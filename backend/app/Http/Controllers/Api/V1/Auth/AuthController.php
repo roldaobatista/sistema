@@ -1,0 +1,113 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+    /**
+     * Login — gera token Sanctum.
+     */
+    public function login(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['Credenciais inválidas.'],
+            ]);
+        }
+
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Conta desativada.'], 403);
+        }
+
+        // Atualiza último login
+        $user->update(['last_login_at' => now()]);
+
+        // Gera token
+        $token = $user->createToken('api')->plainTextToken;
+
+        // Carrega tenant padrão
+        $defaultTenant = $user->tenants()->wherePivot('is_default', true)->first();
+        if ($defaultTenant && !$user->current_tenant_id) {
+            $user->update(['current_tenant_id' => $defaultTenant->id]);
+        }
+
+        return response()->json([
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'tenant_id' => $user->current_tenant_id,
+                'permissions' => $user->getAllPermissions()->pluck('name'),
+                'roles' => $user->getRoleNames(),
+            ],
+        ]);
+    }
+
+    /**
+     * Dados do usuário autenticado.
+     */
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->load('currentTenant');
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'tenant' => $user->currentTenant,
+                'permissions' => $user->getAllPermissions()->pluck('name'),
+                'roles' => $user->getRoleNames(),
+            ],
+        ]);
+    }
+
+    /**
+     * Logout — revoga token atual.
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logout realizado.']);
+    }
+
+    /** Lista tenants disponíveis para o usuário */
+    public function myTenants(Request $request): JsonResponse
+    {
+        $tenants = $request->user()->tenants()->get(['tenants.id', 'tenants.name', 'tenants.document']);
+        return response()->json($tenants);
+    }
+
+    /** Troca o tenant ativo */
+    public function switchTenant(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['tenant_id' => 'required|integer']);
+        $user = $request->user();
+
+        // Verifica se o user pertence a este tenant
+        if (!$user->tenants()->where('tenants.id', $validated['tenant_id'])->exists()) {
+            return response()->json(['message' => 'Acesso negado a esta empresa.'], 403);
+        }
+
+        $user->update(['current_tenant_id' => $validated['tenant_id']]);
+        return response()->json(['message' => 'Empresa alterada.', 'tenant_id' => $validated['tenant_id']]);
+    }
+}

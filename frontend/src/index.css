@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+/* ============================================
+   DESIGN SYSTEM — Sistema de Ordem de Serviço
+   ============================================ */
+
+@theme {
+  /* --- Brand Colors --- */
+  --color-brand-50: oklch(0.97 0.01 245);
+  --color-brand-100: oklch(0.93 0.03 245);
+  --color-brand-200: oklch(0.86 0.06 245);
+  --color-brand-300: oklch(0.76 0.10 245);
+  --color-brand-400: oklch(0.65 0.14 245);
+  --color-brand-500: oklch(0.55 0.18 245);
+  --color-brand-600: oklch(0.47 0.18 245);
+  --color-brand-700: oklch(0.40 0.15 245);
+  --color-brand-800: oklch(0.33 0.12 245);
+  --color-brand-900: oklch(0.27 0.09 245);
+  --color-brand-950: oklch(0.20 0.06 245);
+
+  /* --- Neutral (Slate-based) --- */
+  --color-surface-50: oklch(0.98 0.005 260);
+  --color-surface-100: oklch(0.96 0.008 260);
+  --color-surface-200: oklch(0.92 0.01 260);
+  --color-surface-300: oklch(0.87 0.01 260);
+  --color-surface-400: oklch(0.71 0.01 260);
+  --color-surface-500: oklch(0.55 0.01 260);
+  --color-surface-600: oklch(0.45 0.01 260);
+  --color-surface-700: oklch(0.37 0.01 260);
+  --color-surface-800: oklch(0.27 0.01 260);
+  --color-surface-900: oklch(0.21 0.01 260);
+  --color-surface-950: oklch(0.13 0.01 260);
+
+  /* --- Status Colors --- */
+  --color-success: oklch(0.60 0.17 145);
+  --color-warning: oklch(0.75 0.15 75);
+  --color-danger: oklch(0.55 0.20 27);
+  --color-info: oklch(0.60 0.15 220);
+
+  /* --- Fonts --- */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* --- Radius --- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* --- Shadows --- */
+  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.06);
+  --shadow-elevated: 0 4px 12px oklch(0 0 0 / 0.12), 0 2px 4px oklch(0 0 0 / 0.06);
+  --shadow-modal: 0 12px 40px oklch(0 0 0 / 0.2), 0 4px 12px oklch(0 0 0 / 0.08);
+
+  /* --- Animations --- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Sidebar --- */
+  --sidebar-width: 16rem;
+  --sidebar-collapsed: 4.5rem;
+  --topbar-height: 3.5rem;
+}
+
+/* --- Base layer --- */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-50 text-surface-900;
+  }
+
+  /* Dark mode */
+  .dark body {
+    @apply bg-surface-950 text-surface-100;
+  }
+}
+
+/* --- Utilities --- */
+@utility glass {
+  backdrop-filter: blur(12px) saturate(160%);
+  background-color: oklch(1 0 0 / 0.72);
+}
+
+@utility glass-dark {
+  backdrop-filter: blur(12px) saturate(160%);
+  background-color: oklch(0.15 0.01 260 / 0.72);
+}
+
+/* Focus ring global */
+@utility focus-ring {
+  @apply outline-2 outline-offset-2 outline-brand-500;
+}
+
+/* --- Animations --- */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@utility animate-fade-in {
+  animation: fade-in 0.3s var(--ease-smooth) both;
+}
+
+@utility animate-slide-up {
+  animation: slide-up 0.4s var(--ease-spring) both;
+}
+
+@utility animate-scale-in {
+  animation: scale-in 0.25s var(--ease-spring) both;
+}
+
+@utility animate-shimmer {
+  background: linear-gradient(90deg, oklch(0.94 0 0) 25%, oklch(0.88 0 0) 50%, oklch(0.94 0 0) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@utility animate-pulse-soft {
+  animation: pulse-soft 2s var(--ease-smooth) infinite;
+}
+
+/* Stagger delays for cards */
+@layer utilities {
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+}
+
+/* Skeleton loader */
+@utility skeleton {
+  background: linear-gradient(90deg, oklch(0.94 0.005 260) 25%, oklch(0.90 0.005 260) 50%, oklch(0.94 0.005 260) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}

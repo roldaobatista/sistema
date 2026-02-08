@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class EnsureTenantScope
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Não autenticado.'], 401);
+        }
+
+        $tenantId = $user->current_tenant_id ?? $user->tenant_id;
+
+        if (!$tenantId) {
+            return response()->json(['message' => 'Nenhuma empresa selecionada.'], 403);
+        }
+
+        // Disponibiliza o tenant_id globalmente
+        app()->instance('current_tenant_id', $tenantId);
+        $request->merge(['tenant_id' => $tenantId]);
+
+        return $next($request);
+    }
+}
