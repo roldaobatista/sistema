@@ -49,7 +49,7 @@ class AuditLog extends Model
     public static function log(string $action, string $description, ?Model $model = null, ?array $old = null, ?array $new = null): static
     {
         return static::create([
-            'tenant_id' => auth()->user()?->tenant_id,
+            'tenant_id' => app()->bound('current_tenant_id') ? app('current_tenant_id') : auth()->user()?->tenant_id,
             'user_id' => auth()->id(),
             'action' => $action,
             'auditable_type' => $model ? get_class($model) : null,

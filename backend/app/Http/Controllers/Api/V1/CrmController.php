@@ -196,6 +196,82 @@ class CrmController extends Controller
         return response()->json($pipeline->load('stages'));
     }
 
+    public function pipelinesDestroy(CrmPipeline $pipeline): JsonResponse
+    {
+        $dealCount = CrmDeal::where('pipeline_id', $pipeline->id)->count();
+        if ($dealCount > 0) {
+            return response()->json([
+                'message' => "Não é possível excluir pipeline com {$dealCount} deal(s) vinculado(s). Mova ou exclua os deals primeiro.",
+            ], 422);
+        }
+
+        $pipeline->stages()->delete();
+        $pipeline->delete();
+        return response()->json(null, 204);
+    }
+
+    // ─── Pipeline Stages ──────────────────────────────────
+
+    public function stagesStore(Request $request, CrmPipeline $pipeline): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:100',
+            'color' => 'nullable|string|max:20',
+            'probability' => 'integer|min:0|max:100',
+            'is_won' => 'boolean',
+            'is_lost' => 'boolean',
+        ]);
+
+        $maxOrder = $pipeline->stages()->max('sort_order') ?? -1;
+        $data['sort_order'] = $maxOrder + 1;
+
+        $stage = $pipeline->stages()->create($data);
+        return response()->json($stage, 201);
+    }
+
+    public function stagesUpdate(Request $request, CrmPipelineStage $stage): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => 'sometimes|string|max:100',
+            'color' => 'nullable|string|max:20',
+            'probability' => 'integer|min:0|max:100',
+            'is_won' => 'boolean',
+            'is_lost' => 'boolean',
+        ]);
+
+        $stage->update($data);
+        return response()->json($stage);
+    }
+
+    public function stagesDestroy(CrmPipelineStage $stage): JsonResponse
+    {
+        $dealCount = $stage->deals()->count();
+        if ($dealCount > 0) {
+            return response()->json([
+                'message' => "Não é possível excluir etapa com {$dealCount} deal(s). Mova os deals primeiro.",
+            ], 422);
+        }
+
+        $stage->delete();
+        return response()->json(null, 204);
+    }
+
+    public function stagesReorder(Request $request, CrmPipeline $pipeline): JsonResponse
+    {
+        $data = $request->validate([
+            'stage_ids' => 'required|array',
+            'stage_ids.*' => 'exists:crm_pipeline_stages,id',
+        ]);
+
+        foreach ($data['stage_ids'] as $i => $stageId) {
+            CrmPipelineStage::where('id', $stageId)
+                ->where('pipeline_id', $pipeline->id)
+                ->update(['sort_order' => $i]);
+        }
+
+        return response()->json($pipeline->fresh()->load('stages'));
+    }
+
     // ─── Deals ──────────────────────────────────────────
 
     public function dealsIndex(Request $request): JsonResponse

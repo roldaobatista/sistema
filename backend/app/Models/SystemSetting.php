@@ -37,7 +37,7 @@ class SystemSetting extends Model
     public static function setValue(string $key, mixed $value, string $type = 'string', string $group = 'general'): static
     {
         return static::updateOrCreate(
-            ['key' => $key, 'tenant_id' => auth()->user()?->tenant_id],
+            ['key' => $key, 'tenant_id' => app()->bound('current_tenant_id') ? app('current_tenant_id') : auth()->user()?->tenant_id],
             ['value' => is_array($value) ? json_encode($value) : (string) $value, 'type' => $type, 'group' => $group]
         );
     }

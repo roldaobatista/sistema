@@ -157,4 +157,23 @@ class UserController extends Controller
 
         return response()->json($users);
     }
+
+    /**
+     * Gap #20 — Troca de senha pelo próprio usuário
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if (!Hash::check($validated['current_password'], $request->user()->password)) {
+            return response()->json(['message' => 'Senha atual incorreta.'], 422);
+        }
+
+        $request->user()->update(['password' => Hash::make($validated['new_password'])]);
+
+        return response()->json(['message' => 'Senha alterada com sucesso.']);
+    }
 }

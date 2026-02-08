@@ -43,7 +43,7 @@ return new class extends Migration {
         // Histórico de calibrações
         Schema::create('equipment_calibrations', function (Blueprint $t) {
             $t->id();
-            $t->foreignId('equipment_id')->constrained()->cascadeOnDelete();
+            $t->foreignId('equipment_id')->constrained('equipments')->cascadeOnDelete();
             $t->date('calibration_date');
             $t->date('next_due_date')->nullable();
             $t->string('calibration_type', 30)->default('externa');
@@ -70,7 +70,7 @@ return new class extends Migration {
         // Histórico de manutenções
         Schema::create('equipment_maintenances', function (Blueprint $t) {
             $t->id();
-            $t->foreignId('equipment_id')->constrained()->cascadeOnDelete();
+            $t->foreignId('equipment_id')->constrained('equipments')->cascadeOnDelete();
             $t->string('type', 30)->default('corretiva');
             $t->text('description');
             $t->text('parts_replaced')->nullable();
@@ -88,7 +88,7 @@ return new class extends Migration {
         // Documentos do equipamento
         Schema::create('equipment_documents', function (Blueprint $t) {
             $t->id();
-            $t->foreignId('equipment_id')->constrained()->cascadeOnDelete();
+            $t->foreignId('equipment_id')->constrained('equipments')->cascadeOnDelete();
             $t->string('type', 30)->default('certificado');
             $t->string('name', 150);
             $t->string('file_path');

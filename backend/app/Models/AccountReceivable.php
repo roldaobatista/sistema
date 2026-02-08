@@ -60,6 +60,8 @@ class AccountReceivable extends Model
             $this->update(['status' => self::STATUS_PAID, 'paid_at' => now()]);
         } elseif ($this->amount_paid > 0) {
             $this->update(['status' => self::STATUS_PARTIAL]);
+        } elseif ($this->due_date && $this->due_date->isPast() && in_array($this->status, [self::STATUS_PENDING, self::STATUS_PARTIAL])) {
+            $this->update(['status' => self::STATUS_OVERDUE]);
         }
     }
 

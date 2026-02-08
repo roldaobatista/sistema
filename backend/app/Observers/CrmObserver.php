@@ -23,6 +23,26 @@ class CrmObserver
         }
 
         $status = $wo->status;
+        $fromStatus = $wo->getOriginal('status');
+        $statusLabels = WorkOrder::STATUSES;
+
+        // Notify creator + assignee about status change
+        $notifyUserIds = array_unique(array_filter([$wo->created_by, $wo->assigned_to]));
+        $toLabel = $statusLabels[$status]['label'] ?? $status;
+        $fromLabel = $statusLabels[$fromStatus]['label'] ?? $fromStatus;
+        foreach ($notifyUserIds as $uid) {
+            Notification::notify($wo->tenant_id, $uid, 'os_status_changed',
+                "OS {$wo->number}: {$toLabel}",
+                [
+                    'message' => "Status alterado de {$fromLabel} para {$toLabel}",
+                    'icon' => 'file-text',
+                    'color' => $statusLabels[$status]['color'] ?? 'info',
+                    'link' => "/os/{$wo->id}",
+                    'notifiable_type' => WorkOrder::class,
+                    'notifiable_id' => $wo->id,
+                ]
+            );
+        }
 
         if ($status === WorkOrder::STATUS_COMPLETED) {
             CrmActivity::logSystemEvent(
@@ -53,8 +73,9 @@ class CrmObserver
                 ]);
             }
 
-            // Update last_contact_at
+            // Update last_contact_at + health score
             $wo->customer?->update(['last_contact_at' => now()]);
+            $wo->customer?->recalculateHealthScore();
 
             // ── Auto-generate invoice (AccountReceivable) ──
             if ($wo->total > 0 && !AccountReceivable::where('work_order_id', $wo->id)->exists()) {
@@ -112,6 +133,7 @@ class CrmObserver
                 $wo->assigned_to,
                 ['work_order_id' => $wo->id]
             );
+            $wo->customer?->recalculateHealthScore();
         }
     }
 

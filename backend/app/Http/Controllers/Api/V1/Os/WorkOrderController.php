@@ -138,10 +138,19 @@ class WorkOrderController extends Controller
             'notes' => 'OS criada',
         ]);
 
-        return response()->json(
-            $order->load(['customer', 'equipment', 'assignee:id,name', 'seller:id,name', 'technicians', 'equipmentsList', 'items', 'statusHistory.user:id,name']),
-            201
-        );
+        // Garantia alert
+    $warrantyWarning = null;
+    if ($order->equipment_id) {
+        $equip = Equipment::find($order->equipment_id);
+        if ($equip && $equip->warranty_expires_at && !$equip->warranty_expires_at->isPast()) {
+            $warrantyWarning = "Equipamento {$equip->code} está em garantia até {$equip->warranty_expires_at->format('d/m/Y')}. Verificar cobertura antes de faturar.";
+        }
+    }
+
+    return response()->json([
+        'data' => $order->load(['customer', 'equipment', 'assignee:id,name', 'seller:id,name', 'technicians', 'equipmentsList', 'items', 'statusHistory.user:id,name']),
+        'warranty_warning' => $warrantyWarning,
+    ], 201);
     }
 
     public function show(WorkOrder $workOrder): JsonResponse
@@ -263,6 +272,13 @@ class WorkOrderController extends Controller
                 ->get();
             foreach ($usersToNotify as $u) {
                 $u->notify($notification);
+            }
+        }
+
+        // Gap #10 — Estorno de estoque ao cancelar OS
+        if ($to === WorkOrder::STATUS_CANCELLED) {
+            foreach ($workOrder->items()->where('type', 'product')->whereNotNull('reference_id')->get() as $item) {
+                \App\Models\Product::where('id', $item->reference_id)->increment('stock_qty', (float) $item->quantity);
             }
         }
 
@@ -393,5 +409,28 @@ class WorkOrderController extends Controller
             'message' => 'Assinatura registrada com sucesso',
             'signature_url' => asset("storage/{$path}"),
         ]);
+    }
+
+    // --- Equipamentos múltiplos na OS ---
+
+    public function attachEquipment(Request $request, WorkOrder $workOrder): JsonResponse
+    {
+        $validated = $request->validate([
+            'equipment_id' => 'required|exists:equipments,id',
+        ]);
+
+        if ($workOrder->equipmentsList()->where('equipment_id', $validated['equipment_id'])->exists()) {
+            return response()->json(['message' => 'Equipamento já vinculado a esta OS'], 422);
+        }
+
+        $workOrder->equipmentsList()->attach($validated['equipment_id']);
+
+        return response()->json($workOrder->equipmentsList, 201);
+    }
+
+    public function detachEquipment(WorkOrder $workOrder, Equipment $equipment): JsonResponse
+    {
+        $workOrder->equipmentsList()->detach($equipment->id);
+        return response()->json(null, 204);
     }
 }

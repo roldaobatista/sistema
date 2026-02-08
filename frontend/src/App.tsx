@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -10,6 +11,7 @@ import { PermissionsMatrixPage } from '@/pages/iam/PermissionsMatrixPage'
 import { CustomersPage } from '@/pages/cadastros/CustomersPage'
 import { ProductsPage } from '@/pages/cadastros/ProductsPage'
 import { ServicesPage } from '@/pages/cadastros/ServicesPage'
+import { SuppliersPage } from '@/pages/cadastros/SuppliersPage'
 import { WorkOrdersListPage } from '@/pages/os/WorkOrdersListPage'
 import { WorkOrderCreatePage } from '@/pages/os/WorkOrderCreatePage'
 import { WorkOrderDetailPage } from '@/pages/os/WorkOrderDetailPage'
@@ -21,6 +23,10 @@ import { AccountsReceivablePage } from '@/pages/financeiro/AccountsReceivablePag
 import { AccountsPayablePage } from '@/pages/financeiro/AccountsPayablePage'
 import { CommissionsPage } from '@/pages/financeiro/CommissionsPage'
 import { ExpensesPage } from '@/pages/financeiro/ExpensesPage'
+import { PaymentMethodsPage } from '@/pages/financeiro/PaymentMethodsPage'
+import { PaymentsPage } from '@/pages/financeiro/PaymentsPage'
+import { CashFlowPage } from '@/pages/financeiro/CashFlowPage'
+import { InvoicesPage } from '@/pages/financeiro/InvoicesPage'
 import { ReportsPage } from '@/pages/relatorios/ReportsPage'
 import { SettingsPage } from '@/pages/configuracoes/SettingsPage'
 import { BranchesPage } from '@/pages/configuracoes/BranchesPage'
@@ -54,7 +60,16 @@ const queryClient = new QueryClient({
 })
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, fetchMe, logout } = useAuthStore()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchMe().catch(() => {
+        logout()
+      })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!isAuthenticated) return <Navigate to="/login" replace />
   return <AppLayout>{children}</AppLayout>
 }
@@ -92,6 +107,7 @@ export default function App() {
           <Route path="/cadastros/clientes" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
           <Route path="/cadastros/produtos" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
           <Route path="/cadastros/servicos" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
+          <Route path="/cadastros/fornecedores" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
 
           {/* Orçamentos */}
           <Route path="/orcamentos" element={<ProtectedRoute><QuotesListPage /></ProtectedRoute>} />
@@ -119,6 +135,10 @@ export default function App() {
           <Route path="/financeiro/pagar" element={<ProtectedRoute><AccountsPayablePage /></ProtectedRoute>} />
           <Route path="/financeiro/comissoes" element={<ProtectedRoute><CommissionsPage /></ProtectedRoute>} />
           <Route path="/financeiro/despesas" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+          <Route path="/financeiro/pagamentos" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
+          <Route path="/financeiro/formas-pagamento" element={<ProtectedRoute><PaymentMethodsPage /></ProtectedRoute>} />
+          <Route path="/financeiro/fluxo-caixa" element={<ProtectedRoute><CashFlowPage /></ProtectedRoute>} />
+          <Route path="/financeiro/faturamento" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
 
           {/* Relatórios */}
           <Route path="/relatorios" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />

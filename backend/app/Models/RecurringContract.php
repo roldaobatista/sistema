@@ -87,20 +87,24 @@ class RecurringContract extends Model
     {
         $tenantId = $this->tenant_id;
 
-        $lastNumber = WorkOrder::where('tenant_id', $tenantId)->max('number') ?? 0;
-
         $wo = WorkOrder::create([
             'tenant_id' => $tenantId,
-            'number' => $lastNumber + 1,
+            'number' => WorkOrder::nextNumber($tenantId),
             'customer_id' => $this->customer_id,
             'equipment_id' => $this->equipment_id,
             'assigned_to' => $this->assigned_to,
             'created_by' => $this->created_by,
             'origin_type' => 'recurring_contract',
-            'status' => 'open',
+            'status' => WorkOrder::STATUS_OPEN,
             'priority' => $this->priority,
             'description' => "[Contrato Recorrente] {$this->name}\n{$this->description}",
             'received_at' => now(),
+        ]);
+
+        $wo->statusHistory()->create([
+            'user_id' => $this->created_by,
+            'to_status' => WorkOrder::STATUS_OPEN,
+            'notes' => "OS gerada automaticamente pelo contrato recorrente: {$this->name}",
         ]);
 
         foreach ($this->items as $item) {

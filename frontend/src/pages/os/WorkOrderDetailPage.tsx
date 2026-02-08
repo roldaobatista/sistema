@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     ArrowLeft, Clock, User, Phone, Mail, MapPin,
-    Briefcase, Package, Plus, Trash2, Pencil, Download,
+    Briefcase, Package, Plus, Trash2, Pencil, Download, Save, X,
     CheckCircle2, AlertTriangle, Play, Pause, Truck, XCircle,
     DollarSign, CalendarDays, LinkIcon,
 } from 'lucide-react'
@@ -44,6 +44,12 @@ export function WorkOrderDetailPage() {
         type: 'service' as 'product' | 'service',
         reference_id: '' as string | number, description: '',
         quantity: '1', unit_price: '0', discount: '0',
+    })
+
+    // Inline editing states
+    const [isEditing, setIsEditing] = useState(false)
+    const [editForm, setEditForm] = useState({
+        description: '', priority: '', technical_report: '', internal_notes: '',
     })
 
     const { data: res, isLoading } = useQuery({
@@ -129,6 +135,22 @@ export function WorkOrderDetailPage() {
         }))
     }
 
+    const startEditing = () => {
+        setEditForm({
+            description: order.description ?? '',
+            priority: order.priority ?? 'normal',
+            technical_report: order.technical_report ?? '',
+            internal_notes: order.internal_notes ?? '',
+        })
+        setIsEditing(true)
+    }
+
+    const cancelEditing = () => setIsEditing(false)
+
+    const saveEditing = () => {
+        updateMut.mutate(editForm, { onSuccess: () => setIsEditing(false) })
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -167,6 +189,20 @@ export function WorkOrderDetailPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {!isEditing ? (
+                        <Button variant="outline" icon={<Pencil className="h-4 w-4" />} onClick={startEditing}>
+                            Editar
+                        </Button>
+                    ) : (
+                        <>
+                            <Button variant="outline" icon={<X className="h-4 w-4" />} onClick={cancelEditing}>
+                                Cancelar
+                            </Button>
+                            <Button icon={<Save className="h-4 w-4" />} onClick={saveEditing} loading={updateMut.isPending}>
+                                Salvar
+                            </Button>
+                        </>
+                    )}
                     <Button variant="outline" icon={<Download className="h-4 w-4" />}
                         onClick={() => window.open(`${api.defaults.baseURL}/work-orders/${id}/pdf`, '_blank')}>
                         Baixar PDF
@@ -183,21 +219,67 @@ export function WorkOrderDetailPage() {
                     {/* Descrição */}
                     <div className="rounded-xl border border-surface-200 bg-white p-5 shadow-card">
                         <h3 className="text-sm font-semibold text-surface-900 mb-2">Defeito Relatado</h3>
-                        <p className="text-sm text-surface-700 whitespace-pre-wrap">{order.description}</p>
+                        {isEditing ? (
+                            <textarea
+                                value={editForm.description}
+                                onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+                                rows={4}
+                                className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                            />
+                        ) : (
+                            <p className="text-sm text-surface-700 whitespace-pre-wrap">{order.description}</p>
+                        )}
 
-                        {order.technical_report && (
+                        {isEditing && (
                             <div className="mt-4 border-t border-surface-200 pt-4">
-                                <h3 className="text-sm font-semibold text-surface-900 mb-2">Laudo Técnico</h3>
-                                <p className="text-sm text-surface-700 whitespace-pre-wrap">{order.technical_report}</p>
+                                <h3 className="text-sm font-semibold text-surface-900 mb-2">Prioridade</h3>
+                                <div className="flex gap-2">
+                                    {Object.entries(priorityConfig).map(([key, conf]) => (
+                                        <button key={key} type="button" onClick={() => setEditForm(p => ({ ...p, priority: key }))}
+                                            className={cn('rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
+                                                editForm.priority === key
+                                                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                                                    : 'border-surface-200 text-surface-600 hover:border-surface-300')}>
+                                            {conf.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
-                        {order.internal_notes && (
-                            <div className="mt-4 border-t border-surface-200 pt-4">
-                                <h3 className="text-sm font-semibold text-surface-500 mb-1">Observações Internas</h3>
-                                <p className="text-xs text-surface-500 italic">{order.internal_notes}</p>
-                            </div>
-                        )}
+                        <div className="mt-4 border-t border-surface-200 pt-4">
+                            <h3 className="text-sm font-semibold text-surface-900 mb-2">Laudo Técnico</h3>
+                            {isEditing ? (
+                                <textarea
+                                    value={editForm.technical_report}
+                                    onChange={e => setEditForm(p => ({ ...p, technical_report: e.target.value }))}
+                                    rows={3}
+                                    placeholder="Escreva o laudo técnico..."
+                                    className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                                />
+                            ) : (
+                                order.technical_report
+                                    ? <p className="text-sm text-surface-700 whitespace-pre-wrap">{order.technical_report}</p>
+                                    : <p className="text-sm text-surface-400 italic">Nenhum laudo registrado</p>
+                            )}
+                        </div>
+
+                        <div className="mt-4 border-t border-surface-200 pt-4">
+                            <h3 className="text-sm font-semibold text-surface-500 mb-1">Observações Internas</h3>
+                            {isEditing ? (
+                                <textarea
+                                    value={editForm.internal_notes}
+                                    onChange={e => setEditForm(p => ({ ...p, internal_notes: e.target.value }))}
+                                    rows={2}
+                                    placeholder="Notas internas..."
+                                    className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                                />
+                            ) : (
+                                order.internal_notes
+                                    ? <p className="text-xs text-surface-500 italic">{order.internal_notes}</p>
+                                    : <p className="text-xs text-surface-400 italic">Nenhuma observação interna</p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Itens */}

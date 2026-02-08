@@ -151,9 +151,40 @@ class CommissionRule extends Model
 
     private function calculateCustom(float $amount, array $context): float
     {
-        // tiers/formula stored in tiers field as: { "formula": "gross * 0.1 - expenses * 0.05" }
-        // Simple safe evaluation — for now just use percent_gross as fallback
-        return round($amount * ((float) $this->value / 100), 2);
+        $formula = $this->tiers['formula'] ?? null;
+        if (!$formula) {
+            return round($amount * ((float) $this->value / 100), 2);
+        }
+
+        // Replace variables in formula
+        $vars = [
+            'gross' => $context['gross'] ?? $amount,
+            'net' => ($context['gross'] ?? $amount) - ($context['expenses'] ?? 0),
+            'products' => $context['products_total'] ?? 0,
+            'services' => $context['services_total'] ?? 0,
+            'expenses' => $context['expenses'] ?? 0,
+            'displacement' => $context['displacement'] ?? 0,
+            'cost' => $context['cost'] ?? 0,
+            'percent' => (float) $this->value,
+        ];
+
+        $expr = $formula;
+        foreach ($vars as $key => $val) {
+            $expr = str_replace($key, (string) $val, $expr);
+        }
+
+        // Safe eval: only allow numbers and math operators
+        $expr = preg_replace('/[^0-9.+\-*\/() ]/', '', $expr);
+        if (empty(trim($expr))) {
+            return 0;
+        }
+
+        try {
+            $result = eval("return (float)({$expr});");
+            return round(max(0, (float) $result), 2);
+        } catch (\Throwable) {
+            return round($amount * ((float) $this->value / 100), 2);
+        }
     }
 
     /**
@@ -171,7 +202,7 @@ class CommissionRule extends Model
             'products_total' => (float) $productsTotal,
             'services_total' => (float) $servicesTotal,
             'expenses'       => (float) $expenses,
-            'displacement'   => 0,
+            'displacement'   => (float) ($wo->displacement_value ?? 0),
             'cost'           => 0,
         ]);
     }

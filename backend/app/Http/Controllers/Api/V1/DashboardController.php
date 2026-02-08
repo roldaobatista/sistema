@@ -10,6 +10,9 @@ use App\Models\WorkOrder;
 use App\Models\CommissionEvent;
 use App\Models\Expense;
 use App\Models\Equipment;
+use App\Models\Product;
+use App\Models\AccountReceivable;
+use App\Models\AccountPayable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +72,24 @@ class DashboardController extends Controller
         $avgHealthScore = (int) Customer::where('is_active', true)
             ->whereNotNull('health_score')->avg('health_score');
 
+        // Financeiro
+        $receivablesPending = AccountReceivable::whereIn('status', ['pending', 'partial'])
+            ->sum('amount');
+        $receivablesOverdue = AccountReceivable::whereIn('status', ['pending', 'partial'])
+            ->where('due_date', '<', now())->sum('amount');
+        $payablesPending = AccountPayable::whereIn('status', ['pending', 'partial'])
+            ->sum('amount');
+        $payablesOverdue = AccountPayable::whereIn('status', ['pending', 'partial'])
+            ->where('due_date', '<', now())->sum('amount');
+        $netRevenue = (float) $revenueMonth - (float) $expensesMonth;
+
+        // SLA — tempo médio para concluir OS (em horas)
+        $avgCompletionHours = WorkOrder::where('status', 'completed')
+            ->where('updated_at', '>=', $from)
+            ->whereNotNull('created_at')
+            ->select(DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))
+            ->value('avg_hours');
+
         return response()->json([
             'open_os' => $openOs,
             'in_progress_os' => $inProgressOs,
@@ -87,6 +108,20 @@ class DashboardController extends Controller
             'crm_revenue_month' => (float) $crmRevenueMonth,
             'crm_pending_followups' => $pendingFollowUps,
             'crm_avg_health' => $avgHealthScore,
+            // Estoque
+            'stock_low' => Product::where('is_active', true)
+                ->whereColumn('stock_qty', '<=', 'stock_min')
+                ->where('stock_qty', '>', 0)->count(),
+            'stock_out' => Product::where('is_active', true)
+                ->where('stock_qty', '<=', 0)->count(),
+            // Financeiro
+            'receivables_pending' => (float) $receivablesPending,
+            'receivables_overdue' => (float) $receivablesOverdue,
+            'payables_pending' => (float) $payablesPending,
+            'payables_overdue' => (float) $payablesOverdue,
+            'net_revenue' => $netRevenue,
+            // SLA
+            'avg_completion_hours' => round((float) ($avgCompletionHours ?? 0), 1),
         ]);
     }
 }

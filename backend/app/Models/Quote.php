@@ -14,7 +14,7 @@ class Quote extends Model
     use BelongsToTenant, SoftDeletes, Auditable;
 
     protected $fillable = [
-        'tenant_id', 'quote_number', 'customer_id', 'seller_id', 'status',
+        'tenant_id', 'quote_number', 'revision', 'customer_id', 'seller_id', 'status',
         'valid_until', 'discount_percentage', 'discount_amount',
         'subtotal', 'total', 'observations', 'internal_notes',
         'sent_at', 'approved_at', 'rejected_at', 'rejection_reason',

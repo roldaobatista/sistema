@@ -29,8 +29,11 @@ import {
     Download,
     Phone,
     Upload,
+    Truck,
+    CreditCard,
     Scale,
     RotateCcw,
+    TrendingUp,
     History,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -54,6 +57,7 @@ const navigation: NavItem[] = [
         label: 'CRM',
         icon: Briefcase,
         path: '/crm',
+        permission: 'crm.deal.view',
         children: [
             { label: 'Dashboard', icon: BarChart3, path: '/crm' },
             { label: 'Pipeline', icon: Grid3x3, path: '/crm/pipeline' },
@@ -64,73 +68,108 @@ const navigation: NavItem[] = [
         label: 'Cadastros',
         icon: Package,
         path: '/cadastros',
+        permission: 'cadastros.customer.view',
         children: [
             { label: 'Clientes', icon: Users, path: '/cadastros/clientes' },
             { label: 'Produtos', icon: Package, path: '/cadastros/produtos' },
             { label: 'Serviços', icon: Briefcase, path: '/cadastros/servicos' },
+            { label: 'Fornecedores', icon: Truck, path: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
         ],
     },
-    { label: 'Orçamentos', icon: FileText, path: '/orcamentos' },
-    { label: 'Chamados', icon: Phone, path: '/chamados' },
-    { label: 'Ordens de Serviço', icon: FileText, path: '/os' },
-    { label: 'Contratos Recorrentes', icon: RotateCcw, path: '/os/contratos-recorrentes' },
+    { label: 'Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
+    { label: 'Chamados', icon: Phone, path: '/chamados', permission: 'service_calls.service_call.view' },
+    { label: 'Ordens de Serviço', icon: FileText, path: '/os', permission: 'os.work_order.view' },
+    { label: 'Contratos Recorrentes', icon: RotateCcw, path: '/os/contratos-recorrentes', permission: 'os.work_order.view' },
     {
         label: 'Técnicos',
         icon: Wrench,
         path: '/tecnicos',
+        permission: 'technicians.schedule.view',
         children: [
             { label: 'Agenda', icon: Calendar, path: '/tecnicos/agenda' },
             { label: 'Apontamentos', icon: Clock, path: '/tecnicos/apontamentos' },
-            { label: 'Caixa', icon: DollarSign, path: '/tecnicos/caixa' },
+            { label: 'Caixa', icon: DollarSign, path: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
         ],
     },
     {
         label: 'Financeiro',
         icon: DollarSign,
         path: '/financeiro',
+        permission: 'finance.receivable.view',
         children: [
             { label: 'Contas a Receber', icon: ArrowDownToLine, path: '/financeiro/receber' },
-            { label: 'Contas a Pagar', icon: ArrowUpFromLine, path: '/financeiro/pagar' },
-            { label: 'Comissões', icon: Award, path: '/financeiro/comissoes' },
-            { label: 'Despesas', icon: Receipt, path: '/financeiro/despesas' },
+            { label: 'Contas a Pagar', icon: ArrowUpFromLine, path: '/financeiro/pagar', permission: 'finance.payable.view' },
+            { label: 'Pagamentos', icon: DollarSign, path: '/financeiro/pagamentos' },
+            { label: 'Comissões', icon: Award, path: '/financeiro/comissoes', permission: 'commissions.rule.view' },
+            { label: 'Despesas', icon: Receipt, path: '/financeiro/despesas', permission: 'expenses.expense.view' },
+            { label: 'Formas de Pagamento', icon: CreditCard, path: '/financeiro/formas-pagamento', permission: 'platform.settings.manage' },
+            { label: 'Fluxo de Caixa', icon: TrendingUp, path: '/financeiro/fluxo-caixa', permission: 'finance.receivable.view' },
+            { label: 'Faturamento', icon: FileText, path: '/financeiro/faturamento', permission: 'finance.receivable.view' },
         ],
     },
-    { label: 'Relatórios', icon: BarChart3, path: '/relatorios' },
-    { label: 'Importação', icon: Upload, path: '/importacao' },
-    { label: 'Equipamentos', icon: Scale, path: '/equipamentos' },
-    { label: 'Agenda Calibrações', icon: Calendar, path: '/agenda-calibracoes' },
+    { label: 'Relatórios', icon: BarChart3, path: '/relatorios', permission: 'reports.os_report.view' },
+    { label: 'Importação', icon: Upload, path: '/importacao', permission: 'import.data.view' },
+    { label: 'Equipamentos', icon: Scale, path: '/equipamentos', permission: 'equipments.equipment.view' },
+    { label: 'Agenda Calibrações', icon: Calendar, path: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
     {
         label: 'IAM',
         icon: Shield,
         path: '/iam',
+        permission: 'iam.user.view',
         children: [
             { label: 'Usuários', icon: Users, path: '/iam/usuarios' },
-            { label: 'Roles', icon: KeyRound, path: '/iam/roles' },
-            { label: 'Permissões', icon: Grid3x3, path: '/iam/permissoes' },
+            { label: 'Roles', icon: KeyRound, path: '/iam/roles', permission: 'iam.role.view' },
+            { label: 'Permissões', icon: Grid3x3, path: '/iam/permissoes', permission: 'iam.role.view' },
         ],
     },
     {
         label: 'Configurações',
         icon: Settings,
         path: '/configuracoes',
+        permission: 'platform.settings.view',
         children: [
-            { label: 'Filiais', icon: Building2, path: '/configuracoes/filiais' },
-            { label: 'Empresas', icon: Building2, path: '/configuracoes/empresas' },
-            { label: 'Auditoria', icon: History, path: '/configuracoes/auditoria' },
+            { label: 'Filiais', icon: Building2, path: '/configuracoes/filiais', permission: 'platform.branch.view' },
+            { label: 'Empresas', icon: Building2, path: '/configuracoes/empresas', permission: 'platform.tenant.view' },
+            { label: 'Auditoria', icon: History, path: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
         ],
     },
 ]
 
+function filterNavByPermission(items: NavItem[], userPerms: string[], isSuperAdmin: boolean): NavItem[] {
+    if (isSuperAdmin) return items
+    return items
+        .filter(item => !item.permission || userPerms.includes(item.permission))
+        .map(item => {
+            if (item.children) {
+                return {
+                    ...item,
+                    children: item.children.filter(
+                        child => !child.permission || userPerms.includes(child.permission)
+                    ),
+                }
+            }
+            return item
+        })
+        .filter(item => !item.children || item.children.length > 0)
+}
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const location = useLocation()
-    const { user, logout } = useAuthStore()
+    const { user, logout, hasRole } = useAuthStore()
     const { sidebarCollapsed, toggleSidebar, sidebarMobileOpen, toggleMobileSidebar } = useUIStore()
     const { isInstallable, isOnline, install } = usePWA()
     const { currentTenant, tenants, switchTenant, isSwitching } = useTenantHook()
+
+    const filteredNav = filterNavByPermission(
+        navigation,
+        user?.permissions ?? [],
+        hasRole('super_admin')
+    )
+
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
         () => {
             const initial = new Set<string>()
-            navigation.forEach(item => {
+            filteredNav.forEach(item => {
                 if (item.children?.some(child => location.pathname === child.path)) {
                     initial.add(item.path)
                 }
@@ -182,7 +221,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-                    {navigation.map((item) => (
+                    {filteredNav.map((item) => (
                         <div key={item.path}>
                             {item.children ? (
                                 <button

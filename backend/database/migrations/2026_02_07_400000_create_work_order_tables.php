@@ -28,7 +28,7 @@ return new class extends Migration {
             $t->unsignedBigInteger('tenant_id');
             $t->string('number', 20);                // OS-000001
             $t->foreignId('customer_id')->constrained()->cascadeOnDelete();
-            $t->foreignId('equipment_id')->nullable()->constrained()->nullOnDelete();
+            $t->foreignId('equipment_id')->nullable()->constrained('equipments')->nullOnDelete();
             $t->unsignedBigInteger('branch_id')->nullable();
             $t->unsignedBigInteger('created_by');     // usuário que abriu
             $t->unsignedBigInteger('assigned_to')->nullable(); // técnico responsável

@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Quote;
 use App\Models\QuoteEquipment;
 use App\Models\QuoteItem;
+use App\Models\QuotePhoto;
 use App\Models\WorkOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -125,6 +126,7 @@ class QuoteController extends Controller
         ]);
 
         $quote->update($validated);
+        $quote->increment('revision');
         $quote->recalculateTotal();
 
         return response()->json($quote->fresh(['customer', 'seller', 'equipments.items']));
@@ -295,6 +297,39 @@ class QuoteController extends Controller
     public function removeItem(QuoteItem $item): JsonResponse
     {
         $item->delete();
+        return response()->json(null, 204);
+    }
+
+    // ── Fotos ──
+
+    public function addPhoto(Request $request, Quote $quote): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|image|max:10240',
+            'quote_equipment_id' => 'required|exists:quote_equipments,id',
+            'caption' => 'nullable|string|max:255',
+        ]);
+
+        $path = $request->file('file')->store(
+            "quotes/{$quote->id}/photos",
+            'public'
+        );
+
+        $photo = QuotePhoto::create([
+            'tenant_id' => auth()->user()->tenant_id,
+            'quote_equipment_id' => $request->quote_equipment_id,
+            'path' => $path,
+            'caption' => $request->caption,
+            'sort_order' => 0,
+        ]);
+
+        return response()->json($photo, 201);
+    }
+
+    public function removePhoto(QuotePhoto $photo): JsonResponse
+    {
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($photo->path);
+        $photo->delete();
         return response()->json(null, 204);
     }
 

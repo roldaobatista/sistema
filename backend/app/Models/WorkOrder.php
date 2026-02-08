@@ -20,7 +20,7 @@ class WorkOrder extends Model
         'branch_id', 'created_by', 'assigned_to',
         'status', 'priority', 'description', 'internal_notes', 'technical_report',
         'received_at', 'started_at', 'completed_at', 'delivered_at',
-        'discount', 'discount_percentage', 'discount_amount', 'total',
+        'discount', 'discount_percentage', 'discount_amount', 'displacement_value', 'total',
         'signature_path', 'signature_signer', 'signature_at', 'signature_ip',
     ];
 
@@ -35,6 +35,7 @@ class WorkOrder extends Model
             'discount' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
+            'displacement_value' => 'decimal:2',
             'total' => 'decimal:2',
         ];
     }
@@ -45,6 +46,7 @@ class WorkOrder extends Model
     public const STATUS_WAITING_APPROVAL = 'waiting_approval';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_DELIVERED = 'delivered';
+    public const STATUS_INVOICED = 'invoiced';
     public const STATUS_CANCELLED = 'cancelled';
 
     public const STATUSES = [
@@ -54,6 +56,7 @@ class WorkOrder extends Model
         self::STATUS_WAITING_APPROVAL => ['label' => 'Aguard. Aprovação', 'color' => 'brand'],
         self::STATUS_COMPLETED => ['label' => 'Concluída', 'color' => 'success'],
         self::STATUS_DELIVERED => ['label' => 'Entregue', 'color' => 'success'],
+        self::STATUS_INVOICED => ['label' => 'Faturada', 'color' => 'brand'],
         self::STATUS_CANCELLED => ['label' => 'Cancelada', 'color' => 'danger'],
     ];
 
@@ -70,7 +73,8 @@ class WorkOrder extends Model
         self::STATUS_WAITING_PARTS    => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
         self::STATUS_WAITING_APPROVAL => [self::STATUS_IN_PROGRESS, self::STATUS_COMPLETED, self::STATUS_CANCELLED],
         self::STATUS_COMPLETED        => [self::STATUS_DELIVERED, self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
-        self::STATUS_DELIVERED        => [],
+        self::STATUS_DELIVERED        => [self::STATUS_INVOICED],
+        self::STATUS_INVOICED         => [],
         self::STATUS_CANCELLED        => [],
     ];
 

@@ -69,6 +69,7 @@ class DatabaseSeeder extends Seeder
             'technicians.technician.view', 'technicians.schedule.view', 'technicians.schedule.manage',
             'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
             'finance.payable.view',
+            'finance.cashflow.view', 'finance.dre.view', 'platform.dashboard.view',
             'commissions.rule.view', 'commissions.settlement.view',
             'reports.os_report.view', 'reports.financial_report.view', 'reports.productivity_report.view',
         ]);
@@ -99,6 +100,7 @@ class DatabaseSeeder extends Seeder
         $financeiro->givePermissionTo([
             'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
             'finance.payable.view', 'finance.payable.create', 'finance.payable.settle',
+            'finance.cashflow.view', 'finance.dre.view', 'platform.dashboard.view',
             'commissions.rule.view', 'commissions.rule.create', 'commissions.settlement.view', 'commissions.settlement.create',
             'expenses.expense.view', 'expenses.expense.approve',
             'reports.financial_report.view', 'reports.commission_report.view',
@@ -183,6 +185,7 @@ class DatabaseSeeder extends Seeder
                 'tenant' => ['view', 'create', 'update', 'delete'],
                 'branch' => ['view', 'create', 'update', 'delete'],
                 'settings' => ['view', 'manage'],
+                'dashboard' => ['view'],
             ],
             'cadastros' => [
                 'customer' => ['view', 'create', 'update', 'delete'],
@@ -201,6 +204,8 @@ class DatabaseSeeder extends Seeder
             'finance' => [
                 'receivable' => ['view', 'create', 'update', 'delete', 'settle'],
                 'payable' => ['view', 'create', 'update', 'delete', 'settle'],
+                'cashflow' => ['view'],
+                'dre' => ['view'],
             ],
             'commissions' => [
                 'rule' => ['view', 'create', 'update', 'delete'],

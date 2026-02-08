@@ -53,7 +53,20 @@ class ExpenseController extends Controller
         ]);
 
         $expense = Expense::create([...$validated, 'created_by' => $request->user()->id]);
-        return response()->json($expense->load(['category:id,name,color', 'creator:id,name']), 201);
+
+    // Duplicity warning
+    $duplicateCount = Expense::where('description', $validated['description'])
+        ->where('amount', $validated['amount'])
+        ->where('expense_date', $validated['expense_date'])
+        ->where('id', '!=', $expense->id)
+        ->count();
+
+    $response = $expense->load(['category:id,name,color', 'creator:id,name'])->toArray();
+    if ($duplicateCount > 0) {
+        $response['_warning'] = "Possível duplicidade: {$duplicateCount} despesa(s) com mesma descrição, valor e data.";
+    }
+
+    return response()->json($response, 201);
     }
 
     public function show(Expense $expense): JsonResponse
@@ -153,6 +166,23 @@ class ExpenseController extends Controller
         ]);
 
         return response()->json(ExpenseCategory::create($validated), 201);
+    }
+
+    public function updateCategory(Request $request, ExpenseCategory $category): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:100',
+            'color' => 'nullable|string|max:7',
+            'active' => 'boolean',
+        ]);
+        $category->update($validated);
+        return response()->json($category);
+    }
+
+    public function destroyCategory(ExpenseCategory $category): JsonResponse
+    {
+        $category->delete();
+        return response()->json(null, 204);
     }
 
     // ── Summary ──

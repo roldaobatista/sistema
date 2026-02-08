@@ -16,7 +16,7 @@ class AccountPayable extends Model
     protected $table = 'accounts_payable';
 
     protected $fillable = [
-        'tenant_id', 'created_by', 'supplier', 'category',
+        'tenant_id', 'created_by', 'supplier_id', 'supplier', 'category', 'category_id',
         'description', 'amount', 'amount_paid', 'due_date', 'paid_at',
         'status', 'payment_method', 'notes',
     ];
@@ -41,18 +41,36 @@ class AccountPayable extends Model
         'outros' => 'Outros',
     ];
 
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_PARTIAL = 'partial';
+    public const STATUS_PAID = 'paid';
+    public const STATUS_OVERDUE = 'overdue';
+    public const STATUS_CANCELLED = 'cancelled';
+
     public function recalculateStatus(): void
     {
         if ($this->amount_paid >= $this->amount) {
-            $this->update(['status' => 'paid', 'paid_at' => now()]);
+            $this->update(['status' => self::STATUS_PAID, 'paid_at' => now()]);
         } elseif ($this->amount_paid > 0) {
-            $this->update(['status' => 'partial']);
+            $this->update(['status' => self::STATUS_PARTIAL]);
+        } elseif ($this->due_date && $this->due_date->isPast() && in_array($this->status, [self::STATUS_PENDING, self::STATUS_PARTIAL])) {
+            $this->update(['status' => self::STATUS_OVERDUE]);
         }
     }
 
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function supplierRelation(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
+
+    public function categoryRelation(): BelongsTo
+    {
+        return $this->belongsTo(AccountPayableCategory::class, 'category_id');
     }
 
     public function payments(): MorphMany

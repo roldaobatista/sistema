@@ -58,14 +58,24 @@ class SettingsController extends Controller
         if ($userId = $request->get('user_id')) {
             $query->where('user_id', $userId);
         }
-        if ($from = $request->get('from')) {
-            $query->where('created_at', '>=', $from);
-        }
-        if ($to = $request->get('to')) {
-            $query->where('created_at', '<=', "$to 23:59:59");
-        }
         if ($type = $request->get('auditable_type')) {
             $query->where('auditable_type', 'like', "%$type%");
+        }
+        if ($auditableId = $request->get('auditable_id')) {
+            $query->where('auditable_id', $auditableId);
+        }
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('old_values', 'like', "%{$search}%")
+                  ->orWhere('new_values', 'like', "%{$search}%");
+            });
+        }
+        if ($from = $request->get('from') ?? $request->get('date_from')) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to = $request->get('to') ?? $request->get('date_to')) {
+            $query->whereDate('created_at', '<=', $to);
         }
 
         $logs = $query->orderByDesc('created_at')

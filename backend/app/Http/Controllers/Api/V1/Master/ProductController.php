@@ -100,4 +100,20 @@ class ProductController extends Controller
         $cat = ProductCategory::create($validated);
         return response()->json($cat, 201);
     }
+
+    public function updateCategory(Request $request, ProductCategory $category): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'is_active' => 'boolean',
+        ]);
+        $category->update($validated);
+        return response()->json($category);
+    }
+
+    public function destroyCategory(ProductCategory $category): JsonResponse
+    {
+        $category->delete();
+        return response()->json(null, 204);
+    }
 }

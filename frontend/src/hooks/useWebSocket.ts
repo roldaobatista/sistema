@@ -39,6 +39,7 @@ export function useWebSocket(config: WebSocketConfig) {
             ws.onopen = () => {
                 setIsConnected(true)
                 reconnectAttempts.current = 0
+                console.log('[WS] connected to', url)
 
                 // Subscribe to channels
                 if (tenantId) {
@@ -82,6 +83,7 @@ export function useWebSocket(config: WebSocketConfig) {
             }
 
             ws.onerror = () => {
+                // Silently close — errors are expected when WS server (Reverb) is not running
                 ws.close()
             }
 

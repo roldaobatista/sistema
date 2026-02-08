@@ -21,7 +21,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('equipment_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('equipment_id')->nullable()->constrained('equipments')->nullOnDelete();
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('created_by')->constrained('users');
             $table->string('name');

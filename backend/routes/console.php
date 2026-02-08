@@ -26,8 +26,20 @@ Schedule::command('app:mark-overdue-receivables')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/overdue-receivables.log'));
 
+// ─── Mark Overdue Payables (diário às 6:05h) ───
+Schedule::command('app:mark-overdue-payables')
+    ->dailyAt('06:05')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/overdue-payables.log'));
+
 // ─── Recurring Work Orders (#24) (diário às 6:30h) ───
 Schedule::command('app:generate-recurring-work-orders')
     ->dailyAt('06:30')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/recurring-work-orders.log'));
+
+// ─── Expired Quotes (diário às 06:15) ───
+Schedule::command('quotes:check-expired')
+    ->dailyAt('06:15')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/expired-quotes.log'));

@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToTenant;
 
 class QuoteItem extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
-        'quote_equipment_id', 'type', 'product_id', 'service_id',
+        'tenant_id', 'quote_equipment_id', 'type', 'product_id', 'service_id',
         'custom_description', 'quantity', 'original_price', 'unit_price',
         'discount_percentage', 'subtotal', 'sort_order',
     ];

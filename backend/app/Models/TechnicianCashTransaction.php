@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToTenant;
 
 class TechnicianCashTransaction extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
-        'fund_id', 'type', 'amount', 'balance_after',
+        'tenant_id', 'fund_id', 'type', 'amount', 'balance_after',
         'expense_id', 'work_order_id', 'created_by',
         'description', 'transaction_date',
     ];

@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToTenant;
 
 class EquipmentCalibration extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
-        'equipment_id', 'calibration_date', 'next_due_date',
+        'tenant_id', 'equipment_id', 'calibration_date', 'next_due_date',
         'calibration_type', 'result', 'laboratory', 'certificate_number',
         'certificate_file', 'uncertainty', 'errors_found',
         'corrections_applied', 'performed_by', 'approved_by',

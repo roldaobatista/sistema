@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
-    BarChart3, FileText, Users, DollarSign, TrendingUp,
-    Clock, CheckCircle2, Wallet, Receipt, AlertCircle, Scale, AlertTriangle,
+    FileText, DollarSign, TrendingUp,
+    Clock, CheckCircle2, Wallet, Receipt, AlertCircle, Scale, AlertTriangle, Package,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -10,7 +10,7 @@ import api from '@/lib/api'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
-const statusConfig: Record<string, { label: string; variant: any; color: string }> = {
+const statusConfig: Record<string, { label: string; variant: string; color: string }> = {
     pending: { label: 'Pendente', variant: 'warning', color: 'text-amber-600' },
     in_progress: { label: 'Em Andamento', variant: 'info', color: 'text-sky-600' },
     completed: { label: 'Concluída', variant: 'success', color: 'text-emerald-600' },
@@ -38,6 +38,8 @@ export function DashboardPage() {
     const cards2 = [
         { label: 'Comissões Pendentes', value: fmtBRL(s.pending_commissions ?? 0), icon: Wallet, color: 'text-sky-600 bg-sky-50' },
         { label: 'Despesas (mês)', value: fmtBRL(s.expenses_month ?? 0), icon: Receipt, color: 'text-red-600 bg-red-50' },
+        { label: 'Estoque Baixo', value: s.stock_low ?? 0, icon: Package, color: 'text-amber-600 bg-amber-50' },
+        { label: 'Sem Estoque', value: s.stock_out ?? 0, icon: AlertTriangle, color: 'text-red-600 bg-red-50' },
     ]
 
     const recentOs = s.recent_os ?? []
@@ -74,7 +76,7 @@ export function DashboardPage() {
             </div>
 
             {/* Financial cards */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {cards2.map((stat) => (
                     <div key={stat.label} className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
                         <div className="flex items-center gap-3">
@@ -88,6 +90,43 @@ export function DashboardPage() {
                         </div>
                     </div>
                 ))}
+            </div>
+
+            {/* Financial + SLA cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
+                    <div className="flex items-center gap-3">
+                        <div className="rounded-lg p-2.5 text-emerald-600 bg-emerald-50"><TrendingUp className="h-5 w-5" /></div>
+                        <div>
+                            <p className="text-xs text-surface-500">A Receber (pendente)</p>
+                            <p className="text-lg font-bold text-surface-900">{isLoading ? '…' : fmtBRL(s.receivables_pending ?? 0)}</p>
+                        </div>
+                    </div>
+                    {(s.receivables_overdue ?? 0) > 0 && (
+                        <p className="mt-2 text-xs font-semibold text-red-600">⚠ {fmtBRL(s.receivables_overdue)} vencido</p>
+                    )}
+                </div>
+                <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
+                    <div className="flex items-center gap-3">
+                        <div className="rounded-lg p-2.5 text-red-600 bg-red-50"><Receipt className="h-5 w-5" /></div>
+                        <div>
+                            <p className="text-xs text-surface-500">A Pagar (pendente)</p>
+                            <p className="text-lg font-bold text-surface-900">{isLoading ? '…' : fmtBRL(s.payables_pending ?? 0)}</p>
+                        </div>
+                    </div>
+                    {(s.payables_overdue ?? 0) > 0 && (
+                        <p className="mt-2 text-xs font-semibold text-red-600">⚠ {fmtBRL(s.payables_overdue)} vencido</p>
+                    )}
+                </div>
+                <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
+                    <div className="flex items-center gap-3">
+                        <div className="rounded-lg p-2.5 text-blue-600 bg-blue-50"><Clock className="h-5 w-5" /></div>
+                        <div>
+                            <p className="text-xs text-surface-500">SLA — Tempo Médio OS</p>
+                            <p className="text-lg font-bold text-surface-900">{isLoading ? '…' : `${s.avg_completion_hours ?? 0}h`}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Equipments Alerts Widget */}
@@ -112,9 +151,11 @@ export function DashboardPage() {
                         </div>
                     </div>
                     <div className="space-y-2">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {eqAlerts.map((eq: any) => {
                             const d = new Date(eq.next_calibration_at)
-                            const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                            const now = new Date()
+                            const diff = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
                             const isPast = diff < 0
                             return (
                                 <div key={eq.id} className="flex items-center justify-between rounded-lg bg-white px-4 py-2.5">

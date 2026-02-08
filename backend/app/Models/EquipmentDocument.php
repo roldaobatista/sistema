@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToTenant;
 
 class EquipmentDocument extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
-        'equipment_id', 'type', 'name', 'file_path',
+        'tenant_id', 'equipment_id', 'type', 'name', 'file_path',
         'expires_at', 'uploaded_by',
     ];
 

@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToTenant;
 
 class RecurringContractItem extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
-        'recurring_contract_id', 'type', 'description', 'quantity', 'unit_price',
+        'tenant_id', 'recurring_contract_id', 'type', 'description', 'quantity', 'unit_price',
     ];
 
     protected function casts(): array

@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToTenant;
 
 class EquipmentMaintenance extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
-        'equipment_id', 'type', 'description', 'parts_replaced',
+        'tenant_id', 'equipment_id', 'type', 'description', 'parts_replaced',
         'cost', 'downtime_hours', 'performed_by', 'work_order_id',
         'next_maintenance_at',
     ];

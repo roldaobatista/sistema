@@ -201,6 +201,15 @@ class ReportController extends Controller
             ->whereIn('status', ['approved', 'paid'])
             ->sum('commission_amount');
 
+        // Gap #14 — Custo real dos itens de OS (via cost_price salvo no WorkOrderItem)
+        $itemCosts = (float) DB::table('work_order_items')
+            ->join('work_orders', 'work_order_items.work_order_id', '=', 'work_orders.id')
+            ->where('work_order_items.type', 'product')
+            ->whereNotNull('work_order_items.cost_price')
+            ->whereBetween('work_orders.completed_at', [$from, "$to 23:59:59"])
+            ->selectRaw('SUM(work_order_items.cost_price * work_order_items.quantity) as total')
+            ->value('total') ?? 0;
+
         $totalCosts = $costs + $expenses + $commissions;
         $margin = $revenue > 0 ? round(($revenue - $totalCosts) / $revenue * 100, 1) : 0;
 
@@ -210,6 +219,7 @@ class ReportController extends Controller
             'costs' => $costs,
             'expenses' => $expenses,
             'commissions' => $commissions,
+            'item_costs' => $itemCosts,
             'total_costs' => $totalCosts,
             'profit' => $revenue - $totalCosts,
             'margin_pct' => $margin,
@@ -398,6 +408,84 @@ class ReportController extends Controller
             'calibration_due_30' => max(0, $dueNext30),
             'calibrations_month' => $calibrationsMonth,
             'top_brands' => $topBrands,
+        ]);
+    }
+
+    // ── 11. Relatório de Fornecedores (#18) ──
+    public function suppliers(Request $request): JsonResponse
+    {
+        $from = $request->get('from', now()->startOfYear()->toDateString());
+        $to = $request->get('to', now()->toDateString());
+
+        $ranking = DB::table('accounts_payable')
+            ->join('suppliers', 'accounts_payable.supplier_id', '=', 'suppliers.id')
+            ->whereBetween('accounts_payable.due_date', [$from, "$to 23:59:59"])
+            ->where('accounts_payable.status', '!=', 'cancelled')
+            ->select(
+                'suppliers.id', 'suppliers.name',
+                DB::raw('COUNT(*) as orders_count'),
+                DB::raw('SUM(accounts_payable.amount) as total_amount'),
+                DB::raw('SUM(accounts_payable.amount_paid) as total_paid'),
+            )
+            ->groupBy('suppliers.id', 'suppliers.name')
+            ->orderByDesc('total_amount')
+            ->get();
+
+        $byCategory = DB::table('suppliers')
+            ->select('category', DB::raw('COUNT(*) as count'))
+            ->groupBy('category')
+            ->get();
+
+        $totalSuppliers = \App\Models\Supplier::count();
+        $activeSuppliers = \App\Models\Supplier::where('is_active', true)->count();
+
+        return response()->json([
+            'period' => ['from' => $from, 'to' => $to],
+            'ranking' => $ranking,
+            'by_category' => $byCategory,
+            'total_suppliers' => $totalSuppliers,
+            'active_suppliers' => $activeSuppliers,
+        ]);
+    }
+
+    // ── 12. Relatório de Estoque/Movimentação (#19) ──
+    public function stock(Request $request): JsonResponse
+    {
+        $products = \App\Models\Product::select(
+                'id', 'name', 'sku', 'stock_qty', 'min_stock', 'cost_price', 'sale_price'
+            )
+            ->orderBy('name')
+            ->get();
+
+        $outOfStock = $products->where('stock_qty', '<=', 0)->count();
+        $lowStock = $products->filter(fn($p) => $p->stock_qty > 0 && $p->min_stock && $p->stock_qty <= $p->min_stock)->count();
+        $totalValue = $products->sum(fn($p) => $p->stock_qty * $p->cost_price);
+        $totalSaleValue = $products->sum(fn($p) => $p->stock_qty * $p->sale_price);
+
+        $recentMovements = DB::table('work_order_items')
+            ->join('work_orders', 'work_order_items.work_order_id', '=', 'work_orders.id')
+            ->join('products', 'work_order_items.reference_id', '=', 'products.id')
+            ->where('work_order_items.type', 'product')
+            ->orderByDesc('work_orders.created_at')
+            ->limit(50)
+            ->select(
+                'products.name as product_name',
+                'work_order_items.quantity',
+                'work_orders.number as os_number',
+                'work_orders.created_at',
+            )
+            ->get();
+
+        return response()->json([
+            'summary' => [
+                'total_products' => $products->count(),
+                'out_of_stock' => $outOfStock,
+                'low_stock' => $lowStock,
+                'total_cost_value' => (float) $totalValue,
+                'total_sale_value' => (float) $totalSaleValue,
+            ],
+            'products' => $products,
+            'recent_movements' => $recentMovements,
         ]);
     }
 }
