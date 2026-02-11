@@ -9,9 +9,10 @@ interface WebSocketConfig {
 }
 
 interface WebSocketMessage {
-    event: string
-    channel: string
-    data: any
+    event?: string
+    channel?: string
+    data?: unknown
+    [key: string]: unknown
 }
 
 export function useWebSocket(config: WebSocketConfig) {
@@ -19,6 +20,7 @@ export function useWebSocket(config: WebSocketConfig) {
     const wsRef = useRef<WebSocket | null>(null)
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const reconnectAttempts = useRef(0)
+    const connectRef = useRef<() => void>(() => {})
     const qc = useQueryClient()
     const [isConnected, setIsConnected] = useState(false)
     const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null)
@@ -78,7 +80,7 @@ export function useWebSocket(config: WebSocketConfig) {
                 if (enabled && reconnectAttempts.current < maxReconnectAttempts) {
                     const delay = getReconnectDelay()
                     reconnectAttempts.current += 1
-                    reconnectTimer.current = setTimeout(connect, delay)
+                    reconnectTimer.current = setTimeout(() => connectRef.current(), delay)
                 }
             }
 
@@ -93,6 +95,10 @@ export function useWebSocket(config: WebSocketConfig) {
         }
     }, [url, tenantId, userId, enabled, qc, getReconnectDelay])
 
+    useEffect(() => {
+        connectRef.current = connect
+    }, [connect])
+
     const disconnect = useCallback(() => {
         if (reconnectTimer.current) {
             clearTimeout(reconnectTimer.current)
@@ -104,7 +110,7 @@ export function useWebSocket(config: WebSocketConfig) {
         setIsConnected(false)
     }, [])
 
-    const send = useCallback((data: any) => {
+    const send = useCallback((data: unknown) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify(data))
         }

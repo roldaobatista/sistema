@@ -16,9 +16,9 @@ class CrmMessageFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'customer_id' => Customer::factory(),
-            'channel' => fake()->randomElement(['whatsapp', 'email']),
-            'direction' => 'outbound',
-            'status' => 'sent',
+            'channel' => fake()->randomElement([CrmMessage::CHANNEL_WHATSAPP, CrmMessage::CHANNEL_EMAIL]),
+            'direction' => CrmMessage::DIRECTION_OUTBOUND,
+            'status' => CrmMessage::STATUS_SENT,
             'body' => fake()->paragraph(),
             'to_address' => fake()->phoneNumber(),
             'sent_at' => now(),
@@ -28,7 +28,7 @@ class CrmMessageFactory extends Factory
     public function whatsapp(): static
     {
         return $this->state(fn () => [
-            'channel' => 'whatsapp',
+            'channel' => CrmMessage::CHANNEL_WHATSAPP,
             'to_address' => fake()->numerify('##9########'),
             'provider' => 'evolution-api',
         ]);
@@ -37,7 +37,7 @@ class CrmMessageFactory extends Factory
     public function email(): static
     {
         return $this->state(fn () => [
-            'channel' => 'email',
+            'channel' => CrmMessage::CHANNEL_EMAIL,
             'subject' => fake()->sentence(),
             'to_address' => fake()->email(),
             'provider' => 'smtp',
@@ -47,8 +47,8 @@ class CrmMessageFactory extends Factory
     public function inbound(): static
     {
         return $this->state(fn () => [
-            'direction' => 'inbound',
-            'status' => 'delivered',
+            'direction' => CrmMessage::DIRECTION_INBOUND,
+            'status' => CrmMessage::STATUS_DELIVERED,
             'delivered_at' => now(),
         ]);
     }
@@ -56,7 +56,7 @@ class CrmMessageFactory extends Factory
     public function failed(): static
     {
         return $this->state(fn () => [
-            'status' => 'failed',
+            'status' => CrmMessage::STATUS_FAILED,
             'failed_at' => now(),
             'error_message' => 'Connection timeout',
         ]);
@@ -65,7 +65,7 @@ class CrmMessageFactory extends Factory
     public function delivered(): static
     {
         return $this->state(fn () => [
-            'status' => 'delivered',
+            'status' => CrmMessage::STATUS_DELIVERED,
             'delivered_at' => now(),
         ]);
     }
@@ -73,7 +73,7 @@ class CrmMessageFactory extends Factory
     public function read(): static
     {
         return $this->state(fn () => [
-            'status' => 'read',
+            'status' => CrmMessage::STATUS_READ,
             'delivered_at' => now()->subMinutes(5),
             'read_at' => now(),
         ]);

@@ -9,15 +9,22 @@ use App\Models\EquipmentMaintenance;
 use App\Models\EquipmentDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class EquipmentController extends Controller
 {
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     /**
      * Listagem com filtros avançados.
      */
     public function index(Request $request): JsonResponse
     {
-        $q = Equipment::where('tenant_id', $request->user()->tenant_id)
+        $q = Equipment::where('tenant_id', $this->tenantId($request))
             ->with(['customer:id,name', 'responsible:id,name']);
 
         // Filtros
@@ -73,8 +80,10 @@ class EquipmentController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $data = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'type' => 'required|string|max:100',
             'category' => 'nullable|string|max:40',
             'brand' => 'nullable|string|max:100',
@@ -85,12 +94,14 @@ class EquipmentController extends Controller
             'capacity_unit' => 'nullable|string|max:10',
             'resolution' => 'nullable|numeric',
             'precision_class' => 'nullable|in:I,II,III,IIII',
-            'status' => 'nullable|string|max:30',
+            'status' => ['nullable', Rule::in(array_keys(Equipment::STATUSES))],
             'location' => 'nullable|string|max:150',
-            'responsible_user_id' => 'nullable|exists:users,id',
+            'responsible_user_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'purchase_date' => 'nullable|date',
             'purchase_value' => 'nullable|numeric',
             'warranty_expires_at' => 'nullable|date',
+            'last_calibration_at' => 'nullable|date',
+            'next_calibration_at' => 'nullable|date',
             'calibration_interval_months' => 'nullable|integer|min:1',
             'inmetro_number' => 'nullable|string|max:50',
             'tag' => 'nullable|string|max:50',
@@ -98,8 +109,15 @@ class EquipmentController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $data['tenant_id'] = $request->user()->tenant_id;
-        $data['code'] = Equipment::generateCode($data['tenant_id']);
+        // Calcular vencimento automaticamente se não informado e tiver base
+        if (empty($data['next_calibration_at']) && !empty($data['last_calibration_at']) && !empty($data['calibration_interval_months'])) {
+            $data['next_calibration_at'] = \Carbon\Carbon::parse($data['last_calibration_at'])
+                ->addMonths((int)$data['calibration_interval_months'])
+                ->toDateString();
+        }
+
+        $data['tenant_id'] = $tenantId;
+        $data['code'] = Equipment::generateCode($tenantId);
 
         $equipment = Equipment::create($data);
 
@@ -113,8 +131,10 @@ class EquipmentController extends Controller
     {
         $this->authorize($request, $equipment);
 
+        $tenantId = $this->tenantId($request);
+
         $data = $request->validate([
-            'customer_id' => 'nullable|exists:customers,id',
+            'customer_id' => ['nullable', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'type' => 'nullable|string|max:100',
             'category' => 'nullable|string|max:40',
             'brand' => 'nullable|string|max:100',
@@ -125,12 +145,14 @@ class EquipmentController extends Controller
             'capacity_unit' => 'nullable|string|max:10',
             'resolution' => 'nullable|numeric',
             'precision_class' => 'nullable|in:I,II,III,IIII',
-            'status' => 'nullable|string|max:30',
+            'status' => ['nullable', Rule::in(array_keys(Equipment::STATUSES))],
             'location' => 'nullable|string|max:150',
-            'responsible_user_id' => 'nullable|exists:users,id',
+            'responsible_user_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'purchase_date' => 'nullable|date',
             'purchase_value' => 'nullable|numeric',
             'warranty_expires_at' => 'nullable|date',
+            'last_calibration_at' => 'nullable|date',
+            'next_calibration_at' => 'nullable|date',
             'calibration_interval_months' => 'nullable|integer|min:1',
             'inmetro_number' => 'nullable|string|max:50',
             'tag' => 'nullable|string|max:50',
@@ -138,6 +160,21 @@ class EquipmentController extends Controller
             'is_active' => 'nullable|boolean',
             'notes' => 'nullable|string',
         ]);
+
+        // Calcular vencimento automaticamente se parâmetros mudaram
+        if (
+            (isset($data['last_calibration_at']) || isset($data['calibration_interval_months'])) &&
+            empty($data['next_calibration_at'])
+        ) {
+            $last = $data['last_calibration_at'] ?? $equipment->last_calibration_at;
+            $interval = $data['calibration_interval_months'] ?? $equipment->calibration_interval_months;
+
+            if ($last && $interval) {
+                $data['next_calibration_at'] = \Carbon\Carbon::parse($last)
+                    ->addMonths((int)$interval)
+                    ->toDateString();
+            }
+        }
 
         $equipment->update($data);
 
@@ -159,7 +196,7 @@ class EquipmentController extends Controller
      */
     public function dashboard(Request $request): JsonResponse
     {
-        $tid = $request->user()->tenant_id;
+        $tid = $this->tenantId($request);
 
         $total = Equipment::where('tenant_id', $tid)->active()->count();
         $overdue = Equipment::where('tenant_id', $tid)->overdue()->count();
@@ -201,7 +238,7 @@ class EquipmentController extends Controller
      */
     public function alerts(Request $request): JsonResponse
     {
-        $tid = $request->user()->tenant_id;
+        $tid = $this->tenantId($request);
 
         $equipments = Equipment::where('tenant_id', $tid)
             ->calibrationDue(60)
@@ -245,8 +282,15 @@ class EquipmentController extends Controller
             'result' => 'required|in:aprovado,aprovado_com_ressalva,reprovado',
             'laboratory' => 'nullable|string|max:150',
             'certificate_number' => 'nullable|string|max:50',
-            'uncertainty' => 'nullable|string|max:50',
+            'certificate_pdf_path' => 'nullable|string|max:255',
+            'standard_used' => 'nullable|string|max:255',
+            'uncertainty' => 'nullable|numeric',
+            'error_found' => 'nullable|numeric',
             'errors_found' => 'nullable|array',
+            'technician_notes' => 'nullable|string',
+            'temperature' => 'nullable|numeric',
+            'humidity' => 'nullable|numeric',
+            'pressure' => 'nullable|numeric',
             'corrections_applied' => 'nullable|string',
             'cost' => 'nullable|numeric',
             'work_order_id' => 'nullable|exists:work_orders,id',
@@ -255,23 +299,28 @@ class EquipmentController extends Controller
 
         $data['performed_by'] = $request->user()->id;
 
-        // Calcular próximo vencimento
-        if ($equipment->calibration_interval_months) {
-            $data['next_due_date'] = \Carbon\Carbon::parse($data['calibration_date'])
-                ->addMonths($equipment->calibration_interval_months);
+        try {
+            // Calcular próximo vencimento
+            if ($equipment->calibration_interval_months) {
+                $data['next_due_date'] = \Carbon\Carbon::parse($data['calibration_date'])
+                    ->addMonths($equipment->calibration_interval_months);
+            }
+
+            $calibration = $equipment->calibrations()->create($data);
+
+            // Atualizar equipamento
+            $equipment->update([
+                'last_calibration_at' => $data['calibration_date'],
+                'next_calibration_at' => $data['next_due_date'] ?? null,
+                'certificate_number' => $data['certificate_number'] ?? $equipment->certificate_number,
+                'status' => Equipment::STATUS_ACTIVE,
+            ]);
+
+            return response()->json(['calibration' => $calibration], 201);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao registrar calibração: ' . $e->getMessage()], 500);
         }
-
-        $calibration = $equipment->calibrations()->create($data);
-
-        // Atualizar equipamento
-        $equipment->update([
-            'last_calibration_at' => $data['calibration_date'],
-            'next_calibration_at' => $data['next_due_date'] ?? null,
-            'certificate_number' => $data['certificate_number'] ?? $equipment->certificate_number,
-            'status' => 'ativo',
-        ]);
-
-        return response()->json(['calibration' => $calibration], 201);
     }
 
     // ─── Manutenções ────────────────────────────────────────
@@ -291,9 +340,14 @@ class EquipmentController extends Controller
         ]);
 
         $data['performed_by'] = $request->user()->id;
-        $maintenance = $equipment->maintenances()->create($data);
 
-        return response()->json(['maintenance' => $maintenance], 201);
+        try {
+            $maintenance = $equipment->maintenances()->create($data);
+            return response()->json(['maintenance' => $maintenance], 201);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao registrar manutenção: ' . $e->getMessage()], 500);
+        }
     }
 
     // ─── Documentos ─────────────────────────────────────────
@@ -370,7 +424,7 @@ class EquipmentController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $tid = $request->user()->tenant_id;
+        $tid = $this->tenantId($request);
 
         $equipments = Equipment::where('tenant_id', $tid)
             ->with(['customer:id,name'])
@@ -421,7 +475,7 @@ class EquipmentController extends Controller
 
     private function authorize(Request $request, Equipment $equipment): void
     {
-        if ($equipment->tenant_id !== $request->user()->tenant_id) {
+        if ($equipment->tenant_id !== $this->tenantId($request)) {
             abort(403);
         }
     }

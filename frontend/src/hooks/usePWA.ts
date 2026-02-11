@@ -5,9 +5,17 @@ interface BeforeInstallPromptEvent extends Event {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+type NavigatorWithStandalone = Navigator & {
+    standalone?: boolean
+}
+
+const isStandaloneMode = () =>
+    window.matchMedia('(display-mode: standalone)').matches
+    || (window.navigator as NavigatorWithStandalone).standalone === true
+
 export function usePWA() {
     const [isInstallable, setIsInstallable] = useState(false)
-    const [isInstalled, setIsInstalled] = useState(false)
+    const [isInstalled, setIsInstalled] = useState(() => isStandaloneMode())
     const [isOnline, setIsOnline] = useState(navigator.onLine)
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
     const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null)
@@ -15,7 +23,7 @@ export function usePWA() {
     useEffect(() => {
         // Register service worker
         if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-            (navigator as any).serviceWorker.register('/sw.js').then((reg: ServiceWorkerRegistration) => {
+            navigator.serviceWorker.register('/sw.js').then((reg: ServiceWorkerRegistration) => {
                 setSwRegistration(reg)
                 console.log('[SW] registered:', reg.scope)
 
@@ -29,31 +37,35 @@ export function usePWA() {
                         })
                     }
                 })
-            }).catch((err: any) => console.error('[SW] registration failed:', err))
+            }).catch((err: unknown) => console.error('[SW] registration failed:', err))
         }
 
         // Install prompt
         const handleBeforeInstall = (e: Event) => {
-            e.preventDefault()
-            setDeferredPrompt(e as BeforeInstallPromptEvent)
+            const event = e as BeforeInstallPromptEvent
+            event.preventDefault()
+            setDeferredPrompt(event)
             setIsInstallable(true)
         }
 
-        // Detect standalone mode
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-            || (window.navigator as any).standalone === true
-        setIsInstalled(isStandalone)
+        const handleInstalled = () => {
+            setIsInstalled(true)
+            setIsInstallable(false)
+            setDeferredPrompt(null)
+        }
 
         // Online/offline
         const handleOnline = () => setIsOnline(true)
         const handleOffline = () => setIsOnline(false)
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+        window.addEventListener('appinstalled', handleInstalled)
         window.addEventListener('online', handleOnline)
         window.addEventListener('offline', handleOffline)
 
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+            window.removeEventListener('appinstalled', handleInstalled)
             window.removeEventListener('online', handleOnline)
             window.removeEventListener('offline', handleOffline)
         }

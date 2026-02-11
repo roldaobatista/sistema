@@ -6,9 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\RecurringContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RecurringContractController extends Controller
 {
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = RecurringContract::with([
@@ -45,10 +52,12 @@ class RecurringContractController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'equipment_id' => 'nullable|exists:equipment,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'equipment_id' => ['nullable', Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'frequency' => 'required|in:weekly,biweekly,monthly,bimonthly,quarterly,semiannual,annual',
@@ -62,7 +71,7 @@ class RecurringContractController extends Controller
             'items.*.unit_price' => 'required_with:items|numeric|min:0',
         ]);
 
-        $validated['tenant_id'] = app('current_tenant_id');
+        $validated['tenant_id'] = $tenantId;
         $validated['created_by'] = $request->user()->id;
         $validated['next_run_date'] = $validated['start_date'];
 
@@ -80,10 +89,12 @@ class RecurringContractController extends Controller
 
     public function update(Request $request, RecurringContract $recurringContract): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $validated = $request->validate([
-            'customer_id' => 'sometimes|exists:customers,id',
-            'equipment_id' => 'nullable|exists:equipment,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'customer_id' => ['sometimes', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'equipment_id' => ['nullable', Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'frequency' => 'sometimes|in:weekly,biweekly,monthly,bimonthly,quarterly,semiannual,annual',

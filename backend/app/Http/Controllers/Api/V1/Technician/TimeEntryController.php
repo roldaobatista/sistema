@@ -6,15 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\TimeEntry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class TimeEntryController extends Controller
 {
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $query = TimeEntry::with([
             'technician:id,name',
-            'workOrder:id,number',
-        ]);
+            'workOrder:id,number,os_number',
+        ])->where('tenant_id', $tenantId);
 
         if ($techId = $request->get('technician_id')) {
             $query->where('technician_id', $techId);
@@ -44,35 +54,44 @@ class TimeEntryController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $validated = $request->validate([
-            'work_order_id' => 'required|exists:work_orders,id',
-            'technician_id' => 'required|exists:users,id',
-            'schedule_id' => 'nullable|exists:schedules,id',
+            'work_order_id' => ['required', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'technician_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'schedule_id' => ['nullable', Rule::exists('schedules', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'started_at' => 'required|date',
             'ended_at' => 'nullable|date|after:started_at',
-            'type' => 'sometimes|in:work,travel,waiting',
+            'type' => ['sometimes', Rule::in(array_keys(TimeEntry::TYPES))],
             'description' => 'nullable|string',
         ]);
 
-        $entry = TimeEntry::create($validated);
-        return response()->json($entry->load(['technician:id,name', 'workOrder:id,number']), 201);
+        $entry = DB::transaction(function () use ($validated, $tenantId) {
+            return TimeEntry::create([...$validated, 'tenant_id' => $tenantId]);
+        });
+
+        return response()->json($entry->load(['technician:id,name', 'workOrder:id,number,os_number']), 201);
     }
 
     public function update(Request $request, TimeEntry $timeEntry): JsonResponse
     {
+        abort_unless($timeEntry->tenant_id === $this->tenantId($request), 404);
+
         $validated = $request->validate([
             'started_at' => 'sometimes|date',
-            'ended_at' => 'nullable|date',
-            'type' => 'sometimes|in:work,travel,waiting',
+            'ended_at' => 'nullable|date|after:started_at',
+            'type' => ['sometimes', Rule::in(array_keys(TimeEntry::TYPES))],
             'description' => 'nullable|string',
         ]);
 
         $timeEntry->update($validated);
-        return response()->json($timeEntry->fresh()->load(['technician:id,name', 'workOrder:id,number']));
+        return response()->json($timeEntry->fresh()->load(['technician:id,name', 'workOrder:id,number,os_number']));
     }
 
-    public function destroy(TimeEntry $timeEntry): JsonResponse
+    public function destroy(Request $request, TimeEntry $timeEntry): JsonResponse
     {
+        abort_unless($timeEntry->tenant_id === $this->tenantId($request), 404);
+
         $timeEntry->delete();
         return response()->json(null, 204);
     }
@@ -80,40 +99,53 @@ class TimeEntryController extends Controller
     // Timer: inicia um apontamento (sem ended_at)
     public function start(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $validated = $request->validate([
-            'work_order_id' => 'required|exists:work_orders,id',
-            'type' => 'sometimes|in:work,travel,waiting',
+            'work_order_id' => ['required', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'type' => ['sometimes', Rule::in(array_keys(TimeEntry::TYPES))],
             'description' => 'nullable|string',
         ]);
 
         $entry = TimeEntry::create([
             ...$validated,
+            'tenant_id' => $tenantId,
             'technician_id' => $request->user()->id,
             'started_at' => now(),
         ]);
 
-        return response()->json($entry->load(['workOrder:id,number']), 201);
+        return response()->json($entry->load(['workOrder:id,number,os_number']), 201);
     }
 
     // Timer: finaliza apontamento em andamento
     public function stop(Request $request, TimeEntry $timeEntry): JsonResponse
     {
+        abort_unless($timeEntry->tenant_id === $this->tenantId($request), 404);
+
         if ($timeEntry->ended_at) {
             return response()->json(['message' => 'Apontamento já finalizado'], 422);
         }
 
+        // Verifica ownership — só o próprio técnico ou admin pode parar
+        $user = $request->user();
+        if ($timeEntry->technician_id !== $user->id && !$user->hasRole('admin')) {
+            return response()->json(['message' => 'Sem permissão para finalizar este apontamento'], 403);
+        }
+
         $timeEntry->update(['ended_at' => now()]);
-        return response()->json($timeEntry->fresh()->load(['workOrder:id,number']));
+        return response()->json($timeEntry->fresh()->load(['workOrder:id,number,os_number']));
     }
 
     // Resumo de horas por técnico (dashboard)
     public function summary(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
         $from = $request->get('from', now()->startOfWeek()->toDateString());
         $to = $request->get('to', now()->endOfWeek()->toDateString());
 
         $entries = TimeEntry::selectRaw('technician_id, type, SUM(duration_minutes) as total_minutes, COUNT(*) as entries_count')
-            ->whereBetween('started_at', [$from, $to])
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('started_at', [$from, "{$to} 23:59:59"])
             ->whereNotNull('ended_at')
             ->groupBy('technician_id', 'type')
             ->with('technician:id,name')

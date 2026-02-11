@@ -8,57 +8,58 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('crm_messages', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained();
-            $table->foreignId('customer_id')->constrained();
-            $table->foreignId('deal_id')->nullable()->constrained('crm_deals')->nullOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained();
+        if (!Schema::hasTable('crm_messages')) {
+            Schema::create('crm_messages', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('tenant_id')->constrained();
+                $table->foreignId('customer_id')->constrained();
+                $table->foreignId('deal_id')->nullable()->constrained('crm_deals')->nullOnDelete();
+                $table->foreignId('user_id')->nullable()->constrained();
 
-            $table->enum('channel', ['whatsapp', 'email', 'sms']);
-            $table->enum('direction', ['inbound', 'outbound']);
-            $table->enum('status', ['pending', 'sent', 'delivered', 'read', 'failed'])->default('pending');
+                $table->enum('channel', ['whatsapp', 'email', 'sms']);
+                $table->enum('direction', ['inbound', 'outbound']);
+                $table->enum('status', ['pending', 'sent', 'delivered', 'read', 'failed'])->default('pending');
 
-            $table->string('subject')->nullable(); // email only
-            $table->text('body');
-            $table->string('from_address')->nullable(); // phone/email
-            $table->string('to_address')->nullable();   // phone/email
+                $table->string('subject')->nullable();
+                $table->text('body');
+                $table->string('from_address')->nullable();
+                $table->string('to_address')->nullable();
 
-            // External provider IDs
-            $table->string('external_id')->nullable()->index(); // WhatsApp message ID / email message-id
-            $table->string('provider')->nullable(); // evolution-api, resend, smtp
+                $table->string('external_id')->nullable()->index();
+                $table->string('provider')->nullable();
 
-            // Metadata
-            $table->json('attachments')->nullable(); // [{name, url, mime}]
-            $table->json('metadata')->nullable();    // headers, template name, etc.
+                $table->json('attachments')->nullable();
+                $table->json('metadata')->nullable();
 
-            $table->timestamp('sent_at')->nullable();
-            $table->timestamp('delivered_at')->nullable();
-            $table->timestamp('read_at')->nullable();
-            $table->timestamp('failed_at')->nullable();
-            $table->text('error_message')->nullable();
+                $table->timestamp('sent_at')->nullable();
+                $table->timestamp('delivered_at')->nullable();
+                $table->timestamp('read_at')->nullable();
+                $table->timestamp('failed_at')->nullable();
+                $table->text('error_message')->nullable();
 
-            $table->timestamps();
+                $table->timestamps();
 
-            $table->index(['tenant_id', 'customer_id', 'channel']);
-            $table->index(['tenant_id', 'channel', 'status']);
-        });
+                $table->index(['tenant_id', 'customer_id', 'channel']);
+                $table->index(['tenant_id', 'channel', 'status']);
+            });
+        }
 
-        // Templates for WhatsApp/Email
-        Schema::create('crm_message_templates', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained();
-            $table->string('name');
-            $table->string('slug')->index();
-            $table->enum('channel', ['whatsapp', 'email', 'sms']);
-            $table->string('subject')->nullable();
-            $table->text('body');
-            $table->json('variables')->nullable(); // [{name, description}]
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
+        if (!Schema::hasTable('crm_message_templates')) {
+            Schema::create('crm_message_templates', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('tenant_id')->constrained();
+                $table->string('name');
+                $table->string('slug')->index();
+                $table->enum('channel', ['whatsapp', 'email', 'sms']);
+                $table->string('subject')->nullable();
+                $table->text('body');
+                $table->json('variables')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
 
-            $table->unique(['tenant_id', 'slug']);
-        });
+                $table->unique(['tenant_id', 'slug']);
+            });
+        }
     }
 
     public function down(): void

@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { crmApi } from '@/lib/crm-api'
+import { toast } from 'sonner'
 
 interface Props {
     open: boolean
@@ -66,8 +67,16 @@ export function ActivityForm({ open, onClose, customerId, dealId }: Props) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['crm'] })
             queryClient.invalidateQueries({ queryKey: ['customer-360'] })
+            toast.success('Atividade registrada com sucesso')
             onClose()
             setForm({ type: 'nota', title: '', description: '', channel: '', outcome: '', scheduled_at: '', completed_at: '', duration_minutes: '' })
+        },
+        onError: (error: any) => {
+            if (error.response?.status === 422) {
+                toast.error('Dados inválidos. Verifique os campos.')
+            } else {
+                toast.error(error.response?.data?.message || 'Erro ao registrar atividade')
+            }
         },
     })
 
@@ -85,8 +94,8 @@ export function ActivityForm({ open, onClose, customerId, dealId }: Props) {
                                 key={t.value}
                                 onClick={() => set('type', t.value)}
                                 className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${form.type === t.value
-                                        ? 'border-brand-300 bg-brand-50 text-brand-700'
-                                        : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'
+                                    ? 'border-brand-300 bg-brand-50 text-brand-700'
+                                    : 'border-subtle bg-white text-surface-600 hover:bg-surface-50'
                                     }`}
                             >
                                 {t.label}
@@ -109,7 +118,7 @@ export function ActivityForm({ open, onClose, customerId, dealId }: Props) {
                     <textarea
                         value={form.description}
                         onChange={e => set('description', e.target.value)}
-                        className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                        className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                         rows={3}
                         placeholder="Detalhes opcionais..."
                     />
@@ -121,7 +130,7 @@ export function ActivityForm({ open, onClose, customerId, dealId }: Props) {
                         <select
                             value={form.channel}
                             onChange={e => set('channel', e.target.value)}
-                            className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                            className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                         >
                             <option value="">—</option>
                             {CHANNELS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -132,7 +141,7 @@ export function ActivityForm({ open, onClose, customerId, dealId }: Props) {
                         <select
                             value={form.outcome}
                             onChange={e => set('outcome', e.target.value)}
-                            className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                            className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                         >
                             <option value="">—</option>
                             {OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}

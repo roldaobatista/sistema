@@ -95,7 +95,7 @@ class CrmActivity extends Model
             'type' => 'system',
             'customer_id' => $customerId,
             'deal_id' => $dealId,
-            'user_id' => $userId ?? (Auth::check() ? Auth::id() : 1),
+            'user_id' => $userId ?? (Auth::check() ? Auth::id() : null),
             'title' => $title,
             'is_automated' => true,
             'completed_at' => now(),

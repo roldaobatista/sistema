@@ -1,29 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Search, Plus, Pencil, Trash2, Phone, Mail, MapPin,
-  User as UserIcon, Building2, ChevronDown, ChevronUp,
+  User as UserIcon, Building2, ChevronDown, Users, AlertTriangle,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import api from '@/lib/api'
+import { useDebounce } from '@/hooks/useDebounce'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-
-interface Customer {
-  id: number
-  type: 'PF' | 'PJ'
-  name: string
-  document: string | null
-  email: string | null
-  phone: string | null
-  phone2: string | null
-  address_city: string | null
-  address_state: string | null
-  is_active: boolean
-  contacts: Contact[]
-}
 
 interface Contact {
   id?: number
@@ -34,9 +22,30 @@ interface Contact {
   is_primary: boolean
 }
 
+interface Customer {
+  id: number
+  type: 'PF' | 'PJ'
+  name: string
+  trade_name?: string
+  document: string | null
+  email: string | null
+  phone: string | null
+  phone2: string | null
+  address_zip?: string
+  address_street?: string
+  address_number?: string
+  address_complement?: string
+  address_neighborhood?: string
+  address_city: string | null
+  address_state: string | null
+  notes?: string
+  is_active: boolean
+  contacts: Contact[]
+}
+
 const emptyForm = {
   type: 'PF' as 'PF' | 'PJ',
-  name: '', document: '', email: '', phone: '', phone2: '',
+  name: '', trade_name: '', document: '', email: '', phone: '', phone2: '',
   address_zip: '', address_street: '', address_number: '',
   address_complement: '', address_neighborhood: '',
   address_city: '', address_state: '', notes: '',
@@ -45,196 +54,323 @@ const emptyForm = {
 
 export function CustomersPage() {
   const qc = useQueryClient()
-  const [search, setSearch] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [editing, setEditing] = useState<Customer | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState(emptyForm)
+  const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearch = useDebounce(searchTerm, 500)
+  const [showConfirmDelete, setShowConfirmDelete] = useState<Customer | null>(null)
+  const [deleteDependencies, setDeleteDependencies] = useState<any>(null)
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
 
   const { data: res, isLoading } = useQuery({
-    queryKey: ['customers', search],
-    queryFn: () => api.get('/customers', { params: { search, per_page: 50 } }),
+    queryKey: ['customers', debouncedSearch],
+    queryFn: () => api.get('/customers', { params: { search: debouncedSearch } }),
   })
-  const customers: Customer[] = res?.data?.data ?? []
+  const customers: Customer[] = res?.data?.data ?? res?.data ?? []
 
   const saveMut = useMutation({
-    mutationFn: (data: typeof form) =>
-      editing ? api.put(`/customers/${editing.id}`, data) : api.post('/customers', data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['customers'] }); setShowForm(false) },
+    mutationFn: (data: typeof emptyForm) => {
+      const sanitized = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v === '' ? null : v])
+      )
+      return editingId ? api.put(`/customers/${editingId}`, sanitized) : api.post('/customers', sanitized)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      closeModal()
+      toast.success(editingId ? 'Cliente atualizado com sucesso!' : 'Cliente criado com sucesso!')
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message ?? 'Erro ao salvar cliente.')
+    },
   })
 
-  const delMut = useMutation({
+  const deleteMut = useMutation({
     mutationFn: (id: number) => api.delete(`/customers/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['work-orders'] })
+      qc.invalidateQueries({ queryKey: ['quotes'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      setShowConfirmDelete(null)
+      toast.success('Cliente excluído com sucesso!')
+    },
+    onError: (err: any) => {
+      if (err.response?.status === 409 || err.response?.status === 422) {
+        setDeleteDependencies(err.response.data.dependencies)
+        setDeleteMessage(err.response.data.message)
+      } else {
+        toast.error(err.response?.data?.message ?? 'Erro ao excluir cliente.')
+        setShowConfirmDelete(null)
+      }
+    },
   })
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setShowForm(true) }
-  const openEdit = (c: Customer) => {
-    setEditing(c)
-    setForm({
-      ...emptyForm,
-      type: c.type, name: c.name, document: c.document ?? '', email: c.email ?? '',
-      phone: c.phone ?? '', phone2: c.phone2 ?? '',
-      is_active: c.is_active, contacts: c.contacts ?? [],
-    })
-    setShowForm(true)
+  function openNew() {
+    setEditingId(null)
+    setForm(emptyForm)
+    setShowModal(true)
   }
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
-    setForm(prev => ({ ...prev, [k]: v }))
+  function openEdit(c: Customer) {
+    setEditingId(c.id)
+    setForm({
+      type: c.type, name: c.name, trade_name: c.trade_name ?? '',
+      document: c.document ?? '', email: c.email ?? '',
+      phone: c.phone ?? '', phone2: c.phone2 ?? '',
+      address_zip: c.address_zip ?? '', address_street: c.address_street ?? '',
+      address_number: c.address_number ?? '', address_complement: c.address_complement ?? '',
+      address_neighborhood: c.address_neighborhood ?? '',
+      address_city: c.address_city ?? '', address_state: c.address_state ?? '',
+      notes: c.notes ?? '', is_active: c.is_active,
+      contacts: c.contacts ?? [],
+    })
+    setShowModal(true)
+  }
 
-  const addContact = () =>
-    set('contacts', [...form.contacts, { name: '', role: '', phone: '', email: '', is_primary: false }])
+  function closeModal() { setShowModal(false); setEditingId(null) }
+
+  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [key]: key === 'is_active' ? (e.target as HTMLInputElement).checked : e.target.value }))
 
   const updateContact = (i: number, field: keyof Contact, val: string | boolean) =>
-    set('contacts', form.contacts.map((c, idx) => idx === i ? { ...c, [field]: val } : c))
+    setForm(prev => ({ ...prev, contacts: prev.contacts.map((c, idx) => idx === i ? { ...c, [field]: val } : c) }))
+
+  const addContact = () =>
+    setForm(prev => ({ ...prev, contacts: [...prev.contacts, { name: '', role: '', phone: '', email: '', is_primary: false }] }))
 
   const removeContact = (i: number) =>
-    set('contacts', form.contacts.filter((_, idx) => idx !== i))
+    setForm(prev => ({ ...prev, contacts: prev.contacts.filter((_, idx) => idx !== i) }))
 
-  return (
-    <div className="space-y-6">
+
+  if (isLoading) return (
+    <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900">Clientes</h1>
-          <p className="mt-1 text-sm text-surface-500">Cadastro de clientes PF e PJ</p>
+          <div className="skeleton h-7 w-32" />
+          <div className="skeleton mt-2 h-4 w-48" />
         </div>
-        <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Novo Cliente</Button>
+        <div className="skeleton h-9 w-28" />
       </div>
+      <div className="skeleton h-10 w-full max-w-md" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map(i => <div key={i} className="skeleton h-40 rounded-xl" />)}
+      </div>
+    </div>
+  )
 
-      <div className="max-w-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-          <input type="text" value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-            placeholder="Buscar nome, CPF/CNPJ, email..."
-            className="w-full rounded-lg border border-surface-300 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-surface-900 tracking-tight">Clientes</h1>
+          <p className="text-sm text-surface-500">Gerencie sua base de clientes</p>
         </div>
+        <Button onClick={openNew} icon={<Plus className="h-4 w-4" />}>Novo Cliente</Button>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-surface-200 bg-white shadow-card">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-surface-200 bg-surface-50">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-600">Cliente</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-600 md:table-cell">Documento</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-600 lg:table-cell">Contato</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-600 lg:table-cell">Cidade</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-600">Status</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-surface-600">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-100">
-            {isLoading ? (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
-            ) : customers.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-surface-500">Nenhum cliente encontrado</td></tr>
-            ) : customers.map(c => (
-              <tr key={c.id} className="hover:bg-surface-50 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold',
-                      c.type === 'PJ' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700')}>
-                      {c.type === 'PJ' ? <Building2 className="h-4 w-4" /> : <UserIcon className="h-4 w-4" />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-surface-900">{c.name}</p>
-                      <Badge variant={c.type === 'PJ' ? 'info' : 'success'} className="mt-0.5">{c.type}</Badge>
-                    </div>
-                  </div>
-                </td>
-                <td className="hidden px-4 py-3 text-sm text-surface-600 md:table-cell">{c.document || '—'}</td>
-                <td className="hidden px-4 py-3 lg:table-cell">
-                  <div className="space-y-0.5 text-xs text-surface-600">
-                    {c.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{c.phone}</span>}
-                    {c.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{c.email}</span>}
-                  </div>
-                </td>
-                <td className="hidden px-4 py-3 text-sm text-surface-600 lg:table-cell">
-                  {c.address_city ? `${c.address_city}/${c.address_state}` : '—'}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={c.is_active ? 'success' : 'danger'} dot>{c.is_active ? 'Ativo' : 'Inativo'}</Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => { if (confirm('Excluir?')) delMut.mutate(c.id) }}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex items-center gap-2 rounded-xl bg-surface-0 p-2 shadow-sm border border-surface-100 max-w-md">
+        <Search className="h-4 w-4 text-surface-400 ml-2" />
+        <input
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-surface-400"
+          placeholder="Buscar por nome, documento ou e-mail..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
       </div>
 
-      {/* Form Modal */}
-      <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Cliente' : 'Novo Cliente'} size="xl">
-        <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="max-h-[70vh] overflow-y-auto space-y-4 pr-1">
-          {/* Tipo */}
-          <div className="flex gap-2">
-            {(['PF', 'PJ'] as const).map(t => (
-              <button key={t} type="button" onClick={() => set('type', t)}
-                className={cn('flex-1 rounded-lg border py-2 text-sm font-medium transition-all',
-                  form.type === t ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-300 text-surface-600 hover:border-surface-400')}>
-                {t === 'PF' ? 'Pessoa Física' : 'Pessoa Jurídica'}
-              </button>
-            ))}
+      {customers.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-surface-300 bg-surface-50 py-16 text-center">
+          <Users className="mx-auto mb-3 h-10 w-10 text-surface-300" />
+          <p className="text-sm font-medium text-surface-500">Nenhum cliente encontrado</p>
+          {searchTerm && <p className="mt-1 text-xs text-surface-400">Tente buscar por outro termo</p>}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {customers.map((c, i) => (
+            <div key={c.id} className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border border-surface-200 bg-surface-0 p-5 shadow-sm transition-all hover:border-brand-200 hover:shadow-md stagger-${Math.min(i + 1, 6)} animate-slide-up`}>
+              <div>
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-100 text-surface-600 font-medium text-sm">
+                    {c.name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <Badge variant={c.is_active ? 'success' : 'neutral'} className="capitalize">
+                    {c.is_active ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+                <h3 className="font-semibold text-surface-900 line-clamp-1" title={c.name}>{c.name}</h3>
+                {c.trade_name && <p className="text-xs text-surface-500 line-clamp-1">{c.trade_name}</p>}
+
+                <div className="mt-4 space-y-2 text-xs text-surface-500">
+                  {c.document && (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-[10px] h-5 px-1.5">{c.type}</Badge>
+                      <span className="font-mono">{c.document}</span>
+                    </div>
+                  )}
+                  {c.phone && <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {c.phone}</div>}
+                  {c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> <span className="truncate">{c.email}</span></div>}
+                  {c.address_city && <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {c.address_city}/{c.address_state}</div>}
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-end gap-2 border-t border-surface-100 pt-3 opacity-0 transition-opacity group-hover:opacity-100">
+                <Button variant="ghost" size="sm" onClick={() => openEdit(c)} className="h-8 w-8 p-0 text-surface-500 hover:text-brand-600">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setShowConfirmDelete(c)
+                  setDeleteDependencies(null)
+                  setDeleteMessage(null)
+                }} className="h-8 w-8 p-0 text-surface-500 hover:text-red-600">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      <Modal open={showModal} onOpenChange={setShowModal} title={editingId ? 'Editar Cliente' : 'Novo Cliente'} size="xl">
+        <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4 max-h-[80vh] overflow-y-auto px-1">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-1">
+              <label className="text-sm font-medium text-surface-700">Tipo</label>
+              <div className="mt-1.5 flex gap-4">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="type" value="PF" checked={form.type === 'PF'} onChange={set('type')} className="text-brand-600 focus:ring-brand-500" />
+                  Pessoa Física
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="type" value="PJ" checked={form.type === 'PJ'} onChange={set('type')} className="text-brand-600 focus:ring-brand-500" />
+                  Pessoa Jurídica
+                </label>
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <Input label="Nome / Razão Social *" value={form.name} onChange={set('name')} required />
+            </div>
+            <div className="md:col-span-1">
+              <Input label={form.type === 'PF' ? 'CPF' : 'CNPJ'} value={form.document} onChange={set('document')} />
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Nome" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
-            <Input label={form.type === 'PJ' ? 'CNPJ' : 'CPF'} value={form.document} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('document', e.target.value)} />
-            <Input label="E-mail" type="email" value={form.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('email', e.target.value)} />
-            <Input label="Telefone" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('phone', e.target.value)} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input label="Nome Fantasia" value={form.trade_name} onChange={set('trade_name')} disabled={form.type === 'PF'} />
+            <Input label="E-mail" type="email" value={form.email} onChange={set('email')} />
+            <Input label="Telefone Principal" value={form.phone} onChange={set('phone')} />
           </div>
 
-          {/* Endereço */}
           <details className="group">
-            <summary className="cursor-pointer text-sm font-medium text-surface-700 flex items-center gap-1">
+            <summary className="cursor-pointer text-sm font-medium text-surface-700 flex items-center gap-1 py-1">
               <MapPin className="h-4 w-4" /> Endereço
               <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
             </summary>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <Input label="CEP" value={form.address_zip} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_zip', e.target.value)} />
+            <div className="mt-3 grid gap-3 sm:grid-cols-3 pl-2 border-l-2 border-surface-100">
+              <Input label="CEP" value={form.address_zip} onChange={set('address_zip')} />
               <div className="sm:col-span-2">
-                <Input label="Rua" value={form.address_street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_street', e.target.value)} />
+                <Input label="Rua" value={form.address_street} onChange={set('address_street')} />
               </div>
-              <Input label="Número" value={form.address_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_number', e.target.value)} />
-              <Input label="Complemento" value={form.address_complement} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_complement', e.target.value)} />
-              <Input label="Bairro" value={form.address_neighborhood} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_neighborhood', e.target.value)} />
-              <Input label="Cidade" value={form.address_city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_city', e.target.value)} />
-              <Input label="UF" value={form.address_state} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_state', e.target.value)} maxLength={2} />
+              <Input label="Número" value={form.address_number} onChange={set('address_number')} />
+              <Input label="Complemento" value={form.address_complement} onChange={set('address_complement')} />
+              <Input label="Bairro" value={form.address_neighborhood} onChange={set('address_neighborhood')} />
+              <Input label="Cidade" value={form.address_city} onChange={set('address_city')} />
+              <Input label="UF" value={form.address_state} onChange={set('address_state')} maxLength={2} />
+              <Input label="Telefone Secundário" value={form.phone2} onChange={set('phone2')} />
             </div>
           </details>
 
-          {/* Contatos */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-surface-700">Contatos</span>
-              <Button variant="ghost" size="sm" type="button" onClick={addContact}><Plus className="h-4 w-4" /> Adicionar</Button>
-            </div>
-            {form.contacts.map((ct, i) => (
-              <div key={i} className="mb-2 grid gap-2 rounded-lg border border-surface-200 p-3 sm:grid-cols-4">
-                <Input placeholder="Nome" value={ct.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateContact(i, 'name', e.target.value)} />
-                <Input placeholder="Cargo" value={ct.role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateContact(i, 'role', e.target.value)} />
-                <Input placeholder="Telefone" value={ct.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateContact(i, 'phone', e.target.value)} />
-                <div className="flex items-end gap-2">
-                  <Input placeholder="E-mail" value={ct.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateContact(i, 'email', e.target.value)} className="flex-1" />
-                  <Button variant="ghost" size="sm" type="button" onClick={() => removeContact(i)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
+          <details className="group">
+            <summary className="cursor-pointer text-sm font-medium text-surface-700 flex items-center gap-1 py-1">
+              <Users className="h-4 w-4" /> Contatos Adicionais
+              <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-3 space-y-3 pl-2 border-l-2 border-surface-100">
+              {form.contacts.map((ct, i) => (
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-surface-50 p-2 rounded-lg relative group/contact">
+                  <div className="sm:col-span-3"><Input placeholder="Nome" value={ct.name} onChange={(e) => updateContact(i, 'name', e.target.value)} className="bg-white" /></div>
+                  <div className="sm:col-span-3"><Input placeholder="Cargo" value={ct.role} onChange={(e) => updateContact(i, 'role', e.target.value)} className="bg-white" /></div>
+                  <div className="sm:col-span-3"><Input placeholder="Email" value={ct.email} onChange={(e) => updateContact(i, 'email', e.target.value)} className="bg-white" /></div>
+                  <div className="sm:col-span-2"><Input placeholder="Telefone" value={ct.phone} onChange={(e) => updateContact(i, 'phone', e.target.value)} className="bg-white" /></div>
+                  <div className="sm:col-span-1 flex items-center justify-center">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeContact(i)} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={addContact} icon={<Plus className="h-3 w-3" />}>Adicionar Contato</Button>
+            </div>
+          </details>
+
+          <div className="flex items-center gap-2 py-2">
+            <input type="checkbox" id="is_active" checked={form.is_active} onChange={set('is_active')} className="rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+            <label htmlFor="is_active" className="text-sm font-medium text-surface-700">Cliente Ativo</label>
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t border-surface-200 pt-4">
-            <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button type="submit" loading={saveMut.isPending}>{editing ? 'Salvar' : 'Criar Cliente'}</Button>
+          <div>
+            <label className="text-sm font-medium text-surface-700 mb-1 block">Observações</label>
+            <textarea className="w-full rounded-md border border-surface-300 p-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none min-h-[80px]"
+              value={form.notes} onChange={set('notes')} />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-surface-100">
+            <Button variant="outline" type="button" onClick={closeModal}>Cancelar</Button>
+            <Button type="submit" loading={saveMut.isPending}>{editingId ? 'Salvar Alterações' : 'Criar Cliente'}</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Confirm Delete Modal */}
+      <Modal open={!!showConfirmDelete} onOpenChange={() => setShowConfirmDelete(null)} size="sm" title="Excluir Cliente">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-medium text-surface-900">Tem certeza?</h3>
+              <p className="text-sm text-surface-500">
+                Deseja realmente excluir <strong>{showConfirmDelete?.name}</strong>?
+              </p>
+            </div>
+          </div>
+
+          {deleteMessage && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-100">
+              <p className="font-medium mb-1">Não é possível excluir:</p>
+              <p>{deleteMessage}</p>
+            </div>
+          )}
+
+          {deleteDependencies && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(deleteDependencies).map(([key, count]) => (
+                  <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
+                    <span className="text-surface-600 capitalize">{key.replace(/_/g, ' ')}</span>
+                    <Badge variant="neutral">{String(count)}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setShowConfirmDelete(null)}>Cancelar</Button>
+            {deleteDependencies ? (
+              <Button variant="ghost" disabled className="text-surface-400 cursor-not-allowed">
+                Resolva as pendências acima
+              </Button>
+            ) : (
+              <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
+                onClick={() => showConfirmDelete && deleteMut.mutate(showConfirmDelete.id)}>
+                Excluir Cliente
+              </Button>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   )

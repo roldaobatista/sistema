@@ -2,26 +2,34 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BelongsToTenant;
+use App\Traits\SyncsWithCentral;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkOrder extends Model
 {
-    use BelongsToTenant, SoftDeletes, Auditable;
+    use BelongsToTenant, HasFactory, SoftDeletes, Auditable, SyncsWithCentral;
+
+    protected $appends = [
+        'business_number',
+    ];
 
     protected $fillable = [
         'tenant_id', 'os_number', 'number', 'customer_id', 'equipment_id',
-        'quote_id', 'service_call_id', 'seller_id', 'driver_id', 'origin_type',
+        'quote_id', 'service_call_id', 'recurring_contract_id', 'seller_id', 'driver_id', 'origin_type',
         'branch_id', 'created_by', 'assigned_to',
         'status', 'priority', 'description', 'internal_notes', 'technical_report',
         'received_at', 'started_at', 'completed_at', 'delivered_at',
         'discount', 'discount_percentage', 'discount_amount', 'displacement_value', 'total',
         'signature_path', 'signature_signer', 'signature_at', 'signature_ip',
+        'checklist_id', 'sla_policy_id', 'sla_due_at', 'sla_responded_at',
     ];
 
     protected function casts(): array
@@ -32,12 +40,37 @@ class WorkOrder extends Model
             'completed_at' => 'datetime',
             'delivered_at' => 'datetime',
             'signature_at' => 'datetime',
+            'sla_due_at' => 'datetime',
+            'sla_responded_at' => 'datetime',
             'discount' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'displacement_value' => 'decimal:2',
             'total' => 'decimal:2',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $workOrder): void {
+            $workOrder->os_number = self::sanitizeOsNumber($workOrder->os_number);
+
+            if (!$workOrder->os_number && $workOrder->number) {
+                // Backward compatibility for integrations that do not pass os_number.
+                $workOrder->os_number = $workOrder->number;
+            }
+        });
+
+        static::updating(function (self $workOrder): void {
+            if ($workOrder->isDirty('os_number')) {
+                $workOrder->os_number = self::sanitizeOsNumber($workOrder->os_number);
+            }
+        });
+    }
+
+    public function businessNumber(): Attribute
+    {
+        return Attribute::get(fn (): string => (string) ($this->os_number ?: $this->number));
     }
 
     public const STATUS_OPEN = 'open';
@@ -49,22 +82,35 @@ class WorkOrder extends Model
     public const STATUS_INVOICED = 'invoiced';
     public const STATUS_CANCELLED = 'cancelled';
 
+    // ── Origin Types ──
+    public const ORIGIN_QUOTE = 'quote';
+    public const ORIGIN_SERVICE_CALL = 'service_call';
+    public const ORIGIN_RECURRING = 'recurring_contract'; // Updated to match RecurringContract usage
+    public const ORIGIN_MANUAL = 'manual';
+    public const ORIGIN_DIRECT = 'manual'; // Alias for legacy/frontend compatibility
+
+    // ── Priority Constants ──
+    public const PRIORITY_LOW = 'low';
+    public const PRIORITY_NORMAL = 'normal';
+    public const PRIORITY_HIGH = 'high';
+    public const PRIORITY_URGENT = 'urgent';
+
     public const STATUSES = [
         self::STATUS_OPEN => ['label' => 'Aberta', 'color' => 'info'],
         self::STATUS_IN_PROGRESS => ['label' => 'Em Andamento', 'color' => 'warning'],
-        self::STATUS_WAITING_PARTS => ['label' => 'Aguard. Peças', 'color' => 'warning'],
-        self::STATUS_WAITING_APPROVAL => ['label' => 'Aguard. Aprovação', 'color' => 'brand'],
-        self::STATUS_COMPLETED => ['label' => 'Concluída', 'color' => 'success'],
+        self::STATUS_WAITING_PARTS => ['label' => 'Aguard. Pecas', 'color' => 'warning'],
+        self::STATUS_WAITING_APPROVAL => ['label' => 'Aguard. Aprovacao', 'color' => 'brand'],
+        self::STATUS_COMPLETED => ['label' => 'Concluida', 'color' => 'success'],
         self::STATUS_DELIVERED => ['label' => 'Entregue', 'color' => 'success'],
         self::STATUS_INVOICED => ['label' => 'Faturada', 'color' => 'brand'],
         self::STATUS_CANCELLED => ['label' => 'Cancelada', 'color' => 'danger'],
     ];
 
     public const PRIORITIES = [
-        'low' => ['label' => 'Baixa', 'color' => 'default'],
-        'normal' => ['label' => 'Normal', 'color' => 'info'],
-        'high' => ['label' => 'Alta', 'color' => 'warning'],
-        'urgent' => ['label' => 'Urgente', 'color' => 'danger'],
+        self::PRIORITY_LOW => ['label' => 'Baixa', 'color' => 'default'],
+        self::PRIORITY_NORMAL => ['label' => 'Normal', 'color' => 'info'],
+        self::PRIORITY_HIGH => ['label' => 'Alta', 'color' => 'warning'],
+        self::PRIORITY_URGENT => ['label' => 'Urgente', 'color' => 'danger'],
     ];
 
     public const ALLOWED_TRANSITIONS = [
@@ -88,19 +134,27 @@ class WorkOrder extends Model
     {
         $last = static::withTrashed()->where('tenant_id', $tenantId)->max('number');
         $seq = $last ? (int) str_replace('OS-', '', $last) + 1 : 1;
-        return 'OS-' . str_pad($seq, 6, '0', STR_PAD_LEFT);
+        return 'OS-' . str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
     }
 
     public function recalculateTotal(): void
     {
-        $itemsTotal = $this->items()->sum('total');
-        $subtotal = max(0, $itemsTotal - ($this->discount ?? 0));
-        $discountPercent = $this->discount_percentage > 0
-            ? $subtotal * ($this->discount_percentage / 100) : 0;
-        $this->update(['total' => max(0, $subtotal - $discountPercent), 'discount_amount' => $discountPercent]);
-    }
+        $itemsTotal = (float) $this->items()->sum('total');
 
-    // ── Relationships ──
+        // Apply EITHER percentage discount OR fixed discount — not both
+        if ($this->discount_percentage > 0) {
+            $discountAmount = round($itemsTotal * ($this->discount_percentage / 100), 2);
+        } else {
+            $discountAmount = (float) ($this->discount ?? 0);
+        }
+
+        $displacement = (float) ($this->displacement_value ?? 0);
+
+        $this->update([
+            'total' => max(0, $itemsTotal - $discountAmount + $displacement),
+            'discount_amount' => $discountAmount,
+        ]);
+    }
 
     public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
     public function equipment(): BelongsTo { return $this->belongsTo(Equipment::class); }
@@ -109,10 +163,15 @@ class WorkOrder extends Model
     public function assignee(): BelongsTo { return $this->belongsTo(User::class, 'assigned_to'); }
     public function quote(): BelongsTo { return $this->belongsTo(Quote::class); }
     public function serviceCall(): BelongsTo { return $this->belongsTo(ServiceCall::class); }
+    public function recurringContract(): BelongsTo { return $this->belongsTo(RecurringContract::class); }
     public function seller(): BelongsTo { return $this->belongsTo(User::class, 'seller_id'); }
     public function driver(): BelongsTo { return $this->belongsTo(User::class, 'driver_id'); }
     public function items(): HasMany { return $this->hasMany(WorkOrderItem::class); }
     public function statusHistory(): HasMany { return $this->hasMany(WorkOrderStatusHistory::class)->orderByDesc('created_at'); }
+
+    public function checklist(): BelongsTo { return $this->belongsTo(ServiceChecklist::class); }
+    public function checklistResponses(): HasMany { return $this->hasMany(WorkOrderChecklistResponse::class); }
+    public function slaPolicy(): BelongsTo { return $this->belongsTo(SlaPolicy::class); }
 
     public function technicians(): BelongsToMany
     {
@@ -128,13 +187,14 @@ class WorkOrder extends Model
             ->withTimestamps();
     }
 
-    // ── Garantia ──
-
     public const WARRANTY_DAYS = 90;
 
     public function getWarrantyUntilAttribute(): ?\Carbon\Carbon
     {
-        if (!$this->completed_at) return null;
+        if (!$this->completed_at) {
+            return null;
+        }
+
         return $this->completed_at->copy()->addDays(self::WARRANTY_DAYS);
     }
 
@@ -143,11 +203,37 @@ class WorkOrder extends Model
         return $this->warranty_until && $this->warranty_until->isFuture();
     }
 
-    // ── Anexos/Fotos ──
-
     public function attachments(): HasMany
     {
         return $this->hasMany(WorkOrderAttachment::class);
     }
-}
 
+    public function centralSyncData(): array
+    {
+        $statusMap = [
+            self::STATUS_OPEN => \App\Enums\CentralItemStatus::ABERTO,
+            self::STATUS_IN_PROGRESS => \App\Enums\CentralItemStatus::EM_ANDAMENTO,
+            self::STATUS_WAITING_PARTS => \App\Enums\CentralItemStatus::EM_ANDAMENTO,
+            self::STATUS_WAITING_APPROVAL => \App\Enums\CentralItemStatus::EM_ANDAMENTO,
+            self::STATUS_COMPLETED => \App\Enums\CentralItemStatus::CONCLUIDO,
+            self::STATUS_DELIVERED => \App\Enums\CentralItemStatus::CONCLUIDO,
+            self::STATUS_INVOICED => \App\Enums\CentralItemStatus::CONCLUIDO,
+            self::STATUS_CANCELLED => \App\Enums\CentralItemStatus::CANCELADO,
+        ];
+
+        return [
+            'status' => $statusMap[$this->status] ?? \App\Enums\CentralItemStatus::ABERTO,
+            'titulo' => "OS #{$this->business_number} - {$this->customer?->name}",
+        ];
+    }
+
+    private static function sanitizeOsNumber(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = trim((string) $value);
+        return $normalized === '' ? null : $normalized;
+    }
+}

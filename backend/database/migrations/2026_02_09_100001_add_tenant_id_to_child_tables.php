@@ -45,25 +45,34 @@ return new class extends Migration
                     $parentTable = $parts[3];
 
                     DB::statement("
-                        UPDATE {$table} c
-                        INNER JOIN {$midTable} m ON c.{$midFk} = m.id
-                        INNER JOIN {$parentTable} p ON m.{$parentFk} = p.id
-                        SET c.tenant_id = p.tenant_id
-                        WHERE c.tenant_id IS NULL
+                        UPDATE {$table}
+                        SET tenant_id = (
+                            SELECT p.tenant_id
+                            FROM {$midTable} m
+                            INNER JOIN {$parentTable} p ON m.{$parentFk} = p.id
+                            WHERE {$table}.{$midFk} = m.id
+                        )
+                        WHERE tenant_id IS NULL
                     ");
                 } else {
                     DB::statement("
-                        UPDATE {$table} c
-                        INNER JOIN {$parentTable} p ON c.{$fk} = p.id
-                        SET c.tenant_id = p.tenant_id
-                        WHERE c.tenant_id IS NULL
+                        UPDATE {$table}
+                        SET tenant_id = (
+                            SELECT p.tenant_id FROM {$parentTable} p
+                            WHERE {$table}.{$fk} = p.id
+                        )
+                        WHERE tenant_id IS NULL
                     ");
                 }
 
-                // Add foreign key constraint after backfilling
-                Schema::table($table, function (Blueprint $t) {
-                    $t->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
-                });
+                // Add foreign key constraint after backfilling (may not work on SQLite)
+                try {
+                    Schema::table($table, function (Blueprint $t) {
+                        $t->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+                    });
+                } catch (\Throwable) {
+                    // SQLite doesn't support adding FK constraints to existing tables
+                }
             }
         }
     }

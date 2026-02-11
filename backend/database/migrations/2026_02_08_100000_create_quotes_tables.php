@@ -40,7 +40,7 @@ return new class extends Migration
         Schema::create('quote_equipments', function (Blueprint $t) {
             $t->id();
             $t->unsignedBigInteger('quote_id');
-            $t->unsignedBigInteger('equipment_id');
+            $t->unsignedBigInteger('equipment_id')->nullable();
             $t->text('description')->nullable(); // descrição do que será feito
             $t->integer('sort_order')->default(0);
             $t->timestamps();

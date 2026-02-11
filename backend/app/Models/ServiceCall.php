@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
+use App\Traits\SyncsWithCentral;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,11 +12,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ServiceCall extends Model
 {
-    use BelongsToTenant, SoftDeletes, Auditable;
+    use BelongsToTenant, SoftDeletes, Auditable, SyncsWithCentral, \Illuminate\Database\Eloquent\Factories\HasFactory;
 
     protected $fillable = [
         'tenant_id', 'call_number', 'customer_id', 'quote_id',
-        'technician_id', 'driver_id', 'status', 'priority',
+        'technician_id', 'driver_id', 'created_by', 'status', 'priority',
         'scheduled_date', 'started_at', 'completed_at',
         'latitude', 'longitude', 'address', 'city', 'state', 'observations',
     ];
@@ -31,13 +32,20 @@ class ServiceCall extends Model
         ];
     }
 
+    public const STATUS_OPEN = 'open';
+    public const STATUS_SCHEDULED = 'scheduled';
+    public const STATUS_IN_TRANSIT = 'in_transit';
+    public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUSES = [
-        'open' => ['label' => 'Aberto', 'color' => 'bg-blue-100 text-blue-700'],
-        'scheduled' => ['label' => 'Agendado', 'color' => 'bg-amber-100 text-amber-700'],
-        'in_transit' => ['label' => 'Em Deslocamento', 'color' => 'bg-cyan-100 text-cyan-700'],
-        'in_progress' => ['label' => 'Em Atendimento', 'color' => 'bg-indigo-100 text-indigo-700'],
-        'completed' => ['label' => 'Concluído', 'color' => 'bg-emerald-100 text-emerald-700'],
-        'cancelled' => ['label' => 'Cancelado', 'color' => 'bg-red-100 text-red-700'],
+        self::STATUS_OPEN => ['label' => 'Aberto', 'color' => 'bg-blue-100 text-blue-700'],
+        self::STATUS_SCHEDULED => ['label' => 'Agendado', 'color' => 'bg-amber-100 text-amber-700'],
+        self::STATUS_IN_TRANSIT => ['label' => 'Em Deslocamento', 'color' => 'bg-cyan-100 text-cyan-700'],
+        self::STATUS_IN_PROGRESS => ['label' => 'Em Atendimento', 'color' => 'bg-indigo-100 text-indigo-700'],
+        self::STATUS_COMPLETED => ['label' => 'Concluído', 'color' => 'bg-emerald-100 text-emerald-700'],
+        self::STATUS_CANCELLED => ['label' => 'Cancelado', 'color' => 'bg-red-100 text-red-700'],
     ];
 
     public const PRIORITIES = [
@@ -46,6 +54,21 @@ class ServiceCall extends Model
         'high' => ['label' => 'Alta', 'color' => 'text-amber-500'],
         'urgent' => ['label' => 'Urgente', 'color' => 'text-red-500'],
     ];
+
+    public const ALLOWED_TRANSITIONS = [
+        self::STATUS_OPEN => [self::STATUS_SCHEDULED, self::STATUS_CANCELLED],
+        self::STATUS_SCHEDULED => [self::STATUS_IN_TRANSIT, self::STATUS_OPEN, self::STATUS_CANCELLED],
+        self::STATUS_IN_TRANSIT => [self::STATUS_IN_PROGRESS, self::STATUS_SCHEDULED, self::STATUS_CANCELLED],
+        self::STATUS_IN_PROGRESS => [self::STATUS_COMPLETED, self::STATUS_CANCELLED],
+        self::STATUS_COMPLETED => [],
+        self::STATUS_CANCELLED => [self::STATUS_OPEN],
+    ];
+
+    public function canTransitionTo(string $newStatus): bool
+    {
+        $allowed = self::ALLOWED_TRANSITIONS[$this->status] ?? [];
+        return in_array($newStatus, $allowed, true);
+    }
 
     public function customer(): BelongsTo
     {
@@ -67,6 +90,11 @@ class ServiceCall extends Model
         return $this->belongsTo(User::class, 'driver_id');
     }
 
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function equipments(): BelongsToMany
     {
         return $this->belongsToMany(Equipment::class, 'service_call_equipments')
@@ -76,7 +104,7 @@ class ServiceCall extends Model
 
     public static function nextNumber(int $tenantId): string
     {
-        $last = static::where('tenant_id', $tenantId)->orderByDesc('id')->value('call_number');
+        $last = static::withTrashed()->where('tenant_id', $tenantId)->orderByDesc('id')->value('call_number');
         $num = $last ? ((int) preg_replace('/\D/', '', $last)) + 1 : 1;
         return 'CT-' . str_pad($num, 5, '0', STR_PAD_LEFT);
     }
@@ -109,5 +137,24 @@ class ServiceCall extends Model
             ? $this->created_at->diffInHours($this->completed_at)
             : $this->created_at->diffInHours(now());
         return $elapsed > $limit;
+    }
+
+    // ── Central Sync ──
+
+    public function centralSyncData(): array
+    {
+        $statusMap = [
+            self::STATUS_OPEN => \App\Enums\CentralItemStatus::ABERTO,
+            self::STATUS_SCHEDULED => \App\Enums\CentralItemStatus::ABERTO,
+            self::STATUS_IN_TRANSIT => \App\Enums\CentralItemStatus::EM_ANDAMENTO,
+            self::STATUS_IN_PROGRESS => \App\Enums\CentralItemStatus::EM_ANDAMENTO,
+            self::STATUS_COMPLETED => \App\Enums\CentralItemStatus::CONCLUIDO,
+            self::STATUS_CANCELLED => \App\Enums\CentralItemStatus::CANCELADO,
+        ];
+
+        return [
+            'status' => $statusMap[$this->status] ?? \App\Enums\CentralItemStatus::ABERTO,
+            'titulo' => "Chamado #{$this->call_number} — {$this->customer?->name}",
+        ];
     }
 }

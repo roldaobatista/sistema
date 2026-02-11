@@ -2,13 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, DollarSign, User, Calendar, FileText, Phone, Mail, MessageCircle, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { crmApi, type CrmDeal, type CrmActivity } from '@/lib/crm-api'
 import { SendMessageModal } from '@/components/crm/SendMessageModal'
 import { MessageHistory } from '@/components/crm/MessageHistory'
+import { toast } from 'sonner'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
+    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
 const typeIcons: Record<string, React.ElementType> = {
     ligacao: Phone,
@@ -19,6 +23,17 @@ const typeIcons: Record<string, React.ElementType> = {
     reuniao: User,
     visita: User,
     tarefa: CheckCircle2,
+}
+
+const WO_STATUS_LABELS: Record<string, string> = {
+    open: 'Aberta',
+    in_progress: 'Em Andamento',
+    waiting_parts: 'Aguardando Peças',
+    waiting_approval: 'Aguardando Aprovação',
+    completed: 'Concluída',
+    delivered: 'Entregue',
+    invoiced: 'Faturada',
+    cancelled: 'Cancelada',
 }
 
 interface Props {
@@ -44,6 +59,10 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['crm'] })
             queryClient.invalidateQueries({ queryKey: ['crm-deal', dealId] })
+            toast.success('Deal marcado como ganho!')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Erro ao marcar deal como ganho')
         },
     })
 
@@ -52,8 +71,12 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['crm'] })
             queryClient.invalidateQueries({ queryKey: ['crm-deal', dealId] })
+            toast.success('Deal marcado como perdido')
             setShowLostForm(false)
             setLostReason('')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Erro ao marcar deal como perdido')
         },
     })
 
@@ -66,11 +89,11 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
 
             {/* Drawer */}
             <div className={cn(
-                'fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-surface-200 bg-white shadow-modal',
+                'fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-subtle bg-white shadow-modal',
                 'animate-in slide-in-from-right duration-300'
             )}>
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-surface-200 px-5 py-4">
+                <div className="flex items-center justify-between border-b border-subtle px-5 py-4">
                     <h2 className="text-lg font-semibold text-surface-900 truncate">
                         {isLoading ? 'Carregando…' : deal?.title}
                     </h2>
@@ -89,10 +112,10 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
                 ) : deal ? (
                     <div className="flex-1 overflow-y-auto">
                         {/* Status + Actions */}
-                        <div className="border-b border-surface-200 px-5 py-4">
+                        <div className="border-b border-subtle px-5 py-4">
                             <div className="flex items-center gap-2 mb-4">
-                                <Badge variant={deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'} dot>
-                                    {deal.status === 'won' ? 'Ganho' : deal.status === 'lost' ? 'Perdido' : 'Aberto'}
+                                <Badge variant={deal.status === DEAL_STATUS.WON ? 'success' : deal.status === DEAL_STATUS.LOST ? 'danger' : 'info'} dot>
+                                    {deal.status === DEAL_STATUS.WON ? 'Ganho' : deal.status === DEAL_STATUS.LOST ? 'Perdido' : 'Aberto'}
                                 </Badge>
                                 {deal.stage && (
                                     <span className="rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -102,7 +125,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
                                 )}
                             </div>
 
-                            {deal.status === 'open' && (
+                            {deal.status === DEAL_STATUS.OPEN && (
                                 <div className="flex gap-2">
                                     <Button
                                         size="sm"
@@ -125,7 +148,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
                                 </div>
                             )}
 
-                            {deal.status === 'open' && deal.customer && (
+                            {deal.status === DEAL_STATUS.OPEN && deal.customer && (
                                 <div className="mt-2">
                                     <Button
                                         size="sm"
@@ -144,7 +167,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
                                         value={lostReason}
                                         onChange={e => setLostReason(e.target.value)}
                                         placeholder="Motivo da perda (opcional)"
-                                        className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                                        className="w-full rounded-lg border border-default px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                                         rows={2}
                                     />
                                     <Button
@@ -160,7 +183,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
                         </div>
 
                         {/* Info Grid */}
-                        <div className="border-b border-surface-200 px-5 py-4 space-y-3">
+                        <div className="border-b border-subtle px-5 py-4 space-y-3">
                             <InfoRow icon={DollarSign} label="Valor" value={fmtBRL(deal.value)} />
                             <InfoRow icon={User} label="Cliente" value={deal.customer?.name ?? '—'} />
                             <InfoRow icon={User} label="Responsável" value={deal.assignee?.name ?? 'Não atribuído'} />
@@ -174,7 +197,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
                                 <InfoRow icon={FileText} label="Orçamento" value={`#${deal.quote.quote_number} — ${fmtBRL(deal.quote.total)}`} />
                             )}
                             {deal.workOrder && (
-                                <InfoRow icon={FileText} label="OS" value={`#${deal.workOrder.number} — ${deal.workOrder.status}`} />
+                                <InfoRow icon={FileText} label="OS" value={`#${woIdentifier(deal.workOrder)} — ${WO_STATUS_LABELS[deal.workOrder.status] ?? deal.workOrder.status}`} />
                             )}
                             {deal.equipment && (
                                 <InfoRow icon={FileText} label="Equipamento" value={`${deal.equipment.code} — ${deal.equipment.brand} ${deal.equipment.model}`} />
@@ -183,7 +206,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
 
                         {/* Notes */}
                         {deal.notes && (
-                            <div className="border-b border-surface-200 px-5 py-4">
+                            <div className="border-b border-subtle px-5 py-4">
                                 <p className="text-xs font-medium text-surface-500 mb-1">Observações</p>
                                 <p className="text-sm text-surface-700 whitespace-pre-wrap">{deal.notes}</p>
                             </div>
@@ -191,7 +214,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
 
                         {/* Messages */}
                         {deal.customer && (
-                            <div className="border-b border-surface-200 px-5 py-4">
+                            <div className="border-b border-subtle px-5 py-4">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Mensagens</h3>
                                     <button

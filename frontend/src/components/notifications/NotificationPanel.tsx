@@ -2,14 +2,34 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
-    Bell, Check, CheckCheck, AlertTriangle, Clock,
-    Scale, FileText, Wrench, X, Wifi, WifiOff,
+    Bell, CheckCheck, AlertTriangle, Clock,
+    Scale, FileText, Wrench, X,
+    type LucideIcon,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useWebSocket } from '@/hooks/useWebSocket'
 
-const iconMap: Record<string, any> = {
+interface NotificationItem {
+    id: number
+    title: string
+    message?: string | null
+    icon?: string | null
+    color?: string | null
+    link?: string | null
+    read_at?: string | null
+    created_at: string
+}
+
+interface NotificationCountResponse {
+    unread_count: number
+}
+
+interface NotificationListResponse {
+    notifications: NotificationItem[]
+}
+
+const iconMap: Record<string, LucideIcon> = {
     'alert-triangle': AlertTriangle,
     'clock': Clock,
     'scale': Scale,
@@ -27,6 +47,7 @@ const colorMap: Record<string, string> = {
 
 export default function NotificationPanel() {
     const [open, setOpen] = useState(false)
+    const [nowTs, setNowTs] = useState(() => Date.now())
     const ref = useRef<HTMLDivElement>(null)
     const navigate = useNavigate()
     const qc = useQueryClient()
@@ -39,16 +60,16 @@ export default function NotificationPanel() {
     })
 
     // Poll unread count every 30s (fallback when no WebSocket)
-    const { data: countData } = useQuery({
+    const { data: countData } = useQuery<NotificationCountResponse>({
         queryKey: ['notifications-count'],
-        queryFn: () => api.get('/notifications/unread-count').then(r => r.data),
+        queryFn: async () => (await api.get('/notifications/unread-count')).data,
         refetchInterval: isConnected ? 60_000 : 30_000, // slower poll when WS active
     })
 
     // Full list when panel open
-    const { data: listData } = useQuery({
+    const { data: listData } = useQuery<NotificationListResponse>({
         queryKey: ['notifications'],
-        queryFn: () => api.get('/notifications').then(r => r.data),
+        queryFn: async () => (await api.get('/notifications')).data,
         enabled: open,
     })
 
@@ -77,10 +98,16 @@ export default function NotificationPanel() {
         return () => document.removeEventListener('mousedown', handler)
     }, [])
 
-    const unread = countData?.unread_count ?? 0
-    const notifications = listData?.notifications ?? []
+    // Update relative timestamps without using impure calls during render
+    useEffect(() => {
+        const timer = setInterval(() => setNowTs(Date.now()), 60_000)
+        return () => clearInterval(timer)
+    }, [])
 
-    const handleClick = (n: any) => {
+    const unread = countData?.unread_count ?? 0
+    const notifications: NotificationItem[] = listData?.notifications ?? []
+
+    const handleClick = (n: NotificationItem) => {
         if (!n.read_at) markRead.mutate(n.id)
         if (n.link) {
             navigate(n.link)
@@ -88,8 +115,8 @@ export default function NotificationPanel() {
         }
     }
 
-    const timeAgo = (date: string) => {
-        const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000)
+    const timeAgo = (date: string, now: number) => {
+        const mins = Math.floor((now - new Date(date).getTime()) / 60000)
         if (mins < 1) return 'agora'
         if (mins < 60) return `${mins}min`
         const hrs = Math.floor(mins / 60)
@@ -113,9 +140,9 @@ export default function NotificationPanel() {
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-2 w-96 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-elevated z-50">
+                <div className="absolute right-0 top-full mt-2 w-96 overflow-hidden rounded-xl border border-default bg-white shadow-elevated z-50">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-surface-200 px-4 py-3">
+                    <div className="flex items-center justify-between border-b border-subtle px-4 py-3">
                         <h3 className="text-sm font-semibold text-surface-900">
                             Notificações
                             {unread > 0 && (
@@ -151,9 +178,11 @@ export default function NotificationPanel() {
                                 Nenhuma notificação
                             </p>
                         )}
-                        {notifications.map((n: any) => {
-                            const Icon = iconMap[n.icon] || Bell
-                            const bgColor = colorMap[n.color] || 'bg-surface-100 text-surface-600'
+                        {notifications.map((n) => {
+                            const iconKey = n.icon ?? ''
+                            const colorKey = n.color ?? ''
+                            const Icon = iconMap[iconKey] || Bell
+                            const bgColor = colorMap[colorKey] || 'bg-surface-100 text-surface-600'
                             return (
                                 <button
                                     key={n.id}
@@ -179,7 +208,7 @@ export default function NotificationPanel() {
                                             </p>
                                         )}
                                         <p className="mt-1 text-[11px] text-surface-400">
-                                            {timeAgo(n.created_at)}
+                                            {timeAgo(n.created_at, nowTs)}
                                         </p>
                                     </div>
                                     {!n.read_at && (

@@ -23,6 +23,10 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             localStorage.removeItem('auth_token')
+            localStorage.removeItem('portal_token')
+            // FIX-22: Limpar stores Zustand persistidos para evitar estado fantasma
+            localStorage.removeItem('auth-store')
+            localStorage.removeItem('portal-auth-store')
             window.location.href = '/login'
         }
         return Promise.reject(error)

@@ -42,18 +42,20 @@ class CrmMessageController extends Controller
 
     public function send(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $tenantId = (int) ($user->current_tenant_id ?? $user->tenant_id);
+
         $data = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'channel' => ['required', Rule::in(['whatsapp', 'email'])],
             'body' => 'required|string',
             'subject' => 'required_if:channel,email|nullable|string|max:255',
-            'deal_id' => 'nullable|exists:crm_deals,id',
-            'template_id' => 'nullable|exists:crm_message_templates,id',
+            'deal_id' => ['nullable', Rule::exists('crm_deals', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'template_id' => ['nullable', Rule::exists('crm_message_templates', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'variables' => 'nullable|array',
         ]);
 
-        /** @var \App\Models\User $user */
-        $user = $request->user();
         $customer = Customer::findOrFail($data['customer_id']);
 
         // If template provided, use it
@@ -68,11 +70,11 @@ class CrmMessageController extends Controller
         } else {
             $message = match ($data['channel']) {
                 'whatsapp' => $this->messaging->sendWhatsApp(
-                    $user->tenant_id, $customer, $data['body'],
+                    $tenantId, $customer, $data['body'],
                     $data['deal_id'] ?? null, $user->id
                 ),
                 'email' => $this->messaging->sendEmail(
-                    $user->tenant_id, $customer,
+                    $tenantId, $customer,
                     $data['subject'] ?? '(Sem assunto)',
                     $data['body'],
                     $data['deal_id'] ?? null, $user->id
@@ -109,7 +111,7 @@ class CrmMessageController extends Controller
 
         /** @var \App\Models\User $user */
         $user = $request->user();
-        $data['tenant_id'] = $user->tenant_id;
+        $data['tenant_id'] = (int) ($user->current_tenant_id ?? $user->tenant_id);
 
         $template = CrmMessageTemplate::create($data);
         return response()->json($template, 201);
@@ -168,7 +170,8 @@ class CrmMessageController extends Controller
         if ($event === 'messages.upsert') {
             $msgs = $data['data'] ?? [];
             foreach ((array) $msgs as $msg) {
-                if (!($msg['key']['fromMe'] ?? true) === false) continue;
+                $isFromMe = $msg['key']['fromMe'] ?? true;
+                if ($isFromMe) continue;
 
                 $phone = preg_replace('/\D/', '', $msg['key']['remoteJid'] ?? '');
                 $phone = preg_replace('/^55/', '', $phone);
@@ -176,23 +179,44 @@ class CrmMessageController extends Controller
                     ?? $msg['message']['extendedTextMessage']['text']
                     ?? '[Mídia]';
 
-                // Find customer by phone
-                $customer = Customer::where('phone', 'like', "%{$phone}")
-                    ->orWhere('phone2', 'like', "%{$phone}")
+                // Find tenant via last outbound message to this phone
+                $lastOutbound = CrmMessage::where('to_address', 'like', "%{$phone}")
+                    ->where('direction', CrmMessage::DIRECTION_OUTBOUND)
+                    ->latest()
                     ->first();
 
-                if ($customer) {
-                    $this->messaging->recordInbound(
-                        $customer->tenant_id,
-                        $customer->id,
-                        'whatsapp',
-                        $body,
-                        $phone,
-                        $msg['key']['id'] ?? null,
-                        null,
-                        ['raw' => $msg]
-                    );
+                $tenantId = $lastOutbound?->tenant_id;
+                $customer = null;
+
+                if ($tenantId) {
+                    // Find customer scoped to tenant
+                    $customer = Customer::where('tenant_id', $tenantId)
+                        ->where(function ($q) use ($phone) {
+                            $q->where('phone', 'like', "%{$phone}")
+                              ->orWhere('phone2', 'like', "%{$phone}");
+                        })->first();
+                } else {
+                    // Fallback: find customer directly by phone (first contact scenario)
+                    $customer = Customer::where(function ($q) use ($phone) {
+                        $q->where('phone', 'like', "%{$phone}")
+                          ->orWhere('phone2', 'like', "%{$phone}");
+                    })->first();
+
+                    $tenantId = $customer?->tenant_id;
                 }
+
+                if (!$tenantId || !$customer) continue;
+
+                $this->messaging->recordInbound(
+                    $customer->tenant_id,
+                    $customer->id,
+                    'whatsapp',
+                    $body,
+                    $phone,
+                    $msg['key']['id'] ?? null,
+                    null,
+                    ['raw' => $msg]
+                );
             }
         }
 

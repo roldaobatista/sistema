@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('type');
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
             $table->foreignId('deal_id')->nullable()->constrained('crm_deals')->nullOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->timestamp('scheduled_at')->nullable();

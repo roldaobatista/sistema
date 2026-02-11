@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Notification extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, \Illuminate\Database\Eloquent\Factories\HasFactory;
 
     protected $fillable = [
         'tenant_id', 'user_id', 'type', 'title', 'message',

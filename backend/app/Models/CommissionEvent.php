@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CommissionEvent extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasFactory, Auditable;
 
     protected $fillable = [
         'tenant_id', 'commission_rule_id', 'work_order_id', 'user_id',

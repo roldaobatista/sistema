@@ -8,7 +8,7 @@ use App\Models\Concerns\BelongsToTenant;
 
 class QuotePhoto extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, \Illuminate\Database\Eloquent\Factories\HasFactory;
 
     protected $fillable = [
         'tenant_id', 'quote_equipment_id', 'quote_item_id', 'path', 'caption', 'sort_order',

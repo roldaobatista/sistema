@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
-import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, LogIn, Loader2, Shield } from 'lucide-react'
 
 export function LoginPage() {
     const { login, isLoading } = useAuthStore()
@@ -27,113 +27,158 @@ export function LoginPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-surface-50 to-brand-100 p-4">
-            {/* Background pattern */}
-            <div className="pointer-events-none fixed inset-0 overflow-hidden opacity-30">
-                <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-brand-200 blur-3xl" />
-                <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-brand-300 blur-3xl" />
-            </div>
+        <div className="flex min-h-screen">
+            {/* Left Panel — Branding */}
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-b from-surface-900 via-surface-800 to-surface-950">
+                {/* Grid */}
+                <div className="absolute inset-0 opacity-[0.03]"
+                    style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
-            <div className="relative w-full max-w-md">
-                {/* Card */}
-                <div className="rounded-2xl border border-surface-200 bg-white p-8 shadow-elevated">
-                    {/* Logo */}
-                    <div className="mb-8 text-center">
-                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600 text-white shadow-lg">
-                            <span className="text-xl font-bold">OS</span>
+                {/* Brand accent glow */}
+                <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-brand-500/8 blur-3xl" />
+                <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-brand-600/5 blur-3xl" />
+
+                <div className="relative z-10 flex flex-col justify-center px-16">
+                    <div className="flex items-center gap-2.5 mb-10">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-white font-bold text-sm">
+                            K
                         </div>
-                        <h1 className="text-2xl font-bold text-surface-900">
-                            Sistema OS
-                        </h1>
-                        <p className="mt-1 text-sm text-surface-500">
-                            Entre com suas credenciais para acessar
-                        </p>
+                        <span className="text-[15px] font-semibold tabular-nums text-white tracking-tight">KALIBRIUM</span>
                     </div>
 
-                    {/* Error */}
-                    {error && (
-                        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {error}
-                        </div>
-                    )}
+                    <h2 className="text-3xl font-bold text-white leading-tight tracking-tight mb-3">
+                        Gestão completa<br />
+                        <span className="text-brand-400">para sua empresa</span>
+                    </h2>
+                    <p className="text-sm text-surface-400 max-w-md leading-relaxed">
+                        Ordens de serviço, financeiro, CRM, estoque e muito mais em uma plataforma integrada.
+                    </p>
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-surface-700">
-                                E-mail
-                            </label>
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="seu@email.com"
-                                required
-                                autoFocus
-                                className={cn(
-                                    'w-full rounded-lg border border-surface-300 bg-white px-4 py-2.5 text-sm text-surface-900',
-                                    'placeholder:text-surface-400',
-                                    'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20',
-                                    'transition-all duration-200'
-                                )}
-                            />
+                    {/* Feature pills */}
+                    <div className="flex flex-wrap gap-1.5 mt-8">
+                        {['Ordens de Serviço', 'Financeiro', 'CRM', 'Estoque', 'Portal Cliente'].map(f => (
+                            <span key={f} className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white/60">
+                                {f}
+                            </span>
+                        ))}
+                    </div>
+
+                    {/* Tolerance bar — brand signature */}
+                    <div className="mt-12 flex gap-0.5 max-w-xs">
+                        <div className="h-0.5 flex-[5] rounded-l-full bg-emerald-500/40" />
+                        <div className="h-0.5 flex-[2] bg-amber-400/40" />
+                        <div className="h-0.5 flex-[1] rounded-r-full bg-red-400/40" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Panel — Form */}
+            <div className="flex flex-1 items-center justify-center bg-surface-50 p-4 relative">
+                <div className="relative w-full max-w-sm">
+                    {/* Mobile branding */}
+                    <div className="mb-8 text-center lg:hidden">
+                        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white font-bold text-sm">
+                            K
+                        </div>
+                        <h1 className="text-[15px] font-semibold tabular-nums text-surface-900 tracking-tight">KALIBRIUM</h1>
+                    </div>
+
+                    {/* Card */}
+                    <div className="rounded-xl border border-default bg-surface-0 p-7 shadow-elevated">
+                        <div className="mb-6">
+                            <h1 className="text-lg font-semibold text-surface-900 tracking-tight">
+                                Bem-vindo de volta
+                            </h1>
+                            <p className="mt-0.5 text-[13px] text-surface-500">
+                                Entre com suas credenciais para acessar
+                            </p>
                         </div>
 
-                        <div>
-                            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-surface-700">
-                                Senha
-                            </label>
-                            <div className="relative">
+                        {/* Error */}
+                        {error && (
+                            <div className="mb-5 rounded-lg border border-red-200/50 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700 flex items-center gap-2">
+                                <Shield className="h-3.5 w-3.5 flex-shrink-0" /> {error}
+                            </div>
+                        )}
+
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="space-y-1.5">
+                                <label htmlFor="email" className="block text-[13px] font-medium text-surface-700">
+                                    E-mail
+                                </label>
                                 <input
-                                    id="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="seu@email.com"
                                     required
+                                    autoFocus
                                     className={cn(
-                                        'w-full rounded-lg border border-surface-300 bg-white px-4 py-2.5 pr-10 text-sm text-surface-900',
+                                        'w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900',
                                         'placeholder:text-surface-400',
-                                        'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20',
-                                        'transition-all duration-200'
+                                        'focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
+                                        'transition-all duration-150'
                                     )}
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600"
-                                >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </button>
                             </div>
-                        </div>
 
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className={cn(
-                                'flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white',
-                                'hover:bg-brand-700 active:bg-brand-800',
-                                'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2',
-                                'disabled:cursor-not-allowed disabled:opacity-60',
-                                'transition-all duration-200'
-                            )}
-                        >
-                            {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <LogIn className="h-4 w-4" />
-                            )}
-                            {isLoading ? 'Entrando...' : 'Entrar'}
-                        </button>
-                    </form>
+                            <div className="space-y-1.5">
+                                <label htmlFor="password" className="block text-[13px] font-medium text-surface-700">
+                                    Senha
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        required
+                                        className={cn(
+                                            'w-full rounded-md border border-default bg-surface-50 px-3 py-2 pr-9 text-sm text-surface-900',
+                                            'placeholder:text-surface-400',
+                                            'focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
+                                            'transition-all duration-150'
+                                        )}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className={cn(
+                                    'flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm',
+                                    'hover:bg-brand-500 active:bg-brand-700',
+                                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+                                    'disabled:cursor-not-allowed disabled:opacity-40',
+                                    'transition-colors duration-150'
+                                )}
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    <LogIn className="h-3.5 w-3.5" />
+                                )}
+                                {isLoading ? 'Entrando...' : 'Entrar'}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Footer */}
+                    <p className="mt-5 text-center text-[11px] text-surface-400">
+                        KALIBRIUM © 2026 — Gestão empresarial inteligente
+                    </p>
                 </div>
-
-                {/* Footer */}
-                <p className="mt-6 text-center text-xs text-surface-400">
-                    Sistema de Ordem de Serviço © 2026
-                </p>
             </div>
         </div>
     )

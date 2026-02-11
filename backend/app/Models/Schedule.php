@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Schedule extends Model
 {
-    use BelongsToTenant, SoftDeletes;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'tenant_id', 'work_order_id', 'customer_id', 'technician_id',
@@ -58,9 +59,11 @@ class Schedule extends Model
         int $technicianId,
         string $start,
         string $end,
-        ?int $excludeId = null
+        ?int $excludeId = null,
+        ?int $tenantId = null
     ): bool {
         return static::where('technician_id', $technicianId)
+            ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
             ->where('status', '!=', self::STATUS_CANCELLED)
             ->where('scheduled_start', '<', $end)
             ->where('scheduled_end', '>', $start)

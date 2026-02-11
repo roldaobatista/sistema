@@ -40,7 +40,9 @@ class SupplierController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $tenantId = auth()->user()->tenant_id;
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $tenantId = $user?->tenant_id;
 
         $validated = $request->validate([
             'type' => 'required|in:PF,PJ',
@@ -108,6 +110,18 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier): JsonResponse
     {
+        // Check for accounts payable linked to this supplier
+        $payablesCount = \App\Models\AccountPayable::where('supplier_id', $supplier->id)->count();
+        
+        if ($payablesCount > 0) {
+             return response()->json([
+                'message' => "Não é possível excluir este fornecedor pois ele possui $payablesCount conta(s) a pagar vinculada(s).",
+                'dependencies' => [
+                    'accounts_payable' => $payablesCount,
+                ],
+            ], 409);
+        }
+
         $supplier->delete();
         return response()->json(null, 204);
     }

@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'tenant.scope' => \App\Http\Middleware\EnsureTenantScope::class,
+            'check.tenant' => \App\Http\Middleware\EnsureTenantScope::class,
             'check.permission' => \App\Http\Middleware\CheckPermission::class,
             'verify.webhook' => \App\Http\Middleware\VerifyWebhookSignature::class,
         ]);

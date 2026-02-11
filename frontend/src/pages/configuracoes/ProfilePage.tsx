@@ -13,13 +13,13 @@ export function ProfilePage() {
     const qc = useQueryClient()
     const { setUser } = useAuthStore()
     const [showPassword, setShowPassword] = useState(false)
-    const [passwordForm, setPasswordForm] = useState({ current_password: '', password: '', password_confirmation: '' })
+    const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', new_password_confirmation: '' })
     const [saved, setSaved] = useState(false)
     const [pwSaved, setPwSaved] = useState(false)
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['profile'],
-        queryFn: () => api.get('/me'),
+        queryFn: () => api.get('/profile'),
     })
     const profile = res?.data
 
@@ -34,20 +34,23 @@ export function ProfilePage() {
     }
 
     const updateMut = useMutation({
-        mutationFn: (data: typeof form) => api.put('/me', data),
+        mutationFn: (data: typeof form) => api.put('/profile', data),
         onSuccess: (res) => {
             qc.invalidateQueries({ queryKey: ['profile'] })
             if (res.data?.user) setUser(res.data.user)
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
         },
+        onError: (err: any) => {
+            alert(err.response?.data?.message ?? 'Erro ao atualizar perfil.')
+        },
     })
 
     const passwordMut = useMutation({
-        mutationFn: (data: typeof passwordForm) => api.put('/me', data),
+        mutationFn: (data: typeof passwordForm) => api.post('/profile/change-password', data),
         onSuccess: () => {
             setPwSaved(true)
-            setPasswordForm({ current_password: '', password: '', password_confirmation: '' })
+            setPasswordForm({ current_password: '', new_password: '', new_password_confirmation: '' })
             setTimeout(() => setPwSaved(false), 3000)
         },
     })
@@ -60,7 +63,7 @@ export function ProfilePage() {
 
     if (isLoading || !profile) {
         return (
-            <div className="mx-auto max-w-3xl space-y-6 animate-fade-in">
+            <div className="mx-auto max-w-3xl space-y-5 animate-fade-in">
                 <div className="flex items-center gap-4">
                     <div className="skeleton h-16 w-16 rounded-2xl" />
                     <div>
@@ -76,15 +79,15 @@ export function ProfilePage() {
     }
 
     return (
-        <div className="mx-auto max-w-3xl space-y-6 animate-fade-in">
+        <div className="mx-auto max-w-3xl space-y-5 animate-fade-in">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl font-bold text-white shadow-lg">
                     {profile.name?.charAt(0)?.toUpperCase() ?? 'U'}
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">{profile.name}</h1>
-                    <p className="text-sm text-surface-500">{profile.email}</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">{profile.name}</h1>
+                    <p className="text-[13px] text-surface-500">{profile.email}</p>
                     <div className="mt-1 flex items-center gap-2">
                         {profile.roles?.map((r: string) => (
                             <Badge key={r} variant="brand">{r}</Badge>
@@ -94,7 +97,7 @@ export function ProfilePage() {
             </div>
 
             {/* Dados pessoais */}
-            <div className="animate-slide-up rounded-xl border border-surface-200 bg-white p-6 shadow-card hover:shadow-elevated transition-shadow duration-200">
+            <div className="animate-slide-up rounded-xl border border-default bg-surface-0 p-6 shadow-card hover:shadow-elevated transition-shadow duration-200">
                 <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-surface-900">
                     <User className="h-5 w-5 text-brand-500" />
                     Dados Pessoais
@@ -120,7 +123,7 @@ export function ProfilePage() {
             </div>
 
             {/* Alterar Senha */}
-            <div className="animate-slide-up stagger-2 rounded-xl border border-surface-200 bg-white p-6 shadow-card hover:shadow-elevated transition-shadow duration-200">
+            <div className="animate-slide-up stagger-2 rounded-xl border border-default bg-surface-0 p-6 shadow-card hover:shadow-elevated transition-shadow duration-200">
                 <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-surface-900">
                     <Key className="h-5 w-5 text-brand-500" />
                     Alterar Senha
@@ -137,15 +140,15 @@ export function ProfilePage() {
                         <Input
                             label="Nova Senha"
                             type={showPassword ? 'text' : 'password'}
-                            value={passwordForm.password}
-                            onChange={setPw('password')}
+                            value={passwordForm.new_password}
+                            onChange={setPw('new_password')}
                             required
                         />
                         <Input
                             label="Confirmar Nova Senha"
                             type={showPassword ? 'text' : 'password'}
-                            value={passwordForm.password_confirmation}
-                            onChange={setPw('password_confirmation')}
+                            value={passwordForm.new_password_confirmation}
+                            onChange={setPw('new_password_confirmation')}
                             required
                         />
                     </div>
@@ -178,7 +181,7 @@ export function ProfilePage() {
             </div>
 
             {/* Info card */}
-            <div className="animate-slide-up stagger-3 rounded-xl border border-surface-200 bg-white p-6 shadow-card hover:shadow-elevated transition-shadow duration-200">
+            <div className="animate-slide-up stagger-3 rounded-xl border border-default bg-surface-0 p-6 shadow-card hover:shadow-elevated transition-shadow duration-200">
                 <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-surface-900">
                     <Shield className="h-5 w-5 text-brand-500" />
                     Informações da Conta
@@ -190,10 +193,6 @@ export function ProfilePage() {
                             <Building2 className="h-3.5 w-3.5 text-brand-500" />
                             {profile.tenant?.name ?? '—'}
                         </p>
-                    </div>
-                    <div>
-                        <span className="text-surface-500">Filial</span>
-                        <p className="mt-0.5 font-medium text-surface-800">{profile.branch?.name ?? '—'}</p>
                     </div>
                     <div>
                         <span className="text-surface-500">Permissões</span>

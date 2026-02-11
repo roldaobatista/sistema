@@ -5,12 +5,25 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Invoice extends Model
 {
-    use BelongsToTenant, SoftDeletes, Auditable;
+    use BelongsToTenant, HasFactory, SoftDeletes, Auditable;
+
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_ISSUED = 'issued';
+    public const STATUS_SENT = 'sent';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUSES = [
+        self::STATUS_DRAFT => 'Rascunho',
+        self::STATUS_ISSUED => 'Emitida',
+        self::STATUS_SENT => 'Enviada',
+        self::STATUS_CANCELLED => 'Cancelada',
+    ];
 
     protected $fillable = [
         'tenant_id', 'work_order_id', 'customer_id', 'created_by',

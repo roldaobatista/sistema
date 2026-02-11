@@ -84,6 +84,27 @@ class ProductController extends Controller
 
     public function destroy(Product $product): JsonResponse
     {
+        $quotesCount = \App\Models\QuoteItem::where('product_id', $product->id)->count();
+        $ordersCount = \App\Models\WorkOrderItem::where('product_id', $product->id)->count();
+        // Assuming StockMovement model exists and has product_id
+        $stocksCount = \App\Models\StockMovement::where('product_id', $product->id)->count();
+
+        if ($quotesCount > 0 || $ordersCount > 0 || $stocksCount > 0) {
+            $parts = [];
+            if ($quotesCount > 0) $parts[] = "$quotesCount orçamento(s)";
+            if ($ordersCount > 0) $parts[] = "$ordersCount ordem(ns) de serviço";
+            if ($stocksCount > 0) $parts[] = "$stocksCount movimentação(ões) de estoque";
+
+            return response()->json([
+                'message' => "Não é possível excluir este produto pois ele possui vínculos: " . implode(', ', $parts),
+                'dependencies' => [
+                    'quotes' => $quotesCount,
+                    'work_orders' => $ordersCount,
+                    'stock_movements' => $stocksCount,
+                ],
+            ], 409);
+        }
+
         $product->delete();
         return response()->json(null, 204);
     }

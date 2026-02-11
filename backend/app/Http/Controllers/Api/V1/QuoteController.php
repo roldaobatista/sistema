@@ -3,17 +3,40 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
+use App\Http\Requests\Quote\StoreQuoteRequest;
+use App\Http\Requests\Quote\UpdateQuoteRequest;
 use App\Models\Quote;
 use App\Models\QuoteEquipment;
 use App\Models\QuoteItem;
 use App\Models\QuotePhoto;
-use App\Models\WorkOrder;
+use App\Services\QuoteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class QuoteController extends Controller
 {
+    public function __construct(
+        protected QuoteService $service
+    ) {}
+
+    private function currentTenantId(): int
+    {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
+    private function ensureQuoteMutable(Quote $quote): ?JsonResponse
+    {
+        if (!in_array($quote->status, [Quote::STATUS_DRAFT, Quote::STATUS_REJECTED], true)) {
+            return response()->json(['message' => 'Só é possível editar orçamentos em rascunho ou rejeitados'], 422);
+        }
+
+        return null;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Quote::with(['customer:id,name', 'seller:id,name'])
@@ -38,62 +61,21 @@ class QuoteController extends Controller
         return response()->json($quotes);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreQuoteRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'seller_id' => 'required|exists:users,id',
-            'valid_until' => 'nullable|date|after:today',
-            'discount_percentage' => 'nullable|numeric|min:0|max:100',
-            'observations' => 'nullable|string',
-            'internal_notes' => 'nullable|string',
-            'equipments' => 'required|array|min:1',
-            'equipments.*.equipment_id' => 'required|exists:equipments,id',
-            'equipments.*.description' => 'nullable|string',
-            'equipments.*.items' => 'required|array|min:1',
-            'equipments.*.items.*.type' => 'required|in:product,service',
-            'equipments.*.items.*.product_id' => 'nullable|exists:products,id',
-            'equipments.*.items.*.service_id' => 'nullable|exists:services,id',
-            'equipments.*.items.*.custom_description' => 'nullable|string',
-            'equipments.*.items.*.quantity' => 'required|numeric|min:0.01',
-            'equipments.*.items.*.original_price' => 'required|numeric|min:0',
-            'equipments.*.items.*.unit_price' => 'required|numeric|min:0',
-            'equipments.*.items.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
-        ]);
+        $tenantId = $this->currentTenantId();
+        
+        try {
+            $quote = $this->service->createQuote($request->validated(), $tenantId, (int) auth()->id());
 
-        $quote = Quote::create([
-            'tenant_id' => auth()->user()->tenant_id,
-            'quote_number' => Quote::nextNumber(auth()->user()->tenant_id),
-            'customer_id' => $validated['customer_id'],
-            'seller_id' => $validated['seller_id'],
-            'valid_until' => $validated['valid_until'] ?? null,
-            'discount_percentage' => $validated['discount_percentage'] ?? 0,
-            'observations' => $validated['observations'] ?? null,
-            'internal_notes' => $validated['internal_notes'] ?? null,
-        ]);
-
-        foreach ($validated['equipments'] as $i => $eqData) {
-            $eq = $quote->equipments()->create([
-                'equipment_id' => $eqData['equipment_id'],
-                'description' => $eqData['description'] ?? null,
-                'sort_order' => $i,
-            ]);
-
-            foreach ($eqData['items'] as $j => $itemData) {
-                $eq->items()->create([
-                    ...$itemData,
-                    'sort_order' => $j,
-                ]);
-            }
+            return response()->json(
+                $quote->load(['customer', 'seller', 'equipments.equipment', 'equipments.items']),
+                201
+            );
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao criar orçamento'], 500);
         }
-
-        $quote->recalculateTotal();
-        AuditLog::log('created', "Orçamento {$quote->quote_number} criado", $quote);
-
-        return response()->json(
-            $quote->load(['customer', 'seller', 'equipments.equipment', 'equipments.items']),
-            201
-        );
     }
 
     public function show(Quote $quote): JsonResponse
@@ -110,32 +92,25 @@ class QuoteController extends Controller
         );
     }
 
-    public function update(Request $request, Quote $quote): JsonResponse
+    public function update(UpdateQuoteRequest $request, Quote $quote): JsonResponse
     {
-        if (!in_array($quote->status, ['draft', 'rejected'])) {
-            return response()->json(['message' => 'Só é possível editar orçamentos em rascunho ou rejeitados'], 422);
+        if ($error = $this->ensureQuoteMutable($quote)) {
+            return $error;
         }
 
-        $validated = $request->validate([
-            'customer_id' => 'sometimes|exists:customers,id',
-            'seller_id' => 'sometimes|exists:users,id',
-            'valid_until' => 'nullable|date',
-            'discount_percentage' => 'nullable|numeric|min:0|max:100',
-            'observations' => 'nullable|string',
-            'internal_notes' => 'nullable|string',
-        ]);
-
-        $quote->update($validated);
-        $quote->increment('revision');
-        $quote->recalculateTotal();
-
-        return response()->json($quote->fresh(['customer', 'seller', 'equipments.items']));
+        try {
+            $updatedQuote = $this->service->updateQuote($quote, $request->validated());
+            return response()->json($updatedQuote->fresh(['customer', 'seller', 'equipments.items']));
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao atualizar orçamento'], 500);
+        }
     }
 
     public function destroy(Quote $quote): JsonResponse
     {
-        if ($quote->status !== 'draft') {
-            return response()->json(['message' => 'Só é possível excluir orçamentos em rascunho'], 422);
+        if ($error = $this->ensureQuoteMutable($quote)) {
+            return $error;
         }
         $quote->delete();
         return response()->json(null, 204);
@@ -145,118 +120,95 @@ class QuoteController extends Controller
 
     public function send(Quote $quote): JsonResponse
     {
-        if ($quote->status !== 'draft') {
-            return response()->json(['message' => 'Orçamento precisa estar em rascunho para enviar'], 422);
+        try {
+            $this->service->sendQuote($quote);
+            return response()->json($quote);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao enviar orçamento'], 500);
         }
-        $quote->update(['status' => 'sent', 'sent_at' => now()]);
-        AuditLog::log('status_changed', "Orçamento {$quote->quote_number} enviado ao cliente", $quote);
-        return response()->json($quote);
     }
 
     public function approve(Quote $quote): JsonResponse
     {
-        if ($quote->status !== 'sent') {
-            return response()->json(['message' => 'Orçamento precisa estar enviado para aprovar'], 422);
+        try {
+            /** @var \App\Models\User $user */
+            $user = auth()->user();
+            $this->service->approveQuote($quote, $user);
+            return response()->json($quote);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao aprovar orçamento'], 500);
         }
-        $quote->update(['status' => 'approved', 'approved_at' => now()]);
-        AuditLog::log('status_changed', "Orçamento {$quote->quote_number} aprovado", $quote);
-        return response()->json($quote);
     }
 
     public function reject(Request $request, Quote $quote): JsonResponse
     {
-        if ($quote->status !== 'sent') {
-            return response()->json(['message' => 'Orçamento precisa estar enviado para rejeitar'], 422);
+        try {
+            $this->service->rejectQuote($quote, $request->get('reason'));
+            return response()->json($quote);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao rejeitar orçamento'], 500);
         }
-        $quote->update([
-            'status' => 'rejected',
-            'rejected_at' => now(),
-            'rejection_reason' => $request->get('reason'),
-        ]);
-        AuditLog::log('status_changed', "Orçamento {$quote->quote_number} rejeitado", $quote);
-        return response()->json($quote);
     }
 
     public function duplicate(Quote $quote): JsonResponse
     {
-        $newQuote = $quote->replicate(['quote_number', 'status', 'sent_at', 'approved_at', 'rejected_at']);
-        $newQuote->quote_number = Quote::nextNumber($quote->tenant_id);
-        $newQuote->status = 'draft';
-        $newQuote->save();
-
-        foreach ($quote->equipments as $eq) {
-            $newEq = $newQuote->equipments()->create($eq->only(['equipment_id', 'description', 'sort_order']));
-            foreach ($eq->items as $item) {
-                $newEq->items()->create($item->only([
-                    'type', 'product_id', 'service_id', 'custom_description',
-                    'quantity', 'original_price', 'unit_price', 'discount_percentage', 'sort_order',
-                ]));
-            }
+        try {
+            $newQuote = $this->service->duplicateQuote($quote);
+            return response()->json($newQuote->load(['customer', 'seller', 'equipments.items']), 201);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao duplicar orçamento'], 500);
         }
-
-        $newQuote->recalculateTotal();
-        AuditLog::log('created', "Orçamento {$newQuote->quote_number} duplicado de {$quote->quote_number}", $newQuote);
-
-        return response()->json($newQuote->load(['customer', 'seller', 'equipments.items']), 201);
     }
 
     public function convertToWorkOrder(Quote $quote): JsonResponse
     {
-        if ($quote->status !== 'approved') {
-            return response()->json(['message' => 'Orçamento precisa estar aprovado para converter'], 422);
-        }
-
-        $wo = WorkOrder::create([
-            'tenant_id' => $quote->tenant_id,
-            'customer_id' => $quote->customer_id,
-            'quote_id' => $quote->id,
-            'origin_type' => 'quote',
-            'seller_id' => $quote->seller_id,
-            'status' => 'open',
-            'priority' => 'normal',
-            'description' => $quote->observations ?? "Gerada a partir do orçamento {$quote->quote_number}",
-            'total' => $quote->total,
-        ]);
-
-        // Copy items
-    foreach ($quote->equipments as $eq) {
-        foreach ($eq->items as $item) {
-            $wo->items()->create([
-                'type' => $item->type,
-                'product_id' => $item->product_id,
-                'service_id' => $item->service_id,
-                'description' => $item->custom_description,
-                'quantity' => $item->quantity,
-                'unit_price' => $item->unit_price,
-                'discount_percentage' => $item->discount_percentage,
-                'subtotal' => $item->subtotal,
-            ]);
-        }
-
-        // Copiar equipamento para pivô da OS
-        if ($eq->equipment_id) {
-            $wo->equipmentsList()->syncWithoutDetaching([
-                $eq->equipment_id => ['observations' => $eq->observations ?? ''],
-            ]);
+        try {
+            $wo = $this->service->convertToWorkOrder($quote, (int) auth()->id());
+            return response()->json($wo->load('items'), 201);
+        } catch (\App\Exceptions\QuoteAlreadyConvertedException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'work_order' => $e->workOrder->only(['id', 'number', 'os_number', 'status', 'business_number']),
+            ], 409);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao converter orçamento em OS'], 500);
         }
     }
 
-    $quote->update(['status' => 'invoiced']);
-    AuditLog::log('created', "OS criada a partir do orçamento {$quote->quote_number}", $wo);
-
-        return response()->json($wo->load('items'), 201);
-    }
-
-    // ── Equipamentos ──
+    // ── Equipamentos, Itens e Fotos (Manteremos aqui por enquanto, pois são manipulacoes diretas de filhos) ──
+    // Poderiamos mover para o Service também, mas para manter o escopo focado na refatoração principal,
+    // vamos deixar métodos menores aqui se não forem complexos demais.
+    // Mas wait, a idea é limpar o controller. Vamos mover Add/Remove Equipment/Item para o service? 
+    // Sim, é melhor. Mas para não estourar o escopo do prompt agora, vou manter, e se o user pedir mais refatoração fazemos.
+    // O user pediu "via código... cada botao...". Então vamos manter o que já funciona bem e só encapsular transações.
 
     public function addEquipment(Request $request, Quote $quote): JsonResponse
     {
+        if ($error = $this->ensureQuoteMutable($quote)) {
+            return $error;
+        }
+
+        $tenantId = $this->currentTenantId();
         $validated = $request->validate([
-            'equipment_id' => 'required|exists:equipments,id',
+            'equipment_id' => ['required', Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'description' => 'nullable|string',
         ]);
 
         $eq = $quote->equipments()->create([
+            'tenant_id' => $tenantId,
             ...$validated,
             'sort_order' => $quote->equipments()->count(),
         ]);
@@ -266,19 +218,34 @@ class QuoteController extends Controller
 
     public function removeEquipment(Quote $quote, QuoteEquipment $equipment): JsonResponse
     {
-        $equipment->delete();
-        $quote->recalculateTotal();
+        if ($error = $this->ensureQuoteMutable($quote)) {
+            return $error;
+        }
+
+        if ($equipment->quote_id !== $quote->id) {
+            return response()->json(['message' => 'Equipamento não pertence a este orçamento'], 403);
+        }
+
+        DB::transaction(function () use ($equipment, $quote) {
+            $equipment->delete();
+            $quote->recalculateTotal();
+        });
+
         return response()->json(null, 204);
     }
 
-    // ── Itens ──
-
     public function addItem(Request $request, QuoteEquipment $equipment): JsonResponse
     {
+        $quote = $equipment->quote()->firstOrFail();
+        if ($error = $this->ensureQuoteMutable($quote)) {
+            return $error;
+        }
+
+        $tenantId = $this->currentTenantId();
         $validated = $request->validate([
             'type' => 'required|in:product,service',
-            'product_id' => 'nullable|exists:products,id',
-            'service_id' => 'nullable|exists:services,id',
+            'product_id' => ['nullable', 'required_if:type,product', Rule::exists('products', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'service_id' => ['nullable', 'required_if:type,service', Rule::exists('services', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'custom_description' => 'nullable|string',
             'quantity' => 'required|numeric|min:0.01',
             'original_price' => 'required|numeric|min:0',
@@ -286,27 +253,54 @@ class QuoteController extends Controller
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $item = $equipment->items()->create([
-            ...$validated,
-            'sort_order' => $equipment->items()->count(),
-        ]);
+        try {
+            $item = DB::transaction(function () use ($equipment, $tenantId, $validated) {
+                $item = $equipment->items()->create([
+                    'tenant_id' => $tenantId,
+                    ...$validated,
+                    'sort_order' => $equipment->items()->count(),
+                ]);
+                return $item;
+            });
 
-        return response()->json($item->load(['product', 'service']), 201);
+            return response()->json($item->load(['product', 'service']), 201);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar item'], 500);
+        }
     }
 
     public function removeItem(QuoteItem $item): JsonResponse
     {
-        $item->delete();
-        return response()->json(null, 204);
-    }
+        $quote = $item->quoteEquipment?->quote;
+        if ($quote && ($error = $this->ensureQuoteMutable($quote))) {
+            return $error;
+        }
 
-    // ── Fotos ──
+        try {
+            $item->delete(); // Recalculate triggered by model events
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover item'], 500);
+        }
+    }
 
     public function addPhoto(Request $request, Quote $quote): JsonResponse
     {
+        if ($error = $this->ensureQuoteMutable($quote)) {
+            return $error;
+        }
+
+        $tenantId = $this->currentTenantId();
         $request->validate([
             'file' => 'required|image|max:10240',
-            'quote_equipment_id' => 'required|exists:quote_equipments,id',
+            'quote_equipment_id' => [
+                'required',
+                Rule::exists('quote_equipments', 'id')->where(
+                    fn ($q) => $q->where('tenant_id', $tenantId)->where('quote_id', $quote->id)
+                ),
+            ],
             'caption' => 'nullable|string|max:255',
         ]);
 
@@ -315,8 +309,12 @@ class QuoteController extends Controller
             'public'
         );
 
+        if (!$path) {
+            return response()->json(['message' => 'Erro ao salvar arquivo da foto'], 500);
+        }
+
         $photo = QuotePhoto::create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => $tenantId,
             'quote_equipment_id' => $request->quote_equipment_id,
             'path' => $path,
             'caption' => $request->caption,
@@ -328,6 +326,11 @@ class QuoteController extends Controller
 
     public function removePhoto(QuotePhoto $photo): JsonResponse
     {
+        $quote = $photo->quoteEquipment?->quote;
+        if ($quote && ($error = $this->ensureQuoteMutable($quote))) {
+            return $error;
+        }
+
         \Illuminate\Support\Facades\Storage::disk('public')->delete($photo->path);
         $photo->delete();
         return response()->json(null, 204);
@@ -337,21 +340,24 @@ class QuoteController extends Controller
 
     public function summary(): JsonResponse
     {
-        $base = Quote::query();
+        $tenantId = $this->currentTenantId();
+        $base = Quote::where('tenant_id', $tenantId);
         return response()->json([
-            'draft' => (clone $base)->where('status', 'draft')->count(),
-            'sent' => (clone $base)->where('status', 'sent')->count(),
-            'approved' => (clone $base)->where('status', 'approved')->count(),
-            'total_month' => (clone $base)->whereMonth('created_at', now()->month)->sum('total'),
+            'draft' => (clone $base)->where('status', Quote::STATUS_DRAFT)->count(),
+            'sent' => (clone $base)->where('status', Quote::STATUS_SENT)->count(),
+            'approved' => (clone $base)->where('status', Quote::STATUS_APPROVED)->count(),
+            'invoiced' => (clone $base)->where('status', Quote::STATUS_INVOICED)->count(),
+            'total_month' => (clone $base)->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->sum('total'),
             'conversion_rate' => $this->getConversionRate(),
         ]);
     }
 
     private function getConversionRate(): float
     {
-        $sent = Quote::whereIn('status', ['approved', 'rejected', 'invoiced'])->count();
+        $tenantId = $this->currentTenantId();
+        $sent = Quote::where('tenant_id', $tenantId)->whereIn('status', [Quote::STATUS_APPROVED, Quote::STATUS_REJECTED, Quote::STATUS_INVOICED])->count();
         if ($sent === 0) return 0;
-        $approved = Quote::whereIn('status', ['approved', 'invoiced'])->count();
+        $approved = Quote::where('tenant_id', $tenantId)->whereIn('status', [Quote::STATUS_APPROVED, Quote::STATUS_INVOICED])->count();
         return round(($approved / $sent) * 100, 1);
     }
 
@@ -376,21 +382,17 @@ class QuoteController extends Controller
             return response()->json(['message' => 'Token inválido'], 403);
         }
 
-        if ($quote->status !== 'sent') {
-            return response()->json(['message' => 'Orçamento não está disponível para aprovação'], 422);
+        try {
+            $this->service->publicApprove($quote);
+            return response()->json(['message' => 'Orçamento aprovado com sucesso', 'quote' => $quote->fresh()]);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao aprovar orçamento'], 500);
         }
-
-        if ($quote->isExpired()) {
-            return response()->json(['message' => 'Orçamento expirado'], 422);
-        }
-
-        $quote->update([
-            'status' => 'approved',
-            'approved_at' => now(),
-        ]);
-
-        AuditLog::log('status_changed', "Orçamento {$quote->quote_number} aprovado pelo cliente via link público", $quote);
-
-        return response()->json(['message' => 'Orçamento aprovado com sucesso', 'quote' => $quote->fresh()]);
     }
 }
+
+
+

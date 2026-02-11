@@ -15,17 +15,15 @@ class UserController extends Controller
         $user->load('currentTenant');
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'avatar' => $user->avatar,
-                'tenant' => $user->currentTenant,
-                'permissions' => $user->getAllPermissions()->pluck('name'),
-                'roles' => $user->getRoleNames(),
-                'last_login_at' => $user->last_login_at,
-            ],
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'tenant' => $user->currentTenant,
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'roles' => $user->getRoleNames(),
+            'last_login_at' => $user->last_login_at,
+            'created_at' => $user->created_at,
         ]);
     }
 
@@ -45,7 +43,8 @@ class UserController extends Controller
             if (!Hash::check($validated['current_password'], $user->password)) {
                 return response()->json(['message' => 'Senha atual incorreta.'], 422);
             }
-            $validated['password'] = Hash::make($validated['password']);
+            // FIX-02: NÃO usar Hash::make() — o cast 'hashed' do Model já faz o hash.
+            // $validated['password'] já será hasheado pelo Model ao persistir.
         }
 
         unset($validated['current_password']);
@@ -60,5 +59,27 @@ class UserController extends Controller
                 'phone' => $user->phone,
             ],
         ]);
+    }
+
+    /**
+     * FIX-B5: Alterar senha do próprio usuário autenticado.
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return response()->json(['message' => 'Senha atual incorreta.'], 422);
+        }
+
+        // O cast 'hashed' do Model já faz o hash automaticamente
+        $user->update(['password' => $validated['new_password']]);
+
+        return response()->json(['message' => 'Senha alterada com sucesso.']);
     }
 }

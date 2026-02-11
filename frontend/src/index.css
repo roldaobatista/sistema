@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 /* ============================================
-   DESIGN SYSTEM — Sistema de Ordem de Serviço
+   KALIBRIUM Design System — "Laboratório de Controle"
+   Precision · Traceability · Confidence
    ============================================ */
 
 @theme {
-  /* --- Brand Colors --- */
+  /* ── Brand (Azul-Instrumento, hue 245) ── */
   --color-brand-50: oklch(0.97 0.01 245);
   --color-brand-100: oklch(0.93 0.03 245);
   --color-brand-200: oklch(0.86 0.06 245);
@@ -18,97 +19,114 @@
   --color-brand-900: oklch(0.27 0.09 245);
   --color-brand-950: oklch(0.20 0.06 245);
 
-  /* --- Neutral (Slate-based) --- */
-  --color-surface-50: oklch(0.98 0.005 260);
-  --color-surface-100: oklch(0.96 0.008 260);
-  --color-surface-200: oklch(0.92 0.01 260);
-  --color-surface-300: oklch(0.87 0.01 260);
-  --color-surface-400: oklch(0.71 0.01 260);
-  --color-surface-500: oklch(0.55 0.01 260);
-  --color-surface-600: oklch(0.45 0.01 260);
-  --color-surface-700: oklch(0.37 0.01 260);
-  --color-surface-800: oklch(0.27 0.01 260);
-  --color-surface-900: oklch(0.21 0.01 260);
-  --color-surface-950: oklch(0.13 0.01 260);
+  /* ── Surface (Grafite — bancadas metálicas) ── */
+  --color-surface-0: oklch(1 0 0);
+  --color-surface-50: oklch(0.985 0.003 260);
+  --color-surface-100: oklch(0.965 0.005 260);
+  --color-surface-200: oklch(0.925 0.008 260);
+  --color-surface-300: oklch(0.87 0.008 260);
+  --color-surface-400: oklch(0.70 0.008 260);
+  --color-surface-500: oklch(0.55 0.008 260);
+  --color-surface-600: oklch(0.44 0.008 260);
+  --color-surface-700: oklch(0.37 0.008 260);
+  --color-surface-800: oklch(0.27 0.008 260);
+  --color-surface-900: oklch(0.20 0.008 260);
+  --color-surface-950: oklch(0.14 0.008 260);
 
-  /* --- Status Colors --- */
+  /* ── Semantic (Calibration-world) ── */
   --color-success: oklch(0.60 0.17 145);
   --color-warning: oklch(0.75 0.15 75);
   --color-danger: oklch(0.55 0.20 27);
-  --color-info: oklch(0.60 0.15 220);
+  --color-info: oklch(0.60 0.15 245);
 
-  /* --- Fonts --- */
+  /* ── Typography ── */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 
-  /* --- Radius --- */
+  /* ── Radius (tight = technical) ── */
+  --radius-xs: 0.25rem;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
 
-  /* --- Shadows --- */
-  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.06);
-  --shadow-elevated: 0 4px 12px oklch(0 0 0 / 0.12), 0 2px 4px oklch(0 0 0 / 0.06);
-  --shadow-modal: 0 12px 40px oklch(0 0 0 / 0.2), 0 4px 12px oklch(0 0 0 / 0.08);
+  /* ── Shadows (minimal — depth via borders, not shadows) ── */
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-elevated: 0 2px 8px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-modal: 0 8px 32px oklch(0 0 0 / 0.16), 0 2px 8px oklch(0 0 0 / 0.06);
 
-  /* --- Animations --- */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ── Animations (professional ease-out, no spring) ── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* --- Sidebar --- */
-  --sidebar-width: 16rem;
-  --sidebar-collapsed: 4.5rem;
-  --topbar-height: 3.5rem;
+  /* ── Layout ── */
+  --sidebar-width: 15.5rem;
+  --sidebar-collapsed: 4rem;
+  --topbar-height: 3.25rem;
 }
 
-/* --- Base layer --- */
+/* ── Base Layer ── */
 @layer base {
   html {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.011em;
   }
 
   body {
     @apply bg-surface-50 text-surface-900;
   }
 
-  /* Dark mode */
-  .dark body {
-    @apply bg-surface-950 text-surface-100;
+  /* Tabular numbers for data */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* --- Utilities --- */
+/* ── Border Tokens (RGBA progression) ── */
+@utility border-subtle {
+  border-color: oklch(0 0 0 / 0.06);
+}
+
+@utility border-default {
+  border-color: oklch(0 0 0 / 0.09);
+}
+
+@utility border-emphasis {
+  border-color: oklch(0 0 0 / 0.14);
+}
+
+@utility border-strong {
+  border-color: oklch(0 0 0 / 0.20);
+}
+
+/* ── Glass ── */
 @utility glass {
-  backdrop-filter: blur(12px) saturate(160%);
-  background-color: oklch(1 0 0 / 0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  background-color: oklch(1 0 0 / 0.78);
 }
 
-@utility glass-dark {
-  backdrop-filter: blur(12px) saturate(160%);
-  background-color: oklch(0.15 0.01 260 / 0.72);
-}
-
-/* Focus ring global */
+/* ── Focus Ring ── */
 @utility focus-ring {
-  @apply outline-2 outline-offset-2 outline-brand-500;
+  @apply outline-2 outline-offset-2 outline-brand-500/50;
 }
 
-/* --- Animations --- */
+/* ── Animations ── */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
 
@@ -119,23 +137,23 @@
 
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  50% { opacity: 0.5; }
 }
 
 @utility animate-fade-in {
-  animation: fade-in 0.3s var(--ease-smooth) both;
+  animation: fade-in 0.2s var(--ease-out) both;
 }
 
 @utility animate-slide-up {
-  animation: slide-up 0.4s var(--ease-spring) both;
+  animation: slide-up 0.3s var(--ease-out) both;
 }
 
 @utility animate-scale-in {
-  animation: scale-in 0.25s var(--ease-spring) both;
+  animation: scale-in 0.2s var(--ease-out) both;
 }
 
 @utility animate-shimmer {
-  background: linear-gradient(90deg, oklch(0.94 0 0) 25%, oklch(0.88 0 0) 50%, oklch(0.94 0 0) 75%);
+  background: linear-gradient(90deg, oklch(0.96 0 0) 25%, oklch(0.92 0 0) 50%, oklch(0.96 0 0) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -144,20 +162,28 @@
   animation: pulse-soft 2s var(--ease-smooth) infinite;
 }
 
-/* Stagger delays for cards */
+/* ── Stagger Delays ── */
 @layer utilities {
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.1s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.2s; }
-  .stagger-5 { animation-delay: 0.25s; }
-  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-1 { animation-delay: 0.04s; }
+  .stagger-2 { animation-delay: 0.08s; }
+  .stagger-3 { animation-delay: 0.12s; }
+  .stagger-4 { animation-delay: 0.16s; }
+  .stagger-5 { animation-delay: 0.20s; }
+  .stagger-6 { animation-delay: 0.24s; }
 }
 
-/* Skeleton loader */
+/* ── Skeleton Loader ── */
 @utility skeleton {
-  background: linear-gradient(90deg, oklch(0.94 0.005 260) 25%, oklch(0.90 0.005 260) 50%, oklch(0.94 0.005 260) 75%);
+  background: linear-gradient(90deg, oklch(0.94 0.003 260) 25%, oklch(0.90 0.003 260) 50%, oklch(0.94 0.003 260) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-md);
+}
+
+/* ── Scrollbar (thin, professional) ── */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.80 0.005 260) transparent;
+  }
 }

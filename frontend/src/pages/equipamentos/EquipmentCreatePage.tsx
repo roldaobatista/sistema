@@ -36,6 +36,7 @@ export default function EquipmentCreatePage() {
         tag: '',
         is_critical: false,
         notes: '',
+        purchase_value: '',
     })
 
     const mutation = useMutation({
@@ -50,9 +51,10 @@ export default function EquipmentCreatePage() {
         mutation.mutate({
             ...form,
             customer_id: +form.customer_id || undefined,
-            capacity: form.capacity ? +form.capacity : undefined,
-            resolution: form.resolution ? +form.resolution : undefined,
-            calibration_interval_months: form.calibration_interval_months ? +form.calibration_interval_months : undefined,
+            capacity: form.capacity ? +form.capacity : null,
+            resolution: form.resolution ? +form.resolution : null,
+            purchase_value: form.purchase_value ? +form.purchase_value : null,
+            calibration_interval_months: form.calibration_interval_months ? +form.calibration_interval_months : null,
         })
     }
 
@@ -60,20 +62,20 @@ export default function EquipmentCreatePage() {
     const classes = constants?.precision_classes ?? {}
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div className="flex items-center gap-4">
                 <button onClick={() => navigate('/equipamentos')} className="rounded-lg border border-surface-200 p-2 hover:bg-surface-50">
                     <ArrowLeft size={18} />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Novo Equipamento</h1>
-                    <p className="text-sm text-surface-500">Cadastrar equipamento / instrumento de medição</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Novo Equipamento</h1>
+                    <p className="text-[13px] text-surface-500">Cadastrar equipamento / instrumento de medição</p>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Identificação */}
-                <div className="rounded-xl border border-surface-200 bg-white p-6 shadow-card">
+                <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
                     <h3 className="mb-4 flex items-center gap-2 font-semibold text-surface-900">
                         <Scale size={18} className="text-brand-500" />
                         Identificação
@@ -124,7 +126,7 @@ export default function EquipmentCreatePage() {
                 </div>
 
                 {/* Especificações Técnicas */}
-                <div className="rounded-xl border border-surface-200 bg-white p-6 shadow-card">
+                <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
                     <h3 className="mb-4 font-semibold text-surface-900">Especificações Técnicas</h3>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
@@ -158,14 +160,14 @@ export default function EquipmentCreatePage() {
                         <div className="flex items-end">
                             <label className="flex cursor-pointer items-center gap-2">
                                 <input type="checkbox" checked={form.is_critical} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('is_critical', e.target.checked)} className="accent-red-600" />
-                                <span className="text-sm font-medium text-surface-700">Equipamento Crítico</span>
+                                <span className="text-[13px] font-medium text-surface-700">Equipamento Crítico</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 {/* Observações */}
-                <div className="rounded-xl border border-surface-200 bg-white p-6 shadow-card">
+                <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
                     <h3 className="mb-4 font-semibold text-surface-900">Observações</h3>
                     <textarea
                         value={form.notes}

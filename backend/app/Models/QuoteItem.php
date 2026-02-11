@@ -8,7 +8,9 @@ use App\Models\Concerns\BelongsToTenant;
 
 class QuoteItem extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, \Illuminate\Database\Eloquent\Factories\HasFactory;
+
+    protected $appends = ['description'];
 
     protected $fillable = [
         'tenant_id', 'quote_equipment_id', 'type', 'product_id', 'service_id',
@@ -38,11 +40,11 @@ class QuoteItem extends Model
         });
 
         static::saved(function (self $item) {
-            $item->quoteEquipment->quote->recalculateTotal();
+            $item->quoteEquipment?->quote?->recalculateTotal();
         });
 
         static::deleted(function (self $item) {
-            $item->quoteEquipment->quote->recalculateTotal();
+            $item->quoteEquipment?->quote?->recalculateTotal();
         });
     }
 
@@ -59,5 +61,22 @@ class QuoteItem extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function getDescriptionAttribute(): ?string
+    {
+        if (!empty($this->custom_description)) {
+            return $this->custom_description;
+        }
+
+        if ($this->product_id && $this->product) {
+            return $this->product->name;
+        }
+
+        if ($this->service_id && $this->service) {
+            return $this->service->name;
+        }
+
+        return null;
     }
 }

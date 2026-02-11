@@ -20,7 +20,10 @@ export function useCurrentTenant() {
         mutationFn: (tenantId: number) => api.post('/switch-tenant', { tenant_id: tenantId }),
         onSuccess: async () => {
             await fetchMe()
-            qc.invalidateQueries()
+            qc.invalidateQueries({ queryKey: ['my-tenants'] })
+            qc.invalidateQueries({ queryKey: ['tenants'] })
+            qc.invalidateQueries({ queryKey: ['tenants-stats'] })
+            qc.invalidateQueries({ queryKey: ['branches'] })
         },
     })
 

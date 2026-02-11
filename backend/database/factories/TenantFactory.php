@@ -16,7 +16,7 @@ class TenantFactory extends Factory
             'document' => fake()->numerify('##.###.###/####-##'),
             'email' => fake()->companyEmail(),
             'phone' => fake()->phoneNumber(),
-            'status' => 'active',
+            'status' => Tenant::STATUS_ACTIVE,
         ];
     }
 }

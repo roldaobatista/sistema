@@ -9,9 +9,16 @@ use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(Request $request): JsonResponse
     {
-        $query = Payment::with(['receiver:id,name']);
+        $query = Payment::with(['receiver:id,name'])
+            ->where('tenant_id', $this->tenantId($request));
 
         if ($method = $request->get('payment_method')) {
             $query->where('payment_method', $method);
@@ -54,7 +61,8 @@ class PaymentController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        $query = Payment::query();
+        $query = Payment::query()
+            ->where('tenant_id', $this->tenantId($request));
 
         if ($from = $request->get('date_from')) {
             $query->where('payment_date', '>=', $from);

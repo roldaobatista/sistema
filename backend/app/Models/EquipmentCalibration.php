@@ -13,7 +13,9 @@ class EquipmentCalibration extends Model
     protected $fillable = [
         'tenant_id', 'equipment_id', 'calibration_date', 'next_due_date',
         'calibration_type', 'result', 'laboratory', 'certificate_number',
-        'certificate_file', 'uncertainty', 'errors_found',
+        'certificate_file', 'certificate_pdf_path', 'standard_used',
+        'error_found', 'uncertainty', 'errors_found', 'technician_notes',
+        'temperature', 'humidity', 'pressure',
         'corrections_applied', 'performed_by', 'approved_by',
         'cost', 'work_order_id', 'notes',
     ];
@@ -24,6 +26,11 @@ class EquipmentCalibration extends Model
             'calibration_date' => 'date',
             'next_due_date' => 'date',
             'errors_found' => 'array',
+            'error_found' => 'decimal:4',
+            'uncertainty' => 'decimal:4',
+            'temperature' => 'decimal:2',
+            'humidity' => 'decimal:2',
+            'pressure' => 'decimal:2',
             'cost' => 'decimal:2',
         ];
     }

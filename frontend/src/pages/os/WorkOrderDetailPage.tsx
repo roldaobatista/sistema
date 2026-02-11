@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    ArrowLeft, Clock, User, Phone, Mail, MapPin,
+    ArrowLeft, Clock, User, Phone, Mail, MapPin, ClipboardList,
     Briefcase, Package, Plus, Trash2, Pencil, Download, Save, X,
     CheckCircle2, AlertTriangle, Play, Pause, Truck, XCircle,
-    DollarSign, CalendarDays, LinkIcon,
+    DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -22,6 +22,7 @@ const statusConfig: Record<string, { label: string; variant: any; icon: any }> =
     waiting_approval: { label: 'Aguard. Aprovação', variant: 'brand', icon: Pause },
     completed: { label: 'Concluída', variant: 'success', icon: CheckCircle2 },
     delivered: { label: 'Entregue', variant: 'success', icon: Truck },
+    invoiced: { label: 'Faturada', variant: 'brand', icon: DollarSign },
     cancelled: { label: 'Cancelada', variant: 'danger', icon: XCircle },
 }
 
@@ -36,15 +37,19 @@ export function WorkOrderDetailPage() {
     const { id } = useParams()
     const navigate = useNavigate()
     const qc = useQueryClient()
+
+    // State
     const [showStatusModal, setShowStatusModal] = useState(false)
     const [newStatus, setNewStatus] = useState('')
     const [statusNotes, setStatusNotes] = useState('')
+
     const [showItemModal, setShowItemModal] = useState(false)
     const [itemForm, setItemForm] = useState({
         type: 'service' as 'product' | 'service',
         reference_id: '' as string | number, description: '',
         quantity: '1', unit_price: '0', discount: '0',
     })
+    const [editingItem, setEditingItem] = useState<any>(null)
 
     // Inline editing states
     const [isEditing, setIsEditing] = useState(false)
@@ -52,9 +57,10 @@ export function WorkOrderDetailPage() {
         description: '', priority: '', technical_report: '', internal_notes: '',
     })
 
+    // Queries
     const { data: res, isLoading } = useQuery({
         queryKey: ['work-order', id],
-        queryFn: () => api.get(`/ work - orders / ${id} `),
+        queryFn: () => api.get(`/work-orders/${id}`),
     })
 
     const { data: productsRes } = useQuery({
@@ -67,17 +73,30 @@ export function WorkOrderDetailPage() {
         queryFn: () => api.get('/services', { params: { per_page: 100, is_active: true } }),
     })
 
+    const { data: checklistRes } = useQuery({
+        queryKey: ['wo-checklist', id],
+        queryFn: () => api.get(`/work-orders/${id}/checklist-responses`),
+    })
+    const checklistItems: any[] = checklistRes?.data?.data ?? []
+
     const order = res?.data
     const products = productsRes?.data?.data ?? []
     const services = servicesRes?.data?.data ?? []
 
+    // Mutations
+    const saveChecklistMut = useMutation({
+        mutationFn: (responses: any[]) => api.post(`/work-orders/${id}/checklist-responses`, { responses }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['wo-checklist', id] }),
+    })
+
     const statusMut = useMutation({
         mutationFn: (data: { status: string; notes: string }) =>
-            api.post(`/ work - orders / ${id}/status`, data),
+            api.post(`/work-orders/${id}/status`, data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
             setShowStatusModal(false)
         },
+        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao alterar status'),
     })
 
     const addItemMut = useMutation({
@@ -86,26 +105,54 @@ export function WorkOrderDetailPage() {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
             setShowItemModal(false)
         },
+        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao adicionar item'),
+    })
+
+    const updateItemMut = useMutation({
+        mutationFn: (data: any) => api.put(`/work-orders/${id}/items/${editingItem?.id}`, data),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            setShowItemModal(false)
+            setEditingItem(null)
+        },
+        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao atualizar item'),
     })
 
     const delItemMut = useMutation({
         mutationFn: (itemId: number) => api.delete(`/work-orders/${id}/items/${itemId}`),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['work-order', id] }),
+        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao remover item'),
     })
 
     const updateMut = useMutation({
         mutationFn: (data: any) => api.put(`/work-orders/${id}`, data),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['work-order', id] }),
+        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao salvar alterações'),
     })
 
     const signMut = useMutation({
         mutationFn: (data: { signature: string; signer_name: string }) =>
             api.post(`/work-orders/${id}/signature`, data),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['work-order', id] }),
+        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao salvar assinatura'),
     })
 
+    // Helpers
+    const downloadPdf = async () => {
+        const response = await api.get(`/work-orders/${id}/pdf`, { responseType: 'blob' })
+        const blob = new Blob([response.data], { type: 'application/pdf' })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `os-${id}.pdf`
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        window.URL.revokeObjectURL(url)
+    }
+
     if (isLoading || !order) {
-        return <div className="py-16 text-center text-sm text-surface-500">Carregando...</div>
+        return <div className="py-16 text-center text-[13px] text-surface-500">Carregando...</div>
     }
 
     const formatBRL = (v: string | number) =>
@@ -119,8 +166,21 @@ export function WorkOrderDetailPage() {
     const sc = statusConfig[order.status] ?? statusConfig.open
     const StatusIcon = sc.icon
 
-    const openItemForm = () => {
-        setItemForm({ type: 'service', reference_id: '', description: '', quantity: '1', unit_price: '0', discount: '0' })
+    const openItemForm = (item?: any) => {
+        if (item) {
+            setEditingItem(item)
+            setItemForm({
+                type: item.type,
+                reference_id: item.reference_id ?? '',
+                description: item.description,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                discount: item.discount,
+            })
+        } else {
+            setEditingItem(null)
+            setItemForm({ type: 'service', reference_id: '', description: '', quantity: '1', unit_price: '0', discount: '0' })
+        }
         setShowItemModal(true)
     }
 
@@ -152,7 +212,7 @@ export function WorkOrderDetailPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -161,7 +221,7 @@ export function WorkOrderDetailPage() {
                     </button>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold text-surface-900">{order.number}</h1>
+                            <h1 className="text-lg font-semibold text-surface-900 tracking-tight">{order.business_number ?? order.os_number ?? order.number}</h1>
                             <Badge variant={sc.variant} dot>{sc.label}</Badge>
                             {order.priority !== 'normal' && (
                                 <Badge variant={priorityConfig[order.priority]?.variant}>
@@ -170,7 +230,7 @@ export function WorkOrderDetailPage() {
                                 </Badge>
                             )}
                         </div>
-                        <p className="text-sm text-surface-500">Criada em {formatDate(order.created_at)}</p>
+                        <p className="text-[13px] text-surface-500">Criada em {formatDate(order.created_at)}</p>
                         {/* Rastreabilidade */}
                         <div className="mt-1 flex items-center gap-2">
                             {order.quote_id && (
@@ -204,10 +264,10 @@ export function WorkOrderDetailPage() {
                         </>
                     )}
                     <Button variant="outline" icon={<Download className="h-4 w-4" />}
-                        onClick={() => window.open(`${api.defaults.baseURL}/work-orders/${id}/pdf`, '_blank')}>
+                        onClick={downloadPdf}>
                         Baixar PDF
                     </Button>
-                    <Button onClick={() => { setNewStatus(order.status); setStatusNotes(''); setShowStatusModal(true) }}>
+                    <Button onClick={() => { setNewStatus(''); setStatusNotes(''); setShowStatusModal(true) }}>
                         Alterar Status
                     </Button>
                 </div>
@@ -215,23 +275,23 @@ export function WorkOrderDetailPage() {
 
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-5">
                     {/* Descrição */}
-                    <div className="rounded-xl border border-surface-200 bg-white p-5 shadow-card">
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <h3 className="text-sm font-semibold text-surface-900 mb-2">Defeito Relatado</h3>
                         {isEditing ? (
                             <textarea
                                 value={editForm.description}
                                 onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
                                 rows={4}
-                                className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                             />
                         ) : (
                             <p className="text-sm text-surface-700 whitespace-pre-wrap">{order.description}</p>
                         )}
 
                         {isEditing && (
-                            <div className="mt-4 border-t border-surface-200 pt-4">
+                            <div className="mt-4 border-t border-subtle pt-4">
                                 <h3 className="text-sm font-semibold text-surface-900 mb-2">Prioridade</h3>
                                 <div className="flex gap-2">
                                     {Object.entries(priorityConfig).map(([key, conf]) => (
@@ -247,7 +307,7 @@ export function WorkOrderDetailPage() {
                             </div>
                         )}
 
-                        <div className="mt-4 border-t border-surface-200 pt-4">
+                        <div className="mt-4 border-t border-subtle pt-4">
                             <h3 className="text-sm font-semibold text-surface-900 mb-2">Laudo Técnico</h3>
                             {isEditing ? (
                                 <textarea
@@ -255,7 +315,7 @@ export function WorkOrderDetailPage() {
                                     onChange={e => setEditForm(p => ({ ...p, technical_report: e.target.value }))}
                                     rows={3}
                                     placeholder="Escreva o laudo técnico..."
-                                    className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                                    className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                                 />
                             ) : (
                                 order.technical_report
@@ -264,7 +324,7 @@ export function WorkOrderDetailPage() {
                             )}
                         </div>
 
-                        <div className="mt-4 border-t border-surface-200 pt-4">
+                        <div className="mt-4 border-t border-subtle pt-4">
                             <h3 className="text-sm font-semibold text-surface-500 mb-1">Observações Internas</h3>
                             {isEditing ? (
                                 <textarea
@@ -272,7 +332,7 @@ export function WorkOrderDetailPage() {
                                     onChange={e => setEditForm(p => ({ ...p, internal_notes: e.target.value }))}
                                     rows={2}
                                     placeholder="Notas internas..."
-                                    className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                                    className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                                 />
                             ) : (
                                 order.internal_notes
@@ -282,11 +342,11 @@ export function WorkOrderDetailPage() {
                         </div>
                     </div>
 
-                    {/* Itens */}
-                    <div className="rounded-xl border border-surface-200 bg-white p-5 shadow-card">
+                    {/* Itens List Section */}
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-semibold text-surface-900">Itens</h3>
-                            <Button variant="ghost" size="sm" onClick={openItemForm} icon={<Plus className="h-4 w-4" />}>
+                            <Button variant="ghost" size="sm" onClick={() => openItemForm()} icon={<Plus className="h-4 w-4" />}>
                                 Adicionar
                             </Button>
                         </div>
@@ -307,15 +367,32 @@ export function WorkOrderDetailPage() {
                                             <p className="text-xs text-surface-400">{item.quantity} × {formatBRL(item.unit_price)}</p>
                                         </div>
                                         <span className="text-sm font-semibold text-surface-900">{formatBRL(item.total)}</span>
-                                        <Button variant="ghost" size="sm" onClick={() => { if (confirm('Remover?')) delItemMut.mutate(item.id) }}>
-                                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                                        </Button>
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="sm" onClick={() => openItemForm(item)}>
+                                                <Pencil className="h-3.5 w-3.5 text-surface-500" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={() => { if (confirm('Remover?')) delItemMut.mutate(item.id) }}>
+                                                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
-                                <div className="flex items-center justify-between border-t border-surface-200 pt-3 mt-3">
-                                    <span className="text-sm font-medium text-surface-600">Desconto</span>
-                                    <span className="text-sm text-surface-600">{formatBRL(order.discount)}</span>
+                                <div className="flex items-center justify-between border-t border-subtle pt-3 mt-3">
+                                    <span className="text-sm font-medium text-surface-600">Desconto fixo</span>
+                                    <span className="text-[13px] text-surface-600">{formatBRL(order.discount ?? 0)}</span>
                                 </div>
+                                {parseFloat(order.discount_percentage ?? 0) > 0 && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium text-surface-600">Desconto (%)</span>
+                                        <span className="text-[13px] text-surface-600">{order.discount_percentage}% ({formatBRL(order.discount_amount ?? 0)})</span>
+                                    </div>
+                                )}
+                                {parseFloat(order.displacement_value ?? 0) > 0 && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium text-surface-600">Deslocamento</span>
+                                        <span className="text-[13px] text-emerald-600">+ {formatBRL(order.displacement_value)}</span>
+                                    </div>
+                                )}
                                 <div className="flex items-center justify-between">
                                     <span className="text-base font-bold text-surface-900">Total</span>
                                     <span className="text-base font-bold text-brand-600">{formatBRL(order.total)}</span>
@@ -324,207 +401,198 @@ export function WorkOrderDetailPage() {
                         )}
                     </div>
 
-                    {/* Timeline */}
-                    <div className="rounded-xl border border-surface-200 bg-white p-5 shadow-card">
-                        <h3 className="text-sm font-semibold text-surface-900 mb-4">Timeline</h3>
-                        <div className="relative ml-3 space-y-0">
-                            {order.status_history?.map((entry: any, i: number) => {
-                                const entryConf = statusConfig[entry.to_status] ?? statusConfig.open
-                                const EntryIcon = entryConf.icon
-                                return (
-                                    <div key={entry.id} className="relative pb-6 pl-6">
-                                        {i < order.status_history.length - 1 && (
-                                            <span className="absolute left-[7px] top-5 bottom-0 w-px bg-surface-200" />
-                                        )}
-                                        <div className={cn('absolute left-0 top-0.5 flex h-4 w-4 items-center justify-center rounded-full',
-                                            `bg-${entryConf.variant === 'info' ? 'sky' : entryConf.variant === 'warning' ? 'amber' : entryConf.variant === 'success' ? 'emerald' : entryConf.variant === 'danger' ? 'red' : 'surface'}-100`)}>
-                                            <EntryIcon className="h-2.5 w-2.5 text-surface-600" />
+                    {/* Checklist Responses */}
+                    {checklistItems.length > 0 && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
+                                    <ClipboardList className="h-4 w-4 text-brand-500" />
+                                    Checklist
+                                </h3>
+                                <Badge variant="outline">{checklistItems.length} itens</Badge>
+                            </div>
+                            <div className="space-y-2">
+                                {checklistItems.map((resp: any) => (
+                                    <div key={resp.id} className="flex items-start gap-3 rounded-lg border border-surface-100 p-3">
+                                        <div className="flex-shrink-0 mt-0.5">
+                                            {resp.value === 'true' || resp.value === 'sim' || resp.value === 'ok' ? (
+                                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                            ) : resp.value === 'false' || resp.value === 'não' || resp.value === 'nok' ? (
+                                                <XCircle className="h-4 w-4 text-red-500" />
+                                            ) : (
+                                                <ClipboardList className="h-4 w-4 text-surface-400" />
+                                            )}
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant={entryConf.variant} className="text-[10px]">{entryConf.label}</Badge>
-                                                <span className="text-xs text-surface-400">{formatDate(entry.created_at)}</span>
-                                            </div>
-                                            <p className="mt-0.5 text-xs text-surface-500">
-                                                por <span className="font-medium">{entry.user?.name}</span>
-                                                {entry.notes && <> — {entry.notes}</>}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-surface-800">
+                                                {resp.item?.label ?? resp.item?.name ?? `Item #${resp.checklist_item_id}`}
                                             </p>
+                                            {resp.value && resp.value !== 'true' && resp.value !== 'false' && resp.value !== 'sim' && resp.value !== 'não' && resp.value !== 'ok' && resp.value !== 'nok' && (
+                                                <p className="text-xs text-surface-600 mt-0.5">{resp.value}</p>
+                                            )}
+                                            {resp.notes && (
+                                                <p className="text-xs text-surface-400 italic mt-0.5">{resp.notes}</p>
+                                            )}
                                         </div>
                                     </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar Info */}
-                <div className="space-y-4">
-                    {/* Cliente */}
-                    <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">Cliente</h3>
-                        <p className="text-sm font-medium text-surface-900">{order.customer?.name}</p>
-                        {order.customer?.phone && (
-                            <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><Phone className="h-3 w-3" />{order.customer.phone}</p>
-                        )}
-                        {order.customer?.email && (
-                            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-surface-500"><Mail className="h-3 w-3" />{order.customer.email}</p>
-                        )}
-                    </div>
-
-                    {/* Equipamento */}
-                    {order.equipment && (
-                        <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">Equipamento</h3>
-                            <p className="text-sm font-medium text-surface-900">{order.equipment.type}</p>
-                            {order.equipment.brand && <p className="text-xs text-surface-500">{order.equipment.brand} {order.equipment.model}</p>}
-                            {order.equipment.serial_number && <p className="text-xs text-surface-400 mt-1">S/N: {order.equipment.serial_number}</p>}
+                                ))}
+                            </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Responsáveis */}
-                    <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">Responsáveis</h3>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="text-surface-500">Criada por</span>
-                                <span className="font-medium text-surface-700">{order.creator?.name}</span>
+                {/* Sidebar */}
+                <div className="space-y-6">
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                            <User className="h-4 w-4 text-brand-500" />
+                            Cliente
+                        </h3>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-xs text-surface-500">Nome</p>
+                                <p className="font-medium text-surface-900">{order.customer?.name}</p>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-surface-500">Técnico</span>
-                                <span className="font-medium text-surface-700">{order.assignee?.name ?? '—'}</span>
+                            <div>
+                                <p className="text-xs text-surface-500">Documento</p>
+                                <p className="font-medium text-surface-900">{order.customer?.document || '—'}</p>
                             </div>
-                            {order.seller && (
-                                <div className="flex items-center justify-between">
-                                    <span className="text-surface-500">Vendedor</span>
-                                    <span className="font-medium text-surface-700">{order.seller.name}</span>
-                                </div>
-                            )}
-                            {order.driver && (
-                                <div className="flex items-center justify-between">
-                                    <span className="text-surface-500">Motorista</span>
-                                    <span className="font-medium text-surface-700">{order.driver.name}</span>
-                                </div>
-                            )}
+                            <div>
+                                <p className="text-xs text-surface-500">Contato</p>
+                                <p className="font-medium text-surface-900">
+                                    {order.customer?.contacts?.[0]?.phone || order.customer?.email || '—'}
+                                </p>
+                            </div>
                         </div>
                     </div>
+                    {/* Placeholder for Timeline/Checklist if needed */}
 
-                    {/* Técnicos N:N */}
-                    {order.technicians?.length > 0 && (
-                        <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">Técnicos Atribuídos</h3>
-                            <div className="flex flex-wrap gap-1.5">
-                                {order.technicians.map((t: any) => (
-                                    <Badge key={t.id} variant="info">{t.name}{t.pivot?.role === 'driver' ? ' (Mot.)' : ''}</Badge>
+                    {/* Equipamentos */}
+                    {(order.equipment || order.equipments_list?.length > 0) && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <Shield className="h-4 w-4 text-brand-500" />
+                                Equipamentos
+                            </h3>
+                            <div className="space-y-2">
+                                {order.equipment && (
+                                    <div className="rounded-lg border border-surface-100 p-2.5">
+                                        <p className="text-sm font-medium text-surface-800">{order.equipment.type} {order.equipment.brand ?? ''} {order.equipment.model ?? ''}</p>
+                                        {order.equipment.serial_number && <p className="text-xs text-surface-400">S/N: {order.equipment.serial_number}</p>}
+                                    </div>
+                                )}
+                                {order.equipments_list?.map((eq: any) => (
+                                    <div key={eq.id} className="rounded-lg border border-surface-100 p-2.5">
+                                        <p className="text-sm font-medium text-surface-800">{eq.type} {eq.brand ?? ''} {eq.model ?? ''}</p>
+                                        {eq.serial_number && <p className="text-xs text-surface-400">S/N: {eq.serial_number}</p>}
+                                    </div>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {/* Origem */}
-                    {(order.quote || order.service_call || order.os_number) && (
-                        <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">Origem</h3>
-                            <div className="space-y-2 text-sm">
-                                {order.os_number && (
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-surface-500">Nº Manual</span>
-                                        <span className="font-mono font-medium text-surface-700">{order.os_number}</span>
+                    {/* Técnicos */}
+                    {order.technicians?.length > 0 && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <Users className="h-4 w-4 text-brand-500" />
+                                Técnicos
+                            </h3>
+                            <div className="flex flex-wrap gap-1.5">
+                                {order.technicians.map((t: any) => (
+                                    <span key={t.id} className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+                                        {t.name}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SLA Info */}
+                    {(order.sla_due_at || order.sla_responded_at) && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <CalendarDays className="h-4 w-4 text-brand-500" />
+                                SLA
+                            </h3>
+                            <div className="space-y-2">
+                                {order.sla_due_at && (
+                                    <div>
+                                        <p className="text-xs text-surface-500">Prazo SLA</p>
+                                        <p className="font-medium text-surface-900">{formatDate(order.sla_due_at)}</p>
                                     </div>
                                 )}
-                                {order.origin_type && (
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-surface-500">Tipo</span>
-                                        <Badge variant={order.origin_type === 'quote' ? 'brand' : order.origin_type === 'service_call' ? 'warning' : 'default'}>
-                                            {order.origin_type === 'quote' ? 'Orçamento' : order.origin_type === 'service_call' ? 'Chamado' : 'Direto'}
-                                        </Badge>
-                                    </div>
-                                )}
-                                {order.quote && (
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-surface-500">Orçamento</span>
-                                        <button onClick={() => navigate(`/orcamentos/${order.quote_id}`)} className="text-xs font-medium text-brand-600 hover:underline">
-                                            {order.quote.quote_number}
-                                        </button>
-                                    </div>
-                                )}
-                                {order.service_call && (
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-surface-500">Chamado</span>
-                                        <span className="text-xs font-medium text-surface-700">{order.service_call.call_number}</span>
+                                {order.sla_responded_at && (
+                                    <div>
+                                        <p className="text-xs text-surface-500">Respondido em</p>
+                                        <p className="font-medium text-surface-900">{formatDate(order.sla_responded_at)}</p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* Datas */}
-                    <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-500 mb-3">Datas</h3>
-                        <div className="space-y-1.5 text-xs">
-                            {[
-                                ['Criada', order.created_at],
-                                ['Recebido', order.received_at],
-                                ['Iniciada', order.started_at],
-                                ['Concluída', order.completed_at],
-                                ['Entregue', order.delivered_at],
-                            ].map(([label, date]) => (
-                                <div key={label as string} className="flex items-center justify-between">
-                                    <span className="text-surface-500">{label}</span>
-                                    <span className="text-surface-700">{formatDate(date as string)}</span>
-                                </div>
-                            ))}
+                    {/* Timeline / Histórico de Status */}
+                    {order.status_history?.length > 0 && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <Clock className="h-4 w-4 text-brand-500" />
+                                Histórico
+                            </h3>
+                            <div className="space-y-3">
+                                {order.status_history.map((h: any) => {
+                                    const cfg = statusConfig[h.to_status]
+                                    return (
+                                        <div key={h.id} className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 mt-1">
+                                                <div className={cn('h-2.5 w-2.5 rounded-full', cfg ? `bg-${cfg.variant === 'info' ? 'sky' : cfg.variant === 'warning' ? 'amber' : cfg.variant === 'success' ? 'emerald' : cfg.variant === 'danger' ? 'red' : 'brand'}-500` : 'bg-surface-300')} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-surface-800">{cfg?.label ?? h.to_status}</p>
+                                                {h.notes && <p className="text-xs text-surface-500 mt-0.5">{h.notes}</p>}
+                                                <p className="text-xs text-surface-400 mt-0.5">
+                                                    {h.user?.name ?? 'Sistema'} · {formatDate(h.created_at)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="bg-white rounded-xl shadow-card">
-                        <SignaturePad
-                            onSave={signMut.mutate}
-                            disabled={signMut.isPending || !!order.signature_path}
-                            existingSignature={order.signature_path}
-                        />
+                    {/* Assinatura Digital */}
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                            <Pencil className="h-4 w-4 text-brand-500" />
+                            Assinatura
+                        </h3>
+                        {order.signature_path ? (
+                            <div>
+                                <img src={order.signature_path} alt="Assinatura" className="rounded border border-surface-200 max-h-24" />
+                                {order.signature_signer && <p className="mt-1 text-xs text-surface-500">{order.signature_signer}</p>}
+                                {order.signature_at && <p className="text-xs text-surface-400">{formatDate(order.signature_at)}</p>}
+                            </div>
+                        ) : (
+                            <SignaturePad
+                                onSave={({ signature, signer_name }: { signature: string; signer_name: string }) => signMut.mutate({ signature, signer_name })}
+                                disabled={signMut.isPending}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Status Modal */}
-            <Modal open={showStatusModal} onOpenChange={setShowStatusModal} title="Alterar Status" size="sm">
-                <form onSubmit={e => { e.preventDefault(); statusMut.mutate({ status: newStatus, notes: statusNotes }) }} className="space-y-4">
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-surface-700">Novo Status</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(statusConfig).map(([key, conf]) => {
-                                const Icon = conf.icon
-                                return (
-                                    <button key={key} type="button" onClick={() => setNewStatus(key)}
-                                        className={cn('flex items-center gap-2 rounded-lg border p-2.5 text-xs font-medium transition-all',
-                                            newStatus === key
-                                                ? 'border-brand-500 bg-brand-50 text-brand-700'
-                                                : 'border-surface-200 text-surface-600 hover:border-surface-300')}>
-                                        <Icon className="h-3.5 w-3.5" />
-                                        {conf.label}
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    </div>
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observação</label>
-                        <textarea value={statusNotes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setStatusNotes(e.target.value)} rows={2}
-                            placeholder="Motivo da mudança..."
-                            className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" type="button" onClick={() => setShowStatusModal(false)}>Cancelar</Button>
-                        <Button type="submit" loading={statusMut.isPending}>Confirmar</Button>
-                    </div>
-                </form>
-            </Modal>
-
-            {/* Add Item Modal */}
-            <Modal open={showItemModal} onOpenChange={setShowItemModal} title="Adicionar Item">
+            {/* Add/Edit Item Modal */}
+            <Modal open={showItemModal} onOpenChange={(open) => { setShowItemModal(open); if (!open) setEditingItem(null) }} title={editingItem ? "Editar Item" : "Adicionar Item"}>
                 <form onSubmit={e => {
                     e.preventDefault()
-                    addItemMut.mutate({ ...itemForm, reference_id: itemForm.reference_id || null })
+                    const payload = { ...itemForm, reference_id: itemForm.reference_id || null }
+                    if (editingItem) {
+                        updateItemMut.mutate(payload)
+                    } else {
+                        addItemMut.mutate(payload)
+                    }
                 }} className="space-y-4">
                     <div className="flex rounded-lg border border-surface-200 overflow-hidden">
                         {(['product', 'service'] as const).map(t => (
@@ -536,11 +604,11 @@ export function WorkOrderDetailPage() {
                         ))}
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-sm font-medium text-surface-700">
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">
                             {itemForm.type === 'product' ? 'Produto' : 'Serviço'}
                         </label>
                         <select value={itemForm.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRefChange(e.target.value)}
-                            className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                             <option value="">— Selecionar —</option>
                             {(itemForm.type === 'product' ? products : services).map((r: any) => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
@@ -559,10 +627,39 @@ export function WorkOrderDetailPage() {
                     </div>
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" type="button" onClick={() => setShowItemModal(false)}>Cancelar</Button>
-                        <Button type="submit" loading={addItemMut.isPending}>Adicionar</Button>
+                        <Button type="submit" loading={addItemMut.isPending || updateItemMut.isPending}>
+                            {editingItem ? 'Salvar' : 'Adicionar'}
+                        </Button>
                     </div>
                 </form>
             </Modal>
+
+            {/* Status Modal */}
+            <Modal open={showStatusModal} onOpenChange={setShowStatusModal} title="Alterar Status">
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(statusConfig)
+                            .filter(([k]) => (order.allowed_transitions ?? []).includes(k))
+                            .map(([k, v]) => (
+                                <button key={k} onClick={() => setNewStatus(k)}
+                                    className={cn('flex items-center gap-2 rounded-lg border p-3 text-sm transition-all',
+                                        newStatus === k ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' : 'border-surface-200 hover:border-surface-300')}>
+                                    <v.icon className={cn('h-4 w-4', newStatus === k ? 'text-brand-600' : 'text-surface-400')} />
+                                    <span className={cn('font-medium', newStatus === k ? 'text-surface-900' : 'text-surface-600')}>{v.label}</span>
+                                </button>
+                            ))}
+                        {(order.allowed_transitions ?? []).length === 0 && (
+                            <p className="col-span-2 py-4 text-center text-sm text-surface-400">Este status é final. Não há transições disponíveis.</p>
+                        )}
+                    </div>
+                    <Input label="Observações (Opcional)" value={statusNotes} onChange={(e: any) => setStatusNotes(e.target.value)} />
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={() => setShowStatusModal(false)}>Cancelar</Button>
+                        <Button onClick={() => statusMut.mutate({ status: newStatus, notes: statusNotes })} disabled={!newStatus} loading={statusMut.isPending}>Confirmar</Button>
+                    </div>
+                </div>
+            </Modal>
+
         </div>
     )
 }

@@ -11,6 +11,44 @@ use Illuminate\Http\Response;
 
 class FinancialExportController extends Controller
 {
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
+    private function osNumberFilter(Request $request): ?string
+    {
+        $osNumber = trim((string) $request->get('os_number', ''));
+        return $osNumber !== '' ? $osNumber : null;
+    }
+
+    private function applyReceivableOsFilter($query, ?string $osNumber): void
+    {
+        if (!$osNumber) {
+            return;
+        }
+
+        $query->whereHas('workOrder', function ($wo) use ($osNumber) {
+            $wo->where(function ($q) use ($osNumber) {
+                $q->where('os_number', 'like', "%{$osNumber}%")
+                    ->orWhere('number', 'like', "%{$osNumber}%");
+            });
+        });
+    }
+
+    private function applyPayableIdentifierFilter($query, ?string $osNumber): void
+    {
+        if (!$osNumber) {
+            return;
+        }
+
+        $query->where(function ($q) use ($osNumber) {
+            $q->where('description', 'like', "%{$osNumber}%")
+                ->orWhere('notes', 'like', "%{$osNumber}%");
+        });
+    }
+
     /**
      * #27 — Exportação OFX (Open Financial Exchange).
      * GET /financial/export/ofx?type=receivable|payable&from=2024-01-01&to=2024-01-31
@@ -21,16 +59,32 @@ class FinancialExportController extends Controller
             'type' => 'required|in:receivable,payable',
             'from' => 'required|date',
             'to' => 'required|date|after_or_equal:from',
+            'os_number' => 'nullable|string|max:30',
         ]);
 
         $isReceivable = $validated['type'] === 'receivable';
         $model = $isReceivable ? AccountReceivable::class : AccountPayable::class;
+        $tenantId = $this->tenantId($request);
 
-        $records = $model::query()
+        $query = $model::query()
+            ->where('tenant_id', $tenantId)
             ->whereBetween('due_date', [$validated['from'], $validated['to']])
-            ->with('customer:id,name')
-            ->orderBy('due_date')
-            ->get();
+            ->orderBy('due_date');
+
+        $osNumber = $this->osNumberFilter($request);
+        if ($isReceivable) {
+            $this->applyReceivableOsFilter($query, $osNumber);
+        } else {
+            $this->applyPayableIdentifierFilter($query, $osNumber);
+        }
+
+        if ($isReceivable) {
+            $query->with('customer:id,name');
+        } else {
+            $query->with('supplierRelation:id,name');
+        }
+
+        $records = $query->get();
 
         $dtStart = str_replace('-', '', $validated['from']) . '000000';
         $dtEnd = str_replace('-', '', $validated['to']) . '235959';
@@ -42,7 +96,9 @@ class FinancialExportController extends Controller
             $dt = $r->due_date->format('Ymd') . '120000';
             $amount = $isReceivable ? $r->amount : -$r->amount;
             $fitId = strtoupper(md5($r->id . $r->due_date));
-            $name = $r->customer?->name ?? ($r->description ?? 'N/A');
+            $name = $isReceivable
+                ? ($r->customer?->name ?? ($r->description ?? 'N/A'))
+                : ($r->supplierRelation?->name ?? $r->supplier ?? ($r->description ?? 'N/A'));
             $memo = $r->description ?? '';
 
             $transactions .= "
@@ -115,23 +171,41 @@ NEWFILEUID:NONE
             'type' => 'required|in:receivable,payable',
             'from' => 'required|date',
             'to' => 'required|date|after_or_equal:from',
+            'os_number' => 'nullable|string|max:30',
         ]);
 
         $isReceivable = $validated['type'] === 'receivable';
         $model = $isReceivable ? AccountReceivable::class : AccountPayable::class;
+        $tenantId = $this->tenantId($request);
 
-        $records = $model::query()
+        $query = $model::query()
+            ->where('tenant_id', $tenantId)
             ->whereBetween('due_date', [$validated['from'], $validated['to']])
-            ->with('customer:id,name')
-            ->orderBy('due_date')
-            ->get();
+            ->orderBy('due_date');
+
+        $osNumber = $this->osNumberFilter($request);
+        if ($isReceivable) {
+            $this->applyReceivableOsFilter($query, $osNumber);
+        } else {
+            $this->applyPayableIdentifierFilter($query, $osNumber);
+        }
+
+        if ($isReceivable) {
+            $query->with('customer:id,name');
+        } else {
+            $query->with('supplierRelation:id,name');
+        }
+
+        $records = $query->get();
 
         $csv = "Data Vencimento;Descrição;Cliente;Valor;Status;Valor Pago\n";
 
         foreach ($records as $r) {
             $date = $r->due_date->format('d/m/Y');
             $desc = str_replace(';', ',', $r->description ?? '');
-            $customer = str_replace(';', ',', $r->customer?->name ?? '');
+            $customer = str_replace(';', ',', $isReceivable
+                ? ($r->customer?->name ?? '')
+                : ($r->supplierRelation?->name ?? $r->supplier ?? ''));
             $amount = number_format((float) $r->amount, 2, ',', '.');
             $paid = number_format((float) ($r->amount_paid ?? 0), 2, ',', '.');
             $status = $r->status ?? '';

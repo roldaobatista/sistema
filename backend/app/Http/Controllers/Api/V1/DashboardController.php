@@ -24,15 +24,15 @@ class DashboardController extends Controller
         $from = $request->date('date_from') ?? now()->startOfMonth();
         $to   = $request->date('date_to')   ?? now()->endOfDay();
 
-        $openOs = WorkOrder::whereNotIn('status', ['completed', 'cancelled'])->count();
-        $inProgressOs = WorkOrder::where('status', 'in_progress')->count();
-        $completedMonth = WorkOrder::where('status', 'completed')
+        $openOs = WorkOrder::whereNotIn('status', [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_CANCELLED])->count();
+        $inProgressOs = WorkOrder::where('status', WorkOrder::STATUS_IN_PROGRESS)->count();
+        $completedMonth = WorkOrder::where('status', WorkOrder::STATUS_COMPLETED)
             ->where('updated_at', '>=', $from)->count();
-        $revenueMonth = WorkOrder::where('status', 'completed')
+        $revenueMonth = WorkOrder::where('status', WorkOrder::STATUS_COMPLETED)
             ->where('updated_at', '>=', $from)->sum('total');
 
-        $pendingCommissions = CommissionEvent::where('status', 'pending')->sum('commission_amount');
-        $expensesMonth = Expense::where('status', 'approved')
+        $pendingCommissions = CommissionEvent::where('status', CommissionEvent::STATUS_PENDING)->sum('commission_amount');
+        $expensesMonth = Expense::where('status', Expense::STATUS_APPROVED)
             ->where('expense_date', '>=', $from)->sum('amount');
 
         $recentOs = WorkOrder::with(['customer:id,name', 'assignee:id,name'])
@@ -41,7 +41,7 @@ class DashboardController extends Controller
             ->get(['id', 'number', 'customer_id', 'assignee_id', 'status', 'total', 'created_at']);
 
         $topTechnicians = WorkOrder::select('assignee_id', DB::raw('COUNT(*) as os_count'), DB::raw('SUM(total) as total_revenue'))
-            ->where('status', 'completed')
+            ->where('status', WorkOrder::STATUS_COMPLETED)
             ->where('updated_at', '>=', $from)
             ->whereNotNull('assignee_id')
             ->groupBy('assignee_id')
@@ -61,10 +61,10 @@ class DashboardController extends Controller
             ->get(['id', 'code', 'brand', 'model', 'customer_id', 'next_calibration_at']);
 
         // CRM KPIs
-        $openDeals = CrmDeal::where('status', 'open')->count();
-        $wonDealsMonth = CrmDeal::where('status', 'won')
+        $openDeals = CrmDeal::where('status', CrmDeal::STATUS_OPEN)->count();
+        $wonDealsMonth = CrmDeal::where('status', CrmDeal::STATUS_WON)
             ->where('closed_at', '>=', $from)->count();
-        $crmRevenueMonth = CrmDeal::where('status', 'won')
+        $crmRevenueMonth = CrmDeal::where('status', CrmDeal::STATUS_WON)
             ->where('closed_at', '>=', $from)->sum('value');
         $pendingFollowUps = CrmActivity::where('type', 'tarefa')
             ->where('is_done', false)
@@ -73,22 +73,50 @@ class DashboardController extends Controller
             ->whereNotNull('health_score')->avg('health_score');
 
         // Financeiro
-        $receivablesPending = AccountReceivable::whereIn('status', ['pending', 'partial'])
+        $receivablesPending = AccountReceivable::whereIn('status', [AccountReceivable::STATUS_PENDING, AccountReceivable::STATUS_PARTIAL])
             ->sum('amount');
-        $receivablesOverdue = AccountReceivable::whereIn('status', ['pending', 'partial'])
+        $receivablesOverdue = AccountReceivable::whereIn('status', [AccountReceivable::STATUS_PENDING, AccountReceivable::STATUS_PARTIAL])
             ->where('due_date', '<', now())->sum('amount');
-        $payablesPending = AccountPayable::whereIn('status', ['pending', 'partial'])
+        $payablesPending = AccountPayable::whereIn('status', [AccountPayable::STATUS_PENDING, AccountPayable::STATUS_PARTIAL])
             ->sum('amount');
-        $payablesOverdue = AccountPayable::whereIn('status', ['pending', 'partial'])
+        $payablesOverdue = AccountPayable::whereIn('status', [AccountPayable::STATUS_PENDING, AccountPayable::STATUS_PARTIAL])
             ->where('due_date', '<', now())->sum('amount');
         $netRevenue = (float) $revenueMonth - (float) $expensesMonth;
 
-        // SLA — tempo médio para concluir OS (em horas)
-        $avgCompletionHours = WorkOrder::where('status', 'completed')
-            ->where('updated_at', '>=', $from)
+        // SLA — contagens
+        $slaResponseBreached = WorkOrder::where('sla_response_breached', true)
+            ->where('created_at', '>=', $from)->count();
+        $slaResolutionBreached = WorkOrder::where('sla_resolution_breached', true)
+            ->where('created_at', '>=', $from)->count();
+        $slaTotal = WorkOrder::whereNotNull('sla_policy_id')
+            ->where('created_at', '>=', $from)->count();
+
+        // Monthly Revenue (last 6 months)
+        $monthlyRevenue = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $mStart = now()->subMonths($i)->startOfMonth();
+            $mEnd = now()->subMonths($i)->endOfMonth();
+            $total = (float) WorkOrder::where('status', WorkOrder::STATUS_COMPLETED)
+                ->whereBetween('updated_at', [$mStart, $mEnd])
+                ->sum('total');
+            $monthlyRevenue[] = [
+                'month' => $mStart->format('M'),
+                'total' => $total,
+            ];
+        }
+
+        // Avg completion time (hours)
+        $avgHours = WorkOrder::where('status', WorkOrder::STATUS_COMPLETED)
+            ->whereNotNull('completed_at')
             ->whereNotNull('created_at')
-            ->select(DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))
-            ->value('avg_hours');
+            ->where('updated_at', '>=', $from)
+            ->get(['created_at', 'completed_at']);
+        $totalH = 0;
+        $cnt = count($avgHours);
+        foreach ($avgHours as $wo) {
+            $totalH += $wo->created_at->diffInHours($wo->completed_at);
+        }
+        $avgCompletionHours = $cnt > 0 ? round($totalH / $cnt) : 0;
 
         return response()->json([
             'open_os' => $openOs,
@@ -121,7 +149,12 @@ class DashboardController extends Controller
             'payables_overdue' => (float) $payablesOverdue,
             'net_revenue' => $netRevenue,
             // SLA
-            'avg_completion_hours' => round((float) ($avgCompletionHours ?? 0), 1),
+            'sla_total' => $slaTotal,
+            'sla_response_breached' => $slaResponseBreached,
+            'sla_resolution_breached' => $slaResolutionBreached,
+            // Charts
+            'monthly_revenue' => $monthlyRevenue,
+            'avg_completion_hours' => $avgCompletionHours,
         ]);
     }
 }

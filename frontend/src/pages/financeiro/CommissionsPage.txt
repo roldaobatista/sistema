@@ -1,0 +1,816 @@
+import { useState, useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+    Award, Plus, Users, Settings, FileText, Download, BarChart3, Target, Zap,
+    CheckCircle, Clock, Trash2, Percent, DollarSign, AlertTriangle, Split,
+    Check, X, RefreshCw, TrendingUp, Calendar,
+} from 'lucide-react'
+import api from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { COMMISSION_STATUS } from '@/lib/constants'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
+
+const eventStatusConfig: Record<string, { label: string; variant: any }> = {
+    [COMMISSION_STATUS.PENDING]: { label: 'Pendente', variant: 'warning' },
+    [COMMISSION_STATUS.APPROVED]: { label: 'Aprovado', variant: 'info' },
+    [COMMISSION_STATUS.PAID]: { label: 'Pago', variant: 'success' },
+    [COMMISSION_STATUS.REVERSED]: { label: 'Estornado', variant: 'danger' },
+}
+
+const settlementStatusConfig: Record<string, { label: string; variant: any }> = {
+    [COMMISSION_STATUS.OPEN]: { label: 'Aberto', variant: 'warning' },
+    [COMMISSION_STATUS.CLOSED]: { label: 'Fechado', variant: 'info' },
+    [COMMISSION_STATUS.PAID]: { label: 'Pago', variant: 'success' },
+}
+
+const disputeStatusConfig: Record<string, { label: string; variant: any }> = {
+    [COMMISSION_STATUS.OPEN]: { label: 'Aberta', variant: 'warning' },
+    [COMMISSION_STATUS.ACCEPTED]: { label: 'Aceita', variant: 'success' },
+    [COMMISSION_STATUS.REJECTED]: { label: 'Rejeitada', variant: 'danger' },
+}
+
+const calcTypeLabels: Record<string, string> = {
+    percent_gross: '% Bruto', percent_net: '% L\u00edquido',
+    percent_gross_minus_displacement: '% (Bruto\u2212Desloc.)', percent_services_only: '% Servi\u00e7os',
+    percent_products_only: '% Produtos', fixed_per_os: 'Fixo/OS',
+    percent_profit: '% Lucro', percent_gross_minus_expenses: '% (Bruto\u2212Desp.)',
+    tiered_gross: '% Escalonado', custom_formula: 'F\u00f3rmula',
+}
+
+const roleLabels: Record<string, string> = {
+    technician: 'T\u00e9cnico', seller: 'Vendedor', driver: 'Motorista',
+}
+
+const whenLabels: Record<string, string> = {
+    os_completed: 'OS Conclu\u00edda', installment_paid: 'Parcela Paga', os_invoiced: 'OS Faturada',
+}
+
+const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
+    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '-'
+
+type Tab = 'events' | 'rules' | 'settlements' | 'disputes' | 'goals' | 'campaigns'
+
+export function CommissionsPage() {
+    const qc = useQueryClient()
+    const [tab, setTab] = useState<Tab>('events')
+    const [showRuleForm, setShowRuleForm] = useState(false)
+    const [ruleForm, setRuleForm] = useState({
+        user_id: '' as string | number, name: '', type: 'percentage', value: '', applies_to: 'all',
+        calculation_type: 'percent_gross', applies_to_role: 'technician', applies_when: 'os_completed',
+    })
+    const [userFilter, setUserFilter] = useState('')
+    const [statusFilter, setStatusFilter] = useState('')
+    const [osNumberFilter, setOsNumberFilter] = useState('')
+    const [showGenerate, setShowGenerate] = useState(false)
+    const [genWoId, setGenWoId] = useState<string | number>('')
+    const [showClose, setShowClose] = useState(false)
+    const [closeForm, setCloseForm] = useState({ user_id: '' as string | number, period: '' })
+    const [selectedIds, setSelectedIds] = useState<number[]>([])
+    const [showSplit, setShowSplit] = useState<any>(null)
+    const [splits, setSplits] = useState<{ user_id: string; percentage: string; role: string }[]>([])
+    const [showDispute, setShowDispute] = useState<any>(null)
+    const [disputeReason, setDisputeReason] = useState('')
+    const [showResolve, setShowResolve] = useState<any>(null)
+    const [resolveForm, setResolveForm] = useState({ status: 'accepted', resolution_notes: '', new_amount: '' })
+    const [showGoalForm, setShowGoalForm] = useState(false)
+    const [goalForm, setGoalForm] = useState({ user_id: '' as string | number, period: '', target_amount: '' })
+    const [showCampaignForm, setShowCampaignForm] = useState(false)
+    const [campaignForm, setCampaignForm] = useState({ name: '', multiplier: '1.50', applies_to_role: '', starts_at: '', ends_at: '' })
+    const [downloadKey, setDownloadKey] = useState('')
+
+    // -- Queries --
+    const { data: techsRes } = useQuery({ queryKey: ['technicians'], queryFn: () => api.get('/users', { params: { per_page: 50 } }) })
+    const technicians = techsRes?.data?.data ?? []
+
+    const { data: summaryRes } = useQuery({ queryKey: ['commission-summary'], queryFn: () => api.get('/commission-summary') })
+    const summary = summaryRes?.data ?? {}
+
+    const { data: rulesRes } = useQuery({
+        queryKey: ['commission-rules', userFilter],
+        queryFn: () => api.get('/commission-rules', { params: { user_id: userFilter || undefined } }),
+        enabled: tab === 'rules',
+    })
+    const rules = rulesRes?.data ?? []
+
+    const { data: eventsRes } = useQuery({
+        queryKey: ['commission-events', userFilter, statusFilter, osNumberFilter],
+        queryFn: () => api.get('/commission-events', {
+            params: {
+                user_id: userFilter || undefined,
+                status: statusFilter || undefined,
+                os_number: osNumberFilter.trim() || undefined,
+                per_page: 50,
+            },
+        }),
+        enabled: tab === 'events',
+    })
+    const events = eventsRes?.data?.data ?? []
+
+    const { data: settRes } = useQuery({
+        queryKey: ['commission-settlements', userFilter],
+        queryFn: () => api.get('/commission-settlements', { params: { user_id: userFilter || undefined } }),
+        enabled: tab === 'settlements',
+    })
+    const settlements = settRes?.data ?? []
+
+    const { data: disputesRes } = useQuery({
+        queryKey: ['commission-disputes', statusFilter, osNumberFilter],
+        queryFn: () => api.get('/commission-disputes', {
+            params: {
+                status: statusFilter || undefined,
+                os_number: osNumberFilter.trim() || undefined,
+            },
+        }),
+        enabled: tab === 'disputes',
+    })
+    const disputes = disputesRes?.data ?? []
+
+    const { data: goalsRes } = useQuery({
+        queryKey: ['commission-goals', userFilter],
+        queryFn: () => api.get('/commission-goals', { params: { user_id: userFilter || undefined } }),
+        enabled: tab === 'goals',
+    })
+    const goals = goalsRes?.data ?? []
+
+    const { data: campaignsRes } = useQuery({
+        queryKey: ['commission-campaigns'],
+        queryFn: () => api.get('/commission-campaigns'),
+        enabled: tab === 'campaigns',
+    })
+    const campaigns = campaignsRes?.data ?? []
+
+    const { data: wosRes } = useQuery({
+        queryKey: ['work-orders-commission'],
+        queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
+        enabled: showGenerate,
+    })
+
+    // -- Mutations --
+    const inv = (...keys: string[]) => keys.forEach(k => qc.invalidateQueries({ queryKey: [k] }))
+
+    const saveRuleMut = useMutation({
+        mutationFn: (data: typeof ruleForm) => api.post('/commission-rules', data),
+        onSuccess: () => { inv('commission-rules'); setShowRuleForm(false) },
+    })
+    const delRuleMut = useMutation({
+        mutationFn: (id: number) => api.delete(`/commission-rules/${id}`),
+        onSuccess: () => inv('commission-rules'),
+    })
+    const genMut = useMutation({
+        mutationFn: (woId: string | number) => api.post('/commission-events/generate', { work_order_id: woId }),
+        onSuccess: () => { inv('commission-events', 'commission-summary'); setShowGenerate(false) },
+    })
+    const updateStatusMut = useMutation({
+        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/commission-events/${id}/status`, { status }),
+        onSuccess: () => inv('commission-events', 'commission-summary'),
+    })
+    const batchStatusMut = useMutation({
+        mutationFn: (status: string) => api.post('/commission-events/batch-status', { ids: selectedIds, status }),
+        onSuccess: () => { inv('commission-events', 'commission-summary'); setSelectedIds([]) },
+    })
+    const closeMut = useMutation({
+        mutationFn: (data: typeof closeForm) => api.post('/commission-settlements/close', data),
+        onSuccess: () => { inv('commission-settlements', 'commission-events', 'commission-summary'); setShowClose(false) },
+    })
+    const paySettMut = useMutation({
+        mutationFn: (id: number) => api.post(`/commission-settlements/${id}/pay`),
+        onSuccess: () => inv('commission-settlements', 'commission-summary'),
+    })
+    const splitMut = useMutation({
+        mutationFn: ({ eventId, splits: s }: { eventId: number; splits: typeof splits }) =>
+            api.post(`/commission-events/${eventId}/splits`, { splits: s }),
+        onSuccess: () => { inv('commission-events'); setShowSplit(null) },
+    })
+    const disputeMut = useMutation({
+        mutationFn: (data: { commission_event_id: number; reason: string }) => api.post('/commission-disputes', data),
+        onSuccess: () => { inv('commission-disputes'); setShowDispute(null); setDisputeReason('') },
+    })
+    const resolveMut = useMutation({
+        mutationFn: ({ id, ...data }: { id: number; status: string; resolution_notes: string; new_amount?: string }) =>
+            api.post(`/commission-disputes/${id}/resolve`, data),
+        onSuccess: () => { inv('commission-disputes', 'commission-events'); setShowResolve(null) },
+    })
+    const goalMut = useMutation({
+        mutationFn: (data: typeof goalForm) => api.post('/commission-goals', data),
+        onSuccess: () => { inv('commission-goals'); setShowGoalForm(false) },
+    })
+    const delGoalMut = useMutation({
+        mutationFn: (id: number) => api.delete(`/commission-goals/${id}`),
+        onSuccess: () => inv('commission-goals'),
+    })
+    const campaignMut = useMutation({
+        mutationFn: (data: typeof campaignForm) => api.post('/commission-campaigns', data),
+        onSuccess: () => { inv('commission-campaigns'); setShowCampaignForm(false) },
+    })
+    const delCampaignMut = useMutation({
+        mutationFn: (id: number) => api.delete(`/commission-campaigns/${id}`),
+        onSuccess: () => inv('commission-campaigns'),
+    })
+
+    const toggleSelect = useCallback((id: number) => {
+        setSelectedIds(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+    }, [])
+
+    const downloadFile = async (key: string, url: string, fallbackName: string, mime: string) => {
+        setDownloadKey(key)
+        try {
+            const response = await api.get(url, { responseType: 'blob' })
+            const blob = new Blob([response.data], { type: mime })
+            const objectUrl = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = objectUrl
+            link.download = fallbackName
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            window.URL.revokeObjectURL(objectUrl)
+        } finally {
+            setDownloadKey('')
+        }
+    }
+
+    const exportCSV = async (type: 'events' | 'settlements') => {
+        const params = new URLSearchParams()
+        if (userFilter) params.set('user_id', userFilter)
+        if (type === 'events' && statusFilter) params.set('status', statusFilter)
+        if (type === 'events' && osNumberFilter.trim()) params.set('os_number', osNumberFilter.trim())
+        const query = params.toString()
+
+        await downloadFile(
+            `csv-${type}`,
+            `/commission-${type}/export${query ? `?${query}` : ''}`,
+            `commission-${type}.csv`,
+            'text/csv;charset=utf-8;'
+        )
+    }
+
+    const downloadStatement = async (userId: number, period: string) => {
+        await downloadFile(
+            `statement-${userId}-${period}`,
+            `/commission-statement/pdf?user_id=${userId}&period=${period}`,
+            `commission-statement-${period}-${userId}.pdf`,
+            'application/pdf'
+        )
+    }
+
+    const tabs: { key: Tab; label: string; icon: any }[] = [
+        { key: 'events', label: 'Eventos', icon: FileText },
+        { key: 'rules', label: 'Regras', icon: Settings },
+        { key: 'settlements', label: 'Fechamento', icon: CheckCircle },
+        { key: 'disputes', label: 'Contestações', icon: AlertTriangle },
+        { key: 'goals', label: 'Metas', icon: Target },
+        { key: 'campaigns', label: 'Campanhas', icon: Zap },
+    ]
+
+    return (
+        <div className="space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Comissões</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Regras, eventos, disputas, metas e campanhas</p>
+                </div>
+                <div className="flex gap-2">
+                    {tab === 'rules' && <Button icon={<Plus className="h-4 w-4" />} onClick={() => { setRuleForm({ user_id: '', name: '', type: 'percentage', value: '', applies_to: 'all', calculation_type: 'percent_gross', applies_to_role: 'technician', applies_when: 'os_completed' }); setShowRuleForm(true) }}>Nova Regra</Button>}
+                    {tab === 'events' && <>
+                        <Button icon={<Award className="h-4 w-4" />} onClick={() => { setGenWoId(''); setShowGenerate(true) }}>Gerar da OS</Button>
+                        {selectedIds.length > 0 && <Button variant="outline" icon={<Check className="h-4 w-4" />} onClick={() => batchStatusMut.mutate('approved')} loading={batchStatusMut.isPending}>Aprovar ({selectedIds.length})</Button>}
+                        <Button variant="ghost" icon={<Download className="h-4 w-4" />} onClick={() => exportCSV('events')} loading={downloadKey === 'csv-events'}>CSV</Button>
+                    </>}
+                    {tab === 'settlements' && <>
+                        <Button icon={<CheckCircle className="h-4 w-4" />} onClick={() => { setCloseForm({ user_id: '', period: '' }); setShowClose(true) }}>Fechar Período</Button>
+                        <Button variant="ghost" icon={<Download className="h-4 w-4" />} onClick={() => exportCSV('settlements')} loading={downloadKey === 'csv-settlements'}>CSV</Button>
+                    </>}
+                    {tab === 'goals' && <Button icon={<Plus className="h-4 w-4" />} onClick={() => { setGoalForm({ user_id: '', period: '', target_amount: '' }); setShowGoalForm(true) }}>Nova Meta</Button>}
+                    {tab === 'campaigns' && <Button icon={<Plus className="h-4 w-4" />} onClick={() => { setCampaignForm({ name: '', multiplier: '1.50', applies_to_role: '', starts_at: '', ends_at: '' }); setShowCampaignForm(true) }}>Nova Campanha</Button>}
+                </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                    <div className="flex items-center gap-2 text-amber-600"><Clock className="h-4 w-4" /><span className="text-xs font-medium">Pendente</span></div>
+                    <p className="mt-1 text-xl font-bold text-surface-900">{fmtBRL(summary.pending ?? 0)}</p>
+                </div>
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                    <div className="flex items-center gap-2 text-sky-600"><CheckCircle className="h-4 w-4" /><span className="text-xs font-medium">Aprovado</span></div>
+                    <p className="mt-1 text-xl font-bold text-sky-600">{fmtBRL(summary.approved ?? 0)}</p>
+                </div>
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                    <div className="flex items-center gap-2 text-emerald-600"><DollarSign className="h-4 w-4" /><span className="text-xs font-medium">Pago (mês)</span></div>
+                    <p className="mt-1 text-xl font-bold text-emerald-600">{fmtBRL(summary.paid_this_month ?? 0)}</p>
+                </div>
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                    <div className="flex items-center gap-2 text-brand-600"><BarChart3 className="h-4 w-4" /><span className="text-xs font-medium">Tipos de Cálculo</span></div>
+                    <p className="mt-1 text-xl font-bold text-brand-600">{summary.calculation_types_count ?? 0}</p>
+                </div>
+            </div>
+
+            {/* Tabs + Filter */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap rounded-lg border border-surface-200 bg-surface-50 p-0.5">
+                    {tabs.map(t => {
+                        const Icon = t.icon
+                        return (
+                            <button key={t.key} onClick={() => { setTab(t.key); setSelectedIds([]) }}
+                                className={cn('flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all',
+                                    tab === t.key ? 'bg-white text-brand-700 shadow-sm' : 'text-surface-500 hover:text-surface-700')}>
+                                <Icon className="h-3.5 w-3.5" />{t.label}
+                            </button>
+                        )
+                    })}
+                </div>
+                <div className="flex gap-2">
+                    <select value={userFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setUserFilter(e.target.value)}
+                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                        <option value="">Todos</option>
+                        {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    {(tab === 'events' || tab === 'disputes') && (
+                        <input
+                            value={osNumberFilter}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOsNumberFilter(e.target.value)}
+                            placeholder="OS física (os_number)"
+                            className="w-56 rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                        />
+                    )}
+                    {(tab === 'events' || tab === 'disputes') && (
+                        <select value={statusFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
+                            className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                            <option value="">Todos</option>
+                            {Object.entries(tab === 'events' ? eventStatusConfig : disputeStatusConfig).map(([k, v]) =>
+                                <option key={k} value={k}>{v.label}</option>)}
+                        </select>
+                    )}
+                </div>
+            </div>
+
+            {/* -- Tab: -- */}
+            {tab === 'events' && (
+                <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-subtle bg-surface-50">
+                                <th className="w-10 px-4 py-3"><input type="checkbox" onChange={e => setSelectedIds(e.target.checked ? events.map((ev: any) => ev.id) : [])} checked={selectedIds.length === events.length && events.length > 0} /></th>
+                                <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Técnico</th>
+                                <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">OS</th>
+                                <th className="hidden px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600 md:table-cell">Regra</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Base</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Comissão</th>
+                                <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Status</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-subtle">
+                            {events.length === 0 ? (
+                                <tr><td colSpan={8} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum evento</td></tr>
+                            ) : events.map((e: any) => (
+                                <tr key={e.id} className={cn('hover:bg-surface-50 transition-colors duration-100', selectedIds.includes(e.id) && 'bg-brand-50/50')}>
+                                    <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(e.id)} onChange={() => toggleSelect(e.id)} /></td>
+                                    <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{e.user?.name}</td>
+                                    <td className="px-4 py-3 text-xs text-brand-600 font-medium">{woIdentifier(e.work_order)}</td>
+                                    <td className="hidden px-4 py-3 text-xs text-surface-500 md:table-cell">{e.rule?.name}</td>
+                                    <td className="px-3.5 py-2.5 text-right text-[13px] text-surface-600">{fmtBRL(e.base_amount)}</td>
+                                    <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-surface-900">{fmtBRL(e.commission_amount)}</td>
+                                    <td className="px-4 py-3"><Badge variant={eventStatusConfig[e.status]?.variant}>{eventStatusConfig[e.status]?.label}</Badge></td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center justify-end gap-1">
+                                            {e.status === COMMISSION_STATUS.PENDING && (
+                                                <Button variant="ghost" size="sm" onClick={() => updateStatusMut.mutate({ id: e.id, status: 'approved' })} title="Aprovar">
+                                                    <CheckCircle className="h-4 w-4 text-sky-500" />
+                                                </Button>
+                                            )}
+                                            {e.status !== COMMISSION_STATUS.REVERSED && e.status !== COMMISSION_STATUS.PAID && (
+                                                <Button variant="ghost" size="sm" onClick={() => updateStatusMut.mutate({ id: e.id, status: 'reversed' })} title="Estornar">
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            )}
+                                            <Button variant="ghost" size="sm" onClick={() => { setShowSplit(e); setSplits([{ user_id: '', percentage: '50', role: 'technician' }, { user_id: '', percentage: '50', role: 'technician' }]) }} title="Dividir">
+                                                <Split className="h-4 w-4 text-surface-500" />
+                                            </Button>
+                                            {e.status === COMMISSION_STATUS.PENDING && (
+                                                <Button variant="ghost" size="sm" onClick={() => { setShowDispute(e); setDisputeReason('') }} title="Contestar">
+                                                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* -- Tab: -- */}
+            {tab === 'rules' && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {rules.map((r: any) => (
+                        <div key={r.id} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-surface-900">{r.name}</h3>
+                                <Button variant="ghost" size="sm" onClick={() => { if (confirm('Excluir?')) delRuleMut.mutate(r.id) }}>
+                                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                </Button>
+                            </div>
+                            <p className="text-xs text-surface-500 mt-0.5">{r.user?.name}</p>
+                            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                <div className="flex items-center gap-1 rounded-lg bg-brand-50 px-2 py-1">
+                                    {r.calculation_type === 'fixed_per_os'
+                                        ? <><DollarSign className="h-3.5 w-3.5 text-brand-600" /><span className="text-sm font-bold text-brand-700">{fmtBRL(r.value)}</span></>
+                                        : <><Percent className="h-3.5 w-3.5 text-brand-600" /><span className="text-sm font-bold text-brand-700">{r.value}%</span></>
+                                    }
+                                </div>
+                                <Badge variant={r.active ? 'success' : 'default'}>{r.active ? 'Ativa' : 'Inativa'}</Badge>
+                                <Badge variant="brand">{calcTypeLabels[r.calculation_type] ?? r.calculation_type}</Badge>
+                                <Badge variant="info">{roleLabels[r.applies_to_role] ?? r.applies_to_role}</Badge>
+                            </div>
+                        </div>
+                    ))}
+                    {rules.length === 0 && <p className="col-span-full text-center text-[13px] text-surface-500 py-8">Nenhuma regra cadastrada</p>}
+                </div>
+            )}
+
+            {/* -- Tab: -- */}
+            {tab === 'settlements' && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {settlements.map((s: any) => (
+                        <div key={s.id} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-surface-900">{s.user?.name}</h3>
+                                    <p className="text-xs text-surface-500">{s.period} · {s.events_count} eventos</p>
+                                </div>
+                                <Badge variant={settlementStatusConfig[s.status]?.variant}>{settlementStatusConfig[s.status]?.label}</Badge>
+                            </div>
+                            <p className="mt-2 text-xl font-bold text-surface-900">{fmtBRL(s.total_amount)}</p>
+                            <div className="mt-2 flex gap-2">
+                                {s.status === COMMISSION_STATUS.CLOSED && (
+                                    <Button variant="outline" size="sm" className="flex-1" onClick={() => paySettMut.mutate(s.id)} loading={paySettMut.isPending}>
+                                        Marcar como Pago
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => downloadStatement(s.user_id, s.period)}
+                                    loading={downloadKey === `statement-${s.user_id}-${s.period}`}
+                                    title="PDF"
+                                >
+                                    <Download className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                    {settlements.length === 0 && <p className="col-span-full text-center text-[13px] text-surface-500 py-8">Nenhum fechamento</p>}
+                </div>
+            )}
+
+            {/* Tab: Disputes */}
+            {tab === 'disputes' && (
+                <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-subtle bg-surface-50">
+                                <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Solicitante</th>
+                                <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">OS</th>
+                                <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Motivo</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Valor</th>
+                                <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Status</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-subtle">
+                            {(disputes as any[]).length === 0 ? (
+                                <tr><td colSpan={6} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhuma contestação</td></tr>
+                            ) : (disputes as any[]).map((d: any) => (
+                                <tr key={d.id} className="hover:bg-surface-50 transition-colors duration-100">
+                                    <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{d.user_name}</td>
+                                    <td className="px-4 py-3 text-xs text-brand-600 font-medium">{d.os_number ?? d.work_order_number ?? '-'}</td>
+                                    <td className="px-4 py-3 text-[13px] text-surface-600 max-w-xs truncate">{d.reason}</td>
+                                    <td className="px-3.5 py-2.5 text-right text-sm font-semibold">{fmtBRL(d.commission_amount)}</td>
+                                    <td className="px-4 py-3"><Badge variant={disputeStatusConfig[d.status]?.variant}>{disputeStatusConfig[d.status]?.label}</Badge></td>
+                                    <td className="px-3.5 py-2.5 text-right">
+                                        {d.status === COMMISSION_STATUS.OPEN && (
+                                            <Button variant="outline" size="sm" onClick={() => { setShowResolve(d); setResolveForm({ status: 'accepted', resolution_notes: '', new_amount: '' }) }}>
+                                                Resolver
+                                            </Button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* -- Tab: -- */}
+            {tab === 'goals' && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {(goals as any[]).map((g: any) => {
+                        const pct = g.achievement_pct ?? 0
+                        const color = pct >= 100 ? 'bg-emerald-500' : pct >= 70 ? 'bg-sky-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-400'
+                        return (
+                            <div key={g.id} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-surface-900">{g.user_name}</h3>
+                                        <p className="text-xs text-surface-500">{g.period}</p>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        {pct >= 100 && <span className="text-lg">??</span>}
+                                        <Button variant="ghost" size="sm" onClick={() => { if (confirm('Excluir meta?')) delGoalMut.mutate(g.id) }}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <div className="flex justify-between text-xs text-surface-500 mb-1">
+                                        <span>{fmtBRL(g.achieved_amount)}</span>
+                                        <span>{fmtBRL(g.target_amount)}</span>
+                                    </div>
+                                    <div className="h-2.5 rounded-full bg-surface-100 overflow-hidden">
+                                        <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${Math.min(pct, 100)}%` }} />
+                                    </div>
+                                    <p className="mt-1 text-right text-xs font-bold" style={{ color: pct >= 100 ? '#059669' : '#6B7280' }}>{pct}%</p>
+                                </div>
+                                {g.bonus_rules && (g.bonus_rules as any[]).length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                        {(g.bonus_rules as any[]).map((b: any, i: number) => (
+                                            <Badge key={i} variant={pct >= b.threshold_pct ? 'success' : 'default'}>
+                                                {b.threshold_pct}% ? +{b.bonus_pct}%
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                    {(goals as any[]).length === 0 && <p className="col-span-full text-center text-[13px] text-surface-500 py-8">Nenhuma meta cadastrada</p>}
+                </div>
+            )}
+
+            {/* -- Tab: -- */}
+            {tab === 'campaigns' && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {(campaigns as any[]).map((c: any) => {
+                        const isActive = c.active && new Date(c.starts_at) <= new Date() && new Date(c.ends_at) >= new Date()
+                        return (
+                            <div key={c.id} className={cn('rounded-xl border p-4 shadow-card', isActive ? 'border-emerald-300 bg-emerald-50/30' : 'border-default bg-surface-0')}>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-surface-900">{c.name}</h3>
+                                    <div className="flex gap-1">
+                                        <Badge variant={isActive ? 'success' : 'default'}>{isActive ? 'Ativa' : 'Inativa'}</Badge>
+                                        <Button variant="ghost" size="sm" onClick={() => { if (confirm('Excluir?')) delCampaignMut.mutate(c.id) }}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex items-center gap-3">
+                                    <div className="flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1.5">
+                                        <Zap className="h-4 w-4 text-amber-600" />
+                                        <span className="text-[15px] font-semibold tabular-nums text-amber-700">{c.multiplier}x</span>
+                                    </div>
+                                    <div className="text-xs text-surface-500">
+                                        <p>{c.applies_to_role ? roleLabels[c.applies_to_role] : 'Todos os papéis'}</p>
+                                        <p className="flex items-center gap-1"><Calendar className="h-3 w-3" />{c.starts_at} ? {c.ends_at}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
+                    {(campaigns as any[]).length === 0 && <p className="col-span-full text-center text-[13px] text-surface-500 py-8">Nenhuma campanha</p>}
+                </div>
+            )}
+
+            {/* -- Modals -- */}
+
+            {/* Rule Modal */}
+            <Modal open={showRuleForm} onOpenChange={setShowRuleForm} title="Nova Regra de Comissão">
+                <form onSubmit={e => { e.preventDefault(); saveRuleMut.mutate(ruleForm) }} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Pessoa *</label>
+                            <select value={ruleForm.user_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRuleForm(p => ({ ...p, user_id: e.target.value }))} required
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                <option value="">Selecionar</option>
+                                {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Papel</label>
+                            <select value={ruleForm.applies_to_role} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRuleForm(p => ({ ...p, applies_to_role: e.target.value }))}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                {Object.entries(roleLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <Input label="Nome da regra" value={ruleForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRuleForm(p => ({ ...p, name: e.target.value }))} required placeholder="Ex: 10% sobre serviços" />
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tipo de Cálculo *</label>
+                        <select value={ruleForm.calculation_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRuleForm(p => ({ ...p, calculation_type: e.target.value }))}
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                            {Object.entries(calcTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        </select>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <Input label={ruleForm.calculation_type === 'fixed_per_os' ? 'Valor (R$)' : 'Percentual (%)'} type="number" step="0.01"
+                            value={ruleForm.value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRuleForm(p => ({ ...p, value: e.target.value }))} required />
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Quando</label>
+                            <select value={ruleForm.applies_when} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRuleForm(p => ({ ...p, applies_when: e.target.value }))}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                {Object.entries(whenLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Aplica a</label>
+                            <select value={ruleForm.applies_to} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRuleForm(p => ({ ...p, applies_to: e.target.value }))}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                <option value="all">Tudo</option><option value="products">Produtos</option><option value="services">Serviços</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowRuleForm(false)}>Cancelar</Button>
+                        <Button type="submit" loading={saveRuleMut.isPending}>Criar</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Generate Modal */}
+            <Modal open={showGenerate} onOpenChange={setShowGenerate} title="Gerar Comissões da OS">
+                <form onSubmit={e => { e.preventDefault(); genMut.mutate(genWoId) }} className="space-y-4">
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS *</label>
+                        <select value={genWoId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGenWoId(e.target.value)} required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                            <option value="">Selecionar</option>
+                            {(wosRes?.data?.data ?? []).map((wo: any) => <option key={wo.id} value={wo.id}>{wo.business_number ?? wo.os_number ?? wo.number}  — {wo.customer?.name}  — {fmtBRL(wo.total)}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowGenerate(false)}>Cancelar</Button>
+                        <Button type="submit" loading={genMut.isPending}>Gerar</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Close Settlement Modal */}
+            <Modal open={showClose} onOpenChange={setShowClose} title="Fechar Período">
+                <form onSubmit={e => { e.preventDefault(); closeMut.mutate(closeForm) }} className="space-y-4">
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico *</label>
+                        <select value={closeForm.user_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCloseForm(p => ({ ...p, user_id: e.target.value }))} required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                            <option value="">Selecionar</option>
+                            {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                    </div>
+                    <Input label="Período (YYYY-MM)" value={closeForm.period} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCloseForm(p => ({ ...p, period: e.target.value }))} required placeholder="2026-02" />
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowClose(false)}>Cancelar</Button>
+                        <Button type="submit" loading={closeMut.isPending}>Fechar</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Split Modal */}
+            <Modal open={!!showSplit} onOpenChange={() => setShowSplit(null)} title={`Dividir Comissão — ${fmtBRL(showSplit?.commission_amount ?? 0)}`}>
+                <div className="space-y-3">
+                    {splits.map((s, i) => (
+                        <div key={i} className="grid grid-cols-3 gap-2">
+                            <select value={s.user_id} onChange={e => { const n = [...splits]; n[i].user_id = e.target.value; setSplits(n) }}
+                                className="col-span-1 rounded-lg border border-default bg-surface-50 px-2 py-2 text-sm">
+                                <option value="">Pessoa</option>
+                                {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                            <Input type="number" value={s.percentage} onChange={(e: any) => { const n = [...splits]; n[i].percentage = e.target.value; setSplits(n) }} placeholder="%" />
+                            <select value={s.role} onChange={e => { const n = [...splits]; n[i].role = e.target.value; setSplits(n) }}
+                                className="rounded-lg border border-default bg-surface-50 px-2 py-2 text-sm">
+                                {Object.entries(roleLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                        </div>
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => setSplits([...splits, { user_id: '', percentage: '', role: 'technician' }])}>
+                        <Plus className="h-3 w-3 mr-1" /> Adicionar
+                    </Button>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" onClick={() => setShowSplit(null)}>Cancelar</Button>
+                        <Button onClick={() => showSplit && splitMut.mutate({ eventId: showSplit.id, splits })} loading={splitMut.isPending}>Salvar Splits</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Dispute Modal */}
+            <Modal open={!!showDispute} onOpenChange={() => setShowDispute(null)} title="Contestar Comissão">
+                <form
+                    onSubmit={e => {
+                        e.preventDefault()
+                        if (showDispute) {
+                            disputeMut.mutate({ commission_event_id: showDispute.id, reason: disputeReason })
+                        }
+                    }}
+                    className="space-y-4"
+                >
+                    <div>
+                        <p className="text-[13px] text-surface-600 mb-2">Comissão: <strong>{fmtBRL(showDispute?.commission_amount ?? 0)}</strong>  — {showDispute?.user?.name}</p>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Motivo da contestação *</label>
+                        <textarea value={disputeReason} onChange={e => setDisputeReason(e.target.value)} required minLength={10}
+                            rows={3} className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                            placeholder="Descreva o motivo..." />
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowDispute(null)}>Cancelar</Button>
+                        <Button type="submit" loading={disputeMut.isPending}>Enviar</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Resolve Dispute Modal */}
+            <Modal open={!!showResolve} onOpenChange={() => setShowResolve(null)} title="Resolver Contestação">
+                <form
+                    onSubmit={e => {
+                        e.preventDefault()
+                        if (showResolve) {
+                            resolveMut.mutate({ id: showResolve.id, ...resolveForm })
+                        }
+                    }}
+                    className="space-y-4"
+                >
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Decisão *</label>
+                        <select value={resolveForm.status} onChange={e => setResolveForm(p => ({ ...p, status: e.target.value }))}
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none">
+                            <option value="accepted">Aceitar</option>
+                            <option value="rejected">Rejeitar</option>
+                        </select>
+                    </div>
+                    {resolveForm.status === COMMISSION_STATUS.ACCEPTED && (
+                        <Input label="Novo valor (R$)" type="number" step="0.01" value={resolveForm.new_amount}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setResolveForm(p => ({ ...p, new_amount: e.target.value }))} placeholder="Deixe vazio para manter" />
+                    )}
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Notas de resolução *</label>
+                        <textarea value={resolveForm.resolution_notes} onChange={e => setResolveForm(p => ({ ...p, resolution_notes: e.target.value }))} required minLength={5}
+                            rows={3} className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowResolve(null)}>Cancelar</Button>
+                        <Button type="submit" loading={resolveMut.isPending}>Resolver</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Goal Modal */}
+            <Modal open={showGoalForm} onOpenChange={setShowGoalForm} title="Nova Meta">
+                <form onSubmit={e => { e.preventDefault(); goalMut.mutate(goalForm) }} className="space-y-4">
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Pessoa *</label>
+                        <select value={goalForm.user_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGoalForm(p => ({ ...p, user_id: e.target.value }))} required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                            <option value="">Selecionar</option>
+                            {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Input label="Período (YYYY-MM)" value={goalForm.period} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGoalForm(p => ({ ...p, period: e.target.value }))} required placeholder="2026-02" />
+                        <Input label="Meta (R$)" type="number" step="0.01" value={goalForm.target_amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGoalForm(p => ({ ...p, target_amount: e.target.value }))} required />
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowGoalForm(false)}>Cancelar</Button>
+                        <Button type="submit" loading={goalMut.isPending}>Criar</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Campaign Modal */}
+            <Modal open={showCampaignForm} onOpenChange={setShowCampaignForm} title="Nova Campanha">
+                <form onSubmit={e => { e.preventDefault(); campaignMut.mutate(campaignForm) }} className="space-y-4">
+                    <Input label="Nome" value={campaignForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCampaignForm(p => ({ ...p, name: e.target.value }))} required placeholder="Ex: Campanha de Março" />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Input label="Multiplicador" type="number" step="0.01" min="1.01" max="5" value={campaignForm.multiplier}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCampaignForm(p => ({ ...p, multiplier: e.target.value }))} required />
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Papel (opcional)</label>
+                            <select value={campaignForm.applies_to_role} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCampaignForm(p => ({ ...p, applies_to_role: e.target.value }))}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none">
+                                <option value="">Todos</option>
+                                {Object.entries(roleLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Input label="Início" type="date" value={campaignForm.starts_at} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCampaignForm(p => ({ ...p, starts_at: e.target.value }))} required />
+                        <Input label="Fim" type="date" value={campaignForm.ends_at} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCampaignForm(p => ({ ...p, ends_at: e.target.value }))} required />
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowCampaignForm(false)}>Cancelar</Button>
+                        <Button type="submit" loading={campaignMut.isPending}>Criar</Button>
+                    </div>
+                </form>
+            </Modal>
+        </div>
+    )
+}
+

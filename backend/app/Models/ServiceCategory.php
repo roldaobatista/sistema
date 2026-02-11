@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ServiceCategory extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, \Illuminate\Database\Eloquent\Factories\HasFactory;
 
     protected $fillable = ['tenant_id', 'name', 'is_active'];
 

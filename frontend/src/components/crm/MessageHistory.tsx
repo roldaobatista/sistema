@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { crmApi } from '@/lib/crm-api'
 import type { CrmMessage } from '@/lib/crm-api'
+import { MESSAGE_STATUS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { MessageCircle, Mail, Check, CheckCheck, Clock, AlertCircle, Eye } from 'lucide-react'
 
@@ -104,7 +105,7 @@ export function MessageHistory({ customerId, dealId }: Props) {
                                         'max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm',
                                         isOutbound
                                             ? 'bg-brand-50 border border-brand-100 rounded-br-md'
-                                            : 'bg-white border border-surface-200 rounded-bl-md'
+                                            : 'bg-white border border-default rounded-bl-md'
                                     )}>
                                         {/* Channel + direction */}
                                         <div className="flex items-center gap-1.5 mb-1">
@@ -152,7 +153,7 @@ export function MessageHistory({ customerId, dealId }: Props) {
                                         </div>
 
                                         {/* Error message */}
-                                        {msg.status === 'failed' && msg.error_message && (
+                                        {msg.status === MESSAGE_STATUS.FAILED && msg.error_message && (
                                             <div className="mt-1.5 rounded-md bg-red-50 px-2 py-1 text-[10px] text-red-600">
                                                 ⚠ {msg.error_message}
                                             </div>

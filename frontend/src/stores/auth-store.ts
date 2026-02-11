@@ -6,6 +6,7 @@ interface User {
     id: number
     name: string
     email: string
+    phone: string | null
     tenant_id: number | null
     permissions: string[]
     roles: string[]
@@ -56,6 +57,12 @@ export const useAuthStore = create<AuthState>()(
                     })
                     // Busca dados completos do usuário
                     await get().fetchMe()
+                } catch (err: any) {
+                    set({ isAuthenticated: false, user: null, token: null })
+                    if (err?.response?.status === 403) {
+                        throw new Error(err.response?.data?.message ?? 'Conta desativada.')
+                    }
+                    throw err
                 } finally {
                     set({ isLoading: false })
                 }
@@ -64,8 +71,8 @@ export const useAuthStore = create<AuthState>()(
             logout: async () => {
                 try {
                     await api.post('/logout')
-                } catch {
-                    // ignora erro de logout
+                } catch (err) {
+                    console.warn('Erro ao fazer logout (ignorado):', err)
                 } finally {
                     localStorage.removeItem('auth_token')
                     set({
@@ -80,12 +87,17 @@ export const useAuthStore = create<AuthState>()(
             fetchMe: async () => {
                 try {
                     const { data } = await api.get('/me')
+                    const userData = {
+                        ...data.user,
+                        tenant_id: data.user.tenant?.id ?? data.user.tenant_id ?? null,
+                    }
                     set({
-                        user: data.user,
-                        tenant: data.user.tenant,
+                        user: userData,
+                        tenant: data.user.tenant ?? null,
                         isAuthenticated: true,
                     })
-                } catch {
+                } catch (err) {
+                    console.error('Erro ao buscar dados do usuário:', err)
                     set({ isAuthenticated: false, user: null, tenant: null })
                 }
             },

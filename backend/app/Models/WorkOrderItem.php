@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Concerns\BelongsToTenant;
 
 class WorkOrderItem extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasFactory;
+
+    public const TYPE_PRODUCT = 'product';
+    public const TYPE_SERVICE = 'service';
 
     protected $fillable = [
         'tenant_id',
@@ -43,41 +47,78 @@ class WorkOrderItem extends Model
 
         // Auto-popular cost_price a partir do Product
         static::creating(function (self $item) {
-            if ($item->type === 'product' && $item->reference_id && !$item->cost_price) {
+            if ($item->type === self::TYPE_PRODUCT && $item->reference_id && !$item->cost_price) {
                 $item->cost_price = Product::where('id', $item->reference_id)->value('cost_price') ?? 0;
             }
         });
 
-        // Recalcula total da OS + controle de estoque
+        // Recalcula total da OS + controle de estoque via StockService
         static::created(function (self $item) {
             $item->workOrder->recalculateTotal();
-            if ($item->type === 'product' && $item->reference_id) {
-                $product = Product::find($item->reference_id);
-                if ($product && $product->stock_qty < $item->quantity) {
-                    \Illuminate\Support\Facades\Log::warning("Estoque insuficiente: Produto #{$product->id} ({$product->name}) — disponível: {$product->stock_qty}, solicitado: {$item->quantity}");
+            if ($item->type === self::TYPE_PRODUCT && $item->reference_id) {
+                $product = \App\Models\Product::find($item->reference_id);
+                if ($product && $product->track_stock) {
+                    // Reserva estoque (baixa)
+                    app(\App\Services\StockService::class)->reserve($product, (float) $item->quantity, $item->workOrder);
                 }
-                Product::where('id', $item->reference_id)
-                    ->decrement('stock_qty', (float) $item->quantity);
             }
         });
 
         static::updated(function (self $item) {
             $item->workOrder->recalculateTotal();
-            if ($item->type === 'product' && $item->reference_id && $item->isDirty('quantity')) {
-                $diff = $item->quantity - $item->getOriginal('quantity');
-                if ($diff > 0) {
-                    Product::where('id', $item->reference_id)->decrement('stock_qty', $diff);
-                } elseif ($diff < 0) {
-                    Product::where('id', $item->reference_id)->increment('stock_qty', abs($diff));
+
+            // Detecta mudanças relevantes para estoque
+            if ($item->isDirty(['type', 'reference_id', 'quantity'])) {
+                /** @var \App\Services\StockService $stockService */
+                $stockService = app(\App\Services\StockService::class);
+                
+                $oldType = $item->getOriginal('type');
+                $oldRefId = $item->getOriginal('reference_id');
+                $oldQty = (float) $item->getOriginal('quantity');
+
+                $newType = $item->type;
+                $newRefId = $item->reference_id;
+                $newQty = (float) $item->quantity;
+
+                // 1. Se mudou o PRODUTO (ID ou Tipo) -> Estorna o anterior COMPLETO
+                if ($oldType === self::TYPE_PRODUCT && $oldRefId && ($oldRefId != $newRefId || $oldType != $newType)) {
+                    $oldProduct = \App\Models\Product::find($oldRefId);
+                    if ($oldProduct && $oldProduct->track_stock) {
+                        $stockService->returnStock($oldProduct, $oldQty, $item->workOrder);
+                    }
+                }
+
+                // 2. Se mudou o PRODUTO (ID ou Tipo) -> Reserva o novo COMPLETO
+                if ($newType === self::TYPE_PRODUCT && $newRefId && ($oldRefId != $newRefId || $oldType != $newType)) {
+                    $newProduct = \App\Models\Product::find($newRefId);
+                    if ($newProduct && $newProduct->track_stock) {
+                        $stockService->reserve($newProduct, $newQty, $item->workOrder);
+                    }
+                }
+
+                // 3. Se é o MESMO produto e só mudou a QUANTIDADE -> Ajusta a diferença
+                if ($newType === self::TYPE_PRODUCT && $newRefId && $oldRefId == $newRefId && $oldType == $newType) {
+                    $product = \App\Models\Product::find($newRefId);
+                    if ($product && $product->track_stock) {
+                        $diff = $newQty - $oldQty;
+                        if ($diff > 0) {
+                            $stockService->reserve($product, $diff, $item->workOrder);
+                        } elseif ($diff < 0) {
+                            $stockService->returnStock($product, abs($diff), $item->workOrder);
+                        }
+                    }
                 }
             }
         });
 
         static::deleted(function (self $item) {
             $item->workOrder->recalculateTotal();
-            if ($item->type === 'product' && $item->reference_id) {
-                Product::where('id', $item->reference_id)
-                    ->increment('stock_qty', $item->quantity);
+            if ($item->type === self::TYPE_PRODUCT && $item->reference_id) {
+                $product = \App\Models\Product::find($item->reference_id);
+                if ($product && $product->track_stock) {
+                    // Devolve estoque
+                    app(\App\Services\StockService::class)->returnStock($product, (float) $item->quantity, $item->workOrder);
+                }
             }
         });
     }

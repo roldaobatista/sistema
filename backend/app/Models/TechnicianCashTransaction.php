@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Concerns\BelongsToTenant;
 
 class TechnicianCashTransaction extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasFactory;
+
+    public const TYPE_CREDIT = 'credit';
+    public const TYPE_DEBIT = 'debit';
 
     protected $fillable = [
         'tenant_id', 'fund_id', 'type', 'amount', 'balance_after',

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
     TrendingUp, DollarSign, Users, Target, AlertTriangle,
@@ -6,12 +7,14 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/Badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CrmDashboardPage() {
+    const [nowTs] = useState(() => Date.now())
     const { data, isLoading } = useQuery({
         queryKey: ['crm', 'dashboard'],
         queryFn: () => crmApi.getDashboard().then(r => r.data),
@@ -41,19 +44,19 @@ export function CrmDashboardPage() {
     ]
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">CRM</h1>
-                    <p className="mt-1 text-sm text-surface-500">Pipeline de vendas e relacionamento com clientes</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">CRM</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Pipeline de vendas e relacionamento com clientes</p>
                 </div>
                 <div className="flex gap-2">
                     {pipelines.map(p => (
                         <Link
                             key={p.id}
                             to={`/crm/pipeline/${p.id}`}
-                            className="flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors shadow-card"
+                            className="flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-2 text-[13px] font-medium text-surface-700 hover:bg-surface-50 transition-colors duration-100 shadow-card"
                         >
                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color || '#94a3b8' }} />
                             {p.name}
@@ -67,11 +70,11 @@ export function CrmDashboardPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {kpiCards.map(card => (
                     <div key={card.label}
-                        className="group rounded-xl border border-surface-200 bg-white p-5 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5">
+                        className="group rounded-xl border border-default bg-surface-0 p-5 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5">
                         <div className="flex items-start justify-between">
                             <div>
                                 <p className="text-xs font-medium text-surface-500 uppercase tracking-wider">{card.label}</p>
-                                <p className="mt-2 text-2xl font-bold text-surface-900">{isLoading ? '…' : card.value}</p>
+                                <p className="mt-2 text-lg font-semibold text-surface-900 tracking-tight">{isLoading ? '…' : card.value}</p>
                             </div>
                             <div className={cn('rounded-lg p-2.5', card.color)}>
                                 <card.icon className="h-5 w-5" />
@@ -84,14 +87,14 @@ export function CrmDashboardPage() {
             {/* KPI Row 2 */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {kpiCards2.map(card => (
-                    <div key={card.label} className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
+                    <div key={card.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                         <div className="flex items-center gap-3">
                             <div className={cn('rounded-lg p-2.5', card.color)}>
                                 <card.icon className="h-5 w-5" />
                             </div>
                             <div>
                                 <p className="text-xs text-surface-500">{card.label}</p>
-                                <p className="text-lg font-bold text-surface-900">{isLoading ? '…' : card.value}</p>
+                                <p className="text-[15px] font-semibold tabular-nums text-surface-900">{isLoading ? '…' : card.value}</p>
                             </div>
                         </div>
                     </div>
@@ -100,8 +103,8 @@ export function CrmDashboardPage() {
 
             {/* Pipeline Funnel Summary */}
             {pipelines.length > 0 && (
-                <div className="rounded-xl border border-surface-200 bg-white shadow-card">
-                    <div className="border-b border-surface-200 px-5 py-3">
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                    <div className="border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Funil de Vendas</h2>
                     </div>
                     <div className="p-5 space-y-4">
@@ -136,8 +139,8 @@ export function CrmDashboardPage() {
             )}
 
             {/* Messaging Stats */}
-            <div className="rounded-xl border border-surface-200 bg-white shadow-card">
-                <div className="flex items-center justify-between border-b border-surface-200 px-5 py-3">
+            <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
                     <h2 className="text-sm font-semibold text-surface-900">Mensageria (mês atual)</h2>
                     <Link to="/crm/templates" className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">
                         Templates <ArrowRight className="h-3 w-3" />
@@ -159,7 +162,7 @@ export function CrmDashboardPage() {
                             </div>
                             <div>
                                 <p className="text-[10px] text-surface-400 uppercase tracking-wider">{stat.label}</p>
-                                <p className="text-lg font-bold text-surface-900">{isLoading ? '…' : stat.value}</p>
+                                <p className="text-[15px] font-semibold tabular-nums text-surface-900">{isLoading ? '…' : stat.value}</p>
                             </div>
                         </div>
                     ))}
@@ -168,17 +171,17 @@ export function CrmDashboardPage() {
 
             <div className="grid gap-4 lg:grid-cols-3">
                 {/* Recent Deals */}
-                <div className="lg:col-span-2 rounded-xl border border-surface-200 bg-white shadow-card">
-                    <div className="flex items-center justify-between border-b border-surface-200 px-5 py-3">
+                <div className="lg:col-span-2 rounded-xl border border-default bg-surface-0 shadow-card">
+                    <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Deals Recentes</h2>
                     </div>
-                    <div className="divide-y divide-surface-100">
+                    <div className="divide-y divide-subtle">
                         {isLoading ? (
                             <p className="py-8 text-center text-sm text-surface-400">Carregando…</p>
                         ) : recentDeals.length === 0 ? (
                             <p className="py-8 text-center text-sm text-surface-400">Nenhum deal encontrado</p>
                         ) : recentDeals.map(deal => (
-                            <div key={deal.id} className="flex items-center justify-between px-5 py-3 hover:bg-surface-50 transition-colors">
+                            <div key={deal.id} className="flex items-center justify-between px-5 py-3 hover:bg-surface-50 transition-colors duration-100">
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="h-2 w-2 rounded-full shrink-0"
                                         style={{ backgroundColor: deal.stage?.color || '#94a3b8' }} />
@@ -188,7 +191,7 @@ export function CrmDashboardPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 shrink-0">
-                                    <Badge variant={deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'}>
+                                    <Badge variant={deal.status === DEAL_STATUS.WON ? 'success' : deal.status === DEAL_STATUS.LOST ? 'danger' : 'info'}>
                                         {deal.stage?.name ?? deal.status}
                                     </Badge>
                                     <span className="text-sm font-bold text-surface-900">{fmtBRL(deal.value)}</span>
@@ -199,17 +202,17 @@ export function CrmDashboardPage() {
                 </div>
 
                 {/* Upcoming Activities */}
-                <div className="rounded-xl border border-surface-200 bg-white shadow-card">
-                    <div className="border-b border-surface-200 px-5 py-3">
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                    <div className="border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Próximas Atividades</h2>
                     </div>
-                    <div className="divide-y divide-surface-100">
+                    <div className="divide-y divide-subtle">
                         {isLoading ? (
                             <p className="py-8 text-center text-sm text-surface-400">Carregando…</p>
                         ) : upcomingActivities.length === 0 ? (
                             <p className="py-8 text-center text-sm text-surface-400">Nenhuma atividade agendada</p>
                         ) : upcomingActivities.map(act => (
-                            <div key={act.id} className="px-5 py-3 hover:bg-surface-50 transition-colors">
+                            <div key={act.id} className="px-5 py-3 hover:bg-surface-50 transition-colors duration-100">
                                 <p className="text-sm font-medium text-surface-800">{act.title}</p>
                                 <div className="flex items-center gap-2 mt-1 text-xs text-surface-400">
                                     <Clock className="h-3 w-3" />
@@ -226,11 +229,11 @@ export function CrmDashboardPage() {
 
             <div className="grid gap-4 lg:grid-cols-2">
                 {/* Top Customers */}
-                <div className="rounded-xl border border-surface-200 bg-white shadow-card">
-                    <div className="border-b border-surface-200 px-5 py-3">
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                    <div className="border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Top Clientes (receita ganha)</h2>
                     </div>
-                    <div className="divide-y divide-surface-100">
+                    <div className="divide-y divide-subtle">
                         {isLoading ? (
                             <p className="py-8 text-center text-sm text-surface-400">Carregando…</p>
                         ) : topCustomers.length === 0 ? (
@@ -263,7 +266,7 @@ export function CrmDashboardPage() {
                         <div className="divide-y divide-amber-100">
                             {calibrationAlerts.map((eq: any) => {
                                 const d = new Date(eq.next_calibration_at)
-                                const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                                const diff = Math.ceil((d.getTime() - nowTs) / (1000 * 60 * 60 * 24))
                                 const isPast = diff < 0
                                 return (
                                     <div key={eq.id} className="flex items-center justify-between px-5 py-2.5">

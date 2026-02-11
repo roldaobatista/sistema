@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\SystemSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
 {
@@ -33,6 +34,15 @@ class SettingsController extends Controller
 
         $saved = [];
         foreach ($validated['settings'] as $item) {
+            if (($item['key'] ?? '') === 'quote_sequence_start') {
+                $start = filter_var($item['value'], FILTER_VALIDATE_INT);
+                if ($start === false || (int) $start < 1) {
+                    throw ValidationException::withMessages([
+                        'settings' => 'quote_sequence_start deve ser um inteiro maior ou igual a 1.',
+                    ]);
+                }
+            }
+
             $saved[] = SystemSetting::setValue(
                 $item['key'],
                 $item['value'],
@@ -59,7 +69,7 @@ class SettingsController extends Controller
             $query->where('user_id', $userId);
         }
         if ($type = $request->get('auditable_type')) {
-            $query->where('auditable_type', 'like', "%$type%");
+            $query->where('auditable_type', 'like', '%' . $type . '%');
         }
         if ($auditableId = $request->get('auditable_id')) {
             $query->where('auditable_id', $auditableId);

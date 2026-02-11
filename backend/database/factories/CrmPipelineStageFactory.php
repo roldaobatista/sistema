@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\CrmPipelineStage;
 use App\Models\CrmPipeline;
+use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CrmPipelineStageFactory extends Factory
@@ -13,6 +14,7 @@ class CrmPipelineStageFactory extends Factory
     public function definition(): array
     {
         return [
+            'tenant_id' => Tenant::factory(),
             'pipeline_id' => CrmPipeline::factory(),
             'name' => fake()->randomElement(['Prospecção', 'Qualificação', 'Proposta', 'Negociação']),
             'color' => fake()->hexColor(),

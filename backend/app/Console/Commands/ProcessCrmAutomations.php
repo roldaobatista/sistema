@@ -140,7 +140,7 @@ class ProcessCrmAutomations extends Command
 
         // OS concluídas nos últimos 2 dias que ainda não têm follow-up automático
         $workOrders = WorkOrder::where('tenant_id', $tenant->id)
-            ->where('status', 'completed')
+            ->where('status', WorkOrder::STATUS_COMPLETED)
             ->where('updated_at', '>=', now()->subDays(2))
             ->get();
 
@@ -148,7 +148,7 @@ class ProcessCrmAutomations extends Command
             $exists = CrmActivity::where('tenant_id', $tenant->id)
                 ->where('customer_id', $wo->customer_id)
                 ->where('type', 'system')
-                ->where('title', 'like', "%OS #{$wo->number}%follow-up%")
+                ->where('title', 'like', "%OS #{$wo->business_number}%follow-up%")
                 ->where('created_at', '>=', now()->subDays(3))
                 ->exists();
 
@@ -158,9 +158,9 @@ class ProcessCrmAutomations extends Command
                 'tenant_id' => $tenant->id,
                 'type' => 'tarefa',
                 'customer_id' => $wo->customer_id,
-                'user_id' => $wo->technician_id ?? 1,
-                'title' => "Follow-up: OS #{$wo->number} concluída — verificar satisfação",
-                'description' => "A OS #{$wo->number} foi finalizada. Ligue ou envie mensagem para o cliente para verificar satisfação e identificar novas oportunidades.",
+                'user_id' => $wo->technicians->first()?->id ?? $wo->assigned_to ?? 1,
+                'title' => "Follow-up: OS #{$wo->business_number} concluída — verificar satisfação",
+                'description' => "A OS #{$wo->business_number} foi finalizada. Ligue ou envie mensagem para o cliente para verificar satisfação e identificar novas oportunidades.",
                 'scheduled_at' => now()->addDays(3),
                 'is_automated' => true,
                 'channel' => 'telefone',
@@ -244,7 +244,7 @@ class ProcessCrmAutomations extends Command
 
         foreach ($deals as $deal) {
             $quote = Quote::find($deal->quote_id);
-            if (!$quote || $quote->status !== 'approved') continue;
+            if (!$quote || $quote->status !== Quote::STATUS_APPROVED) continue;
 
             $deal->update(['value' => $quote->total]);
             $deal->markAsWon();
@@ -536,3 +536,4 @@ class ProcessCrmAutomations extends Command
         }
     }
 }
+

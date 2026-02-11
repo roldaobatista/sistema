@@ -3,14 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\Concerns\Auditable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles, Auditable;
 
     protected $fillable = [
         'name',
@@ -19,7 +22,9 @@ class User extends Authenticatable
         'password',
         'is_active',
         'tenant_id',
+        'branch_id',
         'current_tenant_id',
+        'last_login_at',
     ];
 
     protected $hidden = [
@@ -38,14 +43,24 @@ class User extends Authenticatable
     }
 
     // Relacionamentos
-    public function tenants()
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function tenants(): BelongsToMany
     {
         return $this->belongsToMany(Tenant::class, 'user_tenants')
             ->withPivot('is_default')
             ->withTimestamps();
     }
 
-    public function currentTenant()
+    public function currentTenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'current_tenant_id');
     }

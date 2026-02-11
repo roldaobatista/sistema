@@ -31,6 +31,7 @@ class WorkOrderStatusChanged extends Notification
             'waiting_approval' => 'Aguardando Aprovação',
             'completed' => 'Concluída',
             'delivered' => 'Entregue',
+            'invoiced' => 'Faturada',
             'cancelled' => 'Cancelada',
         ];
 
@@ -38,9 +39,9 @@ class WorkOrderStatusChanged extends Notification
         $wo = $this->workOrder;
 
         return (new MailMessage)
-            ->subject("OS #{$wo->number} — Status: {$newLabel}")
+            ->subject("OS #{$wo->business_number} — Status: {$newLabel}")
             ->greeting("Olá, {$notifiable->name}!")
-            ->line("A OS **#{$wo->number}** teve o status alterado para **{$newLabel}**.")
+            ->line("A OS **#{$wo->business_number}** teve o status alterado para **{$newLabel}**.")
             ->line("**Cliente:** {$wo->customer?->name}")
             ->line("**Descrição:** " . \Illuminate\Support\Str::limit($wo->description, 100))
             ->action('Ver OS', config('app.frontend_url') . "/os/{$wo->id}")
@@ -51,9 +52,12 @@ class WorkOrderStatusChanged extends Notification
     {
         return [
             'work_order_id' => $this->workOrder->id,
-            'number' => $this->workOrder->number,
+            'number' => $this->workOrder->business_number,
+            'internal_number' => $this->workOrder->number,
+            'os_number' => $this->workOrder->os_number,
             'old_status' => $this->oldStatus,
             'new_status' => $this->newStatus,
         ];
     }
 }
+

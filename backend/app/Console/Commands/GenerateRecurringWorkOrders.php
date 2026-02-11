@@ -27,7 +27,7 @@ class GenerateRecurringWorkOrders extends Command
         foreach ($contracts as $contract) {
             try {
                 $wo = $contract->generateWorkOrder();
-                $this->line("✓ Contrato #{$contract->id} \"{$contract->name}\" → OS #{$wo->number}");
+                $this->line("✓ Contrato #{$contract->id} \"{$contract->name}\" → OS #{$wo->business_number}");
 
                 // Gap #21 — Notificar técnico e criador
                 $notifyIds = array_filter(array_unique([
@@ -39,7 +39,7 @@ class GenerateRecurringWorkOrders extends Command
                         'tenant_id' => $contract->tenant_id,
                         'user_id' => $uid,
                         'type' => 'recurring_os_generated',
-                        'title' => "Nova OS {$wo->number} gerada automaticamente",
+                        'title' => "Nova OS {$wo->business_number} gerada automaticamente",
                         'data' => json_encode([
                             'message' => "Contrato recorrente: {$contract->name}",
                             'work_order_id' => $wo->id,
@@ -58,3 +58,4 @@ class GenerateRecurringWorkOrders extends Command
         return self::SUCCESS;
     }
 }
+

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { crmApi } from '@/lib/crm-api'
 import api from '@/lib/api'
+import { toast } from 'sonner'
 
 interface Props {
     open: boolean
@@ -33,6 +34,10 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
 
     const customers = customersRes?.data?.data ?? []
 
+    const resetForm = () => {
+        setForm({ title: '', customer_id: '', value: '', expected_close_date: '', source: '', notes: '' })
+    }
+
     const createMutation = useMutation({
         mutationFn: () => crmApi.createDeal({
             title: form.title,
@@ -46,7 +51,16 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
         }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['crm'] })
+            toast.success('Deal criado com sucesso')
+            resetForm()
             onClose()
+        },
+        onError: (error: any) => {
+            if (error.response?.status === 422) {
+                toast.error('Dados inválidos. Verifique os campos.')
+            } else {
+                toast.error(error.response?.data?.message || 'Erro ao criar deal')
+            }
         },
     })
 
@@ -69,7 +83,7 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
                     <select
                         value={form.customer_id}
                         onChange={e => set('customer_id', e.target.value)}
-                        className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                        className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                     >
                         <option value="">Selecione um cliente</option>
                         {customers.map((c: any) => (
@@ -103,7 +117,7 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
                     <select
                         value={form.source}
                         onChange={e => set('source', e.target.value)}
-                        className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                        className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                     >
                         <option value="">Selecione</option>
                         <option value="calibracao_vencendo">Calibração Vencendo</option>
@@ -121,7 +135,7 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
                     <textarea
                         value={form.notes}
                         onChange={e => set('notes', e.target.value)}
-                        className="w-full rounded-lg border border-surface-200 px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                        className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                         rows={3}
                         placeholder="Notas opcionais..."
                     />

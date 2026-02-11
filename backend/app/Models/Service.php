@@ -5,12 +5,13 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Service extends Model
 {
-    use BelongsToTenant, SoftDeletes, Auditable;
+    use BelongsToTenant, SoftDeletes, Auditable, HasFactory;
 
     protected $fillable = [
         'tenant_id',
@@ -35,5 +36,19 @@ class Service extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ServiceCategory::class, 'category_id');
+    }
+
+    // ─── Import Support ─────────────────────────────────────
+
+    public static function getImportFields(): array
+    {
+        return [
+            ['key' => 'code', 'label' => 'Código', 'required' => true],
+            ['key' => 'name', 'label' => 'Nome', 'required' => true],
+            ['key' => 'default_price', 'label' => 'Preço', 'required' => true],
+            ['key' => 'category_name', 'label' => 'Categoria', 'required' => false],
+            ['key' => 'description', 'label' => 'Descrição', 'required' => false],
+            ['key' => 'estimated_minutes', 'label' => 'Tempo Estimado (min)', 'required' => false],
+        ];
     }
 }

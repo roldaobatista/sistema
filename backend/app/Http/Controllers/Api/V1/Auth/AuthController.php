@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -16,46 +17,60 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Credenciais inválidas.'],
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
             ]);
+
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['Credenciais inválidas.'],
+                ]);
+            }
+
+            if (!$user->is_active) {
+                return response()->json(['message' => 'Conta desativada.'], 403);
+            }
+
+            // Atualiza último login
+            $user->update(['last_login_at' => now()]);
+
+            // Revogar tokens API anteriores para evitar acúmulo ilimitado
+            $user->tokens()->where('name', 'api')->delete();
+
+            // Gera token
+            $token = $user->createToken('api')->plainTextToken;
+
+            // Carrega tenant padrão
+            $defaultTenant = $user->tenants()->wherePivot('is_default', true)->first();
+            if ($defaultTenant && !$user->current_tenant_id) {
+                $user->update(['current_tenant_id' => $defaultTenant->id]);
+                $user->refresh();
+            }
+
+            return response()->json([
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'tenant_id' => $user->current_tenant_id,
+                    'tenant' => $defaultTenant,
+                    'permissions' => $user->getAllPermissions()->pluck('name'),
+                    'roles' => $user->getRoleNames(),
+                ],
+            ]);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Login Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'Erro interno ao realizar login.',
+            ], 500);
         }
-
-        if (!$user->is_active) {
-            return response()->json(['message' => 'Conta desativada.'], 403);
-        }
-
-        // Atualiza último login
-        $user->update(['last_login_at' => now()]);
-
-        // Gera token
-        $token = $user->createToken('api')->plainTextToken;
-
-        // Carrega tenant padrão
-        $defaultTenant = $user->tenants()->wherePivot('is_default', true)->first();
-        if ($defaultTenant && !$user->current_tenant_id) {
-            $user->update(['current_tenant_id' => $defaultTenant->id]);
-        }
-
-        return response()->json([
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'tenant_id' => $user->current_tenant_id,
-                'permissions' => $user->getAllPermissions()->pluck('name'),
-                'roles' => $user->getRoleNames(),
-            ],
-        ]);
     }
 
     /**
@@ -75,6 +90,7 @@ class AuthController extends Controller
                 'tenant' => $user->currentTenant,
                 'permissions' => $user->getAllPermissions()->pluck('name'),
                 'roles' => $user->getRoleNames(),
+                'last_login_at' => $user->last_login_at,
             ],
         ]);
     }

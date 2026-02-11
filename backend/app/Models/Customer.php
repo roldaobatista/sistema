@@ -40,7 +40,7 @@ class Customer extends Model
         ];
     }
 
-    const SOURCES = [
+    public const SOURCES = [
         'indicacao' => 'Indicação',
         'google' => 'Google',
         'instagram' => 'Instagram',
@@ -49,7 +49,7 @@ class Customer extends Model
         'outro' => 'Outro',
     ];
 
-    const SEGMENTS = [
+    public const SEGMENTS = [
         'supermercado' => 'Supermercado',
         'farmacia' => 'Farmácia',
         'industria' => 'Indústria',
@@ -62,20 +62,20 @@ class Customer extends Model
         'outro' => 'Outro',
     ];
 
-    const COMPANY_SIZES = [
+    public const COMPANY_SIZES = [
         'micro' => 'Microempresa',
         'pequena' => 'Pequena',
         'media' => 'Média',
         'grande' => 'Grande',
     ];
 
-    const CONTRACT_TYPES = [
+    public const CONTRACT_TYPES = [
         'avulso' => 'Avulso',
         'contrato_mensal' => 'Contrato Mensal',
         'contrato_anual' => 'Contrato Anual',
     ];
 
-    const RATINGS = [
+    public const RATINGS = [
         'A' => 'A — Alto Potencial',
         'B' => 'B — Médio Potencial',
         'C' => 'C — Baixo Potencial',
@@ -148,7 +148,7 @@ class Customer extends Model
 
         // Orçamento aprovado recente (0-15)
         $orcAprovado = $this->quotes()
-            ->where('status', 'approved')
+            ->where('status', Quote::STATUS_APPROVED)
             ->where('approved_at', '>=', now()->subMonths(6))
             ->exists();
         $scores['orcamento_aprovado'] = [
@@ -159,7 +159,7 @@ class Customer extends Model
 
         // Sem pendências (0-10)
         $temPendencia = $this->accountsReceivable()
-            ->where('status', 'overdue')
+            ->where('status', AccountReceivable::STATUS_OVERDUE)
             ->exists();
         $scores['sem_pendencia'] = [
             'score' => $temPendencia ? 0 : 10,
@@ -231,5 +231,27 @@ class Customer extends Model
     public function accountsReceivable(): HasMany
     {
         return $this->hasMany(AccountReceivable::class);
+    }
+
+    // ─── Import Support ─────────────────────────────────────
+
+    public static function getImportFields(): array
+    {
+        return [
+            ['key' => 'name', 'label' => 'Nome', 'required' => true],
+            ['key' => 'document', 'label' => 'CPF/CNPJ', 'required' => true],
+            ['key' => 'type', 'label' => 'Tipo (PF/PJ)', 'required' => false],
+            ['key' => 'email', 'label' => 'E-mail', 'required' => false],
+            ['key' => 'phone', 'label' => 'Telefone', 'required' => false],
+            ['key' => 'phone2', 'label' => 'Telefone 2', 'required' => false],
+            ['key' => 'address_zip', 'label' => 'CEP', 'required' => false],
+            ['key' => 'address_street', 'label' => 'Rua', 'required' => false],
+            ['key' => 'address_number', 'label' => 'Número', 'required' => false],
+            ['key' => 'address_complement', 'label' => 'Complemento', 'required' => false],
+            ['key' => 'address_neighborhood', 'label' => 'Bairro', 'required' => false],
+            ['key' => 'address_city', 'label' => 'Cidade', 'required' => false],
+            ['key' => 'address_state', 'label' => 'UF', 'required' => false],
+            ['key' => 'notes', 'label' => 'Observações', 'required' => false],
+        ];
     }
 }

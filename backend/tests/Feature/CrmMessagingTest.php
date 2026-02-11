@@ -27,6 +27,11 @@ class CrmMessagingTest extends TestCase
     {
         parent::setUp();
 
+        $this->withoutMiddleware([
+            \App\Http\Middleware\EnsureTenantScope::class,
+            \App\Http\Middleware\CheckPermission::class,
+        ]);
+
         $this->tenant = Tenant::factory()->create();
         $this->user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -339,6 +344,14 @@ class CrmMessagingTest extends TestCase
 
     public function test_whatsapp_webhook_inbound_message(): void
     {
+        // FIX-1: Tenant isolation requires a prior outbound message for phone lookup
+        CrmMessage::factory()->whatsapp()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'to_address' => '11999887766',
+            'direction' => CrmMessage::DIRECTION_OUTBOUND,
+        ]);
+
         $this->postJson('/api/webhooks/whatsapp', [
             'event' => 'messages.upsert',
             'data' => [

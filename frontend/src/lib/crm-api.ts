@@ -53,7 +53,7 @@ export interface CrmDeal {
     pipeline?: { id: number; name: string }
     assignee?: { id: number; name: string }
     quote?: { id: number; quote_number: string; total: number; status: string }
-    workOrder?: { id: number; number: string; status: string; total: number }
+    workOrder?: { id: number; number: string; os_number?: string | null; business_number?: string | null; status: string; total: number }
     equipment?: { id: number; code: string; brand: string; model: string }
     activities?: CrmActivity[]
 }

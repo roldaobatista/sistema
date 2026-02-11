@@ -25,14 +25,14 @@ class CrmDealFactory extends Factory
             'probability' => fake()->numberBetween(10, 90),
             'expected_close_date' => fake()->dateTimeBetween('+1 week', '+3 months'),
             'source' => fake()->randomElement(array_keys(CrmDeal::SOURCES)),
-            'status' => 'open',
+            'status' => CrmDeal::STATUS_OPEN,
         ];
     }
 
     public function won(): static
     {
         return $this->state(fn () => [
-            'status' => 'won',
+            'status' => CrmDeal::STATUS_WON,
             'won_at' => now(),
             'probability' => 100,
         ]);
@@ -41,7 +41,7 @@ class CrmDealFactory extends Factory
     public function lost(): static
     {
         return $this->state(fn () => [
-            'status' => 'lost',
+            'status' => CrmDeal::STATUS_LOST,
             'lost_at' => now(),
             'lost_reason' => 'Preço',
             'probability' => 0,

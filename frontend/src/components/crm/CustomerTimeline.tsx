@@ -21,7 +21,7 @@ interface Props {
 export function CustomerTimeline({ activities, className }: Props) {
     if (activities.length === 0) {
         return (
-            <div className={cn('rounded-xl border border-surface-200 bg-white p-8 text-center', className)}>
+            <div className={cn('rounded-xl border border-default bg-white p-8 text-center', className)}>
                 <Clock className="mx-auto h-8 w-8 text-surface-300" />
                 <p className="mt-2 text-sm text-surface-400">Nenhuma atividade registrada</p>
             </div>
@@ -45,7 +45,7 @@ export function CustomerTimeline({ activities, className }: Props) {
                         <Calendar className="h-3.5 w-3.5" />
                         {date}
                     </p>
-                    <div className="relative ml-4 border-l-2 border-surface-200 pl-6 space-y-4">
+                    <div className="relative ml-4 border-l-2 border-subtle pl-6 space-y-4">
                         {acts.map(act => {
                             const cfg = typeConfig[act.type] ?? typeConfig.nota
                             const Icon = cfg.icon
@@ -59,7 +59,7 @@ export function CustomerTimeline({ activities, className }: Props) {
                                         <Icon className={cn('h-3 w-3', cfg.color)} />
                                     </div>
 
-                                    <div className="rounded-lg border border-surface-200/60 bg-white p-3 shadow-sm hover:shadow-card transition-shadow">
+                                    <div className="rounded-lg border border-default/60 bg-white p-3 shadow-sm hover:shadow-card transition-shadow">
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <p className="text-sm font-medium text-surface-800">{act.title}</p>

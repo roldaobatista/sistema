@@ -4,18 +4,19 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Expense extends Model
 {
-    use BelongsToTenant, SoftDeletes, Auditable;
+    use BelongsToTenant, HasFactory, SoftDeletes, Auditable;
 
     protected $fillable = [
         'tenant_id', 'expense_category_id', 'work_order_id', 'created_by', 'approved_by',
         'description', 'amount', 'expense_date', 'payment_method',
-        'status', 'notes', 'receipt_path', 'affects_technician_cash',
+        'notes', 'receipt_path', 'affects_technician_cash', 'status', 'rejection_reason',
     ];
 
     protected function casts(): array

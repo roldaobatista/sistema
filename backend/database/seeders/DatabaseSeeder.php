@@ -71,14 +71,18 @@ class DatabaseSeeder extends Seeder
             'finance.payable.view',
             'finance.cashflow.view', 'finance.dre.view', 'platform.dashboard.view',
             'commissions.rule.view', 'commissions.settlement.view',
+            'expenses.expense.view', 'expenses.expense.approve',
             'reports.os_report.view', 'reports.financial_report.view', 'reports.productivity_report.view',
+            'reports.quotes_report.view', 'reports.service_calls_report.view', 'reports.crm_report.view',
+            'reports.equipments_report.view', 'reports.suppliers_report.view', 'reports.stock_report.view',
+            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.delete', 'quotes.quote.approve', 'quotes.quote.send',
         ]);
         $technician->givePermissionTo([
             'cadastros.customer.view', 'cadastros.product.view', 'cadastros.service.view',
             'os.work_order.view', 'os.work_order.update', 'os.work_order.change_status',
             'technicians.time_entry.create', 'technicians.time_entry.view',
             'technicians.cashbox.view', 'technicians.cashbox.manage',
-            'expenses.expense.create', 'expenses.expense.view',
+            'expenses.expense.create', 'expenses.expense.view', 'expenses.expense.update',
         ]);
         $receptionist->givePermissionTo([
             'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
@@ -91,7 +95,8 @@ class DatabaseSeeder extends Seeder
             'cadastros.product.view', 'cadastros.service.view',
             'os.work_order.view', 'os.work_order.create',
             'commissions.rule.view', 'commissions.settlement.view',
-            'reports.os_report.view',
+            'reports.os_report.view', 'reports.quotes_report.view',
+            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.send',
         ]);
         $driver->givePermissionTo([
             'os.work_order.view',
@@ -191,6 +196,7 @@ class DatabaseSeeder extends Seeder
                 'customer' => ['view', 'create', 'update', 'delete'],
                 'product' => ['view', 'create', 'update', 'delete'],
                 'service' => ['view', 'create', 'update', 'delete'],
+                'supplier' => ['view', 'create', 'update', 'delete'],
             ],
             'os' => [
                 'work_order' => ['view', 'create', 'update', 'delete', 'assign', 'change_status', 'print'],
@@ -206,6 +212,7 @@ class DatabaseSeeder extends Seeder
                 'payable' => ['view', 'create', 'update', 'delete', 'settle'],
                 'cashflow' => ['view'],
                 'dre' => ['view'],
+                'chart' => ['view', 'create', 'update', 'delete'],
             ],
             'commissions' => [
                 'rule' => ['view', 'create', 'update', 'delete'],
@@ -220,11 +227,38 @@ class DatabaseSeeder extends Seeder
                 'productivity_report' => ['view', 'export'],
                 'commission_report' => ['view', 'export'],
                 'margin_report' => ['view', 'export'],
+                'quotes_report' => ['view', 'export'],
+                'service_calls_report' => ['view', 'export'],
+                'crm_report' => ['view', 'export'],
+                'equipments_report' => ['view', 'export'],
+                'suppliers_report' => ['view', 'export'],
+                'stock_report' => ['view', 'export'],
+                'technician_cash_report' => ['view', 'export'],
             ],
             'settings' => [
                 'general' => ['view', 'manage'],
                 'status_flow' => ['view', 'manage'],
                 'template' => ['view', 'manage'],
+            ],
+            'quotes' => [
+                'quote' => ['view', 'create', 'update', 'delete', 'approve', 'send'],
+            ],
+            'service_calls' => [
+                'service_call' => ['view', 'create', 'update', 'delete', 'assign'],
+            ],
+            'equipments' => [
+                'equipment' => ['view', 'create', 'update', 'delete'],
+            ],
+            'estoque' => [
+                'movement' => ['view', 'create'],
+            ],
+            'import' => [
+                'data' => ['view', 'execute'],
+            ],
+            'crm' => [
+                'deal' => ['view', 'create', 'update', 'delete'],
+                'pipeline' => ['view', 'create', 'update', 'delete'],
+                'message' => ['view', 'send'],
             ],
         ];
 

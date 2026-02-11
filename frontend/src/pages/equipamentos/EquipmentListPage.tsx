@@ -103,17 +103,17 @@ export default function EquipmentListPage() {
     const categories = constants?.categories ?? {}
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Equipamentos</h1>
-                    <p className="text-sm text-surface-500">Gestão de balanças, instrumentos e metrologia</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Equipamentos</h1>
+                    <p className="text-[13px] text-surface-500">Gestão de balanças, instrumentos e metrologia</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => window.open(`${(api.defaults as any).baseURL}/equipments-export`, '_blank')}
-                        className="flex items-center gap-2 rounded-lg border border-surface-200 px-4 py-2.5 text-sm font-medium text-surface-700 hover:bg-surface-50"
+                        className="flex items-center gap-2 rounded-lg border border-surface-200 px-4 py-2.5 text-[13px] font-medium text-surface-700 hover:bg-surface-50"
                     >
                         <Download size={16} />
                         Exportar CSV
@@ -131,11 +131,11 @@ export default function EquipmentListPage() {
             {/* KPI Cards */}
             {dashboard && (
                 <div className="grid grid-cols-5 gap-3">
-                    <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
+                    <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                         <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-brand-50 p-2"><Scale size={20} className="text-brand-600" /></div>
                             <div>
-                                <p className="text-2xl font-bold text-surface-900">{dashboard.total}</p>
+                                <p className="text-lg font-semibold text-surface-900 tracking-tight">{dashboard.total}</p>
                                 <p className="text-xs text-surface-500">Total Ativos</p>
                             </div>
                         </div>
@@ -158,7 +158,7 @@ export default function EquipmentListPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-card">
+                    <div className="rounded-xl border border-blue-200/50 bg-blue-50 p-4 shadow-card">
                         <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-blue-100 p-2"><Clock size={20} className="text-blue-600" /></div>
                             <div>
@@ -167,17 +167,49 @@ export default function EquipmentListPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
+                    <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                         <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-surface-100 p-2"><Shield size={20} className="text-surface-600" /></div>
                             <div>
-                                <p className="text-2xl font-bold text-surface-900">{dashboard.critical_count}</p>
+                                <p className="text-lg font-semibold text-surface-900 tracking-tight">{dashboard.critical_count}</p>
                                 <p className="text-xs text-surface-500">Críticos</p>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Category distribution bar */}
+            {dashboard && Object.keys(dashboard.by_category ?? {}).length > 0 && (() => {
+                const cats = Object.entries(dashboard.by_category)
+                const total = cats.reduce((s, [, v]) => s + v, 0)
+                const catColors: Record<string, string> = {
+                    rodoviaria: 'bg-brand-500', industrial: 'bg-emerald-500',
+                    laboratorio: 'bg-blue-500', comercial: 'bg-amber-500',
+                    especial: 'bg-rose-500', outro: 'bg-surface-400',
+                }
+                return (
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                        <h3 className="text-sm font-semibold text-surface-900 mb-3">Distribuição por Categoria</h3>
+                        <div className="flex h-6 overflow-hidden rounded-full">
+                            {cats.map(([key, count]) => (
+                                <div key={key} className={cn('transition-all', catColors[key] ?? 'bg-surface-300')}
+                                    style={{ width: `${(count / total) * 100}%` }}
+                                    title={`${categories[key] as string || key}: ${count}`}
+                                />
+                            ))}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-3">
+                            {cats.map(([key, count]) => (
+                                <div key={key} className="flex items-center gap-1.5">
+                                    <span className={cn('h-2.5 w-2.5 rounded-full', catColors[key] ?? 'bg-surface-300')} />
+                                    <span className="text-xs text-surface-600">{categories[key] as string || key} <strong>{count}</strong> ({total > 0 ? Math.round((count / total) * 100) : 0}%)</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )
+            })()}
 
             {/* Filtros */}
             <div className="flex flex-wrap items-center gap-3">
@@ -188,13 +220,13 @@ export default function EquipmentListPage() {
                         placeholder="Buscar por código, série, marca, modelo, tag..."
                         value={search}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setSearch(e.target.value); setPage(1) }}
-                        className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                        className="w-full rounded-lg border border-default bg-surface-0 py-2.5 pl-10 pr-4 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
                     />
                 </div>
                 <select
                     value={filterCategory}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterCategory(e.target.value); setPage(1) }}
-                    className="rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm"
+                    className="rounded-lg border border-default bg-surface-0 px-3 py-2.5 text-sm"
                 >
                     <option value="">Todas categorias</option>
                     {Object.entries(categories).map(([k, v]) => (
@@ -204,7 +236,7 @@ export default function EquipmentListPage() {
                 <select
                     value={filterStatus}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterStatus(e.target.value); setPage(1) }}
-                    className="rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm"
+                    className="rounded-lg border border-default bg-surface-0 px-3 py-2.5 text-sm"
                 >
                     <option value="">Todos status</option>
                     {Object.entries(statusLabels).map(([k, v]) => (
@@ -217,7 +249,7 @@ export default function EquipmentListPage() {
                         'flex items-center gap-1 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all',
                         filterOverdue
                             ? 'border-red-300 bg-red-50 text-red-700'
-                            : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'
+                            : 'border-default bg-surface-0 text-surface-600 hover:bg-surface-50'
                     )}
                 >
                     <AlertTriangle size={14} />
@@ -226,21 +258,21 @@ export default function EquipmentListPage() {
             </div>
 
             {/* Tabela */}
-            <div className="overflow-auto rounded-xl border border-surface-200 bg-white shadow-card">
+            <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="border-b border-surface-200 bg-surface-50">
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Código</th>
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Equipamento</th>
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Série</th>
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Cliente</th>
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Categoria</th>
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Status</th>
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Calibração</th>
-                            <th className="px-4 py-3 text-left font-semibold text-surface-600">Ações</th>
+                        <tr className="border-b border-subtle bg-surface-50">
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Código</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Equipamento</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Série</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Cliente</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Categoria</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Status</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Calibração</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Ações</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-surface-100">
+                    <tbody className="divide-y divide-subtle">
                         {isLoading && (
                             <tr><td colSpan={8} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>
                         )}
@@ -308,7 +340,7 @@ export default function EquipmentListPage() {
                     >
                         <ChevronLeft size={16} />
                     </button>
-                    <span className="text-sm text-surface-600">Página {page} de {lastPage}</span>
+                    <span className="text-[13px] text-surface-600">Página {page} de {lastPage}</span>
                     <button
                         onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                         disabled={page === lastPage}

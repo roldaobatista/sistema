@@ -12,6 +12,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class CheckPermission
 {
+    /** Role que bypassa todas as permissões */
+    private const ROLE_SUPER_ADMIN = 'super_admin';
+
     public function handle(Request $request, Closure $next, string $permission): Response
     {
         $user = $request->user();
@@ -21,7 +24,7 @@ class CheckPermission
         }
 
         // super_admin bypasses all permission checks
-        if ($user->hasRole('super_admin')) {
+        if ($user->hasRole(self::ROLE_SUPER_ADMIN)) {
             return $next($request);
         }
 

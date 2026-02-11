@@ -14,6 +14,7 @@ import { DealCard } from '@/components/crm/DealCard'
 import { DealDetailDrawer } from '@/components/crm/DealDetailDrawer'
 import { NewDealModal } from '@/components/crm/NewDealModal'
 import { crmApi, type CrmDeal, type CrmPipeline, type CrmPipelineStage } from '@/lib/crm-api'
+import { toast } from 'sonner'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -68,6 +69,10 @@ export function CrmPipelinePage() {
             crmApi.updateDealStage(dealId, stageId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['crm'] })
+        },
+        onError: (error: any) => {
+            queryClient.invalidateQueries({ queryKey: ['crm', 'deals'] })
+            toast.error(error.response?.data?.message || 'Erro ao mover deal de estágio')
         },
     })
 
@@ -133,13 +138,13 @@ export function CrmPipelinePage() {
     return (
         <div className="flex h-full flex-col -m-4 lg:-m-6">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-surface-200 bg-white px-5 py-3">
+            <div className="flex items-center justify-between border-b border-default bg-surface-0 px-5 py-3">
                 <div className="flex items-center gap-3">
                     <Link to="/crm" className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors">
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
                     <div>
-                        <h1 className="text-lg font-bold text-surface-900">{pipeline?.name ?? 'Pipeline'}</h1>
+                        <h1 className="text-[15px] font-semibold tabular-nums text-surface-900">{pipeline?.name ?? 'Pipeline'}</h1>
                         <p className="text-xs text-surface-500">{deals.length} deal(s)</p>
                     </div>
                 </div>
@@ -166,7 +171,7 @@ export function CrmPipelinePage() {
                     <select
                         value={statusFilter}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
-                        className="rounded-lg border border-surface-200 bg-white px-3 py-1.5 text-xs font-medium text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                        className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-xs font-medium text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                     >
                         <option value="open">Abertos</option>
                         <option value="won">Ganhos</option>
@@ -258,7 +263,7 @@ function KanbanColumn({ stage, deals, isLoading, onDealClick, onAddDeal, condens
             )}
         >
             {/* Column header */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-surface-200/60">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-subtle/60">
                 <div className="flex items-center gap-2 min-w-0">
                     <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: stage.color || '#94a3b8' }} />
                     <span className="text-xs font-semibold text-surface-700 truncate">{stage.name}</span>

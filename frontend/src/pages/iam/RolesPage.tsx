@@ -1,40 +1,55 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Shield, Users, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Shield, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
+import { Input } from '@/components/ui/Input'
+import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
+
+interface Permission {
+    id: number
+    name: string
+}
+
+interface PermissionGroup {
+    id: number
+    name: string
+    permissions: Permission[]
+}
 
 interface Role {
     id: number
     name: string
     permissions_count: number
-    users_count: number
-    permissions?: { id: number; name: string }[]
+    permissions?: Permission[]
 }
 
 export function RolesPage() {
     const queryClient = useQueryClient()
+    const { hasPermission } = useAuthStore()
+    const canCreate = hasPermission('iam.role.create')
+    const canUpdate = hasPermission('iam.role.update')
+    const canDelete = hasPermission('iam.role.delete')
     const [showForm, setShowForm] = useState(false)
     const [editingRole, setEditingRole] = useState<Role | null>(null)
     const [roleName, setRoleName] = useState('')
     const [selectedPermissions, setSelectedPermissions] = useState<number[]>([])
+    const [loadingEditId, setLoadingEditId] = useState<number | null>(null)
 
-    const { data: rolesData, isLoading } = useQuery({
+    const { data: rolesData, isLoading, isError, refetch } = useQuery({
         queryKey: ['roles'],
-        queryFn: () => api.get('/roles'),
+        queryFn: () => api.get('/roles').then(r => r.data),
     })
+    const roles: Role[] = rolesData?.data ?? rolesData ?? []
 
-    const { data: permissionsData } = useQuery({
+    const { data: permGroupsData } = useQuery({
         queryKey: ['permissions'],
-        queryFn: () => api.get('/permissions'),
+        queryFn: () => api.get('/permissions').then(r => r.data),
     })
-
-    const roles: Role[] = rolesData?.data ?? []
-    const permissionGroups = permissionsData?.data ?? []
+    const permissionGroups: PermissionGroup[] = Array.isArray(permGroupsData) ? permGroupsData : permGroupsData?.data ?? []
 
     const saveMutation = useMutation({
         mutationFn: (data: { name: string; permissions: number[] }) =>
@@ -44,12 +59,22 @@ export function RolesPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] })
             setShowForm(false)
+            toast.success(editingRole ? 'Role atualizada com sucesso!' : 'Role criada com sucesso!')
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message ?? 'Erro ao salvar role.')
         },
     })
 
     const deleteMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/roles/${id}`),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['roles'] }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['roles'] })
+            toast.success('Role excluída com sucesso!')
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message ?? 'Erro ao excluir role.')
+        },
     })
 
     const openCreate = () => {
@@ -60,11 +85,18 @@ export function RolesPage() {
     }
 
     const openEdit = async (role: Role) => {
-        const { data } = await api.get(`/roles/${role.id}`)
-        setEditingRole(data)
-        setRoleName(data.name)
-        setSelectedPermissions(data.permissions?.map((p: any) => p.id) ?? [])
-        setShowForm(true)
+        setLoadingEditId(role.id)
+        try {
+            const { data } = await api.get(`/roles/${role.id}`)
+            setEditingRole(data)
+            setRoleName(data.name)
+            setSelectedPermissions(data.permissions?.map((p: any) => p.id) ?? [])
+            setShowForm(true)
+        } catch (err: any) {
+            toast.error(err.response?.data?.message ?? 'Erro ao carregar dados da role.')
+        } finally {
+            setLoadingEditId(null)
+        }
     }
 
     const togglePermission = (id: number) => {
@@ -82,23 +114,30 @@ export function RolesPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Roles</h1>
-                    <p className="mt-1 text-sm text-surface-500">Gerencie os perfis de acesso</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Roles</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Gerencie os perfis de acesso</p>
                 </div>
-                <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Role</Button>
+                {canCreate && (
+                    <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Role</Button>
+                )}
             </div>
 
             {/* Roles Grid */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
-                    <p className="col-span-full text-center text-sm text-surface-500 py-12">Carregando...</p>
+                    <p className="col-span-full text-center text-[13px] text-surface-500 py-12">Carregando...</p>
+                ) : isError ? (
+                    <div className="col-span-full text-center py-12">
+                        <p className="text-sm text-red-500">Erro ao carregar roles.</p>
+                        <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Tentar novamente</Button>
+                    </div>
                 ) : roles.map((role) => (
                     <div
                         key={role.id}
-                        className="group rounded-xl border border-surface-200 bg-white p-5 shadow-card hover:shadow-elevated transition-all duration-200"
+                        className="group rounded-xl border border-default bg-surface-0 p-5 shadow-card hover:shadow-elevated transition-all duration-200"
                     >
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
@@ -108,9 +147,6 @@ export function RolesPage() {
                                 <div>
                                     <h3 className="font-semibold text-surface-900">{role.name}</h3>
                                     <div className="mt-1 flex gap-3 text-xs text-surface-500">
-                                        <span className="flex items-center gap-1">
-                                            <Users className="h-3 w-3" /> {role.users_count} usuários
-                                        </span>
                                         <span>{role.permissions_count} permissões</span>
                                     </div>
                                 </div>
@@ -118,10 +154,19 @@ export function RolesPage() {
                         </div>
 
                         <div className="mt-4 flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openEdit(role)} className="flex-1">
-                                Editar
-                            </Button>
-                            {!['super_admin', 'admin'].includes(role.name) && (
+                            {canUpdate && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEdit(role)}
+                                    className="flex-1"
+                                    disabled={role.name === 'super_admin' || loadingEditId === role.id}
+                                    loading={loadingEditId === role.id}
+                                >
+                                    {role.name === 'super_admin' ? 'Protegida' : loadingEditId === role.id ? 'Carregando...' : 'Editar'}
+                                </Button>
+                            )}
+                            {canDelete && !['super_admin', 'admin'].includes(role.name) && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -152,7 +197,7 @@ export function RolesPage() {
                         onChange={(e) => setRoleName(e.target.value)}
                         placeholder="ex: supervisor"
                         required
-                        disabled={editingRole?.name === 'super_admin'}
+                        disabled={!!editingRole?.name && ['super_admin', 'admin'].includes(editingRole.name)}
                     />
 
                     {/* Permission groups */}
@@ -162,7 +207,7 @@ export function RolesPage() {
                             {permissionGroups.map((group: any) => (
                                 <div key={group.id}>
                                     <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-xs font-semibold uppercase tracking-wider text-surface-600">
+                                        <h4 className="text-[11px] font-medium uppercase tracking-wider text-surface-500">
                                             {group.name}
                                         </h4>
                                         <button
@@ -183,7 +228,7 @@ export function RolesPage() {
                                                     'rounded-md border px-2.5 py-1 text-xs font-medium transition-all',
                                                     selectedPermissions.includes(perm.id)
                                                         ? 'border-brand-400 bg-brand-50 text-brand-700'
-                                                        : 'border-surface-200 bg-white text-surface-500 hover:border-surface-300'
+                                                        : 'border-default bg-surface-0 text-surface-500 hover:border-surface-300'
                                                 )}
                                             >
                                                 {perm.name.split('.').slice(1).join('.')}
@@ -198,7 +243,7 @@ export function RolesPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-center justify-end gap-3 border-t border-surface-200 pt-4">
+                    <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
                         <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancelar</Button>
                         <Button type="submit" loading={saveMutation.isPending}>
                             {editingRole ? 'Salvar' : 'Criar Role'}

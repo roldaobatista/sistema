@@ -3,16 +3,17 @@ import { useQuery } from '@tanstack/react-query'
 import { MapPin, Phone, Clock, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/api'
+import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-    open: { label: 'Aberto', color: '#3b82f6' },
-    scheduled: { label: 'Agendado', color: '#f59e0b' },
-    en_route: { label: 'A Caminho', color: '#8b5cf6' },
-    in_progress: { label: 'Em Atend.', color: '#ef4444' },
-    completed: { label: 'Concluído', color: '#22c55e' },
-    cancelled: { label: 'Cancelado', color: '#6b7280' },
+    [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', color: '#3b82f6' },
+    [SERVICE_CALL_STATUS.SCHEDULED]: { label: 'Agendado', color: '#f59e0b' },
+    [SERVICE_CALL_STATUS.IN_TRANSIT]: { label: 'Em Deslocamento', color: '#06b6d4' },
+    [SERVICE_CALL_STATUS.IN_PROGRESS]: { label: 'Em Atend.', color: '#ef4444' },
+    [SERVICE_CALL_STATUS.COMPLETED]: { label: 'Concluído', color: '#22c55e' },
+    [SERVICE_CALL_STATUS.CANCELLED]: { label: 'Cancelado', color: '#6b7280' },
 }
 
 const priorityColors: Record<string, string> = {
@@ -25,26 +26,26 @@ export function ServiceCallMapPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['service-calls-map', statusFilter],
-        queryFn: () => api.get('/service-calls/map-data', { params: statusFilter ? { status: statusFilter } : {} }),
+        queryFn: () => api.get('/service-calls-map', { params: statusFilter ? { status: statusFilter } : {} }),
     })
 
     const calls = res?.data ?? []
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate('/chamados')} className="rounded-lg p-1.5 hover:bg-surface-100">
                         <ArrowLeft className="h-5 w-5 text-surface-500" />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-surface-900">Mapa de Chamados</h1>
-                        <p className="text-sm text-surface-500">{calls.length} chamados com localização</p>
+                        <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Mapa de Chamados</h1>
+                        <p className="text-[13px] text-surface-500">{calls.length} chamados com localização</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <select value={statusFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
-                        className="rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                         <option value="">Todos os status</option>
                         {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select>
@@ -52,24 +53,24 @@ export function ServiceCallMapPage() {
             </div>
 
             {isLoading ? (
-                <div className="py-16 text-center text-sm text-surface-500">Carregando mapa...</div>
+                <div className="py-16 text-center text-[13px] text-surface-500">Carregando mapa...</div>
             ) : calls.length === 0 ? (
-                <div className="rounded-xl border border-surface-200 bg-white p-12 text-center shadow-card">
+                <div className="rounded-xl border border-default bg-surface-0 p-12 text-center shadow-card">
                     <MapPin className="mx-auto h-12 w-12 text-surface-300" />
-                    <p className="mt-3 text-sm text-surface-500">Nenhum chamado com localização disponível</p>
+                    <p className="mt-3 text-[13px] text-surface-500">Nenhum chamado com localização disponível</p>
                 </div>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {calls.map((call: any) => {
-                        const st = statusLabels[call.status] ?? statusLabels.open
+                        const st = statusLabels[call.status] ?? statusLabels[SERVICE_CALL_STATUS.OPEN]
                         return (
-                            <div key={call.id} className="rounded-xl border border-surface-200 bg-white p-4 shadow-card hover:shadow-md transition-shadow">
+                            <div key={call.id} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/chamados/${call.id}`)}>
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
                                         <span className="text-xs font-mono text-surface-400">{call.call_number}</span>
                                         <p className="text-sm font-semibold text-surface-900">{call.customer?.name}</p>
                                     </div>
-                                    <Badge variant={call.status === 'completed' ? 'success' : call.status === 'cancelled' ? 'danger' : call.status === 'in_progress' ? 'warning' : 'info'}>
+                                    <Badge variant={call.status === SERVICE_CALL_STATUS.COMPLETED ? 'success' : call.status === SERVICE_CALL_STATUS.CANCELLED ? 'danger' : call.status === SERVICE_CALL_STATUS.IN_PROGRESS ? 'warning' : 'info'}>
                                         {st.label}
                                     </Badge>
                                 </div>
@@ -81,7 +82,8 @@ export function ServiceCallMapPage() {
                                     {call.latitude && call.longitude && (
                                         <a href={`https://www.google.com/maps?q=${call.latitude},${call.longitude}`}
                                             target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center gap-1 text-brand-600 hover:underline">
+                                            className="flex items-center gap-1 text-brand-600 hover:underline"
+                                            onClick={(e) => e.stopPropagation()}>
                                             <MapPin className="h-3 w-3" />Ver no Maps
                                         </a>
                                     )}

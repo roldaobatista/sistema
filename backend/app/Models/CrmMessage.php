@@ -32,23 +32,36 @@ class CrmMessage extends Model
         ];
     }
 
+    public const CHANNEL_WHATSAPP = 'whatsapp';
+    public const CHANNEL_EMAIL = 'email';
+    public const CHANNEL_SMS = 'sms';
+
     const CHANNELS = [
-        'whatsapp' => 'WhatsApp',
-        'email' => 'E-mail',
-        'sms' => 'SMS',
+        self::CHANNEL_WHATSAPP => 'WhatsApp',
+        self::CHANNEL_EMAIL => 'E-mail',
+        self::CHANNEL_SMS => 'SMS',
     ];
+
+    public const DIRECTION_INBOUND = 'inbound';
+    public const DIRECTION_OUTBOUND = 'outbound';
 
     const DIRECTIONS = [
-        'inbound' => 'Recebida',
-        'outbound' => 'Enviada',
+        self::DIRECTION_INBOUND => 'Recebida',
+        self::DIRECTION_OUTBOUND => 'Enviada',
     ];
 
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_SENT = 'sent';
+    public const STATUS_DELIVERED = 'delivered';
+    public const STATUS_READ = 'read';
+    public const STATUS_FAILED = 'failed';
+
     const STATUSES = [
-        'pending' => 'Pendente',
-        'sent' => 'Enviada',
-        'delivered' => 'Entregue',
-        'read' => 'Lida',
-        'failed' => 'Falhou',
+        self::STATUS_PENDING => 'Pendente',
+        self::STATUS_SENT => 'Enviada',
+        self::STATUS_DELIVERED => 'Entregue',
+        self::STATUS_READ => 'Lida',
+        self::STATUS_FAILED => 'Falhou',
     ];
 
     // ─── Scopes ─────────────────────────────────────────
@@ -70,31 +83,31 @@ class CrmMessage extends Model
 
     public function scopeFailed($q)
     {
-        return $q->where('status', 'failed');
+        return $q->where('status', self::STATUS_FAILED);
     }
 
     // ─── Methods ────────────────────────────────────────
 
-    public function markSent(string $externalId = null): void
+    public function markSent(?string $externalId = null): void
     {
-        $data = ['status' => 'sent', 'sent_at' => now()];
+        $data = ['status' => self::STATUS_SENT, 'sent_at' => now()];
         if ($externalId) $data['external_id'] = $externalId;
         $this->update($data);
     }
 
     public function markDelivered(): void
     {
-        $this->update(['status' => 'delivered', 'delivered_at' => now()]);
+        $this->update(['status' => self::STATUS_DELIVERED, 'delivered_at' => now()]);
     }
 
     public function markRead(): void
     {
-        $this->update(['status' => 'read', 'read_at' => now()]);
+        $this->update(['status' => self::STATUS_READ, 'read_at' => now()]);
     }
 
     public function markFailed(string $error): void
     {
-        $this->update(['status' => 'failed', 'failed_at' => now(), 'error_message' => $error]);
+        $this->update(['status' => self::STATUS_FAILED, 'failed_at' => now(), 'error_message' => $error]);
     }
 
     public function logToTimeline(): CrmActivity
@@ -103,6 +116,7 @@ class CrmMessage extends Model
             'whatsapp' => '📱',
             'email' => '📧',
             'sms' => '💬',
+            default => '💬',
         };
 
         $dir = $this->direction === 'inbound' ? 'recebida' : 'enviada';
@@ -111,15 +125,15 @@ class CrmMessage extends Model
 
         return CrmActivity::create([
             'tenant_id' => $this->tenant_id,
-            'type' => $this->channel === 'email' ? 'email' : 'whatsapp',
+            'type' => $this->channel,
             'customer_id' => $this->customer_id,
             'deal_id' => $this->deal_id,
-            'user_id' => $this->user_id ?? 1,
+            'user_id' => $this->user_id,
             'title' => $title,
             'description' => mb_substr($this->body, 0, 500),
             'is_automated' => true,
             'completed_at' => now(),
-            'channel' => $this->channel === 'email' ? 'email' : 'whatsapp',
+            'channel' => $this->channel,
             'metadata' => [
                 'message_id' => $this->id,
                 'external_id' => $this->external_id,

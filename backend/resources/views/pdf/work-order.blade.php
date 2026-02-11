@@ -1,13 +1,13 @@
 @extends('pdf.layout')
 
-@section('title', "OS {$workOrder->number}")
+@section('title', "OS {$workOrder->business_number}")
 
 @section('content')
     {{-- Badge --}}
     <div class="doc-badge">
         <div class="doc-badge-left">
             <span class="doc-type">Ordem de Serviço</span>
-            <div class="doc-number">{{ $workOrder->number }}</div>
+            <div class="doc-number">{{ $workOrder->business_number }}</div>
         </div>
         <div class="doc-badge-right">
             <div class="doc-date">
@@ -156,3 +156,4 @@
         </div>
     </div>
 @endsection
+

@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\Auditable;
 
 class Branch extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasFactory, Auditable;
 
     protected $fillable = [
         'tenant_id',
@@ -23,4 +26,16 @@ class Branch extends Model
         'phone',
         'email',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'tenant_id' => 'integer',
+        ];
+    }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Equipment extends Model
 {
-    use BelongsToTenant, SoftDeletes, Auditable;
+    use BelongsToTenant, SoftDeletes, Auditable, HasFactory;
 
     protected $table = 'equipments';
 
@@ -37,12 +38,18 @@ class Equipment extends Model
         'IIII' => 'Classe IIII (Ordinária)',
     ];
 
+    public const STATUS_ACTIVE = 'ativo';
+    public const STATUS_IN_CALIBRATION = 'em_calibracao';
+    public const STATUS_IN_MAINTENANCE = 'em_manutencao';
+    public const STATUS_OUT_OF_SERVICE = 'fora_de_uso';
+    public const STATUS_DISCARDED = 'descartado';
+
     const STATUSES = [
-        'ativo' => 'Ativo',
-        'em_calibracao' => 'Em Calibração',
-        'em_manutencao' => 'Em Manutenção',
-        'fora_de_uso' => 'Fora de Uso',
-        'descartado' => 'Descartado',
+        self::STATUS_ACTIVE => 'Ativo',
+        self::STATUS_IN_CALIBRATION => 'Em Calibração',
+        self::STATUS_IN_MAINTENANCE => 'Em Manutenção',
+        self::STATUS_OUT_OF_SERVICE => 'Fora de Uso',
+        self::STATUS_DISCARDED => 'Descartado',
     ];
 
     protected $fillable = [
@@ -97,7 +104,7 @@ class Equipment extends Model
 
     public function scopeActive($q)
     {
-        return $q->where('is_active', true)->where('status', '!=', 'descartado');
+        return $q->where('is_active', true)->where('status', '!=', self::STATUS_DISCARDED);
     }
 
     // ─── Accessors ──────────────────────────────────────────
@@ -123,13 +130,14 @@ class Equipment extends Model
 
     public static function generateCode(int $tenantId): string
     {
-        $last = static::where('tenant_id', $tenantId)
-            ->whereNotNull('code')
-            ->orderByDesc('id')
-            ->value('code');
+        // Usa withoutGlobalScope('tenant') para garantir que podemos encontrar a sequência
+        // mesmo que o tenantId solicitado seja diferente do tenant atual da request (current_tenant_id).
+        $sequence = \App\Models\NumberingSequence::withoutGlobalScope('tenant')->firstOrCreate(
+            ['tenant_id' => $tenantId, 'entity' => 'equipment'],
+            ['prefix' => 'EQP-', 'next_number' => 1, 'padding' => 5]
+        );
 
-        $num = $last ? ((int) preg_replace('/\D/', '', $last)) + 1 : 1;
-        return 'EQP-' . str_pad($num, 5, '0', STR_PAD_LEFT);
+        return $sequence->generateNext();
     }
 
     // ─── Relationships ──────────────────────────────────────
@@ -157,5 +165,19 @@ class Equipment extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(EquipmentDocument::class)->orderByDesc('created_at');
+    }
+
+    // ─── Import Support ─────────────────────────────────────
+
+    public static function getImportFields(): array
+    {
+        return [
+            ['key' => 'serial_number', 'label' => 'Nº Série', 'required' => true],
+            ['key' => 'customer_document', 'label' => 'CPF/CNPJ Cliente', 'required' => true],
+            ['key' => 'type', 'label' => 'Tipo', 'required' => false],
+            ['key' => 'brand', 'label' => 'Marca', 'required' => false],
+            ['key' => 'model', 'label' => 'Modelo', 'required' => false],
+            ['key' => 'notes', 'label' => 'Observações', 'required' => false],
+        ];
     }
 }

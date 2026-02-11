@@ -99,6 +99,7 @@ class CrmSeeder extends Seeder
 
             foreach ($stages as $i => $stage) {
                 $pipeline->stages()->create([
+                    'tenant_id' => $tenantId,
                     'name' => $stage['name'],
                     'color' => $stage['color'],
                     'sort_order' => $i,

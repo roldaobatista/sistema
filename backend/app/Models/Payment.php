@@ -6,10 +6,11 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Models\Concerns\Auditable;
 
 class Payment extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, Auditable;
 
     protected $fillable = [
         'tenant_id', 'payable_type', 'payable_id', 'received_by',

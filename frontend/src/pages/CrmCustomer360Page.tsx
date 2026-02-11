@@ -8,6 +8,7 @@ import {
     Loader2, Edit, Target, FileCheck, Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { DEAL_STATUS, EQUIPMENT_STATUS, WORK_ORDER_STATUS, QUOTE_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CustomerHealthScore } from '@/components/crm/CustomerHealthScore'
@@ -22,6 +23,7 @@ const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', cur
 export function Customer360Page() {
     const { id } = useParams()
     const customerId = Number(id)
+    const [nowTs] = useState(() => Date.now())
     const [activityFormOpen, setActivityFormOpen] = useState(false)
     const [sendMessageOpen, setSendMessageOpen] = useState(false)
 
@@ -58,7 +60,7 @@ export function Customer360Page() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
@@ -66,7 +68,7 @@ export function Customer360Page() {
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
                     <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-700 text-lg font-bold">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-700 text-[15px] font-semibold tabular-nums">
                             {customer.name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div>
@@ -114,7 +116,7 @@ export function Customer360Page() {
 
             {/* Tabs */}
             <Tabs.Root defaultValue="overview">
-                <Tabs.List className="flex border-b border-surface-200 gap-1">
+                <Tabs.List className="flex border-b border-subtle gap-1">
                     {[
                         { value: 'overview', label: 'Visão Geral' },
                         { value: 'equipments', label: `Equipamentos (${equipments.length})` },
@@ -150,10 +152,10 @@ export function Customer360Page() {
 
                 {/* Tab: Equipments */}
                 <Tabs.Content value="equipments" className="mt-5">
-                    <div className="rounded-xl border border-surface-200 bg-white shadow-card overflow-hidden">
+                    <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-surface-200 bg-surface-50">
+                                <tr className="border-b border-subtle bg-surface-50">
                                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-surface-500">Código</th>
                                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-surface-500">Equipamento</th>
                                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-surface-500">Categoria</th>
@@ -161,19 +163,19 @@ export function Customer360Page() {
                                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-surface-500">Próx. Calibração</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-surface-100">
+                            <tbody className="divide-y divide-subtle">
                                 {equipments.length === 0 ? (
                                     <tr><td colSpan={5} className="px-4 py-8 text-center text-surface-400">Nenhum equipamento</td></tr>
                                 ) : equipments.map((eq: any) => {
                                     const nextCal = eq.next_calibration_at ? new Date(eq.next_calibration_at) : null
-                                    const diff = nextCal ? Math.ceil((nextCal.getTime() - Date.now()) / 86400000) : null
+                                    const diff = nextCal ? Math.ceil((nextCal.getTime() - nowTs) / 86400000) : null
                                     return (
-                                        <tr key={eq.id} className="hover:bg-surface-50 transition-colors">
+                                        <tr key={eq.id} className="hover:bg-surface-50 transition-colors duration-100">
                                             <td className="px-4 py-2.5 font-mono text-xs font-bold text-brand-600">{eq.code}</td>
                                             <td className="px-4 py-2.5 text-surface-800">{eq.brand} {eq.model}</td>
                                             <td className="px-4 py-2.5 text-surface-500 capitalize">{eq.category}</td>
                                             <td className="px-4 py-2.5">
-                                                <Badge variant={eq.status === 'active' ? 'success' : 'default'}>{eq.status}</Badge>
+                                                <Badge variant={eq.status === EQUIPMENT_STATUS.ACTIVE ? 'success' : 'default'}>{eq.status}</Badge>
                                             </td>
                                             <td className="px-4 py-2.5">
                                                 {nextCal ? (
@@ -201,7 +203,7 @@ export function Customer360Page() {
                         {deals.length === 0 ? (
                             <p className="text-center text-sm text-surface-400 py-8">Nenhuma oportunidade</p>
                         ) : deals.map((deal: any) => (
-                            <div key={deal.id} className="rounded-lg border border-surface-200 bg-white p-4 shadow-card hover:shadow-elevated transition-shadow">
+                            <div key={deal.id} className="rounded-lg border border-default bg-surface-0 p-4 shadow-card hover:shadow-elevated transition-shadow">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Target className="h-4 w-4 text-brand-500" />
@@ -211,8 +213,8 @@ export function Customer360Page() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <Badge variant={deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'} dot>
-                                            {deal.status === 'won' ? 'Ganho' : deal.status === 'lost' ? 'Perdido' : 'Aberto'}
+                                        <Badge variant={deal.status === DEAL_STATUS.WON ? 'success' : deal.status === DEAL_STATUS.LOST ? 'danger' : 'info'} dot>
+                                            {deal.status === DEAL_STATUS.WON ? 'Ganho' : deal.status === DEAL_STATUS.LOST ? 'Perdido' : 'Aberto'}
                                         </Badge>
                                         <span className="text-sm font-bold text-surface-900">{fmtBRL(Number(deal.value))}</span>
                                     </div>
@@ -231,11 +233,11 @@ export function Customer360Page() {
                 <Tabs.Content value="financial" className="mt-5">
                     <div className="grid gap-5 lg:grid-cols-2">
                         {/* Work Orders */}
-                        <div className="rounded-xl border border-surface-200 bg-white shadow-card">
-                            <div className="border-b border-surface-200 px-5 py-3">
+                        <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                            <div className="border-b border-subtle px-5 py-3">
                                 <h3 className="text-sm font-semibold text-surface-900">Últimas Ordens de Serviço</h3>
                             </div>
-                            <div className="divide-y divide-surface-100">
+                            <div className="divide-y divide-subtle">
                                 {workOrders.length === 0 ? (
                                     <p className="px-5 py-6 text-center text-sm text-surface-400">Nenhuma OS</p>
                                 ) : workOrders.map((wo: any) => (
@@ -245,7 +247,7 @@ export function Customer360Page() {
                                             <p className="text-xs text-surface-400 mt-0.5">{new Date(wo.created_at).toLocaleDateString('pt-BR')}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant={wo.status === 'completed' ? 'success' : wo.status === 'cancelled' ? 'danger' : 'info'}>
+                                            <Badge variant={wo.status === WORK_ORDER_STATUS.COMPLETED ? 'success' : wo.status === WORK_ORDER_STATUS.CANCELLED ? 'danger' : 'info'}>
                                                 {wo.status}
                                             </Badge>
                                             <span className="text-sm font-medium text-surface-800">{fmtBRL(Number(wo.total ?? 0))}</span>
@@ -256,11 +258,11 @@ export function Customer360Page() {
                         </div>
 
                         {/* Quotes */}
-                        <div className="rounded-xl border border-surface-200 bg-white shadow-card">
-                            <div className="border-b border-surface-200 px-5 py-3">
+                        <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                            <div className="border-b border-subtle px-5 py-3">
                                 <h3 className="text-sm font-semibold text-surface-900">Últimos Orçamentos</h3>
                             </div>
-                            <div className="divide-y divide-surface-100">
+                            <div className="divide-y divide-subtle">
                                 {quotes.length === 0 ? (
                                     <p className="px-5 py-6 text-center text-sm text-surface-400">Nenhum orçamento</p>
                                 ) : quotes.map((q: any) => (
@@ -270,7 +272,7 @@ export function Customer360Page() {
                                             <p className="text-xs text-surface-400 mt-0.5">{new Date(q.created_at).toLocaleDateString('pt-BR')}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'danger' : 'warning'}>
+                                            <Badge variant={q.status === QUOTE_STATUS.APPROVED ? 'success' : q.status === QUOTE_STATUS.REJECTED ? 'danger' : 'warning'}>
                                                 {q.status}
                                             </Badge>
                                             <span className="text-sm font-medium text-surface-800">{fmtBRL(Number(q.total ?? 0))}</span>
@@ -296,7 +298,7 @@ export function Customer360Page() {
                 {/* Tab: Data */}
                 <Tabs.Content value="data" className="mt-5">
                     <div className="grid gap-5 lg:grid-cols-2">
-                        <div className="rounded-xl border border-surface-200 bg-white p-5 shadow-card space-y-3">
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-3">
                             <h3 className="text-sm font-semibold text-surface-900 mb-3">Informações de Contato</h3>
                             <DataRow label="Nome" value={customer.name} />
                             <DataRow label="Documento" value={customer.document} />
@@ -310,7 +312,7 @@ export function Customer360Page() {
                             } />
                         </div>
 
-                        <div className="rounded-xl border border-surface-200 bg-white p-5 shadow-card space-y-3">
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-3">
                             <h3 className="text-sm font-semibold text-surface-900 mb-3">Informações CRM</h3>
                             <DataRow label="Origem" value={customer.source} />
                             <DataRow label="Segmento" value={customer.segment} />
@@ -330,7 +332,7 @@ export function Customer360Page() {
 
                 {/* Tab: Messages */}
                 <Tabs.Content value="messages" className="mt-5">
-                    <div className="rounded-xl border border-surface-200 bg-white p-5 shadow-card">
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-semibold text-surface-900">Histórico de Conversas</h3>
                             <Button variant="primary" size="sm" onClick={() => setSendMessageOpen(true)}>
@@ -344,14 +346,14 @@ export function Customer360Page() {
 
                 {/* Tab: Documentos */}
                 <Tabs.Content value="documents" className="mt-5">
-                    <div className="rounded-xl border border-surface-200 bg-white shadow-card">
-                        <div className="flex items-center justify-between border-b border-surface-200 px-5 py-3">
+                    <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                        <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
                             <h3 className="text-sm font-semibold text-surface-900">Documentos & Certificados</h3>
                         </div>
                         {documents.length === 0 ? (
                             <p className="py-10 text-center text-sm text-surface-400">Nenhum documento encontrado</p>
                         ) : (
-                            <div className="divide-y divide-surface-100">
+                            <div className="divide-y divide-subtle">
                                 {documents.map((doc: any) => {
                                     const isExpired = doc.expires_at && new Date(doc.expires_at) < new Date()
                                     const typeLabels: Record<string, string> = {
@@ -363,7 +365,7 @@ export function Customer360Page() {
                                         outro: 'Outro',
                                     }
                                     return (
-                                        <div key={doc.id} className="flex items-center justify-between px-5 py-3 hover:bg-surface-50 transition-colors">
+                                        <div key={doc.id} className="flex items-center justify-between px-5 py-3 hover:bg-surface-50 transition-colors duration-100">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <div className={cn('rounded-lg p-2', isExpired ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600')}>
                                                     <FileCheck className="h-4 w-4" />
@@ -431,7 +433,7 @@ export function Customer360Page() {
 
 function QuickInfo({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
     return (
-        <div className="rounded-lg border border-surface-200 bg-white p-3 shadow-sm">
+        <div className="rounded-lg border border-default bg-surface-0 p-3 shadow-sm">
             <div className="flex items-center gap-2">
                 <Icon className="h-4 w-4 text-surface-400" />
                 <div className="min-w-0">

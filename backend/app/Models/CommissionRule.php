@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CommissionRule extends Model
 {
-    use BelongsToTenant, Auditable;
+    use BelongsToTenant, HasFactory, Auditable;
 
     protected $fillable = [
         'tenant_id', 'user_id', 'name', 'type', 'value', 'applies_to',
@@ -93,7 +94,7 @@ class CommissionRule extends Model
             self::CALC_PERCENT_GROSS => round($baseAmount * ($pct / 100), 2),
 
             self::CALC_PERCENT_NET => round(
-                ($baseAmount - ($context['expenses'] ?? 0)) * ($pct / 100), 2
+                ($baseAmount - ($context['expenses'] ?? 0) - ($context['cost'] ?? 0)) * ($pct / 100), 2
             ),
 
             self::CALC_PERCENT_GROSS_MINUS_DISPLACEMENT => round(
@@ -173,18 +174,87 @@ class CommissionRule extends Model
             $expr = str_replace($key, (string) $val, $expr);
         }
 
-        // Safe eval: only allow numbers and math operators
+        // Sanitize: only allow numbers, decimals, and math operators
         $expr = preg_replace('/[^0-9.+\-*\/() ]/', '', $expr);
         if (empty(trim($expr))) {
             return 0;
         }
 
         try {
-            $result = eval("return (float)({$expr});");
+            $result = self::safeEvaluate($expr);
             return round(max(0, (float) $result), 2);
         } catch (\Throwable) {
             return round($amount * ((float) $this->value / 100), 2);
         }
+    }
+
+    /**
+     * Safe arithmetic expression evaluator (no eval).
+     * Supports: +, -, *, /, parentheses, decimal numbers.
+     */
+    private static function safeEvaluate(string $expr): float
+    {
+        // Tokenize
+        $tokens = [];
+        preg_match_all('/(\d+\.?\d*|[+\-*\/()])/i', $expr, $matches);
+        $tokens = $matches[0];
+
+        if (empty($tokens)) {
+            return 0;
+        }
+
+        $pos = 0;
+        $result = self::parseExpression($tokens, $pos);
+
+        return (float) $result;
+    }
+
+    private static function parseExpression(array &$tokens, int &$pos): float
+    {
+        $result = self::parseTerm($tokens, $pos);
+
+        while ($pos < count($tokens) && in_array($tokens[$pos], ['+', '-'])) {
+            $op = $tokens[$pos++];
+            $right = self::parseTerm($tokens, $pos);
+            $result = $op === '+' ? $result + $right : $result - $right;
+        }
+
+        return $result;
+    }
+
+    private static function parseTerm(array &$tokens, int &$pos): float
+    {
+        $result = self::parseFactor($tokens, $pos);
+
+        while ($pos < count($tokens) && in_array($tokens[$pos], ['*', '/'])) {
+            $op = $tokens[$pos++];
+            $right = self::parseFactor($tokens, $pos);
+            if ($op === '*') {
+                $result *= $right;
+            } else {
+                $result = $right != 0 ? $result / $right : 0;
+            }
+        }
+
+        return $result;
+    }
+
+    private static function parseFactor(array &$tokens, int &$pos): float
+    {
+        if ($pos >= count($tokens)) {
+            return 0;
+        }
+
+        if ($tokens[$pos] === '(') {
+            $pos++; // skip '('
+            $result = self::parseExpression($tokens, $pos);
+            if ($pos < count($tokens) && $tokens[$pos] === ')') {
+                $pos++; // skip ')'
+            }
+            return $result;
+        }
+
+        return (float) $tokens[$pos++];
     }
 
     /**
@@ -195,7 +265,9 @@ class CommissionRule extends Model
     {
         $productsTotal = $wo->items()->where('type', 'product')->sum('total');
         $servicesTotal = $wo->items()->where('type', 'service')->sum('total');
-        $expenses = Expense::where('work_order_id', $wo->id)->sum('amount');
+        $expenses = Expense::where('tenant_id', $wo->tenant_id)
+            ->where('work_order_id', $wo->id)
+            ->sum('amount');
 
         return $this->calculateCommission((float) $wo->total, [
             'gross'          => (float) $wo->total,

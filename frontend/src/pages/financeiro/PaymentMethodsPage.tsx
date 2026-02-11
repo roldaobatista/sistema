@@ -47,22 +47,22 @@ export function PaymentMethodsPage() {
         setForm(prev => ({ ...prev, [k]: v }))
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Formas de Pagamento</h1>
-                    <p className="mt-1 text-sm text-surface-500">Métodos de pagamento configuráveis</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Formas de Pagamento</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Métodos de pagamento configuráveis</p>
                 </div>
                 <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Forma</Button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
-                    <p className="col-span-full py-12 text-center text-sm text-surface-500">Carregando...</p>
+                    <p className="col-span-full py-12 text-center text-[13px] text-surface-500">Carregando...</p>
                 ) : methods.length === 0 ? (
-                    <p className="col-span-full py-12 text-center text-sm text-surface-500">Nenhuma forma cadastrada</p>
+                    <p className="col-span-full py-12 text-center text-[13px] text-surface-500">Nenhuma forma cadastrada</p>
                 ) : methods.map(m => (
-                    <div key={m.id} className="flex items-center justify-between rounded-xl border border-surface-200 bg-white p-4 shadow-card transition-shadow hover:shadow-md">
+                    <div key={m.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-0 p-4 shadow-card transition-shadow hover:shadow-md">
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50">
                                 <CreditCard className="h-5 w-5 text-sky-600" />
@@ -95,7 +95,7 @@ export function PaymentMethodsPage() {
                             className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
                         <label htmlFor="pm-active" className="text-sm text-surface-700">Ativo</label>
                     </div>
-                    <div className="flex items-center justify-end gap-3 border-t border-surface-200 pt-4">
+                    <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
                         <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancelar</Button>
                         <Button type="submit" loading={saveMut.isPending}>{editing ? 'Salvar' : 'Criar'}</Button>
                     </div>

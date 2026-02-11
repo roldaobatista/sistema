@@ -43,3 +43,34 @@ Schedule::command('quotes:check-expired')
     ->dailyAt('06:15')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/expired-quotes.log'));
+
+// ─── Low Stock Alerts (diário às 07:15) ───
+Schedule::command('stock:check-low')
+    ->dailyAt('07:15')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/stock-low-alerts.log'));
+
+// ─── Upcoming Payments (diário às 08:00) ───
+Schedule::command('notify:upcoming-payments')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/upcoming-payments.log'));
+
+// ─── Auto Billing Recurring Contracts (mensal dia 1 às 06:00) ───
+Schedule::command('contracts:bill-recurring')
+    ->monthlyOn(1, '06:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/recurring-billing.log'));
+
+// ─── SLA Breach Detection (a cada 15 min) ───
+Schedule::command('sla:check-breaches')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/sla-breaches.log'));
+
+// ─── Central: Varredura de Financeiros Vencidos (diário às 06:30) ───
+Schedule::command('central:scan-financials')
+    ->dailyAt('06:30')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/central-scan-financials.log'));
+

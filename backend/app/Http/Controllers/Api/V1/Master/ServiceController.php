@@ -74,6 +74,23 @@ class ServiceController extends Controller
 
     public function destroy(Service $service): JsonResponse
     {
+        $quotesCount = \App\Models\QuoteItem::where('service_id', $service->id)->count();
+        $ordersCount = \App\Models\WorkOrderItem::where('service_id', $service->id)->count();
+
+        if ($quotesCount > 0 || $ordersCount > 0) {
+            $parts = [];
+            if ($quotesCount > 0) $parts[] = "$quotesCount orçamento(s)";
+            if ($ordersCount > 0) $parts[] = "$ordersCount ordem(ns) de serviço";
+
+            return response()->json([
+                'message' => "Não é possível excluir este serviço pois ele possui vínculos: " . implode(', ', $parts),
+                'dependencies' => [
+                    'quotes' => $quotesCount,
+                    'work_orders' => $ordersCount,
+                ],
+            ], 409);
+        }
+
         $service->delete();
         return response()->json(null, 204);
     }

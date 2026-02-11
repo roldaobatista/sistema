@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -34,7 +34,7 @@ export default function EquipmentCalendarPage() {
         queryFn: () => api.get('/equipments-alerts').then(r => r.data),
     })
 
-    const alerts: Alert[] = data?.alerts ?? []
+    const alerts = useMemo<Alert[]>(() => data?.alerts ?? [], [data?.alerts])
 
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
@@ -44,18 +44,15 @@ export default function EquipmentCalendarPage() {
 
     const monthName = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
-    const alertsByDay = useMemo(() => {
-        const map: Record<number, Alert[]> = {}
-        alerts.forEach(a => {
-            const d = new Date(a.next_calibration_at)
-            if (d.getFullYear() === year && d.getMonth() === month) {
-                const day = d.getDate()
-                if (!map[day]) map[day] = []
-                map[day].push(a)
-            }
-        })
-        return map
-    }, [alerts, year, month])
+    const alertsByDay: Record<number, Alert[]> = {}
+    alerts.forEach(a => {
+        const d = new Date(a.next_calibration_at)
+        if (d.getFullYear() === year && d.getMonth() === month) {
+            const day = d.getDate()
+            if (!alertsByDay[day]) alertsByDay[day] = []
+            alertsByDay[day].push(a)
+        }
+    })
 
     const prev = () => setCurrentDate(new Date(year, month - 1, 1))
     const next = () => setCurrentDate(new Date(year, month + 1, 1))
@@ -71,16 +68,16 @@ export default function EquipmentCalendarPage() {
     const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Agenda de Calibrações</h1>
-                    <p className="text-sm text-surface-500">Visualize os vencimentos de calibração por mês</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Agenda de Calibrações</h1>
+                    <p className="text-[13px] text-surface-500">Visualize os vencimentos de calibração por mês</p>
                 </div>
                 <Link
                     to="/equipamentos"
-                    className="flex items-center gap-2 rounded-lg border border-surface-200 px-4 py-2.5 text-sm font-medium text-surface-700 hover:bg-surface-50"
+                    className="flex items-center gap-2 rounded-lg border border-surface-200 px-4 py-2.5 text-[13px] font-medium text-surface-700 hover:bg-surface-50"
                 >
                     <Scale size={16} />
                     Ver Equipamentos
@@ -89,7 +86,7 @@ export default function EquipmentCalendarPage() {
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                 {/* Calendar */}
-                <div className="xl:col-span-2 rounded-xl border border-surface-200 bg-white p-5 shadow-card">
+                <div className="xl:col-span-2 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                     {/* Month nav */}
                     <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -237,7 +234,7 @@ export default function EquipmentCalendarPage() {
                     </div>
 
                     {/* Summary */}
-                    <div className="rounded-xl border border-surface-200 bg-white p-4 shadow-card">
+                    <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                         <h3 className="mb-2 text-sm font-semibold text-surface-900">Resumo</h3>
                         <div className="space-y-2 text-xs">
                             <div className="flex justify-between">

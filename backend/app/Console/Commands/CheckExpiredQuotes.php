@@ -12,12 +12,21 @@ class CheckExpiredQuotes extends Command
 
     public function handle(): int
     {
-        $count = Quote::where('status', 'sent')
+        $quotes = Quote::withoutGlobalScopes()
+            ->where('status', Quote::STATUS_SENT)
             ->whereNotNull('valid_until')
             ->where('valid_until', '<', now())
-            ->update(['status' => 'expired']);
+            ->get();
 
-        $this->info("Marked {$count} quote(s) as expired.");
+        foreach ($quotes as $quote) {
+            $quote->update(['status' => Quote::STATUS_EXPIRED]);
+
+            // Setar tenant context para o audit log (comando CLI não tem auth)
+            app()->instance('current_tenant_id', $quote->tenant_id);
+            \App\Models\AuditLog::log('status_changed', "Orçamento {$quote->quote_number} expirado automaticamente", $quote);
+        }
+
+        $this->info("Marked {$quotes->count()} quote(s) as expired.");
         return self::SUCCESS;
     }
 }

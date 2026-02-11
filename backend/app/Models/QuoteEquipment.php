@@ -9,7 +9,9 @@ use App\Models\Concerns\BelongsToTenant;
 
 class QuoteEquipment extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, \Illuminate\Database\Eloquent\Factories\HasFactory;
+
+    protected $table = 'quote_equipments';
 
     protected $fillable = [
         'tenant_id', 'quote_id', 'equipment_id', 'description', 'sort_order',

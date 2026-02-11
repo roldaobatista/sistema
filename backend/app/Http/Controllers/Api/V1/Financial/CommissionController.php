@@ -7,16 +7,62 @@ use App\Models\CommissionRule;
 use App\Models\CommissionEvent;
 use App\Models\CommissionSettlement;
 use App\Models\Expense;
+use Carbon\Carbon;
+use App\Traits\ApiResponseTrait;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class CommissionController extends Controller
 {
+    use ApiResponseTrait;
+
+    private function tenantId(): int
+    {
+        $user = auth()->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
+    /** Cross-DB period filter (SQLite + MySQL compatible) */
+    private function wherePeriod($query, string $column, string $period)
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            $query->whereRaw("strftime('%Y-%m', {$column}) = ?", [$period]);
+        } else {
+            $query->whereRaw("DATE_FORMAT({$column}, '%Y-%m') = ?", [$period]);
+        }
+        return $query;
+    }
+
+    private function osNumberFilter(Request $request): ?string
+    {
+        $osNumber = trim((string) $request->get('os_number', ''));
+        return $osNumber !== '' ? $osNumber : null;
+    }
+
+    private function applyWorkOrderIdentifierFilter($query, ?string $osNumber): void
+    {
+        if (!$osNumber) {
+            return;
+        }
+
+        $query->whereHas('workOrder', function ($wo) use ($osNumber) {
+            $wo->where(function ($q) use ($osNumber) {
+                $q->where('os_number', 'like', "%{$osNumber}%")
+                    ->orWhere('number', 'like', "%{$osNumber}%");
+            });
+        });
+    }
+
     // ── Regras ──
 
     public function rules(Request $request): JsonResponse
     {
-        $query = CommissionRule::with('user:id,name');
+        $query = CommissionRule::where('tenant_id', $this->tenantId())
+            ->with('user:id,name');
 
         if ($userId = $request->get('user_id')) {
             $query->where('user_id', $userId);
@@ -30,33 +76,43 @@ class CommissionController extends Controller
 
     public function storeRule(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
+
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'name' => 'required|string|max:255',
-            'type' => 'sometimes|in:percentage,fixed',
+            'type' => ['sometimes', Rule::in([CommissionRule::TYPE_PERCENTAGE, CommissionRule::TYPE_FIXED])],
             'value' => 'required|numeric|min:0',
-            'applies_to' => 'sometimes|in:all,products,services',
-            'calculation_type' => 'required|in:' . implode(',', array_keys(CommissionRule::CALCULATION_TYPES)),
-            'applies_to_role' => 'sometimes|in:technician,seller,driver',
-            'applies_when' => 'sometimes|in:os_completed,installment_paid,os_invoiced',
+            'applies_to' => ['sometimes', Rule::in([CommissionRule::APPLIES_ALL, CommissionRule::APPLIES_PRODUCTS, CommissionRule::APPLIES_SERVICES])],
+            'calculation_type' => ['required', Rule::in(array_keys(CommissionRule::CALCULATION_TYPES))],
+            'applies_to_role' => ['sometimes', Rule::in([CommissionRule::ROLE_TECHNICIAN, CommissionRule::ROLE_SELLER, CommissionRule::ROLE_DRIVER])],
+            'applies_when' => ['sometimes', Rule::in([CommissionRule::WHEN_OS_COMPLETED, CommissionRule::WHEN_INSTALLMENT_PAID, CommissionRule::WHEN_OS_INVOICED])],
             'tiers' => 'nullable|array',
             'priority' => 'sometimes|integer',
+            'active' => 'sometimes|boolean',
         ]);
 
+        $validated['tenant_id'] = $tenantId;
+        $validated['applies_to'] = $validated['applies_to'] ?? CommissionRule::APPLIES_ALL;
+        $validated['applies_to_role'] = $validated['applies_to_role'] ?? CommissionRule::ROLE_TECHNICIAN;
+        $validated['applies_when'] = $validated['applies_when'] ?? CommissionRule::WHEN_OS_COMPLETED;
         $rule = CommissionRule::create($validated);
         return response()->json($rule->load('user:id,name'), 201);
     }
 
     public function updateRule(Request $request, CommissionRule $commissionRule): JsonResponse
     {
+        abort_if($commissionRule->tenant_id !== $this->tenantId(), 404);
+
         $validated = $request->validate([
+            'user_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $this->tenantId()))],
             'name' => 'sometimes|string|max:255',
-            'type' => 'sometimes|in:percentage,fixed',
+            'type' => ['sometimes', Rule::in([CommissionRule::TYPE_PERCENTAGE, CommissionRule::TYPE_FIXED])],
             'value' => 'sometimes|numeric|min:0',
-            'applies_to' => 'sometimes|in:all,products,services',
-            'calculation_type' => 'sometimes|in:' . implode(',', array_keys(CommissionRule::CALCULATION_TYPES)),
-            'applies_to_role' => 'sometimes|in:technician,seller,driver',
-            'applies_when' => 'sometimes|in:os_completed,installment_paid,os_invoiced',
+            'applies_to' => ['sometimes', Rule::in([CommissionRule::APPLIES_ALL, CommissionRule::APPLIES_PRODUCTS, CommissionRule::APPLIES_SERVICES])],
+            'calculation_type' => ['sometimes', Rule::in(array_keys(CommissionRule::CALCULATION_TYPES))],
+            'applies_to_role' => ['sometimes', Rule::in([CommissionRule::ROLE_TECHNICIAN, CommissionRule::ROLE_SELLER, CommissionRule::ROLE_DRIVER])],
+            'applies_when' => ['sometimes', Rule::in([CommissionRule::WHEN_OS_COMPLETED, CommissionRule::WHEN_INSTALLMENT_PAID, CommissionRule::WHEN_OS_INVOICED])],
             'tiers' => 'nullable|array',
             'priority' => 'sometimes|integer',
             'active' => 'sometimes|boolean',
@@ -68,6 +124,13 @@ class CommissionController extends Controller
 
     public function destroyRule(CommissionRule $commissionRule): JsonResponse
     {
+        abort_if($commissionRule->tenant_id !== $this->tenantId(), 404);
+
+        $eventsCount = CommissionEvent::where('commission_rule_id', $commissionRule->id)->count();
+        if ($eventsCount > 0) {
+            return $this->error("Não é possível excluir: existem {$eventsCount} evento(s) vinculados a esta regra", 409);
+        }
+
         $commissionRule->delete();
         return response()->json(null, 204);
     }
@@ -82,9 +145,9 @@ class CommissionController extends Controller
 
     public function events(Request $request): JsonResponse
     {
-        $query = CommissionEvent::with([
-            'user:id,name', 'workOrder:id,number', 'rule:id,name,calculation_type',
-        ]);
+        $osNumber = $this->osNumberFilter($request);
+        $query = CommissionEvent::where('tenant_id', $this->tenantId())
+            ->with(['user:id,name', 'workOrder:id,number,os_number', 'rule:id,name,calculation_type']);
 
         if ($userId = $request->get('user_id')) {
             $query->where('user_id', $userId);
@@ -93,147 +156,210 @@ class CommissionController extends Controller
             $query->where('status', $status);
         }
         if ($period = $request->get('period')) {
-            $query->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$period]);
+            $this->wherePeriod($query, 'created_at', $period);
         }
+        $this->applyWorkOrderIdentifierFilter($query, $osNumber);
 
         return response()->json(
             $query->orderByDesc('created_at')->paginate($request->get('per_page', 50))
         );
     }
 
+    // ── Injeção de Dependência ──
+    protected \App\Services\CommissionService $commissionService;
+
+    public function __construct(\App\Services\CommissionService $commissionService)
+    {
+        $this->commissionService = $commissionService;
+    }
+
     /** Gerar comissões para uma OS — suporta 10+ calculation_types */
     public function generateForWorkOrder(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'work_order_id' => 'required|exists:work_orders,id',
+            'work_order_id' => [
+                'required',
+                Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $this->tenantId())),
+            ],
         ]);
 
-        $wo = \App\Models\WorkOrder::with(['items', 'technicians'])->findOrFail($validated['work_order_id']);
+        $wo = \App\Models\WorkOrder::findOrFail($validated['work_order_id']);
 
-        $existing = CommissionEvent::where('work_order_id', $wo->id)->exists();
-        if ($existing) {
-            return response()->json(['message' => 'Comissões já geradas para esta OS'], 422);
+        try {
+            $events = $this->commissionService->calculateAndGenerate($wo);
+            
+            // Notification is now handled here or could be moved to service events, 
+            // but keeping it here for now to match previous behavior (controller orchestrates notifications)
+            $this->notifyCommissionGenerated($events);
+
+            return $this->success(['generated' => count($events), 'events' => $events], 'Comissões geradas', 201);
+            
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
         }
-
-        // Monta contexto de cálculo
-        $expensesTotal = Expense::where('work_order_id', $wo->id)
-            ->where('status', 'approved')
-            ->sum('amount');
-
-        $productsTotal = $wo->items->where('type', 'product')->sum('total');
-        $servicesTotal = $wo->items->where('type', 'service')->sum('total');
-
-        $context = [
-            'gross' => (float) $wo->total,
-            'expenses' => (float) $expensesTotal,
-            'displacement' => 0, // TODO: item marcado como deslocamento
-            'products_total' => (float) $productsTotal,
-            'services_total' => (float) $servicesTotal,
-            'cost' => (float) $expensesTotal, // simplificado
-        ];
-
-        $events = [];
-
-        // Coleta todos os user_ids relevantes (técnico principal + vendedor + técnicos N:N)
-        $userRoles = [];
-        if ($wo->assignee_id) $userRoles[] = ['id' => $wo->assignee_id, 'role' => 'technician'];
-        if ($wo->seller_id) $userRoles[] = ['id' => $wo->seller_id, 'role' => 'seller'];
-        if ($wo->driver_id) $userRoles[] = ['id' => $wo->driver_id, 'role' => 'driver'];
-        foreach ($wo->technicians as $tech) {
-            $role = $tech->pivot->role ?? 'technician';
-            if (!collect($userRoles)->contains(fn ($ur) => $ur['id'] === $tech->id && $ur['role'] === $role)) {
-                $userRoles[] = ['id' => $tech->id, 'role' => $role];
-            }
-        }
-
-        foreach ($userRoles as $ur) {
-            $rules = CommissionRule::where('user_id', $ur['id'])
-                ->where('applies_to_role', $ur['role'])
-                ->where('active', true)
-                ->orderBy('priority')
-                ->get();
-
-            foreach ($rules as $rule) {
-                $commissionAmount = $rule->calculateCommission((float) $wo->total, $context);
-                if ($commissionAmount <= 0) continue;
-
-                $events[] = CommissionEvent::create([
-                    'commission_rule_id' => $rule->id,
-                    'work_order_id' => $wo->id,
-                    'user_id' => $ur['id'],
-                    'base_amount' => (float) $wo->total,
-                    'commission_amount' => $commissionAmount,
-                    'status' => 'pending',
-                    'notes' => "Tipo: {$rule->calculation_type}, Papel: {$ur['role']}",
-                ]);
-            }
-        }
-
-        return response()->json(['generated' => count($events), 'events' => $events], 201);
     }
 
     /** Simular comissão (preview sem salvar) */
     public function simulate(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'work_order_id' => 'required|exists:work_orders,id',
+            'work_order_id' => [
+                'required',
+                Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $this->tenantId())),
+            ],
         ]);
 
-        $wo = \App\Models\WorkOrder::with(['items', 'technicians'])->findOrFail($validated['work_order_id']);
+        $wo = \App\Models\WorkOrder::findOrFail($validated['work_order_id']);
 
-        $expensesTotal = Expense::where('work_order_id', $wo->id)
-            ->where('status', 'approved')
-            ->sum('amount');
-
-        $context = [
-            'gross' => (float) $wo->total,
-            'expenses' => (float) $expensesTotal,
-            'displacement' => 0,
-            'products_total' => (float) $wo->items->where('type', 'product')->sum('total'),
-            'services_total' => (float) $wo->items->where('type', 'service')->sum('total'),
-            'cost' => (float) $expensesTotal,
-        ];
-
-        $simulations = [];
-        $userIds = array_filter([$wo->assignee_id, $wo->seller_id, $wo->driver_id]);
-        foreach ($wo->technicians as $tech) $userIds[] = $tech->id;
-        $userIds = array_unique($userIds);
-
-        foreach ($userIds as $uid) {
-            $rules = CommissionRule::where('user_id', $uid)->where('active', true)->get();
-            foreach ($rules as $rule) {
-                $amount = $rule->calculateCommission((float) $wo->total, $context);
-                $simulations[] = [
-                    'user_id' => $uid,
-                    'user_name' => $rule->user?->name,
-                    'rule_name' => $rule->name,
-                    'calculation_type' => $rule->calculation_type,
-                    'applies_to_role' => $rule->applies_to_role,
-                    'base_amount' => (float) $wo->total,
-                    'commission_amount' => $amount,
-                ];
-            }
-        }
+        $simulations = $this->commissionService->simulate($wo);
 
         return response()->json($simulations);
     }
 
     public function updateEventStatus(Request $request, CommissionEvent $commissionEvent): JsonResponse
     {
+        abort_if($commissionEvent->tenant_id !== $this->tenantId(), 404);
+
         $validated = $request->validate([
-            'status' => 'required|in:pending,approved,paid,reversed',
+            'status' => ['required', Rule::in(array_keys(CommissionEvent::STATUSES))],
             'notes' => 'nullable|string',
         ]);
 
+        $oldStatus = $commissionEvent->status;
+        $newStatus = $validated['status'];
+
+        // Validate status transitions
+        $validTransitions = [
+            CommissionEvent::STATUS_PENDING => [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_REVERSED],
+            CommissionEvent::STATUS_APPROVED => [CommissionEvent::STATUS_PAID, CommissionEvent::STATUS_REVERSED],
+            CommissionEvent::STATUS_PAID => [CommissionEvent::STATUS_REVERSED],
+            CommissionEvent::STATUS_REVERSED => [CommissionEvent::STATUS_PENDING],
+        ];
+        if (!in_array($newStatus, $validTransitions[$oldStatus] ?? [])) {
+            return response()->json(['message' => "Transição de status inválida: {$oldStatus} → {$newStatus}"], 422);
+        }
+
         $commissionEvent->update($validated);
+
+        // Notify on approval or payment
+        if (in_array($newStatus, [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])) {
+            $this->notifyStatusChange($commissionEvent, $oldStatus, $newStatus);
+        }
+
         return response()->json($commissionEvent->fresh());
+    }
+
+    /** Aprovação/Estorno em lote */
+    public function batchUpdateStatus(Request $request): JsonResponse
+    {
+        $tenantId = $this->tenantId();
+
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => ['integer', Rule::exists('commission_events', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'status' => ['required', Rule::in(array_keys(CommissionEvent::STATUSES))],
+        ]);
+
+        $events = CommissionEvent::where('tenant_id', $tenantId)
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        // Validação de transições (mesma lógica do updateEventStatus)
+        $validTransitions = [
+            CommissionEvent::STATUS_PENDING => [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_REVERSED],
+            CommissionEvent::STATUS_APPROVED => [CommissionEvent::STATUS_PAID, CommissionEvent::STATUS_REVERSED],
+            CommissionEvent::STATUS_PAID => [CommissionEvent::STATUS_REVERSED],
+            CommissionEvent::STATUS_REVERSED => [CommissionEvent::STATUS_PENDING],
+        ];
+
+        $updated = 0;
+        $skipped = 0;
+        foreach ($events as $event) {
+            if (!in_array($validated['status'], $validTransitions[$event->status] ?? [])) {
+                $skipped++;
+                continue;
+            }
+            $oldStatus = $event->status;
+            $event->update(['status' => $validated['status']]);
+            $updated++;
+
+            if (in_array($validated['status'], [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])) {
+                $this->notifyStatusChange($event, $oldStatus, $validated['status']);
+            }
+        }
+
+        $message = "{$updated} eventos atualizados";
+        if ($skipped > 0) {
+            $message .= ", {$skipped} ignorados (transição inválida)";
+        }
+
+        return $this->success(['updated' => $updated, 'skipped' => $skipped], $message);
+    }
+
+    // ── Splits ──
+
+    public function eventSplits(CommissionEvent $commissionEvent): JsonResponse
+    {
+        abort_if($commissionEvent->tenant_id !== $this->tenantId(), 404);
+
+        $splits = DB::table('commission_splits')
+            ->where('commission_event_id', $commissionEvent->id)
+            ->where('commission_splits.tenant_id', $this->tenantId())
+            ->join('users', 'commission_splits.user_id', '=', 'users.id')
+            ->select('commission_splits.*', 'users.name as user_name')
+            ->get();
+
+        return response()->json($splits);
+    }
+
+    public function splitEvent(Request $request, CommissionEvent $commissionEvent): JsonResponse
+    {
+        $tenantId = $this->tenantId();
+
+        $validated = $request->validate([
+            'splits' => 'required|array|min:2',
+            'splits.*.user_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'splits.*.percentage' => 'required|numeric|min:0.01|max:100',
+        ]);
+
+        $totalPct = collect($validated['splits'])->sum('percentage');
+        if (abs($totalPct - 100) > 0.01) {
+            return $this->error('A soma das porcentagens deve ser exatamente 100%', 422);
+        }
+
+        $baseAmount = (float) $commissionEvent->commission_amount;
+
+        $splits = DB::transaction(function () use ($commissionEvent, $validated, $tenantId, $baseAmount) {
+            // Delete existing splits
+            DB::table('commission_splits')->where('commission_event_id', $commissionEvent->id)->delete();
+
+            $splits = [];
+            foreach ($validated['splits'] as $s) {
+                $amount = round($baseAmount * ($s['percentage'] / 100), 2);
+                $splitId = DB::table('commission_splits')->insertGetId([
+                    'tenant_id' => $tenantId,
+                    'commission_event_id' => $commissionEvent->id,
+                    'user_id' => $s['user_id'],
+                    'percentage' => $s['percentage'],
+                    'amount' => $amount,
+                    'role' => $s['role'] ?? CommissionRule::ROLE_TECHNICIAN,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $splits[] = ['id' => $splitId, 'user_id' => $s['user_id'], 'percentage' => $s['percentage'], 'amount' => $amount];
+            }
+            return $splits;
+        });
+
+        return $this->success($splits, 'Splits criados');
     }
 
     // ── Fechamento ──
 
     public function settlements(Request $request): JsonResponse
     {
-        $query = CommissionSettlement::with('user:id,name');
+        $query = CommissionSettlement::where('tenant_id', $this->tenantId())
+            ->with('user:id,name');
 
         if ($period = $request->get('period')) {
             $query->where('period', $period);
@@ -247,47 +373,202 @@ class CommissionController extends Controller
 
     public function closeSettlement(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
+
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'period' => 'required|string|size:7',
+            'user_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'period' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
         ]);
 
-        $events = CommissionEvent::where('user_id', $validated['user_id'])
-            ->where('status', 'approved')
-            ->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$validated['period']])
-            ->get();
-
-        if ($events->isEmpty()) {
-            return response()->json(['message' => 'Nenhum evento aprovado para este período'], 422);
+        // Block future periods
+        if ($validated['period'] > now()->format('Y-m')) {
+            return $this->error('Não é permitido fechar períodos futuros', 422);
         }
 
-        $settlement = CommissionSettlement::updateOrCreate(
-            ['user_id' => $validated['user_id'], 'period' => $validated['period']],
-            [
-                'total_amount' => $events->sum('commission_amount'),
-                'events_count' => $events->count(),
-                'status' => 'closed',
-            ]
-        );
+        $query = CommissionEvent::where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->where('status', CommissionEvent::STATUS_APPROVED);
+        $this->wherePeriod($query, 'created_at', $validated['period']);
+        $events = $query->get();
 
-        $events->each(fn ($e) => $e->update(['status' => 'paid']));
+        if ($events->isEmpty()) {
+            return $this->error('Nenhum evento aprovado para este período', 422);
+        }
+
+        $settlement = CommissionSettlement::where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->where('period', $validated['period'])
+            ->first();
+
+        if ($settlement && $settlement->status === CommissionSettlement::STATUS_PAID) {
+            return $this->error('Período já pago e não pode ser reaberto', 422);
+        }
+
+        $settlement = DB::transaction(function () use ($tenantId, $validated, $events) {
+            $settlement = CommissionSettlement::updateOrCreate(
+                ['tenant_id' => $tenantId, 'user_id' => $validated['user_id'], 'period' => $validated['period']],
+                [
+                    'total_amount' => $events->sum('commission_amount'),
+                    'events_count' => $events->count(),
+                    'status' => CommissionSettlement::STATUS_CLOSED,
+                    'paid_at' => null,
+                ]
+            );
+
+            // Mark included events so they aren't counted in future closings
+            CommissionEvent::where('tenant_id', $tenantId)
+                ->where('user_id', $validated['user_id'])
+                ->where('status', CommissionEvent::STATUS_APPROVED)
+                ->whereIn('id', $events->pluck('id'))
+                ->update(['status' => CommissionEvent::STATUS_PAID]);
+
+            return $settlement;
+        });
 
         return response()->json($settlement->load('user:id,name'), 201);
     }
 
-    public function paySettlement(CommissionSettlement $commissionSettlement): JsonResponse
+    public function paySettlement(Request $request, CommissionSettlement $commissionSettlement): JsonResponse
     {
-        $commissionSettlement->update(['status' => 'paid', 'paid_at' => now()]);
-        return response()->json($commissionSettlement->fresh());
+        $tenantId = $this->tenantId();
+        if ((int) $commissionSettlement->tenant_id !== $tenantId) {
+            return response()->json(['message' => 'Registro não encontrado'], 404);
+        }
+
+        if ($commissionSettlement->status === CommissionSettlement::STATUS_PAID) {
+            return $this->error('Fechamento já está pago', 422);
+        }
+
+        if ($commissionSettlement->status !== CommissionSettlement::STATUS_CLOSED) {
+            return $this->error('Somente fechamentos com status fechado podem ser pagos', 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $commissionSettlement->update([
+                'status' => CommissionSettlement::STATUS_PAID,
+                'paid_at' => now(),
+            ]);
+
+            // Marcar eventos do período que ainda estejam aprovados como pagos
+            $eventsQuery = CommissionEvent::where('tenant_id', $commissionSettlement->tenant_id)
+                ->where('user_id', $commissionSettlement->user_id)
+                ->where('status', CommissionEvent::STATUS_APPROVED);
+            $this->wherePeriod($eventsQuery, 'created_at', $commissionSettlement->period);
+            $eventsQuery->update(['status' => CommissionEvent::STATUS_PAID]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Falha ao pagar fechamento', ['error' => $e->getMessage(), 'settlement_id' => $commissionSettlement->id]);
+            return $this->error('Erro interno ao pagar fechamento', 500);
+        }
+
+        return response()->json($commissionSettlement->fresh()->load('user:id,name'));
+    }
+
+    // ── Export ──
+
+    public function exportEvents(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $tenantId = $this->tenantId();
+        $osNumber = $this->osNumberFilter($request);
+        $query = CommissionEvent::where('tenant_id', $tenantId)
+            ->with(['user:id,name', 'workOrder:id,number,os_number', 'rule:id,name,calculation_type']);
+
+        if ($userId = $request->get('user_id')) $query->where('user_id', $userId);
+        if ($status = $request->get('status')) $query->where('status', $status);
+        if ($period = $request->get('period')) $this->wherePeriod($query, 'created_at', $period);
+        $this->applyWorkOrderIdentifierFilter($query, $osNumber);
+
+        $events = $query->orderByDesc('created_at')->get();
+
+        return response()->streamDownload(function () use ($events) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Nome', 'OS', 'Regra', 'Tipo Cálculo', 'Valor Base', 'Comissão', 'Status', 'Data']);
+            foreach ($events as $e) {
+                fputcsv($out, [
+                    $e->user?->name, $e->workOrder?->os_number ?? $e->workOrder?->number, $e->rule?->name,
+                    $e->rule?->calculation_type, $e->base_amount, $e->commission_amount,
+                    $e->status, $e->created_at?->format('Y-m-d'),
+                ]);
+            }
+            fclose($out);
+        }, 'comissoes_eventos_' . now()->format('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function exportSettlements(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $settlements = CommissionSettlement::where('tenant_id', $this->tenantId())
+            ->with('user:id,name')->orderByDesc('period')->get();
+
+        return response()->streamDownload(function () use ($settlements) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Nome', 'Período', 'Qtd Eventos', 'Total', 'Status', 'Pago Em']);
+            foreach ($settlements as $s) {
+                fputcsv($out, [
+                    $s->user?->name, $s->period, $s->events_count,
+                    $s->total_amount, $s->status, $s->paid_at?->format('Y-m-d') ?? '',
+                ]);
+            }
+            fclose($out);
+        }, 'comissoes_fechamento_' . now()->format('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function downloadStatement(Request $request): \Symfony\Component\HttpFoundation\Response
+    {
+        $tenantId = $this->tenantId();
+        $validated = $request->validate([
+            'user_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'period' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
+        ]);
+
+        $settlement = CommissionSettlement::where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->where('period', $validated['period'])
+            ->first();
+
+        $query = CommissionEvent::where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->with(['workOrder:id,number,os_number', 'rule:id,name,calculation_type'])
+            ->orderBy('created_at');
+        $this->wherePeriod($query, 'created_at', $validated['period']);
+
+        $events = $query->get();
+        if ($events->isEmpty()) {
+            return response()->json(['message' => 'Nenhum evento encontrado para este periodo'], 404);
+        }
+
+        $user = \App\Models\User::find($validated['user_id']);
+        $total = (float) ($settlement?->total_amount ?? $events->sum('commission_amount'));
+        $html = view('pdf.commission-statement', [
+            'userName' => $user?->name ?? "Usuario {$validated['user_id']}",
+            'period' => $validated['period'],
+            'generatedAt' => now(),
+            'events' => $events,
+            'totalAmount' => $total,
+            'eventsCount' => $events->count(),
+            'settlementStatus' => $settlement?->status,
+            'paidAt' => $settlement?->paid_at,
+        ])->render();
+
+        $pdf = Pdf::loadHTML($html)->setPaper('A4', 'portrait');
+        return $pdf->download("comissao-extrato-{$validated['period']}-{$validated['user_id']}.pdf");
     }
 
     // ── Summary ──
 
     public function summary(): JsonResponse
     {
-        $pendingTotal = CommissionEvent::where('status', 'pending')->sum('commission_amount');
-        $approvedTotal = CommissionEvent::where('status', 'approved')->sum('commission_amount');
-        $paidMonth = CommissionEvent::where('status', 'paid')
+        $tenantId = $this->tenantId();
+
+        $pendingTotal = CommissionEvent::where('tenant_id', $tenantId)->where('status', CommissionEvent::STATUS_PENDING)->sum('commission_amount');
+        $approvedTotal = CommissionEvent::where('tenant_id', $tenantId)->where('status', CommissionEvent::STATUS_APPROVED)->sum('commission_amount');
+        $paidMonth = CommissionEvent::where('tenant_id', $tenantId)->where('status', CommissionEvent::STATUS_PAID)
             ->whereMonth('updated_at', now()->month)
             ->whereYear('updated_at', now()->year)
             ->sum('commission_amount');
@@ -298,5 +579,63 @@ class CommissionController extends Controller
             'paid_this_month' => (float) $paidMonth,
             'calculation_types_count' => count(CommissionRule::CALCULATION_TYPES),
         ]);
+    }
+
+    // ── Helpers: Notifications ──
+
+    private function notifyCommissionGenerated(array $events): void
+    {
+        try {
+            // Eager load workOrder para evitar N+1 queries
+            $eventsCollection = CommissionEvent::with('workOrder:id,number,os_number')
+                ->whereIn('id', collect($events)->pluck('id'))->get()->keyBy('id');
+
+            foreach ($events as $event) {
+                $loaded = $eventsCollection->get($event->id) ?? $event;
+                $user = \App\Models\User::find($event->user_id);
+                if (!$user) continue;
+                DB::table('notifications')->insert([
+                    'id' => \Illuminate\Support\Str::uuid(),
+                    'type' => 'App\\Notifications\\CommissionGenerated',
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $user->id,
+                    'data' => json_encode([
+                        'title' => 'Nova Comissão Gerada',
+                        'message' => "Comissão de R$ " . number_format($event->commission_amount, 2, ',', '.') . " gerada para a OS #" . ($loaded->workOrder?->os_number ?? $loaded->workOrder?->number ?? $event->work_order_id),
+                        'type' => 'commission',
+                        'event_id' => $event->id,
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Throwable) {
+            // Notifications are non-critical
+        }
+    }
+
+    private function notifyStatusChange(object $event, string $oldStatus, string $newStatus): void
+    {
+        try {
+            $statusInfo = CommissionEvent::STATUSES[$newStatus] ?? null;
+            $label = $statusInfo ? mb_strtolower($statusInfo['label']) : $newStatus;
+            $amount = $event->commission_amount ?? 0;
+
+            DB::table('notifications')->insert([
+                'id' => \Illuminate\Support\Str::uuid(),
+                'type' => 'App\\Notifications\\CommissionStatusChanged',
+                'notifiable_type' => 'App\\Models\\User',
+                'notifiable_id' => $event->user_id,
+                'data' => json_encode([
+                    'title' => 'Comissão ' . ucfirst($label),
+                    'message' => "Sua comissão de R$ " . number_format($amount, 2, ',', '.') . " foi {$label}.",
+                    'type' => 'commission',
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable) {
+            // Notifications are non-critical
+        }
     }
 }

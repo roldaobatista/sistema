@@ -26,6 +26,9 @@ class EnsureTenantScope
         app()->instance('current_tenant_id', $tenantId);
         $request->merge(['tenant_id' => $tenantId]);
 
+        // FIX-18: Configura escopo Spatie Permission para o tenant atual
+        setPermissionsTeamId($tenantId);
+
         return $next($request);
     }
 }

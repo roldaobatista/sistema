@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Tests\Feature\WorkOrderStockTest" file="C:\Users\Roldão testes\projetos\sistema\backend\tests\Feature\WorkOrderStockTest.php" tests="3" assertions="4" errors="0" failures="3" skipped="0" time="1.772109">
+    <testcase name="test_item_creation_reserves_stock" file="C:\Users\Roldão testes\projetos\sistema\backend\tests\Feature\WorkOrderStockTest.php" line="50" class="Tests\Feature\WorkOrderStockTest" classname="Tests.Feature.WorkOrderStockTest" assertions="2" time="1.665256">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\WorkOrderStockTest::test_item_creation_reserves_stock&#13;
+Failed asserting that a row in the table [products] matches the attributes {
+    "id": 1,
+    "stock_qty": 90
+}.
+
+Found similar results: [
+    {
+        "id": 1,
+        "stock_qty": -10
+    }
+].
+&#13;
+C:\Users\Roldão testes\projetos\sistema\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\InteractsWithDatabase.php:43
+C:\Users\Roldão testes\projetos\sistema\backend\tests\Feature\WorkOrderStockTest.php:77</failure>
+    </testcase>
+    <testcase name="test_item_deletion_returns_stock" file="C:\Users\Roldão testes\projetos\sistema\backend\tests\Feature\WorkOrderStockTest.php" line="83" class="Tests\Feature\WorkOrderStockTest" classname="Tests.Feature.WorkOrderStockTest" assertions="1" time="0.055788">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\WorkOrderStockTest::test_item_deletion_returns_stock&#13;
+Failed asserting that a row in the table [products] matches the attributes {
+    "id": 1,
+    "stock_qty": 90
+}.
+
+Found similar results: [
+    {
+        "id": 1,
+        "stock_qty": -10
+    }
+].
+&#13;
+C:\Users\Roldão testes\projetos\sistema\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\InteractsWithDatabase.php:43
+C:\Users\Roldão testes\projetos\sistema\backend\tests\Feature\WorkOrderStockTest.php:98</failure>
+    </testcase>
+    <testcase name="test_invoicing_does_not_double_deduct" file="C:\Users\Roldão testes\projetos\sistema\backend\tests\Feature\WorkOrderStockTest.php" line="118" class="Tests\Feature\WorkOrderStockTest" classname="Tests.Feature.WorkOrderStockTest" assertions="1" time="0.051065">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\WorkOrderStockTest::test_invoicing_does_not_double_deduct&#13;
+Failed asserting that a row in the table [products] matches the attributes {
+    "id": 1,
+    "stock_qty": 90
+}.
+
+Found similar results: [
+    {
+        "id": 1,
+        "stock_qty": -10
+    }
+].
+&#13;
+C:\Users\Roldão testes\projetos\sistema\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\InteractsWithDatabase.php:43
+C:\Users\Roldão testes\projetos\sistema\backend\tests\Feature\WorkOrderStockTest.php:133</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

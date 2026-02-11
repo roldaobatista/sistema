@@ -16,7 +16,8 @@ class RecurringContract extends Model
 
     protected $fillable = [
         'tenant_id', 'customer_id', 'equipment_id', 'assigned_to', 'created_by',
-        'name', 'description', 'frequency', 'start_date', 'end_date',
+        'name', 'description', 'frequency', 'billing_type', 'monthly_value',
+        'start_date', 'end_date',
         'next_run_date', 'priority', 'is_active', 'generated_count',
     ];
 
@@ -90,11 +91,12 @@ class RecurringContract extends Model
         $wo = WorkOrder::create([
             'tenant_id' => $tenantId,
             'number' => WorkOrder::nextNumber($tenantId),
+            'recurring_contract_id' => $this->id,
             'customer_id' => $this->customer_id,
             'equipment_id' => $this->equipment_id,
             'assigned_to' => $this->assigned_to,
             'created_by' => $this->created_by,
-            'origin_type' => 'recurring_contract',
+            'origin_type' => WorkOrder::ORIGIN_RECURRING,
             'status' => WorkOrder::STATUS_OPEN,
             'priority' => $this->priority,
             'description' => "[Contrato Recorrente] {$this->name}\n{$this->description}",
@@ -102,6 +104,7 @@ class RecurringContract extends Model
         ]);
 
         $wo->statusHistory()->create([
+            'tenant_id' => $tenantId,
             'user_id' => $this->created_by,
             'to_status' => WorkOrder::STATUS_OPEN,
             'notes' => "OS gerada automaticamente pelo contrato recorrente: {$this->name}",
@@ -121,5 +124,40 @@ class RecurringContract extends Model
         $this->advanceNextRunDate();
 
         return $wo;
+    }
+
+    /** Gera faturamento direto (Conta a Receber) para contratos fixed_monthly */
+    public function generateBilling(): ?AccountReceivable
+    {
+        if ($this->billing_type !== 'fixed_monthly' || !$this->monthly_value) {
+            return null;
+        }
+
+        $period = now()->format('Y-m');
+        $billingKey = "recurring_contract:{$this->id}:{$period}";
+
+        $alreadyBilled = AccountReceivable::where('tenant_id', $this->tenant_id)
+            ->where('notes', $billingKey)
+            ->first();
+
+        if ($alreadyBilled) {
+            return $alreadyBilled;
+        }
+
+        $ar = AccountReceivable::create([
+            'tenant_id' => $this->tenant_id,
+            'customer_id' => $this->customer_id,
+            'created_by' => $this->created_by,
+            'description' => "Contrato Recorrente: {$this->name} - " . now()->format('m/Y'),
+            'notes' => $billingKey,
+            'amount' => $this->monthly_value,
+            'amount_paid' => 0,
+            'due_date' => now()->addDays(30),
+            'status' => AccountReceivable::STATUS_PENDING,
+        ]);
+
+        $this->advanceNextRunDate();
+
+        return $ar;
     }
 }

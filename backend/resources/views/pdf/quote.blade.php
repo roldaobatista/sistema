@@ -87,7 +87,7 @@
                             <td>{{ $j + 1 }}</td>
                             <td><strong>{{ $item->description }}</strong></td>
                             <td>{{ $item->type === 'product' ? 'Peça' : 'Serviço' }}</td>
-                            <td style="text-align: center">{{ number_format($item->quantity, 0) }}</td>
+                            <td style="text-align: center">{{ number_format($item->quantity, 2, ',', '.') }}</td>
                             <td style="text-align: right">R$ {{ number_format($item->unit_price, 2, ',', '.') }}</td>
                             <td style="text-align: right"><strong>R$ {{ number_format($item->subtotal, 2, ',', '.') }}</strong></td>
                         </tr>
@@ -124,7 +124,7 @@
             Condições Gerais
         </div>
         <div style="font-size: 9px; color: #64748b; line-height: 1.8;">
-            • A validade desta proposta é de {{ $quote->valid_until ? now()->diffInDays($quote->valid_until, false) : 30 }} dias a contar da data de emissão.<br>
+            • A validade desta proposta é de {{ $quote->valid_until ? max(0, now()->diffInDays($quote->valid_until, false)) : 30 }} dias a contar da data de emissão.<br>
             • Os preços incluem todos os materiais e mão de obra necessários para a execução dos serviços.<br>
             • Garantia de 90 dias para serviços e peças, exceto desgaste natural.<br>
             • Prazo de execução a combinar após aprovação.<br>

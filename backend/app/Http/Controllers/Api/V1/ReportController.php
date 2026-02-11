@@ -3,43 +3,142 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\WorkOrder;
-use App\Models\AccountReceivable;
 use App\Models\AccountPayable;
+use App\Models\AccountReceivable;
 use App\Models\CommissionEvent;
+use App\Models\CrmDeal;
+use App\Models\Customer;
+use App\Models\Equipment;
+use App\Models\EquipmentCalibration;
 use App\Models\Expense;
-use App\Models\TimeEntry;
+use App\Models\Product;
+use App\Models\Quote;
+use App\Models\ServiceCall;
+use App\Models\Supplier;
+use App\Models\TechnicianCashFund;
+use App\Models\TechnicianCashTransaction;
+use App\Models\WorkOrder;
+use App\Models\WorkOrderItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class ReportController extends Controller
 {
-    // ── 1. Relatório de OS ──
+    private function tenantId(): int
+    {
+        $user = auth()->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
+    private function yearMonthExpression(string $column): string
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            return "strftime('%Y-%m', {$column})";
+        }
+
+        return "DATE_FORMAT({$column}, '%Y-%m')";
+    }
+
+    private function avgHoursExpression(string $startColumn, string $endColumn): string
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            return "AVG((julianday({$endColumn}) - julianday({$startColumn})) * 24)";
+        }
+
+        return "AVG(TIMESTAMPDIFF(HOUR, {$startColumn}, {$endColumn}))";
+    }
+
+    private function validatedDate(Request $request, string $key, string $default): string
+    {
+        $value = $request->get($key, $default);
+        try {
+            return Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            return $default;
+        }
+    }
+
+    private function osNumberFilter(Request $request): ?string
+    {
+        $osNumber = trim((string) $request->get('os_number', ''));
+        if ($osNumber === '') {
+            return null;
+        }
+        return str_replace(['%', '_'], ['\%', '\_'], $osNumber);
+    }
+
+    private function applyWorkOrderFilter($query, string $relation, ?string $osNumber)
+    {
+        if (!$osNumber) {
+            return $query;
+        }
+
+        return $query->whereHas($relation, function ($wo) use ($osNumber) {
+            $wo->where(function ($q) use ($osNumber) {
+                $q->where('os_number', 'like', "%{$osNumber}%")
+                    ->orWhere('number', 'like', "%{$osNumber}%");
+            });
+        });
+    }
+
+    private function applyPayableIdentifierFilter($query, ?string $osNumber)
+    {
+        if (!$osNumber) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($osNumber) {
+            $q->where('description', 'like', "%{$osNumber}%")
+                ->orWhere('notes', 'like', "%{$osNumber}%");
+        });
+    }
+
     public function workOrders(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
-        $branchScope = fn ($q) => $request->filled('branch_id') ? $q->where('branch_id', $request->get('branch_id')) : $q;
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
+        $periodExpr = $this->yearMonthExpression('created_at');
+        $avgExpr = $this->avgHoursExpression('created_at', 'completed_at');
 
-        $byStatus = $branchScope(WorkOrder::select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total')))
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
+        $applyBranch = static function ($query) use ($request) {
+            if ($request->filled('branch_id')) {
+                $query->where('branch_id', (int) $request->get('branch_id'));
+            }
+            return $query;
+        };
+
+        $byStatus = $applyBranch(
+            WorkOrder::where('tenant_id', $tenantId)
+                ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
+        )
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->groupBy('status')
             ->get();
 
-        $byPriority = $branchScope(WorkOrder::select('priority', DB::raw('COUNT(*) as count')))
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
+        $byPriority = $applyBranch(
+            WorkOrder::where('tenant_id', $tenantId)
+                ->select('priority', DB::raw('COUNT(*) as count'))
+        )
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->groupBy('priority')
             ->get();
 
-        $avgTime = $branchScope(WorkOrder::whereNotNull('completed_at'))
-            ->whereBetween('completed_at', [$from, "$to 23:59:59"])
-            ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at)) as avg_hours')
+        $avgTime = $applyBranch(
+            WorkOrder::where('tenant_id', $tenantId)->whereNotNull('completed_at')
+        )
+            ->whereBetween('completed_at', [$from, "{$to} 23:59:59"])
+            ->selectRaw("{$avgExpr} as avg_hours")
             ->value('avg_hours');
 
-        $monthly = $branchScope(WorkOrder::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as count, SUM(total) as total"))
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->groupByRaw("DATE_FORMAT(created_at, '%Y-%m')")
+        $monthly = $applyBranch(
+            WorkOrder::where('tenant_id', $tenantId)
+                ->selectRaw("{$periodExpr} as period, COUNT(*) as count, SUM(total) as total")
+        )
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->groupByRaw($periodExpr)
             ->orderBy('period')
             ->get();
 
@@ -52,32 +151,41 @@ class ReportController extends Controller
         ]);
     }
 
-    // ── 2. Relatório de Produtividade (técnicos) ──
     public function productivity(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
 
         $techStats = DB::table('time_entries')
-            ->join('users', 'users.id', '=', 'time_entries.user_id')
-            ->whereBetween('time_entries.started_at', [$from, "$to 23:59:59"])
-            ->where('time_entries.tenant_id', auth()->user()->tenant_id)
+            ->join('users', 'users.id', '=', 'time_entries.technician_id')
+            ->whereBetween('time_entries.started_at', [$from, "{$to} 23:59:59"])
+            ->where('time_entries.tenant_id', $tenantId)
+            ->whereNull('time_entries.deleted_at')
             ->select(
-                'users.id', 'users.name',
+                'users.id',
+                'users.name',
                 DB::raw("SUM(CASE WHEN type = 'work' THEN duration_minutes ELSE 0 END) as work_minutes"),
                 DB::raw("SUM(CASE WHEN type = 'travel' THEN duration_minutes ELSE 0 END) as travel_minutes"),
                 DB::raw("SUM(CASE WHEN type = 'waiting' THEN duration_minutes ELSE 0 END) as waiting_minutes"),
-                DB::raw('COUNT(DISTINCT work_order_id) as os_count'),
+                DB::raw('COUNT(DISTINCT work_order_id) as os_count')
             )
             ->groupBy('users.id', 'users.name')
             ->get();
 
-        $completedByTech = WorkOrder::whereNotNull('completed_at')
-            ->whereBetween('completed_at', [$from, "$to 23:59:59"])
-            ->select('assignee_id', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
-            ->groupBy('assignee_id')
-            ->with('assignee:id,name')
-            ->get();
+        $completedByTech = WorkOrder::where('work_orders.tenant_id', $tenantId)
+            ->whereNotNull('work_orders.completed_at')
+            ->whereBetween('work_orders.completed_at', [$from, "{$to} 23:59:59"])
+            ->leftJoin('users', 'users.id', '=', 'work_orders.assigned_to')
+            ->selectRaw('work_orders.assigned_to as assignee_id, users.name as assignee_name, COUNT(*) as count, SUM(work_orders.total) as total')
+            ->groupBy('work_orders.assigned_to', 'users.name')
+            ->get()
+            ->map(fn ($row) => [
+                'assignee_id' => $row->assignee_id,
+                'assignee' => $row->assignee_id ? ['id' => $row->assignee_id, 'name' => $row->assignee_name] : null,
+                'count' => $row->count,
+                'total' => $row->total,
+            ]);
 
         return response()->json([
             'period' => ['from' => $from, 'to' => $to],
@@ -86,54 +194,98 @@ class ReportController extends Controller
         ]);
     }
 
-    // ── 3. Relatório Financeiro ──
     public function financial(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
+        $osNumber = $this->osNumberFilter($request);
+        $periodExpr = $this->yearMonthExpression('due_date');
+        $expensePeriodExpr = $this->yearMonthExpression('expense_date');
 
-        $arStats = AccountReceivable::whereBetween('due_date', [$from, $to])
+        $arStatsQuery = AccountReceivable::where('tenant_id', $tenantId)
+            ->whereBetween('due_date', [$from, "{$to} 23:59:59"]);
+        $this->applyWorkOrderFilter($arStatsQuery, 'workOrder', $osNumber);
+
+        $arStats = $arStatsQuery
             ->select(
                 DB::raw('SUM(amount) as total'),
                 DB::raw('SUM(amount_paid) as total_paid'),
-                DB::raw("SUM(CASE WHEN status = 'overdue' THEN amount - amount_paid ELSE 0 END) as overdue"),
-                DB::raw('COUNT(*) as count'),
+                DB::raw("SUM(CASE WHEN status = '" . AccountReceivable::STATUS_OVERDUE . "' THEN amount - amount_paid ELSE 0 END) as overdue"),
+                DB::raw('COUNT(*) as count')
             )
             ->first();
 
-        $apStats = AccountPayable::whereBetween('due_date', [$from, $to])
+        $apStatsQuery = AccountPayable::where('tenant_id', $tenantId)
+            ->whereBetween('due_date', [$from, "{$to} 23:59:59"]);
+        $this->applyPayableIdentifierFilter($apStatsQuery, $osNumber);
+
+        $apStats = $apStatsQuery
             ->select(
                 DB::raw('SUM(amount) as total'),
                 DB::raw('SUM(amount_paid) as total_paid'),
-                DB::raw('COUNT(*) as count'),
+                DB::raw('COUNT(*) as count')
             )
             ->first();
 
-        $expenseByCategory = Expense::whereBetween('expense_date', [$from, $to])
-            ->whereNotIn('status', ['rejected'])
-            ->leftJoin('expense_categories', 'expenses.expense_category_id', '=', 'expense_categories.id')
+        $expenseByCategoryQuery = Expense::where('expenses.tenant_id', $tenantId)
+            ->whereBetween('expense_date', [$from, "{$to} 23:59:59"])
+            ->whereIn('status', [Expense::STATUS_APPROVED]);
+        $this->applyWorkOrderFilter($expenseByCategoryQuery, 'workOrder', $osNumber);
+
+        $expenseByCategory = $expenseByCategoryQuery
+            ->leftJoin('expense_categories', function ($join) use ($tenantId) {
+                $join->on('expenses.expense_category_id', '=', 'expense_categories.id')
+                    ->where('expense_categories.tenant_id', '=', $tenantId);
+            })
             ->select('expense_categories.name as category', DB::raw('SUM(expenses.amount) as total'))
             ->groupBy('expense_categories.name')
             ->get();
 
         $monthlyFlow = DB::query()
-            ->selectRaw("
-                period,
-                SUM(income) as income,
-                SUM(expense) as expense,
-                SUM(income) - SUM(expense) as balance
-            ")
-            ->fromSub(function ($q) use ($from, $to) {
-                $q->selectRaw("DATE_FORMAT(due_date, '%Y-%m') as period, SUM(amount_paid) as income, 0 as expense")
+            ->selectRaw('period, SUM(income) as income, SUM(expense) as expense, SUM(income) - SUM(expense) as balance')
+            ->fromSub(function ($q) use ($from, $to, $tenantId, $periodExpr, $expensePeriodExpr, $osNumber) {
+                $q->selectRaw("{$periodExpr} as period, SUM(amount_paid) as income, 0 as expense")
                     ->from('accounts_receivable')
-                    ->whereBetween('due_date', [$from, $to])
-                    ->groupByRaw("DATE_FORMAT(due_date, '%Y-%m')")
+                    ->where('accounts_receivable.tenant_id', $tenantId)
+                    ->whereBetween('due_date', [$from, "{$to} 23:59:59"])
+                    ->when($osNumber, function ($sub) use ($osNumber) {
+                        $sub->join('work_orders as wo_ar', 'accounts_receivable.work_order_id', '=', 'wo_ar.id')
+                            ->where(function ($f) use ($osNumber) {
+                                $f->where('wo_ar.os_number', 'like', "%{$osNumber}%")
+                                    ->orWhere('wo_ar.number', 'like', "%{$osNumber}%");
+                            });
+                    })
+                    ->groupByRaw($periodExpr)
                     ->unionAll(
                         DB::query()
-                            ->selectRaw("DATE_FORMAT(due_date, '%Y-%m') as period, 0 as income, SUM(amount_paid) as expense")
+                            ->selectRaw("{$periodExpr} as period, 0 as income, SUM(amount_paid) as expense")
                             ->from('accounts_payable')
-                            ->whereBetween('due_date', [$from, $to])
-                            ->groupByRaw("DATE_FORMAT(due_date, '%Y-%m')")
+                            ->where('tenant_id', $tenantId)
+                            ->whereBetween('due_date', [$from, "{$to} 23:59:59"])
+                            ->when($osNumber, function ($sub) use ($osNumber) {
+                                $sub->where(function ($f) use ($osNumber) {
+                                    $f->where('description', 'like', "%{$osNumber}%")
+                                        ->orWhere('notes', 'like', "%{$osNumber}%");
+                                });
+                            })
+                            ->groupByRaw($periodExpr)
+                    )
+                    ->unionAll(
+                        DB::query()
+                            ->selectRaw("{$expensePeriodExpr} as period, 0 as income, SUM(amount) as expense")
+                            ->from('expenses')
+                            ->where('expenses.tenant_id', $tenantId)
+                            ->whereBetween('expense_date', [$from, "{$to} 23:59:59"])
+                            ->whereIn('expenses.status', [Expense::STATUS_APPROVED])
+                            ->when($osNumber, function ($sub) use ($osNumber) {
+                                $sub->join('work_orders as wo_exp', 'expenses.work_order_id', '=', 'wo_exp.id')
+                                    ->where(function ($f) use ($osNumber) {
+                                        $f->where('wo_exp.os_number', 'like', "%{$osNumber}%")
+                                            ->orWhere('wo_exp.number', 'like', "%{$osNumber}%");
+                                    });
+                            })
+                            ->groupByRaw($expensePeriodExpr)
                     );
             }, 'flows')
             ->groupBy('period')
@@ -141,7 +293,7 @@ class ReportController extends Controller
             ->get();
 
         return response()->json([
-            'period' => ['from' => $from, 'to' => $to],
+            'period' => ['from' => $from, 'to' => $to, 'os_number' => $osNumber],
             'receivable' => $arStats,
             'payable' => $apStats,
             'expenses_by_category' => $expenseByCategory,
@@ -149,103 +301,143 @@ class ReportController extends Controller
         ]);
     }
 
-    // ── 4. Relatório de Comissões ──
     public function commissions(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
+        $osNumber = $this->osNumberFilter($request);
 
         $byTech = CommissionEvent::join('users', 'users.id', '=', 'commission_events.user_id')
-            ->whereBetween('commission_events.created_at', [$from, "$to 23:59:59"])
+            ->where('commission_events.tenant_id', $tenantId)
+            ->whereBetween('commission_events.created_at', [$from, "{$to} 23:59:59"])
+            ->when($osNumber, function ($query) use ($osNumber) {
+                $query->join('work_orders', 'work_orders.id', '=', 'commission_events.work_order_id')
+                    ->where(function ($q) use ($osNumber) {
+                        $q->where('work_orders.os_number', 'like', "%{$osNumber}%")
+                            ->orWhere('work_orders.number', 'like', "%{$osNumber}%");
+                    });
+            })
             ->select(
-                'users.id', 'users.name',
+                'users.id',
+                'users.name',
                 DB::raw('COUNT(*) as events_count'),
                 DB::raw('SUM(commission_amount) as total_commission'),
-                DB::raw("SUM(CASE WHEN commission_events.status = 'pending' THEN commission_amount ELSE 0 END) as pending"),
-                DB::raw("SUM(CASE WHEN commission_events.status = 'paid' THEN commission_amount ELSE 0 END) as paid"),
+                DB::raw("SUM(CASE WHEN commission_events.status = '" . CommissionEvent::STATUS_PENDING . "' THEN commission_amount ELSE 0 END) as pending"),
+                DB::raw("SUM(CASE WHEN commission_events.status = '" . CommissionEvent::STATUS_PAID . "' THEN commission_amount ELSE 0 END) as paid")
             )
             ->groupBy('users.id', 'users.name')
             ->get();
 
-        $byStatus = CommissionEvent::whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(commission_amount) as total'))
+        $byStatusQuery = CommissionEvent::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(commission_amount) as total'));
+        $this->applyWorkOrderFilter($byStatusQuery, 'workOrder', $osNumber);
+
+        $byStatus = $byStatusQuery
             ->groupBy('status')
             ->get();
 
         return response()->json([
-            'period' => ['from' => $from, 'to' => $to],
+            'period' => ['from' => $from, 'to' => $to, 'os_number' => $osNumber],
             'by_technician' => $byTech,
             'by_status' => $byStatus,
         ]);
     }
 
-    // ── 5. Relatório de Margem/Lucratividade ──
     public function profitability(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
+        $osNumber = $this->osNumberFilter($request);
 
-        $revenue = (float) AccountReceivable::whereBetween('due_date', [$from, $to])
-            ->where('status', '!=', 'cancelled')
-            ->sum('amount_paid');
+        $revenueQuery = AccountReceivable::where('tenant_id', $tenantId)
+            ->whereBetween('due_date', [$from, "{$to} 23:59:59"])
+            ->where('status', '!=', AccountReceivable::STATUS_CANCELLED);
+        $this->applyWorkOrderFilter($revenueQuery, 'workOrder', $osNumber);
+        $revenue = (float) $revenueQuery->sum('amount_paid');
 
-        $costs = (float) AccountPayable::whereBetween('due_date', [$from, $to])
-            ->where('status', '!=', 'cancelled')
-            ->sum('amount_paid');
+        $costsQuery = AccountPayable::where('tenant_id', $tenantId)
+            ->whereBetween('due_date', [$from, "{$to} 23:59:59"])
+            ->where('status', '!=', AccountPayable::STATUS_CANCELLED);
+        $this->applyPayableIdentifierFilter($costsQuery, $osNumber);
+        $costs = (float) $costsQuery->sum('amount_paid');
 
-        $expenses = (float) Expense::whereBetween('expense_date', [$from, $to])
-            ->whereNotIn('status', ['rejected'])
-            ->sum('amount');
+        $expensesQuery = Expense::where('tenant_id', $tenantId)
+            ->whereBetween('expense_date', [$from, "{$to} 23:59:59"])
+            ->whereIn('status', [Expense::STATUS_APPROVED]);
+        $this->applyWorkOrderFilter($expensesQuery, 'workOrder', $osNumber);
+        $expenses = (float) $expensesQuery->sum('amount');
 
-        $commissions = (float) CommissionEvent::whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->whereIn('status', ['approved', 'paid'])
-            ->sum('commission_amount');
+        $commissionsQuery = CommissionEvent::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->whereIn('status', [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID]);
+        $this->applyWorkOrderFilter($commissionsQuery, 'workOrder', $osNumber);
+        $commissions = (float) $commissionsQuery->sum('commission_amount');
 
-        // Gap #14 — Custo real dos itens de OS (via cost_price salvo no WorkOrderItem)
-        $itemCosts = (float) DB::table('work_order_items')
-            ->join('work_orders', 'work_order_items.work_order_id', '=', 'work_orders.id')
-            ->where('work_order_items.type', 'product')
-            ->whereNotNull('work_order_items.cost_price')
-            ->whereBetween('work_orders.completed_at', [$from, "$to 23:59:59"])
-            ->selectRaw('SUM(work_order_items.cost_price * work_order_items.quantity) as total')
-            ->value('total') ?? 0;
+        $itemCosts = (float) (
+            DB::table('work_order_items')
+                ->join('work_orders', 'work_order_items.work_order_id', '=', 'work_orders.id')
+                ->where('work_order_items.type', WorkOrderItem::TYPE_PRODUCT)
+                ->whereNotNull('work_order_items.cost_price')
+                ->where('work_orders.tenant_id', $tenantId)
+                ->whereBetween('work_orders.completed_at', [$from, "{$to} 23:59:59"])
+                ->when($osNumber, function ($query) use ($osNumber) {
+                    $query->where(function ($q) use ($osNumber) {
+                        $q->where('work_orders.os_number', 'like', "%{$osNumber}%")
+                            ->orWhere('work_orders.number', 'like', "%{$osNumber}%");
+                    });
+                })
+                ->selectRaw('SUM(work_order_items.cost_price * work_order_items.quantity) as total')
+                ->value('total') ?? 0
+        );
 
-        $totalCosts = $costs + $expenses + $commissions;
-        $margin = $revenue > 0 ? round(($revenue - $totalCosts) / $revenue * 100, 1) : 0;
+        $totalCosts = $costs + $expenses + $commissions + $itemCosts;
+        $profit = $revenue - $totalCosts;
+        $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 1) : 0;
 
         return response()->json([
-            'period' => ['from' => $from, 'to' => $to],
+            'period' => ['from' => $from, 'to' => $to, 'os_number' => $osNumber],
             'revenue' => $revenue,
             'costs' => $costs,
             'expenses' => $expenses,
             'commissions' => $commissions,
             'item_costs' => $itemCosts,
             'total_costs' => $totalCosts,
-            'profit' => $revenue - $totalCosts,
+            'profit' => $profit,
             'margin_pct' => $margin,
         ]);
     }
 
-    // ── 6. Relatório de Orçamentos ──
     public function quotes(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
 
-        $byStatus = \App\Models\Quote::select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
+        $byStatus = Quote::where('tenant_id', $tenantId)
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->groupBy('status')
             ->get();
 
-        $bySeller = \App\Models\Quote::join('users', 'users.id', '=', 'quotes.seller_id')
-            ->whereBetween('quotes.created_at', [$from, "$to 23:59:59"])
+        $bySeller = Quote::where('quotes.tenant_id', $tenantId)
+            ->join('users', 'users.id', '=', 'quotes.seller_id')
+            ->whereBetween('quotes.created_at', [$from, "{$to} 23:59:59"])
             ->select('users.id', 'users.name', DB::raw('COUNT(*) as count'), DB::raw('SUM(quotes.total) as total'))
             ->groupBy('users.id', 'users.name')
             ->get();
 
-        $totalQuotes = \App\Models\Quote::whereBetween('created_at', [$from, "$to 23:59:59"])->count();
-        $approved = \App\Models\Quote::where('status', 'approved')
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])->count();
+        $totalQuotes = Quote::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->count();
+
+        $approved = Quote::where('tenant_id', $tenantId)
+            ->whereIn('status', [Quote::STATUS_APPROVED, Quote::STATUS_INVOICED])
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->count();
+
         $conversionRate = $totalQuotes > 0 ? round(($approved / $totalQuotes) * 100, 1) : 0;
 
         return response()->json([
@@ -258,31 +450,39 @@ class ReportController extends Controller
         ]);
     }
 
-    // ── 7. Relatório de Chamados ──
     public function serviceCalls(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
 
-        $byStatus = \App\Models\ServiceCall::select('status', DB::raw('COUNT(*) as count'))
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
+        $byStatus = ServiceCall::where('tenant_id', $tenantId)
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->groupBy('status')
             ->get();
 
-        $byPriority = \App\Models\ServiceCall::select('priority', DB::raw('COUNT(*) as count'))
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
+        $byPriority = ServiceCall::where('tenant_id', $tenantId)
+            ->select('priority', DB::raw('COUNT(*) as count'))
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->groupBy('priority')
             ->get();
 
-        $byTechnician = \App\Models\ServiceCall::join('users', 'users.id', '=', 'service_calls.technician_id')
-            ->whereBetween('service_calls.created_at', [$from, "$to 23:59:59"])
-            ->select('users.id', 'users.name', DB::raw('COUNT(*) as count'))
+        $byTechnician = ServiceCall::where('service_calls.tenant_id', $tenantId)
+            ->leftJoin('users', 'users.id', '=', 'service_calls.technician_id')
+            ->whereBetween('service_calls.created_at', [$from, "{$to} 23:59:59"])
+            ->select('users.id', DB::raw("COALESCE(users.name, 'Sem tecnico') as name"), DB::raw('COUNT(*) as count'))
             ->groupBy('users.id', 'users.name')
             ->get();
 
-        $total = \App\Models\ServiceCall::whereBetween('created_at', [$from, "$to 23:59:59"])->count();
-        $completed = \App\Models\ServiceCall::where('status', 'concluido')
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])->count();
+        $total = ServiceCall::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->count();
+
+        $completed = ServiceCall::where('tenant_id', $tenantId)
+            ->whereIn('status', [ServiceCall::STATUS_COMPLETED])
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->count();
 
         return response()->json([
             'period' => ['from' => $from, 'to' => $to],
@@ -294,60 +494,96 @@ class ReportController extends Controller
         ]);
     }
 
-    // ── 8. Relatório Caixa do Técnico ──
     public function technicianCash(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
+        $osNumber = $this->osNumberFilter($request);
 
-        $funds = \App\Models\TechnicianCashFund::with('user:id,name')->get()
-            ->map(fn ($f) => [
-                'user_id' => $f->user_id,
-                'user_name' => $f->user?->name,
-                'balance' => (float) $f->balance,
-                'credits_period' => (float) $f->transactions()
-                    ->where('type', 'credit')->whereBetween('created_at', [$from, "$to 23:59:59"])->sum('amount'),
-                'debits_period' => (float) $f->transactions()
-                    ->where('type', 'debit')->whereBetween('created_at', [$from, "$to 23:59:59"])->sum('amount'),
-            ]);
+        $funds = TechnicianCashFund::where('tenant_id', $tenantId)
+            ->with('technician:id,name')
+            ->get()
+            ->map(function (TechnicianCashFund $fund) use ($from, $to, $tenantId, $osNumber) {
+                $transactions = $fund->transactions()
+                    ->where('tenant_id', $tenantId)
+                    ->whereBetween('transaction_date', [$from, "{$to} 23:59:59"]);
+                if ($osNumber) {
+                    $transactions->whereHas('workOrder', function ($wo) use ($osNumber) {
+                        $wo->where(function ($q) use ($osNumber) {
+                            $q->where('os_number', 'like', "%{$osNumber}%")
+                                ->orWhere('number', 'like', "%{$osNumber}%");
+                        });
+                    });
+                }
 
-        $totalBalance = $funds->sum('balance');
-        $totalCredits = $funds->sum('credits_period');
-        $totalDebits = $funds->sum('debits_period');
+                return [
+                    'user_id' => $fund->user_id,
+                    'user_name' => $fund->technician?->name,
+                    'balance' => (float) $fund->balance,
+                    'credits_period' => (float) (clone $transactions)->where('type', TechnicianCashTransaction::TYPE_CREDIT)->sum('amount'),
+                    'debits_period' => (float) (clone $transactions)->where('type', TechnicianCashTransaction::TYPE_DEBIT)->sum('amount'),
+                ];
+            })
+            ->values();
 
         return response()->json([
-            'period' => ['from' => $from, 'to' => $to],
+            'period' => ['from' => $from, 'to' => $to, 'os_number' => $osNumber],
             'funds' => $funds,
-            'total_balance' => $totalBalance,
-            'total_credits' => $totalCredits,
-            'total_debits' => $totalDebits,
+            'total_balance' => (float) $funds->sum('balance'),
+            'total_credits' => (float) $funds->sum('credits_period'),
+            'total_debits' => (float) $funds->sum('debits_period'),
         ]);
     }
 
-    // ── 9. Relatório CRM ──
     public function crm(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfMonth()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
 
-        $dealsByStatus = \App\Models\CrmDeal::select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(value) as total'))
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
+        $dealsByStatus = CrmDeal::where('tenant_id', $tenantId)
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(value) as value'))
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->groupBy('status')
             ->get();
 
-        $dealsBySeller = \App\Models\CrmDeal::join('customers', 'customers.id', '=', 'crm_deals.customer_id')
+        $dealsBySeller = CrmDeal::where('crm_deals.tenant_id', $tenantId)
+            ->join('customers', 'customers.id', '=', 'crm_deals.customer_id')
             ->leftJoin('users', 'users.id', '=', 'customers.assigned_seller_id')
-            ->whereBetween('crm_deals.created_at', [$from, "$to 23:59:59"])
-            ->select('users.id', 'users.name', DB::raw('COUNT(*) as count'), DB::raw('SUM(crm_deals.value) as total'))
+            ->whereBetween('crm_deals.created_at', [$from, "{$to} 23:59:59"])
+            ->select(
+                'users.id as owner_id',
+                'users.name as owner_name',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(crm_deals.value) as value')
+            )
             ->groupBy('users.id', 'users.name')
             ->get();
 
-        $totalDeals = \App\Models\CrmDeal::whereBetween('created_at', [$from, "$to 23:59:59"])->count();
-        $wonDeals = \App\Models\CrmDeal::where('status', 'won')
-            ->whereBetween('closed_at', [$from, "$to 23:59:59"])->count();
-        $convRate = $totalDeals > 0 ? round(($wonDeals / $totalDeals) * 100, 1) : 0;
+        $totalDeals = CrmDeal::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->count();
 
-        $healthDistribution = \App\Models\Customer::where('is_active', true)
+        $wonDeals = CrmDeal::where('tenant_id', $tenantId)
+            ->where('status', CrmDeal::STATUS_WON)
+            ->whereBetween('won_at', [$from, "{$to} 23:59:59"])
+            ->count();
+
+        $revenue = (float) CrmDeal::where('tenant_id', $tenantId)
+            ->where('status', CrmDeal::STATUS_WON)
+            ->whereBetween('won_at', [$from, "{$to} 23:59:59"])
+            ->sum('value');
+
+        $totalValue = (float) CrmDeal::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+            ->sum('value');
+
+        $avgDealValue = $totalDeals > 0 ? round($totalValue / $totalDeals, 2) : 0;
+        $conversionRate = $totalDeals > 0 ? round(($wonDeals / $totalDeals) * 100, 1) : 0;
+
+        $healthSummary = Customer::where('tenant_id', $tenantId)
+            ->where('is_active', true)
             ->whereNotNull('health_score')
             ->select(DB::raw("
                 SUM(CASE WHEN health_score >= 80 THEN 1 ELSE 0 END) as healthy,
@@ -356,47 +592,80 @@ class ReportController extends Controller
             "))
             ->first();
 
+        $healthDistribution = [
+            ['range' => 'Saudavel', 'count' => (int) ($healthSummary->healthy ?? 0)],
+            ['range' => 'Risco', 'count' => (int) ($healthSummary->at_risk ?? 0)],
+            ['range' => 'Critico', 'count' => (int) ($healthSummary->critical ?? 0)],
+        ];
+
         return response()->json([
             'period' => ['from' => $from, 'to' => $to],
             'deals_by_status' => $dealsByStatus,
             'deals_by_seller' => $dealsBySeller,
             'total_deals' => $totalDeals,
             'won_deals' => $wonDeals,
-            'conversion_rate' => $convRate,
+            'conversion_rate' => $conversionRate,
+            'revenue' => $revenue,
+            'avg_deal_value' => $avgDealValue,
             'health_distribution' => $healthDistribution,
+            'health_distribution_summary' => [
+                'healthy' => (int) ($healthSummary->healthy ?? 0),
+                'at_risk' => (int) ($healthSummary->at_risk ?? 0),
+                'critical' => (int) ($healthSummary->critical ?? 0),
+            ],
         ]);
     }
 
-    // ── 10. Relatório de Equipamentos ──
     public function equipments(Request $request): JsonResponse
     {
-        $totalActive = \App\Models\Equipment::where('status', 'active')->count();
-        $totalInactive = \App\Models\Equipment::where('status', '!=', 'active')->count();
+        $tenantId = $this->tenantId();
 
-        $byClass = \App\Models\Equipment::where('status', 'active')
+        $totalActive = Equipment::where('tenant_id', $tenantId)->active()->count();
+        $totalInactive = Equipment::where('tenant_id', $tenantId)
+            ->where(function ($query) {
+                $query->where('is_active', false)->orWhere('status', Equipment::STATUS_DISCARDED);
+            })
+            ->count();
+
+        $byClass = Equipment::where('tenant_id', $tenantId)
+            ->active()
             ->select('precision_class', DB::raw('COUNT(*) as count'))
             ->groupBy('precision_class')
             ->get();
 
-        $overdue = \App\Models\Equipment::overdue()->active()->count();
-        $dueNext7 = \App\Models\Equipment::calibrationDue(7)->active()->count() - $overdue;
-        $dueNext30 = \App\Models\Equipment::calibrationDue(30)->active()->count() - $overdue - max(0, $dueNext7);
+        $overdue = Equipment::where('tenant_id', $tenantId)->overdue()->active()->count();
+        $rawDue7 = Equipment::where('tenant_id', $tenantId)->calibrationDue(7)->active()->count();
+        $dueNext7 = max(0, $rawDue7 - $overdue);
+        $rawDue30 = Equipment::where('tenant_id', $tenantId)->calibrationDue(30)->active()->count();
+        $dueNext30 = max(0, $rawDue30 - $overdue - $dueNext7);
 
-        $calibrationsMonth = \App\Models\EquipmentCalibration::whereMonth('calibration_date', now()->month)
+        $calibrationsMonth = EquipmentCalibration::where('tenant_id', $tenantId)
+            ->whereMonth('calibration_date', now()->month)
             ->whereYear('calibration_date', now()->year)
-            ->select(
-                'result',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(cost) as total_cost'),
-            )
+            ->select('result', DB::raw('COUNT(*) as count'), DB::raw('SUM(cost) as total_cost'))
             ->groupBy('result')
             ->get();
 
-        $topBrands = \App\Models\Equipment::where('status', 'active')
+        $totalCalibrationCost = (float) EquipmentCalibration::where('tenant_id', $tenantId)
+            ->whereMonth('calibration_date', now()->month)
+            ->whereYear('calibration_date', now()->year)
+            ->sum('cost');
+
+        $topBrands = Equipment::where('tenant_id', $tenantId)
+            ->active()
             ->select('brand', DB::raw('COUNT(*) as count'))
             ->groupBy('brand')
             ->orderByDesc('count')
             ->take(10)
+            ->get();
+
+        $dueAlerts = Equipment::where('tenant_id', $tenantId)
+            ->active()
+            ->whereNotNull('next_calibration_at')
+            ->whereBetween('next_calibration_at', [now()->toDateString(), now()->addDays(30)->toDateString()])
+            ->orderBy('next_calibration_at')
+            ->select('id', 'brand', 'model', 'code', 'next_calibration_at')
+            ->limit(30)
             ->get();
 
         return response()->json([
@@ -404,75 +673,83 @@ class ReportController extends Controller
             'total_inactive' => $totalInactive,
             'by_class' => $byClass,
             'calibration_overdue' => $overdue,
+            'overdue_calibrations' => $overdue,
             'calibration_due_7' => max(0, $dueNext7),
             'calibration_due_30' => max(0, $dueNext30),
             'calibrations_month' => $calibrationsMonth,
+            'total_calibration_cost' => $totalCalibrationCost,
             'top_brands' => $topBrands,
+            'due_alerts' => $dueAlerts,
         ]);
     }
 
-    // ── 11. Relatório de Fornecedores (#18) ──
     public function suppliers(Request $request): JsonResponse
     {
-        $from = $request->get('from', now()->startOfYear()->toDateString());
-        $to = $request->get('to', now()->toDateString());
+        $tenantId = $this->tenantId();
+        $from = $this->validatedDate($request, 'from', now()->startOfYear()->toDateString());
+        $to = $this->validatedDate($request, 'to', now()->toDateString());
 
         $ranking = DB::table('accounts_payable')
             ->join('suppliers', 'accounts_payable.supplier_id', '=', 'suppliers.id')
-            ->whereBetween('accounts_payable.due_date', [$from, "$to 23:59:59"])
-            ->where('accounts_payable.status', '!=', 'cancelled')
+            ->where('accounts_payable.tenant_id', $tenantId)
+            ->where('suppliers.tenant_id', $tenantId)
+            ->whereBetween('accounts_payable.due_date', [$from, "{$to} 23:59:59"])
+            ->where('accounts_payable.status', '!=', AccountPayable::STATUS_CANCELLED)
             ->select(
-                'suppliers.id', 'suppliers.name',
+                'suppliers.id',
+                'suppliers.name',
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('SUM(accounts_payable.amount) as total_amount'),
-                DB::raw('SUM(accounts_payable.amount_paid) as total_paid'),
+                DB::raw('SUM(accounts_payable.amount_paid) as total_paid')
             )
             ->groupBy('suppliers.id', 'suppliers.name')
             ->orderByDesc('total_amount')
             ->get();
 
-        $byCategory = DB::table('suppliers')
+        $byCategory = Supplier::where('tenant_id', $tenantId)
             ->select('category', DB::raw('COUNT(*) as count'))
             ->groupBy('category')
             ->get();
-
-        $totalSuppliers = \App\Models\Supplier::count();
-        $activeSuppliers = \App\Models\Supplier::where('is_active', true)->count();
 
         return response()->json([
             'period' => ['from' => $from, 'to' => $to],
             'ranking' => $ranking,
             'by_category' => $byCategory,
-            'total_suppliers' => $totalSuppliers,
-            'active_suppliers' => $activeSuppliers,
+            'total_suppliers' => Supplier::where('tenant_id', $tenantId)->count(),
+            'active_suppliers' => Supplier::where('tenant_id', $tenantId)->where('is_active', true)->count(),
         ]);
     }
 
-    // ── 12. Relatório de Estoque/Movimentação (#19) ──
     public function stock(Request $request): JsonResponse
     {
-        $products = \App\Models\Product::select(
-                'id', 'name', 'sku', 'stock_qty', 'min_stock', 'cost_price', 'sale_price'
-            )
+        $tenantId = $this->tenantId();
+
+        $products = Product::where('tenant_id', $tenantId)
+            ->selectRaw('id, name, code, code as sku, stock_qty, stock_min, stock_min as min_stock, cost_price, sell_price, sell_price as sale_price')
             ->orderBy('name')
+            ->limit(500)
             ->get();
 
         $outOfStock = $products->where('stock_qty', '<=', 0)->count();
-        $lowStock = $products->filter(fn($p) => $p->stock_qty > 0 && $p->min_stock && $p->stock_qty <= $p->min_stock)->count();
-        $totalValue = $products->sum(fn($p) => $p->stock_qty * $p->cost_price);
-        $totalSaleValue = $products->sum(fn($p) => $p->stock_qty * $p->sale_price);
+        $lowStock = $products->filter(function ($product) {
+            return $product->stock_qty > 0 && $product->stock_min && $product->stock_qty <= $product->stock_min;
+        })->count();
+
+        $totalValue = $products->sum(fn ($product) => $product->stock_qty * $product->cost_price);
+        $totalSaleValue = $products->sum(fn ($product) => $product->stock_qty * $product->sell_price);
 
         $recentMovements = DB::table('work_order_items')
             ->join('work_orders', 'work_order_items.work_order_id', '=', 'work_orders.id')
             ->join('products', 'work_order_items.reference_id', '=', 'products.id')
-            ->where('work_order_items.type', 'product')
+            ->where('work_orders.tenant_id', $tenantId)
+            ->where('work_order_items.type', WorkOrderItem::TYPE_PRODUCT)
             ->orderByDesc('work_orders.created_at')
             ->limit(50)
             ->select(
                 'products.name as product_name',
                 'work_order_items.quantity',
-                'work_orders.number as os_number',
-                'work_orders.created_at',
+                DB::raw('COALESCE(work_orders.os_number, work_orders.number) as os_number'),
+                'work_orders.created_at'
             )
             ->get();
 

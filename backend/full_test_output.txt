@@ -1,0 +1,343 @@
+﻿PHPUnit 11.5.52 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.2.30
+Configuration: C:\Users\Roldão testes\projetos\sistema\backend\phpunit.xml
+
+...............................................................  63 / 271 ( 23%)
+............................................................... 126 / 271 ( 46%)
+............................................................... 189 / 271 ( 69%)
+............................................................... 252 / 271 ( 92%)
+...................                                             271 / 271 (100%)
+
+Time: 00:19.391, Memory: 102.00 MB
+
+Cash Flow (Tests\Feature\CashFlow)
+ ✔ Cash flow is tenant scoped and includes expenses
+ ✔ Cash flow accepts os number filter
+ ✔ Dre accepts os number filter
+
+Central (Tests\Feature\Central)
+ ✔ Can list central items
+ ✔ Can create central item
+ ✔ Can update central item
+ ✔ Can comment on item
+ ✔ Summary endpoint
+ ✔ Dashboard endpoints
+ ✔ Can manage central rules
+ ✔ Rule is applied on item creation
+
+Checklist Flow (Tests\Feature\ChecklistFlow)
+ ✔ Service checklist store uses current tenant context
+ ✔ Checklist responses reject item not from work order checklist
+
+Commission (Tests\Feature\Commission)
+ ✔ Store rule rejects user from other tenant
+ ✔ Close settlement rejects user from other tenant
+ ✔ Work order completed generates commission events from active rules
+ ✔ Commission settlement close and pay have consistent status flow
+ ✔ Commission events accept os number filter
+ ✔ Commission disputes accept os number filter and return identifier
+
+Crm (Tests\Feature\Crm)
+ ✔ Dashboard returns kpis and pipeline data
+ ✔ List pipelines
+ ✔ Create pipeline with stages
+ ✔ Create deal
+ ✔ List deals with filters
+ ✔ Show deal with relationships
+ ✔ Update deal
+ ✔ Delete deal
+ ✔ Move deal to stage
+ ✔ Mark deal as won
+ ✔ Mark deal as lost with reason
+ ✔ Create activity
+ ✔ List activities with filters
+ ✔ Constants endpoint
+ ✔ Deal mark won moves to won stage
+ ✔ Deal mark lost moves to lost stage
+ ✔ Activity log system event
+ ✔ Automation command runs successfully
+ ✔ Automation is idempotent
+
+Crm Messaging (Tests\Feature\CrmMessaging)
+ ✔ List messages
+ ✔ List messages filtered by channel
+ ✔ Send whatsapp without evolution config
+ ✔ Send whatsapp with mock evolution
+ ✔ Send email
+ ✔ Send requires subject for email
+ ✔ List templates
+ ✔ Create template
+ ✔ Update template
+ ✔ Delete template
+ ✔ Send from template
+ ✔ Whatsapp webhook status update
+ ✔ Whatsapp webhook read status
+ ✔ Whatsapp webhook inbound message
+ ✔ Email webhook delivery
+ ✔ Email webhook bounce
+ ✔ Message status transitions
+ ✔ Message mark failed
+ ✔ Message log to timeline
+ ✔ Template render
+
+Customer (Tests\Feature\Customer)
+ ✔ Create customer pf
+ ✔ Create customer pj
+ ✔ Create customer with contacts
+ ✔ List customers
+ ✔ Show customer
+ ✔ Update customer
+ ✔ Delete customer
+ ✔ Search customers by name
+ ✔ Filter customers by type
+ ✔ Filter customers by active
+ ✔ Customers isolated by tenant
+ ✔ Cannot create duplicate document
+ ✔ Legacy duplicates endpoint is available
+
+Equipment (Tests\Feature\Equipment)
+ ✔ Create equipment
+ ✔ List equipments
+ ✔ Show equipment
+ ✔ Update equipment
+ ✔ Delete equipment
+ ✔ Search equipment by serial
+ ✔ Filter by status
+ ✔ Constants returns categories and statuses
+ ✔ Equipments isolated by tenant
+
+Example (Tests\Feature\Example)
+ ✔ The application returns a successful response
+
+Example (Tests\Unit\Example)
+ ✔ That true is true
+
+Expense (Tests\Feature\Expense)
+ ✔ Store rejects category from other tenant
+ ✔ Store creates with pending status
+ ✔ Show blocks cross tenant expense
+ ✔ Update blocks approved expense
+ ✔ Delete blocks cross tenant expense
+ ✔ Expense returns business os identifier when linked to work order
+ ✔ Reimbursed expense returns value to technician cash
+ ✔ Rejecting expense requires and persists reason
+
+Finance (Tests\Feature\Finance)
+ ✔ Create invoice
+ ✔ Create invoice rejects foreign tenant customer and work order
+ ✔ List invoices
+ ✔ Show invoice
+ ✔ Update invoice status to issued
+ ✔ Cancelled invoice cannot be edited
+ ✔ Delete invoice
+ ✔ Create invoice from work order
+ ✔ Invoice auto generates number
+ ✔ Invoices isolated by tenant
+ ✔ Filter invoices by status
+ ✔ Invoice search and payload use business os identifier
+ ✔ Generate account receivable from work order uses business identifier
+ ✔ Create account receivable rejects foreign tenant customer and work order
+ ✔ Legacy accounts payable categories routes
+ ✔ Account payable categories are tenant scoped
+ ✔ Create account payable rejects foreign tenant supplier and category
+ ✔ Financial export csv payable returns supplier name
+ ✔ Financial export csv receivable accepts os number filter
+ ✔ Receivable summary uses open balance and monthly payments
+ ✔ Pay partial on past due receivable keeps status overdue
+ ✔ Payable summary uses open balance and monthly payments
+
+Iam (Tests\Feature\Iam)
+ ✔ Create user
+ ✔ List users
+ ✔ Show user
+ ✔ Update user
+ ✔ Cannot access user from other tenant
+ ✔ Delete user
+ ✔ Cannot delete self
+ ✔ Toggle user active
+ ✔ Cannot toggle self active
+ ✔ Reset password
+ ✔ Change own password
+ ✔ Change password wrong current
+ ✔ Create role
+ ✔ List roles
+ ✔ Show role
+ ✔ Update role
+ ✔ Delete role
+ ✔ Cannot edit super admin
+ ✔ Cannot delete admin
+ ✔ Create role with permissions
+ ✔ List users by role
+ ✔ Permissions index
+ ✔ Permissions matrix
+ ✔ Cannot rename admin role
+ ✔ Cannot delete role with users
+ ✔ Change password too short
+
+Import (Tests\Feature\Import)
+ ✔ Get fields for valid entity
+ ✔ Get fields for invalid entity
+ ✔ Upload csv file
+ ✔ Upload rejects invalid entity
+ ✔ Upload rejects invalid file type
+ ✔ Preview validates path traversal
+ ✔ Preview validates required path prefix
+ ✔ Execute validates path traversal
+ ✔ History returns paginated results
+ ✔ History only shows own tenant
+ ✔ Save template
+ ✔ List templates
+ ✔ Templates only shows own tenant
+ ✔ Save template rejects invalid entity
+ ✔ Import model has status constants
+ ✔ Import model has strategy constants
+ ✔ Import model has entity type constants
+
+Notification (Tests\Feature\Notification)
+ ✔ List notifications
+ ✔ Unread count
+ ✔ Mark as read
+ ✔ Mark all as read
+
+Portal (Tests\Feature\Portal)
+ ✔ Portal reject quote uses supported columns
+ ✔ Portal approve quote dispatches quote approved event
+ ✔ Portal new service call uses valid schema and links equipment
+
+Product (Tests\Feature\Product)
+ ✔ Create product
+ ✔ List products
+ ✔ Show product
+ ✔ Update product
+ ✔ Delete product
+ ✔ Search product by name
+ ✔ Filter low stock
+ ✔ Create category
+ ✔ List categories
+ ✔ Delete category
+ ✔ Products isolated by tenant
+
+Quote (Tests\Feature\Quote)
+ ✔ Create quote
+ ✔ List quotes
+ ✔ Show quote
+ ✔ Approve quote
+ ✔ Tenant isolation
+ ✔ Quote sequence start setting is respected without breaking existing sequence
+ ✔ Quote sequence uses highest historical value even if latest record is external
+ ✔ Create quote uses sequence start from settings endpoint
+ ✔ Rejects invalid quote sequence start setting
+ ✔ Cannot mutate sent quote through item and equipment endpoints
+ ✔ Convert to os conflict returns business number
+
+Quote Approval Listeners (Tests\Feature\QuoteApprovalListeners)
+ ✔ Handle quote approval listener uses quote number and seller as recipient
+ ✔ Create central item on quote listener uses quote number context and seller
+
+Quote Ready Mail (Tests\Feature\QuoteReadyMail)
+ ✔ Quote ready mail uses quote number
+
+Recurring Flow (Tests\Feature\RecurringFlow)
+ ✔ Store recurring contract rejects foreign tenant relations
+ ✔ Process monthly generates commission for active recurring contract
+ ✔ Contract billing command generates only one receivable per month
+ ✔ Contract billing command handles same name contracts without skipping
+ ✔ Create central item on contract uses assigned user
+
+Report (Tests\Feature\Report)
+ ✔ Work orders report is tenant scoped
+ ✔ Productivity report uses technician id and returns data
+ ✔ Quotes report counts invoiced as converted
+ ✔ Service calls report counts completed calls
+ ✔ Financial report and csv export
+ ✔ Financial report monthly flow includes expenses
+ ✔ Financial reports accept os number filter
+ ✔ Crm and equipment reports return frontend compatible fields
+ ✔ Report export accepts legacy tab alias
+ ✔ Suppliers report returns ranking and categories
+ ✔ Stock report returns products and summary
+ ✔ Technician cash report returns fund data
+
+Service Call (Tests\Feature\ServiceCall)
+ ✔ Create service call
+ ✔ List service calls
+ ✔ Show service call
+ ✔ Update status
+ ✔ Update status rejects invalid transition
+ ✔ Map data supports status filter and payload fields
+ ✔ Legacy map and agenda routes are available
+ ✔ Convert to work order requires single conversion
+ ✔ Summary returns transit and in service breakdown
+ ✔ Service calls isolated by tenant
+
+Stock (Tests\Feature\Stock)
+ ✔ Create stock entry
+ ✔ Create stock adjustment
+ ✔ List movements
+ ✔ Filter movements by product
+ ✔ Stock summary
+ ✔ Low stock alerts
+ ✔ Stock entry requires product
+ ✔ Stock entry requires positive quantity
+
+Supplier (Tests\Feature\Supplier)
+ ✔ Create supplier pj
+ ✔ List suppliers
+ ✔ Show supplier
+ ✔ Update supplier
+ ✔ Delete supplier
+
+Technician Cash (Tests\Feature\TechnicianCash)
+ ✔ Credit uses current tenant context after switch
+ ✔ Credit rejects technician from other tenant
+
+Technician Schedule Time Entry (Tests\Feature\TechnicianScheduleTimeEntry)
+ ✔ Schedule store rejects foreign tenant relations
+ ✔ Time entry store rejects foreign tenant relations
+
+Tenant (Tests\Feature\Tenant)
+ ✔ List tenants
+ ✔ Create tenant
+ ✔ Create tenant with trial status
+ ✔ Create tenant defaults to active
+ ✔ Create tenant rejects invalid status
+ ✔ Show tenant
+ ✔ Update tenant
+ ✔ Destroy tenant without dependencies
+ ✔ Cannot destroy tenant with users
+ ✔ Cannot destroy tenant with branches
+ ✔ Stats
+ ✔ Invite new user
+ ✔ Invite existing user
+ ✔ Cannot invite already member
+ ✔ Remove user from tenant
+ ✔ Cannot remove nonmember user
+ ✔ List branches
+ ✔ Create branch
+ ✔ Show branch
+ ✔ Cannot show branch from other tenant
+ ✔ Update branch
+ ✔ Destroy branch
+ ✔ Cannot destroy branch from other tenant
+ ✔ Cannot create branch with duplicate code
+ ✔ Duplicate code allowed across tenants
+
+Work Order (Tests\Feature\WorkOrder)
+ ✔ Create work order
+ ✔ List work orders
+ ✔ Show work order
+ ✔ Update work order
+ ✔ Delete work order
+ ✔ Transition open to in progress
+ ✔ Invalid status transition blocked
+ ✔ Completed transition
+ ✔ Add item to work order
+ ✔ Update item rejects item from other work order
+ ✔ Delete item rejects item from other work order
+ ✔ Add item rejects product reference from other tenant
+ ✔ Metadata returns statuses and priorities
+ ✔ Work orders isolated by tenant
+ ✔ Filter by status
+
+OK (271 tests, 806 assertions)

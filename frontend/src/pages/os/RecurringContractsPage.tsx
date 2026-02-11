@@ -128,7 +128,7 @@ export function RecurringContractsPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-zinc-100">Contratos Recorrentes</h1>
@@ -279,8 +279,8 @@ export function RecurringContractsPage() {
                                             <Calendar className="h-3.5 w-3.5 inline mr-1" />
                                             {fmtDate(c.next_run_date)}
                                         </td>
-                                        <td className="px-4 py-3 text-center text-zinc-300">{c.generated_count}</td>
-                                        <td className="px-4 py-3 text-center">
+                                        <td className="px-3.5 py-2.5 text-center text-zinc-300">{c.generated_count}</td>
+                                        <td className="px-3.5 py-2.5 text-center">
                                             <Badge variant={c.is_active ? 'success' : 'default'}>
                                                 {c.is_active ? 'Ativo' : 'Inativo'}
                                             </Badge>

@@ -4,6 +4,7 @@ import { crmApi } from '@/lib/crm-api'
 import type { CrmMessageTemplate } from '@/lib/crm-api'
 import { MessageCircle, Mail, Send, X, Loader2, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface Props {
     customerId: number
@@ -41,10 +42,19 @@ export function SendMessageModal({ customerId, customerName, customerPhone, cust
         }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['crm'] })
+            qc.invalidateQueries({ queryKey: ['crm', 'messages'] })
+            toast.success(channel === 'whatsapp' ? 'WhatsApp enviado' : 'E-mail enviado')
             onClose()
             setBody('')
             setSubject('')
             setSelectedTemplate(null)
+        },
+        onError: (error: any) => {
+            if (error.response?.status === 422) {
+                toast.error('Dados inválidos. Verifique os campos.')
+            } else {
+                toast.error(error.response?.data?.message || 'Erro ao enviar mensagem')
+            }
         },
     })
 
@@ -62,9 +72,9 @@ export function SendMessageModal({ customerId, customerName, customerPhone, cust
         <>
             <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div className="w-full max-w-lg rounded-2xl border border-surface-200 bg-white shadow-modal animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-full max-w-lg rounded-2xl border border-default bg-white shadow-modal animate-in fade-in zoom-in-95 duration-200">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-surface-200 px-5 py-4">
+                    <div className="flex items-center justify-between border-b border-subtle px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-surface-900">Enviar Mensagem</h2>
                             <p className="text-xs text-surface-500 mt-0.5">Para: {customerName}</p>
@@ -159,7 +169,7 @@ export function SendMessageModal({ customerId, customerName, customerPhone, cust
                                     value={subject}
                                     onChange={e => setSubject(e.target.value)}
                                     placeholder="Assunto do e-mail..."
-                                    className="w-full rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                    className="w-full rounded-lg border border-default bg-white px-3 py-2 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                                 />
                             </div>
                         )}
@@ -172,14 +182,14 @@ export function SendMessageModal({ customerId, customerName, customerPhone, cust
                                 onChange={e => setBody(e.target.value)}
                                 placeholder={channel === 'whatsapp' ? 'Digite sua mensagem...' : 'Conteúdo do e-mail...'}
                                 rows={5}
-                                className="w-full rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none"
+                                className="w-full rounded-lg border border-default bg-white px-3 py-2.5 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none"
                             />
                             <p className="mt-1 text-xs text-surface-400">{body.length} caracteres</p>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-end gap-2 border-t border-surface-200 px-5 py-3">
+                    <div className="flex items-center justify-end gap-2 border-t border-subtle px-5 py-3">
                         <button
                             onClick={onClose}
                             className="rounded-lg px-4 py-2 text-sm font-medium text-surface-600 hover:bg-surface-100 transition-colors"

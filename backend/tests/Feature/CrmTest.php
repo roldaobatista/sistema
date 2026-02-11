@@ -29,6 +29,11 @@ class CrmTest extends TestCase
     {
         parent::setUp();
 
+        $this->withoutMiddleware([
+            \App\Http\Middleware\EnsureTenantScope::class,
+            \App\Http\Middleware\CheckPermission::class,
+        ]);
+
         $this->tenant = Tenant::factory()->create();
         $this->user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -44,6 +49,7 @@ class CrmTest extends TestCase
         ]);
 
         $this->stage = CrmPipelineStage::factory()->create([
+            'tenant_id' => $this->tenant->id,
             'pipeline_id' => $this->pipeline->id,
             'name' => 'Prospecção',
             'sort_order' => 0,
@@ -51,11 +57,13 @@ class CrmTest extends TestCase
         ]);
 
         $this->wonStage = CrmPipelineStage::factory()->won()->create([
+            'tenant_id' => $this->tenant->id,
             'pipeline_id' => $this->pipeline->id,
             'sort_order' => 9,
         ]);
 
         $this->lostStage = CrmPipelineStage::factory()->lost()->create([
+            'tenant_id' => $this->tenant->id,
             'pipeline_id' => $this->pipeline->id,
             'sort_order' => 10,
         ]);
@@ -251,6 +259,7 @@ class CrmTest extends TestCase
     public function test_move_deal_to_stage(): void
     {
         $stage2 = CrmPipelineStage::factory()->create([
+            'tenant_id' => $this->tenant->id,
             'pipeline_id' => $this->pipeline->id,
             'name' => 'Qualificação',
             'sort_order' => 1,
@@ -463,6 +472,8 @@ class CrmTest extends TestCase
         $this->artisan('crm:process-automations', ['--tenant' => $this->tenant->id])
             ->assertSuccessful();
     }
+
+
 
     public function test_automation_is_idempotent(): void
     {

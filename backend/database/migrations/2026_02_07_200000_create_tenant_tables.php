@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->string('document', 20)->nullable(); // CNPJ/CPF
             $table->string('email')->nullable();
             $table->string('phone', 20)->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->string('status', 20)->default('active');
             $table->timestamps();
         });
 

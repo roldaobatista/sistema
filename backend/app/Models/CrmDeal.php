@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Concerns\Auditable;
 
 class CrmDeal extends Model
 {
-    use BelongsToTenant, SoftDeletes, HasFactory;
+    use BelongsToTenant, SoftDeletes, HasFactory, Auditable;
 
     protected $fillable = [
         'tenant_id', 'customer_id', 'pipeline_id', 'stage_id',
@@ -31,13 +32,17 @@ class CrmDeal extends Model
         ];
     }
 
-    const STATUSES = [
-        'open' => ['label' => 'Aberto', 'color' => 'info'],
-        'won' => ['label' => 'Ganho', 'color' => 'success'],
-        'lost' => ['label' => 'Perdido', 'color' => 'danger'],
+    public const STATUS_OPEN = 'open';
+    public const STATUS_WON = 'won';
+    public const STATUS_LOST = 'lost';
+
+    public const STATUSES = [
+        self::STATUS_OPEN => ['label' => 'Aberto', 'color' => 'info'],
+        self::STATUS_WON => ['label' => 'Ganho', 'color' => 'success'],
+        self::STATUS_LOST => ['label' => 'Perdido', 'color' => 'danger'],
     ];
 
-    const SOURCES = [
+    public const SOURCES = [
         'calibracao_vencendo' => 'Calibração Vencendo',
         'indicacao' => 'Indicação',
         'prospeccao' => 'Prospecção',
@@ -51,17 +56,17 @@ class CrmDeal extends Model
 
     public function scopeOpen($q)
     {
-        return $q->where('status', 'open');
+        return $q->where('status', self::STATUS_OPEN);
     }
 
     public function scopeWon($q)
     {
-        return $q->where('status', 'won');
+        return $q->where('status', self::STATUS_WON);
     }
 
     public function scopeLost($q)
     {
-        return $q->where('status', 'lost');
+        return $q->where('status', self::STATUS_LOST);
     }
 
     public function scopeByPipeline($q, int $pipelineId)
@@ -73,23 +78,33 @@ class CrmDeal extends Model
 
     public function markAsWon(): void
     {
+        if ($this->status === self::STATUS_WON) {
+            return;
+        }
+
         $wonStage = $this->pipeline->stages()->wonStage()->first();
+
         $this->update([
-            'status' => 'won',
-            'won_at' => now(),
+            'status' => self::STATUS_WON,
             'probability' => 100,
+            'won_at' => now(),
             'stage_id' => $wonStage?->id ?? $this->stage_id,
         ]);
     }
 
-    public function markAsLost(string $reason = ''): void
+    public function markAsLost(?string $reason = null): void
     {
+        if ($this->status === self::STATUS_LOST) {
+            return;
+        }
+
         $lostStage = $this->pipeline->stages()->lostStage()->first();
+
         $this->update([
-            'status' => 'lost',
+            'status' => self::STATUS_LOST,
+            'probability' => 0,
             'lost_at' => now(),
             'lost_reason' => $reason,
-            'probability' => 0,
             'stage_id' => $lostStage?->id ?? $this->stage_id,
         ]);
     }

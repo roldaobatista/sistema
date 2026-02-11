@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, X, Shield } from 'lucide-react'
 import api from '@/lib/api'
@@ -5,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 
 export function PermissionsMatrixPage() {
-    const { data: matrixData, isLoading } = useQuery({
+    const { data: matrixData, isLoading, isError } = useQuery({
         queryKey: ['permissions-matrix'],
         queryFn: () => api.get('/permissions/matrix'),
     })
@@ -15,17 +16,25 @@ export function PermissionsMatrixPage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-20 text-sm text-surface-500">
+            <div className="flex items-center justify-center py-20 text-[13px] text-surface-500">
                 Carregando matriz de permissões...
             </div>
         )
     }
 
+    if (isError) {
+        return (
+            <div className="flex items-center justify-center py-20 text-sm text-red-500">
+                Erro ao carregar a matriz de permissões. Tente novamente.
+            </div>
+        )
+    }
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div>
-                <h1 className="text-2xl font-bold text-surface-900">Matriz de Permissões</h1>
-                <p className="mt-1 text-sm text-surface-500">
+                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Matriz de Permissões</h1>
+                <p className="mt-0.5 text-[13px] text-surface-500">
                     Visualização de todas as permissões atribuídas a cada role
                 </p>
             </div>
@@ -50,15 +59,15 @@ export function PermissionsMatrixPage() {
             </div>
 
             {/* Matrix Table */}
-            <div className="overflow-x-auto rounded-xl border border-surface-200 bg-white shadow-card">
+            <div className="overflow-x-auto rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full min-w-[800px]">
                     <thead>
-                        <tr className="border-b border-surface-200 bg-surface-50">
-                            <th className="sticky left-0 z-10 bg-surface-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-600 min-w-[240px]">
+                        <tr className="border-b border-subtle bg-surface-50">
+                            <th className="sticky left-0 z-10 bg-surface-50 px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 min-w-[240px]">
                                 Permissão
                             </th>
                             {roleNames.map(role => (
-                                <th key={role} className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-surface-600 min-w-[100px]">
+                                <th key={role} className="px-3 py-3 text-center text-[11px] font-medium uppercase tracking-wider text-surface-500 min-w-[100px]">
                                     <div className="flex items-center justify-center gap-1.5">
                                         <Shield className="h-3 w-3" />
                                         {role}
@@ -69,7 +78,7 @@ export function PermissionsMatrixPage() {
                     </thead>
                     <tbody>
                         {matrix.map((group: any, gi: number) => (
-                            <>
+                            <Fragment key={`group-${gi}`}>
                                 {/* Group header */}
                                 <tr key={`g-${gi}`} className="bg-surface-50/50">
                                     <td
@@ -107,7 +116,7 @@ export function PermissionsMatrixPage() {
                                         ))}
                                     </tr>
                                 ))}
-                            </>
+                            </Fragment>
                         ))}
                     </tbody>
                 </table>

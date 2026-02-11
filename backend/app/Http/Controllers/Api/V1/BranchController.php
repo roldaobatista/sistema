@@ -7,9 +7,15 @@ use App\Models\AuditLog;
 use App\Models\Branch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class BranchController extends Controller
 {
+    /**
+     * Lista filiais do tenant atual.
+     * Nota: O filtro por tenant_id é aplicado automaticamente pelo global scope BelongsToTenant.
+     */
     public function index(): JsonResponse
     {
         $branches = Branch::orderBy('name')->get();
@@ -18,9 +24,18 @@ class BranchController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (!app()->bound('current_tenant_id')) {
+            return response()->json(['message' => 'Nenhuma empresa selecionada.'], 403);
+        }
+
+        $tenantId = app('current_tenant_id');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'nullable|string|max:20',
+            'code' => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('branches', 'code')->where('tenant_id', $tenantId),
+            ],
             'address_street' => 'nullable|string|max:255',
             'address_number' => 'nullable|string|max:20',
             'address_complement' => 'nullable|string|max:100',
@@ -32,12 +47,19 @@ class BranchController extends Controller
             'email' => 'nullable|email|max:255',
         ]);
 
-        $validated['tenant_id'] = auth()->user()->tenant_id;
-        $branch = Branch::create($validated);
+        try {
+            return DB::transaction(function () use ($validated, $tenantId) {
+                $validated['tenant_id'] = $tenantId;
+                $branch = Branch::create($validated);
 
-        AuditLog::log('created', "Filial {$branch->name} criada", $branch);
+                AuditLog::log('created', "Filial {$branch->name} criada", $branch);
 
-        return response()->json($branch, 201);
+                return response()->json($branch, 201);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao criar filial.'], 500);
+        }
     }
 
     public function show(Branch $branch): JsonResponse
@@ -49,7 +71,12 @@ class BranchController extends Controller
     {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'code' => 'nullable|string|max:20',
+            'code' => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('branches', 'code')
+                    ->where('tenant_id', app('current_tenant_id'))
+                    ->ignore($branch->id),
+            ],
             'address_street' => 'nullable|string|max:255',
             'address_number' => 'nullable|string|max:20',
             'address_complement' => 'nullable|string|max:100',
@@ -61,18 +88,64 @@ class BranchController extends Controller
             'email' => 'nullable|email|max:255',
         ]);
 
-        $branch->update($validated);
-        AuditLog::log('updated', "Filial {$branch->name} atualizada", $branch);
+        try {
+            return DB::transaction(function () use ($validated, $branch) {
+                $old = $branch->toArray();
+                $branch->update($validated);
 
-        return response()->json($branch);
+                $freshBranch = $branch->fresh();
+                AuditLog::log('updated', "Filial {$freshBranch->name} atualizada", $freshBranch, $old, $freshBranch->toArray());
+
+                return response()->json($freshBranch);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao atualizar filial.'], 500);
+        }
     }
 
     public function destroy(Branch $branch): JsonResponse
     {
-        $name = $branch->name;
-        $branch->delete();
-        AuditLog::log('deleted', "Filial {$name} removida");
+        $sequencesCount = \App\Models\NumberingSequence::withoutGlobalScope('tenant')
+            ->where('branch_id', $branch->id)
+            ->count();
 
-        return response()->json(['message' => 'Filial removida.']);
+        $workOrdersCount = \App\Models\WorkOrder::withoutGlobalScope('tenant')
+            ->where('branch_id', $branch->id)
+            ->count();
+
+        $usersCount = \App\Models\User::where('branch_id', $branch->id)->count();
+
+        if ($sequencesCount > 0 || $workOrdersCount > 0 || $usersCount > 0) {
+            $dependencies = [];
+            if ($sequencesCount > 0) $dependencies['numbering_sequences'] = $sequencesCount;
+            if ($workOrdersCount > 0) $dependencies['work_orders'] = $workOrdersCount;
+            if ($usersCount > 0) $dependencies['users'] = $usersCount;
+
+            $msg = "Esta filial possui registros vinculados: ";
+            $parts = [];
+            if ($sequencesCount > 0) $parts[] = "$sequencesCount sequência(s)";
+            if ($workOrdersCount > 0) $parts[] = "$workOrdersCount ordem(ns) de serviço";
+            if ($usersCount > 0) $parts[] = "$usersCount usuário(s)";
+            $msg .= implode(', ', $parts) . ".";
+
+            return response()->json([
+                'message' => $msg,
+                'dependencies' => $dependencies,
+                'confirm_required' => true,
+            ], 409);
+        }
+
+        try {
+            return DB::transaction(function () use ($branch) {
+                AuditLog::log('deleted', "Filial {$branch->name} removida", $branch);
+                $branch->delete();
+
+                return response()->json(null, 204);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao excluir filial.'], 500);
+        }
     }
 }

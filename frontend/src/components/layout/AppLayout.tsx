@@ -35,6 +35,13 @@ import {
     RotateCcw,
     TrendingUp,
     History,
+    Warehouse,
+    ArrowLeftRight,
+    Bell,
+    CheckSquare,
+    Tag,
+    Inbox,
+    Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -54,6 +61,14 @@ interface NavItem {
 const navigation: NavItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     {
+        label: 'Central', icon: Inbox, path: '/central', permission: 'central.item.view',
+        children: [
+            { label: 'Inbox', icon: Inbox, path: '/central' },
+            { label: 'Dashboard', icon: BarChart3, path: '/central/dashboard', permission: 'central.manage.kpis' },
+            { label: 'Automação', icon: Zap, path: '/central/regras', permission: 'central.manage.rules' },
+        ],
+    },
+    {
         label: 'CRM',
         icon: Briefcase,
         path: '/crm',
@@ -71,14 +86,39 @@ const navigation: NavItem[] = [
         permission: 'cadastros.customer.view',
         children: [
             { label: 'Clientes', icon: Users, path: '/cadastros/clientes' },
+            { label: 'Fusão Clientes', icon: Users, path: '/cadastros/clientes/fusao' },
             { label: 'Produtos', icon: Package, path: '/cadastros/produtos' },
             { label: 'Serviços', icon: Briefcase, path: '/cadastros/servicos' },
             { label: 'Fornecedores', icon: Truck, path: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
+            { label: 'Histórico Preços', icon: TrendingUp, path: '/cadastros/historico-precos' },
+            { label: 'Exportação Lote', icon: Upload, path: '/cadastros/exportacao-lote' },
         ],
     },
     { label: 'Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
-    { label: 'Chamados', icon: Phone, path: '/chamados', permission: 'service_calls.service_call.view' },
-    { label: 'Ordens de Serviço', icon: FileText, path: '/os', permission: 'os.work_order.view' },
+    {
+        label: 'Chamados',
+        icon: Phone,
+        path: '/chamados',
+        permission: 'service_calls.service_call.view',
+        children: [
+            { label: 'Lista', icon: FileText, path: '/chamados' },
+            { label: 'Mapa', icon: Scale, path: '/chamados/mapa' },
+            { label: 'Agenda Técnicos', icon: Calendar, path: '/chamados/agenda' },
+        ],
+    },
+    {
+        label: 'Ordens de Serviço',
+        icon: FileText,
+        path: '/os',
+        permission: 'os.work_order.view',
+        children: [
+            { label: 'Lista', icon: FileText, path: '/os' },
+            { label: 'Kanban', icon: Grid3x3, path: '/os/kanban' },
+            { label: 'SLA Políticas', icon: Shield, path: '/os/sla' },
+            { label: 'SLA Dashboard', icon: BarChart3, path: '/os/sla-dashboard' },
+            { label: 'Checklists', icon: CheckSquare, path: '/os/checklists' },
+        ]
+    },
     { label: 'Contratos Recorrentes', icon: RotateCcw, path: '/os/contratos-recorrentes', permission: 'os.work_order.view' },
     {
         label: 'Técnicos',
@@ -101,16 +141,31 @@ const navigation: NavItem[] = [
             { label: 'Contas a Pagar', icon: ArrowUpFromLine, path: '/financeiro/pagar', permission: 'finance.payable.view' },
             { label: 'Pagamentos', icon: DollarSign, path: '/financeiro/pagamentos' },
             { label: 'Comissões', icon: Award, path: '/financeiro/comissoes', permission: 'commissions.rule.view' },
+            { label: 'Dashboard Comissões', icon: BarChart3, path: '/financeiro/comissoes/dashboard', permission: 'commissions.rule.view' },
             { label: 'Despesas', icon: Receipt, path: '/financeiro/despesas', permission: 'expenses.expense.view' },
             { label: 'Formas de Pagamento', icon: CreditCard, path: '/financeiro/formas-pagamento', permission: 'platform.settings.manage' },
             { label: 'Fluxo de Caixa', icon: TrendingUp, path: '/financeiro/fluxo-caixa', permission: 'finance.receivable.view' },
             { label: 'Faturamento', icon: FileText, path: '/financeiro/faturamento', permission: 'finance.receivable.view' },
+            { label: 'Conciliação Bancária', icon: ArrowLeftRight, path: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
+            { label: 'Plano de Contas', icon: FileText, path: '/financeiro/plano-contas', permission: 'finance.receivable.view' },
+            { label: 'Categorias', icon: Tag, path: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
         ],
     },
     { label: 'Relatórios', icon: BarChart3, path: '/relatorios', permission: 'reports.os_report.view' },
+    { label: 'Notificações', icon: Bell, path: '/notificacoes' },
     { label: 'Importação', icon: Upload, path: '/importacao', permission: 'import.data.view' },
     { label: 'Equipamentos', icon: Scale, path: '/equipamentos', permission: 'equipments.equipment.view' },
     { label: 'Agenda Calibrações', icon: Calendar, path: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
+    {
+        label: 'Estoque',
+        icon: Warehouse,
+        path: '/estoque',
+        permission: 'estoque.movement.view',
+        children: [
+            { label: 'Dashboard', icon: BarChart3, path: '/estoque' },
+            { label: 'Movimentações', icon: ArrowLeftRight, path: '/estoque/movimentacoes' },
+        ],
+    },
     {
         label: 'IAM',
         icon: Shield,
@@ -181,7 +236,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const toggleGroup = (path: string) => {
         setExpandedGroups((prev) => {
             const next = new Set(prev)
-            next.has(path) ? next.delete(path) : next.add(path)
+            if (next.has(path)) {
+                next.delete(path)
+            } else {
+                next.add(path)
+            }
             return next
         })
     }
@@ -193,7 +252,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {/* --- Overlay Mobile --- */}
             {sidebarMobileOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-40 bg-black/40 lg:hidden"
                     onClick={toggleMobileSidebar}
                 />
             )}
@@ -201,49 +260,49 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {/* --- Sidebar --- */}
             <aside
                 className={cn(
-                    'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-surface-200 bg-white transition-all duration-300 ease-smooth',
+                    'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-default bg-surface-0 transition-[width,transform] duration-200 ease-out',
                     'lg:relative lg:z-auto',
                     sidebarCollapsed ? 'w-[var(--sidebar-collapsed)]' : 'w-[var(--sidebar-width)]',
                     sidebarMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                 )}
             >
                 {/* Logo */}
-                <div className="flex h-[var(--topbar-height)] items-center gap-3 border-b border-surface-200 px-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white font-bold text-sm">
-                        OS
+                <div className="flex h-[var(--topbar-height)] items-center gap-2.5 border-b border-subtle px-3.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-600 text-white font-bold text-xs">
+                        K
                     </div>
                     {!sidebarCollapsed && (
-                        <span className="truncate font-semibold text-surface-900 text-sm">
-                            Sistema OS
+                        <span className="truncate font-semibold text-surface-900 text-[13px] tracking-tight">
+                            KALIBRIUM
                         </span>
                     )}
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+                <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
                     {filteredNav.map((item) => (
                         <div key={item.path}>
                             {item.children ? (
                                 <button
                                     onClick={() => toggleGroup(item.path)}
                                     className={cn(
-                                        'group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                        'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
                                         item.children.some(c => isActive(c.path))
-                                            ? 'bg-brand-50 text-brand-700'
-                                            : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900',
+                                            ? 'bg-surface-100 text-surface-900'
+                                            : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
                                         sidebarCollapsed && 'justify-center px-2'
                                     )}
                                 >
                                     <item.icon className={cn(
-                                        'h-5 w-5 shrink-0 transition-colors',
-                                        item.children.some(c => isActive(c.path)) ? 'text-brand-500' : 'text-surface-400 group-hover:text-brand-500'
+                                        'h-4 w-4 shrink-0 transition-colors duration-100',
+                                        item.children.some(c => isActive(c.path)) ? 'text-brand-500' : 'text-surface-400 group-hover:text-surface-600'
                                     )} />
                                     {!sidebarCollapsed && (
                                         <>
                                             <span className="flex-1 text-left truncate">{item.label}</span>
                                             <ChevronRight
                                                 className={cn(
-                                                    'h-4 w-4 transition-transform',
+                                                    'h-3.5 w-3.5 text-surface-300 transition-transform duration-150',
                                                     expandedGroups.has(item.path) && 'rotate-90'
                                                 )}
                                             />
@@ -254,16 +313,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 <Link
                                     to={item.path}
                                     className={cn(
-                                        'group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                        'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
                                         isActive(item.path)
-                                            ? 'bg-brand-50 text-brand-700'
-                                            : 'text-surface-600 hover:bg-surface-100 hover:text-surface-900',
+                                            ? 'bg-surface-100 text-surface-900'
+                                            : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
                                         sidebarCollapsed && 'justify-center px-2'
                                     )}
                                 >
+                                    {/* Active indicator bar — Jira style */}
+                                    {isActive(item.path) && (
+                                        <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-brand-500" />
+                                    )}
                                     <item.icon className={cn(
-                                        'h-5 w-5 shrink-0 transition-colors',
-                                        isActive(item.path) ? 'text-brand-500' : 'text-surface-400 group-hover:text-brand-500'
+                                        'h-4 w-4 shrink-0 transition-colors duration-100',
+                                        isActive(item.path) ? 'text-brand-500' : 'text-surface-400 group-hover:text-surface-600'
                                     )} />
                                     {!sidebarCollapsed && (
                                         <span className="flex-1 text-left truncate">{item.label}</span>
@@ -273,19 +336,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
                             {/* Sub-items */}
                             {item.children && !sidebarCollapsed && expandedGroups.has(item.path) && (
-                                <div className="ml-4 mt-1 space-y-1 border-l border-surface-200 pl-3">
+                                <div className="ml-[18px] mt-0.5 space-y-0.5 border-l border-subtle pl-2.5">
                                     {item.children.map((child) => (
                                         <Link
                                             key={child.path}
                                             to={child.path}
                                             className={cn(
-                                                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+                                                'relative flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-[12px] font-medium transition-colors duration-100',
                                                 isActive(child.path)
                                                     ? 'bg-brand-50 text-brand-700'
-                                                    : 'text-surface-500 hover:bg-surface-100 hover:text-surface-800'
+                                                    : 'text-surface-500 hover:bg-surface-50 hover:text-surface-700'
                                             )}
                                         >
-                                            <child.icon className="h-4 w-4" />
+                                            <child.icon className="h-3.5 w-3.5" />
                                             <span>{child.label}</span>
                                         </Link>
                                     ))}
@@ -296,12 +359,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </nav>
 
                 {/* Collapse toggle */}
-                <div className="hidden border-t border-surface-200 p-3 lg:block">
+                <div className="hidden border-t border-subtle p-2 lg:block">
                     <button
                         onClick={toggleSidebar}
-                        className="flex w-full items-center justify-center rounded-lg p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors"
+                        className="flex w-full items-center justify-center rounded-md p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors duration-100"
                     >
-                        {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                        {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
                     </button>
                 </div>
             </aside>
@@ -310,30 +373,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex flex-1 flex-col overflow-hidden">
                 {/* Offline indicator */}
                 {!isOnline && (
-                    <div className="flex items-center justify-center gap-2 bg-amber-500 px-4 py-1.5 text-xs font-medium text-white">
-                        <WifiOff className="h-3.5 w-3.5" />
+                    <div className="flex items-center justify-center gap-2 bg-amber-500 px-4 py-1 text-[11px] font-medium text-white">
+                        <WifiOff className="h-3 w-3" />
                         Você está offline — dados em cache serão exibidos
                     </div>
                 )}
 
                 {/* Topbar */}
-                <header className="flex h-[var(--topbar-height)] items-center justify-between border-b border-surface-200 bg-white px-4 lg:px-6">
-                    <div className="flex items-center gap-3">
+                <header className="flex h-[var(--topbar-height)] items-center justify-between border-b border-default bg-surface-0 px-4 lg:px-5">
+                    <div className="flex items-center gap-2">
                         <button
                             onClick={toggleMobileSidebar}
-                            className="rounded-lg p-1.5 text-surface-500 hover:bg-surface-100 lg:hidden"
+                            className="rounded-md p-1 text-surface-500 hover:bg-surface-100 lg:hidden"
                         >
-                            {sidebarMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                            {sidebarMobileOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         {/* Install PWA button */}
                         {isInstallable && (
                             <button onClick={install}
-                                className="flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-100">
-                                <Download className="h-3.5 w-3.5" />
-                                Instalar App
+                                className="flex items-center gap-1.5 rounded-md bg-surface-100 px-2.5 py-1 text-[11px] font-medium text-surface-700 transition-colors hover:bg-surface-200">
+                                <Download className="h-3 w-3" />
+                                Instalar
                             </button>
                         )}
 
@@ -344,13 +407,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 onChange={e => switchTenant(Number(e.target.value))}
                                 disabled={isSwitching}
                                 aria-label="Selecionar empresa"
-                                className="hidden appearance-none items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 sm:block border-0 focus:outline-none focus:ring-2 focus:ring-brand-500/20 cursor-pointer"
+                                className="hidden appearance-none rounded-md border border-default bg-surface-0 px-2.5 py-1 text-[12px] font-medium text-surface-700 sm:block focus:outline-none focus:ring-2 focus:ring-brand-500/15 cursor-pointer"
                             >
                                 {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
                         ) : (
-                            <span className="hidden items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 sm:flex">
-                                <Building2 className="h-3.5 w-3.5" />
+                            <span className="hidden items-center gap-1.5 rounded-md border border-subtle bg-surface-50 px-2.5 py-1 text-[11px] font-medium text-surface-600 sm:flex">
+                                <Building2 className="h-3 w-3" />
                                 {currentTenant?.name ?? '—'}
                             </span>
                         )}
@@ -359,27 +422,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         <NotificationPanel />
 
                         {/* User */}
-                        <Link to="/perfil" className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-surface-50 transition-colors">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-xs font-bold">
+                        <Link to="/perfil" className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-surface-50 transition-colors duration-100">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 text-brand-700 text-[11px] font-bold ring-1 ring-brand-200/50">
                                 {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                             </div>
-                            <span className="hidden text-sm font-medium text-surface-700 sm:block">
+                            <span className="hidden text-[13px] font-medium text-surface-700 sm:block">
                                 {user?.name ?? 'Usuário'}
                             </span>
                         </Link>
 
                         <button
                             onClick={logout}
-                            className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            className="rounded-md p-1 text-surface-400 hover:bg-red-50 hover:text-red-600 transition-colors duration-100"
                             title="Sair"
                         >
-                            <LogOut className="h-4 w-4" />
+                            <LogOut className="h-3.5 w-3.5" />
                         </button>
                     </div>
                 </header>
 
                 {/* Content */}
-                <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+                <main className="flex-1 overflow-y-auto p-4 lg:p-5">
                     {children}
                 </main>
             </div>

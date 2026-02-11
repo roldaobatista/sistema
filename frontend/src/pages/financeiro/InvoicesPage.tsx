@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Plus, Search, X, Eye, Trash2, Edit } from 'lucide-react'
+import { FileText, Plus, Search, Eye, Trash2, Send, CheckCircle, XCircle } from 'lucide-react'
 import api from '@/lib/api'
 import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
+    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
 const statusMap: Record<string, { label: string; variant: string }> = {
     draft: { label: 'Rascunho', variant: 'default' },
@@ -17,7 +21,7 @@ interface Invoice {
     id: number
     invoice_number: string
     customer?: { id: number; name: string }
-    work_order?: { id: number; number: string }
+    work_order?: { id: number; number: string; os_number?: string | null; business_number?: string | null }
     type: string
     status: string
     total: number
@@ -60,10 +64,29 @@ export function InvoicesPage() {
         onSuccess: () => qc.invalidateQueries({ queryKey: ['invoices'] }),
     })
 
+    const statusMut = useMutation({
+        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/invoices/${id}`, { status }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['invoices'] }),
+    })
+
     function closeModal() {
         setShowModal(false)
         setForm({ customer_id: '', work_order_id: '', type: 'nf_servico', notes: '' })
     }
+
+    const { data: custsRes } = useQuery({
+        queryKey: ['customers-select'],
+        queryFn: () => api.get('/customers', { params: { per_page: 100 } }),
+        enabled: showModal,
+    })
+    const customers: { id: number; name: string }[] = custsRes?.data?.data ?? []
+
+    const { data: wosRes } = useQuery({
+        queryKey: ['work-orders-invoice'],
+        queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
+        enabled: showModal,
+    })
+    const workOrders: { id: number; number: string; os_number?: string; business_number?: string }[] = wosRes?.data?.data ?? []
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -71,9 +94,9 @@ export function InvoicesPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-surface-900">Faturamento / NF</h1>
+                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Faturamento / NF</h1>
                 <button
                     onClick={() => setShowModal(true)}
                     className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-brand-700 transition-colors"
@@ -91,13 +114,13 @@ export function InvoicesPage() {
                         placeholder="Buscar por nº ou cliente..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
+                        className="w-full rounded-lg border border-default bg-surface-0 pl-10 pr-4 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
                     />
                 </div>
                 <select
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
-                    className="rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm shadow-sm"
+                    className="rounded-lg border border-default bg-surface-0 px-3 py-2.5 text-sm shadow-sm"
                 >
                     <option value="">Todos os status</option>
                     {Object.entries(statusMap).map(([k, v]) => (
@@ -107,22 +130,22 @@ export function InvoicesPage() {
             </div>
 
             {/* Table */}
-            <div className="rounded-xl border border-surface-200 bg-white shadow-card overflow-hidden">
+            <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead className="bg-surface-50 text-surface-600">
                             <tr>
-                                <th className="px-4 py-3 text-left font-medium">Nº NF</th>
-                                <th className="px-4 py-3 text-left font-medium">Cliente</th>
-                                <th className="px-4 py-3 text-left font-medium">OS</th>
-                                <th className="px-4 py-3 text-left font-medium">Tipo</th>
-                                <th className="px-4 py-3 text-left font-medium">Status</th>
-                                <th className="px-4 py-3 text-right font-medium">Total</th>
-                                <th className="px-4 py-3 text-left font-medium">Emissão</th>
-                                <th className="px-4 py-3 text-center font-medium">Ações</th>
+                                <th className="px-3.5 py-2.5 text-left font-medium">Nº NF</th>
+                                <th className="px-3.5 py-2.5 text-left font-medium">Cliente</th>
+                                <th className="px-3.5 py-2.5 text-left font-medium">OS</th>
+                                <th className="px-3.5 py-2.5 text-left font-medium">Tipo</th>
+                                <th className="px-3.5 py-2.5 text-left font-medium">Status</th>
+                                <th className="px-3.5 py-2.5 text-right font-medium">Total</th>
+                                <th className="px-3.5 py-2.5 text-left font-medium">Emissão</th>
+                                <th className="px-3.5 py-2.5 text-center font-medium">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-surface-100">
+                        <tbody className="divide-y divide-subtle">
                             {isLoading ? (
                                 <tr><td colSpan={8} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>
                             ) : invoices.length === 0 ? (
@@ -131,10 +154,10 @@ export function InvoicesPage() {
                                     Nenhuma fatura encontrada
                                 </td></tr>
                             ) : invoices.map(inv => (
-                                <tr key={inv.id} className="hover:bg-surface-50 transition-colors">
+                                <tr key={inv.id} className="hover:bg-surface-50 transition-colors duration-100">
                                     <td className="px-4 py-3 font-bold text-brand-600">{inv.invoice_number}</td>
                                     <td className="px-4 py-3 text-surface-700">{inv.customer?.name ?? '—'}</td>
-                                    <td className="px-4 py-3 text-surface-500">{inv.work_order?.number ?? '—'}</td>
+                                    <td className="px-4 py-3 text-surface-500">{woIdentifier(inv.work_order)}</td>
                                     <td className="px-4 py-3">
                                         <span className="text-xs font-medium text-surface-600 uppercase">{inv.type?.replace('_', ' ')}</span>
                                     </td>
@@ -143,7 +166,7 @@ export function InvoicesPage() {
                                             {statusMap[inv.status]?.label ?? inv.status}
                                         </Badge>
                                     </td>
-                                    <td className="px-4 py-3 text-right font-semibold text-surface-900">
+                                    <td className="px-3.5 py-2.5 text-right font-semibold text-surface-900">
                                         {fmtBRL(parseFloat(String(inv.total ?? 0)))}
                                     </td>
                                     <td className="px-4 py-3 text-surface-500">
@@ -158,6 +181,33 @@ export function InvoicesPage() {
                                             >
                                                 <Eye size={16} />
                                             </button>
+                                            {inv.status === 'draft' && (
+                                                <button
+                                                    onClick={() => { if (confirm('Emitir esta fatura?')) statusMut.mutate({ id: inv.id, status: 'issued' }) }}
+                                                    className="rounded p-1.5 text-surface-400 hover:bg-blue-50 hover:text-blue-600"
+                                                    title="Emitir"
+                                                >
+                                                    <Send size={16} />
+                                                </button>
+                                            )}
+                                            {inv.status === 'issued' && (
+                                                <button
+                                                    onClick={() => { if (confirm('Marcar como paga?')) statusMut.mutate({ id: inv.id, status: 'paid' }) }}
+                                                    className="rounded p-1.5 text-surface-400 hover:bg-emerald-50 hover:text-emerald-600"
+                                                    title="Marcar como paga"
+                                                >
+                                                    <CheckCircle size={16} />
+                                                </button>
+                                            )}
+                                            {inv.status !== 'cancelled' && inv.status !== 'paid' && (
+                                                <button
+                                                    onClick={() => { if (confirm('Cancelar esta fatura?')) statusMut.mutate({ id: inv.id, status: 'cancelled' }) }}
+                                                    className="rounded p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600"
+                                                    title="Cancelar"
+                                                >
+                                                    <XCircle size={16} />
+                                                </button>
+                                            )}
                                             {inv.status === 'draft' && (
                                                 <button
                                                     onClick={() => { if (confirm('Excluir esta fatura?')) deleteMut.mutate(inv.id) }}
@@ -177,122 +227,100 @@ export function InvoicesPage() {
             </div>
 
             {/* Detail Modal */}
-            {detailInvoice && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-surface-900">Fatura {detailInvoice.invoice_number}</h2>
-                            <button onClick={() => setDetailInvoice(null)} className="rounded-lg p-1.5 hover:bg-surface-100">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between"><span className="text-surface-500">Cliente:</span><span className="font-medium">{detailInvoice.customer?.name ?? '—'}</span></div>
-                            <div className="flex justify-between"><span className="text-surface-500">OS:</span><span className="font-medium">{detailInvoice.work_order?.number ?? '—'}</span></div>
-                            <div className="flex justify-between"><span className="text-surface-500">Tipo:</span><span className="font-medium uppercase">{detailInvoice.type?.replace('_', ' ')}</span></div>
-                            <div className="flex justify-between"><span className="text-surface-500">Status:</span><Badge variant={(statusMap[detailInvoice.status]?.variant ?? 'default') as any}>{statusMap[detailInvoice.status]?.label ?? detailInvoice.status}</Badge></div>
-                            <div className="flex justify-between"><span className="text-surface-500">Total:</span><span className="font-bold text-lg">{fmtBRL(parseFloat(String(detailInvoice.total ?? 0)))}</span></div>
-                            {detailInvoice.notes && (
-                                <div><span className="text-surface-500">Observações:</span><p className="mt-1 text-surface-700">{detailInvoice.notes}</p></div>
-                            )}
-                            {detailInvoice.items && detailInvoice.items.length > 0 && (
-                                <div>
-                                    <span className="text-surface-500 font-medium">Itens:</span>
-                                    <div className="mt-2 rounded-lg border border-surface-200 overflow-hidden">
-                                        <table className="w-full text-xs">
-                                            <thead className="bg-surface-50"><tr>
-                                                <th className="px-3 py-2 text-left">Descrição</th>
-                                                <th className="px-3 py-2 text-right">Qtd</th>
-                                                <th className="px-3 py-2 text-right">Unit</th>
-                                                <th className="px-3 py-2 text-right">Total</th>
-                                            </tr></thead>
-                                            <tbody className="divide-y divide-surface-100">
-                                                {detailInvoice.items.map((it: any, idx: number) => (
-                                                    <tr key={idx}>
-                                                        <td className="px-3 py-2">{it.description}</td>
-                                                        <td className="px-3 py-2 text-right">{it.quantity}</td>
-                                                        <td className="px-3 py-2 text-right">{fmtBRL(it.unit_price)}</td>
-                                                        <td className="px-3 py-2 text-right font-medium">{fmtBRL(it.total)}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+            <Modal open={!!detailInvoice} onOpenChange={() => setDetailInvoice(null)} title={`Fatura ${detailInvoice?.invoice_number ?? ''}`} size="lg">
+                {detailInvoice && (
+                    <div className="space-y-3 text-sm">
+                        <div className="flex justify-between"><span className="text-surface-500">Cliente:</span><span className="font-medium">{detailInvoice.customer?.name ?? '—'}</span></div>
+                        <div className="flex justify-between"><span className="text-surface-500">OS:</span><span className="font-medium">{woIdentifier(detailInvoice.work_order)}</span></div>
+                        <div className="flex justify-between"><span className="text-surface-500">Tipo:</span><span className="font-medium uppercase">{detailInvoice.type?.replace('_', ' ')}</span></div>
+                        <div className="flex justify-between"><span className="text-surface-500">Status:</span><Badge variant={(statusMap[detailInvoice.status]?.variant ?? 'default') as any}>{statusMap[detailInvoice.status]?.label ?? detailInvoice.status}</Badge></div>
+                        <div className="flex justify-between"><span className="text-surface-500">Total:</span><span className="font-bold text-lg">{fmtBRL(parseFloat(String(detailInvoice.total ?? 0)))}</span></div>
+                        {detailInvoice.notes && (
+                            <div><span className="text-surface-500">Observações:</span><p className="mt-1 text-surface-700">{detailInvoice.notes}</p></div>
+                        )}
+                        {detailInvoice.items && detailInvoice.items.length > 0 && (
+                            <div>
+                                <span className="text-surface-500 font-medium">Itens:</span>
+                                <div className="mt-2 rounded-lg border border-surface-200 overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-surface-50"><tr>
+                                            <th className="px-3 py-2 text-left">Descrição</th>
+                                            <th className="px-3 py-2 text-right">Qtd</th>
+                                            <th className="px-3 py-2 text-right">Unit</th>
+                                            <th className="px-3 py-2 text-right">Total</th>
+                                        </tr></thead>
+                                        <tbody className="divide-y divide-subtle">
+                                            {detailInvoice.items.map((it: any, idx: number) => (
+                                                <tr key={idx}>
+                                                    <td className="px-3 py-2">{it.description}</td>
+                                                    <td className="px-3 py-2 text-right">{it.quantity}</td>
+                                                    <td className="px-3 py-2 text-right">{fmtBRL(it.unit_price)}</td>
+                                                    <td className="px-3 py-2 text-right font-medium">{fmtBRL(it.total)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
-                </div>
-            )}
+                )}
+            </Modal>
 
             {/* Create Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-surface-900">Nova Fatura</h2>
-                            <button onClick={closeModal} className="rounded-lg p-1.5 hover:bg-surface-100">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-surface-700 mb-1">ID do Cliente</label>
-                                <input
-                                    type="number"
-                                    required
-                                    value={form.customer_id}
-                                    onChange={e => setForm(p => ({ ...p, customer_id: e.target.value }))}
-                                    className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-surface-700 mb-1">ID da OS (opcional)</label>
-                                <input
-                                    type="number"
-                                    value={form.work_order_id}
-                                    onChange={e => setForm(p => ({ ...p, work_order_id: e.target.value }))}
-                                    className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
-                                    placeholder="Copiar itens da OS automaticamente"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-surface-700 mb-1">Tipo</label>
-                                <select
-                                    value={form.type}
-                                    onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
-                                    className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm"
-                                >
-                                    <option value="nf_servico">NF Serviço</option>
-                                    <option value="nf_produto">NF Produto</option>
-                                    <option value="recibo">Recibo</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-surface-700 mb-1">Observações</label>
-                                <textarea
-                                    value={form.notes}
-                                    onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                                    className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
-                                    rows={3}
-                                />
-                            </div>
-                            <div className="flex gap-3 justify-end pt-2">
-                                <button type="button" onClick={closeModal} className="rounded-lg border border-surface-200 px-4 py-2.5 text-sm hover:bg-surface-50">
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={createMut.isPending}
-                                    className="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-brand-700 disabled:opacity-50"
-                                >
-                                    {createMut.isPending ? 'Criando...' : 'Criar Fatura'}
-                                </button>
-                            </div>
-                        </form>
+            <Modal open={showModal} onOpenChange={closeModal} title="Nova Fatura">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-[13px] font-medium text-surface-700 mb-1">Cliente *</label>
+                        <select
+                            required
+                            value={form.customer_id}
+                            onChange={e => setForm(p => ({ ...p, customer_id: e.target.value }))}
+                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
+                        >
+                            <option value="">Selecione o cliente</option>
+                            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
                     </div>
-                </div>
-            )}
+                    <div>
+                        <label className="block text-[13px] font-medium text-surface-700 mb-1">OS (opcional)</label>
+                        <select
+                            value={form.work_order_id}
+                            onChange={e => setForm(p => ({ ...p, work_order_id: e.target.value }))}
+                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
+                        >
+                            <option value="">Nenhuma OS vinculada</option>
+                            {workOrders.map(wo => <option key={wo.id} value={wo.id}>{wo.business_number ?? wo.os_number ?? wo.number}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[13px] font-medium text-surface-700 mb-1">Tipo</label>
+                        <select
+                            value={form.type}
+                            onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
+                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm"
+                        >
+                            <option value="nf_servico">NF Serviço</option>
+                            <option value="nf_produto">NF Produto</option>
+                            <option value="recibo">Recibo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[13px] font-medium text-surface-700 mb-1">Observações</label>
+                        <textarea
+                            value={form.notes}
+                            onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none"
+                            rows={3}
+                        />
+                    </div>
+                    <div className="flex gap-3 justify-end border-t pt-4">
+                        <Button variant="outline" type="button" onClick={closeModal}>Cancelar</Button>
+                        <Button type="submit" loading={createMut.isPending}>Criar Fatura</Button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     )
 }
+

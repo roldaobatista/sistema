@@ -1,35 +1,66 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    Calendar, Plus, Clock, User, MapPin, FileText,
-    ChevronLeft, ChevronRight, Pencil, Trash2,
+    Plus, User,
+    ChevronLeft, ChevronRight, Trash2,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 
-const statusConfig: Record<string, { label: string; variant: any }> = {
+const statusConfig: Record<string, { label: string; variant: 'default' | 'brand' | 'success' | 'danger' | 'warning' | 'info' }> = {
     scheduled: { label: 'Agendado', variant: 'info' },
     confirmed: { label: 'Confirmado', variant: 'brand' },
     completed: { label: 'Concluído', variant: 'success' },
     cancelled: { label: 'Cancelado', variant: 'danger' },
 }
 
+interface Technician {
+    id: number
+    name: string
+}
+
+interface Customer {
+    id: number
+    name: string
+}
+
+interface WorkOrder {
+    id: number
+    number: string
+    os_number?: string | null
+    business_number?: string | null
+    status: string
+    customer?: { name: string }
+}
+
 interface Schedule {
-    id: number; title: string; notes: string | null; status: string
-    scheduled_start: string; scheduled_end: string; address: string | null
-    technician: { id: number; name: string }
-    customer: { id: number; name: string } | null
-    work_order: { id: number; number: string; status: string } | null
+    id: number
+    title: string
+    notes: string | null
+    status: string
+    scheduled_start: string
+    scheduled_end: string
+    address: string | null
+    technician: Technician
+    customer: Customer | null
+    work_order: WorkOrder | null
 }
 
 const emptyForm = {
-    title: '', technician_id: '' as string | number, customer_id: '' as string | number,
-    work_order_id: '' as string | number, scheduled_start: '', scheduled_end: '',
-    notes: '', address: '', status: 'scheduled',
+    title: '',
+    technician_id: '' as string | number,
+    customer_id: '' as string | number,
+    work_order_id: '' as string | number,
+    scheduled_start: '',
+    scheduled_end: '',
+    notes: '',
+    address: '',
+    status: 'scheduled',
 }
 
 function getWeekDays(date: Date) {
@@ -45,6 +76,8 @@ function getWeekDays(date: Date) {
 const fmt = (d: Date) => d.toISOString().split('T')[0]
 const fmtShort = (d: Date) => d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
 const fmtTime = (s: string) => new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+const woIdentifier = (wo?: WorkOrder | null) =>
+    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
 export function SchedulesPage() {
     const qc = useQueryClient()
@@ -58,7 +91,7 @@ export function SchedulesPage() {
     const from = fmt(days[0])
     const to = fmt(days[6]) + 'T23:59:59'
 
-    const { data: res, isLoading } = useQuery({
+    const { data: res } = useQuery({
         queryKey: ['schedules', from, to, techFilter],
         queryFn: () => api.get('/schedules', {
             params: { from, to, technician_id: techFilter || undefined, per_page: 200 },
@@ -67,27 +100,36 @@ export function SchedulesPage() {
     const schedules: Schedule[] = res?.data?.data ?? []
 
     const { data: techsRes } = useQuery({
-        queryKey: ['technicians'],
-        queryFn: () => api.get('/users', { params: { per_page: 50 } }),
+        queryKey: ['technicians-schedules'],
+        queryFn: () => api.get('/users/by-role/tecnico'),
     })
-    const technicians = techsRes?.data?.data ?? []
+    const technicians: Technician[] = techsRes?.data ?? []
 
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-select'],
         queryFn: () => api.get('/work-orders', { params: { per_page: 50, status: 'open' } }),
         enabled: showForm,
     })
-    const workOrders = wosRes?.data?.data ?? []
+    const workOrders: WorkOrder[] = wosRes?.data?.data ?? []
+
+    const { data: customersRes } = useQuery({
+        queryKey: ['customers-select'],
+        queryFn: () => api.get('/customers', { params: { per_page: 50 } }),
+        enabled: showForm,
+    })
+    const customers: Customer[] = customersRes?.data?.data ?? []
 
     const saveMut = useMutation({
         mutationFn: (data: typeof form) =>
             editing ? api.put(`/schedules/${editing.id}`, data) : api.post('/schedules', data),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedules'] }); setShowForm(false) },
+        onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao salvar agendamento'),
     })
 
     const delMut = useMutation({
         mutationFn: (id: number) => api.delete(`/schedules/${id}`),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['schedules'] }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedules'] }); setShowForm(false) },
+        onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao excluir agendamento'),
     })
 
     const prevWeek = () => setWeekOf(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })
@@ -123,12 +165,12 @@ export function SchedulesPage() {
     const isToday = (d: Date) => fmt(d) === fmt(new Date())
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Agenda</h1>
-                    <p className="mt-1 text-sm text-surface-500">Agendamentos e visitas dos técnicos</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Agenda</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Agendamentos e visitas dos técnicos</p>
                 </div>
                 <Button icon={<Plus className="h-4 w-4" />} onClick={() => openCreate()}>Novo Agendamento</Button>
             </div>
@@ -146,18 +188,42 @@ export function SchedulesPage() {
                     </span>
                 </div>
                 <select value={techFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTechFilter(e.target.value)}
-                    className="rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                    className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                     <option value="">Todos os técnicos</option>
-                    {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    {technicians.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
             </div>
+
+            {/* Weekly summary */}
+            {schedules.length > 0 && (() => {
+                const groups = Object.entries(statusConfig).map(([k, v]) => ({
+                    key: k, label: v.label, count: schedules.filter(s => s.status === k).length,
+                })).filter(g => g.count > 0)
+                const statusColors: Record<string, string> = {
+                    scheduled: 'bg-sky-500', confirmed: 'bg-brand-500', completed: 'bg-emerald-500', cancelled: 'bg-red-400',
+                }
+                const total = schedules.length
+                return (
+                    <div className="flex items-center gap-4 rounded-xl border border-default bg-surface-0 px-5 py-3 shadow-card">
+                        <span className="text-xs font-medium text-surface-500">Semana:</span>
+                        <span className="text-[15px] font-semibold tabular-nums text-surface-900">{total} agendamentos</span>
+                        <div className="flex-1" />
+                        {groups.map(g => (
+                            <span key={g.key} className="flex items-center gap-1.5 text-xs text-surface-600">
+                                <span className={cn('h-2.5 w-2.5 rounded-full', statusColors[g.key] ?? 'bg-surface-300')} />
+                                {g.label}: <strong>{g.count}</strong>
+                            </span>
+                        ))}
+                    </div>
+                )
+            })()}
 
             {/* Week Grid */}
             <div className="grid grid-cols-7 gap-2">
                 {days.map(day => (
                     <div key={fmt(day)} className={cn(
                         'min-h-[200px] rounded-xl border p-2 transition-colors',
-                        isToday(day) ? 'border-brand-300 bg-brand-50/50' : 'border-surface-200 bg-white',
+                        isToday(day) ? 'border-brand-300 bg-brand-50/50' : 'border-default bg-surface-0',
                     )}>
                         <div className="flex items-center justify-between mb-2">
                             <span className={cn(
@@ -186,7 +252,7 @@ export function SchedulesPage() {
                                         <User className="h-2.5 w-2.5" />{s.technician.name}
                                     </p>
                                     {s.work_order && (
-                                        <p className="text-[10px] text-brand-500 truncate">{s.work_order.number}</p>
+                                        <p className="text-[10px] text-brand-500 truncate">{woIdentifier(s.work_order)}</p>
                                     )}
                                 </button>
                             ))}
@@ -201,19 +267,37 @@ export function SchedulesPage() {
                     <Input label="Título" value={form.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('title', e.target.value)} required placeholder="Ex: Manutenção preventiva" />
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico *</label>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico *</label>
                             <select value={form.technician_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('technician_id', e.target.value)} required
-                                className="w-full rounded-lg border border-surface-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecionar</option>
-                                {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                {technicians.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">OS Vinculada</label>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS Vinculada</label>
                             <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
-                                className="w-full rounded-lg border border-surface-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhuma</option>
-                                {workOrders.map((wo: any) => <option key={wo.id} value={wo.id}>{wo.number} — {wo.customer?.name}</option>)}
+                                {workOrders.map((wo) => <option key={wo.id} value={wo.id}>{wo.business_number ?? wo.os_number ?? wo.number} — {wo.customer?.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cliente</label>
+                            <select value={form.customer_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('customer_id', e.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                <option value="">Nenhum</option>
+                                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS Vinculada</label>
+                            <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                <option value="">Nenhuma</option>
+                                {workOrders.map((wo) => <option key={wo.id} value={wo.id}>{wo.business_number ?? wo.os_number ?? wo.number} — {wo.customer?.name}</option>)}
                             </select>
                         </div>
                     </div>
@@ -223,13 +307,13 @@ export function SchedulesPage() {
                     </div>
                     <Input label="Endereço" value={form.address} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address', e.target.value)} placeholder="Local da visita" />
                     <div>
-                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observações</label>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
                         <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
-                            className="w-full rounded-lg border border-surface-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
                     {editing && (
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Status</label>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Status</label>
                             <div className="flex gap-2">
                                 {Object.entries(statusConfig).map(([k, v]) => (
                                     <button key={k} type="button" onClick={() => set('status', k)}
@@ -241,7 +325,7 @@ export function SchedulesPage() {
                             </div>
                         </div>
                     )}
-                    <div className="flex items-center justify-between border-t border-surface-200 pt-4">
+                    <div className="flex items-center justify-between border-t border-subtle pt-4">
                         <div>
                             {editing && (
                                 <Button variant="ghost" size="sm" type="button"
@@ -260,3 +344,4 @@ export function SchedulesPage() {
         </div>
     )
 }
+
