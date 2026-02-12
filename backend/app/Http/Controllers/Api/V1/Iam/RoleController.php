@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1\Iam;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Traits\AppliesTenantScope;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
@@ -28,7 +30,7 @@ class RoleController extends Controller
 
         $tenantId = app('current_tenant_id');
 
-        $roles = Role::withCount('permissions')
+        $roles = Role::withCount(['permissions', 'users'])
             ->where(function ($query) use ($tenantId) {
                 $query->where('tenant_id', $tenantId)
                       ->orWhereNull('tenant_id');
@@ -55,27 +57,34 @@ class RoleController extends Controller
                     return $query->where('tenant_id', $tenantId);
                 }),
             ],
+            'description' => 'nullable|string|max:500',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
         ]);
 
-        $role = DB::transaction(function () use ($validated, $tenantId) {
-            $role = Role::create([
-                'name' => $validated['name'],
-                'guard_name' => self::GUARD_NAME,
-                'tenant_id' => $tenantId,
-            ]);
+        try {
+            $role = DB::transaction(function () use ($validated, $tenantId) {
+                $role = Role::create([
+                    'name' => $validated['name'],
+                    'description' => $validated['description'] ?? null,
+                    'guard_name' => self::GUARD_NAME,
+                    'tenant_id' => $tenantId,
+                ]);
 
-            if (!empty($validated['permissions'])) {
-                $role->syncPermissions($validated['permissions']);
-            }
+                if (!empty($validated['permissions'])) {
+                    $role->syncPermissions($validated['permissions']);
+                }
 
-            return $role;
-        });
+                return $role;
+            });
 
-        $role->load('permissions:id,name');
+            $role->load('permissions:id,name');
 
-        return response()->json($role, 201);
+            return response()->json($role, 201);
+        } catch (\Exception $e) {
+            Log::error('Role store failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao criar role.'], 500);
+        }
     }
 
     public function show(Request $request, Role $role): JsonResponse
@@ -122,17 +131,31 @@ class RoleController extends Controller
             return response()->json(['message' => 'Roles do sistema não podem ser renomeadas.'], 422);
         }
 
-        if (isset($validated['name'])) {
-            $role->update(['name' => $validated['name']]);
+        try {
+            DB::transaction(function () use ($role, $validated) {
+                $updateData = [];
+                if (isset($validated['name'])) {
+                    $updateData['name'] = $validated['name'];
+                }
+                if (array_key_exists('description', $validated)) {
+                    $updateData['description'] = $validated['description'];
+                }
+                if (!empty($updateData)) {
+                    $role->update($updateData);
+                }
+
+                if (isset($validated['permissions'])) {
+                    $role->syncPermissions($validated['permissions']);
+                }
+            });
+
+            $role->load('permissions:id,name');
+
+            return response()->json($role);
+        } catch (\Exception $e) {
+            Log::error('Role update failed', ['role_id' => $role->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar role.'], 500);
         }
-
-        if (isset($validated['permissions'])) {
-            $role->syncPermissions($validated['permissions']);
-        }
-
-        $role->load('permissions:id,name');
-
-        return response()->json($role);
     }
 
     public function destroy(Request $request, Role $role): JsonResponse
@@ -160,7 +183,77 @@ class RoleController extends Controller
             ], 422);
         }
 
-        $role->delete();
-        return response()->json(null, 204);
+        try {
+            $role->delete();
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            Log::error('Role delete failed', ['role_id' => $role->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir role.'], 500);
+        }
+    }
+
+    /**
+     * GET /roles/{role}/users — lista os usuários atribuídos a esta role.
+     */
+    public function users(Request $request, Role $role): JsonResponse
+    {
+        $this->applyTenantScope($request);
+
+        $tenantId = (int) app('current_tenant_id');
+        abort_unless($role->tenant_id === null || (int) $role->tenant_id === $tenantId, 404);
+
+        $users = User::whereHas('tenants', fn ($q) => $q->where('tenants.id', $tenantId))
+            ->whereHas('roles', fn ($q) => $q->where('roles.id', $role->id))
+            ->select('id', 'name', 'email', 'is_active')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['data' => $users]);
+    }
+
+    /**
+     * POST /roles/{role}/clone — clona uma role com todas as suas permissões.
+     */
+    public function clone(Request $request, Role $role): JsonResponse
+    {
+        $this->applyTenantScope($request);
+
+        $tenantId = (int) app('current_tenant_id');
+
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::notIn([self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN]),
+                Rule::unique('roles')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
+        ]);
+
+        try {
+            $newRole = DB::transaction(function () use ($role, $validated, $tenantId) {
+                $newRole = Role::create([
+                    'name' => $validated['name'],
+                    'guard_name' => self::GUARD_NAME,
+                    'tenant_id' => $tenantId,
+                ]);
+
+                $permissionIds = $role->permissions->pluck('id')->toArray();
+                if (!empty($permissionIds)) {
+                    $newRole->syncPermissions($permissionIds);
+                }
+
+                return $newRole;
+            });
+
+            $newRole->load('permissions:id,name');
+
+            return response()->json($newRole, 201);
+        } catch (\Exception $e) {
+            Log::error('Role clone failed', ['role_id' => $role->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao clonar role.'], 500);
+        }
     }
 }

@@ -42,6 +42,7 @@ import {
     Tag,
     Inbox,
     Zap,
+    Search,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -56,6 +57,14 @@ interface NavItem {
     path: string
     permission?: string
     children?: Omit<NavItem, 'children'>[]
+}
+
+function hasPermissionExpression(expression: string, userPerms: string[]): boolean {
+    return expression
+        .split('|')
+        .map(item => item.trim())
+        .filter(Boolean)
+        .some(permission => userPerms.includes(permission))
 }
 
 const navigation: NavItem[] = [
@@ -126,8 +135,8 @@ const navigation: NavItem[] = [
         path: '/tecnicos',
         permission: 'technicians.schedule.view',
         children: [
-            { label: 'Agenda', icon: Calendar, path: '/tecnicos/agenda' },
-            { label: 'Apontamentos', icon: Clock, path: '/tecnicos/apontamentos' },
+            { label: 'Agenda', icon: Calendar, path: '/tecnicos/agenda', permission: 'technicians.schedule.view' },
+            { label: 'Apontamentos', icon: Clock, path: '/tecnicos/apontamentos', permission: 'technicians.time_entry.view' },
             { label: 'Caixa', icon: DollarSign, path: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
         ],
     },
@@ -135,27 +144,40 @@ const navigation: NavItem[] = [
         label: 'Financeiro',
         icon: DollarSign,
         path: '/financeiro',
-        permission: 'finance.receivable.view',
+        permission: 'finance.receivable.view|finance.payable.view|finance.cashflow.view|finance.chart.view|commissions.rule.view|expenses.expense.view',
         children: [
-            { label: 'Contas a Receber', icon: ArrowDownToLine, path: '/financeiro/receber' },
+            { label: 'Contas a Receber', icon: ArrowDownToLine, path: '/financeiro/receber', permission: 'finance.receivable.view' },
             { label: 'Contas a Pagar', icon: ArrowUpFromLine, path: '/financeiro/pagar', permission: 'finance.payable.view' },
-            { label: 'Pagamentos', icon: DollarSign, path: '/financeiro/pagamentos' },
+            { label: 'Pagamentos', icon: DollarSign, path: '/financeiro/pagamentos', permission: 'finance.receivable.view|finance.payable.view' },
             { label: 'Comissões', icon: Award, path: '/financeiro/comissoes', permission: 'commissions.rule.view' },
             { label: 'Dashboard Comissões', icon: BarChart3, path: '/financeiro/comissoes/dashboard', permission: 'commissions.rule.view' },
             { label: 'Despesas', icon: Receipt, path: '/financeiro/despesas', permission: 'expenses.expense.view' },
-            { label: 'Formas de Pagamento', icon: CreditCard, path: '/financeiro/formas-pagamento', permission: 'platform.settings.manage' },
-            { label: 'Fluxo de Caixa', icon: TrendingUp, path: '/financeiro/fluxo-caixa', permission: 'finance.receivable.view' },
+            { label: 'Formas de Pagamento', icon: CreditCard, path: '/financeiro/formas-pagamento', permission: 'finance.payable.view' },
+            { label: 'Fluxo de Caixa', icon: TrendingUp, path: '/financeiro/fluxo-caixa', permission: 'finance.cashflow.view' },
             { label: 'Faturamento', icon: FileText, path: '/financeiro/faturamento', permission: 'finance.receivable.view' },
             { label: 'Conciliação Bancária', icon: ArrowLeftRight, path: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
-            { label: 'Plano de Contas', icon: FileText, path: '/financeiro/plano-contas', permission: 'finance.receivable.view' },
+            { label: 'Plano de Contas', icon: FileText, path: '/financeiro/plano-contas', permission: 'finance.chart.view' },
             { label: 'Categorias', icon: Tag, path: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
         ],
     },
     { label: 'Relatórios', icon: BarChart3, path: '/relatorios', permission: 'reports.os_report.view' },
-    { label: 'Notificações', icon: Bell, path: '/notificacoes' },
+    { label: 'Notificações', icon: Bell, path: '/notificacoes', permission: 'notifications.notification.view' },
     { label: 'Importação', icon: Upload, path: '/importacao', permission: 'import.data.view' },
     { label: 'Equipamentos', icon: Scale, path: '/equipamentos', permission: 'equipments.equipment.view' },
     { label: 'Agenda Calibrações', icon: Calendar, path: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
+    {
+        label: 'Intel. INMETRO',
+        icon: Search,
+        path: '/inmetro',
+        permission: 'inmetro.intelligence.view',
+        children: [
+            { label: 'Dashboard', icon: BarChart3, path: '/inmetro' },
+            { label: 'Leads', icon: Users, path: '/inmetro/leads' },
+            { label: 'Instrumentos', icon: Scale, path: '/inmetro/instrumentos' },
+            { label: 'Importação', icon: Upload, path: '/inmetro/importacao' },
+            { label: 'Concorrentes', icon: Warehouse, path: '/inmetro/concorrentes' },
+        ],
+    },
     {
         label: 'Estoque',
         icon: Warehouse,
@@ -192,25 +214,38 @@ const navigation: NavItem[] = [
 
 function filterNavByPermission(items: NavItem[], userPerms: string[], isSuperAdmin: boolean): NavItem[] {
     if (isSuperAdmin) return items
-    return items
-        .filter(item => !item.permission || userPerms.includes(item.permission))
-        .map(item => {
-            if (item.children) {
-                return {
-                    ...item,
-                    children: item.children.filter(
-                        child => !child.permission || userPerms.includes(child.permission)
-                    ),
-                }
-            }
-            return item
+
+    const filtered: NavItem[] = []
+
+    for (const item of items) {
+        const canAccessItem = !item.permission || hasPermissionExpression(item.permission, userPerms)
+
+        if (!item.children) {
+            if (canAccessItem) filtered.push(item)
+            continue
+        }
+
+        const allowedChildren = item.children.filter(
+            child => !child.permission || hasPermissionExpression(child.permission, userPerms)
+        )
+
+        if (!canAccessItem && allowedChildren.length === 0) {
+            continue
+        }
+
+        filtered.push({
+            ...item,
+            path: canAccessItem ? item.path : allowedChildren[0].path,
+            children: allowedChildren,
         })
-        .filter(item => !item.children || item.children.length > 0)
+    }
+
+    return filtered
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const location = useLocation()
-    const { user, logout, hasRole } = useAuthStore()
+    const { user, logout, hasRole, hasPermission } = useAuthStore()
     const { sidebarCollapsed, toggleSidebar, sidebarMobileOpen, toggleMobileSidebar } = useUIStore()
     const { isInstallable, isOnline, install } = usePWA()
     const { currentTenant, tenants, switchTenant, isSwitching } = useTenantHook()
@@ -220,6 +255,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         user?.permissions ?? [],
         hasRole('super_admin')
     )
+    const canViewNotifications = hasRole('super_admin') || hasPermission('notifications.notification.view')
 
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
         () => {
@@ -419,7 +455,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         )}
 
                         {/* Notifications */}
-                        <NotificationPanel />
+                        {canViewNotifications ? <NotificationPanel /> : null}
 
                         {/* User */}
                         <Link to="/perfil" className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-surface-50 transition-colors duration-100">

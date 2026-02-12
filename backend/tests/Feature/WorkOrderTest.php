@@ -388,4 +388,141 @@ class WorkOrderTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('total', 1);
     }
+
+    // ── Business Rules ──
+
+    public function test_cannot_delete_completed_work_order(): void
+    {
+        $wo = WorkOrder::factory()->completed()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+        ]);
+
+        $response = $this->deleteJson("/api/v1/work-orders/{$wo->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Não é possível excluir OS concluída, entregue ou faturada');
+
+        $this->assertDatabaseHas('work_orders', ['id' => $wo->id]);
+    }
+
+    public function test_rejects_invalid_status_transition(): void
+    {
+        $wo = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+            'status' => WorkOrder::STATUS_OPEN,
+        ]);
+
+        // open → delivered is not allowed
+        $response = $this->postJson("/api/v1/work-orders/{$wo->id}/status", [
+            'status' => WorkOrder::STATUS_DELIVERED,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonStructure(['message', 'allowed']);
+
+        $this->assertDatabaseHas('work_orders', ['id' => $wo->id, 'status' => WorkOrder::STATUS_OPEN]);
+    }
+
+    // ── New Endpoints ──
+
+    public function test_duplicate_work_order(): void
+    {
+        $wo = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+        ]);
+
+        WorkOrderItem::create([
+            'work_order_id' => $wo->id,
+            'tenant_id' => $this->tenant->id,
+            'type' => 'service',
+            'description' => 'Test Service',
+            'quantity' => 2,
+            'unit_price' => '100.00',
+            'discount' => '0.00',
+            'total' => '200.00',
+        ]);
+
+        $response = $this->postJson("/api/v1/work-orders/{$wo->id}/duplicate");
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.status', WorkOrder::STATUS_OPEN);
+
+        $newId = $response->json('data.id');
+        $this->assertNotEquals($wo->id, $newId);
+        $this->assertDatabaseCount('work_orders', 2);
+    }
+
+    public function test_reopen_cancelled_work_order(): void
+    {
+        $wo = WorkOrder::factory()->cancelled()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+        ]);
+
+        $response = $this->postJson("/api/v1/work-orders/{$wo->id}/reopen");
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('work_orders', [
+            'id' => $wo->id,
+            'status' => WorkOrder::STATUS_OPEN,
+        ]);
+    }
+
+    public function test_reopen_non_cancelled_returns_422(): void
+    {
+        $wo = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+            'status' => WorkOrder::STATUS_OPEN,
+        ]);
+
+        $response = $this->postJson("/api/v1/work-orders/{$wo->id}/reopen");
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Apenas OS canceladas podem ser reabertas');
+    }
+
+    public function test_export_csv(): void
+    {
+        WorkOrder::factory()->count(3)->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+        ]);
+
+        $response = $this->get('/api/v1/work-orders-export');
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_dashboard_stats(): void
+    {
+        WorkOrder::factory()->count(2)->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+        ]);
+
+        $response = $this->getJson('/api/v1/work-orders-dashboard-stats');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'status_counts',
+                'avg_completion_hours',
+                'month_revenue',
+                'sla_compliance',
+                'total_orders',
+                'top_customers',
+            ]);
+    }
 }

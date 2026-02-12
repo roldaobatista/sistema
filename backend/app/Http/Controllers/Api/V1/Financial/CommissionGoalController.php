@@ -8,6 +8,7 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class CommissionGoalController extends Controller
@@ -75,21 +76,26 @@ class CommissionGoalController extends Controller
             return $this->error('Já existe uma meta para este usuário e período', 422);
         }
 
-        $id = DB::transaction(function () use ($tenantId, $validated) {
-            return DB::table('commission_goals')->insertGetId([
-                'tenant_id' => $tenantId,
-                'user_id' => $validated['user_id'],
-                'period' => $validated['period'],
-                'target_amount' => $validated['target_amount'],
-                'bonus_rules' => json_encode($validated['bonus_rules'] ?? []),
-                'achieved_amount' => 0,
-                'status' => self::STATUS_ACTIVE,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        });
+        try {
+            $id = DB::transaction(function () use ($tenantId, $validated) {
+                return DB::table('commission_goals')->insertGetId([
+                    'tenant_id' => $tenantId,
+                    'user_id' => $validated['user_id'],
+                    'period' => $validated['period'],
+                    'target_amount' => $validated['target_amount'],
+                    'bonus_rules' => json_encode($validated['bonus_rules'] ?? []),
+                    'achieved_amount' => 0,
+                    'status' => self::STATUS_ACTIVE,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            });
 
-        return $this->success(['id' => $id], 'Meta criada', 201);
+            return $this->success(['id' => $id], 'Meta criada', 201);
+        } catch (\Exception $e) {
+            Log::error('Falha ao criar meta de comissão', ['error' => $e->getMessage()]);
+            return $this->error('Erro interno ao criar meta', 500);
+        }
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -131,43 +137,55 @@ class CommissionGoalController extends Controller
         $goal = DB::table('commission_goals')->where('id', $id)->where('tenant_id', $tid)->first();
         if (!$goal) return $this->error('Meta não encontrada', 404);
 
-        $driver = DB::getDriverName();
-        $periodFilter = $driver === 'sqlite'
-            ? "strftime('%Y-%m', created_at) = ?"
-            : "DATE_FORMAT(created_at, '%Y-%m') = ?";
+        try {
+            $driver = DB::getDriverName();
+            $periodFilter = $driver === 'sqlite'
+                ? "strftime('%Y-%m', created_at) = ?"
+                : "DATE_FORMAT(created_at, '%Y-%m') = ?";
 
-        $achieved = DB::table('commission_events')
-            ->where('tenant_id', $tid)
-            ->where('user_id', $goal->user_id)
-            ->whereIn('status', [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])
-            ->whereRaw($periodFilter, [$goal->period])
-            ->sum('commission_amount');
+            $achieved = DB::table('commission_events')
+                ->where('tenant_id', $tid)
+                ->where('user_id', $goal->user_id)
+                ->whereIn('status', [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])
+                ->whereRaw($periodFilter, [$goal->period])
+                ->sum('commission_amount');
 
-        DB::table('commission_goals')->where('id', $id)->update([
-            'achieved_amount' => $achieved,
-            'updated_at' => now(),
-        ]);
+            DB::table('commission_goals')->where('id', $id)->update([
+                'achieved_amount' => $achieved,
+                'updated_at' => now(),
+            ]);
 
-        $pct = $goal->target_amount > 0 ? round(($achieved / $goal->target_amount) * 100, 1) : 0;
+            $pct = bccomp((string) $goal->target_amount, '0', 2) > 0
+                ? (float) bcmul(bcdiv((string) $achieved, (string) $goal->target_amount, 4), '100', 1)
+                : 0;
 
-        return $this->success([
-            'achieved_amount' => (float) $achieved,
-            'target_amount' => (float) $goal->target_amount,
-            'achievement_pct' => $pct,
-        ]);
+            return $this->success([
+                'achieved_amount' => (float) $achieved,
+                'target_amount' => (float) $goal->target_amount,
+                'achievement_pct' => $pct,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Falha ao recalcular meta de comissão', ['error' => $e->getMessage(), 'goal_id' => $id]);
+            return $this->error('Erro ao recalcular meta', 500);
+        }
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $deleted = DB::table('commission_goals')
-            ->where('id', $id)
-            ->where('tenant_id', $this->tenantId())
-            ->delete();
+        try {
+            $deleted = DB::table('commission_goals')
+                ->where('id', $id)
+                ->where('tenant_id', $this->tenantId())
+                ->delete();
 
-        if (!$deleted) {
-            return $this->error('Meta não encontrada', 404);
+            if (!$deleted) {
+                return $this->error('Meta não encontrada', 404);
+            }
+
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            Log::error('Falha ao excluir meta de comissão', ['error' => $e->getMessage(), 'goal_id' => $id]);
+            return $this->error('Erro interno ao excluir meta', 500);
         }
-
-        return response()->json(null, 204);
     }
 }

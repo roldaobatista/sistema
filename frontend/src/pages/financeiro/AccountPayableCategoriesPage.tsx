@@ -1,7 +1,12 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Tag, Trash2, Edit, Palette } from 'lucide-react'
+﻿import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Edit, Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import api from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 
 interface Category {
     id: number
@@ -11,135 +16,243 @@ interface Category {
     is_active: boolean
 }
 
+interface ApiErrorLike {
+    response?: {
+        status?: number
+        data?: {
+            message?: string
+            errors?: Record<string, string[]>
+        }
+    }
+}
+
 const presetColors = [
     '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
     '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6',
 ]
 
+const emptyForm = {
+    name: '',
+    color: '#3b82f6',
+    description: '',
+}
+
 export function AccountPayableCategoriesPage() {
     const qc = useQueryClient()
+    const { hasPermission, hasRole } = useAuthStore()
+
+    const isSuperAdmin = hasRole('super_admin')
+    const canCreate = isSuperAdmin || hasPermission('finance.payable.create')
+    const canUpdate = isSuperAdmin || hasPermission('finance.payable.update')
+    const canDelete = isSuperAdmin || hasPermission('finance.payable.delete')
+
     const [showForm, setShowForm] = useState(false)
     const [editing, setEditing] = useState<Category | null>(null)
-    const [name, setName] = useState('')
-    const [color, setColor] = useState('#3b82f6')
-    const [description, setDescription] = useState('')
+    const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
+    const [formErrors, setFormErrors] = useState<Record<string, string[]>>({})
+    const [form, setForm] = useState(emptyForm)
 
-    const { data: res, isLoading } = useQuery({
+    const categoriesQuery = useQuery({
         queryKey: ['ap-categories'],
-        queryFn: () => api.get('/account-payable-categories'),
+        queryFn: async () => {
+            const { data } = await api.get<Category[]>('/account-payable-categories')
+            return data
+        },
     })
-    const categories: Category[] = res?.data ?? []
+    const categories = categoriesQuery.data ?? []
 
     const saveMut = useMutation({
-        mutationFn: (payload: any) =>
-            editing
-                ? api.put(`/account-payable-categories/${editing.id}`, payload)
-                : api.post('/account-payable-categories', payload),
+        mutationFn: async () => {
+            const payload = {
+                name: form.name.trim(),
+                color: form.color,
+                description: form.description.trim() || null,
+            }
+
+            if (editing) {
+                await api.put(`/account-payable-categories/${editing.id}`, payload)
+                return
+            }
+
+            await api.post('/account-payable-categories', payload)
+        },
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['ap-categories'] })
             resetForm()
+            toast.success(editing ? 'Categoria atualizada com sucesso' : 'Categoria criada com sucesso')
+        },
+        onError: (error: unknown) => {
+            const status = (error as ApiErrorLike | undefined)?.response?.status
+            const payload = (error as ApiErrorLike | undefined)?.response?.data
+
+            if (status === 422 && payload?.errors) {
+                setFormErrors(payload.errors)
+                toast.error(payload.message ?? 'Verifique os campos obrigatorios')
+                return
+            }
+
+            if (status === 403) {
+                toast.error('Sem permissao para esta acao')
+                return
+            }
+
+            toast.error(payload?.message ?? 'Erro ao salvar categoria')
         },
     })
 
     const deleteMut = useMutation({
-        mutationFn: (id: number) => api.delete(`/account-payable-categories/${id}`),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['ap-categories'] }),
+        mutationFn: async (id: number) => {
+            await api.delete(`/account-payable-categories/${id}`)
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['ap-categories'] })
+            setDeleteTarget(null)
+            toast.success('Categoria excluida com sucesso')
+        },
+        onError: (error: unknown) => {
+            const status = (error as ApiErrorLike | undefined)?.response?.status
+            const message = (error as ApiErrorLike | undefined)?.response?.data?.message
+            if (status === 403) {
+                toast.error('Sem permissao para excluir categoria')
+                return
+            }
+            toast.error(message ?? 'Erro ao excluir categoria')
+        },
     })
 
     const resetForm = () => {
         setShowForm(false)
         setEditing(null)
-        setName('')
-        setColor('#3b82f6')
-        setDescription('')
+        setForm(emptyForm)
+        setFormErrors({})
     }
 
-    const openEdit = (c: Category) => {
-        setEditing(c)
-        setName(c.name)
-        setColor(c.color ?? '#3b82f6')
-        setDescription(c.description ?? '')
+    const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+        setForm((prev) => ({ ...prev, [key]: value }))
+        if (formErrors[key]) {
+            setFormErrors((prev) => {
+                const next = { ...prev }
+                delete next[key]
+                return next
+            })
+        }
+    }
+
+    const openCreate = () => {
+        if (!canCreate) {
+            toast.error('Sem permissao para criar categoria')
+            return
+        }
+        setEditing(null)
+        setForm(emptyForm)
+        setFormErrors({})
         setShowForm(true)
+    }
+
+    const openEdit = (category: Category) => {
+        if (!canUpdate) {
+            toast.error('Sem permissao para editar categoria')
+            return
+        }
+        setEditing(category)
+        setForm({
+            name: category.name,
+            color: category.color ?? '#3b82f6',
+            description: category.description ?? '',
+        })
+        setFormErrors({})
+        setShowForm(true)
+    }
+
+    const openDelete = (category: Category) => {
+        if (!canDelete) {
+            toast.error('Sem permissao para excluir categoria')
+            return
+        }
+        setDeleteTarget(category)
     }
 
     return (
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Categorias de Contas a Pagar</h1>
-                <button
-                    onClick={() => { resetForm(); setShowForm(true) }}
-                    className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
-                >
-                    <Plus className="h-4 w-4" /> Nova Categoria
-                </button>
+                {canCreate && (
+                    <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Categoria</Button>
+                )}
             </div>
 
-            {showForm && (
-                <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card space-y-4">
-                    <h2 className="font-semibold text-surface-900">{editing ? 'Editar' : 'Nova'} Categoria</h2>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[13px] font-medium text-surface-700 mb-1">Nome</label>
-                            <input value={name} onChange={e => setName(e.target.value)}
-                                className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-                        </div>
-                        <div>
-                            <label className="block text-[13px] font-medium text-surface-700 mb-1">Descrição</label>
-                            <input value={description} onChange={e => setDescription(e.target.value)}
-                                className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-[13px] font-medium text-surface-700 mb-2">Cor</label>
-                        <div className="flex gap-2">
-                            {presetColors.map(c => (
-                                <button key={c} onClick={() => setColor(c)}
-                                    className={`h-8 w-8 rounded-full border-2 transition-transform ${color === c ? 'border-surface-900 scale-110' : 'border-transparent'}`}
-                                    style={{ backgroundColor: c }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                    <div className="flex gap-3 justify-end">
-                        <button onClick={resetForm} className="px-4 py-2 text-[13px] text-surface-600 hover:text-surface-800">Cancelar</button>
-                        <button onClick={() => saveMut.mutate({ name, color, description: description || null })}
-                            disabled={!name.trim() || saveMut.isPending}
-                            className="px-4 py-2 text-sm font-medium rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">
-                            {saveMut.isPending ? 'Salvando...' : 'Salvar'}
-                        </button>
-                    </div>
+            {categoriesQuery.isLoading ? (
+                <div className="py-12 text-center text-[13px] text-surface-500">Carregando...</div>
+            ) : categoriesQuery.isError ? (
+                <div className="py-12 text-center text-[13px] text-red-600">
+                    Erro ao carregar categorias. <button className="underline" onClick={() => categoriesQuery.refetch()}>Tentar novamente</button>
                 </div>
-            )}
-
-            {isLoading ? (
-                <div className="text-center text-surface-400 py-12">Carregando...</div>
             ) : categories.length === 0 ? (
-                <div className="text-center text-surface-400 py-12">Nenhuma categoria cadastrada.</div>
+                <div className="py-12 text-center text-[13px] text-surface-500">Nenhuma categoria cadastrada.</div>
             ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {categories.map(c => (
-                        <div key={c.id} className="rounded-xl border border-default bg-surface-0 shadow-card p-4 flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: c.color ? `${c.color}20` : '#f1f5f9' }}>
-                                <Tag className="h-5 w-5" style={{ color: c.color ?? '#64748b' }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-surface-900">{c.name}</p>
-                                {c.description && <p className="text-xs text-surface-500 truncate">{c.description}</p>}
+                    {categories.map((category) => (
+                        <div key={category.id} className="flex items-center gap-3 rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                            <div className="h-10 w-10 shrink-0 rounded-lg" style={{ backgroundColor: category.color ?? '#e2e8f0' }} />
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-surface-900">{category.name}</p>
+                                {category.description && <p className="truncate text-xs text-surface-500">{category.description}</p>}
                             </div>
                             <div className="flex gap-1">
-                                <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-surface-100 text-surface-400 hover:text-brand-600">
-                                    <Edit className="h-3.5 w-3.5" />
-                                </button>
-                                <button onClick={() => { if (confirm('Excluir categoria?')) deleteMut.mutate(c.id) }}
-                                    className="p-1.5 rounded hover:bg-surface-100 text-surface-400 hover:text-red-500">
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </button>
+                                {canUpdate && (
+                                    <Button variant="ghost" size="sm" onClick={() => openEdit(category)}>
+                                        <Edit className="h-3.5 w-3.5 text-surface-500" />
+                                    </Button>
+                                )}
+                                {canDelete && (
+                                    <Button variant="ghost" size="sm" onClick={() => openDelete(category)}>
+                                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Categoria' : 'Nova Categoria'}>
+                <form onSubmit={(event) => { event.preventDefault(); saveMut.mutate() }} className="space-y-4">
+                    <Input label="Nome *" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} error={formErrors.name?.[0]} required />
+                    <Input label="Descricao" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} />
+
+                    <div>
+                        <label className="mb-2 block text-[13px] font-medium text-surface-700">Cor</label>
+                        <div className="flex flex-wrap gap-2">
+                            {presetColors.map((color) => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    onClick={() => set('color', color)}
+                                    className={`h-8 w-8 rounded-full border-2 transition-transform ${form.color === color ? 'scale-110 border-surface-900' : 'border-transparent'}`}
+                                    style={{ backgroundColor: color }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 border-t border-subtle pt-4">
+                        <Button variant="outline" type="button" onClick={resetForm}>Cancelar</Button>
+                        <Button type="submit" loading={saveMut.isPending} disabled={!form.name.trim()}>Salvar</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Categoria">
+                <div className="space-y-4">
+                    <p className="text-[13px] text-surface-600">Tem certeza que deseja excluir a categoria {deleteTarget?.name}?</p>
+                    <div className="flex justify-end gap-3 border-t border-subtle pt-4">
+                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+                        <Button variant="danger" loading={deleteMut.isPending} onClick={() => { if (deleteTarget) deleteMut.mutate(deleteTarget.id) }}>
+                            Excluir
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }

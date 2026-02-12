@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Plus, Trash2, Package, Briefcase, Users, Truck } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
@@ -82,10 +83,15 @@ export function WorkOrderCreatePage() {
         mutationFn: (data: any) => api.post('/work-orders', data),
         onSuccess: (res) => {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
+            toast.success('OS criada com sucesso!')
+            const warrantyWarning = res?.data?.warranty_warning
+            if (warrantyWarning) {
+                toast.warning(warrantyWarning, { duration: 8000 })
+            }
             const workOrderId = res?.data?.data?.id ?? res?.data?.id
             if (workOrderId) navigate(`/os/${workOrderId}`)
         },
-        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao criar OS'),
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar OS'),
     })
 
     const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>

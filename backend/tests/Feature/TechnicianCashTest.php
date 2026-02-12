@@ -160,6 +160,30 @@ class TechnicianCashTest extends TestCase
             ->assertJsonValidationErrors(['user_id']);
     }
 
+    public function test_credit_accepts_technician_linked_by_tenant_membership(): void
+    {
+        $otherTenant = Tenant::factory()->create();
+        $sharedTechnician = User::factory()->create([
+            'tenant_id' => $otherTenant->id,
+            'current_tenant_id' => $otherTenant->id,
+            'is_active' => true,
+        ]);
+        $sharedTechnician->tenants()->attach($this->tenant->id, ['is_default' => false]);
+
+        $response = $this->postJson('/api/v1/technician-cash/credit', [
+            'user_id' => $sharedTechnician->id,
+            'amount' => 120,
+            'description' => 'Credito tecnico compartilhado',
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('technician_cash_funds', [
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $sharedTechnician->id,
+            'balance' => '120.00',
+        ]);
+    }
+
     public function test_show_returns_fund_and_transactions(): void
     {
         $this->postJson('/api/v1/technician-cash/credit', [
@@ -186,6 +210,27 @@ class TechnicianCashTest extends TestCase
         $response = $this->getJson("/api/v1/technician-cash/{$foreignUser->id}");
 
         $response->assertStatus(404);
+    }
+
+    public function test_show_accepts_user_linked_by_tenant_membership(): void
+    {
+        $otherTenant = Tenant::factory()->create();
+        $sharedTechnician = User::factory()->create([
+            'tenant_id' => $otherTenant->id,
+            'current_tenant_id' => $otherTenant->id,
+            'is_active' => true,
+        ]);
+        $sharedTechnician->tenants()->attach($this->tenant->id, ['is_default' => false]);
+
+        $this->postJson('/api/v1/technician-cash/credit', [
+            'user_id' => $sharedTechnician->id,
+            'amount' => 90,
+            'description' => 'Seed para extrato compartilhado',
+        ])->assertStatus(201);
+
+        $response = $this->getJson("/api/v1/technician-cash/{$sharedTechnician->id}");
+        $response->assertOk()
+            ->assertJsonPath('fund.user_id', $sharedTechnician->id);
     }
 
     public function test_summary_returns_correct_totals(): void

@@ -65,11 +65,17 @@ export function CommissionDashboardPage() {
                     <div className="flex items-center gap-2 text-emerald-600"><TrendingUp className="h-5 w-5" /><span className="text-xs font-semibold uppercase tracking-wider">Pago (mês)</span></div>
                     <p className="mt-3 text-2xl font-bold text-emerald-600">{fmtBRL(overview.paid_this_month ?? 0)}</p>
                     <div className="mt-1 flex items-center gap-1 text-xs">
-                        {overview.variation_pct > 0
-                            ? <><ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" /><span className="text-emerald-600">+{overview.variation_pct}%</span></>
-                            : <><ArrowDownRight className="h-3.5 w-3.5 text-red-500" /><span className="text-red-600">{overview.variation_pct}%</span></>
-                        }
-                        <span className="text-surface-400">vs. mês anterior</span>
+                        {overview.variation_pct != null ? (
+                            <>
+                                {overview.variation_pct >= 0
+                                    ? <><ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" /><span className="text-emerald-600">+{overview.variation_pct}%</span></>
+                                    : <><ArrowDownRight className="h-3.5 w-3.5 text-red-500" /><span className="text-red-600">{overview.variation_pct}%</span></>
+                                }
+                                <span className="text-surface-400">vs. mês anterior</span>
+                            </>
+                        ) : (
+                            <span className="text-surface-400">Sem dados do mês anterior</span>
+                        )}
                     </div>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">

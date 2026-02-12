@@ -4,19 +4,33 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuditLogController extends Controller
 {
+    private function baseQuery()
+    {
+        $tenantId = app()->bound('current_tenant_id') ? (int) app('current_tenant_id') : null;
+
+        return AuditLog::with('user')
+            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+            ->where(function ($query) {
+                $query->whereNull('auditable_type')
+                    ->orWhereNotIn('auditable_type', [Tenant::class, User::class]);
+            })
+            ->orderByDesc('created_at');
+    }
+
     /**
      * GET /audit-logs — paginated list with advanced filters.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = AuditLog::with('user')
-            ->orderByDesc('created_at');
+        $query = $this->baseQuery();
 
         // Filters
         if ($request->filled('action')) {
@@ -87,7 +101,9 @@ class AuditLogController extends Controller
      */
     public function actions(): JsonResponse
     {
-        $actions = AuditLog::distinct('action')->pluck('action');
+        $actions = $this->baseQuery()
+            ->distinct('action')
+            ->pluck('action');
 
         return response()->json(['data' => $actions]);
     }
@@ -97,7 +113,8 @@ class AuditLogController extends Controller
      */
     public function entityTypes(): JsonResponse
     {
-        $types = AuditLog::distinct('auditable_type')
+        $types = $this->baseQuery()
+            ->distinct('auditable_type')
             ->pluck('auditable_type')
             ->filter()
             ->map(fn($t) => [
@@ -114,8 +131,7 @@ class AuditLogController extends Controller
      */
     public function export(Request $request): StreamedResponse
     {
-        $query = AuditLog::with('user')
-            ->orderByDesc('created_at');
+        $query = $this->baseQuery();
 
         if ($request->filled('action')) {
             $query->where('action', $request->input('action'));

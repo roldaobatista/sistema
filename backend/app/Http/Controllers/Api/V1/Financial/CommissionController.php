@@ -74,6 +74,15 @@ class CommissionController extends Controller
         return response()->json($query->orderBy('priority')->orderBy('name')->get());
     }
 
+    public function showRule(CommissionRule $commissionRule): JsonResponse
+    {
+        if ((int) $commissionRule->tenant_id !== $this->tenantId()) {
+            return response()->json(['message' => 'Registro não encontrado'], 404);
+        }
+
+        return response()->json($commissionRule->load('user:id,name'));
+    }
+
     public function storeRule(Request $request): JsonResponse
     {
         $tenantId = $this->tenantId();
@@ -92,12 +101,19 @@ class CommissionController extends Controller
             'active' => 'sometimes|boolean',
         ]);
 
-        $validated['tenant_id'] = $tenantId;
-        $validated['applies_to'] = $validated['applies_to'] ?? CommissionRule::APPLIES_ALL;
-        $validated['applies_to_role'] = $validated['applies_to_role'] ?? CommissionRule::ROLE_TECHNICIAN;
-        $validated['applies_when'] = $validated['applies_when'] ?? CommissionRule::WHEN_OS_COMPLETED;
-        $rule = CommissionRule::create($validated);
-        return response()->json($rule->load('user:id,name'), 201);
+        try {
+            $validated['tenant_id'] = $tenantId;
+            $validated['applies_to'] = $validated['applies_to'] ?? CommissionRule::APPLIES_ALL;
+            $validated['applies_to_role'] = $validated['applies_to_role'] ?? CommissionRule::ROLE_TECHNICIAN;
+            $validated['applies_when'] = $validated['applies_when'] ?? CommissionRule::WHEN_OS_COMPLETED;
+
+            $rule = DB::transaction(fn () => CommissionRule::create($validated));
+
+            return response()->json($rule->load('user:id,name'), 201);
+        } catch (\Exception $e) {
+            Log::error('Falha ao criar regra de comissão', ['error' => $e->getMessage()]);
+            return $this->error('Erro interno ao criar regra', 500);
+        }
     }
 
     public function updateRule(Request $request, CommissionRule $commissionRule): JsonResponse
@@ -118,8 +134,13 @@ class CommissionController extends Controller
             'active' => 'sometimes|boolean',
         ]);
 
-        $commissionRule->update($validated);
-        return response()->json($commissionRule->fresh()->load('user:id,name'));
+        try {
+            DB::transaction(fn () => $commissionRule->update($validated));
+            return response()->json($commissionRule->fresh()->load('user:id,name'));
+        } catch (\Exception $e) {
+            Log::error('Falha ao atualizar regra de comissão', ['error' => $e->getMessage(), 'rule_id' => $commissionRule->id]);
+            return $this->error('Erro interno ao atualizar regra', 500);
+        }
     }
 
     public function destroyRule(CommissionRule $commissionRule): JsonResponse
@@ -131,8 +152,13 @@ class CommissionController extends Controller
             return $this->error("Não é possível excluir: existem {$eventsCount} evento(s) vinculados a esta regra", 409);
         }
 
-        $commissionRule->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $commissionRule->delete());
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            Log::error('Falha ao excluir regra de comissão', ['error' => $e->getMessage(), 'rule_id' => $commissionRule->id]);
+            return $this->error('Erro interno ao excluir regra', 500);
+        }
     }
 
     /** Tipos de cálculo disponíveis */
@@ -239,14 +265,20 @@ class CommissionController extends Controller
             return response()->json(['message' => "Transição de status inválida: {$oldStatus} → {$newStatus}"], 422);
         }
 
-        $commissionEvent->update($validated);
+        try {
+            DB::transaction(function () use ($commissionEvent, $validated, $oldStatus, $newStatus) {
+                $commissionEvent->update($validated);
 
-        // Notify on approval or payment
-        if (in_array($newStatus, [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])) {
-            $this->notifyStatusChange($commissionEvent, $oldStatus, $newStatus);
+                if (in_array($newStatus, [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])) {
+                    $this->notifyStatusChange($commissionEvent, $oldStatus, $newStatus);
+                }
+            });
+
+            return response()->json($commissionEvent->fresh());
+        } catch (\Exception $e) {
+            Log::error('Falha ao atualizar status do evento de comissão', ['error' => $e->getMessage(), 'event_id' => $commissionEvent->id]);
+            return $this->error('Erro interno ao atualizar status', 500);
         }
-
-        return response()->json($commissionEvent->fresh());
     }
 
     /** Aprovação/Estorno em lote */
@@ -264,7 +296,6 @@ class CommissionController extends Controller
             ->whereIn('id', $validated['ids'])
             ->get();
 
-        // Validação de transições (mesma lógica do updateEventStatus)
         $validTransitions = [
             CommissionEvent::STATUS_PENDING => [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_REVERSED],
             CommissionEvent::STATUS_APPROVED => [CommissionEvent::STATUS_PAID, CommissionEvent::STATUS_REVERSED],
@@ -272,28 +303,36 @@ class CommissionController extends Controller
             CommissionEvent::STATUS_REVERSED => [CommissionEvent::STATUS_PENDING],
         ];
 
-        $updated = 0;
-        $skipped = 0;
-        foreach ($events as $event) {
-            if (!in_array($validated['status'], $validTransitions[$event->status] ?? [])) {
-                $skipped++;
-                continue;
+        try {
+            $updated = 0;
+            $skipped = 0;
+
+            DB::transaction(function () use ($events, $validated, $validTransitions, &$updated, &$skipped) {
+                foreach ($events as $event) {
+                    if (!in_array($validated['status'], $validTransitions[$event->status] ?? [])) {
+                        $skipped++;
+                        continue;
+                    }
+                    $oldStatus = $event->status;
+                    $event->update(['status' => $validated['status']]);
+                    $updated++;
+
+                    if (in_array($validated['status'], [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])) {
+                        $this->notifyStatusChange($event, $oldStatus, $validated['status']);
+                    }
+                }
+            });
+
+            $message = "{$updated} eventos atualizados";
+            if ($skipped > 0) {
+                $message .= ", {$skipped} ignorados (transição inválida)";
             }
-            $oldStatus = $event->status;
-            $event->update(['status' => $validated['status']]);
-            $updated++;
 
-            if (in_array($validated['status'], [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])) {
-                $this->notifyStatusChange($event, $oldStatus, $validated['status']);
-            }
+            return $this->success(['updated' => $updated, 'skipped' => $skipped], $message);
+        } catch (\Exception $e) {
+            Log::error('Falha no batch update de comissões', ['error' => $e->getMessage()]);
+            return $this->error('Erro interno ao atualizar eventos em lote', 500);
         }
-
-        $message = "{$updated} eventos atualizados";
-        if ($skipped > 0) {
-            $message .= ", {$skipped} ignorados (transição inválida)";
-        }
-
-        return $this->success(['updated' => $updated, 'skipped' => $skipped], $message);
     }
 
     // ── Splits ──
@@ -415,12 +454,7 @@ class CommissionController extends Controller
                 ]
             );
 
-            // Mark included events so they aren't counted in future closings
-            CommissionEvent::where('tenant_id', $tenantId)
-                ->where('user_id', $validated['user_id'])
-                ->where('status', CommissionEvent::STATUS_APPROVED)
-                ->whereIn('id', $events->pluck('id'))
-                ->update(['status' => CommissionEvent::STATUS_PAID]);
+            // Events stay APPROVED — they will be marked PAID only when paySettlement is called
 
             return $settlement;
         });
@@ -467,56 +501,103 @@ class CommissionController extends Controller
         return response()->json($commissionSettlement->fresh()->load('user:id,name'));
     }
 
-    // ── Export ──
-
-    public function exportEvents(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function reopenSettlement(CommissionSettlement $commissionSettlement): JsonResponse
     {
         $tenantId = $this->tenantId();
-        $osNumber = $this->osNumberFilter($request);
-        $query = CommissionEvent::where('tenant_id', $tenantId)
-            ->with(['user:id,name', 'workOrder:id,number,os_number', 'rule:id,name,calculation_type']);
+        if ((int) $commissionSettlement->tenant_id !== $tenantId) {
+            return response()->json(['message' => 'Registro não encontrado'], 404);
+        }
 
-        if ($userId = $request->get('user_id')) $query->where('user_id', $userId);
-        if ($status = $request->get('status')) $query->where('status', $status);
-        if ($period = $request->get('period')) $this->wherePeriod($query, 'created_at', $period);
-        $this->applyWorkOrderIdentifierFilter($query, $osNumber);
+        if ($commissionSettlement->status === CommissionSettlement::STATUS_PAID) {
+            return $this->error('Fechamento já foi pago e não pode ser reaberto', 422);
+        }
 
-        $events = $query->orderByDesc('created_at')->get();
+        if ($commissionSettlement->status !== CommissionSettlement::STATUS_CLOSED) {
+            return $this->error('Somente fechamentos com status fechado podem ser reabertos', 422);
+        }
 
-        return response()->streamDownload(function () use ($events) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['Nome', 'OS', 'Regra', 'Tipo Cálculo', 'Valor Base', 'Comissão', 'Status', 'Data']);
-            foreach ($events as $e) {
-                fputcsv($out, [
-                    $e->user?->name, $e->workOrder?->os_number ?? $e->workOrder?->number, $e->rule?->name,
-                    $e->rule?->calculation_type, $e->base_amount, $e->commission_amount,
-                    $e->status, $e->created_at?->format('Y-m-d'),
-                ]);
-            }
-            fclose($out);
-        }, 'comissoes_eventos_' . now()->format('Y-m-d') . '.csv', [
-            'Content-Type' => 'text/csv',
-        ]);
+        try {
+            DB::transaction(function () use ($commissionSettlement) {
+                $commissionSettlement->update(['status' => CommissionSettlement::STATUS_OPEN, 'paid_at' => null]);
+
+                $periodStart = \Illuminate\Support\Carbon::parse($commissionSettlement->period . '-01');
+                $periodEnd = $periodStart->copy()->addMonth();
+
+                CommissionEvent::where('tenant_id', $commissionSettlement->tenant_id)
+                    ->where('user_id', $commissionSettlement->user_id)
+                    ->where('status', CommissionEvent::STATUS_APPROVED)
+                    ->where('created_at', '>=', $periodStart)
+                    ->where('created_at', '<', $periodEnd)
+                    ->update(['status' => CommissionEvent::STATUS_PENDING]);
+            });
+        } catch (\Exception $e) {
+            Log::error('Falha ao reabrir fechamento', ['error' => $e->getMessage(), 'settlement_id' => $commissionSettlement->id]);
+            return $this->error('Erro interno ao reabrir fechamento', 500);
+        }
+
+        return response()->json($commissionSettlement->fresh()->load('user:id,name'));
     }
 
-    public function exportSettlements(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
-    {
-        $settlements = CommissionSettlement::where('tenant_id', $this->tenantId())
-            ->with('user:id,name')->orderByDesc('period')->get();
+    // ── Export ──
 
-        return response()->streamDownload(function () use ($settlements) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['Nome', 'Período', 'Qtd Eventos', 'Total', 'Status', 'Pago Em']);
-            foreach ($settlements as $s) {
-                fputcsv($out, [
-                    $s->user?->name, $s->period, $s->events_count,
-                    $s->total_amount, $s->status, $s->paid_at?->format('Y-m-d') ?? '',
-                ]);
-            }
-            fclose($out);
-        }, 'comissoes_fechamento_' . now()->format('Y-m-d') . '.csv', [
-            'Content-Type' => 'text/csv',
-        ]);
+    public function exportEvents(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+    {
+        try {
+            $tenantId = $this->tenantId();
+            $osNumber = $this->osNumberFilter($request);
+            $query = CommissionEvent::where('tenant_id', $tenantId)
+                ->with(['user:id,name', 'workOrder:id,number,os_number', 'rule:id,name,calculation_type']);
+
+            if ($userId = $request->get('user_id')) $query->where('user_id', $userId);
+            if ($status = $request->get('status')) $query->where('status', $status);
+            if ($period = $request->get('period')) $this->wherePeriod($query, 'created_at', $period);
+            $this->applyWorkOrderIdentifierFilter($query, $osNumber);
+
+            $events = $query->orderByDesc('created_at')->get();
+
+            return response()->streamDownload(function () use ($events) {
+                $out = fopen('php://output', 'w');
+                fputcsv($out, ['Nome', 'OS', 'Regra', 'Tipo Cálculo', 'Valor Base', 'Comissão', 'Status', 'Data']);
+                foreach ($events as $e) {
+                    fputcsv($out, [
+                        $e->user?->name, $e->workOrder?->os_number ?? $e->workOrder?->number, $e->rule?->name,
+                        $e->rule?->calculation_type, $e->base_amount, $e->commission_amount,
+                        $e->status, $e->created_at?->format('Y-m-d'),
+                    ]);
+                }
+                fclose($out);
+            }, 'comissoes_eventos_' . now()->format('Y-m-d') . '.csv', [
+                'Content-Type' => 'text/csv',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Falha ao exportar eventos de comissão', ['error' => $e->getMessage()]);
+            return $this->error('Erro ao exportar eventos', 500);
+        }
+    }
+
+    public function exportSettlements(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+    {
+        try {
+            $settlements = CommissionSettlement::where('tenant_id', $this->tenantId())
+                ->with('user:id,name')->orderByDesc('period')->get();
+
+            return response()->streamDownload(function () use ($settlements) {
+                $out = fopen('php://output', 'w');
+                fputcsv($out, ['Nome', 'Período', 'Qtd Eventos', 'Total', 'Status', 'Pago Em']);
+                foreach ($settlements as $s) {
+                    fputcsv($out, [
+                        $s->user?->name, $s->period, $s->events_count,
+                        $s->total_amount, $s->status, $s->paid_at?->format('Y-m-d') ?? '',
+                    ]);
+                }
+                fclose($out);
+            }, 'comissoes_fechamento_' . now()->format('Y-m-d') . '.csv', [
+                'Content-Type' => 'text/csv',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Falha ao exportar fechamentos de comissão', ['error' => $e->getMessage()]);
+            return $this->error('Erro ao exportar fechamentos', 500);
+        }
     }
 
     public function downloadStatement(Request $request): \Symfony\Component\HttpFoundation\Response

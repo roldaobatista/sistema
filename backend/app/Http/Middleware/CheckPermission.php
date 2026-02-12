@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -12,15 +13,15 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class CheckPermission
 {
-    /** Role que bypassa todas as permissões */
+    /** Role que bypassa todas as permissoes */
     private const ROLE_SUPER_ADMIN = 'super_admin';
 
-    public function handle(Request $request, Closure $next, string $permission): Response
+    public function handle(Request $request, Closure $next, string $permissionExpression): Response
     {
         $user = $request->user();
 
         if (!$user) {
-            return response()->json(['message' => 'Não autenticado.'], 401);
+            return response()->json(['message' => 'Nao autenticado.'], 401);
         }
 
         // super_admin bypasses all permission checks
@@ -28,9 +29,39 @@ class CheckPermission
             return $next($request);
         }
 
-        if (!$user->hasPermissionTo($permission)) {
+        $permissions = array_values(array_filter(array_map(
+            static fn (string $item) => trim($item),
+            explode('|', $permissionExpression)
+        )));
+
+        if (empty($permissions)) {
             return response()->json([
-                'message' => 'Acesso negado. Permissão necessária: ' . $permission,
+                'message' => 'Acesso negado. Permissao nao configurada.',
+            ], 403);
+        }
+
+        $hasAnyPermission = false;
+        $hasKnownPermission = false;
+
+        foreach ($permissions as $permission) {
+            try {
+                if ($user->hasPermissionTo($permission)) {
+                    $hasAnyPermission = true;
+                    break;
+                }
+                $hasKnownPermission = true;
+            } catch (PermissionDoesNotExist) {
+                continue;
+            }
+        }
+
+        if (!$hasAnyPermission) {
+            $message = $hasKnownPermission
+                ? 'Acesso negado. Permissao necessaria: ' . implode(' | ', $permissions)
+                : 'Acesso negado. Permissao nao configurada: ' . implode(' | ', $permissions);
+
+            return response()->json([
+                'message' => $message,
             ], 403);
         }
 

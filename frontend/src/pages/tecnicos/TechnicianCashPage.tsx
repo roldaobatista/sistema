@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Technician {
     id: number
@@ -71,6 +72,8 @@ const woIdentifier = (wo?: WorkOrder | null) =>
 
 export function TechnicianCashPage() {
     const qc = useQueryClient()
+    const { hasPermission, hasRole } = useAuthStore()
+    const canManageCash = hasRole('super_admin') || hasPermission('technicians.cashbox.manage')
     const [selectedTech, setSelectedTech] = useState<number | null>(null)
     const [showCreditModal, setShowCreditModal] = useState(false)
     const [showDebitModal, setShowDebitModal] = useState(false)
@@ -123,7 +126,7 @@ export function TechnicianCashPage() {
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-cash'],
-        queryFn: () => api.get('/users/by-role/tecnico'),
+        queryFn: () => api.get('/technicians/options'),
     })
     const allTechnicians: Technician[] = techsRes?.data ?? []
 
@@ -142,11 +145,13 @@ export function TechnicianCashPage() {
         parseFloat(String(v)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
     const openCreditModal = (userId?: number) => {
+        if (!canManageCash) return
         setTxForm({ user_id: userId ? String(userId) : '', amount: '', description: '' })
         setShowCreditModal(true)
     }
 
     const openDebitModal = (userId?: number) => {
+        if (!canManageCash) return
         setTxForm({ user_id: userId ? String(userId) : '', amount: '', description: '' })
         setShowDebitModal(true)
     }
@@ -158,10 +163,12 @@ export function TechnicianCashPage() {
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Caixa do Técnico</h1>
                     <p className="text-[13px] text-surface-500">Controle de verba rotativa por técnico</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => openCreditModal()} icon={<Plus className="h-4 w-4" />}>Crédito</Button>
-                    <Button variant="outline" onClick={() => openDebitModal()} icon={<Minus className="h-4 w-4" />}>Débito</Button>
-                </div>
+                {canManageCash && (
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => openCreditModal()} icon={<Plus className="h-4 w-4" />}>Crédito</Button>
+                        <Button variant="outline" onClick={() => openDebitModal()} icon={<Minus className="h-4 w-4" />}>Débito</Button>
+                    </div>
+                )}
             </div>
 
             {/* Stats */}
@@ -235,13 +242,17 @@ export function TechnicianCashPage() {
                                         onChange={e => { setFilters(p => ({ ...p, date_to: e.target.value })); setPage(1); }}
                                     />
                                 </div>
-                                <div className="h-4 w-px bg-default mx-1" />
-                                <div className="flex gap-1.5">
-                                    <Button variant="ghost" size="sm" onClick={() => openCreditModal(selectedTech)}
-                                        icon={<ArrowUpCircle className="h-3.5 w-3.5 text-emerald-600" />}>Crédito</Button>
-                                    <Button variant="ghost" size="sm" onClick={() => openDebitModal(selectedTech)}
-                                        icon={<ArrowDownCircle className="h-3.5 w-3.5 text-red-600" />}>Débito</Button>
-                                </div>
+                                {canManageCash && (
+                                    <>
+                                        <div className="h-4 w-px bg-default mx-1" />
+                                        <div className="flex gap-1.5">
+                                            <Button variant="ghost" size="sm" onClick={() => openCreditModal(selectedTech)}
+                                                icon={<ArrowUpCircle className="h-3.5 w-3.5 text-emerald-600" />}>Crédito</Button>
+                                            <Button variant="ghost" size="sm" onClick={() => openDebitModal(selectedTech)}
+                                                icon={<ArrowDownCircle className="h-3.5 w-3.5 text-red-600" />}>Débito</Button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -309,7 +320,7 @@ export function TechnicianCashPage() {
             </div>
 
             {/* Credit Modal */}
-            <Modal open={showCreditModal} onOpenChange={setShowCreditModal} title="Adicionar Crédito" size="sm">
+            <Modal open={showCreditModal && canManageCash} onOpenChange={setShowCreditModal} title="Adicionar Crédito" size="sm">
                 <form onSubmit={e => { e.preventDefault(); creditMut.mutate({ ...txForm, user_id: Number(txForm.user_id), amount: Number(txForm.amount) }) }} className="space-y-4">
                     {!txForm.user_id && (
                         <div>
@@ -333,7 +344,7 @@ export function TechnicianCashPage() {
             </Modal>
 
             {/* Debit Modal */}
-            <Modal open={showDebitModal} onOpenChange={setShowDebitModal} title="Lançar Débito" size="sm">
+            <Modal open={showDebitModal && canManageCash} onOpenChange={setShowDebitModal} title="Lançar Débito" size="sm">
                 <form onSubmit={e => { e.preventDefault(); debitMut.mutate({ ...txForm, user_id: Number(txForm.user_id), amount: Number(txForm.amount) }) }} className="space-y-4">
                     {!txForm.user_id && (
                         <div>
@@ -358,3 +369,4 @@ export function TechnicianCashPage() {
         </div>
     )
 }
+

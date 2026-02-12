@@ -275,4 +275,36 @@ class CustomerTest extends TestCase
         $response->assertOk()
             ->assertJsonFragment(['key' => 'Duplicado LTDA']);
     }
+
+    public function test_merge_uses_current_tenant_context_when_user_switches_company(): void
+    {
+        $switchedTenant = Tenant::factory()->create();
+
+        $this->user->update([
+            'current_tenant_id' => $switchedTenant->id,
+        ]);
+
+        app()->instance('current_tenant_id', $switchedTenant->id);
+
+        $primary = Customer::factory()->create([
+            'tenant_id' => $switchedTenant->id,
+            'name' => 'Cliente Principal',
+        ]);
+
+        $duplicate = Customer::factory()->create([
+            'tenant_id' => $switchedTenant->id,
+            'name' => 'Cliente Duplicado',
+        ]);
+
+        $response = $this->postJson('/api/v1/customers/merge', [
+            'primary_id' => $primary->id,
+            'duplicate_ids' => [$duplicate->id],
+        ]);
+
+        $response->assertOk();
+
+        $this->assertSoftDeleted('customers', [
+            'id' => $duplicate->id,
+        ]);
+    }
 }

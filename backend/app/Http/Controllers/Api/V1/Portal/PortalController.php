@@ -3,21 +3,35 @@
 namespace App\Http\Controllers\Api\V1\Portal;
 
 use App\Events\QuoteApproved;
+use App\Events\ServiceCallCreated;
 use App\Http\Controllers\Controller;
 use App\Models\AccountReceivable;
+use App\Models\ClientPortalUser;
 use App\Models\Quote;
 use App\Models\ServiceCall;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PortalController extends Controller
 {
+    private function portalUser(Request $request): ClientPortalUser
+    {
+        $user = $request->user();
+
+        if (!$user instanceof ClientPortalUser) {
+            abort(403, 'Acesso restrito ao portal do cliente.');
+        }
+
+        return $user;
+    }
+
     /**
      * Listar Ordens de Servico do cliente logado.
      */
     public function workOrders(Request $request)
     {
-        $user = $request->user();
+        $user = $this->portalUser($request);
 
         $workOrders = \App\Models\WorkOrder::where('tenant_id', $user->tenant_id)
             ->where('customer_id', $user->customer_id)
@@ -33,7 +47,7 @@ class PortalController extends Controller
      */
     public function quotes(Request $request)
     {
-        $user = $request->user();
+        $user = $this->portalUser($request);
 
         $quotes = \App\Models\Quote::where('tenant_id', $user->tenant_id)
             ->where('customer_id', $user->customer_id)
@@ -54,7 +68,7 @@ class PortalController extends Controller
      */
     public function updateQuoteStatus(Request $request, int $id)
     {
-        $user = $request->user();
+        $user = $this->portalUser($request);
 
         $quote = \App\Models\Quote::where('tenant_id', $user->tenant_id)
             ->where('customer_id', $user->customer_id)
@@ -103,7 +117,7 @@ class PortalController extends Controller
      */
     public function financials(Request $request)
     {
-        $user = $request->user();
+        $user = $this->portalUser($request);
 
         $financials = \App\Models\AccountReceivable::where('tenant_id', $user->tenant_id)
             ->where('customer_id', $user->customer_id)
@@ -119,7 +133,7 @@ class PortalController extends Controller
      */
     public function newServiceCall(Request $request)
     {
-        $user = $request->user();
+        $user = $this->portalUser($request);
 
         $validated = $request->validate([
             'equipment_id' => 'nullable|exists:equipments,id',
@@ -140,23 +154,35 @@ class PortalController extends Controller
         }
 
         try {
-            $serviceCall = ServiceCall::create([
-                'tenant_id' => $user->tenant_id,
-                'call_number' => ServiceCall::nextNumber($user->tenant_id),
-                'customer_id' => $user->customer_id,
-                'created_by' => $user->id,
-                'status' => ServiceCall::STATUS_OPEN,
-                'priority' => $validated['priority'] ?? 'normal',
-                'observations' => $validated['description'],
-            ]);
+            $fallbackUserId = User::query()
+                ->where('tenant_id', $user->tenant_id)
+                ->orderBy('id')
+                ->value('id');
 
-            if (!empty($validated['equipment_id'])) {
-                $serviceCall->equipments()->attach($validated['equipment_id'], [
+            $serviceCall = DB::transaction(function () use ($user, $validated, $fallbackUserId) {
+                $serviceCall = ServiceCall::create([
+                    'tenant_id' => $user->tenant_id,
+                    'call_number' => ServiceCall::nextNumber($user->tenant_id),
+                    'customer_id' => $user->customer_id,
+                    'created_by' => $fallbackUserId,
+                    'status' => ServiceCall::STATUS_OPEN,
+                    'priority' => $validated['priority'] ?? 'normal',
                     'observations' => $validated['description'],
                 ]);
-            }
 
-            event(new \App\Events\ServiceCallCreated($serviceCall, $user));
+                if (!empty($validated['equipment_id'])) {
+                    $serviceCall->equipments()->attach($validated['equipment_id'], [
+                        'observations' => $validated['description'],
+                    ]);
+                }
+
+                return $serviceCall;
+            });
+
+            if ($fallbackUserId) {
+                $eventUser = User::query()->find($fallbackUserId);
+                event(new ServiceCallCreated($serviceCall, $eventUser));
+            }
 
             return response()->json($serviceCall->load('equipments:id,brand,model,serial_number'), 201);
         } catch (\Throwable $e) {

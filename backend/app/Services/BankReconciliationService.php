@@ -10,15 +10,15 @@ use Illuminate\Support\Facades\DB;
 
 class BankReconciliationService
 {
-    public function importOfx(int $tenantId, string $filePath, int $userId): BankStatement
+    public function importOfx(int $tenantId, string $filePath, int $userId, ?string $originalFilename = null): BankStatement
     {
         $content = file_get_contents($filePath);
         $entries = $this->parseOfx($content);
 
-        return DB::transaction(function () use ($tenantId, $filePath, $userId, $entries) {
+        return DB::transaction(function () use ($tenantId, $filePath, $userId, $entries, $originalFilename) {
             $statement = BankStatement::create([
                 'tenant_id' => $tenantId,
-                'filename' => basename($filePath),
+                'filename' => $originalFilename ?: basename($filePath),
                 'imported_at' => now(),
                 'created_by' => $userId,
                 'total_entries' => count($entries),
@@ -90,7 +90,11 @@ class BankReconciliationService
             }
         }
 
-        $statement->increment('matched_entries', $matched);
+        $statement->update([
+            'matched_entries' => $statement->entries()
+                ->where('status', BankStatementEntry::STATUS_MATCHED)
+                ->count(),
+        ]);
 
         return $matched;
     }
@@ -111,7 +115,7 @@ class BankReconciliationService
             if (preg_match('/<DTPOSTED>(\d{8})/', $trn, $m)) {
                 $date = substr($m[1], 0, 4) . '-' . substr($m[1], 4, 2) . '-' . substr($m[1], 6, 2);
             }
-            if (preg_match('/<MEMO>(.+)/', $trn, $m)) {
+            if (preg_match('/<MEMO>([^<\r\n]+)/', $trn, $m)) {
                 $description = trim($m[1]);
             }
 

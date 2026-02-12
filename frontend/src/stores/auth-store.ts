@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+﻿import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import api from '@/lib/api'
 
@@ -10,6 +10,9 @@ interface User {
     tenant_id: number | null
     permissions: string[]
     roles: string[]
+    all_permissions?: string[]
+    all_roles?: string[]
+    tenant?: Tenant | null
 }
 
 interface Tenant {
@@ -36,6 +39,24 @@ interface AuthState {
     setUser: (user: User) => void
 }
 
+function normalizeUser(rawUser: any): User {
+    const permissions = Array.isArray(rawUser?.permissions)
+        ? rawUser.permissions
+        : (Array.isArray(rawUser?.all_permissions) ? rawUser.all_permissions : [])
+
+    const roles = Array.isArray(rawUser?.roles)
+        ? rawUser.roles
+        : (Array.isArray(rawUser?.all_roles) ? rawUser.all_roles : [])
+
+    return {
+        ...rawUser,
+        permissions,
+        roles,
+        all_permissions: permissions,
+        all_roles: roles,
+    }
+}
+
 export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
@@ -49,13 +70,15 @@ export const useAuthStore = create<AuthState>()(
                 set({ isLoading: true })
                 try {
                     const { data } = await api.post('/login', { email, password })
+                    const user = normalizeUser(data.user)
+
                     localStorage.setItem('auth_token', data.token)
                     set({
-                        user: data.user,
+                        user,
                         token: data.token,
                         isAuthenticated: true,
                     })
-                    // Busca dados completos do usuário
+
                     await get().fetchMe()
                 } catch (err: any) {
                     set({ isAuthenticated: false, user: null, token: null })
@@ -87,30 +110,46 @@ export const useAuthStore = create<AuthState>()(
             fetchMe: async () => {
                 try {
                     const { data } = await api.get('/me')
+                    const normalizedUser = normalizeUser(data.user)
                     const userData = {
-                        ...data.user,
-                        tenant_id: data.user.tenant?.id ?? data.user.tenant_id ?? null,
+                        ...normalizedUser,
+                        tenant_id: normalizedUser.tenant?.id ?? normalizedUser.tenant_id ?? null,
                     }
+
                     set({
                         user: userData,
-                        tenant: data.user.tenant ?? null,
+                        tenant: normalizedUser.tenant ?? null,
                         isAuthenticated: true,
                     })
                 } catch (err) {
-                    console.error('Erro ao buscar dados do usuário:', err)
+                    console.error('Erro ao buscar dados do usuario:', err)
                     set({ isAuthenticated: false, user: null, tenant: null })
                 }
             },
 
             hasPermission: (permission) => {
-                return get().user?.permissions.includes(permission) ?? false
+                const user = get().user
+                if (!user) return false
+
+                const permissions = Array.isArray(user.permissions)
+                    ? user.permissions
+                    : (Array.isArray(user.all_permissions) ? user.all_permissions : [])
+
+                return permissions.includes(permission)
             },
 
             hasRole: (role) => {
-                return get().user?.roles.includes(role) ?? false
+                const user = get().user
+                if (!user) return false
+
+                const roles = Array.isArray(user.roles)
+                    ? user.roles
+                    : (Array.isArray(user.all_roles) ? user.all_roles : [])
+
+                return roles.includes(role)
             },
 
-            setUser: (user) => set({ user }),
+            setUser: (user) => set({ user: normalizeUser(user) }),
         }),
         {
             name: 'auth-store',

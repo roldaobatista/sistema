@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Shield, Trash2 } from 'lucide-react'
+import { Plus, Shield, Trash2, Copy, ShieldOff, Pencil } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -23,7 +23,9 @@ interface PermissionGroup {
 interface Role {
     id: number
     name: string
+    description: string | null
     permissions_count: number
+    users_count: number
     permissions?: Permission[]
 }
 
@@ -36,8 +38,12 @@ export function RolesPage() {
     const [showForm, setShowForm] = useState(false)
     const [editingRole, setEditingRole] = useState<Role | null>(null)
     const [roleName, setRoleName] = useState('')
+    const [roleDescription, setRoleDescription] = useState('')
     const [selectedPermissions, setSelectedPermissions] = useState<number[]>([])
     const [loadingEditId, setLoadingEditId] = useState<number | null>(null)
+    const [deleteConfirmRole, setDeleteConfirmRole] = useState<Role | null>(null)
+    const [cloneRole, setCloneRole] = useState<Role | null>(null)
+    const [cloneName, setCloneName] = useState('')
 
     const { data: rolesData, isLoading, isError, refetch } = useQuery({
         queryKey: ['roles'],
@@ -52,7 +58,7 @@ export function RolesPage() {
     const permissionGroups: PermissionGroup[] = Array.isArray(permGroupsData) ? permGroupsData : permGroupsData?.data ?? []
 
     const saveMutation = useMutation({
-        mutationFn: (data: { name: string; permissions: number[] }) =>
+        mutationFn: (data: { name: string; description: string; permissions: number[] }) =>
             editingRole
                 ? api.put(`/roles/${editingRole.id}`, data)
                 : api.post('/roles', data),
@@ -70,6 +76,7 @@ export function RolesPage() {
         mutationFn: (id: number) => api.delete(`/roles/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] })
+            setDeleteConfirmRole(null)
             toast.success('Role excluída com sucesso!')
         },
         onError: (err: any) => {
@@ -77,9 +84,30 @@ export function RolesPage() {
         },
     })
 
+    const cloneMutation = useMutation({
+        mutationFn: ({ roleId, name }: { roleId: number; name: string }) =>
+            api.post(`/roles/${roleId}/clone`, { name }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['roles'] })
+            setCloneRole(null)
+            setCloneName('')
+            toast.success('Role clonada com sucesso!')
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message ?? 'Erro ao clonar role.')
+        },
+    })
+
+    const handleCloneSubmit = () => {
+        if (cloneRole && cloneName.trim()) {
+            cloneMutation.mutate({ roleId: cloneRole.id, name: cloneName.trim() })
+        }
+    }
+
     const openCreate = () => {
         setEditingRole(null)
         setRoleName('')
+        setRoleDescription('')
         setSelectedPermissions([])
         setShowForm(true)
     }
@@ -90,6 +118,7 @@ export function RolesPage() {
             const { data } = await api.get(`/roles/${role.id}`)
             setEditingRole(data)
             setRoleName(data.name)
+            setRoleDescription(data.description ?? '')
             setSelectedPermissions(data.permissions?.map((p: any) => p.id) ?? [])
             setShowForm(true)
         } catch (err: any) {
@@ -118,7 +147,7 @@ export function RolesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Roles</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Gerencie os perfis de acesso</p>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Gerencie os perfis de acesso{!isLoading && roles.length > 0 ? ` · ${roles.length} perfis` : ''}</p>
                 </div>
                 {canCreate && (
                     <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Role</Button>
@@ -128,11 +157,36 @@ export function RolesPage() {
             {/* Roles Grid */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
-                    <p className="col-span-full text-center text-[13px] text-surface-500 py-12">Carregando...</p>
+                    <>{[...Array(6)].map((_, i) => (
+                        <div key={`sk-${i}`} className="rounded-xl border border-default bg-surface-0 p-5 animate-pulse">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-surface-200" />
+                                <div className="space-y-1.5">
+                                    <div className="h-4 w-24 rounded bg-surface-200" />
+                                    <div className="h-3 w-32 rounded bg-surface-200" />
+                                </div>
+                            </div>
+                            <div className="mt-4 flex items-center gap-2">
+                                <div className="h-8 flex-1 rounded bg-surface-200" />
+                                <div className="h-8 w-8 rounded bg-surface-200" />
+                            </div>
+                        </div>
+                    ))}</>
                 ) : isError ? (
                     <div className="col-span-full text-center py-12">
                         <p className="text-sm text-red-500">Erro ao carregar roles.</p>
                         <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Tentar novamente</Button>
+                    </div>
+                ) : roles.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                        <div className="rounded-full bg-surface-100 p-4 mb-4">
+                            <ShieldOff className="h-8 w-8 text-surface-400" />
+                        </div>
+                        <p className="text-sm font-medium text-surface-700">Nenhuma role encontrada</p>
+                        <p className="mt-1 text-xs text-surface-500">Crie a primeira role para definir níveis de acesso.</p>
+                        {canCreate && (
+                            <Button icon={<Plus className="h-4 w-4" />} className="mt-4" onClick={openCreate}>Nova Role</Button>
+                        )}
                     </div>
                 ) : roles.map((role) => (
                     <div
@@ -148,12 +202,28 @@ export function RolesPage() {
                                     <h3 className="font-semibold text-surface-900">{role.name}</h3>
                                     <div className="mt-1 flex gap-3 text-xs text-surface-500">
                                         <span>{role.permissions_count} permissões</span>
+                                        <span>·</span>
+                                        <span>{role.users_count ?? 0} usuário(s)</span>
                                     </div>
+                                    {role.description && (
+                                        <p className="mt-1.5 text-xs text-surface-500 line-clamp-2">{role.description}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-4 flex items-center gap-2">
+                            {canCreate && !['super_admin', 'admin'].includes(role.name) && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => { setCloneRole(role); setCloneName(`${role.name} (cópia)`) }}
+                                    loading={cloneMutation.isPending}
+                                    title="Clonar role"
+                                >
+                                    <Copy className="h-4 w-4 text-surface-500" />
+                                </Button>
+                            )}
                             {canUpdate && (
                                 <Button
                                     variant="outline"
@@ -170,7 +240,7 @@ export function RolesPage() {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => { if (confirm('Excluir esta role?')) deleteMutation.mutate(role.id) }}
+                                    onClick={() => setDeleteConfirmRole(role)}
                                 >
                                     <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
@@ -188,7 +258,7 @@ export function RolesPage() {
                 size="xl"
             >
                 <form
-                    onSubmit={(e) => { e.preventDefault(); saveMutation.mutate({ name: roleName, permissions: selectedPermissions }) }}
+                    onSubmit={(e) => { e.preventDefault(); saveMutation.mutate({ name: roleName, description: roleDescription, permissions: selectedPermissions }) }}
                     className="space-y-4"
                 >
                     <Input
@@ -199,6 +269,17 @@ export function RolesPage() {
                         required
                         disabled={!!editingRole?.name && ['super_admin', 'admin'].includes(editingRole.name)}
                     />
+                    <div>
+                        <label className="mb-1 block text-[13px] font-medium text-surface-700">Descrição</label>
+                        <textarea
+                            value={roleDescription}
+                            onChange={(e) => setRoleDescription(e.target.value)}
+                            placeholder="Descrição do propósito desta role"
+                            maxLength={500}
+                            rows={2}
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 resize-none"
+                        />
+                    </div>
 
                     {/* Permission groups */}
                     <div>
@@ -250,6 +331,67 @@ export function RolesPage() {
                         </Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Modal Delete Confirmation */}
+            <Modal
+                open={!!deleteConfirmRole}
+                onOpenChange={(open) => { if (!open) setDeleteConfirmRole(null) }}
+                title="Confirmar Exclusão"
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">
+                        Tem certeza que deseja excluir a role <strong>{deleteConfirmRole?.name}</strong>?
+                        Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
+                        <Button variant="outline" onClick={() => setDeleteConfirmRole(null)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="danger"
+                            loading={deleteMutation.isPending}
+                            onClick={() => deleteConfirmRole && deleteMutation.mutate(deleteConfirmRole.id)}
+                        >
+                            Excluir
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal Clone */}
+            <Modal
+                open={!!cloneRole}
+                onOpenChange={(open) => { if (!open) { setCloneRole(null); setCloneName('') } }}
+                title={`Clonar Role: ${cloneRole?.name ?? ''}`}
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-surface-700 mb-1">
+                            Nome da nova role <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                            value={cloneName}
+                            onChange={(e) => setCloneName(e.target.value)}
+                            placeholder="Ex: Gerente (cópia)"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
+                        <Button variant="outline" onClick={() => { setCloneRole(null); setCloneName('') }}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            loading={cloneMutation.isPending}
+                            disabled={!cloneName.trim()}
+                            onClick={handleCloneSubmit}
+                        >
+                            Clonar
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     )

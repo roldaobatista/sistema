@@ -25,6 +25,8 @@ use App\Models\User;
 use App\Models\WorkOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ReportTest extends TestCase
@@ -53,6 +55,31 @@ class ReportTest extends TestCase
         $this->customer = Customer::factory()->create([
             'tenant_id' => $this->tenant->id,
         ]);
+
+        setPermissionsTeamId($this->tenant->id);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $exportPermissions = [
+            'reports.os_report.export',
+            'reports.productivity_report.export',
+            'reports.financial_report.export',
+            'reports.commission_report.export',
+            'reports.margin_report.export',
+            'reports.quotes_report.export',
+            'reports.service_calls_report.export',
+            'reports.technician_cash_report.export',
+            'reports.crm_report.export',
+            'reports.equipments_report.export',
+            'reports.suppliers_report.export',
+            'reports.stock_report.export',
+        ];
+
+        foreach ($exportPermissions as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        $this->user->syncPermissions($exportPermissions);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         app()->instance('current_tenant_id', $this->tenant->id);
         Sanctum::actingAs($this->user, ['*']);

@@ -5,15 +5,19 @@ import {
     ArrowLeft, Clock, User, Phone, Mail, MapPin, ClipboardList,
     Briefcase, Package, Plus, Trash2, Pencil, Download, Save, X,
     CheckCircle2, AlertTriangle, Play, Pause, Truck, XCircle,
-    DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users,
+    DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users, Copy, RotateCcw,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { SignaturePad } from '@/components/signature/SignaturePad'
+import { useAuthStore } from '@/stores/auth-store'
+
+const MAX_ATTACHMENT_SIZE_MB = 10
 
 const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
     open: { label: 'Aberta', variant: 'info', icon: Clock },
@@ -37,6 +41,9 @@ export function WorkOrderDetailPage() {
     const { id } = useParams()
     const navigate = useNavigate()
     const qc = useQueryClient()
+    const { hasPermission } = useAuthStore()
+    const canUpdate = hasPermission('os.work_order.update')
+    const canChangeStatus = hasPermission('os.work_order.change_status')
 
     // State
     const [showStatusModal, setShowStatusModal] = useState(false)
@@ -55,10 +62,15 @@ export function WorkOrderDetailPage() {
     const [isEditing, setIsEditing] = useState(false)
     const [editForm, setEditForm] = useState({
         description: '', priority: '', technical_report: '', internal_notes: '',
+        displacement_value: '0',
     })
 
+    // Delete confirmation state
+    const [deleteItemId, setDeleteItemId] = useState<number | null>(null)
+    const [deleteAttachId, setDeleteAttachId] = useState<number | null>(null)
+
     // Queries
-    const { data: res, isLoading } = useQuery({
+    const { data: res, isLoading, isError, refetch: refetchOrder } = useQuery({
         queryKey: ['work-order', id],
         queryFn: () => api.get(`/work-orders/${id}`),
     })
@@ -86,7 +98,11 @@ export function WorkOrderDetailPage() {
     // Mutations
     const saveChecklistMut = useMutation({
         mutationFn: (responses: any[]) => api.post(`/work-orders/${id}/checklist-responses`, { responses }),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['wo-checklist', id] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['wo-checklist', id] })
+            toast.success('Checklist salvo com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar checklist'),
     })
 
     const statusMut = useMutation({
@@ -94,65 +110,177 @@ export function WorkOrderDetailPage() {
             api.post(`/work-orders/${id}/status`, data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
             setShowStatusModal(false)
+            toast.success('Status atualizado com sucesso!')
         },
-        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao alterar status'),
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao alterar status'),
     })
 
     const addItemMut = useMutation({
         mutationFn: (data: any) => api.post(`/work-orders/${id}/items`, data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            qc.invalidateQueries({ queryKey: ['stock'] })
+            qc.invalidateQueries({ queryKey: ['products'] })
             setShowItemModal(false)
+            toast.success('Item adicionado com sucesso!')
         },
-        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao adicionar item'),
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao adicionar item'),
     })
 
     const updateItemMut = useMutation({
         mutationFn: (data: any) => api.put(`/work-orders/${id}/items/${editingItem?.id}`, data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            qc.invalidateQueries({ queryKey: ['stock'] })
+            qc.invalidateQueries({ queryKey: ['products'] })
             setShowItemModal(false)
             setEditingItem(null)
+            toast.success('Item atualizado com sucesso!')
         },
-        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao atualizar item'),
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar item'),
     })
 
     const delItemMut = useMutation({
         mutationFn: (itemId: number) => api.delete(`/work-orders/${id}/items/${itemId}`),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['work-order', id] }),
-        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao remover item'),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            qc.invalidateQueries({ queryKey: ['stock'] })
+            qc.invalidateQueries({ queryKey: ['products'] })
+            setDeleteItemId(null)
+            toast.success('Item removido com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao remover item'),
     })
 
     const updateMut = useMutation({
         mutationFn: (data: any) => api.put(`/work-orders/${id}`, data),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['work-order', id] }),
-        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao salvar alterações'),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            toast.success('Alterações salvas com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar alterações'),
+    })
+
+    // Attachment mutations
+    const uploadAttachmentMut = useMutation({
+        mutationFn: (formData: FormData) =>
+            api.post(`/work-orders/${id}/attachments`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            toast.success('Anexo enviado com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao enviar anexo'),
+    })
+
+    const deleteAttachmentMut = useMutation({
+        mutationFn: (attachmentId: number) =>
+            api.delete(`/work-orders/${id}/attachments/${attachmentId}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            toast.success('Anexo removido com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao remover anexo'),
     })
 
     const signMut = useMutation({
         mutationFn: (data: { signature: string; signer_name: string }) =>
             api.post(`/work-orders/${id}/signature`, data),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['work-order', id] }),
-        onError: (err: any) => alert(err?.response?.data?.message || 'Erro ao salvar assinatura'),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            toast.success('Assinatura registrada com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar assinatura'),
+    })
+
+    const duplicateMut = useMutation({
+        mutationFn: () => api.post(`/work-orders/${id}/duplicate`),
+        onSuccess: (res: any) => {
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            toast.success('OS duplicada com sucesso!')
+            navigate(`/os/${res.data?.data?.id ?? res.data?.id}`)
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao duplicar OS'),
+    })
+
+    const reopenMut = useMutation({
+        mutationFn: () => api.post(`/work-orders/${id}/reopen`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            toast.success('OS reaberta com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao reabrir OS'),
     })
 
     // Helpers
     const downloadPdf = async () => {
-        const response = await api.get(`/work-orders/${id}/pdf`, { responseType: 'blob' })
-        const blob = new Blob([response.data], { type: 'application/pdf' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `os-${id}.pdf`
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        window.URL.revokeObjectURL(url)
+        try {
+            const response = await api.get(`/work-orders/${id}/pdf`, { responseType: 'blob' })
+            const blob = new Blob([response.data], { type: 'application/pdf' })
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `os-${id}.pdf`
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            window.URL.revokeObjectURL(url)
+        } catch {
+            toast.error('Erro ao gerar PDF')
+        }
     }
 
     if (isLoading || !order) {
-        return <div className="py-16 text-center text-[13px] text-surface-500">Carregando...</div>
+        return (
+            <div className="space-y-5">
+                <div className="animate-pulse flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-surface-200" />
+                    <div className="space-y-1">
+                        <div className="h-5 w-32 rounded bg-surface-200" />
+                        <div className="h-3 w-48 rounded bg-surface-100" />
+                    </div>
+                </div>
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2 space-y-5">
+                        <div className="animate-pulse rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-3">
+                            <div className="h-4 w-28 rounded bg-surface-200" />
+                            <div className="h-4 w-full rounded bg-surface-100" />
+                            <div className="h-4 w-3/4 rounded bg-surface-100" />
+                        </div>
+                        <div className="animate-pulse rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-3">
+                            <div className="h-4 w-20 rounded bg-surface-200" />
+                            <div className="h-12 w-full rounded bg-surface-100" />
+                            <div className="h-12 w-full rounded bg-surface-100" />
+                        </div>
+                    </div>
+                    <div className="space-y-5">
+                        <div className="animate-pulse rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-3">
+                            <div className="h-4 w-20 rounded bg-surface-200" />
+                            <div className="h-4 w-full rounded bg-surface-100" />
+                            <div className="h-4 w-2/3 rounded bg-surface-100" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (isError) {
+        return (
+            <div className="py-16 text-center">
+                <AlertTriangle className="mx-auto h-12 w-12 text-red-300" />
+                <p className="mt-3 text-sm text-surface-500">Erro ao carregar ordem de serviço</p>
+                <Button className="mt-3" variant="outline" onClick={() => refetchOrder()}>Tentar novamente</Button>
+            </div>
+        )
     }
 
     const formatBRL = (v: string | number) =>
@@ -201,6 +329,7 @@ export function WorkOrderDetailPage() {
             priority: order.priority ?? 'normal',
             technical_report: order.technical_report ?? '',
             internal_notes: order.internal_notes ?? '',
+            displacement_value: order.displacement_value ?? '0',
         })
         setIsEditing(true)
     }
@@ -249,27 +378,43 @@ export function WorkOrderDetailPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {!isEditing ? (
-                        <Button variant="outline" icon={<Pencil className="h-4 w-4" />} onClick={startEditing}>
-                            Editar
+                    {canUpdate && (
+                        !isEditing ? (
+                            <Button variant="outline" icon={<Pencil className="h-4 w-4" />} onClick={startEditing}>
+                                Editar
+                            </Button>
+                        ) : (
+                            <>
+                                <Button variant="outline" icon={<X className="h-4 w-4" />} onClick={cancelEditing}>
+                                    Cancelar
+                                </Button>
+                                <Button icon={<Save className="h-4 w-4" />} onClick={saveEditing} loading={updateMut.isPending}>
+                                    Salvar
+                                </Button>
+                            </>
+                        )
+                    )}
+                    {hasPermission('os.work_order.create') && (
+                        <Button variant="outline" icon={<Copy className="h-4 w-4" />}
+                            onClick={() => duplicateMut.mutate()} loading={duplicateMut.isPending}>
+                            Duplicar
                         </Button>
-                    ) : (
-                        <>
-                            <Button variant="outline" icon={<X className="h-4 w-4" />} onClick={cancelEditing}>
-                                Cancelar
-                            </Button>
-                            <Button icon={<Save className="h-4 w-4" />} onClick={saveEditing} loading={updateMut.isPending}>
-                                Salvar
-                            </Button>
-                        </>
+                    )}
+                    {order.status === 'cancelled' && canChangeStatus && (
+                        <Button variant="outline" icon={<RotateCcw className="h-4 w-4" />}
+                            onClick={() => reopenMut.mutate()} loading={reopenMut.isPending}>
+                            Reabrir
+                        </Button>
                     )}
                     <Button variant="outline" icon={<Download className="h-4 w-4" />}
                         onClick={downloadPdf}>
                         Baixar PDF
                     </Button>
-                    <Button onClick={() => { setNewStatus(''); setStatusNotes(''); setShowStatusModal(true) }}>
-                        Alterar Status
-                    </Button>
+                    {canChangeStatus && (
+                        <Button onClick={() => { setNewStatus(''); setStatusNotes(''); setShowStatusModal(true) }}>
+                            Alterar Status
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -340,15 +485,34 @@ export function WorkOrderDetailPage() {
                                     : <p className="text-xs text-surface-400 italic">Nenhuma observação interna</p>
                             )}
                         </div>
+
+                        <div className="mt-4 border-t border-subtle pt-4">
+                            <h3 className="text-sm font-semibold text-surface-500 mb-1">Deslocamento</h3>
+                            {isEditing ? (
+                                <Input
+                                    label="Valor do Deslocamento (R$)"
+                                    type="number"
+                                    step="0.01"
+                                    value={editForm.displacement_value}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm(p => ({ ...p, displacement_value: e.target.value }))}
+                                />
+                            ) : (
+                                parseFloat(order.displacement_value ?? 0) > 0
+                                    ? <p className="text-sm text-emerald-600 font-medium">+ {formatBRL(order.displacement_value)}</p>
+                                    : <p className="text-sm text-surface-400 italic">Nenhum valor de deslocamento</p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Itens List Section */}
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-semibold text-surface-900">Itens</h3>
-                            <Button variant="ghost" size="sm" onClick={() => openItemForm()} icon={<Plus className="h-4 w-4" />}>
-                                Adicionar
-                            </Button>
+                            {canUpdate && (
+                                <Button variant="ghost" size="sm" onClick={() => openItemForm()} icon={<Plus className="h-4 w-4" />}>
+                                    Adicionar
+                                </Button>
+                            )}
                         </div>
 
                         {order.items?.length === 0 ? (
@@ -367,14 +531,16 @@ export function WorkOrderDetailPage() {
                                             <p className="text-xs text-surface-400">{item.quantity} × {formatBRL(item.unit_price)}</p>
                                         </div>
                                         <span className="text-sm font-semibold text-surface-900">{formatBRL(item.total)}</span>
-                                        <div className="flex gap-1">
-                                            <Button variant="ghost" size="sm" onClick={() => openItemForm(item)}>
-                                                <Pencil className="h-3.5 w-3.5 text-surface-500" />
-                                            </Button>
-                                            <Button variant="ghost" size="sm" onClick={() => { if (confirm('Remover?')) delItemMut.mutate(item.id) }}>
-                                                <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                                            </Button>
-                                        </div>
+                                        {canUpdate && (
+                                            <div className="flex gap-1">
+                                                <Button variant="ghost" size="sm" onClick={() => openItemForm(item)}>
+                                                    <Pencil className="h-3.5 w-3.5 text-surface-500" />
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setDeleteItemId(item.id)}>
+                                                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                                 <div className="flex items-center justify-between border-t border-subtle pt-3 mt-3">
@@ -439,6 +605,69 @@ export function WorkOrderDetailPage() {
                             </div>
                         </div>
                     )}
+
+                    {/* Anexos / Fotos */}
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
+                                <Paperclip className="h-4 w-4 text-brand-500" />
+                                Anexos
+                            </h3>
+                            {canUpdate && (
+                                <label className="cursor-pointer">
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (!file) return
+                                            if (file.size > MAX_ATTACHMENT_SIZE_MB * 1024 * 1024) {
+                                                toast.error(`Arquivo excede ${MAX_ATTACHMENT_SIZE_MB}MB`)
+                                                return
+                                            }
+                                            const fd = new FormData()
+                                            fd.append('file', file)
+                                            uploadAttachmentMut.mutate(fd)
+                                            e.target.value = ''
+                                        }}
+                                    />
+                                    <Button variant="ghost" size="sm" icon={<Upload className="h-4 w-4" />}>
+                                        <span>Enviar</span>
+                                    </Button>
+                                </label>
+                            )}
+                        </div>
+
+                        {(!order.attachments || order.attachments.length === 0) ? (
+                            <p className="py-4 text-center text-sm text-surface-400">Nenhum anexo</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {order.attachments.map((att: any) => (
+                                    <div key={att.id} className="flex items-center gap-3 rounded-lg border border-surface-100 p-3 hover:bg-surface-50">
+                                        <div className="rounded-md bg-surface-100 p-1.5">
+                                            <Paperclip className="h-4 w-4 text-surface-500" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-surface-800 truncate">{att.file_name}</p>
+                                            <p className="text-xs text-surface-400">
+                                                {att.uploader?.name ?? 'Sistema'} · {(att.file_size / 1024).toFixed(0)}KB
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="sm" onClick={() => window.open(`/storage/${att.file_path}`, '_blank')}>
+                                                <Download className="h-3.5 w-3.5 text-surface-500" />
+                                            </Button>
+                                            {canUpdate && (
+                                                <Button variant="ghost" size="sm" onClick={() => setDeleteAttachId(att.id)}>
+                                                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Sidebar */}
@@ -528,6 +757,56 @@ export function WorkOrderDetailPage() {
                                         <p className="font-medium text-surface-900">{formatDate(order.sla_responded_at)}</p>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Garantia */}
+                    {(order.warranty_until || order.warranty_terms) && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <Shield className="h-4 w-4 text-emerald-500" />
+                                Garantia
+                            </h3>
+                            <div className="space-y-2">
+                                {order.warranty_until && (
+                                    <div>
+                                        <p className="text-xs text-surface-500">Válida até</p>
+                                        <p className="font-medium text-surface-900">{formatDate(order.warranty_until)}</p>
+                                    </div>
+                                )}
+                                {order.warranty_terms && (
+                                    <div>
+                                        <p className="text-xs text-surface-500">Termos</p>
+                                        <p className="text-sm text-surface-700">{order.warranty_terms}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Assinatura do Cliente (somente quando completed ou delivered) */}
+                    {['completed', 'delivered'].includes(order.status) && !order.signature_path && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <Pencil className="h-4 w-4 text-brand-500" />
+                                Assinatura do Cliente
+                            </h3>
+                            <SignaturePad
+                                onSave={(data) => signMut.mutate(data)}
+                            />
+                        </div>
+                    )}
+                    {order.signature_path && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                Assinatura Registrada
+                            </h3>
+                            <div className="space-y-2">
+                                <img src={order.signature_path} alt="Assinatura" className="max-h-24 rounded-lg border border-surface-100" />
+                                {order.signed_by_name && <p className="text-sm text-surface-600">{order.signed_by_name}</p>}
+                                {order.signature_at && <p className="text-xs text-surface-400">{formatDate(order.signature_at)}</p>}
                             </div>
                         </div>
                     )}
@@ -656,6 +935,40 @@ export function WorkOrderDetailPage() {
                     <div className="flex justify-end gap-2 pt-2">
                         <Button variant="outline" onClick={() => setShowStatusModal(false)}>Cancelar</Button>
                         <Button onClick={() => statusMut.mutate({ status: newStatus, notes: statusNotes })} disabled={!newStatus} loading={statusMut.isPending}>Confirmar</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Delete Item Confirmation Modal */}
+            <Modal open={deleteItemId !== null} onOpenChange={(open) => { if (!open) setDeleteItemId(null) }} title="Confirmar Remoção">
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">Tem certeza que deseja remover este item? Esta ação não pode ser desfeita.</p>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setDeleteItemId(null)}>Cancelar</Button>
+                        <Button
+                            variant="danger"
+                            onClick={() => { if (deleteItemId) delItemMut.mutate(deleteItemId) }}
+                            loading={delItemMut.isPending}
+                        >
+                            Remover
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Delete Attachment Confirmation Modal */}
+            <Modal open={deleteAttachId !== null} onOpenChange={(open) => { if (!open) setDeleteAttachId(null) }} title="Confirmar Remoção">
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.</p>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setDeleteAttachId(null)}>Cancelar</Button>
+                        <Button
+                            variant="danger"
+                            onClick={() => { if (deleteAttachId) { deleteAttachmentMut.mutate(deleteAttachId); setDeleteAttachId(null) } }}
+                            loading={deleteAttachmentMut.isPending}
+                        >
+                            Remover
+                        </Button>
                     </div>
                 </div>
             </Modal>

@@ -32,11 +32,12 @@ class QuoteItem extends Model
     protected static function booted(): void
     {
         static::saving(function (self $item) {
-            $price = $item->unit_price;
-            if ($item->discount_percentage > 0) {
-                $price = $price * (1 - $item->discount_percentage / 100);
+            $price = (string) $item->unit_price;
+            if ((float) $item->discount_percentage > 0) {
+                $discountFactor = bcsub('1', bcdiv((string) $item->discount_percentage, '100', 6), 6);
+                $price = bcmul($price, $discountFactor, 2);
             }
-            $item->subtotal = round($price * $item->quantity, 2);
+            $item->subtotal = bcmul($price, (string) $item->quantity, 2);
         });
 
         static::saved(function (self $item) {

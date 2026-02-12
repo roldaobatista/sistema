@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class CustomerMergeController extends Controller
 {
@@ -18,7 +17,10 @@ class CustomerMergeController extends Controller
      */
     public function merge(Request $request)
     {
-        $tenantId = auth()->user()->tenant_id;
+        $user = $request->user();
+        $tenantId = app()->bound('current_tenant_id')
+            ? (int) app('current_tenant_id')
+            : (int) ($user->current_tenant_id ?? $user->tenant_id);
 
         $request->validate([
             'primary_id' => [

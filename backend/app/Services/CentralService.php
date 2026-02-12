@@ -91,7 +91,7 @@ class CentralService
             $user = request()->user();
             $data['tenant_id'] = app()->bound('current_tenant_id')
                 ? app('current_tenant_id')
-                : $user->tenant_id;
+                : ($user->current_tenant_id ?? $user->tenant_id);
             $data['criado_por_user_id'] = $user->id;
             $data['responsavel_user_id'] ??= $user->id;
             
@@ -110,7 +110,12 @@ class CentralService
             
             // Se responsável for outro, notificar
             if ($item->responsavel_user_id && $item->responsavel_user_id !== $user->id) {
-                // TODO: Notification::create(...)
+                $item->gerarNotificacao(
+                    'central_item_assigned',
+                    'Nova atribuicao na Central',
+                    "{$user->name} atribuiu \"{$item->titulo}\" para voce.",
+                    ['actor_user_id' => (int) $user->id]
+                );
             }
 
             return $item;
@@ -132,7 +137,14 @@ class CentralService
             }
             if (isset($data['responsavel_user_id']) && $data['responsavel_user_id'] != $oldResponsavel) {
                 $this->logHistory($item, 'assigned', $oldResponsavel, $data['responsavel_user_id']);
-                // TODO: Notificar novo responsável
+                if ((int) $data['responsavel_user_id'] !== (int) request()->user()?->id) {
+                    $item->gerarNotificacao(
+                        'central_item_assigned',
+                        'Item atualizado na Central',
+                        "Voce foi definido(a) como responsavel por \"{$item->titulo}\".",
+                        ['actor_user_id' => (int) request()->user()?->id]
+                    );
+                }
             }
             if (isset($data['snooze_until'])) {
                 $this->logHistory($item, 'snoozed', null, $data['snooze_until']);

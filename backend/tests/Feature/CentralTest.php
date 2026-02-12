@@ -77,6 +77,33 @@ class CentralTest extends TestCase
         ]);
     }
 
+    public function test_create_item_for_another_user_sends_notification(): void
+    {
+        $assignee = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'current_tenant_id' => $this->tenant->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/central/items', [
+            'tipo' => CentralItemType::TAREFA->value,
+            'titulo' => 'Item para atribuicao',
+            'responsavel_user_id' => $assignee->id,
+        ]);
+
+        $response->assertCreated();
+
+        $itemId = (int) $response->json('id');
+
+        $this->assertDatabaseHas('notifications', [
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $assignee->id,
+            'type' => 'central_item_assigned',
+            'notifiable_type' => CentralItem::class,
+            'notifiable_id' => $itemId,
+        ]);
+    }
+
     public function test_can_update_central_item()
     {
         $item = CentralItem::create([
@@ -172,9 +199,56 @@ class CentralTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['data']);
 
+        $this->postJson('/api/v1/central/items', [
+            'tipo' => CentralItemType::TAREFA->value,
+            'titulo' => 'Urgente para workload',
+            'prioridade' => CentralItemPriority::URGENTE->value,
+            'responsavel_user_id' => $this->user->id,
+        ])->assertCreated();
+
+        $this->getJson('/api/v1/central/workload')
+            ->assertOk()
+            ->assertJsonFragment(['urgentes' => 1]);
+
         $this->getJson('/api/v1/central/overdue-by-team')
             ->assertOk()
             ->assertJsonStructure(['data']);
+    }
+
+    public function test_assign_endpoint_sends_notification_to_new_assignee(): void
+    {
+        $newAssignee = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'current_tenant_id' => $this->tenant->id,
+            'is_active' => true,
+        ]);
+
+        $item = CentralItem::create([
+            'tenant_id' => $this->tenant->id,
+            'criado_por_user_id' => $this->user->id,
+            'responsavel_user_id' => $this->user->id,
+            'tipo' => CentralItemType::TAREFA,
+            'titulo' => 'Item para reatribuicao',
+            'status' => CentralItemStatus::ABERTO,
+        ]);
+
+        $this->postJson("/api/v1/central/items/{$item->id}/assign", [
+            'user_id' => $newAssignee->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $newAssignee->id,
+            'type' => 'central_item_assigned',
+            'notifiable_type' => CentralItem::class,
+            'notifiable_id' => $item->id,
+        ]);
+
+        $this->assertDatabaseHas('central_item_history', [
+            'central_item_id' => $item->id,
+            'action' => 'assigned',
+            'to_value' => (string) $newAssignee->id,
+        ]);
     }
 
     public function test_can_manage_central_rules(): void

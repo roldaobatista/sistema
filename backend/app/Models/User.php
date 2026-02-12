@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -63,5 +64,31 @@ class User extends Authenticatable
     public function currentTenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'current_tenant_id');
+    }
+
+    public function hasTenantAccess(int $tenantId): bool
+    {
+        if ($tenantId <= 0) {
+            return false;
+        }
+
+        if ((int) $this->tenant_id === $tenantId || (int) $this->current_tenant_id === $tenantId) {
+            return true;
+        }
+
+        return $this->tenants()->where('tenants.id', $tenantId)->exists();
+    }
+
+    public function switchTenant(Tenant|int $tenant): self
+    {
+        $tenantId = $tenant instanceof Tenant ? (int) $tenant->id : (int) $tenant;
+
+        if ($tenantId <= 0 || !$this->hasTenantAccess($tenantId)) {
+            throw (new ModelNotFoundException())->setModel(Tenant::class, [$tenantId]);
+        }
+
+        $this->forceFill(['current_tenant_id' => $tenantId])->save();
+
+        return $this->refresh();
     }
 }

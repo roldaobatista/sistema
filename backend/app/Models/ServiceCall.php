@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Traits\SyncsWithCentral;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,13 @@ class ServiceCall extends Model
         'technician_id', 'driver_id', 'created_by', 'status', 'priority',
         'scheduled_date', 'started_at', 'completed_at',
         'latitude', 'longitude', 'address', 'city', 'state', 'observations',
+        'resolution_notes',
+    ];
+
+    protected $appends = [
+        'sla_breached',
+        'response_time_minutes',
+        'resolution_time_minutes',
     ];
 
     protected function casts(): array
@@ -100,6 +108,11 @@ class ServiceCall extends Model
         return $this->belongsToMany(Equipment::class, 'service_call_equipments')
             ->withPivot('observations')
             ->withTimestamps();
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(ServiceCallComment::class)->orderByDesc('created_at');
     }
 
     public static function nextNumber(int $tenantId): string

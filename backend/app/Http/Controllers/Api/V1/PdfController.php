@@ -8,8 +8,10 @@ use App\Models\EquipmentCalibration;
 use App\Models\Quote;
 use App\Models\Tenant;
 use App\Models\WorkOrder;
+use App\Support\ReportExportAuthorization;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Symfony\Component\HttpFoundation\Response;
 
 class PdfController extends Controller
@@ -80,38 +82,18 @@ class PdfController extends Controller
 
     public function reportExport(Request $request, string $type): Response
     {
-        $aliases = [
-            'os' => 'work-orders',
-            'service_calls' => 'service-calls',
-            'technician_cash' => 'technician-cash',
-        ];
-        $type = $aliases[$type] ?? $type;
+        $type = ReportExportAuthorization::normalizeType($type);
 
         // Permissão granular por tipo de relatório
-        $permissionMap = [
-            'work-orders'    => 'reports.os_report.export',
-            'productivity'   => 'reports.productivity_report.export',
-            'financial'      => 'reports.financial_report.export',
-            'commissions'    => 'reports.commission_report.export',
-            'profitability'  => 'reports.margin_report.export',
-            'quotes'         => 'reports.quotes_report.export',
-            'service-calls'  => 'reports.service_calls_report.export',
-            'technician-cash' => 'reports.technician_cash_report.export',
-            'crm'            => 'reports.crm_report.export',
-            'equipments'     => 'reports.equipments_report.export',
-            'suppliers'      => 'reports.suppliers_report.export',
-            'stock'          => 'reports.stock_report.export',
-        ];
-
-        $permission = $permissionMap[$type] ?? null;
+        $permission = ReportExportAuthorization::permissionForType($type);
         $user = $request->user();
         if ($permission && $user && method_exists($user, 'hasPermissionTo')) {
             try {
                 if (!$user->hasPermissionTo($permission)) {
                     abort(403, 'Sem permissão para exportar este relatório.');
                 }
-            } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist $e) {
-                // Permissão ainda não registrada — permitir via middleware de rota
+            } catch (PermissionDoesNotExist) {
+                abort(403, 'Acesso negado. Permissao nao configurada para este relatorio.');
             }
         }
 
@@ -129,6 +111,7 @@ class PdfController extends Controller
             'equipments' => 'equipments',
             'suppliers' => 'suppliers',
             'stock' => 'stock',
+            'customers' => 'customers',
             default => null,
         };
 
@@ -259,6 +242,14 @@ class PdfController extends Controller
                 $multi('products', $data['products'] ?? []),
                 $multi('recent_movements', $data['recent_movements'] ?? [])
             ),
+            'customers' => array_merge(
+                $multi('top_by_revenue', $data['top_by_revenue'] ?? []),
+                $multi('by_segment', $data['by_segment'] ?? []),
+                $single('summary', [
+                    'total_active' => $data['total_active'] ?? 0,
+                    'new_in_period' => $data['new_in_period'] ?? 0,
+                ])
+            ),
             default => $multi('rows', $data['rows'] ?? ($data['data'] ?? [])),
         };
     }
@@ -288,13 +279,13 @@ class PdfController extends Controller
 
         $handle = fopen('php://temp', 'w+');
         fwrite($handle, "\xEF\xBB\xBF");
-        fputcsv($handle, $headers);
+        fputcsv($handle, $headers, ';');
         foreach ($normalizedRows as $row) {
             $line = [];
             foreach ($headers as $header) {
                 $line[] = $row[$header] ?? '';
             }
-            fputcsv($handle, $line);
+            fputcsv($handle, $line, ';');
         }
 
         rewind($handle);

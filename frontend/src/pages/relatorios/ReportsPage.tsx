@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
     ClipboardList, Users, DollarSign, Award, TrendingUp,
     Calendar, ArrowRight, FileText, Phone, Wallet, Target, Scale, Download,
-    Truck, Package,
+    Truck, Package, UserCheck, FileX,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 const fmtBRL = (val: number) => (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtHours = (min: number) => { const m = Number(min) || 0; return `${Math.floor(m / 60)}h ${m % 60}m` }
 
-type Tab = 'os' | 'productivity' | 'financial' | 'commissions' | 'profitability' | 'quotes' | 'service_calls' | 'technician_cash' | 'crm' | 'equipments' | 'suppliers' | 'stock'
+type Tab = 'os' | 'productivity' | 'financial' | 'commissions' | 'profitability' | 'quotes' | 'service_calls' | 'technician_cash' | 'crm' | 'equipments' | 'suppliers' | 'stock' | 'customers'
 
 const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: 'os', label: 'Ordens', icon: ClipboardList },
@@ -26,6 +26,7 @@ const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: 'equipments', label: 'Equipamentos', icon: Scale },
     { key: 'suppliers', label: 'Fornecedores', icon: Truck },
     { key: 'stock', label: 'Estoque', icon: Package },
+    { key: 'customers', label: 'Clientes', icon: UserCheck },
 ]
 
 const statusLabels: Record<string, string> = {
@@ -66,6 +67,7 @@ export function ReportsPage() {
         equipments: '/reports/equipments',
         suppliers: '/reports/suppliers',
         stock: '/reports/stock',
+        customers: '/reports/customers',
     }
     const exportType: Record<Tab, string> = {
         os: 'work-orders',
@@ -80,6 +82,7 @@ export function ReportsPage() {
         equipments: 'equipments',
         suppliers: 'suppliers',
         stock: 'stock',
+        customers: 'customers',
     }
 
     const { data: res, isLoading, isError } = useQuery({
@@ -116,8 +119,13 @@ export function ReportsPage() {
             link.click()
             link.remove()
             window.URL.revokeObjectURL(url)
-        } catch {
-            setExportError('Erro ao exportar relatório. Tente novamente.')
+        } catch (err: any) {
+            const status = err?.response?.status
+            if (status === 403) {
+                setExportError('Sem permissão para exportar este relatório.')
+            } else {
+                setExportError('Erro ao exportar relatório. Tente novamente.')
+            }
             setTimeout(() => setExportError(''), 5000)
         } finally {
             setIsExporting(false)
@@ -176,7 +184,25 @@ export function ReportsPage() {
                 </div>
             </div>
 
-            {isLoading && <div className="py-12 text-center text-[13px] text-surface-500">Carregando relatório...</div>}
+            {isLoading && (
+                <div className="space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card animate-pulse">
+                                <div className="h-3 w-20 rounded bg-surface-200 mb-3" />
+                                <div className="h-6 w-16 rounded bg-surface-200 mb-2" />
+                                <div className="h-3 w-24 rounded bg-surface-100" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card animate-pulse">
+                        <div className="h-4 w-32 rounded bg-surface-200 mb-4" />
+                        <div className="space-y-3">
+                            {[1, 2, 3].map(i => <div key={i} className="h-3 w-full rounded bg-surface-100" />)}
+                        </div>
+                    </div>
+                </div>
+            )}
             {isError && <div className="py-12 text-center text-[13px] text-red-600">Erro ao carregar relatório. Verifique sua conexão e tente novamente.</div>}
 
             {/* OS Report */}
@@ -850,6 +876,65 @@ export function ReportsPage() {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Customers Report */}
+            {tab === 'customers' && !isLoading && (
+                <div className="space-y-5">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                            <span className="text-xs font-medium text-surface-500">Clientes Ativos</span>
+                            <p className="text-2xl font-bold text-surface-900">{data.total_active ?? 0}</p>
+                        </div>
+                        <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                            <span className="text-xs font-medium text-surface-500">Novos no Período</span>
+                            <p className="text-2xl font-bold text-emerald-600">{data.new_in_period ?? 0}</p>
+                        </div>
+                    </div>
+
+                    {(data.top_by_revenue ?? []).length > 0 ? (
+                        <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
+                            <h3 className="px-4 py-3 text-sm font-semibold text-surface-700 border-b border-subtle bg-surface-50">Top 20 Clientes por Faturamento</h3>
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-subtle bg-surface-50">
+                                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Cliente</th>
+                                        <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">OS</th>
+                                        <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Faturamento</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-subtle">
+                                    {(data.top_by_revenue ?? []).map((c: any) => (
+                                        <tr key={c.id} className="hover:bg-surface-50">
+                                            <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{c.name}</td>
+                                            <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-surface-900">{c.os_count}</td>
+                                            <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-emerald-600">{fmtBRL(Number(c.total_revenue ?? 0))}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : !isLoading && (
+                        <div className="flex flex-col items-center gap-2 py-12 text-surface-400">
+                            <FileX className="h-10 w-10" />
+                            <p className="text-sm">Nenhum dado de clientes encontrado para o período.</p>
+                        </div>
+                    )}
+
+                    {(data.by_segment ?? []).length > 0 && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="mb-3 text-sm font-semibold text-surface-700">Por Segmento</h3>
+                            <div className="space-y-2">
+                                {(data.by_segment ?? []).map((s: any) => (
+                                    <div key={s.segment ?? 'sem'} className="flex items-center justify-between">
+                                        <span className="text-sm">{s.segment ?? 'Sem Segmento'}</span>
+                                        <span className="text-sm font-bold">{s.count}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

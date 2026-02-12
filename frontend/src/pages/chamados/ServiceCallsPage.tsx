@@ -3,340 +3,355 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
     Plus, Search, Phone, MapPin, UserCheck, ArrowRight, Trash2,
-    AlertCircle, Clock, Truck, CheckCircle, XCircle,
+    AlertCircle, Clock, Truck, CheckCircle, XCircle, Map, Calendar,
+    Download, ChevronLeft, ChevronRight, AlertTriangle,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-import { Input } from '@/components/ui/Input'
+import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
-    [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', icon: Phone },
+    [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', icon: AlertCircle },
     [SERVICE_CALL_STATUS.SCHEDULED]: { label: 'Agendado', variant: 'warning', icon: Clock },
-    [SERVICE_CALL_STATUS.IN_TRANSIT]: { label: 'Em Deslocamento', variant: 'info', icon: Truck },
-    [SERVICE_CALL_STATUS.IN_PROGRESS]: { label: 'Em Atendimento', variant: 'default', icon: AlertCircle },
+    [SERVICE_CALL_STATUS.IN_TRANSIT]: { label: 'Em Trânsito', variant: 'info', icon: Truck },
+    [SERVICE_CALL_STATUS.IN_PROGRESS]: { label: 'Em Atendimento', variant: 'warning', icon: ArrowRight },
     [SERVICE_CALL_STATUS.COMPLETED]: { label: 'Concluído', variant: 'success', icon: CheckCircle },
     [SERVICE_CALL_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'danger', icon: XCircle },
 }
 
-const priorityConfig: Record<string, { label: string; color: string }> = {
-    low: { label: 'Baixa', color: 'text-surface-500' },
-    normal: { label: 'Normal', color: 'text-blue-500' },
-    high: { label: 'Alta', color: 'text-amber-500' },
-    urgent: { label: 'Urgente', color: 'text-red-500' },
+const priorityConfig: Record<string, { label: string; variant: any }> = {
+    low: { label: 'Baixa', variant: 'default' },
+    normal: { label: 'Normal', variant: 'info' },
+    high: { label: 'Alta', variant: 'warning' },
+    urgent: { label: 'Urgente', variant: 'danger' },
 }
-
-const emptyForm = { customer_id: '', priority: 'normal', address: '', city: '', state: '', observations: '', scheduled_date: '' }
 
 export function ServiceCallsPage() {
     const navigate = useNavigate()
-    const qc = useQueryClient()
+    const queryClient = useQueryClient()
+    const { hasPermission, hasRole } = useAuthStore()
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
-    const [showCreate, setShowCreate] = useState(false)
-    const [showAssign, setShowAssign] = useState<any>(null)
+    const [priorityFilter, setPriorityFilter] = useState('')
+    const [page, setPage] = useState(1)
+    const perPage = 30
 
-    // Form state
-    const [form, setForm] = useState({ ...emptyForm })
-    const [assignForm, setAssignForm] = useState({ technician_id: '', driver_id: '', scheduled_date: '' })
-    const [customerSearch, setCustomerSearch] = useState('')
+    const [deleteTarget, setDeleteTarget] = useState<any>(null)
 
-    const { data: summaryRes } = useQuery({ queryKey: ['service-calls-summary'], queryFn: () => api.get('/service-calls-summary') })
-    const summary = summaryRes?.data ?? {}
-
-    const { data: callsRes } = useQuery({
-        queryKey: ['service-calls', search, statusFilter],
-        queryFn: () => api.get('/service-calls', { params: { search: search || undefined, status: statusFilter || undefined, per_page: 50 } }),
-    })
-    const calls = callsRes?.data?.data ?? []
-
-    const { data: customersRes } = useQuery({
-        queryKey: ['customers-lookup', customerSearch],
-        queryFn: () => api.get('/customers', { params: { search: customerSearch, per_page: 10 } }),
-        enabled: customerSearch.length > 1,
+    const { data, isLoading } = useQuery({
+        queryKey: ['service-calls', search, statusFilter, priorityFilter, page],
+        queryFn: () =>
+            api.get('/service-calls', {
+                params: {
+                    search: search || undefined,
+                    status: statusFilter || undefined,
+                    priority: priorityFilter || undefined,
+                    page,
+                    per_page: perPage,
+                },
+            }).then((r) => r.data),
     })
 
-    const { data: techniciansRes } = useQuery({
-        queryKey: ['users-all'],
-        queryFn: () => api.get('/users', { params: { per_page: 100 } }),
-    })
-    const technicians = techniciansRes?.data?.data ?? []
-
-    const resetCreateForm = () => {
-        setForm({ ...emptyForm })
-        setCustomerSearch('')
-    }
-
-    const createMut = useMutation({
-        mutationFn: () => {
-            if (!form.customer_id) {
-                return Promise.reject(new Error('Selecione um cliente'))
-            }
-            return api.post('/service-calls', form)
-        },
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            setShowCreate(false)
-            resetCreateForm()
-            toast.success('Chamado criado com sucesso!')
-        },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || err?.message || 'Erro ao criar chamado')
-        },
+    const { data: summary } = useQuery({
+        queryKey: ['service-calls-summary'],
+        queryFn: () => api.get('/service-calls-summary').then((r) => r.data),
     })
 
-    const assignMut = useMutation({
-        mutationFn: () => api.put(`/service-calls/${showAssign.id}/assign`, assignForm),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            setShowAssign(null)
-            toast.success('Técnico atribuído com sucesso!')
-        },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Erro ao atribuir técnico')
-        },
-    })
-
-    const statusMut = useMutation({
-        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/service-calls/${id}/status`, { status }),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            toast.success('Status atualizado!')
-        },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Erro ao atualizar status')
-        },
-    })
-
-    const convertMut = useMutation({
-        mutationFn: (id: number) => api.post(`/service-calls/${id}/convert-to-os`),
-        onSuccess: (res) => {
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            toast.success('Chamado convertido em OS!')
-            const workOrderId = res?.data?.id
-            if (workOrderId) navigate(`/os/${workOrderId}`)
-        },
-        onError: (err: any) => {
-            const existingId = err?.response?.data?.work_order?.id
-            if (existingId) {
-                toast.info('Este chamado já foi convertido em OS')
-                navigate(`/os/${existingId}`)
-            } else {
-                toast.error(err?.response?.data?.message || 'Erro ao converter chamado')
-            }
-        },
-    })
-
-    const deleteMut = useMutation({
+    const deleteMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/service-calls/${id}`),
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            toast.success('Chamado excluído com sucesso!')
+            toast.success('Chamado excluído com sucesso')
+            queryClient.invalidateQueries({ queryKey: ['service-calls'] })
+            queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
+            setDeleteTarget(null)
         },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Erro ao excluir chamado')
+        onError: (error: any) => {
+            if (error.response?.status === 409) {
+                toast.error(error.response.data?.message || 'Chamado possui OS vinculada')
+            } else if (error.response?.status === 403) {
+                toast.error('Sem permissão para excluir')
+            } else {
+                toast.error(error.response?.data?.message || 'Erro ao excluir chamado')
+            }
+            setDeleteTarget(null)
         },
     })
 
-    const stats = [
-        { label: 'Abertos', value: summary.open ?? 0, icon: Phone, color: 'text-blue-600' },
-        { label: 'Agendados', value: summary.scheduled ?? 0, icon: Clock, color: 'text-amber-600' },
-        { label: 'Em Deslocamento', value: summary.in_transit ?? 0, icon: Truck, color: 'text-cyan-600' },
-        { label: 'Em Atendimento', value: summary.in_progress ?? 0, icon: AlertCircle, color: 'text-indigo-600' },
-        { label: 'Concluídos Hoje', value: summary.completed_today ?? 0, icon: CheckCircle, color: 'text-emerald-600' },
-    ]
-
-    const nextStatus: Record<string, string> = {
-        [SERVICE_CALL_STATUS.OPEN]: SERVICE_CALL_STATUS.SCHEDULED, [SERVICE_CALL_STATUS.SCHEDULED]: SERVICE_CALL_STATUS.IN_TRANSIT, [SERVICE_CALL_STATUS.IN_TRANSIT]: SERVICE_CALL_STATUS.IN_PROGRESS, [SERVICE_CALL_STATUS.IN_PROGRESS]: SERVICE_CALL_STATUS.COMPLETED,
+    const handleExport = async () => {
+        try {
+            const { data } = await api.get('/service-calls-export', {
+                params: { status: statusFilter || undefined, priority: priorityFilter || undefined },
+            })
+            const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = data.filename
+            a.click()
+            URL.revokeObjectURL(url)
+            toast.success('Exportação concluída')
+        } catch {
+            toast.error('Erro ao exportar')
+        }
     }
 
+    const calls = data?.data ?? []
+    const pagination = data ? { current_page: data.current_page, last_page: data.last_page, total: data.total } : null
+
+    const canCreate = hasRole('super_admin') || hasPermission('service_calls.service_call.create')
+    const canDelete = hasRole('super_admin') || hasPermission('service_calls.service_call.delete')
+
     return (
-        <div className="space-y-5">
-            <div className="flex items-center justify-between">
-                <div><h1 className="text-lg font-semibold text-surface-900 tracking-tight">Chamados Técnicos</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Gestão de atendimentos e agendamentos</p></div>
-                <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowCreate(true)}>Novo Chamado</Button>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        Chamados Técnicos
+                        {pagination && (
+                            <span className="ml-2 text-sm font-normal text-gray-500">
+                                ({pagination.total} {pagination.total === 1 ? 'registro' : 'registros'})
+                            </span>
+                        )}
+                    </h1>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => navigate('/chamados/mapa')}>
+                        <Map className="w-4 h-4 mr-1" /> Mapa
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/chamados/agenda')}>
+                        <Calendar className="w-4 h-4 mr-1" /> Agenda
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExport}>
+                        <Download className="w-4 h-4 mr-1" /> CSV
+                    </Button>
+                    {canCreate && (
+                        <Button onClick={() => navigate('/chamados/novo')}>
+                            <Plus className="w-4 h-4 mr-1" /> Novo Chamado
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-                {stats.map(s => {
-                    const Icon = s.icon
-                    return (
-                        <div key={s.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                            <div className="flex items-center gap-3">
-                                <div className={`rounded-lg bg-surface-50 p-2 ${s.color}`}><Icon className="h-5 w-5" /></div>
-                                <div><p className="text-xs text-surface-500">{s.label}</p><p className="text-xl font-bold text-surface-900">{s.value}</p></div>
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
-
-            {/* Pipeline Visual */}
-            <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                <h3 className="text-sm font-semibold text-surface-900 mb-3">Fluxo de Atendimento</h3>
-                <div className="flex items-center gap-1">
+            {/* Summary Cards */}
+            {summary && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {[
-                        { key: 'open', label: 'Aberto', count: summary.open ?? 0, color: 'bg-blue-500' },
-                        { key: 'scheduled', label: 'Agendado', count: summary.scheduled ?? 0, color: 'bg-amber-500' },
-                        { key: 'in_transit', label: 'Deslocamento', count: summary.in_transit ?? 0, color: 'bg-cyan-500' },
-                        { key: 'in_progress', label: 'Atendimento', count: summary.in_progress ?? 0, color: 'bg-brand-500' },
-                        { key: 'completed', label: 'Concluído', count: summary.completed_today ?? 0, color: 'bg-emerald-500' },
-                    ].map((stage, i, arr) => (
-                        <React.Fragment key={stage.key}>
-                            <div className="flex-1 text-center">
-                                <div className={`mx-auto h-10 rounded-lg ${stage.color} flex items-center justify-center`}>
-                                    <span className="text-sm font-bold text-white">{stage.count}</span>
-                                </div>
-                                <p className="text-[10px] text-surface-500 mt-1 font-medium">{stage.label}</p>
-                            </div>
-                            {i < arr.length - 1 && (
-                                <ArrowRight className="h-4 w-4 text-surface-300 flex-shrink-0" />
-                            )}
-                        </React.Fragment>
+                        { label: 'Abertos', value: summary.open, color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+                        { label: 'Agendados', value: summary.scheduled, color: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+                        { label: 'Em Trânsito', value: summary.in_transit, color: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+                        { label: 'Em Atendimento', value: summary.in_progress, color: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+                        { label: 'Concluídos Hoje', value: summary.completed_today, color: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+                        { label: 'SLA Estourado', value: summary.sla_breached_active, color: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+                    ].map((item) => (
+                        <div key={item.label} className={`rounded-xl p-3 ${item.color}`}>
+                            <p className="text-xs font-medium opacity-80">{item.label}</p>
+                            <p className="text-2xl font-bold">{item.value ?? 0}</p>
+                        </div>
                     ))}
                 </div>
-            </div>
+            )}
+
             {/* Filters */}
-            <div className="flex flex-wrap gap-3">
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-                    <input value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)} placeholder="Buscar chamado ou cliente..."
-                        className="w-full rounded-lg border border-default bg-surface-50 py-2 pl-10 pr-3 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por número ou cliente..."
+                        value={search}
+                        onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
                 </div>
-                <select value={statusFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
-                    className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm">
-                    <option value="">Todos</option>
-                    {Object.entries(statusConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                <select
+                    value={statusFilter}
+                    onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                >
+                    <option value="">Todos os status</option>
+                    {Object.entries(statusConfig).map(([k, v]) => (
+                        <option key={k} value={k}>{v.label}</option>
+                    ))}
+                </select>
+                <select
+                    value={priorityFilter}
+                    onChange={(e) => { setPriorityFilter(e.target.value); setPage(1) }}
+                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                >
+                    <option value="">Todas as prioridades</option>
+                    {Object.entries(priorityConfig).map(([k, v]) => (
+                        <option key={k} value={k}>{v.label}</option>
+                    ))}
                 </select>
             </div>
 
             {/* Table */}
-            <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
-                <table className="w-full">
-                    <thead><tr className="border-b border-subtle bg-surface-50">
-                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Nº</th>
-                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Cliente</th>
-                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Técnico</th>
-                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Status</th>
-                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Prioridade</th>
-                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Agendado</th>
-                        <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Local</th>
-                        <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Ações</th>
-                    </tr></thead>
-                    <tbody className="divide-y divide-subtle">
-                        {calls.length === 0 ? (
-                            <tr><td colSpan={8} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum chamado encontrado</td></tr>
-                        ) : calls.map((c: any) => {
-                            const sc = statusConfig[c.status] ?? statusConfig[SERVICE_CALL_STATUS.OPEN]
-                            const pr = priorityConfig[c.priority] ?? priorityConfig.normal
-                            return (
-                                <tr key={c.id} className="hover:bg-surface-50 transition-colors duration-100">
-                                    <td className="px-4 py-3 text-sm font-mono font-semibold text-brand-700">
-                                        <button onClick={() => navigate(`/chamados/${c.id}`)} className="hover:underline">
-                                            {c.call_number}
-                                        </button>
-                                    </td>
-                                    <td className="px-4 py-3 text-sm text-surface-900">{c.customer?.name}</td>
-                                    <td className="px-4 py-3 text-[13px] text-surface-600">
-                                        {c.technician?.name ?? <span className="text-surface-400 italic text-xs">Não atribuído</span>}
-                                    </td>
-                                    <td className="px-4 py-3"><Badge variant={sc.variant}>{sc.label}</Badge></td>
-                                    <td className="px-4 py-3"><span className={`text-sm font-medium ${pr.color}`}>{pr.label}</span></td>
-                                    <td className="px-4 py-3 text-[13px] text-surface-500">{c.scheduled_date ? new Date(c.scheduled_date).toLocaleDateString('pt-BR') : '—'}</td>
-                                    <td className="px-4 py-3 text-[13px] text-surface-500">
-                                        {c.city && c.state ? `${c.city}/${c.state}` : <span className="text-surface-300">-</span>}
-                                    </td>
-                                    <td className="px-3.5 py-2.5 text-right">
-                                        <div className="flex justify-end gap-1">
-                                            {!c.technician_id && (<button onClick={() => { setShowAssign(c); setAssignForm({ technician_id: '', driver_id: '', scheduled_date: '' }) }} title="Atribuir técnico"
-                                                className="rounded p-1.5 text-blue-600 hover:bg-blue-50"><UserCheck className="h-4 w-4" /></button>)}
-                                            {nextStatus[c.status] && (<button onClick={() => {
-                                                if (c.status === SERVICE_CALL_STATUS.OPEN && !c.technician_id) {
-                                                    setShowAssign(c); setAssignForm({ technician_id: '', driver_id: '', scheduled_date: '' });
-                                                    toast.info('Atribua um técnico antes de agendar o chamado');
-                                                    return;
-                                                }
-                                                statusMut.mutate({ id: c.id, status: nextStatus[c.status] })
-                                            }} title="Avançar status"
-                                                className="rounded p-1.5 text-emerald-600 hover:bg-emerald-50"><ArrowRight className="h-4 w-4" /></button>)}
-                                            {(c.status === SERVICE_CALL_STATUS.COMPLETED || c.status === SERVICE_CALL_STATUS.IN_PROGRESS) && (<button onClick={() => convertMut.mutate(c.id)} title="Converter em OS"
-                                                className="rounded p-1.5 text-brand-600 hover:bg-brand-50"><MapPin className="h-4 w-4" /></button>)}
-                                            {c.status === SERVICE_CALL_STATUS.OPEN && (<button onClick={() => { if (confirm('Deseja excluir este chamado?')) deleteMut.mutate(c.id) }} title="Excluir"
-                                                className="rounded p-1.5 text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>)}
-                                        </div>
-                                    </td>
-                                </tr>
-                            )
-                        })}
-                    </tbody>
-                </table>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                {isLoading ? (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 p-4 animate-pulse">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40" />
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded flex-1" />
+                            </div>
+                        ))}
+                    </div>
+                ) : calls.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400">
+                        <Phone className="w-12 h-12 mb-4 opacity-30" />
+                        <p className="text-lg font-medium">Nenhum chamado encontrado</p>
+                        <p className="text-sm mt-1">
+                            {search || statusFilter || priorityFilter ? 'Tente alterar os filtros' : 'Crie seu primeiro chamado'}
+                        </p>
+                        {canCreate && !search && !statusFilter && !priorityFilter && (
+                            <Button className="mt-4" onClick={() => navigate('/chamados/novo')}>
+                                <Plus className="w-4 h-4 mr-1" /> Novo Chamado
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Nº</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Cliente</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Status</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Prioridade</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">SLA</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Técnico</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Cidade</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Agendado</th>
+                                        <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {calls.map((call: any) => {
+                                        const sc = statusConfig[call.status]
+                                        const pc = priorityConfig[call.priority]
+                                        const StatusIcon = sc?.icon || AlertCircle
+                                        return (
+                                            <tr
+                                                key={call.id}
+                                                className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
+                                                onClick={() => navigate(`/chamados/${call.id}`)}
+                                            >
+                                                <td className="px-4 py-3 font-mono text-xs font-semibold">{call.call_number}</td>
+                                                <td className="px-4 py-3 font-medium">{call.customer?.name || '—'}</td>
+                                                <td className="px-4 py-3">
+                                                    <Badge variant={sc?.variant || 'default'}>
+                                                        <StatusIcon className="w-3 h-3 mr-1" />
+                                                        {sc?.label || call.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <Badge variant={pc?.variant || 'default'}>{pc?.label || call.priority}</Badge>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    {call.sla_breached ? (
+                                                        <Badge variant="danger">
+                                                            <AlertTriangle className="w-3 h-3 mr-1" /> Estourado
+                                                        </Badge>
+                                                    ) : call.status !== 'completed' && call.status !== 'cancelled' ? (
+                                                        <Badge variant="success">OK</Badge>
+                                                    ) : (
+                                                        <span className="text-gray-400">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                    {call.technician?.name || (
+                                                        <span className="text-gray-400 italic">Não atribuído</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                    {call.city ? `${call.city}/${call.state}` : '—'}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                    {call.scheduled_date
+                                                        ? new Date(call.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+                                                        : '—'}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                        {canDelete && (
+                                                            <button
+                                                                onClick={() => setDeleteTarget(call)}
+                                                                className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                                title="Excluir"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination */}
+                        {pagination && pagination.last_page > 1 && (
+                            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    Página {pagination.current_page} de {pagination.last_page}
+                                </p>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={page <= 1}
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={page >= pagination.last_page}
+                                        onClick={() => setPage((p) => p + 1)}
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
-            {/* Modal Criar */}
-            <Modal open={showCreate} onOpenChange={(v) => { if (!v) { setShowCreate(false); resetCreateForm() } }} title="Novo Chamado Técnico">
+            {/* Delete Confirmation Modal */}
+            <Modal
+                open={!!deleteTarget}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Excluir Chamado"
+            >
                 <div className="space-y-4">
-                    <div>
-                        <label className="text-[13px] font-medium text-surface-700">Cliente</label>
-                        <input value={customerSearch} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerSearch(e.target.value)} placeholder="Buscar cliente..."
-                            className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm" />
-                        {(customersRes?.data?.data ?? []).map((c: any) => (
-                            <button key={c.id} onClick={() => { setForm(f => ({ ...f, customer_id: c.id })); setCustomerSearch(c.name) }}
-                                className={`mt-1 w-full rounded border p-2 text-left text-sm ${+form.customer_id === c.id ? 'border-brand-500 bg-brand-50' : 'border-surface-200'}`}>
-                                {c.name}
-                            </button>
-                        ))}
-                        {!form.customer_id && <p className="mt-1 text-xs text-red-500">Selecione um cliente</p>}
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-[13px] font-medium text-surface-700">Prioridade</label>
-                            <select value={form.priority} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, priority: e.target.value }))}
-                                className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
-                                {Object.entries(priorityConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                            </select></div>
-                        <Input label="Data Agendamento" type="datetime-local" value={form.scheduled_date} onChange={(e: any) => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                        <Input label="Cidade" value={form.city} onChange={(e: any) => setForm(f => ({ ...f, city: e.target.value }))} />
-                        <Input label="UF" value={form.state} onChange={(e: any) => setForm(f => ({ ...f, state: e.target.value }))} />
-                        <Input label="Endereço" value={form.address} onChange={(e: any) => setForm(f => ({ ...f, address: e.target.value }))} />
-                    </div>
-                    <Input label="Observações" value={form.observations} onChange={(e: any) => setForm(f => ({ ...f, observations: e.target.value }))} />
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => { setShowCreate(false); resetCreateForm() }}>Cancelar</Button>
-                        <Button onClick={() => createMut.mutate()} loading={createMut.isPending} disabled={!form.customer_id}>Criar Chamado</Button>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Modal Atribuir */}
-            <Modal open={!!showAssign} onOpenChange={(v) => { if (!v) setShowAssign(null) }} title="Atribuir Técnico">
-                <div className="space-y-4">
-                    <div><label className="text-[13px] font-medium text-surface-700">Técnico</label>
-                        <select value={assignForm.technician_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssignForm(f => ({ ...f, technician_id: e.target.value }))}
-                            className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
-                            <option value="">Selecione</option>
-                            {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select></div>
-                    <div><label className="text-[13px] font-medium text-surface-700">Motorista (UMC)</label>
-                        <select value={assignForm.driver_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssignForm(f => ({ ...f, driver_id: e.target.value }))}
-                            className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
-                            <option value="">Selecione (opcional)</option>
-                            {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select></div>
-                    <Input label="Data Agendamento" type="datetime-local" value={assignForm.scheduled_date} onChange={(e: any) => setAssignForm(f => ({ ...f, scheduled_date: e.target.value }))} />
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAssign(null)}>Cancelar</Button>
-                        <Button onClick={() => { if (!assignForm.technician_id) { toast.error('Selecione um técnico'); return; } assignMut.mutate() }} loading={assignMut.isPending}>Atribuir</Button>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Tem certeza que deseja excluir o chamado <strong>{deleteTarget?.call_number}</strong>?
+                        Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="danger"
+                            loading={deleteMutation.isPending}
+                            onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+                        >
+                            <Trash2 className="w-4 h-4 mr-1" /> Excluir
+                        </Button>
                     </div>
                 </div>
             </Modal>

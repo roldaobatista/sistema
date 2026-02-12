@@ -10,9 +10,18 @@ use Illuminate\Http\Request;
 
 class SlaDashboardController extends Controller
 {
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+
+        return app()->bound('current_tenant_id')
+            ? (int) app('current_tenant_id')
+            : (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function overview(Request $request): JsonResponse
     {
-        $tenantId = $request->header('X-Company-Id');
+        $tenantId = $this->tenantId($request);
 
         $total = WorkOrder::where('tenant_id', $tenantId)
             ->whereNotNull('sla_policy_id')
@@ -63,7 +72,7 @@ class SlaDashboardController extends Controller
 
     public function breachedOrders(Request $request): JsonResponse
     {
-        $tenantId = $request->header('X-Company-Id');
+        $tenantId = $this->tenantId($request);
 
         $orders = WorkOrder::where('tenant_id', $tenantId)
             ->where(function ($q) {
@@ -79,7 +88,7 @@ class SlaDashboardController extends Controller
 
     public function byPolicy(Request $request): JsonResponse
     {
-        $tenantId = $request->header('X-Company-Id');
+        $tenantId = $this->tenantId($request);
 
         $policies = SlaPolicy::where('tenant_id', $tenantId)
             ->where('is_active', true)

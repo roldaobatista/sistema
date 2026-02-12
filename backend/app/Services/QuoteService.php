@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\QuoteStatus;
 use App\Events\QuoteApproved;
 use App\Models\AuditLog;
 use App\Models\Quote;
@@ -13,7 +12,6 @@ use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class QuoteService
 {
@@ -97,7 +95,7 @@ class QuoteService
             if ($approver) {
                 QuoteApproved::dispatch($quote, $approver);
             }
-            
+
             return $quote;
         });
     }
@@ -109,7 +107,7 @@ class QuoteService
         }
 
         if ($quote->isExpired()) {
-             throw new \DomainException('Orçamento expirado');
+            throw new \DomainException('Orçamento expirado');
         }
 
         return DB::transaction(function () use ($quote) {
@@ -134,14 +132,36 @@ class QuoteService
             throw new \DomainException('Orçamento precisa estar enviado para rejeitar');
         }
 
-        $quote->update([
-            'status' => Quote::STATUS_REJECTED,
-            'rejected_at' => now(),
-            'rejection_reason' => $reason,
-        ]);
-        AuditLog::log('status_changed', "Orçamento {$quote->quote_number} rejeitado", $quote);
+        return DB::transaction(function () use ($quote, $reason) {
+            $quote->update([
+                'status' => Quote::STATUS_REJECTED,
+                'rejected_at' => now(),
+                'rejection_reason' => $reason,
+            ]);
+            AuditLog::log('status_changed', "Orçamento {$quote->quote_number} rejeitado", $quote);
 
-        return $quote;
+            return $quote;
+        });
+    }
+
+    public function reopenQuote(Quote $quote): Quote
+    {
+        $allowedStatuses = [Quote::STATUS_REJECTED, Quote::STATUS_EXPIRED];
+        if (!in_array($quote->status, $allowedStatuses, true)) {
+            throw new \DomainException('Só é possível reabrir orçamentos rejeitados ou expirados');
+        }
+
+        return DB::transaction(function () use ($quote) {
+            $quote->update([
+                'status' => Quote::STATUS_DRAFT,
+                'rejected_at' => null,
+                'rejection_reason' => null,
+            ]);
+            $quote->increment('revision');
+            AuditLog::log('status_changed', "Orçamento {$quote->quote_number} reaberto (rev. {$quote->revision})", $quote);
+
+            return $quote;
+        });
     }
 
     public function duplicateQuote(Quote $quote): Quote
@@ -172,6 +192,28 @@ class QuoteService
             AuditLog::log('created', "Orçamento {$newQuote->quote_number} duplicado de {$quote->quote_number}", $newQuote);
 
             return $newQuote;
+        });
+    }
+
+    public function updateItem(QuoteItem $item, array $data): QuoteItem
+    {
+        return DB::transaction(function () use ($item, $data) {
+            $item->update(Arr::only($data, [
+                'custom_description', 'quantity', 'original_price', 'unit_price', 'discount_percentage',
+            ]));
+
+            $quote = $item->quoteEquipment?->quote;
+            $quote?->recalculateTotal();
+
+            return $item->fresh(['product', 'service']);
+        });
+    }
+
+    public function updateEquipment(QuoteEquipment $equipment, array $data): QuoteEquipment
+    {
+        return DB::transaction(function () use ($equipment, $data) {
+            $equipment->update(Arr::only($data, ['description', 'sort_order']));
+            return $equipment->fresh(['equipment']);
         });
     }
 
@@ -212,9 +254,12 @@ class QuoteService
 
             foreach ($quote->equipments as $eq) {
                 foreach ($eq->items as $item) {
-                    $preDiscountTotal = (float) $item->quantity * (float) $item->unit_price;
-                    $lineSubtotal = (float) $item->subtotal;
-                    $discountAmount = max(0, round($preDiscountTotal - $lineSubtotal, 2));
+                    $preDiscountTotal = bcmul((string) $item->quantity, (string) $item->unit_price, 2);
+                    $lineSubtotal = (string) $item->subtotal;
+                    $discountAmount = bcsub($preDiscountTotal, $lineSubtotal, 2);
+                    if (bccomp($discountAmount, '0', 2) < 0) {
+                        $discountAmount = '0.00';
+                    }
 
                     $wo->items()->create([
                         'tenant_id' => $quote->tenant_id,
@@ -241,8 +286,7 @@ class QuoteService
             return $wo;
         });
     }
-    
-    // Helper to resolve actor
+
     private function resolveApprovalActor(Quote $quote): ?User
     {
         if ($quote->relationLoaded('seller') && $quote->seller) {
@@ -255,8 +299,8 @@ class QuoteService
                 return $seller;
             }
         }
-        
-        // Fallback to ANY user of the tenant as "approver" for the event if needed
+
         return User::where('tenant_id', $quote->tenant_id)->orderBy('id')->first();
     }
 }
+

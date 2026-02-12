@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -92,6 +93,73 @@ class ImportService
     }
 
     /**
+     * Exporta dados de uma entidade como CSV.
+     */
+    public function exportEntityData(string $entity, int $tenantId): string
+    {
+        $fields = $this->getFields($entity);
+        if (empty($fields)) return '';
+
+        $modelClass = match ($entity) {
+            Import::ENTITY_CUSTOMERS => Customer::class,
+            Import::ENTITY_PRODUCTS => Product::class,
+            Import::ENTITY_SERVICES => Service::class,
+            Import::ENTITY_EQUIPMENTS => Equipment::class,
+            Import::ENTITY_SUPPLIERS => Supplier::class,
+            default => null,
+        };
+
+        if (!$modelClass) return '';
+
+        $headers = array_map(fn($f) => $f['label'], $fields);
+        $keys = array_map(fn($f) => $f['key'], $fields);
+
+        $eagerLoads = $this->getExportEagerLoads($entity);
+
+        $output = fopen('php://temp', 'r+');
+        fwrite($output, "\xEF\xBB\xBF"); // BOM for Excel UTF-8
+        fputcsv($output, $headers, ';');
+
+        // I4: Chunk streaming para evitar memory overflow
+        $query = $modelClass::where('tenant_id', $tenantId);
+        if (!empty($eagerLoads)) {
+            $query->with($eagerLoads);
+        }
+        $query->chunk(500, function ($records) use ($output, $keys, $entity) {
+            foreach ($records as $record) {
+                $line = [];
+                foreach ($keys as $key) {
+                    $line[] = $this->resolveExportField($record, $key, $entity);
+                }
+                fputcsv($output, $line, ';');
+            }
+        });
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        return $csv;
+    }
+
+    /**
+     * Conta linhas de dados em um CSV (exclui header).
+     */
+    public function countCsvRows(string $fullPath): int
+    {
+        $handle = fopen($fullPath, 'r');
+        if (!$handle) return 0;
+
+        $count = -1; // Desconta header
+        while (fgets($handle) !== false) {
+            $count++;
+        }
+        fclose($handle);
+
+        return max(0, $count);
+    }
+
+    /**
      * Exporta log de erros como CSV.
      */
     public function exportErrorCsv(Import $import): string
@@ -146,6 +214,9 @@ class ImportService
         }
 
         $deleted = 0;
+        $failed = 0;
+        $failedIds = [];
+
         DB::beginTransaction();
 
         try {
@@ -155,14 +226,26 @@ class ImportService
                     ->first();
 
                 if ($record) {
-                    $record->delete(); // SoftDelete se disponível
-                    $deleted++;
+                    try {
+                        // I2: Usar delete() para respeitar soft-deletes
+                        $record->delete();
+                        $deleted++;
+                    } catch (\Throwable $e) {
+                        $failed++;
+                        $failedIds[] = $id;
+                        Log::warning('Rollback could not delete record', [
+                            'import_id' => $import->id,
+                            'record_id' => $id,
+                            'entity' => $import->entity_type,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
 
             $import->update([
-                'status' => Import::STATUS_ROLLED_BACK,
-                'imported_ids' => [],
+                'status' => $failed === 0 ? Import::STATUS_ROLLED_BACK : Import::STATUS_PARTIALLY_ROLLED_BACK,
+                'imported_ids' => $failedIds,
             ]);
 
             DB::commit();
@@ -173,6 +256,7 @@ class ImportService
 
         return [
             'deleted' => $deleted,
+            'failed' => $failed,
             'total' => count($importedIds),
         ];
     }
@@ -338,6 +422,12 @@ class ImportService
                 DB::rollBack();
                 $errors++;
 
+                Log::warning('Import row error', [
+                    'import_id' => $import->id,
+                    'line' => $lineNum,
+                    'error' => $e->getMessage(),
+                ]);
+
                 $rowData = [];
                 if (count($headers) === count($line)) {
                     $rowData = array_combine($headers, $line);
@@ -366,6 +456,13 @@ class ImportService
             'imported_ids' => $importedIds,
             'status' => $finalStatus,
         ]);
+
+        // Cleanup: remove uploaded file after processing
+        try {
+            Storage::disk('local')->delete($import->file_name);
+        } catch (\Throwable $e) {
+            Log::warning('Could not cleanup import file', ['file' => $import->file_name, 'error' => $e->getMessage()]);
+        }
     }
 
     private function detectSeparator(string $fullPath): string
@@ -420,12 +517,12 @@ class ImportService
             $status = 'warning';
         }
 
-        // Document validation (customers + suppliers)
+        // F1: Document validation com dígitos verificadores (customers + suppliers)
         if (in_array($entity, [Import::ENTITY_CUSTOMERS, Import::ENTITY_SUPPLIERS]) && !empty($data['document'])) {
             $doc = preg_replace('/\D/', '', $data['document']);
-            if (!in_array(strlen($doc), [11, 14])) {
-                $messages[] = 'CPF/CNPJ inválido';
-                $status = 'error';
+            if (!$this->validateCpfCnpj($doc)) {
+                $messages[] = 'CPF/CNPJ inválido (verificar documento)';
+                if ($status === 'valid') $status = 'warning';
             }
         }
 
@@ -433,6 +530,28 @@ class ImportService
         if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $messages[] = "E-mail inválido: '{$data['email']}'";
             $status = 'error';
+        }
+
+        // Phone validation (Brazilian format)
+        if (in_array($entity, [Import::ENTITY_CUSTOMERS, Import::ENTITY_SUPPLIERS])) {
+            foreach (['phone', 'phone2'] as $phoneKey) {
+                if (!empty($data[$phoneKey])) {
+                    $digits = preg_replace('/\D/', '', $data[$phoneKey]);
+                    if (strlen($digits) < 10 || strlen($digits) > 11) {
+                        $messages[] = "Telefone '{$data[$phoneKey]}' inválido (esperado 10 ou 11 dígitos)";
+                        if ($status === 'valid') $status = 'warning';
+                    }
+                }
+            }
+        }
+
+        // UF validation
+        if (!empty($data['address_state'])) {
+            $validUfs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+            if (!in_array(strtoupper($data['address_state']), $validUfs)) {
+                $messages[] = "UF inválida: '{$data['address_state']}'";
+                if ($status === 'valid') $status = 'warning';
+            }
         }
 
         // Numeric validation
@@ -495,8 +614,7 @@ class ImportService
     {
         $data['tenant_id'] = $tenantId;
 
-        // Só define is_active se o model aceitar esse campo
-        $model = match($entity) {
+        $modelClass = match($entity) {
             Import::ENTITY_CUSTOMERS => Customer::class,
             Import::ENTITY_PRODUCTS => Product::class,
             Import::ENTITY_SERVICES => Service::class,
@@ -504,7 +622,12 @@ class ImportService
             Import::ENTITY_SUPPLIERS => Supplier::class,
             default => null
         };
-        if ($model && in_array('is_active', (new $model)->getFillable())) {
+
+        if (!$modelClass) return null;
+
+        $instance = new $modelClass;
+
+        if (in_array('is_active', $instance->getFillable())) {
             $data['is_active'] = true;
         }
 
@@ -522,22 +645,9 @@ class ImportService
             $data['code'] = Equipment::generateCode($tenantId);
         }
 
-        $model = match($entity) {
-            Import::ENTITY_CUSTOMERS => Customer::class,
-            Import::ENTITY_PRODUCTS => Product::class,
-            Import::ENTITY_SERVICES => Service::class,
-            Import::ENTITY_EQUIPMENTS => Equipment::class,
-            Import::ENTITY_SUPPLIERS => Supplier::class,
-            default => null
-        };
-
-        if ($model) {
-            $instance = new $model;
-            $fillableData = array_intersect_key($data, array_flip($instance->getFillable()));
-            $created = $model::create($fillableData);
-            return $created->id;
-        }
-        return null;
+        $fillableData = array_intersect_key($data, array_flip($instance->getFillable()));
+        $created = $modelClass::create($fillableData);
+        return $created->id;
     }
 
     private function updateExisting(object $record, array $data, string $entity, int $tenantId): bool
@@ -558,20 +668,34 @@ class ImportService
 
     private function normalizeData(array &$data, string $entity): void
     {
-        $numericKeys = ['sell_price', 'cost_price', 'stock_qty', 'stock_min', 'default_price', 'annual_revenue_estimate', 'estimated_minutes'];
+        // C1: Normalização numérica segura (sem float cast direto para money)
+        $moneyKeys = ['sell_price', 'cost_price', 'default_price', 'annual_revenue_estimate'];
+        $intKeys = ['stock_qty', 'stock_min', 'estimated_minutes'];
+        $numericKeys = array_merge($moneyKeys, $intKeys);
+
         foreach ($data as $key => $value) {
             if (in_array($key, $numericKeys) && is_string($value)) {
                 if (str_contains($value, ',')) {
                     $value = str_replace('.', '', $value);
                     $value = str_replace(',', '.', $value);
                 }
-                $data[$key] = $key === 'estimated_minutes' ? (int) $value : (float) $value;
+                if (in_array($key, $intKeys)) {
+                    $data[$key] = (int) $value;
+                } else {
+                    // Money: usar bcadd para precisão
+                    $data[$key] = bcadd($value, '0', 2);
+                }
             }
         }
 
         // Document
         if (isset($data['document'])) {
             $data['document'] = preg_replace('/\D/', '', $data['document']);
+        }
+
+        // Address ZIP (CEP)
+        if (isset($data['address_zip'])) {
+            $data['address_zip'] = preg_replace('/\D/', '', $data['address_zip']);
         }
     }
 
@@ -604,5 +728,100 @@ class ImportService
             }
             unset($data['customer_document']);
         }
+    }
+
+    private function getExportEagerLoads(string $entity): array
+    {
+        return match ($entity) {
+            Import::ENTITY_PRODUCTS => ['category'],
+            Import::ENTITY_SERVICES => ['category'],
+            Import::ENTITY_EQUIPMENTS => ['customer'],
+            default => [],
+        };
+    }
+
+    private function resolveExportField(object $record, string $key, string $entity): string
+    {
+        // Virtual fields that need relationship resolution
+        if ($key === 'category_name') {
+            return $record->category?->name ?? '';
+        }
+
+        if ($key === 'customer_document' && $entity === Import::ENTITY_EQUIPMENTS) {
+            return $record->customer?->document ?? '';
+        }
+
+        // Numeric fields — format for Brazilian CSV
+        $moneyKeys = ['sell_price', 'cost_price', 'default_price'];
+        if (in_array($key, $moneyKeys) && $record->{$key} !== null) {
+            return number_format((float) $record->{$key}, 2, ',', '.');
+        }
+
+        return (string) ($record->{$key} ?? '');
+    }
+
+    /**
+     * F1: Valida CPF ou CNPJ com dígitos verificadores.
+     */
+    private function validateCpfCnpj(string $doc): bool
+    {
+        $doc = preg_replace('/\D/', '', $doc);
+
+        if (strlen($doc) === 11) {
+            return $this->validateCpf($doc);
+        }
+
+        if (strlen($doc) === 14) {
+            return $this->validateCnpj($doc);
+        }
+
+        return false;
+    }
+
+    private function validateCpf(string $cpf): bool
+    {
+        if (preg_match('/^(\d)\1{10}$/', $cpf)) return false;
+
+        for ($t = 9; $t < 11; $t++) {
+            $d = 0;
+            for ($c = 0; $c < $t; $c++) {
+                $d += (int) $cpf[$c] * (($t + 1) - $c);
+            }
+            $d = ((10 * $d) % 11) % 10;
+            if ((int) $cpf[$c] !== $d) return false;
+        }
+
+        return true;
+    }
+
+    private function validateCnpj(string $cnpj): bool
+    {
+        if (preg_match('/^(\d)\1{13}$/', $cnpj)) return false;
+
+        $length = strlen($cnpj) - 2;
+        $numbers = substr($cnpj, 0, $length);
+        $digits = substr($cnpj, $length);
+
+        $sum = 0;
+        $pos = $length - 7;
+        for ($i = $length; $i >= 1; $i--) {
+            $sum += (int) $numbers[$length - $i] * $pos--;
+            if ($pos < 2) $pos = 9;
+        }
+        $result = $sum % 11 < 2 ? 0 : 11 - ($sum % 11);
+        if ((int) $digits[0] !== $result) return false;
+
+        $length++;
+        $numbers = substr($cnpj, 0, $length);
+        $sum = 0;
+        $pos = $length - 7;
+        for ($i = $length; $i >= 1; $i--) {
+            $sum += (int) $numbers[$length - $i] * $pos--;
+            if ($pos < 2) $pos = 9;
+        }
+        $result = $sum % 11 < 2 ? 0 : 11 - ($sum % 11);
+        if ((int) $digits[1] !== $result) return false;
+
+        return true;
     }
 }

@@ -74,3 +74,15 @@ Schedule::command('central:scan-financials')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/central-scan-financials.log'));
 
+// ─── INMETRO Weekly Sync (semanal - segunda às 06:00) ───
+Schedule::command('inmetro:sync')
+    ->weeklyOn(1, '06:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/inmetro-sync.log'));
+
+// ─── INMETRO Lead Generation (diário às 07:45) ───
+Schedule::command('inmetro:generate-leads')
+    ->dailyAt('07:45')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/inmetro-leads.log'));
+

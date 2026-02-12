@@ -32,7 +32,7 @@ class QuoteReadyMail extends Mailable
                 'quote' => $this->quote,
                 'customerName' => $this->quote->customer?->name ?? 'Cliente',
                 'total' => number_format((float) $this->quote->total, 2, ',', '.'),
-                'approvalUrl' => $this->quote->publicApprovalUrl(),
+                'approvalUrl' => $this->quote->approval_url,
             ],
         );
     }

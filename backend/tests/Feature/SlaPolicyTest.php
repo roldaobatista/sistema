@@ -176,4 +176,39 @@ class SlaPolicyTest extends TestCase
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['name', 'response_time_minutes', 'priority']);
     }
+
+    public function test_index_uses_current_tenant_when_user_switches_company(): void
+    {
+        $switchedTenant = Tenant::factory()->create();
+
+        $this->user->update([
+            'current_tenant_id' => $switchedTenant->id,
+        ]);
+
+        app()->instance('current_tenant_id', $switchedTenant->id);
+
+        SlaPolicy::create([
+            'tenant_id' => $switchedTenant->id,
+            'name' => 'SLA Tenant Atual',
+            'response_time_minutes' => 45,
+            'resolution_time_minutes' => 180,
+            'priority' => 'high',
+            'is_active' => true,
+        ]);
+
+        SlaPolicy::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'SLA Tenant Base',
+            'response_time_minutes' => 30,
+            'resolution_time_minutes' => 120,
+            'priority' => 'low',
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson('/api/v1/sla-policies');
+
+        $response->assertOk()
+            ->assertJsonFragment(['name' => 'SLA Tenant Atual'])
+            ->assertJsonMissing(['name' => 'SLA Tenant Base']);
+    }
 }

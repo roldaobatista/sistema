@@ -7,6 +7,7 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class CommissionDisputeController extends Controller
@@ -85,37 +86,42 @@ class CommissionDisputeController extends Controller
             return $this->error('Ja existe uma contestacao aberta para este evento', 422);
         }
 
-        $id = DB::table('commission_disputes')->insertGetId([
-            'tenant_id' => $tenantId,
-            'commission_event_id' => $validated['commission_event_id'],
-            'user_id' => auth()->id(),
-            'reason' => $validated['reason'],
-            'status' => self::STATUS_OPEN,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         try {
-            $event = DB::table('commission_events')->find($validated['commission_event_id']);
-            DB::table('notifications')->insert([
-                'id' => \Illuminate\Support\Str::uuid(),
-                'type' => 'App\\Notifications\\CommissionDisputed',
-                'notifiable_type' => 'App\\Models\\User',
-                'notifiable_id' => $event->user_id ?? auth()->id(),
-                'data' => json_encode([
-                    'title' => 'Comissao contestada',
-                    'message' => "Uma contestacao foi aberta: {$validated['reason']}",
-                    'type' => 'commission_dispute',
-                    'dispute_id' => $id,
-                ]),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        } catch (\Throwable) {
-            // Non-critical
-        }
+            $id = DB::transaction(function () use ($tenantId, $validated) {
+                $id = DB::table('commission_disputes')->insertGetId([
+                    'tenant_id' => $tenantId,
+                    'commission_event_id' => $validated['commission_event_id'],
+                    'user_id' => auth()->id(),
+                    'reason' => $validated['reason'],
+                    'status' => self::STATUS_OPEN,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
-        return $this->success(['id' => $id], 'Contestacao registrada', 201);
+                $event = DB::table('commission_events')->find($validated['commission_event_id']);
+                DB::table('notifications')->insert([
+                    'id' => \Illuminate\Support\Str::uuid(),
+                    'type' => 'App\\Notifications\\CommissionDisputed',
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $event->user_id ?? auth()->id(),
+                    'data' => json_encode([
+                        'title' => 'Comissão contestada',
+                        'message' => "Uma contestação foi aberta: {$validated['reason']}",
+                        'type' => 'commission_dispute',
+                        'dispute_id' => $id,
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                return $id;
+            });
+
+            return $this->success(['id' => $id], 'Contestação registrada', 201);
+        } catch (\Exception $e) {
+            Log::error('Falha ao registrar contestação de comissão', ['error' => $e->getMessage()]);
+            return $this->error('Erro interno ao registrar contestação', 500);
+        }
     }
 
     public function resolve(Request $request, int $id): JsonResponse
@@ -147,7 +153,7 @@ class CommissionDisputeController extends Controller
                 'updated_at' => now(),
             ]);
 
-            if ($validated['status'] === self::STATUS_ACCEPTED && isset($validated['new_amount'])) {
+            if ($validated['status'] === self::STATUS_ACCEPTED) {
                 $event = DB::table('commission_events')
                     ->where('id', $dispute->commission_event_id)
                     ->first();
@@ -155,13 +161,20 @@ class CommissionDisputeController extends Controller
                 $existingNotes = (string) ($event->notes ?? '');
                 $suffix = " | Ajustado via contestação #{$id}";
 
+                $eventUpdate = [
+                    'notes' => $existingNotes . $suffix,
+                    'updated_at' => now(),
+                ];
+
+                if (isset($validated['new_amount'])) {
+                    $eventUpdate['commission_amount'] = $validated['new_amount'];
+                } else {
+                    $eventUpdate['status'] = 'reversed';
+                }
+
                 DB::table('commission_events')
                     ->where('id', $dispute->commission_event_id)
-                    ->update([
-                        'commission_amount' => $validated['new_amount'],
-                        'notes' => $existingNotes . $suffix,
-                        'updated_at' => now(),
-                    ]);
+                    ->update($eventUpdate);
             }
         });
 

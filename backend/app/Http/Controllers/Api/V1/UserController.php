@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -43,27 +45,27 @@ class UserController extends Controller
             if (!Hash::check($validated['current_password'], $user->password)) {
                 return response()->json(['message' => 'Senha atual incorreta.'], 422);
             }
-            // FIX-02: NÃO usar Hash::make() — o cast 'hashed' do Model já faz o hash.
-            // $validated['password'] já será hasheado pelo Model ao persistir.
         }
 
-        unset($validated['current_password']);
-        $user->update($validated);
+        try {
+            unset($validated['current_password']);
+            $user->update($validated);
 
-        return response()->json([
-            'message' => 'Perfil atualizado.',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-            ],
-        ]);
+            return response()->json([
+                'message' => 'Perfil atualizado.',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Profile update failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar perfil.'], 500);
+        }
     }
 
-    /**
-     * FIX-B5: Alterar senha do próprio usuário autenticado.
-     */
     public function changePassword(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -77,9 +79,19 @@ class UserController extends Controller
             return response()->json(['message' => 'Senha atual incorreta.'], 422);
         }
 
-        // O cast 'hashed' do Model já faz o hash automaticamente
-        $user->update(['password' => $validated['new_password']]);
+        try {
+            DB::transaction(function () use ($user, $validated) {
+                $user->update(['password' => $validated['new_password']]);
 
-        return response()->json(['message' => 'Senha alterada com sucesso.']);
+                // Revogar todos os tokens exceto o atual por segurança
+                $currentTokenId = $user->currentAccessToken()?->id;
+                $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+            });
+
+            return response()->json(['message' => 'Senha alterada com sucesso.']);
+        } catch (\Exception $e) {
+            Log::error('Password change failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao alterar senha.'], 500);
+        }
     }
 }

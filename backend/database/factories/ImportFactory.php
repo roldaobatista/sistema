@@ -13,14 +13,14 @@ class ImportFactory extends Factory
 
     public function definition(): array
     {
-        $tenant = Tenant::factory()->create();
-
         return [
-            'tenant_id' => $tenant->id,
-            'user_id' => User::factory()->state([
-                'tenant_id' => $tenant->id,
-                'current_tenant_id' => $tenant->id,
-            ]),
+            'tenant_id' => Tenant::factory(),
+            'user_id' => function (array $attributes) {
+                return User::factory()->state([
+                    'tenant_id' => $attributes['tenant_id'],
+                    'current_tenant_id' => $attributes['tenant_id'],
+                ]);
+            },
             'entity_type' => $this->faker->randomElement(array_keys(Import::ENTITY_TYPES)),
             'file_name' => $this->faker->word() . '.csv',
             'total_rows' => $this->faker->numberBetween(10, 500),

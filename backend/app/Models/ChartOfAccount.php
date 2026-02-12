@@ -44,4 +44,19 @@ class ChartOfAccount extends Model
     {
         return $this->hasMany(self::class, 'parent_id');
     }
+
+    public function receivables(): HasMany
+    {
+        return $this->hasMany(AccountReceivable::class, 'chart_of_account_id');
+    }
+
+    public function payables(): HasMany
+    {
+        return $this->hasMany(AccountPayable::class, 'chart_of_account_id');
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class, 'chart_of_account_id');
+    }
 }

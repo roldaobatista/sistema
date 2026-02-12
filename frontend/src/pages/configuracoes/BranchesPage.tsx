@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Building2, Plus, Pencil, Trash2, Phone, Mail, MapPin, X, Check,
-    AlertTriangle, XCircle, Search, RefreshCw,
+    AlertTriangle, XCircle, Search, RefreshCw, Loader2,
 } from 'lucide-react'
+import { useViaCep } from '@/hooks/useViaCep'
+import { useIbgeStates, useIbgeCities } from '@/hooks/useIbge'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
@@ -44,6 +46,22 @@ export function BranchesPage() {
     const [deleteDependencies, setDeleteDependencies] = useState<any>(null)
     const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
     const [search, setSearch] = useState('')
+    const viaCep = useViaCep()
+    const { data: ibgeStates = [] } = useIbgeStates()
+    const { data: ibgeCities = [] } = useIbgeCities(form.address_state)
+
+    async function handleCepBlur() {
+        const result = await viaCep.lookup(form.address_zip)
+        if (result) {
+            setForm(f => ({
+                ...f,
+                address_street: result.street || f.address_street,
+                address_neighborhood: result.neighborhood || f.address_neighborhood,
+                address_city: result.city || f.address_city,
+                address_state: result.state || f.address_state,
+            }))
+        }
+    }
 
     const canCreate = hasPermission('platform.branch.create')
     const canUpdate = hasPermission('platform.branch.update')
@@ -233,11 +251,29 @@ export function BranchesPage() {
                     <div className="grid grid-cols-3 gap-3">
                         <Input label="Complemento" value={form.address_complement} onChange={set('address_complement')} />
                         <Input label="Bairro" value={form.address_neighborhood} onChange={set('address_neighborhood')} />
-                        <Input label="CEP" value={form.address_zip} onChange={set('address_zip')} />
+                        <div className="relative">
+                            <Input label="CEP" value={form.address_zip} onChange={set('address_zip')} onBlur={handleCepBlur} />
+                            {viaCep.loading && <Loader2 className="absolute right-2 top-8 h-4 w-4 animate-spin text-brand-500" />}
+                        </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                        <Input label="Cidade" value={form.address_city} onChange={set('address_city')} />
-                        <Input label="UF" value={form.address_state} onChange={set('address_state')} maxLength={2} />
+                        <div>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Cidade</label>
+                            <select value={form.address_city} onChange={e => setForm(f => ({ ...f, address_city: e.target.value }))}
+                                className="w-full rounded-md border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                disabled={!form.address_state}>
+                                <option value="">{form.address_state ? 'Selecione' : 'Selecione o UF primeiro'}</option>
+                                {ibgeCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">UF</label>
+                            <select value={form.address_state} onChange={e => setForm(f => ({ ...f, address_state: e.target.value, address_city: '' }))}
+                                className="w-full rounded-md border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
+                                <option value="">Selecione</option>
+                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
+                            </select>
+                        </div>
                         <Input label="Telefone" value={form.phone} onChange={set('phone')} />
                     </div>
                     <Input label="E-mail" type="email" value={form.email} onChange={set('email')} />

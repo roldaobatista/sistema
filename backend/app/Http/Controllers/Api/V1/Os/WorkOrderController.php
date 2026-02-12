@@ -16,6 +16,7 @@ use App\Events\WorkOrderCancelled;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class WorkOrderController extends Controller
@@ -86,10 +87,25 @@ class WorkOrderController extends Controller
             $query->where('customer_id', $customerId);
         }
 
+        if ($dateFrom = $request->get('date_from')) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo = $request->get('date_to')) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        // Contagem por status (todas as páginas) para quick stats do frontend
+        $statusCounts = (clone $query)->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
         $orders = $query->orderByDesc('created_at')
             ->paginate($request->get('per_page', 20));
 
-        return response()->json($orders);
+        $response = $orders->toArray();
+        $response['status_counts'] = $statusCounts;
+
+        return response()->json($response);
     }
 
     public function store(Request $request): JsonResponse
@@ -104,7 +120,7 @@ class WorkOrderController extends Controller
             'description' => 'required|string',
             'internal_notes' => 'nullable|string',
             'received_at' => 'nullable|date',
-            'discount' => 'numeric|min:0',
+            'discount' => 'sometimes|numeric|min:0',
             // Novos campos v2
             'os_number' => 'nullable|string|max:30',
             'quote_id' => ['nullable', Rule::exists('quotes', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
@@ -118,7 +134,8 @@ class WorkOrderController extends Controller
                 WorkOrder::ORIGIN_MANUAL,
                 'direct', // Legacy/Frontend support
             ])],
-            'discount_percentage' => 'numeric|min:0|max:100',
+            'discount_percentage' => 'sometimes|numeric|min:0|max:100',
+            'displacement_value' => 'sometimes|numeric|min:0',
             'technician_ids' => 'nullable|array',
             'technician_ids.*' => [Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'equipment_ids' => 'nullable|array',
@@ -134,9 +151,9 @@ class WorkOrderController extends Controller
             'items.*.type' => 'required|in:product,service',
             'items.*.reference_id' => 'nullable|integer',
             'items.*.description' => 'required|string',
-            'items.*.quantity' => 'numeric|min:0.01',
-            'items.*.unit_price' => 'numeric|min:0',
-            'items.*.discount' => 'numeric|min:0',
+            'items.*.quantity' => 'sometimes|numeric|min:0.01',
+            'items.*.unit_price' => 'sometimes|numeric|min:0',
+            'items.*.discount' => 'sometimes|numeric|min:0',
         ]);
 
         if (!empty($validated['items'])) {
@@ -201,6 +218,7 @@ class WorkOrderController extends Controller
             $order->statusHistory()->create([
                 'tenant_id' => $tenantId,
                 'user_id' => $request->user()->id,
+                'from_status' => null,
                 'to_status' => WorkOrder::STATUS_OPEN,
                 'notes' => 'OS criada',
             ]);
@@ -261,18 +279,26 @@ class WorkOrderController extends Controller
             'internal_notes' => 'nullable|string',
             'technical_report' => 'nullable|string',
             'received_at' => 'nullable|date',
-            'discount' => 'numeric|min:0',
+            'discount' => 'sometimes|numeric|min:0',
             'os_number' => 'nullable|string|max:30',
             'seller_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'discount_percentage' => 'numeric|min:0|max:100',
-            'displacement_value' => 'numeric|min:0',
+            'discount_percentage' => 'sometimes|numeric|min:0|max:100',
+            'displacement_value' => 'sometimes|numeric|min:0',
         ]);
 
-        $workOrder->update($validated);
+        try {
+            DB::beginTransaction();
+            $workOrder->update($validated);
 
-        if (isset($validated['discount']) || isset($validated['discount_percentage']) || isset($validated['displacement_value'])) {
-            $workOrder->recalculateTotal();
+            if (isset($validated['discount']) || isset($validated['discount_percentage']) || isset($validated['displacement_value'])) {
+                $workOrder->recalculateTotal();
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder update failed', ['id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar OS'], 500);
         }
 
         return response()->json($workOrder->fresh()->load([
@@ -299,7 +325,16 @@ class WorkOrderController extends Controller
             ], 409);
         }
 
-        $workOrder->delete();
+        try {
+            DB::beginTransaction();
+            $workOrder->delete();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder delete failed', ['id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir OS'], 500);
+        }
+
         return response()->json(null, 204);
     }
 
@@ -323,54 +358,66 @@ class WorkOrderController extends Controller
             ], 422);
         }
 
-        $workOrder->update([
-            'status' => $to,
-            'started_at' => $to === WorkOrder::STATUS_IN_PROGRESS && !$workOrder->started_at ? now() : $workOrder->started_at,
-            'completed_at' => $to === WorkOrder::STATUS_COMPLETED ? now() : $workOrder->completed_at,
-            'delivered_at' => $to === WorkOrder::STATUS_DELIVERED ? now() : $workOrder->delivered_at,
-        ]);
-
-        // statusHistory criado apenas para transições sem Listener dedicado
-        // Os Listeners WorkOrderStarted, Completed, Cancelled, Invoiced já criam seus próprios registros
-        if (!in_array($to, [WorkOrder::STATUS_IN_PROGRESS, WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_CANCELLED, WorkOrder::STATUS_INVOICED])) {
-            $workOrder->statusHistory()->create([
-                'tenant_id' => $workOrder->tenant_id,
-                'user_id' => $request->user()->id,
-                'from_status' => $from,
-                'to_status' => $to,
-                'notes' => $validated['notes'] ?? null,
+        DB::beginTransaction();
+        try {
+            $workOrder->update([
+                'status' => $to,
+                'started_at' => $to === WorkOrder::STATUS_IN_PROGRESS && !$workOrder->started_at ? now() : $workOrder->started_at,
+                'completed_at' => $to === WorkOrder::STATUS_COMPLETED ? now() : $workOrder->completed_at,
+                'delivered_at' => $to === WorkOrder::STATUS_DELIVERED ? now() : $workOrder->delivered_at,
             ]);
-        }
 
-        // #26 — Notificar técnico responsável e criador por email
-        if (in_array($to, [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_DELIVERED, WorkOrder::STATUS_CANCELLED, WorkOrder::STATUS_WAITING_APPROVAL])) {
-            $notification = new \App\Notifications\WorkOrderStatusChanged($workOrder, $from, $to);
-            $notifyIds = array_filter(array_unique([
-                $workOrder->assigned_to,
-                $workOrder->created_by,
-            ]));
-            $usersToNotify = \App\Models\User::whereIn('id', $notifyIds)
-                ->where('id', '!=', $request->user()->id) // não notificar quem fez a ação
-                ->get();
-            foreach ($usersToNotify as $u) {
-                $u->notify($notification);
+            // statusHistory criado apenas para transições sem Listener dedicado
+            // Os Listeners WorkOrderStarted, Completed, Cancelled, Invoiced já criam seus próprios registros
+            if (!in_array($to, [WorkOrder::STATUS_IN_PROGRESS, WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_CANCELLED, WorkOrder::STATUS_INVOICED])) {
+                $workOrder->statusHistory()->create([
+                    'tenant_id' => $workOrder->tenant_id,
+                    'user_id' => $request->user()->id,
+                    'from_status' => $from,
+                    'to_status' => $to,
+                    'notes' => $validated['notes'] ?? null,
+                ]);
             }
+
+            // #26 — Notificar técnico responsável e criador por email
+            if (in_array($to, [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_DELIVERED, WorkOrder::STATUS_CANCELLED, WorkOrder::STATUS_WAITING_APPROVAL])) {
+                $notification = new \App\Notifications\WorkOrderStatusChanged($workOrder, $from, $to);
+                $notifyIds = array_filter(array_unique([
+                    $workOrder->assigned_to,
+                    $workOrder->created_by,
+                ]));
+                $usersToNotify = \App\Models\User::whereIn('id', $notifyIds)
+                    ->where('id', '!=', $request->user()->id)
+                    ->get();
+                foreach ($usersToNotify as $u) {
+                    $u->notify($notification);
+                }
+            }
+
+            DB::commit();
+
+            // Dispatch domain events AFTER commit to prevent race conditions
+            $user = $request->user();
+            match ($to) {
+                WorkOrder::STATUS_IN_PROGRESS => WorkOrderStarted::dispatch($workOrder, $user),
+                WorkOrder::STATUS_COMPLETED => WorkOrderCompleted::dispatch($workOrder, $user),
+                WorkOrder::STATUS_INVOICED => WorkOrderInvoiced::dispatch($workOrder, $user),
+                WorkOrder::STATUS_CANCELLED => WorkOrderCancelled::dispatch($workOrder, $user, $validated['notes'] ?? ''),
+                default => null,
+            };
+
+            return response()->json($workOrder->fresh()->load('statusHistory.user:id,name'));
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder status update failed', [
+                'work_order_id' => $workOrder->id,
+                'from' => $from,
+                'to' => $to,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['message' => 'Erro ao alterar status da OS'], 500);
         }
-
-        // Estorno de estoque ao cancelar — delegado ao HandleWorkOrderCancellation listener
-        // (evita duplicidade de estorno)
-
-        // Dispatch domain events
-        $user = $request->user();
-        match ($to) {
-            WorkOrder::STATUS_IN_PROGRESS => WorkOrderStarted::dispatch($workOrder, $user),
-            WorkOrder::STATUS_COMPLETED => WorkOrderCompleted::dispatch($workOrder, $user),
-            WorkOrder::STATUS_INVOICED => WorkOrderInvoiced::dispatch($workOrder, $user),
-            WorkOrder::STATUS_CANCELLED => WorkOrderCancelled::dispatch($workOrder, $user, $validated['notes'] ?? ''),
-            default => null,
-        };
-
-        return response()->json($workOrder->fresh()->load('statusHistory.user:id,name'));
     }
 
     // --- Itens CRUD ---
@@ -382,9 +429,9 @@ class WorkOrderController extends Controller
             'type' => 'required|in:product,service',
             'reference_id' => 'nullable|integer',
             'description' => 'required|string',
-            'quantity' => 'numeric|min:0.01',
-            'unit_price' => 'numeric|min:0',
-            'discount' => 'numeric|min:0',
+            'quantity' => 'sometimes|numeric|min:0.01',
+            'unit_price' => 'sometimes|numeric|min:0',
+            'discount' => 'sometimes|numeric|min:0',
         ]);
 
         $message = $this->validateItemReference(
@@ -400,9 +447,16 @@ class WorkOrderController extends Controller
             ], 422);
         }
 
-        $item = $workOrder->items()->create($validated);
-        // recalculateTotal já é chamado pelo hook WorkOrderItem::created
-        return response()->json($item, 201);
+        try {
+            DB::beginTransaction();
+            $item = $workOrder->items()->create($validated);
+            DB::commit();
+            return response()->json($item, 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder addItem failed', ['wo_id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao adicionar item'], 500);
+        }
     }
 
     public function updateItem(Request $request, WorkOrder $workOrder, WorkOrderItem $item): JsonResponse
@@ -417,9 +471,9 @@ class WorkOrderController extends Controller
             'type' => 'sometimes|in:product,service',
             'reference_id' => 'nullable|integer',
             'description' => 'sometimes|string',
-            'quantity' => 'numeric|min:0.01',
-            'unit_price' => 'numeric|min:0',
-            'discount' => 'numeric|min:0',
+            'quantity' => 'sometimes|numeric|min:0.01',
+            'unit_price' => 'sometimes|numeric|min:0',
+            'discount' => 'sometimes|numeric|min:0',
         ]);
 
         $type = $validated['type'] ?? $item->type;
@@ -433,9 +487,16 @@ class WorkOrderController extends Controller
             ], 422);
         }
 
-        $item->update($validated);
-        // recalculateTotal + estoque já são chamados pelo hook WorkOrderItem::updated
-        return response()->json($item);
+        try {
+            DB::beginTransaction();
+            $item->update($validated);
+            DB::commit();
+            return response()->json($item);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder updateItem failed', ['item_id' => $item->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar item'], 500);
+        }
     }
 
     public function destroyItem(WorkOrder $workOrder, WorkOrderItem $item): JsonResponse
@@ -444,8 +505,16 @@ class WorkOrderController extends Controller
             return response()->json(['message' => 'Item não pertence a esta OS'], 403);
         }
 
-        $item->delete();
-        // recalculateTotal já é chamado pelo hook WorkOrderItem::deleted
+        try {
+            DB::beginTransaction();
+            $item->delete();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder deleteItem failed', ['item_id' => $item->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover item'], 500);
+        }
+
         return response()->json(null, 204);
     }
 
@@ -472,19 +541,30 @@ class WorkOrderController extends Controller
             'description' => 'nullable|string|max:255',
         ]);
 
-        $file = $request->file('file');
-        $path = $file->store("work-orders/{$workOrder->id}/attachments", 'public');
+        try {
+            DB::beginTransaction();
 
-        $attachment = $workOrder->attachments()->create([
-            'uploaded_by' => $request->user()->id,
-            'file_name' => $file->getClientOriginalName(),
-            'file_path' => $path,
-            'file_type' => $file->getMimeType(),
-            'file_size' => $file->getSize(),
-            'description' => $request->input('description'),
-        ]);
+            $file = $request->file('file');
+            $path = $file->store("work-orders/{$workOrder->id}/attachments", 'public');
 
-        return response()->json($attachment->load('uploader:id,name'), 201);
+            $attachment = $workOrder->attachments()->create([
+                'tenant_id' => $this->currentTenantId(),
+                'uploaded_by' => $request->user()->id,
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'description' => $request->input('description'),
+            ]);
+
+            DB::commit();
+
+            return response()->json($attachment->load('uploader:id,name'), 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder storeAttachment failed', ['wo_id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao enviar anexo'], 500);
+        }
     }
 
     public function destroyAttachment(WorkOrder $workOrder, \App\Models\WorkOrderAttachment $attachment): JsonResponse
@@ -493,8 +573,16 @@ class WorkOrderController extends Controller
             return response()->json(['message' => 'Anexo não pertence a esta OS'], 403);
         }
 
-        \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
-        $attachment->delete();
+        try {
+            DB::beginTransaction();
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+            $attachment->delete();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder destroyAttachment failed', ['attachment_id' => $attachment->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover anexo'], 500);
+        }
 
         return response()->json(null, 204);
     }
@@ -516,25 +604,35 @@ class WorkOrderController extends Controller
             ], 422);
         }
 
-        // Decode base64 and save
-        $imageData = base64_decode(
-            preg_replace('#^data:image/\w+;base64,#i', '', $validated['signature'])
-        );
+        try {
+            DB::beginTransaction();
 
-        $path = "signatures/wo_{$workOrder->id}_" . time() . '.png';
-        \Illuminate\Support\Facades\Storage::disk('public')->put($path, $imageData);
+            // Decode base64 and save
+            $imageData = base64_decode(
+                preg_replace('#^data:image/\w+;base64,#i', '', $validated['signature'])
+            );
 
-        $workOrder->update([
-            'signature_path' => $path,
-            'signature_signer' => $validated['signer_name'],
-            'signature_at' => now(),
-            'signature_ip' => $request->ip(),
-        ]);
+            $path = "signatures/wo_{$workOrder->id}_" . time() . '.png';
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, $imageData);
 
-        return response()->json([
-            'message' => 'Assinatura registrada com sucesso',
-            'signature_url' => asset("storage/{$path}"),
-        ]);
+            $workOrder->update([
+                'signature_path' => $path,
+                'signature_signer' => $validated['signer_name'],
+                'signature_at' => now(),
+                'signature_ip' => $request->ip(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Assinatura registrada com sucesso',
+                'signature_url' => asset("storage/{$path}"),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder storeSignature failed', ['wo_id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao salvar assinatura'], 500);
+        }
     }
 
     // --- Equipamentos múltiplos na OS ---
@@ -551,14 +649,221 @@ class WorkOrderController extends Controller
             return response()->json(['message' => 'Equipamento já vinculado a esta OS'], 422);
         }
 
-        $workOrder->equipmentsList()->attach($validated['equipment_id']);
+        try {
+            DB::beginTransaction();
+            $workOrder->equipmentsList()->attach($validated['equipment_id']);
+            DB::commit();
 
-        return response()->json($workOrder->equipmentsList, 201);
+            return response()->json($workOrder->fresh()->equipmentsList, 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder attachEquipment failed', ['wo_id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao vincular equipamento'], 500);
+        }
     }
 
     public function detachEquipment(WorkOrder $workOrder, Equipment $equipment): JsonResponse
     {
-        $workOrder->equipmentsList()->detach($equipment->id);
+        if ($equipment->tenant_id !== $workOrder->tenant_id) {
+            return response()->json(['message' => 'Equipamento não pertence a este tenant'], 403);
+        }
+
+        try {
+            DB::beginTransaction();
+            $workOrder->equipmentsList()->detach($equipment->id);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder detachEquipment failed', ['wo_id' => $workOrder->id, 'equipment_id' => $equipment->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao desvincular equipamento'], 500);
+        }
+
         return response()->json(null, 204);
+    }
+
+    // --- Duplicar OS ---
+
+    public function duplicate(Request $request, WorkOrder $workOrder): JsonResponse
+    {
+        $tenantId = $this->currentTenantId();
+
+        try {
+            DB::beginTransaction();
+
+            $newOrder = $workOrder->replicate(['number', 'os_number', 'status', 'started_at', 'completed_at', 'delivered_at', 'cancelled_at', 'cancellation_reason', 'signature_path', 'signed_by_name', 'signature_at', 'invoice_id']);
+            $newOrder->number = WorkOrder::nextNumber($tenantId);
+            $newOrder->status = WorkOrder::STATUS_OPEN;
+            $newOrder->created_by = $request->user()->id;
+            $newOrder->total = '0.00';
+            $newOrder->save();
+
+            // Clone items
+            foreach ($workOrder->items as $item) {
+                $newItem = $item->replicate(['work_order_id']);
+                $newItem->work_order_id = $newOrder->id;
+                $newItem->save();
+            }
+
+            // Clone equipment links
+            $equipIds = $workOrder->equipmentsList()->pluck('equipment_id')->toArray();
+            if (!empty($equipIds)) {
+                $newOrder->equipmentsList()->attach($equipIds);
+            }
+
+            // Clone technicians
+            $techIds = $workOrder->technicians()->pluck('user_id')->toArray();
+            if (!empty($techIds)) {
+                $newOrder->technicians()->attach($techIds);
+            }
+
+            $newOrder->recalculateTotal();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'OS duplicada com sucesso',
+                'data' => $newOrder->fresh()->load(['customer', 'items', 'equipmentsList']),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder duplicate failed', ['source_id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao duplicar OS'], 500);
+        }
+    }
+
+    // --- Exportar CSV ---
+
+    public function exportCsv(Request $request)
+    {
+        $query = WorkOrder::with(['customer:id,name', 'assignee:id,name'])
+            ->orderByDesc('created_at');
+
+        if ($status = $request->get('status')) {
+            $query->where('status', $status);
+        }
+        if ($priority = $request->get('priority')) {
+            $query->where('priority', $priority);
+        }
+        if ($from = $request->get('date_from')) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to = $request->get('date_to')) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $orders = $query->get();
+
+        $callback = function () use ($orders) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Número', 'Status', 'Prioridade', 'Cliente', 'Técnico', 'Total', 'Criado em', 'Concluído em']);
+            foreach ($orders as $wo) {
+                fputcsv($out, [
+                    $wo->business_number,
+                    WorkOrder::STATUSES[$wo->status]['label'] ?? $wo->status,
+                    WorkOrder::PRIORITIES[$wo->priority]['label'] ?? $wo->priority,
+                    $wo->customer?->name ?? '—',
+                    $wo->assignee?->name ?? '—',
+                    number_format((float) $wo->total, 2, ',', '.'),
+                    $wo->created_at?->format('d/m/Y H:i') ?? '',
+                    $wo->completed_at?->format('d/m/Y H:i') ?? '',
+                ]);
+            }
+            fclose($out);
+        };
+
+        $filename = 'os_export_' . now()->format('Y-m-d_His') . '.csv';
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
+    }
+
+    // --- Dashboard Stats ---
+
+    public function dashboardStats(Request $request): JsonResponse
+    {
+        $base = WorkOrder::query();
+
+        // Status counts
+        $statusCounts = (clone $base)
+            ->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        // Avg completion time (in hours)
+        $avgCompletionHours = (clone $base)
+            ->whereNotNull('completed_at')
+            ->whereNotNull('started_at')
+            ->select('started_at', 'completed_at')
+            ->get()
+            ->avg(fn ($row) => \Carbon\Carbon::parse($row->started_at)->diffInHours(\Carbon\Carbon::parse($row->completed_at)));
+
+        // Revenue this month
+        $monthRevenue = (clone $base)
+            ->where('status', WorkOrder::STATUS_INVOICED)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('total');
+
+        // SLA compliance
+        $totalWithSla = (clone $base)->whereNotNull('sla_due_at')->count();
+        $slaBreached = (clone $base)
+            ->whereNotNull('sla_due_at')
+            ->whereColumn('completed_at', '>', 'sla_due_at')
+            ->count();
+        $slaCompliance = $totalWithSla > 0 ? round((($totalWithSla - $slaBreached) / $totalWithSla) * 100, 1) : 100;
+
+        // Top 5 customers
+        $topCustomers = (clone $base)
+            ->join('customers', 'work_orders.customer_id', '=', 'customers.id')
+            ->select('customers.name', DB::raw('count(*) as total_os'), DB::raw('sum(work_orders.total) as revenue'))
+            ->groupBy('customers.id', 'customers.name')
+            ->orderByDesc('total_os')
+            ->limit(5)
+            ->get();
+
+        return response()->json([
+            'status_counts' => $statusCounts,
+            'avg_completion_hours' => round((float) $avgCompletionHours, 1),
+            'month_revenue' => number_format((float) $monthRevenue, 2, '.', ''),
+            'sla_compliance' => $slaCompliance,
+            'total_orders' => (clone $base)->count(),
+            'top_customers' => $topCustomers,
+        ]);
+    }
+
+    // --- Reabrir OS cancelada ---
+
+    public function reopen(Request $request, WorkOrder $workOrder): JsonResponse
+    {
+        if ($workOrder->status !== WorkOrder::STATUS_CANCELLED) {
+            return response()->json(['message' => 'Apenas OS canceladas podem ser reabertas'], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $workOrder->update([
+                'status' => WorkOrder::STATUS_OPEN,
+            ]);
+
+            WorkOrderStatusHistory::create([
+                'tenant_id' => $workOrder->tenant_id,
+                'work_order_id' => $workOrder->id,
+                'user_id' => $request->user()->id,
+                'from_status' => WorkOrder::STATUS_CANCELLED,
+                'to_status' => WorkOrder::STATUS_OPEN,
+                'notes' => 'OS reaberta',
+            ]);
+
+            DB::commit();
+
+            return response()->json($workOrder->fresh()->load('statusHistory.user:id,name'));
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder reopen failed', ['id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao reabrir OS'], 500);
+        }
     }
 }

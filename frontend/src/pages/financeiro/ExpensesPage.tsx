@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Receipt, Plus, Search, CheckCircle, XCircle,
-    Clock, Eye, Trash2, Tag, RefreshCw, Pencil, RotateCcw, Settings,
+    Clock, Eye, Trash2, Tag, RefreshCw, Pencil, RotateCcw, Settings, Download, DollarSign,
+    BarChart3, ChevronDown, Copy, History, AlertTriangle,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { EXPENSE_STATUS } from '@/lib/constants'
@@ -19,6 +20,9 @@ const statusConfig: Record<string, { label: string; variant: any }> = {
     reimbursed: { label: 'Reembolsado', variant: 'success' },
 }
 
+const isEditableExpenseStatus = (status: string): status is 'pending' | 'rejected' =>
+    status === EXPENSE_STATUS.PENDING || status === EXPENSE_STATUS.REJECTED
+
 const paymentMethods: Record<string, string> = {
     dinheiro: 'Dinheiro', pix: 'PIX', cartao_credito: 'Cartão Crédito',
     cartao_debito: 'Cartão Débito', boleto: 'Boleto', transferencia: 'Transferência',
@@ -28,12 +32,21 @@ interface Exp {
     id: number; description: string; amount: string
     expense_date: string; status: string; payment_method: string | null
     notes: string | null; receipt_path: string | null
+    chart_of_account_id?: number | null
+    chart_of_account?: { id: number; code: string; name: string; type: string } | null
     rejection_reason?: string | null
     affects_technician_cash?: boolean
     category: { id: number; name: string; color: string } | null
     creator: { id: number; name: string }
     work_order: { id: number; number: string; os_number?: string | null; business_number?: string | null } | null
     approver?: { id: number; name: string } | null
+    _warning?: string
+    _budget_warning?: string
+}
+
+interface StatusHistoryEntry {
+    id: number; from_status: string | null; to_status: string
+    reason: string | null; changed_by: string; changed_at: string
 }
 
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -44,6 +57,7 @@ const woIdentifier = (wo?: { number: string; os_number?: string | null; business
 export function ExpensesPage() {
     const qc = useQueryClient()
     const { hasPermission } = useAuthStore()
+    const canViewChart = hasPermission('finance.chart.view')
 
     const canCreate = hasPermission('expenses.expense.create')
     const canUpdate = hasPermission('expenses.expense.update')
@@ -71,9 +85,16 @@ export function ExpensesPage() {
     const [actionFeedback, setActionFeedback] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
     const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+    const [showBatchReject, setShowBatchReject] = useState(false)
+    const [batchRejectReason, setBatchRejectReason] = useState('')
+    const [creatorFilter, setCreatorFilter] = useState('')
+    const [woFilter, setWoFilter] = useState('')
+    const [showAnalytics, setShowAnalytics] = useState(false)
+    const [showHistory, setShowHistory] = useState<number | null>(null)
     const emptyForm = {
         expense_category_id: '' as string | number, work_order_id: '' as string | number,
-        description: '', amount: '', expense_date: '', payment_method: '', notes: '',
+        chart_of_account_id: '' as string | number, description: '', amount: '', expense_date: '', payment_method: '', notes: '',
         affects_technician_cash: false, receipt: null as File | null,
     }
     const [form, setForm] = useState(emptyForm)
@@ -85,10 +106,10 @@ export function ExpensesPage() {
     }, [search])
 
     // Reset page when filters change
-    useEffect(() => { setPage(1) }, [debouncedSearch, statusFilter, catFilter, dateFrom, dateTo])
+    useEffect(() => { setPage(1) }, [debouncedSearch, statusFilter, catFilter, dateFrom, dateTo, creatorFilter, woFilter])
 
     const { data: res, isLoading } = useQuery({
-        queryKey: ['expenses', debouncedSearch, statusFilter, catFilter, dateFrom, dateTo, page],
+        queryKey: ['expenses', debouncedSearch, statusFilter, catFilter, dateFrom, dateTo, creatorFilter, woFilter, page],
         queryFn: () => api.get('/expenses', {
             params: {
                 search: debouncedSearch || undefined,
@@ -96,6 +117,8 @@ export function ExpensesPage() {
                 expense_category_id: catFilter || undefined,
                 date_from: dateFrom || undefined,
                 date_to: dateTo || undefined,
+                created_by: creatorFilter || undefined,
+                work_order_id: woFilter || undefined,
                 per_page: 50,
                 page
             },
@@ -116,6 +139,20 @@ export function ExpensesPage() {
     })
     const categories = catsRes?.data ?? []
 
+    const { data: chartRes } = useQuery({
+        queryKey: ['chart-of-accounts-expenses'],
+        queryFn: () => api.get('/chart-of-accounts', { params: { is_active: 1, type: 'expense' } }),
+        enabled: canViewChart && showForm,
+    })
+    const chartAccounts: { id: number; code: string; name: string }[] = chartRes?.data?.data ?? []
+
+    const { data: analyticsRes } = useQuery({
+        queryKey: ['expense-analytics'],
+        queryFn: () => api.get('/expense-analytics'),
+        enabled: showAnalytics,
+    })
+    const analytics = analyticsRes?.data ?? null
+
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-expense'],
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
@@ -127,6 +164,7 @@ export function ExpensesPage() {
             const formData = new FormData()
             if (data.expense_category_id) formData.append('expense_category_id', String(data.expense_category_id))
             if (data.work_order_id) formData.append('work_order_id', String(data.work_order_id))
+            if (data.chart_of_account_id) formData.append('chart_of_account_id', String(data.chart_of_account_id))
             formData.append('description', data.description)
             formData.append('amount', data.amount)
             formData.append('expense_date', data.expense_date)
@@ -145,14 +183,18 @@ export function ExpensesPage() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
         },
-        onSuccess: () => {
+        onSuccess: (res: any) => {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
+            qc.invalidateQueries({ queryKey: ['expense-analytics'] })
             setShowForm(false)
             setEditingId(null)
             setForm(emptyForm)
             setFieldErrors({})
-            showFeedback(editingId ? 'Despesa atualizada com sucesso' : 'Despesa criada com sucesso')
+            const msg = editingId ? 'Despesa atualizada com sucesso' : 'Despesa criada com sucesso'
+            const warning = res?.data?._warning
+            const budgetWarning = res?.data?._budget_warning
+            showFeedback(warning ? `${msg}. ⚠️ ${warning}` : budgetWarning ? `${msg}. ⚠️ ${budgetWarning}` : msg)
         },
         onError: (err: any) => {
             if (err?.response?.status === 422 && err?.response?.data?.errors) {
@@ -173,6 +215,7 @@ export function ExpensesPage() {
         onSuccess: (_d, vars) => {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
+            qc.invalidateQueries({ queryKey: ['expense-analytics'] })
             setRejectTarget(null)
             showFeedback(`Despesa ${statusConfig[vars.status]?.label?.toLowerCase() ?? vars.status} com sucesso`)
         },
@@ -191,6 +234,7 @@ export function ExpensesPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
+            qc.invalidateQueries({ queryKey: ['expense-analytics'] })
             setDeleteTarget(null)
             showFeedback('Despesa excluída com sucesso')
         },
@@ -224,8 +268,96 @@ export function ExpensesPage() {
         },
     })
 
+    const batchMut = useMutation({
+        mutationFn: (data: { expense_ids: number[]; status: string; rejection_reason?: string }) =>
+            api.post('/expenses/batch-status', data),
+        onSuccess: (res: any) => {
+            qc.invalidateQueries({ queryKey: ['expenses'] })
+            qc.invalidateQueries({ queryKey: ['expense-summary'] })
+            qc.invalidateQueries({ queryKey: ['expense-analytics'] })
+            setSelectedIds(new Set())
+            setShowBatchReject(false)
+            showFeedback(res?.data?.message ?? 'Lote processado com sucesso')
+        },
+        onError: (err: any) => {
+            if (err?.response?.status === 422) {
+                showFeedback(err?.response?.data?.message ?? 'Erro de validação no lote')
+            } else if (err?.response?.status === 403) {
+                showFeedback('Você não tem permissão para esta ação')
+            } else {
+                showFeedback(err?.response?.data?.message ?? 'Erro ao processar lote')
+            }
+        },
+    })
+
+    const dupMut = useMutation({
+        mutationFn: (id: number) => api.post(`/expenses/${id}/duplicate`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['expenses'] })
+            qc.invalidateQueries({ queryKey: ['expense-summary'] })
+            qc.invalidateQueries({ queryKey: ['expense-analytics'] })
+            showFeedback('Despesa duplicada como pendente')
+        },
+        onError: (err: any) => {
+            showFeedback(err?.response?.data?.message ?? 'Erro ao duplicar despesa')
+        },
+    })
+
+    const { data: historyRes } = useQuery({
+        queryKey: ['expense-history', showHistory],
+        queryFn: () => api.get(`/expenses/${showHistory}/history`),
+        enabled: showHistory !== null,
+    })
+    const historyEntries: StatusHistoryEntry[] = historyRes?.data ?? []
+
+    const handleExport = async () => {
+        try {
+            const params = new URLSearchParams()
+            if (statusFilter) params.set('status', statusFilter)
+            if (catFilter) params.set('expense_category_id', catFilter)
+            if (dateFrom) params.set('date_from', dateFrom)
+            if (dateTo) params.set('date_to', dateTo)
+            if (creatorFilter) params.set('created_by', creatorFilter)
+            if (woFilter) params.set('work_order_id', woFilter)
+            const response = await api.get(`/expenses-export?${params.toString()}`, { responseType: 'blob' })
+            const url = window.URL.createObjectURL(new Blob([response.data]))
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `despesas_${new Date().toISOString().slice(0, 10)}.csv`
+            a.click()
+            window.URL.revokeObjectURL(url)
+            showFeedback('Exportação concluída')
+        } catch {
+            showFeedback('Erro ao exportar despesas')
+        }
+    }
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id); else next.add(id)
+            return next
+        })
+    }
+
+    const toggleSelectAll = () => {
+        const pendingIds = records.filter(r => r.status === EXPENSE_STATUS.PENDING).map(r => r.id)
+        if (pendingIds.length > 0 && pendingIds.every(id => selectedIds.has(id))) {
+            setSelectedIds(new Set())
+        } else {
+            setSelectedIds(new Set(pendingIds))
+        }
+    }
+
+    const pendingRecords = records.filter(r => r.status === EXPENSE_STATUS.PENDING)
+    const allPendingSelected = pendingRecords.length > 0 && pendingRecords.every(r => selectedIds.has(r.id))
+
+    // Unique creators from current data for filter
+    const uniqueCreators = Array.from(new Map(records.map(r => [r.creator.id, r.creator])).values())
+
     const delCatMut = useMutation({
         mutationFn: (id: number) => api.delete(`/expense-categories/${id}`),
+
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['expense-categories'] })
             qc.invalidateQueries({ queryKey: ['expenses'] })
@@ -264,12 +396,13 @@ export function ExpensesPage() {
     }
 
     const openEdit = (exp: Exp) => {
-        if (![EXPENSE_STATUS.PENDING, EXPENSE_STATUS.REJECTED].includes(exp.status)) return
+        if (!isEditableExpenseStatus(exp.status)) return
         setEditingId(exp.id)
         setFieldErrors({})
         setForm({
             expense_category_id: exp.category?.id ?? '',
             work_order_id: exp.work_order?.id ?? '',
+            chart_of_account_id: exp.chart_of_account?.id ?? '',
             description: exp.description,
             amount: exp.amount,
             expense_date: exp.expense_date,
@@ -293,6 +426,9 @@ export function ExpensesPage() {
                     <p className="mt-0.5 text-[13px] text-surface-500">Controle de despesas e aprovações</p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" icon={<Download className="h-4 w-4" />} onClick={handleExport}>
+                        Exportar CSV
+                    </Button>
                     {canCreate && (
                         <Button variant="outline" icon={<Settings className="h-4 w-4" />} onClick={() => setShowCatManager(true)}>
                             Categorias
@@ -313,19 +449,123 @@ export function ExpensesPage() {
             )}
 
             {/* Summary Cards */}
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                     <div className="flex items-center gap-2 text-amber-600"><Clock className="h-4 w-4" /><span className="text-xs font-medium">Pendente Aprovação</span></div>
                     <p className="mt-1 text-xl font-bold text-surface-900">{fmtBRL(summary.pending ?? 0)}</p>
+                    <p className="mt-0.5 text-xs text-surface-400">{summary.pending_count ?? 0} despesa(s)</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                     <div className="flex items-center gap-2 text-sky-600"><CheckCircle className="h-4 w-4" /><span className="text-xs font-medium">Aprovado</span></div>
                     <p className="mt-1 text-xl font-bold text-sky-600">{fmtBRL(summary.approved ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                    <div className="flex items-center gap-2 text-emerald-600"><DollarSign className="h-4 w-4" /><span className="text-xs font-medium">Reembolsado</span></div>
+                    <p className="mt-1 text-xl font-bold text-emerald-600">{fmtBRL(summary.reimbursed ?? 0)}</p>
+                </div>
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                     <div className="flex items-center gap-2 text-surface-600"><Receipt className="h-4 w-4" /><span className="text-xs font-medium">Total do Mês</span></div>
                     <p className="mt-1 text-xl font-bold text-surface-900">{fmtBRL(summary.month_total ?? 0)}</p>
+                    <p className="mt-0.5 text-xs text-surface-400">{summary.total_count ?? 0} total</p>
                 </div>
+            </div>
+
+            {/* Analytics Toggle + Section */}
+            <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                <button onClick={() => setShowAnalytics(p => !p)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-surface-50 transition-colors">
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-brand-600" />
+                        <span className="text-sm font-semibold text-surface-800">Analytics de Despesas</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-surface-400 transition-transform duration-200 ${showAnalytics ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showAnalytics && analytics && (
+                    <div className="border-t border-subtle px-4 pb-4 pt-3">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {/* By Category */}
+                            <div>
+                                <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Gastos por Categoria</h3>
+                                <div className="space-y-2">
+                                    {(analytics.by_category ?? []).length === 0 ? (
+                                        <p className="text-xs text-surface-400">Nenhum dado no período</p>
+                                    ) : (() => {
+                                        const maxVal = Math.max(...(analytics.by_category ?? []).map((c: any) => Number(c.total)), 1)
+                                        return (analytics.by_category ?? []).map((cat: any) => (
+                                            <div key={cat.category_id ?? 'none'} className="flex items-center gap-2">
+                                                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: cat.category_color }} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-0.5">
+                                                        <span className="truncate text-xs font-medium text-surface-700">{cat.category_name}</span>
+                                                        <span className="ml-2 text-xs tabular-nums text-surface-500">{fmtBRL(cat.total)}</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full rounded-full bg-surface-100">
+                                                        <div className="h-full rounded-full transition-all duration-300"
+                                                            style={{ width: `${(Number(cat.total) / maxVal) * 100}%`, backgroundColor: cat.category_color }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* By Month */}
+                            <div>
+                                <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Evolução Mensal (6 meses)</h3>
+                                <div className="space-y-2">
+                                    {(analytics.by_month ?? []).length === 0 ? (
+                                        <p className="text-xs text-surface-400">Nenhum dado</p>
+                                    ) : (() => {
+                                        const maxMonth = Math.max(...(analytics.by_month ?? []).map((m: any) => Number(m.total)), 1)
+                                        return (analytics.by_month ?? []).map((m: any) => {
+                                            const [year, month] = m.month.split('-')
+                                            const label = `${month}/${year}`
+                                            return (
+                                                <div key={m.month} className="flex items-center gap-3">
+                                                    <span className="w-12 text-xs text-surface-500 tabular-nums">{label}</span>
+                                                    <div className="flex-1 h-1.5 rounded-full bg-surface-100">
+                                                        <div className="h-full rounded-full bg-brand-500 transition-all duration-300"
+                                                            style={{ width: `${(Number(m.total) / maxMonth) * 100}%` }} />
+                                                    </div>
+                                                    <span className="w-24 text-right text-xs text-surface-600 tabular-nums">{fmtBRL(m.total)}</span>
+                                                </div>
+                                            )
+                                        })
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* Top Creators */}
+                            <div>
+                                <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Top Responsáveis</h3>
+                                <div className="space-y-2">
+                                    {(analytics.top_creators ?? []).length === 0 ? (
+                                        <p className="text-xs text-surface-400">Nenhum dado</p>
+                                    ) : (analytics.top_creators ?? []).map((cr: any, i: number) => (
+                                        <div key={cr.user_id} className="flex items-center gap-2">
+                                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-100 text-[10px] font-bold text-surface-500">{i + 1}</span>
+                                            <span className="flex-1 truncate text-xs font-medium text-surface-700">{cr.user_name}</span>
+                                            <span className="text-xs text-surface-400">{cr.count}x</span>
+                                            <span className="text-xs font-medium tabular-nums text-surface-600">{fmtBRL(cr.total)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <p className="mt-3 text-[11px] text-surface-400">
+                            Período: {analytics.period?.from} a {analytics.period?.to} · Exclui despesas rejeitadas
+                        </p>
+                    </div>
+                )}
+
+                {showAnalytics && !analytics && (
+                    <div className="border-t border-subtle px-4 py-6 text-center">
+                        <div className="mx-auto h-4 w-32 animate-pulse rounded bg-surface-200" />
+                    </div>
+                )}
             </div>
 
             {/* Filters */}
@@ -345,18 +585,56 @@ export function ExpensesPage() {
                     <option value="">Todas categorias</option>
                     {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+                {uniqueCreators.length > 1 && (
+                    <select value={creatorFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCreatorFilter(e.target.value)}
+                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                        <option value="">Todos responsáveis</option>
+                        {uniqueCreators.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                )}
             </div>
             {/* Filters Row 2 */}
             <div className="flex flex-wrap gap-3">
                 <Input type="date" value={dateFrom} onChange={(e: any) => setDateFrom(e.target.value)} className="w-40" placeholder="De" />
                 <Input type="date" value={dateTo} onChange={(e: any) => setDateTo(e.target.value)} className="w-40" placeholder="Até" />
+                {woFilter && (
+                    <Button variant="ghost" size="sm" onClick={() => setWoFilter('')} className="text-xs text-surface-500">
+                        Limpar filtro OS
+                    </Button>
+                )}
             </div>
+
+            {/* Batch Actions */}
+            {selectedIds.size > 0 && canApprove && (
+                <div className="flex items-center gap-3 rounded-lg border border-brand-200 bg-brand-50/50 px-4 py-2.5">
+                    <span className="text-sm font-medium text-brand-700">{selectedIds.size} selecionada(s)</span>
+                    <Button size="sm" variant="outline" icon={<CheckCircle className="h-4 w-4" />}
+                        loading={batchMut.isPending}
+                        onClick={() => batchMut.mutate({ expense_ids: Array.from(selectedIds), status: EXPENSE_STATUS.APPROVED })}>
+                        Aprovar Selecionadas
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" icon={<XCircle className="h-4 w-4" />}
+                        onClick={() => { setShowBatchReject(true); setBatchRejectReason('') }}>
+                        Rejeitar Selecionadas
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                        Limpar seleção
+                    </Button>
+                </div>
+            )}
 
             {/* Table */}
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
+                            {canApprove && (
+                                <th className="w-10 px-3 py-2.5">
+                                    <input type="checkbox" checked={allPendingSelected && pendingRecords.length > 0} onChange={toggleSelectAll}
+                                        className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                                        title="Selecionar todas pendentes" />
+                                </th>
+                            )}
                             <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Descrição</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600 sm:table-cell">Categoria</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600 md:table-cell">Responsável</th>
@@ -368,9 +646,20 @@ export function ExpensesPage() {
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {isLoading ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">Carregando...</td></tr>
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <tr key={`skel-${i}`}>
+                                    {canApprove && <td className="px-3 py-3"><div className="h-4 w-4 animate-pulse rounded bg-surface-200" /></td>}
+                                    <td className="px-4 py-3"><div className="h-4 w-32 animate-pulse rounded bg-surface-200" /></td>
+                                    <td className="hidden px-4 py-3 sm:table-cell"><div className="h-4 w-20 animate-pulse rounded bg-surface-200" /></td>
+                                    <td className="hidden px-4 py-3 md:table-cell"><div className="h-4 w-24 animate-pulse rounded bg-surface-200" /></td>
+                                    <td className="hidden px-4 py-3 md:table-cell"><div className="h-4 w-20 animate-pulse rounded bg-surface-200" /></td>
+                                    <td className="px-4 py-3"><div className="h-5 w-16 animate-pulse rounded-full bg-surface-200" /></td>
+                                    <td className="px-4 py-3"><div className="ml-auto h-4 w-20 animate-pulse rounded bg-surface-200" /></td>
+                                    <td className="px-4 py-3"><div className="ml-auto h-4 w-16 animate-pulse rounded bg-surface-200" /></td>
+                                </tr>
+                            ))
                         ) : records.length === 0 ? (
-                            <tr><td colSpan={7} className="px-4 py-16 text-center">
+                            <tr><td colSpan={canApprove ? 8 : 7} className="px-4 py-16 text-center">
                                 <Receipt className="mx-auto h-10 w-10 text-surface-300" />
                                 <p className="mt-3 text-sm font-medium text-surface-600">Nenhuma despesa encontrada</p>
                                 <p className="mt-1 text-xs text-surface-400">Crie uma nova despesa para começar</p>
@@ -382,7 +671,15 @@ export function ExpensesPage() {
                                 )}
                             </td></tr>
                         ) : records.map(r => (
-                            <tr key={r.id} className="hover:bg-surface-50 transition-colors duration-100">
+                            <tr key={r.id} className={`hover:bg-surface-50 transition-colors duration-100 ${selectedIds.has(r.id) ? 'bg-brand-50/30' : ''}`}>
+                                {canApprove && (
+                                    <td className="px-3 py-3">
+                                        {r.status === EXPENSE_STATUS.PENDING ? (
+                                            <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)}
+                                                className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+                                        ) : <div className="h-4 w-4" />}
+                                    </td>
+                                )}
                                 <td className="px-4 py-3">
                                     <p className="text-[13px] font-medium text-surface-900">{r.description}</p>
                                     {r.work_order && <p className="text-xs text-brand-500">{woIdentifier(r.work_order)}</p>}
@@ -401,18 +698,18 @@ export function ExpensesPage() {
                                 <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-surface-900">{fmtBRL(r.amount)}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => loadDetail(r)}><Eye className="h-4 w-4" /></Button>
-                                        {canUpdate && [EXPENSE_STATUS.PENDING, EXPENSE_STATUS.REJECTED].includes(r.status) && (
-                                            <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                                        <Button variant="ghost" size="sm" title="Ver detalhes" onClick={() => loadDetail(r)}><Eye className="h-4 w-4" /></Button>
+                                        {canUpdate && isEditableExpenseStatus(r.status) && (
+                                            <Button variant="ghost" size="sm" title="Editar" onClick={() => openEdit(r)}>
                                                 <Pencil className="h-4 w-4 text-surface-500" />
                                             </Button>
                                         )}
                                         {canApprove && r.status === EXPENSE_STATUS.PENDING && (
                                             <>
-                                                <Button variant="ghost" size="sm" onClick={() => statusMut.mutate({ id: r.id, status: EXPENSE_STATUS.APPROVED })}>
+                                                <Button variant="ghost" size="sm" title="Aprovar" onClick={() => statusMut.mutate({ id: r.id, status: EXPENSE_STATUS.APPROVED })}>
                                                     <CheckCircle className="h-4 w-4 text-sky-500" />
                                                 </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => {
+                                                <Button variant="ghost" size="sm" title="Rejeitar" onClick={() => {
                                                     setRejectTarget(r.id)
                                                     setRejectReason('')
                                                 }}>
@@ -421,7 +718,7 @@ export function ExpensesPage() {
                                             </>
                                         )}
                                         {canApprove && r.status === EXPENSE_STATUS.APPROVED && (
-                                            <Button variant="ghost" size="sm" onClick={() => statusMut.mutate({ id: r.id, status: EXPENSE_STATUS.REIMBURSED })}>
+                                            <Button variant="ghost" size="sm" title="Marcar como reembolsado" onClick={() => statusMut.mutate({ id: r.id, status: EXPENSE_STATUS.REIMBURSED })}>
                                                 <RefreshCw className="h-4 w-4 text-emerald-500" />
                                             </Button>
                                         )}
@@ -430,8 +727,16 @@ export function ExpensesPage() {
                                                 <RotateCcw className="h-4 w-4 text-amber-500" />
                                             </Button>
                                         )}
-                                        {canDelete && [EXPENSE_STATUS.PENDING, EXPENSE_STATUS.REJECTED].includes(r.status) && (
-                                            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r.id)}>
+                                        {canCreate && (
+                                            <Button variant="ghost" size="sm" title="Duplicar" onClick={() => dupMut.mutate(r.id)}>
+                                                <Copy className="h-4 w-4 text-surface-500" />
+                                            </Button>
+                                        )}
+                                        <Button variant="ghost" size="sm" title="Histórico" onClick={() => setShowHistory(r.id)}>
+                                            <History className="h-4 w-4 text-surface-400" />
+                                        </Button>
+                                        {canDelete && isEditableExpenseStatus(r.status) && (
+                                            <Button variant="ghost" size="sm" title="Excluir" onClick={() => setDeleteTarget(r.id)}>
                                                 <Trash2 className="h-4 w-4 text-red-500" />
                                             </Button>
                                         )}
@@ -478,6 +783,16 @@ export function ExpensesPage() {
                             </select>
                         </div>
                     </div>
+                    {canViewChart && (
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Plano de Contas</label>
+                            <select value={form.chart_of_account_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('chart_of_account_id', e.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                <option value="">Nao classificado</option>
+                                {chartAccounts.map(account => <option key={account.id} value={account.id}>{account.code} - {account.name}</option>)}
+                            </select>
+                        </div>
+                    )}
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
                             <Input label="Valor (R$) *" type="number" step="0.01" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('amount', e.target.value)} required />
@@ -542,6 +857,9 @@ export function ExpensesPage() {
                                     <div className="flex items-center gap-2.5">
                                         <span className="h-3 w-3 rounded-full" style={{ backgroundColor: c.color }} />
                                         <span className="text-sm font-medium text-surface-800">{c.name}</span>
+                                        {c.expenses_count != null && (
+                                            <span className="text-xs text-surface-400">({c.expenses_count})</span>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Button variant="ghost" size="sm" onClick={() => { setEditingCatId(c.id); setCatForm({ name: c.name, color: c.color }); setShowCatForm(true) }}>
@@ -603,6 +921,10 @@ export function ExpensesPage() {
                                     </p>
                                 ) : <p className="text-sm text-surface-400">Sem categoria</p>}
                             </div>
+                            <div>
+                                <span className="text-xs text-surface-500">Plano de Contas</span>
+                                <p className="text-sm font-medium">{showDetail.chart_of_account ? `${showDetail.chart_of_account.code} - ${showDetail.chart_of_account.name}` : 'â€”'}</p>
+                            </div>
                             <div><span className="text-xs text-surface-500">Valor</span><p className="text-[15px] font-semibold tabular-nums">{fmtBRL(showDetail.amount)}</p></div>
                             <div><span className="text-xs text-surface-500">Status</span><Badge variant={statusConfig[showDetail.status]?.variant}>{statusConfig[showDetail.status]?.label}</Badge></div>
                             <div><span className="text-xs text-surface-500">Responsável</span><p className="text-sm">{showDetail.creator.name}</p></div>
@@ -643,6 +965,53 @@ export function ExpensesPage() {
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button className="bg-red-600 hover:bg-red-700" loading={delMut.isPending} disabled={delMut.isPending} onClick={() => { delMut.mutate(deleteTarget!) }}>Excluir</Button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Batch Reject Modal */}
+            <Modal open={showBatchReject} onOpenChange={setShowBatchReject} title="Rejeitar em Lote">
+                <form onSubmit={e => { e.preventDefault(); if (!batchRejectReason.trim()) return; batchMut.mutate({ expense_ids: Array.from(selectedIds), status: EXPENSE_STATUS.REJECTED, rejection_reason: batchRejectReason.trim() }) }} className="space-y-4">
+                    <p className="text-sm text-surface-600">{selectedIds.size} despesa(s) selecionada(s) serão rejeitadas.</p>
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Motivo da rejeição *</label>
+                        <textarea value={batchRejectReason} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBatchRejectReason(e.target.value)} rows={3} required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                            placeholder="Informe o motivo da rejeição..." />
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowBatchReject(false)}>Cancelar</Button>
+                        <Button type="submit" className="bg-red-600 hover:bg-red-700" loading={batchMut.isPending} disabled={batchMut.isPending}>Rejeitar Selecionadas</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Status History Modal */}
+            <Modal open={showHistory !== null} onOpenChange={() => setShowHistory(null)} title="Histórico de Status">
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {historyEntries.length === 0 ? (
+                        <p className="text-sm text-surface-400 text-center py-6">Nenhum registro de histórico</p>
+                    ) : historyEntries.map((h) => (
+                        <div key={h.id} className="flex gap-3 border-b border-subtle pb-3 last:border-0">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-100">
+                                <History className="h-4 w-4 text-surface-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {h.from_status && (
+                                        <>
+                                            <Badge variant={statusConfig[h.from_status]?.variant}>{statusConfig[h.from_status]?.label}</Badge>
+                                            <span className="text-xs text-surface-400">→</span>
+                                        </>
+                                    )}
+                                    <Badge variant={statusConfig[h.to_status]?.variant}>{statusConfig[h.to_status]?.label}</Badge>
+                                </div>
+                                {h.reason && <p className="mt-1 text-xs text-surface-600">{h.reason}</p>}
+                                <p className="mt-1 text-[11px] text-surface-400">
+                                    {h.changed_by} · {new Date(h.changed_at).toLocaleString('pt-BR')}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </Modal>
         </div>

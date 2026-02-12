@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1\Technician;
 
 use App\Http\Controllers\Controller;
 use App\Models\Schedule;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use App\Models\WorkOrder;
 
@@ -16,6 +18,28 @@ class ScheduleController extends Controller
     {
         $user = $request->user();
         return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
+    private function userBelongsToTenant(int $userId, int $tenantId): bool
+    {
+        return User::query()
+            ->where('id', $userId)
+            ->where(function ($query) use ($tenantId) {
+                $query
+                    ->where('tenant_id', $tenantId)
+                    ->orWhere('current_tenant_id', $tenantId)
+                    ->orWhereHas('tenants', fn ($tenantQuery) => $tenantQuery->where('tenants.id', $tenantId));
+            })
+            ->exists();
+    }
+
+    private function ensureTenantUser(int $userId, int $tenantId, string $field = 'technician_id'): void
+    {
+        if (!$this->userBelongsToTenant($userId, $tenantId)) {
+            throw ValidationException::withMessages([
+                $field => ['Usuario nao pertence ao tenant atual.'],
+            ]);
+        }
     }
 
     public function index(Request $request): JsonResponse
@@ -61,13 +85,15 @@ class ScheduleController extends Controller
         $validated = $request->validate([
             'work_order_id' => ['nullable', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'customer_id' => ['nullable', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'technician_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'technician_id' => ['required', Rule::exists('users', 'id')],
             'title' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'scheduled_start' => 'required|date',
             'scheduled_end' => 'required|date|after:scheduled_start',
+            'status' => ['sometimes', Rule::in(array_keys(Schedule::STATUSES))],
             'address' => 'nullable|string|max:500',
         ]);
+        $this->ensureTenantUser((int) $validated['technician_id'], $tenantId);
 
         if (Schedule::hasConflict($validated['technician_id'], $validated['scheduled_start'], $validated['scheduled_end'], null, $tenantId)) {
             return response()->json([
@@ -76,7 +102,11 @@ class ScheduleController extends Controller
         }
 
         $schedule = DB::transaction(function () use ($validated, $tenantId) {
-            return Schedule::create([...$validated, 'tenant_id' => $tenantId, 'status' => Schedule::STATUS_SCHEDULED]);
+            return Schedule::create([
+                ...$validated,
+                'tenant_id' => $tenantId,
+                'status' => $validated['status'] ?? Schedule::STATUS_SCHEDULED,
+            ]);
         });
 
         return response()->json($schedule->load(['technician:id,name', 'customer:id,name', 'workOrder:id,number,os_number']), 201);
@@ -99,7 +129,7 @@ class ScheduleController extends Controller
         $validated = $request->validate([
             'work_order_id' => ['nullable', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'customer_id' => ['nullable', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'technician_id' => ['sometimes', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'technician_id' => ['sometimes', Rule::exists('users', 'id')],
             'title' => 'sometimes|string|max:255',
             'notes' => 'nullable|string',
             'scheduled_start' => 'sometimes|date',
@@ -107,6 +137,9 @@ class ScheduleController extends Controller
             'status' => ['sometimes', Rule::in(array_keys(Schedule::STATUSES))],
             'address' => 'nullable|string|max:500',
         ]);
+        if (array_key_exists('technician_id', $validated)) {
+            $this->ensureTenantUser((int) $validated['technician_id'], $tenantId);
+        }
 
         abort_unless($schedule->tenant_id === $tenantId, 404);
 
@@ -250,11 +283,12 @@ class ScheduleController extends Controller
         $tenantId = $this->tenantId($request);
 
         $validated = $request->validate([
-            'technician_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'technician_id' => ['required', Rule::exists('users', 'id')],
             'start' => 'required|date',
             'end' => 'required|date|after:start',
             'exclude_schedule_id' => ['nullable', Rule::exists('schedules', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ]);
+        $this->ensureTenantUser((int) $validated['technician_id'], $tenantId);
 
         $hasConflict = Schedule::hasConflict(
             $validated['technician_id'],

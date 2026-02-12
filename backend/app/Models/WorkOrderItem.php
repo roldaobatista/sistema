@@ -42,7 +42,9 @@ class WorkOrderItem extends Model
     {
         // Auto-calcula total ao salvar
         static::saving(function (self $item) {
-            $item->total = max(0, ($item->quantity * $item->unit_price) - $item->discount);
+            $subtotal = bcmul((string) $item->quantity, (string) $item->unit_price, 2);
+            $result = bcsub($subtotal, (string) ($item->discount ?? 0), 2);
+            $item->total = bccomp($result, '0', 2) < 0 ? '0.00' : $result;
         });
 
         // Auto-popular cost_price a partir do Product

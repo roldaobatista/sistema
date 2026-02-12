@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
     ArrowLeft, ArrowRight, Plus, Trash2, Search, Package, Wrench, Save,
 } from 'lucide-react'
@@ -124,6 +125,8 @@ export function QuoteCreatePage() {
     const discountAmount = discountPercentage > 0 ? subtotal * (discountPercentage / 100) : 0
     const total = subtotal - discountAmount
 
+    const qc = useQueryClient()
+
     const saveMut = useMutation({
         mutationFn: () => {
             setErrorMsg(null)
@@ -143,8 +146,17 @@ export function QuoteCreatePage() {
                 })),
             })
         },
-        onSuccess: () => navigate('/orcamentos'),
-        onError: () => setErrorMsg(STRINGS.errorSaving),
+        onSuccess: () => {
+            toast.success('Orçamento criado com sucesso!')
+            qc.invalidateQueries({ queryKey: ['quotes'] })
+            qc.invalidateQueries({ queryKey: ['quotes-summary'] })
+            navigate('/orcamentos')
+        },
+        onError: (err: any) => {
+            const msg = err?.response?.data?.message || STRINGS.errorSaving
+            setErrorMsg(msg)
+            toast.error(msg)
+        },
     })
 
     const handleNext = () => {

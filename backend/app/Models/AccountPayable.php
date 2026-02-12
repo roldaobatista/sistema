@@ -19,6 +19,7 @@ class AccountPayable extends Model
 
     protected $fillable = [
         'tenant_id', 'created_by', 'supplier_id', 'category_id',
+        'chart_of_account_id',
         'description', 'amount', 'amount_paid', 'due_date', 'paid_at',
         'status', 'payment_method', 'notes',
     ];
@@ -101,6 +102,11 @@ class AccountPayable extends Model
     public function categoryRelation(): BelongsTo
     {
         return $this->belongsTo(AccountPayableCategory::class, 'category_id');
+    }
+
+    public function chartOfAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
     }
 
     public function payments(): MorphMany

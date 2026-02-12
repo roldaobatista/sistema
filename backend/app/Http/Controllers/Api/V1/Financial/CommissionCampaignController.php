@@ -7,6 +7,7 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CommissionCampaignController extends Controller
 {
@@ -43,20 +44,27 @@ class CommissionCampaignController extends Controller
             'ends_at' => 'required|date|after_or_equal:starts_at',
         ]);
 
-        $id = DB::table('commission_campaigns')->insertGetId([
-            'tenant_id' => $this->tenantId(),
-            'name' => $validated['name'],
-            'multiplier' => $validated['multiplier'],
-            'applies_to_role' => $validated['applies_to_role'] ?? null,
-            'applies_to_calculation_type' => $validated['applies_to_calculation_type'] ?? null,
-            'starts_at' => $validated['starts_at'],
-            'ends_at' => $validated['ends_at'],
-            'active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        try {
+            $id = DB::transaction(function () use ($validated) {
+                return DB::table('commission_campaigns')->insertGetId([
+                    'tenant_id' => $this->tenantId(),
+                    'name' => $validated['name'],
+                    'multiplier' => $validated['multiplier'],
+                    'applies_to_role' => $validated['applies_to_role'] ?? null,
+                    'applies_to_calculation_type' => $validated['applies_to_calculation_type'] ?? null,
+                    'starts_at' => $validated['starts_at'],
+                    'ends_at' => $validated['ends_at'],
+                    'active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            });
 
-        return $this->success(['id' => $id], 'Campanha criada', 201);
+            return $this->success(['id' => $id], 'Campanha criada', 201);
+        } catch (\Exception $e) {
+            Log::error('Falha ao criar campanha de comissão', ['error' => $e->getMessage()]);
+            return $this->error('Erro interno ao criar campanha', 500);
+        }
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -80,27 +88,41 @@ class CommissionCampaignController extends Controller
             return $this->error('Campanha não encontrada', 404);
         }
 
-        $validated['updated_at'] = now();
+        try {
+            $validated['updated_at'] = now();
 
-        DB::table('commission_campaigns')
-            ->where('id', $id)
-            ->where('tenant_id', $this->tenantId())
-            ->update($validated);
+            DB::transaction(function () use ($id, $validated) {
+                DB::table('commission_campaigns')
+                    ->where('id', $id)
+                    ->where('tenant_id', $this->tenantId())
+                    ->update($validated);
+            });
 
-        return $this->success(null, 'Campanha atualizada');
+            return $this->success(null, 'Campanha atualizada');
+        } catch (\Exception $e) {
+            Log::error('Falha ao atualizar campanha de comissão', ['error' => $e->getMessage(), 'campaign_id' => $id]);
+            return $this->error('Erro interno ao atualizar campanha', 500);
+        }
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $deleted = DB::table('commission_campaigns')
-            ->where('id', $id)
-            ->where('tenant_id', $this->tenantId())
-            ->delete();
+        try {
+            $deleted = DB::transaction(function () use ($id) {
+                return DB::table('commission_campaigns')
+                    ->where('id', $id)
+                    ->where('tenant_id', $this->tenantId())
+                    ->delete();
+            });
 
-        if (!$deleted) {
-            return $this->error('Campanha não encontrada', 404);
+            if (!$deleted) {
+                return $this->error('Campanha não encontrada', 404);
+            }
+
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            Log::error('Falha ao excluir campanha de comissão', ['error' => $e->getMessage(), 'campaign_id' => $id]);
+            return $this->error('Erro interno ao excluir campanha', 500);
         }
-
-        return response()->json(null, 204);
     }
 }

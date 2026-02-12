@@ -1,9 +1,6 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    Plus, User,
-    ChevronLeft, ChevronRight, Trash2,
-} from 'lucide-react'
+﻿import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight, Plus, Trash2, User } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -11,11 +8,12 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { useAuthStore } from '@/stores/auth-store'
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'brand' | 'success' | 'danger' | 'warning' | 'info' }> = {
     scheduled: { label: 'Agendado', variant: 'info' },
     confirmed: { label: 'Confirmado', variant: 'brand' },
-    completed: { label: 'Concluído', variant: 'success' },
+    completed: { label: 'Concluido', variant: 'success' },
     cancelled: { label: 'Cancelado', variant: 'danger' },
 }
 
@@ -65,194 +63,232 @@ const emptyForm = {
 
 function getWeekDays(date: Date) {
     const start = new Date(date)
-    start.setDate(start.getDate() - start.getDay() + 1) // Monday
-    return Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(start)
-        d.setDate(start.getDate() + i)
-        return d
+    start.setDate(start.getDate() - start.getDay() + 1)
+
+    return Array.from({ length: 7 }, (_, index) => {
+        const current = new Date(start)
+        current.setDate(start.getDate() + index)
+        return current
     })
 }
 
-const fmt = (d: Date) => d.toISOString().split('T')[0]
-const fmtShort = (d: Date) => d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
-const fmtTime = (s: string) => new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-const woIdentifier = (wo?: WorkOrder | null) =>
-    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
+const toLocalDateInput = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+const formatDateISO = (date: Date) => toLocalDateInput(date)
+const formatDayLabel = (date: Date) => date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
+const formatTime = (value: string) => new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+const workOrderIdentifier = (workOrder?: WorkOrder | null) => workOrder?.business_number ?? workOrder?.os_number ?? workOrder?.number ?? '-'
 
 export function SchedulesPage() {
-    const qc = useQueryClient()
+    const queryClient = useQueryClient()
+    const { hasPermission, hasRole } = useAuthStore()
+    const canManageSchedules = hasRole('super_admin') || hasPermission('technicians.schedule.manage')
+
     const [weekOf, setWeekOf] = useState(() => new Date())
     const [showForm, setShowForm] = useState(false)
     const [editing, setEditing] = useState<Schedule | null>(null)
     const [form, setForm] = useState(emptyForm)
-    const [techFilter, setTechFilter] = useState('')
+    const [technicianFilter, setTechnicianFilter] = useState('')
 
-    const days = getWeekDays(weekOf)
-    const from = fmt(days[0])
-    const to = fmt(days[6]) + 'T23:59:59'
+    const weekDays = getWeekDays(weekOf)
+    const from = formatDateISO(weekDays[0])
+    const to = `${formatDateISO(weekDays[6])}T23:59:59`
 
-    const { data: res } = useQuery({
-        queryKey: ['schedules', from, to, techFilter],
-        queryFn: () => api.get('/schedules', {
-            params: { from, to, technician_id: techFilter || undefined, per_page: 200 },
-        }),
+    const { data: schedulesResponse } = useQuery({
+        queryKey: ['schedules', from, to, technicianFilter],
+        queryFn: () =>
+            api.get('/schedules', {
+                params: {
+                    from,
+                    to,
+                    technician_id: technicianFilter || undefined,
+                    per_page: 200,
+                },
+            }),
     })
-    const schedules: Schedule[] = res?.data?.data ?? []
+    const schedules: Schedule[] = schedulesResponse?.data?.data ?? []
 
-    const { data: techsRes } = useQuery({
+    const { data: techniciansResponse } = useQuery({
         queryKey: ['technicians-schedules'],
-        queryFn: () => api.get('/users/by-role/tecnico'),
+        queryFn: () => api.get('/technicians/options'),
     })
-    const technicians: Technician[] = techsRes?.data ?? []
+    const technicians: Technician[] = techniciansResponse?.data ?? []
 
-    const { data: wosRes } = useQuery({
+    const { data: workOrdersResponse } = useQuery({
         queryKey: ['work-orders-select'],
         queryFn: () => api.get('/work-orders', { params: { per_page: 50, status: 'open' } }),
         enabled: showForm,
     })
-    const workOrders: WorkOrder[] = wosRes?.data?.data ?? []
+    const workOrders: WorkOrder[] = workOrdersResponse?.data?.data ?? []
 
-    const { data: customersRes } = useQuery({
+    const { data: customersResponse } = useQuery({
         queryKey: ['customers-select'],
         queryFn: () => api.get('/customers', { params: { per_page: 50 } }),
         enabled: showForm,
     })
-    const customers: Customer[] = customersRes?.data?.data ?? []
+    const customers: Customer[] = customersResponse?.data?.data ?? []
 
-    const saveMut = useMutation({
-        mutationFn: (data: typeof form) =>
-            editing ? api.put(`/schedules/${editing.id}`, data) : api.post('/schedules', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedules'] }); setShowForm(false) },
-        onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao salvar agendamento'),
+    const saveMutation = useMutation({
+        mutationFn: (payload: typeof form) =>
+            editing ? api.put(`/schedules/${editing.id}`, payload) : api.post('/schedules', payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['schedules'] })
+            setShowForm(false)
+            setEditing(null)
+            setForm(emptyForm)
+        },
+        onError: (error: { response?: { data?: { message?: string } } }) => {
+            toast.error(error?.response?.data?.message ?? 'Erro ao salvar agendamento')
+        },
     })
 
-    const delMut = useMutation({
+    const deleteMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/schedules/${id}`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedules'] }); setShowForm(false) },
-        onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao excluir agendamento'),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['schedules'] })
+            setShowForm(false)
+            setEditing(null)
+            setForm(emptyForm)
+        },
+        onError: (error: { response?: { data?: { message?: string } } }) => {
+            toast.error(error?.response?.data?.message ?? 'Erro ao excluir agendamento')
+        },
     })
 
-    const prevWeek = () => setWeekOf(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })
-    const nextWeek = () => setWeekOf(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })
-    const today = () => setWeekOf(new Date())
+    const setFormField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+        setForm((previous) => ({ ...previous, [key]: value }))
+    }
+
+    const previousWeek = () => setWeekOf((current) => {
+        const next = new Date(current)
+        next.setDate(next.getDate() - 7)
+        return next
+    })
+
+    const nextWeek = () => setWeekOf((current) => {
+        const next = new Date(current)
+        next.setDate(next.getDate() + 7)
+        return next
+    })
+
+    const goToToday = () => setWeekOf(new Date())
 
     const openCreate = (day?: Date) => {
+        if (!canManageSchedules) return
+        const start = day ? `${formatDateISO(day)}T09:00` : ''
+        const end = day ? `${formatDateISO(day)}T10:00` : ''
+
         setEditing(null)
-        const start = day ? `${fmt(day)}T09:00` : ''
-        const end = day ? `${fmt(day)}T10:00` : ''
         setForm({ ...emptyForm, scheduled_start: start, scheduled_end: end })
         setShowForm(true)
     }
 
-    const openEdit = (s: Schedule) => {
-        setEditing(s)
+    const openEdit = (schedule: Schedule) => {
+        if (!canManageSchedules) return
+        setEditing(schedule)
         setForm({
-            title: s.title, technician_id: s.technician.id,
-            customer_id: s.customer?.id ?? '', work_order_id: s.work_order?.id ?? '',
-            scheduled_start: s.scheduled_start.replace(' ', 'T').slice(0, 16),
-            scheduled_end: s.scheduled_end.replace(' ', 'T').slice(0, 16),
-            notes: s.notes ?? '', address: s.address ?? '', status: s.status,
+            title: schedule.title,
+            technician_id: schedule.technician.id,
+            customer_id: schedule.customer?.id ?? '',
+            work_order_id: schedule.work_order?.id ?? '',
+            scheduled_start: schedule.scheduled_start.replace(' ', 'T').slice(0, 16),
+            scheduled_end: schedule.scheduled_end.replace(' ', 'T').slice(0, 16),
+            notes: schedule.notes ?? '',
+            address: schedule.address ?? '',
+            status: schedule.status,
         })
         setShowForm(true)
     }
 
-    const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
-        setForm(prev => ({ ...prev, [k]: v }))
-
-    const getSchedulesForDay = (day: Date) =>
-        schedules.filter(s => s.scheduled_start.startsWith(fmt(day)))
-
-    const isToday = (d: Date) => fmt(d) === fmt(new Date())
+    const getSchedulesForDay = (day: Date) => schedules.filter((schedule) => schedule.scheduled_start.startsWith(formatDateISO(day)))
+    const isToday = (day: Date) => formatDateISO(day) === formatDateISO(new Date())
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Agenda</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Agendamentos e visitas dos técnicos</p>
+                    <h1 className="text-lg font-semibold tracking-tight text-surface-900">Agenda</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Agendamentos e visitas dos tecnicos</p>
                 </div>
-                <Button icon={<Plus className="h-4 w-4" />} onClick={() => openCreate()}>Novo Agendamento</Button>
+                {canManageSchedules && (
+                    <Button icon={<Plus className="h-4 w-4" />} onClick={() => openCreate()}>
+                        Novo Agendamento
+                    </Button>
+                )}
             </div>
 
-            {/* Week Nav + Filters */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={prevWeek}><ChevronLeft className="h-4 w-4" /></Button>
-                    <button onClick={today} className="rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100 transition-colors">
+                    <Button variant="ghost" size="sm" onClick={previousWeek}><ChevronLeft className="h-4 w-4" /></Button>
+                    <button onClick={goToToday} className="rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100 transition-colors">
                         Hoje
                     </button>
                     <Button variant="ghost" size="sm" onClick={nextWeek}><ChevronRight className="h-4 w-4" /></Button>
                     <span className="ml-2 text-sm font-medium text-surface-600">
-                        {days[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} — {days[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {weekDays[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                 </div>
-                <select value={techFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTechFilter(e.target.value)}
-                    className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                    <option value="">Todos os técnicos</option>
-                    {technicians.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+
+                <select
+                    value={technicianFilter}
+                    onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setTechnicianFilter(event.target.value)}
+                    className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                >
+                    <option value="">Todos os tecnicos</option>
+                    {technicians.map((technician) => (
+                        <option key={technician.id} value={technician.id}>{technician.name}</option>
+                    ))}
                 </select>
             </div>
 
-            {/* Weekly summary */}
-            {schedules.length > 0 && (() => {
-                const groups = Object.entries(statusConfig).map(([k, v]) => ({
-                    key: k, label: v.label, count: schedules.filter(s => s.status === k).length,
-                })).filter(g => g.count > 0)
-                const statusColors: Record<string, string> = {
-                    scheduled: 'bg-sky-500', confirmed: 'bg-brand-500', completed: 'bg-emerald-500', cancelled: 'bg-red-400',
-                }
-                const total = schedules.length
-                return (
-                    <div className="flex items-center gap-4 rounded-xl border border-default bg-surface-0 px-5 py-3 shadow-card">
-                        <span className="text-xs font-medium text-surface-500">Semana:</span>
-                        <span className="text-[15px] font-semibold tabular-nums text-surface-900">{total} agendamentos</span>
-                        <div className="flex-1" />
-                        {groups.map(g => (
-                            <span key={g.key} className="flex items-center gap-1.5 text-xs text-surface-600">
-                                <span className={cn('h-2.5 w-2.5 rounded-full', statusColors[g.key] ?? 'bg-surface-300')} />
-                                {g.label}: <strong>{g.count}</strong>
-                            </span>
-                        ))}
-                    </div>
-                )
-            })()}
-
-            {/* Week Grid */}
             <div className="grid grid-cols-7 gap-2">
-                {days.map(day => (
-                    <div key={fmt(day)} className={cn(
-                        'min-h-[200px] rounded-xl border p-2 transition-colors',
-                        isToday(day) ? 'border-brand-300 bg-brand-50/50' : 'border-default bg-surface-0',
-                    )}>
-                        <div className="flex items-center justify-between mb-2">
-                            <span className={cn(
-                                'text-xs font-semibold uppercase',
-                                isToday(day) ? 'text-brand-700' : 'text-surface-500',
-                            )}>
-                                {fmtShort(day)}
+                {weekDays.map((day) => (
+                    <div
+                        key={formatDateISO(day)}
+                        className={cn(
+                            'min-h-[200px] rounded-xl border bg-surface-0 p-2 transition-colors',
+                            isToday(day) ? 'border-brand-300 bg-brand-50/50' : 'border-default'
+                        )}
+                    >
+                        <div className="mb-2 flex items-center justify-between">
+                            <span className={cn('text-xs font-semibold uppercase', isToday(day) ? 'text-brand-700' : 'text-surface-500')}>
+                                {formatDayLabel(day)}
                             </span>
-                            <button onClick={() => openCreate(day)}
-                                className="rounded p-0.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600">
-                                <Plus className="h-3 w-3" />
-                            </button>
+                            {canManageSchedules && (
+                                <button onClick={() => openCreate(day)} className="rounded p-0.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600">
+                                    <Plus className="h-3 w-3" />
+                                </button>
+                            )}
                         </div>
+
                         <div className="space-y-1.5">
-                            {getSchedulesForDay(day).map(s => (
-                                <button key={s.id} onClick={() => openEdit(s)}
-                                    className="w-full rounded-lg border border-surface-100 bg-white p-2 text-left shadow-sm hover:shadow-card transition-all group">
+                            {getSchedulesForDay(day).map((schedule) => (
+                                <button
+                                    key={schedule.id}
+                                    onClick={() => openEdit(schedule)}
+                                    className={cn(
+                                        'group w-full rounded-lg border border-surface-100 bg-white p-2 text-left shadow-sm transition-all',
+                                        canManageSchedules ? 'hover:shadow-card' : 'cursor-default'
+                                    )}
+                                >
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-medium text-surface-400">{fmtTime(s.scheduled_start)}</span>
-                                        <Badge variant={statusConfig[s.status]?.variant ?? 'default'} className="text-[9px] px-1 py-0">
-                                            {statusConfig[s.status]?.label}
+                                        <span className="text-[10px] font-medium text-surface-400">{formatTime(schedule.scheduled_start)}</span>
+                                        <Badge variant={statusConfig[schedule.status]?.variant ?? 'default'} className="px-1 py-0 text-[9px]">
+                                            {statusConfig[schedule.status]?.label}
                                         </Badge>
                                     </div>
-                                    <p className="mt-0.5 text-xs font-medium text-surface-800 truncate">{s.title}</p>
-                                    <p className="text-[10px] text-surface-500 truncate flex items-center gap-0.5">
-                                        <User className="h-2.5 w-2.5" />{s.technician.name}
+                                    <p className="mt-0.5 truncate text-xs font-medium text-surface-800">{schedule.title}</p>
+                                    <p className="flex items-center gap-0.5 truncate text-[10px] text-surface-500">
+                                        <User className="h-2.5 w-2.5" />
+                                        {schedule.technician.name}
                                     </p>
-                                    {s.work_order && (
-                                        <p className="text-[10px] text-brand-500 truncate">{woIdentifier(s.work_order)}</p>
+                                    {schedule.work_order && (
+                                        <p className="truncate text-[10px] text-brand-500">{workOrderIdentifier(schedule.work_order)}</p>
                                     )}
                                 </button>
                             ))}
@@ -261,82 +297,93 @@ export function SchedulesPage() {
                 ))}
             </div>
 
-            {/* Form Modal */}
-            <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Agendamento' : 'Novo Agendamento'} size="lg">
-                <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
-                    <Input label="Título" value={form.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('title', e.target.value)} required placeholder="Ex: Manutenção preventiva" />
+            <Modal open={showForm && canManageSchedules} onOpenChange={setShowForm} title={editing ? 'Editar Agendamento' : 'Novo Agendamento'} size="lg">
+                <form onSubmit={(event) => { event.preventDefault(); saveMutation.mutate(form) }} className="space-y-4">
+                    <Input label="Titulo" value={form.title} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('title', event.target.value)} required placeholder="Ex: Manutencao preventiva" />
+
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico *</label>
-                            <select value={form.technician_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('technician_id', e.target.value)} required
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tecnico *</label>
+                            <select value={form.technician_id} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('technician_id', event.target.value)} required
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecionar</option>
-                                {technicians.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                {technicians.map((technician) => (
+                                    <option key={technician.id} value={technician.id}>{technician.name}</option>
+                                ))}
                             </select>
                         </div>
+
                         <div>
                             <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS Vinculada</label>
-                            <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
+                            <select value={form.work_order_id} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('work_order_id', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhuma</option>
-                                {workOrders.map((wo) => <option key={wo.id} value={wo.id}>{wo.business_number ?? wo.os_number ?? wo.number} — {wo.customer?.name}</option>)}
+                                {workOrders.map((workOrder) => (
+                                    <option key={workOrder.id} value={workOrder.id}>
+                                        {workOrder.business_number ?? workOrder.os_number ?? workOrder.number} - {workOrder.customer?.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
+
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cliente</label>
-                            <select value={form.customer_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('customer_id', e.target.value)}
+                            <select value={form.customer_id} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('customer_id', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
-                                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                {customers.map((customer) => (
+                                    <option key={customer.id} value={customer.id}>{customer.name}</option>
+                                ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS Vinculada</label>
-                            <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
-                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                                <option value="">Nenhuma</option>
-                                {workOrders.map((wo) => <option key={wo.id} value={wo.id}>{wo.business_number ?? wo.os_number ?? wo.number} — {wo.customer?.name}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Input label="Início" type="datetime-local" value={form.scheduled_start} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('scheduled_start', e.target.value)} required />
-                        <Input label="Fim" type="datetime-local" value={form.scheduled_end} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('scheduled_end', e.target.value)} required />
-                    </div>
-                    <Input label="Endereço" value={form.address} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address', e.target.value)} placeholder="Local da visita" />
-                    <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
-                        <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
-                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
-                    </div>
-                    {editing && (
+
                         <div>
                             <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Status</label>
-                            <div className="flex gap-2">
-                                {Object.entries(statusConfig).map(([k, v]) => (
-                                    <button key={k} type="button" onClick={() => set('status', k)}
-                                        className={cn('rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
-                                            form.status === k ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 text-surface-500')}>
-                                        {v.label}
-                                    </button>
+                            <select value={form.status} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('status', event.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                {Object.entries(statusConfig).map(([key, value]) => (
+                                    <option key={key} value={key}>{value.label}</option>
                                 ))}
-                            </div>
+                            </select>
                         </div>
-                    )}
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Input label="Inicio" type="datetime-local" value={form.scheduled_start} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('scheduled_start', event.target.value)} required />
+                        <Input label="Fim" type="datetime-local" value={form.scheduled_end} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('scheduled_end', event.target.value)} required />
+                    </div>
+
+                    <Input label="Endereco" value={form.address} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('address', event.target.value)} placeholder="Local da visita" />
+
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observacoes</label>
+                        <textarea value={form.notes} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setFormField('notes', event.target.value)} rows={2}
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                    </div>
+
                     <div className="flex items-center justify-between border-t border-subtle pt-4">
                         <div>
                             {editing && (
-                                <Button variant="ghost" size="sm" type="button"
-                                    onClick={() => { if (confirm('Excluir?')) { delMut.mutate(editing.id); setShowForm(false) } }}>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    type="button"
+                                    onClick={() => {
+                                        if (confirm('Excluir?')) {
+                                            deleteMutation.mutate(editing.id)
+                                            setShowForm(false)
+                                        }
+                                    }}
+                                >
                                     <Trash2 className="h-4 w-4 text-red-500" /> Excluir
                                 </Button>
                             )}
                         </div>
                         <div className="flex gap-2">
                             <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancelar</Button>
-                            <Button type="submit" loading={saveMut.isPending}>{editing ? 'Salvar' : 'Agendar'}</Button>
+                            <Button type="submit" loading={saveMutation.isPending}>{editing ? 'Salvar' : 'Agendar'}</Button>
                         </div>
                     </div>
                 </form>
@@ -344,4 +391,3 @@ export function SchedulesPage() {
         </div>
     )
 }
-

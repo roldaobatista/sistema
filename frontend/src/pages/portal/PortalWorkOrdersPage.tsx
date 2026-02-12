@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText, Search, Clock, CheckCircle, AlertCircle, Wrench, Package } from 'lucide-react'
+import { FileText, Search, Clock, CheckCircle, AlertCircle, Wrench, Package, RefreshCw } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { WORK_ORDER_STATUS } from '@/lib/constants'
@@ -24,7 +24,7 @@ export function PortalWorkOrdersPage() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-work-orders'],
         queryFn: () => api.get('/portal/work-orders').then(res => res.data),
     })
@@ -94,7 +94,33 @@ export function PortalWorkOrdersPage() {
 
             {/* OS Cards */}
             {isLoading ? (
-                <div className="text-center text-surface-400 py-12">Carregando...</div>
+                <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="animate-pulse rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-lg bg-surface-200" />
+                                    <div className="space-y-1">
+                                        <div className="h-4 w-16 rounded bg-surface-200" />
+                                        <div className="h-3 w-20 rounded bg-surface-100" />
+                                    </div>
+                                </div>
+                                <div className="h-6 w-24 rounded-full bg-surface-200" />
+                            </div>
+                            <div className="h-4 w-3/4 rounded bg-surface-100 mb-3" />
+                            <div className="flex gap-6">
+                                <div className="h-3 w-24 rounded bg-surface-100" />
+                                <div className="h-3 w-20 rounded bg-surface-100" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : isError ? (
+                <div className="text-center py-12">
+                    <RefreshCw className="mx-auto h-10 w-10 text-red-300" />
+                    <p className="mt-2 text-sm text-surface-400">Erro ao carregar ordens de serviço</p>
+                    <button onClick={() => refetch()} className="mt-3 text-sm text-brand-600 hover:text-brand-700 font-medium">Tentar novamente</button>
+                </div>
             ) : filtered.length === 0 ? (
                 <div className="text-center py-12">
                     <FileText className="mx-auto h-10 w-10 text-surface-300" />

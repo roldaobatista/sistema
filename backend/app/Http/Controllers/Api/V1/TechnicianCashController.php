@@ -18,6 +18,28 @@ class TechnicianCashController extends Controller
         return (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
     }
 
+    private function userBelongsToTenant(int $userId, int $tenantId): bool
+    {
+        return User::query()
+            ->where('id', $userId)
+            ->where(function ($query) use ($tenantId) {
+                $query
+                    ->where('tenant_id', $tenantId)
+                    ->orWhere('current_tenant_id', $tenantId)
+                    ->orWhereHas('tenants', fn ($tenantQuery) => $tenantQuery->where('tenants.id', $tenantId));
+            })
+            ->exists();
+    }
+
+    private function ensureTenantUser(int $userId, int $tenantId, string $field = 'user_id'): void
+    {
+        if (!$this->userBelongsToTenant($userId, $tenantId)) {
+            throw ValidationException::withMessages([
+                $field => ['Tecnico nao pertence ao tenant atual.'],
+            ]);
+        }
+    }
+
     /** Lista todos os fundos (saldos) dos tecnicos */
     public function index(Request $request): JsonResponse
     {
@@ -36,12 +58,7 @@ class TechnicianCashController extends Controller
     {
         $tenantId = $this->tenantId($request);
 
-        // Validar que o usuario pertence ao tenant
-        $userExists = User::where('id', $userId)
-            ->where('tenant_id', $tenantId)
-            ->exists();
-
-        if (!$userExists) {
+        if (!$this->userBelongsToTenant($userId, $tenantId)) {
             return response()->json(['message' => 'Tecnico nao encontrado'], 404);
         }
 
@@ -76,10 +93,11 @@ class TechnicianCashController extends Controller
         $tenantId = $this->tenantId($request);
 
         $validated = $request->validate([
-            'user_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'user_id' => ['required', Rule::exists('users', 'id')],
             'amount' => 'required|numeric|min:0.01',
             'description' => 'required|string|max:255',
         ]);
+        $this->ensureTenantUser((int) $validated['user_id'], $tenantId);
 
         $fund = TechnicianCashFund::getOrCreate($validated['user_id'], $tenantId);
         $tx = $fund->addCredit(
@@ -97,11 +115,12 @@ class TechnicianCashController extends Controller
         $tenantId = $this->tenantId($request);
 
         $validated = $request->validate([
-            'user_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'user_id' => ['required', Rule::exists('users', 'id')],
             'amount' => 'required|numeric|min:0.01',
             'description' => 'required|string|max:255',
             'work_order_id' => ['nullable', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ]);
+        $this->ensureTenantUser((int) $validated['user_id'], $tenantId);
 
         $fund = TechnicianCashFund::getOrCreate($validated['user_id'], $tenantId);
 
@@ -147,4 +166,3 @@ class TechnicianCashController extends Controller
         ]);
     }
 }
-

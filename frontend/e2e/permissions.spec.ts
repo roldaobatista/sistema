@@ -11,7 +11,7 @@ test.describe('Permissão e Acesso', () => {
         const protectedRoutes = [
             '/',
             '/cadastros/clientes',
-            '/ordens-de-servico',
+            '/os',
             '/financeiro/receber',
             '/financeiro/pagar',
             '/financeiro/comissoes',
@@ -31,10 +31,11 @@ test.describe('Permissão e Acesso', () => {
 
         // Set an expired/invalid token
         await page.evaluate(() => {
-            localStorage.setItem('auth-storage', JSON.stringify({
+            localStorage.setItem('auth-store', JSON.stringify({
                 state: { token: 'expired-invalid-token', isAuthenticated: true },
                 version: 0,
             }))
+            localStorage.setItem('auth_token', 'expired-invalid-token')
         })
 
         await page.goto(BASE + '/')

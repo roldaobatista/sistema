@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Notification;
 use App\Models\WorkOrder;
+use App\Services\HolidayService;
 use Illuminate\Console\Command;
 
 class CheckSlaBreaches extends Command
@@ -11,11 +12,10 @@ class CheckSlaBreaches extends Command
     protected $signature = 'sla:check-breaches';
     protected $description = 'Verifica e marca OS com SLA estourado, envia alertas';
 
-    public function handle(): int
+    public function handle(HolidayService $holidayService): int
     {
         $breached = 0;
 
-        // OS com SLA que ainda não foi respondida
         $pendingResponse = WorkOrder::whereNotNull('sla_due_at')
             ->whereNull('sla_responded_at')
             ->where('sla_response_breached', false)
@@ -27,10 +27,13 @@ class CheckSlaBreaches extends Command
             $policy = $wo->slaPolicy;
             if (!$policy) continue;
 
-            $responseDeadline = $wo->created_at->addHours($policy->response_time_hours);
+            $responseDeadline = $holidayService->addBusinessMinutes(
+                $wo->created_at,
+                $policy->response_time_minutes
+            );
             if (now()->greaterThan($responseDeadline)) {
                 $wo->update(['sla_response_breached' => true]);
-                $this->notifyBreach($wo, 'response', $policy->response_time_hours);
+                $this->notifyBreach($wo, 'response', $policy->response_time_minutes);
                 $breached++;
             }
         }

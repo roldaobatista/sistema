@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { useAuthStore } from '@/stores/auth-store'
 
 const typeConfig: Record<string, { label: string; variant: 'default' | 'brand' | 'success' | 'danger' | 'warning' | 'info'; icon: typeof Briefcase }> = {
     work: { label: 'Trabalho', variant: 'success', icon: Briefcase },
@@ -60,16 +61,31 @@ const emptyForm = {
 const woIdentifier = (wo?: WorkOrder | null) =>
     wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
+const toLocalDateInput = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
 export function TimeEntriesPage() {
     const qc = useQueryClient()
+    const { hasPermission, hasRole } = useAuthStore()
+    const isSuperAdmin = hasRole('super_admin')
+    const canCreate = isSuperAdmin || hasPermission('technicians.time_entry.create')
+    const canUpdate = isSuperAdmin || hasPermission('technicians.time_entry.update')
+    const canDelete = isSuperAdmin || hasPermission('technicians.time_entry.delete')
+    const canStop = canCreate || canUpdate
     const [showForm, setShowForm] = useState(false)
     const [form, setForm] = useState(emptyForm)
     const [techFilter, setTechFilter] = useState('')
     const [typeFilter, setTypeFilter] = useState('')
     const [dateFrom, setDateFrom] = useState(() => {
-        const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0]
+        const d = new Date()
+        d.setDate(d.getDate() - 7)
+        return toLocalDateInput(d)
     })
-    const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0])
+    const [dateTo, setDateTo] = useState(() => toLocalDateInput(new Date()))
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['time-entries', techFilter, typeFilter, dateFrom, dateTo],
@@ -92,7 +108,7 @@ export function TimeEntriesPage() {
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-time-entries'],
-        queryFn: () => api.get('/users/by-role/tecnico'),
+        queryFn: () => api.get('/technicians/options'),
     })
     const technicians: Technician[] = techsRes?.data ?? []
 
@@ -151,9 +167,11 @@ export function TimeEntriesPage() {
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Apontamento de Horas</h1>
                     <p className="mt-0.5 text-[13px] text-surface-500">Registro de tempo dos técnicos nas OS</p>
                 </div>
-                <Button icon={<Plus className="h-4 w-4" />} onClick={() => { setForm(emptyForm); setShowForm(true) }}>
-                    Novo Apontamento
-                </Button>
+                {canCreate && (
+                    <Button icon={<Plus className="h-4 w-4" />} onClick={() => { setForm(emptyForm); setShowForm(true) }}>
+                        Novo Apontamento
+                    </Button>
+                )}
             </div>
 
             {/* Running Timers */}
@@ -175,9 +193,11 @@ export function TimeEntriesPage() {
                                         {e.work_order && <span className="ml-2 text-xs text-brand-500">{woIdentifier(e.work_order)}</span>}
                                         <p className="text-xs text-surface-500">{tc?.label} — Iniciado {formatTime(e.started_at)}</p>
                                     </div>
-                                    <Button variant="outline" size="sm" onClick={() => stopMut.mutate(e.id)} loading={stopMut.isPending}>
-                                        <Square className="h-3.5 w-3.5 mr-1" /> Parar
-                                    </Button>
+                                    {canStop && (
+                                        <Button variant="outline" size="sm" onClick={() => stopMut.mutate(e.id)} loading={stopMut.isPending}>
+                                            <Square className="h-3.5 w-3.5 mr-1" /> Parar
+                                        </Button>
+                                    )}
                                 </div>
                             )
                         })}
@@ -283,14 +303,16 @@ export function TimeEntriesPage() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-end gap-1">
-                                            {!e.ended_at && (
+                                            {!e.ended_at && canStop && (
                                                 <Button variant="ghost" size="sm" onClick={() => stopMut.mutate(e.id)}>
                                                     <Square className="h-4 w-4 text-red-500" />
                                                 </Button>
                                             )}
-                                            <Button variant="ghost" size="sm" onClick={() => { if (confirm('Excluir?')) delMut.mutate(e.id) }}>
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </Button>
+                                            {canDelete && (
+                                                <Button variant="ghost" size="sm" onClick={() => { if (confirm('Excluir?')) delMut.mutate(e.id) }}>
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -301,7 +323,7 @@ export function TimeEntriesPage() {
             </div>
 
             {/* Manual Entry Modal */}
-            <Modal open={showForm} onOpenChange={setShowForm} title="Novo Apontamento">
+            <Modal open={showForm && canCreate} onOpenChange={setShowForm} title="Novo Apontamento">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>

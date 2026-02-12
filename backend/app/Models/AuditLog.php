@@ -49,7 +49,7 @@ class AuditLog extends Model
     public static function log(string $action, string $description, ?Model $model = null, ?array $old = null, ?array $new = null): static
     {
         return static::create([
-            'tenant_id' => app()->bound('current_tenant_id') ? app('current_tenant_id') : auth()->user()?->tenant_id,
+            'tenant_id' => self::resolveTenantId($model),
             'user_id' => auth()->id(),
             'action' => $action,
             'auditable_type' => $model ? get_class($model) : null,
@@ -60,5 +60,34 @@ class AuditLog extends Model
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
+    }
+
+    private static function resolveTenantId(?Model $model): ?int
+    {
+        if ($model && array_key_exists('tenant_id', $model->getAttributes())) {
+            $tenantId = (int) $model->getAttribute('tenant_id');
+            if ($tenantId > 0) {
+                return $tenantId;
+            }
+        }
+
+        // Tenant events should be attributed to the tenant being changed.
+        if ($model instanceof Tenant) {
+            return (int) $model->getKey();
+        }
+
+        if (app()->bound('current_tenant_id')) {
+            return (int) app('current_tenant_id');
+        }
+
+        $user = auth()->user();
+        if ($user) {
+            $tenantId = (int) ($user->current_tenant_id ?? $user->tenant_id ?? 0);
+            if ($tenantId > 0) {
+                return $tenantId;
+            }
+        }
+
+        return null;
     }
 }

@@ -1,0 +1,39 @@
+# Docker Compose — MySQL local para desenvolvimento
+# Uso: docker compose up -d
+# Para: docker compose down
+# Reset DB: docker compose down -v && docker compose up -d
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sistema_mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sistema_local
+      MYSQL_USER: sistema
+      MYSQL_PASSWORD: sistema
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: sistema_pma
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:

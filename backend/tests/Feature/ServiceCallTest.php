@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\WorkOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ServiceCallTest extends TestCase
@@ -239,5 +240,142 @@ class ServiceCallTest extends TestCase
         $response->assertOk()
             ->assertSee('Meu Tenant')
             ->assertDontSee('Outro Tenant');
+    }
+
+    // ── Novos Testes ──
+
+    public function test_update_service_call(): void
+    {
+        $call = ServiceCall::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+        ]);
+
+        $response = $this->putJson("/api/v1/service-calls/{$call->id}", [
+            'observations' => 'Atualizado',
+            'priority' => 'urgent',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('observations', 'Atualizado')
+            ->assertJsonPath('priority', 'urgent');
+    }
+
+    public function test_delete_service_call_without_work_order(): void
+    {
+        $call = ServiceCall::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+        ]);
+
+        $response = $this->deleteJson("/api/v1/service-calls/{$call->id}");
+
+        $response->assertNoContent();
+        $this->assertSoftDeleted('service_calls', ['id' => $call->id]);
+    }
+
+    public function test_delete_service_call_with_work_order_returns_409(): void
+    {
+        $call = ServiceCall::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'status' => ServiceCall::STATUS_COMPLETED,
+        ]);
+
+        WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'service_call_id' => $call->id,
+        ]);
+
+        $response = $this->deleteJson("/api/v1/service-calls/{$call->id}");
+
+        $response->assertStatus(409);
+    }
+
+    public function test_assign_technician(): void
+    {
+        $call = ServiceCall::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'status' => ServiceCall::STATUS_OPEN,
+        ]);
+
+        $response = $this->putJson("/api/v1/service-calls/{$call->id}/assign", [
+            'technician_id' => $this->technician->id,
+            'scheduled_date' => now()->addDay()->toDateTimeString(),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('technician_id', $this->technician->id)
+            ->assertJsonPath('status', ServiceCall::STATUS_SCHEDULED);
+    }
+
+    public function test_assignees_returns_technicians_and_drivers_from_current_tenant(): void
+    {
+        $technicianRole = Role::firstOrCreate(['name' => 'tecnico', 'guard_name' => 'web']);
+        $driverRole = Role::firstOrCreate(['name' => 'motorista', 'guard_name' => 'web']);
+
+        $this->technician->assignRole($technicianRole);
+
+        $driver = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'current_tenant_id' => $this->tenant->id,
+        ]);
+        $driver->assignRole($driverRole);
+
+        $otherTenant = Tenant::factory()->create();
+        $outsideTech = User::factory()->create([
+            'tenant_id' => $otherTenant->id,
+            'current_tenant_id' => $otherTenant->id,
+        ]);
+        $outsideTech->assignRole($technicianRole);
+
+        $response = $this->getJson('/api/v1/service-calls-assignees');
+
+        $response->assertOk()
+            ->assertJsonFragment(['id' => $this->technician->id, 'name' => $this->technician->name])
+            ->assertJsonFragment(['id' => $driver->id, 'name' => $driver->name])
+            ->assertJsonMissing(['id' => $outsideTech->id]);
+    }
+
+    public function test_add_comment(): void
+    {
+        $call = ServiceCall::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+        ]);
+
+        $response = $this->postJson("/api/v1/service-calls/{$call->id}/comments", [
+            'content' => 'Teste de comentário',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('content', 'Teste de comentário')
+            ->assertJsonPath('user.id', $this->user->id);
+    }
+
+    public function test_export_csv(): void
+    {
+        ServiceCall::factory()->count(2)->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+        ]);
+
+        $response = $this->getJson('/api/v1/service-calls-export');
+
+        $response->assertOk()
+            ->assertJsonStructure(['csv', 'filename']);
+    }
+
+    public function test_store_cannot_override_status(): void
+    {
+        $response = $this->postJson('/api/v1/service-calls', [
+            'customer_id' => $this->customer->id,
+            'status' => 'completed',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('status', ServiceCall::STATUS_OPEN);
     }
 }

@@ -2,8 +2,11 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Search, Plus, Pencil, Trash2, Phone, Mail, MapPin,
-  User as UserIcon, Building2, ChevronDown, Users, AlertTriangle,
+  User as UserIcon, Building2, ChevronDown, Users, AlertTriangle, Loader2,
 } from 'lucide-react'
+import { useViaCep } from '@/hooks/useViaCep'
+import { useCnpjLookup } from '@/hooks/useCnpjLookup'
+import { useIbgeStates, useIbgeCities } from '@/hooks/useIbge'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -62,6 +65,43 @@ export function CustomersPage() {
   const [showConfirmDelete, setShowConfirmDelete] = useState<Customer | null>(null)
   const [deleteDependencies, setDeleteDependencies] = useState<any>(null)
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
+  const viaCep = useViaCep()
+  const cnpjLookup = useCnpjLookup()
+  const { data: ibgeStates = [] } = useIbgeStates()
+  const { data: ibgeCities = [] } = useIbgeCities(form.address_state)
+
+  async function handleCepBlur() {
+    const result = await viaCep.lookup(form.address_zip)
+    if (result) {
+      setForm(f => ({
+        ...f,
+        address_street: result.street || f.address_street,
+        address_neighborhood: result.neighborhood || f.address_neighborhood,
+        address_city: result.city || f.address_city,
+        address_state: result.state || f.address_state,
+      }))
+    }
+  }
+
+  async function handleCnpjLookup() {
+    const result = await cnpjLookup.lookup(form.document)
+    if (result) {
+      setForm(f => ({
+        ...f,
+        name: f.name || result.name,
+        trade_name: f.trade_name || result.trade_name,
+        email: f.email || result.email,
+        phone: f.phone || result.phone,
+        address_zip: f.address_zip || result.address_zip,
+        address_street: f.address_street || result.address_street,
+        address_number: f.address_number || result.address_number,
+        address_complement: f.address_complement || result.address_complement,
+        address_neighborhood: f.address_neighborhood || result.address_neighborhood,
+        address_city: f.address_city || result.address_city,
+        address_state: f.address_state || result.address_state,
+      }))
+    }
+  }
 
   const { data: res, isLoading } = useQuery({
     queryKey: ['customers', debouncedSearch],
@@ -253,7 +293,16 @@ export function CustomersPage() {
               <Input label="Nome / Razão Social *" value={form.name} onChange={set('name')} required />
             </div>
             <div className="md:col-span-1">
-              <Input label={form.type === 'PF' ? 'CPF' : 'CNPJ'} value={form.document} onChange={set('document')} />
+              <div className="relative">
+                <Input label={form.type === 'PF' ? 'CPF' : 'CNPJ'} value={form.document} onChange={set('document')} />
+                {form.type === 'PJ' && form.document.replace(/\D/g, '').length === 14 && (
+                  <button type="button" onClick={handleCnpjLookup} disabled={cnpjLookup.loading}
+                    className="absolute right-2 top-8 rounded p-1 text-surface-400 hover:text-brand-600 transition-colors"
+                    title="Buscar dados do CNPJ">
+                    {cnpjLookup.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -269,15 +318,33 @@ export function CustomersPage() {
               <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
             </summary>
             <div className="mt-3 grid gap-3 sm:grid-cols-3 pl-2 border-l-2 border-surface-100">
-              <Input label="CEP" value={form.address_zip} onChange={set('address_zip')} />
+              <div className="relative">
+                <Input label="CEP" value={form.address_zip} onChange={set('address_zip')} onBlur={handleCepBlur} />
+                {viaCep.loading && <Loader2 className="absolute right-2 top-8 h-4 w-4 animate-spin text-brand-500" />}
+              </div>
               <div className="sm:col-span-2">
                 <Input label="Rua" value={form.address_street} onChange={set('address_street')} />
               </div>
               <Input label="Número" value={form.address_number} onChange={set('address_number')} />
               <Input label="Complemento" value={form.address_complement} onChange={set('address_complement')} />
               <Input label="Bairro" value={form.address_neighborhood} onChange={set('address_neighborhood')} />
-              <Input label="Cidade" value={form.address_city} onChange={set('address_city')} />
-              <Input label="UF" value={form.address_state} onChange={set('address_state')} maxLength={2} />
+              <div>
+                <label className="text-sm font-medium text-surface-700 mb-1 block">UF</label>
+                <select value={form.address_state} onChange={e => { setForm(f => ({ ...f, address_state: e.target.value, address_city: '' })) }}
+                  className="w-full rounded-md border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
+                  <option value="">Selecione</option>
+                  {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-surface-700 mb-1 block">Cidade</label>
+                <select value={form.address_city} onChange={e => setForm(f => ({ ...f, address_city: e.target.value }))}
+                  className="w-full rounded-md border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                  disabled={!form.address_state}>
+                  <option value="">{form.address_state ? 'Selecione' : 'Selecione o UF primeiro'}</option>
+                  {ibgeCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
               <Input label="Telefone Secundário" value={form.phone2} onChange={set('phone2')} />
             </div>
           </details>

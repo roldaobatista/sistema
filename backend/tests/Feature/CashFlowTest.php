@@ -6,6 +6,7 @@ use App\Models\AccountPayable;
 use App\Models\AccountReceivable;
 use App\Models\Customer;
 use App\Models\Expense;
+use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
@@ -285,5 +286,120 @@ class CashFlowTest extends TestCase
         $this->assertSame(80.0, (float) ($response->json('expenses') ?? 0));
         $this->assertSame(180.0, (float) ($response->json('total_costs') ?? 0));
         $this->assertSame(520.0, (float) ($response->json('gross_profit') ?? 0));
+    }
+
+    public function test_cash_flow_paid_columns_use_payment_records_for_partial_titles(): void
+    {
+        $receivable = AccountReceivable::create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+            'description' => 'Receber parcial',
+            'amount' => 1000,
+            'amount_paid' => 300,
+            'due_date' => now()->toDateString(),
+            'status' => 'partial',
+        ]);
+
+        $payable = AccountPayable::create([
+            'tenant_id' => $this->tenant->id,
+            'created_by' => $this->user->id,
+            'description' => 'Pagar parcial',
+            'amount' => 500,
+            'amount_paid' => 200,
+            'due_date' => now()->toDateString(),
+            'status' => 'partial',
+        ]);
+
+        Payment::create([
+            'tenant_id' => $this->tenant->id,
+            'payable_type' => AccountReceivable::class,
+            'payable_id' => $receivable->id,
+            'received_by' => $this->user->id,
+            'amount' => 300,
+            'payment_method' => 'pix',
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        Payment::create([
+            'tenant_id' => $this->tenant->id,
+            'payable_type' => AccountPayable::class,
+            'payable_id' => $payable->id,
+            'received_by' => $this->user->id,
+            'amount' => 200,
+            'payment_method' => 'pix',
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        $response = $this->getJson('/api/v1/cash-flow?months=1');
+        $response->assertOk()->assertJsonCount(1);
+
+        $this->assertSame(1000.0, (float) $response->json('0.receivables_total'));
+        $this->assertSame(300.0, (float) $response->json('0.receivables_paid'));
+        $this->assertSame(500.0, (float) $response->json('0.payables_total'));
+        $this->assertSame(200.0, (float) $response->json('0.payables_paid'));
+        $this->assertSame(100.0, (float) $response->json('0.cash_balance'));
+    }
+
+    public function test_dre_uses_payment_records_for_partial_titles(): void
+    {
+        $receivable = AccountReceivable::create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+            'description' => 'Receita parcial',
+            'amount' => 1000,
+            'amount_paid' => 400,
+            'due_date' => now()->toDateString(),
+            'status' => 'partial',
+        ]);
+
+        $payable = AccountPayable::create([
+            'tenant_id' => $this->tenant->id,
+            'created_by' => $this->user->id,
+            'description' => 'Custo parcial',
+            'amount' => 700,
+            'amount_paid' => 150,
+            'due_date' => now()->toDateString(),
+            'status' => 'partial',
+        ]);
+
+        Payment::create([
+            'tenant_id' => $this->tenant->id,
+            'payable_type' => AccountReceivable::class,
+            'payable_id' => $receivable->id,
+            'received_by' => $this->user->id,
+            'amount' => 400,
+            'payment_method' => 'pix',
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        Payment::create([
+            'tenant_id' => $this->tenant->id,
+            'payable_type' => AccountPayable::class,
+            'payable_id' => $payable->id,
+            'received_by' => $this->user->id,
+            'amount' => 150,
+            'payment_method' => 'pix',
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        $response = $this->getJson('/api/v1/dre?date_from=2000-01-01&date_to=2100-01-01');
+
+        $response->assertOk();
+        $this->assertSame(400.0, (float) $response->json('revenue'));
+        $this->assertSame(150.0, (float) $response->json('costs'));
+        $this->assertSame(250.0, (float) $response->json('gross_profit'));
+    }
+
+    public function test_cash_flow_and_dre_reject_invalid_parameters(): void
+    {
+        $this->getJson('/api/v1/cash-flow?months=abc')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Parametros invalidos para fluxo de caixa.');
+
+        $this->getJson('/api/v1/dre?date_from=2026-02-10&date_to=2026-02-01')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Parametros invalidos para DRE.');
     }
 }

@@ -14,9 +14,11 @@ class NotificationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $limit = max(1, min(100, (int) $request->input('limit', 30)));
+
         $notifications = Notification::where('user_id', $request->user()->id)
             ->orderByDesc('created_at')
-            ->take($request->input('limit', 30))
+            ->take($limit)
             ->get();
 
         $unreadCount = Notification::where('user_id', $request->user()->id)
@@ -34,9 +36,13 @@ class NotificationController extends Controller
      */
     public function markRead(Request $request, Notification $notification): JsonResponse
     {
-        if ($notification->user_id !== $request->user()->id) abort(403);
+        if ($notification->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
 
-        $notification->update(['read_at' => now()]);
+        if (!$notification->read_at) {
+            $notification->update(['read_at' => now()]);
+        }
 
         return response()->json(['notification' => $notification]);
     }
@@ -46,11 +52,11 @@ class NotificationController extends Controller
      */
     public function markAllRead(Request $request): JsonResponse
     {
-        Notification::where('user_id', $request->user()->id)
+        $updated = Notification::where('user_id', $request->user()->id)
             ->unread()
             ->update(['read_at' => now()]);
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'updated' => $updated]);
     }
 
     /**

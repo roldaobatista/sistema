@@ -8,6 +8,8 @@ use App\Models\AccountPayable;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class AccountPayableController extends Controller
@@ -23,7 +25,7 @@ class AccountPayableController extends Controller
         $tenantId = $this->tenantId($request);
         $query = AccountPayable::query()
             ->where('tenant_id', $tenantId)
-            ->with(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'creator:id,name']);
+            ->with(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'chartOfAccount:id,code,name,type', 'creator:id,name']);
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -61,6 +63,7 @@ class AccountPayableController extends Controller
         $validated = $request->validate([
             'supplier_id' => ['nullable', Rule::exists('suppliers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'category_id' => ['nullable', Rule::exists('account_payable_categories', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'chart_of_account_id' => ['nullable', Rule::exists('chart_of_accounts', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'description' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0.01',
             'due_date' => 'required|date',
@@ -68,13 +71,18 @@ class AccountPayableController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $record = AccountPayable::create([
-            ...$validated,
-            'tenant_id' => $tenantId,
-            'created_by' => $request->user()->id,
-        ]);
+        try {
+            $record = AccountPayable::create([
+                ...$validated,
+                'tenant_id' => $tenantId,
+                'created_by' => $request->user()->id,
+            ]);
 
-        return response()->json($record->refresh()->load(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'creator:id,name']), 201);
+            return response()->json($record->refresh()->load(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'chartOfAccount:id,code,name,type', 'creator:id,name']), 201);
+        } catch (\Throwable $e) {
+            Log::error('AP store failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao criar título a pagar'], 500);
+        }
     }
 
     public function show(AccountPayable $accountPayable): JsonResponse
@@ -82,6 +90,7 @@ class AccountPayableController extends Controller
         return response()->json($accountPayable->load([
             'supplierRelation:id,name',
             'categoryRelation:id,name,color',
+            'chartOfAccount:id,code,name,type',
             'creator:id,name',
             'payments.receiver:id,name',
         ]));
@@ -89,11 +98,16 @@ class AccountPayableController extends Controller
 
     public function update(Request $request, AccountPayable $accountPayable): JsonResponse
     {
+        if (in_array($accountPayable->status, [AccountPayable::STATUS_CANCELLED, AccountPayable::STATUS_PAID])) {
+            return response()->json(['message' => 'Título cancelado ou pago não pode ser editado'], 422);
+        }
+
         $tenantId = $this->tenantId($request);
 
         $validated = $request->validate([
             'supplier_id' => ['nullable', Rule::exists('suppliers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'category_id' => ['nullable', Rule::exists('account_payable_categories', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'chart_of_account_id' => ['nullable', Rule::exists('chart_of_accounts', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'description' => 'sometimes|string|max:255',
             'amount' => 'sometimes|numeric|min:0.01',
             'due_date' => 'sometimes|date',
@@ -102,8 +116,25 @@ class AccountPayableController extends Controller
             'status' => ['sometimes', Rule::in(array_keys(AccountPayable::STATUSES))],
         ]);
 
-        $accountPayable->update($validated);
-        return response()->json($accountPayable->fresh()->load(['supplierRelation:id,name', 'categoryRelation:id,name,color']));
+        // Block amount change below already paid
+        if (isset($validated['amount']) && $accountPayable->payments()->exists()) {
+            if (bccomp((string) $validated['amount'], (string) $accountPayable->amount_paid, 2) < 0) {
+                return response()->json(['message' => 'O valor não pode ser menor que o já pago (R$ ' . number_format($accountPayable->amount_paid, 2, ',', '.') . ')'], 422);
+            }
+        }
+
+        try {
+            $accountPayable->update($validated);
+
+            if (isset($validated['amount'])) {
+                $accountPayable->recalculateStatus();
+            }
+
+            return response()->json($accountPayable->fresh()->load(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'chartOfAccount:id,code,name,type']));
+        } catch (\Throwable $e) {
+            Log::error('AP update failed', ['id' => $accountPayable->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar título'], 500);
+        }
     }
 
     public function destroy(AccountPayable $accountPayable): JsonResponse
@@ -126,74 +157,81 @@ class AccountPayableController extends Controller
         ]);
 
         if ($accountPayable->status === AccountPayable::STATUS_CANCELLED) {
-            return response()->json(['message' => 'Titulo cancelado nao pode receber baixa'], 422);
+            return response()->json(['message' => 'Título cancelado não pode receber baixa'], 422);
         }
 
-        $remaining = $accountPayable->amount - $accountPayable->amount_paid;
-        if ($remaining <= 0) {
-            return response()->json(['message' => 'Titulo ja liquidado'], 422);
+        $remaining = bcsub((string) $accountPayable->amount, (string) $accountPayable->amount_paid, 2);
+        if (bccomp($remaining, '0', 2) <= 0) {
+            return response()->json(['message' => 'Título já liquidado'], 422);
         }
 
-        if ($validated['amount'] > $remaining) {
-            return response()->json(['message' => 'Valor excede o saldo restante'], 422);
+        if (bccomp((string) $validated['amount'], $remaining, 2) > 0) {
+            return response()->json(['message' => 'Valor excede o saldo restante (R$ ' . number_format((float) $remaining, 2, ',', '.') . ')'], 422);
         }
 
         try {
-            $payment = Payment::create([
-                ...$validated,
-                'tenant_id' => $this->tenantId($request),
-                'payable_type' => AccountPayable::class,
-                'payable_id' => $accountPayable->id,
-                'received_by' => $request->user()->id,
-            ]);
+            $payment = DB::transaction(function () use ($validated, $request, $accountPayable) {
+                return Payment::create([
+                    ...$validated,
+                    'tenant_id' => $this->tenantId($request),
+                    'payable_type' => AccountPayable::class,
+                    'payable_id' => $accountPayable->id,
+                    'received_by' => $request->user()->id,
+                ]);
+                // amount_paid e status são atualizados automaticamente pelo Payment::booted()
+            });
 
-            // amount_paid e status são atualizados automaticamente pelo Payment::booted()
             PaymentMade::dispatch($accountPayable->fresh(), $payment);
 
             return response()->json($payment->load('receiver:id,name'), 201);
         } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao registrar pagamento: ' . $e->getMessage()], 500);
+            Log::error('AP pay failed', ['id' => $accountPayable->id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao registrar pagamento'], 500);
         }
     }
 
     public function summary(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        try {
+            $tenantId = $this->tenantId($request);
 
-        $pending = (float) AccountPayable::where('tenant_id', $tenantId)
-            ->whereIn('status', [AccountPayable::STATUS_PENDING, AccountPayable::STATUS_PARTIAL])
-            ->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total')
-            ->value('total');
+            $pending = (float) AccountPayable::where('tenant_id', $tenantId)
+                ->whereIn('status', [AccountPayable::STATUS_PENDING, AccountPayable::STATUS_PARTIAL])
+                ->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total')
+                ->value('total');
 
-        $overdue = (float) AccountPayable::where('tenant_id', $tenantId)
-            ->where('status', AccountPayable::STATUS_OVERDUE)
-            ->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total')
-            ->value('total');
+            $overdue = (float) AccountPayable::where('tenant_id', $tenantId)
+                ->where('status', AccountPayable::STATUS_OVERDUE)
+                ->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total')
+                ->value('total');
 
-        $paidMonth = (float) Payment::where('tenant_id', $tenantId)
-            ->where('payable_type', AccountPayable::class)
-            ->whereMonth('payment_date', now()->month)
-            ->whereYear('payment_date', now()->year)
-            ->sum('amount');
+            $paidMonth = (float) Payment::where('tenant_id', $tenantId)
+                ->where('payable_type', AccountPayable::class)
+                ->whereMonth('payment_date', now()->month)
+                ->whereYear('payment_date', now()->year)
+                ->sum('amount');
 
-        $recordedThisMonth = (float) AccountPayable::where('tenant_id', $tenantId)
-            ->whereNotIn('status', [AccountPayable::STATUS_CANCELLED])
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->sum('amount');
+            $recordedThisMonth = (float) AccountPayable::where('tenant_id', $tenantId)
+                ->whereNotIn('status', [AccountPayable::STATUS_CANCELLED])
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('amount');
 
-        $totalOpen = (float) AccountPayable::where('tenant_id', $tenantId)
-            ->whereIn('status', [AccountPayable::STATUS_PENDING, AccountPayable::STATUS_PARTIAL, AccountPayable::STATUS_OVERDUE])
-            ->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total')
-            ->value('total');
+            $totalOpen = (float) AccountPayable::where('tenant_id', $tenantId)
+                ->whereIn('status', [AccountPayable::STATUS_PENDING, AccountPayable::STATUS_PARTIAL, AccountPayable::STATUS_OVERDUE])
+                ->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total')
+                ->value('total');
 
-        return response()->json([
-            'pending' => $pending,
-            'overdue' => $overdue,
-            'recorded_this_month' => $recordedThisMonth,
-            'paid_this_month' => $paidMonth,
-            'total_open' => $totalOpen,
-        ]);
+            return response()->json([
+                'pending' => $pending,
+                'overdue' => $overdue,
+                'recorded_this_month' => $recordedThisMonth,
+                'paid_this_month' => $paidMonth,
+                'total_open' => $totalOpen,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('AP summary failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao gerar resumo'], 500);
+        }
     }
 }

@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
+use App\Models\AuditLog;
 use App\Models\Quote;
+use Illuminate\Console\Command;
 
 class CheckExpiredQuotes extends Command
 {
@@ -20,13 +21,13 @@ class CheckExpiredQuotes extends Command
 
         foreach ($quotes as $quote) {
             $quote->update(['status' => Quote::STATUS_EXPIRED]);
-
-            // Setar tenant context para o audit log (comando CLI não tem auth)
             app()->instance('current_tenant_id', $quote->tenant_id);
-            \App\Models\AuditLog::log('status_changed', "Orçamento {$quote->quote_number} expirado automaticamente", $quote);
+            AuditLog::log('status_changed', "Orçamento {$quote->quote_number} expirado automaticamente", $quote);
         }
 
         $this->info("Marked {$quotes->count()} quote(s) as expired.");
         return self::SUCCESS;
     }
 }
+
+

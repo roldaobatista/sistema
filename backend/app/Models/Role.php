@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Spatie\Permission\Models\Role as SpatieRole;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Role extends SpatieRole
 {
@@ -14,6 +15,7 @@ class Role extends SpatieRole
      */
     protected $fillable = [
         'name',
+        'description',
         'guard_name',
         'tenant_id',
     ];
@@ -24,6 +26,14 @@ class Role extends SpatieRole
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * Explicit users relationship for withCount support.
+     */
+    public function users(): MorphToMany
+    {
+        return $this->morphedByMany(User::class, 'model', 'model_has_roles', 'role_id', 'model_id');
     }
 
     /**

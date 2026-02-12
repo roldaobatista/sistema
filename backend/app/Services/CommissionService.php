@@ -7,6 +7,8 @@ use App\Models\CommissionEvent;
 use App\Models\CommissionRule;
 use App\Models\WorkOrder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CommissionService
 {
@@ -27,41 +29,20 @@ class CommissionService
 
         // 2. Carregar dependências
         $wo->loadMissing(['items', 'technicians', 'customer']);
-        
-        // 3. Preparar contexto de cálculo (valores base)
-        $expensesTotal = (float) \App\Models\Expense::where('tenant_id', $wo->tenant_id)
-            ->where('work_order_id', $wo->id)
-            ->where('status', \App\Models\Expense::STATUS_APPROVED)
-            ->sum('amount');
 
-        $itemsCost = (float) $wo->items->sum(fn ($item) => $item->cost_price * $item->quantity);
-        $productsTotal = (float) $wo->items->where('type', 'product')->sum('total');
-        $servicesTotal = (float) $wo->items->where('type', 'service')->sum('total');
-
-        $context = [
-            'gross' => (float) $wo->total,
-            'expenses' => $expensesTotal,
-            'displacement' => (float) ($wo->displacement_value ?? 0),
-            'products_total' => $productsTotal,
-            'services_total' => $servicesTotal,
-            'cost' => $itemsCost,
-        ];
+        // 3. Preparar contexto de cálculo (valores base) — bcmath
+        $context = $this->buildCalculationContext($wo);
 
         // 4. Identificar beneficiários (quem deve receber)
         $beneficiaries = $this->identifyBeneficiaries($wo);
 
         // 5. Carregar campanhas ativas
-        $campaigns = \Illuminate\Support\Facades\DB::table('commission_campaigns')
-            ->where('tenant_id', $wo->tenant_id)
-            ->where('active', true)
-            ->where('starts_at', '<=', now()->toDateString())
-            ->where('ends_at', '>=', now()->toDateString())
-            ->get();
+        $campaigns = $this->loadActiveCampaigns($wo->tenant_id);
 
         $events = [];
 
         // 6. Processar regras para cada beneficiário
-        \Illuminate\Support\Facades\DB::transaction(function () use ($wo, $beneficiaries, $campaigns, $context, &$events) {
+        DB::transaction(function () use ($wo, $beneficiaries, $campaigns, $context, &$events) {
             foreach ($beneficiaries as $b) {
                 $rules = CommissionRule::where('tenant_id', $wo->tenant_id)
                     ->where('user_id', $b['id'])
@@ -71,50 +52,26 @@ class CommissionService
                     ->get();
 
                 foreach ($rules as $rule) {
-                    // Calcular valor base da regra
                     $commissionAmount = $rule->calculateCommission((float) $wo->total, $context);
 
-                    if ($commissionAmount <= 0) {
+                    if (bccomp((string) $commissionAmount, '0', 2) <= 0) {
                         continue;
                     }
 
-                    // Aplicar multiplicador de campanha (se houver)
-                    $multiplier = 1.0;
-                    $campaignName = null;
+                    $campaignResult = $this->applyCampaignMultiplier($campaigns, $b['role'], $rule->calculation_type, (string) $commissionAmount);
 
-                    foreach ($campaigns as $campaign) {
-                        // Filtro de role da campanha
-                        if ($campaign->applies_to_role && $campaign->applies_to_role !== $b['role']) {
-                            continue;
-                        }
-                        // Filtro de tipo de cálculo da campanha
-                        if ($campaign->applies_to_calculation_type && $campaign->applies_to_calculation_type !== $rule->calculation_type) {
-                            continue;
-                        }
-
-                        // Aplica o maior multiplicador encontrado
-                        if ((float) $campaign->multiplier > $multiplier) {
-                            $multiplier = (float) $campaign->multiplier;
-                            $campaignName = $campaign->name;
-                        }
-                    }
-
-                    $finalAmount = round($commissionAmount * $multiplier, 2);
-
-                    // Formatar notas
                     $notes = "Regra: {$rule->name} ({$rule->calculation_type})";
-                    if ($campaignName) {
-                        $notes .= " | Campanha: {$campaignName} (x{$multiplier})";
+                    if ($campaignResult['campaign_name']) {
+                        $notes .= " | Campanha: {$campaignResult['campaign_name']} (x{$campaignResult['multiplier']})";
                     }
 
-                    // Criar evento
                     $event = CommissionEvent::create([
                         'tenant_id' => $wo->tenant_id,
                         'commission_rule_id' => $rule->id,
                         'work_order_id' => $wo->id,
                         'user_id' => $b['id'],
-                        'base_amount' => (float) $wo->total,
-                        'commission_amount' => $finalAmount,
+                        'base_amount' => $wo->total,
+                        'commission_amount' => $campaignResult['final_amount'],
                         'status' => CommissionEvent::STATUS_PENDING,
                         'notes' => $notes,
                     ]);
@@ -128,34 +85,15 @@ class CommissionService
     }
 
     /**
-     * Simula comissões para UI (não salva nada).
+     * Simula comissões para UI (não salva nada). Aplica campanhas ativas.
      */
     public function simulate(\App\Models\WorkOrder $wo): array
     {
-        // Lógica similar ao calculateAndGenerate, mas sem persistência
-        // e retornando DTOs de preview.
-        // ... (Para brevidade, focarei na refatoracao do controller usar o calculateAndGenerate real em transação rollback ou similar,
-        // mas para simulação pura, é melhor ter um método light separado ou parametrizar o principal.
-        // Vou implementar uma versão simplificada de simulação aqui para o Controller usar).
-
         $wo->loadMissing(['items', 'technicians']);
-        
-        $expensesTotal = (float) \App\Models\Expense::where('tenant_id', $wo->tenant_id)
-            ->where('work_order_id', $wo->id)
-            ->where('status', \App\Models\Expense::STATUS_APPROVED)
-            ->sum('amount');
-        
-        $itemsCost = (float) $wo->items->sum(fn ($item) => $item->cost_price * $item->quantity);
-        $context = [
-            'gross' => (float) $wo->total,
-            'expenses' => $expensesTotal,
-            'displacement' => (float) ($wo->displacement_value ?? 0),
-            'products_total' => (float) $wo->items->where('type', 'product')->sum('total'),
-            'services_total' => (float) $wo->items->where('type', 'service')->sum('total'),
-            'cost' => $itemsCost,
-        ];
 
+        $context = $this->buildCalculationContext($wo);
         $beneficiaries = $this->identifyBeneficiaries($wo);
+        $campaigns = $this->loadActiveCampaigns($wo->tenant_id);
         $simulations = [];
 
         foreach ($beneficiaries as $b) {
@@ -167,17 +105,24 @@ class CommissionService
 
             foreach ($rules as $rule) {
                 $amount = $rule->calculateCommission((float) $wo->total, $context);
-                if ($amount > 0) {
-                     $simulations[] = [
-                        'user_id' => $b['id'],
-                        'user_name' => $rule->user?->name ?? 'Usuario ' . $b['id'],
-                        'rule_name' => $rule->name,
-                        'calculation_type' => $rule->calculation_type,
-                        'applies_to_role' => $rule->applies_to_role, // Pode ser diferente do b['role'] se a regra for genérica, mas aqui filtramos por role exato.
-                        'base_amount' => (float) $wo->total,
-                        'commission_amount' => $amount,
-                    ];
+
+                if (bccomp((string) $amount, '0', 2) <= 0) {
+                    continue;
                 }
+
+                $campaignResult = $this->applyCampaignMultiplier($campaigns, $b['role'], $rule->calculation_type, (string) $amount);
+
+                $simulations[] = [
+                    'user_id' => $b['id'],
+                    'user_name' => $rule->user?->name ?? 'Usuario ' . $b['id'],
+                    'rule_name' => $rule->name,
+                    'calculation_type' => $rule->calculation_type,
+                    'applies_to_role' => $rule->applies_to_role,
+                    'base_amount' => (float) $wo->total,
+                    'commission_amount' => (float) $campaignResult['final_amount'],
+                    'multiplier' => (float) $campaignResult['multiplier'],
+                    'campaign_name' => $campaignResult['campaign_name'],
+                ];
             }
         }
 
@@ -229,24 +174,95 @@ class CommissionService
             return;
         }
 
-        // Nota: Idealmente verificaríamos se a regra da comissão era "WHEN_INSTALLMENT_PAID".
-        // Por simplificação atual, assumimos que se está PENDING e a conta foi paga, libera.
-        // Mas o correto seria o CommissionEvent ter um flag ou link para saber qual gatilho o gerou.
-        // Para manter compatibilidade com o código anterior, liberamos todas as PENDING daquela OS.
-        
-        $pendingEvents = CommissionEvent::where('work_order_id', $ar->work_order_id)
-            ->where('tenant_id', $ar->tenant_id)
-            ->where('status', CommissionEvent::STATUS_PENDING)
-            ->get();
+        DB::transaction(function () use ($ar) {
+            $pendingEvents = CommissionEvent::where('work_order_id', $ar->work_order_id)
+                ->where('tenant_id', $ar->tenant_id)
+                ->where('status', CommissionEvent::STATUS_PENDING)
+                ->lockForUpdate()
+                ->get();
 
-        foreach ($pendingEvents as $event) {
-            // Se a regra diz que é só no pagamento, agora é a hora.
-            // Se a regra era "na finalização da OS", já deveria estar liberada ou awaiting approval.
-            // Vamos assumir aprovação automática no pagamento para simplificar fluxo financeiro.
-            $event->update([
-                'status' => CommissionEvent::STATUS_APPROVED,
-                'notes' => ($event->notes ?? '') . " | Liberada por pagamento #{$ar->id} em " . now()->format('d/m/Y'),
-            ]);
+            foreach ($pendingEvents as $event) {
+                $event->update([
+                    'status' => CommissionEvent::STATUS_APPROVED,
+                    'notes' => ($event->notes ?? '') . " | Liberada por pagamento #{$ar->id} em " . now()->format('d/m/Y'),
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Constrói contexto de cálculo com valores base da OS — usando bcmath.
+     */
+    private function buildCalculationContext(WorkOrder $wo): array
+    {
+        $expensesTotal = \App\Models\Expense::where('tenant_id', $wo->tenant_id)
+            ->where('work_order_id', $wo->id)
+            ->where('status', \App\Models\Expense::STATUS_APPROVED)
+            ->sum('amount');
+
+        $itemsCost = '0';
+        foreach ($wo->items as $item) {
+            $itemsCost = bcadd($itemsCost, bcmul((string) $item->cost_price, (string) $item->quantity, 2), 2);
         }
+
+        $productsTotal = '0';
+        $servicesTotal = '0';
+        foreach ($wo->items as $item) {
+            if ($item->type === 'product') {
+                $productsTotal = bcadd($productsTotal, (string) $item->total, 2);
+            } else {
+                $servicesTotal = bcadd($servicesTotal, (string) $item->total, 2);
+            }
+        }
+
+        return [
+            'gross' => (float) $wo->total,
+            'expenses' => (float) $expensesTotal,
+            'displacement' => (float) ($wo->displacement_value ?? 0),
+            'products_total' => (float) $productsTotal,
+            'services_total' => (float) $servicesTotal,
+            'cost' => (float) $itemsCost,
+        ];
+    }
+
+    /**
+     * Carrega campanhas ativas para o tenant.
+     */
+    private function loadActiveCampaigns(int $tenantId): Collection
+    {
+        return DB::table('commission_campaigns')
+            ->where('tenant_id', $tenantId)
+            ->where('active', true)
+            ->where('starts_at', '<=', now()->toDateString())
+            ->where('ends_at', '>=', now()->toDateString())
+            ->get();
+    }
+
+    /**
+     * Aplica o maior multiplicador de campanha aplicável — bcmath.
+     */
+    private function applyCampaignMultiplier(Collection $campaigns, string $role, string $calculationType, string $baseAmount): array
+    {
+        $multiplier = '1';
+        $campaignName = null;
+
+        foreach ($campaigns as $campaign) {
+            if ($campaign->applies_to_role && $campaign->applies_to_role !== $role) {
+                continue;
+            }
+            if (isset($campaign->applies_to_calculation_type) && $campaign->applies_to_calculation_type && $campaign->applies_to_calculation_type !== $calculationType) {
+                continue;
+            }
+            if (bccomp((string) $campaign->multiplier, $multiplier, 2) > 0) {
+                $multiplier = (string) $campaign->multiplier;
+                $campaignName = $campaign->name;
+            }
+        }
+
+        return [
+            'final_amount' => bcmul($baseAmount, $multiplier, 2),
+            'multiplier' => $multiplier,
+            'campaign_name' => $campaignName,
+        ];
     }
 }

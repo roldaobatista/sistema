@@ -10,6 +10,15 @@ use Illuminate\Validation\Rule;
 
 class PaymentMethodController extends Controller
 {
+    private function currentTenantId(Request $request): int
+    {
+        $user = $request->user();
+
+        return app()->bound('current_tenant_id')
+            ? (int) app('current_tenant_id')
+            : (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json(
@@ -19,7 +28,7 @@ class PaymentMethodController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $tenantId = auth()->user()->tenant_id;
+        $tenantId = $this->currentTenantId($request);
 
         $validated = $request->validate([
             'name' => 'required|string|max:100',

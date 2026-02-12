@@ -68,14 +68,29 @@ class DatabaseSeeder extends Seeder
             'os.work_order.assign', 'os.work_order.change_status',
             'technicians.technician.view', 'technicians.schedule.view', 'technicians.schedule.manage',
             'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
-            'finance.payable.view',
+            'finance.receivable.update', 'finance.receivable.delete',
+            'finance.payable.view', 'finance.payable.create', 'finance.payable.settle',
+            'finance.payable.update', 'finance.payable.delete',
             'finance.cashflow.view', 'finance.dre.view', 'platform.dashboard.view',
             'commissions.rule.view', 'commissions.settlement.view',
             'expenses.expense.view', 'expenses.expense.approve',
-            'reports.os_report.view', 'reports.financial_report.view', 'reports.productivity_report.view',
-            'reports.quotes_report.view', 'reports.service_calls_report.view', 'reports.crm_report.view',
-            'reports.equipments_report.view', 'reports.suppliers_report.view', 'reports.stock_report.view',
+            'reports.os_report.view', 'reports.os_report.export',
+            'reports.financial_report.view', 'reports.financial_report.export',
+            'reports.productivity_report.view', 'reports.productivity_report.export',
+            'reports.commission_report.view', 'reports.commission_report.export',
+            'reports.margin_report.view', 'reports.margin_report.export',
+            'reports.technician_cash_report.view', 'reports.technician_cash_report.export',
+            'reports.quotes_report.view', 'reports.quotes_report.export',
+            'reports.service_calls_report.view', 'reports.service_calls_report.export',
+            'reports.crm_report.view', 'reports.crm_report.export',
+            'reports.equipments_report.view', 'reports.equipments_report.export',
+            'reports.suppliers_report.view', 'reports.suppliers_report.export',
+            'reports.stock_report.view', 'reports.stock_report.export',
+            'reports.customers_report.view', 'reports.customers_report.export',
             'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.delete', 'quotes.quote.approve', 'quotes.quote.send',
+            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update', 'service_calls.service_call.assign',
+            'central.item.view', 'central.create.task', 'central.assign', 'central.close.self', 'central.manage.kpis', 'central.manage.rules',
+            'notifications.notification.view', 'notifications.notification.update',
         ]);
         $technician->givePermissionTo([
             'cadastros.customer.view', 'cadastros.product.view', 'cadastros.service.view',
@@ -83,12 +98,18 @@ class DatabaseSeeder extends Seeder
             'technicians.time_entry.create', 'technicians.time_entry.view',
             'technicians.cashbox.view', 'technicians.cashbox.manage',
             'expenses.expense.create', 'expenses.expense.view', 'expenses.expense.update',
+            'service_calls.service_call.view', 'service_calls.service_call.update',
+            'central.item.view', 'central.create.task', 'central.close.self',
+            'notifications.notification.view', 'notifications.notification.update',
         ]);
         $receptionist->givePermissionTo([
             'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
             'cadastros.product.view', 'cadastros.service.view',
             'os.work_order.view', 'os.work_order.create', 'os.work_order.update',
             'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
+            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update',
+            'central.item.view', 'central.create.task', 'central.close.self',
+            'notifications.notification.view', 'notifications.notification.update',
         ]);
         $seller->givePermissionTo([
             'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
@@ -96,19 +117,36 @@ class DatabaseSeeder extends Seeder
             'os.work_order.view', 'os.work_order.create',
             'commissions.rule.view', 'commissions.settlement.view',
             'reports.os_report.view', 'reports.quotes_report.view',
+            'reports.customers_report.view',
             'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.send',
+            'service_calls.service_call.view', 'service_calls.service_call.create',
+            'central.item.view', 'central.create.task', 'central.close.self',
+            'notifications.notification.view', 'notifications.notification.update',
         ]);
         $driver->givePermissionTo([
             'os.work_order.view',
             'technicians.time_entry.create', 'technicians.time_entry.view',
+            'notifications.notification.view', 'notifications.notification.update',
         ]);
         $financeiro->givePermissionTo([
             'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
+            'finance.receivable.update', 'finance.receivable.delete',
             'finance.payable.view', 'finance.payable.create', 'finance.payable.settle',
+            'finance.payable.update', 'finance.payable.delete',
+            'finance.chart.view', 'finance.chart.create', 'finance.chart.update', 'finance.chart.delete',
             'finance.cashflow.view', 'finance.dre.view', 'platform.dashboard.view',
-            'commissions.rule.view', 'commissions.rule.create', 'commissions.settlement.view', 'commissions.settlement.create',
+            'commissions.rule.view', 'commissions.rule.create', 'commissions.rule.update',
+            'commissions.settlement.view', 'commissions.settlement.create',
+            'commissions.dispute.view', 'commissions.dispute.create', 'commissions.dispute.resolve',
+            'commissions.goal.view', 'commissions.goal.create', 'commissions.goal.update', 'commissions.goal.delete',
+            'commissions.campaign.view', 'commissions.campaign.create', 'commissions.campaign.update', 'commissions.campaign.delete',
+            'commissions.recurring.view', 'commissions.recurring.create', 'commissions.recurring.update', 'commissions.recurring.delete',
             'expenses.expense.view', 'expenses.expense.approve',
-            'reports.financial_report.view', 'reports.commission_report.view',
+            'reports.financial_report.view', 'reports.financial_report.export',
+            'reports.commission_report.view', 'reports.commission_report.export',
+            'reports.margin_report.view', 'reports.margin_report.export',
+            'central.item.view', 'central.create.task', 'central.close.self', 'central.manage.kpis', 'central.manage.rules',
+            'notifications.notification.view', 'notifications.notification.update',
         ]);
 
         // ── Usuários ──────────────────
@@ -199,7 +237,7 @@ class DatabaseSeeder extends Seeder
                 'supplier' => ['view', 'create', 'update', 'delete'],
             ],
             'os' => [
-                'work_order' => ['view', 'create', 'update', 'delete', 'assign', 'change_status', 'print'],
+                'work_order' => ['view', 'create', 'update', 'delete', 'assign', 'change_status', 'print', 'export'],
             ],
             'technicians' => [
                 'technician' => ['view', 'create', 'update', 'delete'],
@@ -217,23 +255,13 @@ class DatabaseSeeder extends Seeder
             'commissions' => [
                 'rule' => ['view', 'create', 'update', 'delete'],
                 'settlement' => ['view', 'create', 'approve'],
+                'dispute' => ['view', 'create', 'resolve'],
+                'goal' => ['view', 'create', 'update', 'delete'],
+                'campaign' => ['view', 'create', 'update', 'delete'],
+                'recurring' => ['view', 'create', 'update', 'delete'],
             ],
             'expenses' => [
                 'expense' => ['view', 'create', 'update', 'delete', 'approve'],
-            ],
-            'reports' => [
-                'os_report' => ['view', 'export'],
-                'financial_report' => ['view', 'export'],
-                'productivity_report' => ['view', 'export'],
-                'commission_report' => ['view', 'export'],
-                'margin_report' => ['view', 'export'],
-                'quotes_report' => ['view', 'export'],
-                'service_calls_report' => ['view', 'export'],
-                'crm_report' => ['view', 'export'],
-                'equipments_report' => ['view', 'export'],
-                'suppliers_report' => ['view', 'export'],
-                'stock_report' => ['view', 'export'],
-                'technician_cash_report' => ['view', 'export'],
             ],
             'settings' => [
                 'general' => ['view', 'manage'],
@@ -253,31 +281,66 @@ class DatabaseSeeder extends Seeder
                 'movement' => ['view', 'create'],
             ],
             'import' => [
-                'data' => ['view', 'execute'],
+                'data' => ['view', 'execute', 'delete'],
             ],
             'crm' => [
                 'deal' => ['view', 'create', 'update', 'delete'],
                 'pipeline' => ['view', 'create', 'update', 'delete'],
                 'message' => ['view', 'send'],
             ],
+            'notifications' => [
+                'notification' => ['view', 'update'],
+            ],
+            'reports' => [
+                'os_report' => ['view', 'export'],
+                'quotes_report' => ['view', 'export'],
+                'productivity_report' => ['view', 'export'],
+                'customers_report' => ['view', 'export'],
+                'financial_report' => ['view', 'export'],
+                'commission_report' => ['view', 'export'],
+                'margin_report' => ['view', 'export'],
+                'service_calls_report' => ['view', 'export'],
+                'crm_report' => ['view', 'export'],
+                'equipments_report' => ['view', 'export'],
+                'suppliers_report' => ['view', 'export'],
+                'stock_report' => ['view', 'export'],
+                'technician_cash_report' => ['view', 'export'],
+            ],
+            'inmetro' => [
+                'intelligence' => ['view', 'import', 'enrich', 'convert'],
+            ],
         ];
 
         $order = 0;
         foreach ($modules as $module => $resources) {
-            $group = \App\Models\PermissionGroup::create([
-                'name' => ucfirst(str_replace('_', ' ', $module)),
-                'order' => $order++,
-            ]);
+            $group = \App\Models\PermissionGroup::firstOrCreate(
+                ['name' => ucfirst(str_replace('_', ' ', $module))],
+                ['order' => $order]
+            );
+            $order++;
 
             foreach ($resources as $resource => $actions) {
                 foreach ($actions as $action) {
-                    Permission::create([
-                        'name' => "{$module}.{$resource}.{$action}",
-                        'guard_name' => 'web',
-                        'group_id' => $group->id,
-                        'criticality' => in_array($action, ['delete', 'manage', 'approve']) ? 'HIGH' :
-                            (in_array($action, ['create', 'update']) ? 'MED' : 'LOW'),
-                    ]);
+                    $criticality = in_array($action, ['delete', 'manage', 'approve']) ? 'HIGH' :
+                        (in_array($action, ['create', 'update']) ? 'MED' : 'LOW');
+
+                    $permission = Permission::firstOrCreate(
+                        [
+                            'name' => "{$module}.{$resource}.{$action}",
+                            'guard_name' => 'web',
+                        ],
+                        [
+                            'group_id' => $group->id,
+                            'criticality' => $criticality,
+                        ]
+                    );
+
+                    if (!$permission->group_id || !$permission->criticality) {
+                        $permission->update([
+                            'group_id' => $group->id,
+                            'criticality' => $permission->criticality ?: $criticality,
+                        ]);
+                    }
                 }
             }
         }

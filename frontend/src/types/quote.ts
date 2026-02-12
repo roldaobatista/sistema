@@ -29,7 +29,7 @@ export interface QuoteEquipment {
     created_at: string;
     updated_at: string;
     // Relations
-    equipment?: { id: number; name?: string; model?: string; brand?: string; serial_number?: string };
+    equipment?: { id: number; name?: string; model?: string; brand?: string; serial_number?: string; tag?: string };
     items?: QuoteItem[];
     photos?: QuotePhoto[];
 }
@@ -65,11 +65,12 @@ export interface Quote {
     approved_at: string | null;
     rejected_at: string | null;
     rejection_reason: string | null;
+    approval_url?: string;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
     // Relations
-    customer?: { id: number; name: string; document?: string; contacts?: any[] };
+    customer?: { id: number; name: string; document?: string; email?: string; phone?: string; contacts?: any[] };
     seller?: { id: number; name: string };
     equipments?: QuoteEquipment[];
 }
@@ -78,6 +79,7 @@ export interface QuoteSummary {
     draft: number;
     sent: number;
     approved: number;
+    rejected: number;
     invoiced: number;
     total_month: number;
     conversion_rate: number;

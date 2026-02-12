@@ -8,6 +8,7 @@ use App\Enums\CentralItemStatus;
 use App\Enums\CentralItemType;
 use App\Enums\CentralItemVisibility;
 use App\Models\Concerns\BelongsToTenant;
+use App\Models\Notification;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -111,8 +112,10 @@ class CentralItem extends Model
         array $extras = []
     ): self {
         $tenantId = $model->tenant_id ?? app('current_tenant_id');
+        $authUser = auth()->user();
+        $authUserId = $authUser instanceof User ? (int) $authUser->id : null;
         $criadoPorUserId = $extras['criado_por_user_id']
-            ?? auth()->id()
+            ?? $authUserId
             ?? $responsavelId
             ?? User::query()->where('tenant_id', $tenantId)->value('id');
 
@@ -172,9 +175,36 @@ class CentralItem extends Model
         $item->save();
     }
 
-    public function gerarNotificacao(): void
+    public function gerarNotificacao(
+        string $type = 'central_item_assigned',
+        ?string $title = null,
+        ?string $message = null,
+        array $extraData = []
+    ): void
     {
-        // Implementacao futura
+        if (!$this->tenant_id || !$this->responsavel_user_id) {
+            return;
+        }
+
+        Notification::notify(
+            (int) $this->tenant_id,
+            (int) $this->responsavel_user_id,
+            $type,
+            $title ?? "Central: {$this->titulo}",
+            [
+                'message' => $message ?? ($this->descricao_curta ?: null),
+                'icon' => 'inbox',
+                'color' => 'blue',
+                'link' => "/central?item={$this->id}",
+                'notifiable_type' => self::class,
+                'notifiable_id' => $this->id,
+                'data' => array_merge([
+                    'central_item_id' => $this->id,
+                    'status' => $this->status?->value,
+                    'prioridade' => $this->prioridade?->value,
+                ], $extraData),
+            ]
+        );
     }
 
     public function registrarHistorico(

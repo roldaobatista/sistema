@@ -9,9 +9,20 @@ use Illuminate\Http\Request;
 
 class SlaPolicyController extends Controller
 {
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+
+        return app()->bound('current_tenant_id')
+            ? (int) app('current_tenant_id')
+            : (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(Request $request): JsonResponse
     {
-        $policies = SlaPolicy::where('tenant_id', $request->user()->tenant_id)
+        $tenantId = $this->tenantId($request);
+
+        $policies = SlaPolicy::where('tenant_id', $tenantId)
             ->orderBy('name')
             ->get();
 
@@ -20,6 +31,8 @@ class SlaPolicyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'response_time_minutes' => 'required|integer|min:1',
@@ -28,7 +41,7 @@ class SlaPolicyController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $data['tenant_id'] = $request->user()->tenant_id;
+        $data['tenant_id'] = $tenantId;
         $policy = SlaPolicy::create($data);
 
         return response()->json(['data' => $policy], 201);
@@ -36,13 +49,15 @@ class SlaPolicyController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $policy = SlaPolicy::where('tenant_id', $request->user()->tenant_id)->findOrFail($id);
+        $tenantId = $this->tenantId($request);
+        $policy = SlaPolicy::where('tenant_id', $tenantId)->findOrFail($id);
         return response()->json(['data' => $policy]);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $policy = SlaPolicy::where('tenant_id', $request->user()->tenant_id)->findOrFail($id);
+        $tenantId = $this->tenantId($request);
+        $policy = SlaPolicy::where('tenant_id', $tenantId)->findOrFail($id);
         
         $data = $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -59,7 +74,8 @@ class SlaPolicyController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $policy = SlaPolicy::where('tenant_id', $request->user()->tenant_id)->findOrFail($id);
+        $tenantId = $this->tenantId($request);
+        $policy = SlaPolicy::where('tenant_id', $tenantId)->findOrFail($id);
         $policy->delete();
 
         return response()->json(['message' => 'Política SLA excluída com sucesso']);

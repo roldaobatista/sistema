@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\V1\Financial;
 use App\Http\Controllers\Controller;
 use App\Models\AccountReceivable;
 use App\Models\AccountPayable;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class FinancialExportController extends Controller
 {
@@ -50,58 +50,55 @@ class FinancialExportController extends Controller
     }
 
     /**
-     * #27 — Exportação OFX (Open Financial Exchange).
+     * OFX Export.
      * GET /financial/export/ofx?type=receivable|payable&from=2024-01-01&to=2024-01-31
      */
     public function ofx(Request $request): Response
     {
-        $validated = $request->validate([
-            'type' => 'required|in:receivable,payable',
-            'from' => 'required|date',
-            'to' => 'required|date|after_or_equal:from',
-            'os_number' => 'nullable|string|max:30',
-        ]);
+        try {
+            $validated = $request->validate([
+                'type' => 'required|in:receivable,payable',
+                'from' => 'required|date',
+                'to' => 'required|date|after_or_equal:from',
+                'os_number' => 'nullable|string|max:30',
+            ]);
 
-        $isReceivable = $validated['type'] === 'receivable';
-        $model = $isReceivable ? AccountReceivable::class : AccountPayable::class;
-        $tenantId = $this->tenantId($request);
+            $isReceivable = $validated['type'] === 'receivable';
+            $model = $isReceivable ? AccountReceivable::class : AccountPayable::class;
+            $tenantId = $this->tenantId($request);
 
-        $query = $model::query()
-            ->where('tenant_id', $tenantId)
-            ->whereBetween('due_date', [$validated['from'], $validated['to']])
-            ->orderBy('due_date');
+            $query = $model::query()
+                ->where('tenant_id', $tenantId)
+                ->whereBetween('due_date', [$validated['from'], $validated['to']])
+                ->orderBy('due_date');
 
-        $osNumber = $this->osNumberFilter($request);
-        if ($isReceivable) {
-            $this->applyReceivableOsFilter($query, $osNumber);
-        } else {
-            $this->applyPayableIdentifierFilter($query, $osNumber);
-        }
+            $osNumber = $this->osNumberFilter($request);
+            if ($isReceivable) {
+                $this->applyReceivableOsFilter($query, $osNumber);
+                $query->with('customer:id,name');
+            } else {
+                $this->applyPayableIdentifierFilter($query, $osNumber);
+                $query->with('supplierRelation:id,name');
+            }
 
-        if ($isReceivable) {
-            $query->with('customer:id,name');
-        } else {
-            $query->with('supplierRelation:id,name');
-        }
+            $records = $query->get();
 
-        $records = $query->get();
+            $dtStart = str_replace('-', '', $validated['from']) . '000000';
+            $dtEnd = str_replace('-', '', $validated['to']) . '235959';
+            $acctId = $isReceivable ? '0001-RECEIVABLE' : '0002-PAYABLE';
+            $acctType = $isReceivable ? 'SAVINGS' : 'CHECKING';
 
-        $dtStart = str_replace('-', '', $validated['from']) . '000000';
-        $dtEnd = str_replace('-', '', $validated['to']) . '235959';
-        $acctId = $isReceivable ? '0001-RECEIVABLE' : '0002-PAYABLE';
-        $acctType = $isReceivable ? 'SAVINGS' : 'CHECKING';
+            $transactions = '';
+            foreach ($records as $r) {
+                $dt = $r->due_date->format('Ymd') . '120000';
+                $amount = $isReceivable ? $r->amount : -$r->amount;
+                $fitId = strtoupper(md5($r->id . $r->due_date));
+                $name = $isReceivable
+                    ? ($r->customer?->name ?? ($r->description ?? 'N/A'))
+                    : ($r->supplierRelation?->name ?? $r->supplier ?? ($r->description ?? 'N/A'));
+                $memo = $r->description ?? '';
 
-        $transactions = '';
-        foreach ($records as $r) {
-            $dt = $r->due_date->format('Ymd') . '120000';
-            $amount = $isReceivable ? $r->amount : -$r->amount;
-            $fitId = strtoupper(md5($r->id . $r->due_date));
-            $name = $isReceivable
-                ? ($r->customer?->name ?? ($r->description ?? 'N/A'))
-                : ($r->supplierRelation?->name ?? $r->supplier ?? ($r->description ?? 'N/A'));
-            $memo = $r->description ?? '';
-
-            $transactions .= "
+                $transactions .= "
 <STMTTRN>
 <TRNTYPE>" . ($amount >= 0 ? 'CREDIT' : 'DEBIT') . "
 <DTPOSTED>{$dt}
@@ -110,9 +107,9 @@ class FinancialExportController extends Controller
 <NAME>" . mb_substr($name, 0, 32) . "
 <MEMO>{$memo}
 </STMTTRN>";
-        }
+            }
 
-        $ofx = "OFXHEADER:100
+            $ofx = "OFXHEADER:100
 DATA:OFXSGML
 VERSION:102
 SECURITY:NONE
@@ -155,66 +152,82 @@ NEWFILEUID:NONE
 </BANKMSGSRSV1>
 </OFX>";
 
-        return response($ofx, 200, [
-            'Content-Type' => 'application/x-ofx',
-            'Content-Disposition' => "attachment; filename=\"export_{$validated['type']}_{$validated['from']}_{$validated['to']}.ofx\"",
-        ]);
+            return response($ofx, 200, [
+                'Content-Type' => 'application/x-ofx',
+                'Content-Disposition' => "attachment; filename=\"export_{$validated['type']}_{$validated['from']}_{$validated['to']}.ofx\"",
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('OFX export failed', ['error' => $e->getMessage()]);
+            return response('Erro ao gerar exportação OFX', 500);
+        }
     }
 
     /**
-     * Exportação CSV simples.
+     * CSV Export using fputcsv for proper escaping.
      * GET /financial/export/csv?type=receivable|payable&from=...&to=...
      */
     public function csv(Request $request): Response
     {
-        $validated = $request->validate([
-            'type' => 'required|in:receivable,payable',
-            'from' => 'required|date',
-            'to' => 'required|date|after_or_equal:from',
-            'os_number' => 'nullable|string|max:30',
-        ]);
+        try {
+            $validated = $request->validate([
+                'type' => 'required|in:receivable,payable',
+                'from' => 'required|date',
+                'to' => 'required|date|after_or_equal:from',
+                'os_number' => 'nullable|string|max:30',
+            ]);
 
-        $isReceivable = $validated['type'] === 'receivable';
-        $model = $isReceivable ? AccountReceivable::class : AccountPayable::class;
-        $tenantId = $this->tenantId($request);
+            $isReceivable = $validated['type'] === 'receivable';
+            $model = $isReceivable ? AccountReceivable::class : AccountPayable::class;
+            $tenantId = $this->tenantId($request);
 
-        $query = $model::query()
-            ->where('tenant_id', $tenantId)
-            ->whereBetween('due_date', [$validated['from'], $validated['to']])
-            ->orderBy('due_date');
+            $query = $model::query()
+                ->where('tenant_id', $tenantId)
+                ->whereBetween('due_date', [$validated['from'], $validated['to']])
+                ->orderBy('due_date');
 
-        $osNumber = $this->osNumberFilter($request);
-        if ($isReceivable) {
-            $this->applyReceivableOsFilter($query, $osNumber);
-        } else {
-            $this->applyPayableIdentifierFilter($query, $osNumber);
+            $osNumber = $this->osNumberFilter($request);
+            if ($isReceivable) {
+                $this->applyReceivableOsFilter($query, $osNumber);
+                $query->with('customer:id,name');
+            } else {
+                $this->applyPayableIdentifierFilter($query, $osNumber);
+                $query->with('supplierRelation:id,name');
+            }
+
+            $records = $query->get();
+
+            $handle = fopen('php://temp', 'r+');
+            fputcsv($handle, ['Data Vencimento', 'Descrição', 'Cliente/Fornecedor', 'Valor', 'Status', 'Valor Pago'], ';');
+
+            foreach ($records as $r) {
+                $customer = $isReceivable
+                    ? ($r->customer?->name ?? '')
+                    : ($r->supplierRelation?->name ?? $r->supplier ?? '');
+
+                fputcsv($handle, [
+                    $r->due_date->format('d/m/Y'),
+                    $r->description ?? '',
+                    $customer,
+                    number_format((float) $r->amount, 2, ',', '.'),
+                    $r->status ?? '',
+                    number_format((float) ($r->amount_paid ?? 0), 2, ',', '.'),
+                ], ';');
+            }
+
+            rewind($handle);
+            $csv = stream_get_contents($handle);
+            fclose($handle);
+
+            // BOM for proper UTF-8 in Excel
+            $csv = "\xEF\xBB\xBF" . $csv;
+
+            return response($csv, 200, [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => "attachment; filename=\"export_{$validated['type']}_{$validated['from']}_{$validated['to']}.csv\"",
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('CSV export failed', ['error' => $e->getMessage()]);
+            return response('Erro ao gerar exportação CSV', 500);
         }
-
-        if ($isReceivable) {
-            $query->with('customer:id,name');
-        } else {
-            $query->with('supplierRelation:id,name');
-        }
-
-        $records = $query->get();
-
-        $csv = "Data Vencimento;Descrição;Cliente;Valor;Status;Valor Pago\n";
-
-        foreach ($records as $r) {
-            $date = $r->due_date->format('d/m/Y');
-            $desc = str_replace(';', ',', $r->description ?? '');
-            $customer = str_replace(';', ',', $isReceivable
-                ? ($r->customer?->name ?? '')
-                : ($r->supplierRelation?->name ?? $r->supplier ?? ''));
-            $amount = number_format((float) $r->amount, 2, ',', '.');
-            $paid = number_format((float) ($r->amount_paid ?? 0), 2, ',', '.');
-            $status = $r->status ?? '';
-            $csv .= "{$date};{$desc};{$customer};{$amount};{$status};{$paid}\n";
-        }
-
-        return response($csv, 200, [
-            'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => "attachment; filename=\"export_{$validated['type']}_{$validated['from']}_{$validated['to']}.csv\"",
-        ]);
     }
 }

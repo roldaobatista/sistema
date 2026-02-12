@@ -17,6 +17,7 @@ class Import extends Model
     public const STATUS_DONE = 'done';
     public const STATUS_FAILED = 'failed';
     public const STATUS_ROLLED_BACK = 'rolled_back';
+    public const STATUS_PARTIALLY_ROLLED_BACK = 'partially_rolled_back';
 
     public const STATUSES = [
         self::STATUS_PENDING => 'Pendente',
@@ -24,6 +25,7 @@ class Import extends Model
         self::STATUS_DONE => 'Concluído',
         self::STATUS_FAILED => 'Falhou',
         self::STATUS_ROLLED_BACK => 'Desfeita',
+        self::STATUS_PARTIALLY_ROLLED_BACK => 'Parcialmente Desfeita',
     ];
 
     // ─── Duplicate Strategy Constants ───────────────────────
@@ -52,9 +54,12 @@ class Import extends Model
         self::ENTITY_SUPPLIERS => 'Fornecedores',
     ];
 
+    // ─── Limits ─────────────────────────────────────────────
+    public const MAX_ROWS_LIMIT = 10000;
+
     protected $fillable = [
-        'tenant_id', 'user_id', 'entity_type', 'file_name', 'separator',
-        'total_rows', 'inserted', 'updated', 'skipped', 'errors',
+        'tenant_id', 'user_id', 'entity_type', 'file_name', 'original_name',
+        'separator', 'total_rows', 'inserted', 'updated', 'skipped', 'errors',
         'status', 'mapping', 'error_log', 'duplicate_strategy', 'imported_ids',
     ];
 
@@ -75,5 +80,28 @@ class Import extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function scopeByStatus($query, string $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    public function scopeByEntity($query, string $entity)
+    {
+        return $query->where('entity_type', $entity);
+    }
+
+    public function scopeSearch($query, string $term)
+    {
+        return $query->where(function ($q) use ($term) {
+            $q->where('file_name', 'like', "%{$term}%")
+              ->orWhere('original_name', 'like', "%{$term}%");
+        });
     }
 }

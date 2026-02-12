@@ -20,8 +20,6 @@ class CentralController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        // TODO: Adicionar CheckPermission middleware
-        
         $items = $this->service->listar(
             $request->all(),
             $request->get('per_page', 20)
@@ -97,7 +95,7 @@ class CentralController extends Controller
 
         $assigneeId = $validated['user_id'] ?? $validated['responsavel_user_id'] ?? null;
         if (!$assigneeId) {
-            return response()->json(['message' => 'user_id ou responsavel_user_id é obrigatório'], 422);
+            return response()->json(['message' => 'user_id ou responsavel_user_id e obrigatorio'], 422);
         }
 
         $updated = $this->service->atualizar($centralItem, ['responsavel_user_id' => $assigneeId]);
@@ -154,7 +152,7 @@ class CentralController extends Controller
 
     public function storeRule(Request $request): JsonResponse
     {
-        $validated = $request->validate($this->ruleValidationRules());
+        $validated = $request->validate($this->ruleValidationRules($request));
         $validated = $this->normalizeRulePayload($validated);
 
         /** @var \App\Models\User $user */
@@ -169,7 +167,7 @@ class CentralController extends Controller
 
     public function updateRule(Request $request, CentralRule $centralRule): JsonResponse
     {
-        $validated = $request->validate($this->ruleValidationRules(true));
+        $validated = $request->validate($this->ruleValidationRules($request, true));
         $validated = $this->normalizeRulePayload($validated);
 
         $centralRule->update($validated);
@@ -184,9 +182,10 @@ class CentralController extends Controller
         return response()->json(null, 204);
     }
 
-    private function ruleValidationRules(bool $partial = false): array
+    private function ruleValidationRules(Request $request, bool $partial = false): array
     {
         $required = $partial ? 'sometimes' : 'required';
+        $tenantId = $this->currentTenantId($request);
 
         return [
             'nome' => [$required, 'string', 'max:100'],
@@ -212,7 +211,7 @@ class CentralController extends Controller
             'responsavel_user_id' => [
                 'nullable',
                 Rule::exists('users', 'id')->where(
-                    fn ($q) => $q->where('tenant_id', request()->user()?->current_tenant_id ?? request()->user()?->tenant_id)
+                    fn ($q) => $q->where('tenant_id', $tenantId)
                 ),
             ],
             'role_alvo' => ['nullable', 'string', 'max:100'],

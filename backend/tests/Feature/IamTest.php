@@ -165,6 +165,7 @@ class IamTest extends TestCase
 
         $response = $this->postJson("/api/v1/users/{$target->id}/reset-password", [
             'password' => 'novaSenha123',
+            'password_confirmation' => 'novaSenha123',
         ]);
 
         $response->assertOk()
@@ -469,5 +470,208 @@ class IamTest extends TestCase
         ]);
 
         $response->assertStatus(403);
+    }
+
+    // ──── Tests for new endpoints ────
+
+    public function test_list_user_sessions(): void
+    {
+        $target = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'current_tenant_id' => $this->tenant->id,
+        ]);
+        $target->tenants()->attach($this->tenant->id, ['is_default' => true]);
+        $target->createToken('test-token');
+
+        $response = $this->getJson("/api/v1/users/{$target->id}/sessions");
+
+        $response->assertOk()
+            ->assertJsonStructure(['data' => [['id', 'name', 'last_used_at', 'created_at', 'is_current']]]);
+    }
+
+    public function test_bulk_toggle_active(): void
+    {
+        $targets = User::factory()->count(3)->create([
+            'tenant_id' => $this->tenant->id,
+            'current_tenant_id' => $this->tenant->id,
+            'is_active' => true,
+        ]);
+        $targets->each(fn ($u) => $u->tenants()->attach($this->tenant->id, ['is_default' => true]));
+
+        $response = $this->postJson('/api/v1/users/bulk-toggle-active', [
+            'user_ids' => $targets->pluck('id')->toArray(),
+            'is_active' => false,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('affected', 3);
+
+        foreach ($targets as $target) {
+            $target->refresh();
+            $this->assertFalse($target->is_active);
+        }
+    }
+
+    public function test_export_users_csv(): void
+    {
+        $response = $this->get('/api/v1/users/export');
+
+        $response->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_clone_role(): void
+    {
+        $original = Role::create([
+            'name' => 'clone-source',
+            'guard_name' => 'web',
+            'tenant_id' => $this->tenant->id,
+        ]);
+
+        $perm = Permission::firstOrCreate(
+            ['name' => 'iam.user.view', 'guard_name' => 'web'],
+            ['group_id' => null, 'criticality' => 'LOW']
+        );
+        $original->givePermissionTo($perm);
+
+        $response = $this->postJson("/api/v1/roles/{$original->id}/clone", [
+            'name' => 'clone-target',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('name', 'clone-target');
+
+        $cloned = Role::where('name', 'clone-target')->first();
+        $this->assertNotNull($cloned);
+        $this->assertTrue($cloned->hasPermissionTo('iam.user.view'));
+    }
+
+    public function test_clone_protected_role(): void
+    {
+        $admin = Role::create([
+            'name' => 'admin',
+            'guard_name' => 'web',
+            'tenant_id' => $this->tenant->id,
+        ]);
+
+        $perm = Permission::firstOrCreate(
+            ['name' => 'iam.user.view', 'guard_name' => 'web'],
+            ['group_id' => null, 'criticality' => 'LOW']
+        );
+        $admin->givePermissionTo($perm);
+
+        $response = $this->postJson("/api/v1/roles/{$admin->id}/clone", [
+            'name' => 'admin-clone',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('name', 'admin-clone');
+
+        $cloned = Role::where('name', 'admin-clone')->first();
+        $this->assertNotNull($cloned);
+        $this->assertTrue($cloned->hasPermissionTo('iam.user.view'));
+    }
+
+    public function test_force_logout_user(): void
+    {
+        $target = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'current_tenant_id' => $this->tenant->id,
+        ]);
+        $target->tenants()->attach($this->tenant->id, ['is_default' => true]);
+        $target->createToken('session-1');
+        $target->createToken('session-2');
+
+        $response = $this->postJson("/api/v1/users/{$target->id}/force-logout");
+
+        $response->assertOk()
+            ->assertJsonPath('revoked', 2);
+
+        $this->assertEquals(0, $target->tokens()->count());
+    }
+
+    public function test_cannot_force_logout_self(): void
+    {
+        $response = $this->postJson("/api/v1/users/{$this->user->id}/force-logout");
+
+        $response->assertStatus(422);
+    }
+
+    public function test_list_role_users(): void
+    {
+        $role = Role::create([
+            'name' => 'suporte',
+            'guard_name' => 'web',
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $target = $this->createTenantUser(['is_active' => true]);
+        $target->assignRole($role);
+
+        $response = $this->getJson("/api/v1/roles/{$role->id}/users");
+
+        $response->assertOk()
+            ->assertJsonStructure(['data' => [['id', 'name', 'email', 'is_active']]]);
+
+        $this->assertTrue(
+            collect($response->json('data'))->contains('id', $target->id)
+        );
+    }
+
+    public function test_toggle_permission(): void
+    {
+        $role = Role::create([
+            'name' => 'toggle-test',
+            'guard_name' => 'web',
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $perm = Permission::firstOrCreate(
+            ['name' => 'iam.toggle.test', 'guard_name' => 'web'],
+            ['group_id' => null, 'criticality' => 'LOW']
+        );
+
+        // Grant
+        $response = $this->postJson('/api/v1/permissions/toggle', [
+            'role_id' => $role->id,
+            'permission_id' => $perm->id,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('granted', true);
+
+        $role->refresh();
+        $this->assertTrue($role->hasPermissionTo($perm));
+
+        // Revoke
+        $response2 = $this->postJson('/api/v1/permissions/toggle', [
+            'role_id' => $role->id,
+            'permission_id' => $perm->id,
+        ]);
+
+        $response2->assertOk()
+            ->assertJsonPath('granted', false);
+
+        app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $role->refresh();
+        $this->assertFalse($role->hasPermissionTo($perm));
+    }
+
+    public function test_cannot_toggle_super_admin_permission(): void
+    {
+        $superAdmin = Role::create([
+            'name' => 'super_admin',
+            'guard_name' => 'web',
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $perm = Permission::firstOrCreate(
+            ['name' => 'iam.toggle.block', 'guard_name' => 'web'],
+            ['group_id' => null, 'criticality' => 'LOW']
+        );
+
+        $response = $this->postJson('/api/v1/permissions/toggle', [
+            'role_id' => $superAdmin->id,
+            'permission_id' => $perm->id,
+        ]);
+
+        $response->assertStatus(422);
     }
 }

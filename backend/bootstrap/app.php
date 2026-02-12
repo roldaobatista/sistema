@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.scope' => \App\Http\Middleware\EnsureTenantScope::class,
             'check.tenant' => \App\Http\Middleware\EnsureTenantScope::class,
             'check.permission' => \App\Http\Middleware\CheckPermission::class,
+            'check.report.export' => \App\Http\Middleware\CheckReportExportPermission::class,
             'verify.webhook' => \App\Http\Middleware\VerifyWebhookSignature::class,
         ]);
     })

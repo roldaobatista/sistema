@@ -1,7 +1,10 @@
 import React, { useState } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Pencil, Trash2, Truck, AlertTriangle } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Truck, AlertTriangle, Loader2 } from 'lucide-react'
+import { useViaCep } from '@/hooks/useViaCep'
+import { useCnpjLookup } from '@/hooks/useCnpjLookup'
+import { useIbgeStates, useIbgeCities } from '@/hooks/useIbge'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -41,6 +44,43 @@ export function SuppliersPage() {
     const [showConfirmDelete, setShowConfirmDelete] = useState<Supplier | null>(null)
     const [deleteDependencies, setDeleteDependencies] = useState<any>(null)
     const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
+    const viaCep = useViaCep()
+    const cnpjLookup = useCnpjLookup()
+    const { data: ibgeStates = [] } = useIbgeStates()
+    const { data: ibgeCities = [] } = useIbgeCities(form.address_state)
+
+    async function handleCepBlur() {
+        const result = await viaCep.lookup(form.address_zip)
+        if (result) {
+            setForm(f => ({
+                ...f,
+                address_street: result.street || f.address_street,
+                address_neighborhood: result.neighborhood || f.address_neighborhood,
+                address_city: result.city || f.address_city,
+                address_state: result.state || f.address_state,
+            }))
+        }
+    }
+
+    async function handleCnpjLookup() {
+        const result = await cnpjLookup.lookup(form.document)
+        if (result) {
+            setForm(f => ({
+                ...f,
+                name: f.name || result.name,
+                trade_name: f.trade_name || result.trade_name,
+                email: f.email || result.email,
+                phone: f.phone || result.phone,
+                address_zip: f.address_zip || result.address_zip,
+                address_street: f.address_street || result.address_street,
+                address_number: f.address_number || result.address_number,
+                address_complement: f.address_complement || result.address_complement,
+                address_neighborhood: f.address_neighborhood || result.address_neighborhood,
+                address_city: f.address_city || result.address_city,
+                address_state: f.address_state || result.address_state,
+            }))
+        }
+    }
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['suppliers', debouncedSearch],
@@ -205,7 +245,16 @@ export function SuppliersPage() {
                                 <option value="PF">Pessoa Física</option>
                             </select>
                         </div>
-                        <Input label={form.type === 'PJ' ? 'CNPJ' : 'CPF'} value={form.document} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('document', e.target.value)} />
+                        <div className="relative">
+                            <Input label={form.type === 'PJ' ? 'CNPJ' : 'CPF'} value={form.document} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('document', e.target.value)} />
+                            {form.type === 'PJ' && form.document.replace(/\D/g, '').length === 14 && (
+                                <button type="button" onClick={handleCnpjLookup} disabled={cnpjLookup.loading}
+                                    className="absolute right-2 top-8 rounded p-1 text-surface-400 hover:text-brand-600 transition-colors"
+                                    title="Buscar dados do CNPJ">
+                                    {cnpjLookup.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                </button>
+                            )}
+                        </div>
                         <Input label={form.type === 'PJ' ? 'Razão Social' : 'Nome'} value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
@@ -214,7 +263,10 @@ export function SuppliersPage() {
                         <Input label="Telefone" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('phone', e.target.value)} />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-4">
-                        <Input label="CEP" value={form.address_zip} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_zip', e.target.value)} />
+                        <div className="relative">
+                            <Input label="CEP" value={form.address_zip} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_zip', e.target.value)} onBlur={handleCepBlur} />
+                            {viaCep.loading && <Loader2 className="absolute right-2 top-8 h-4 w-4 animate-spin text-brand-500" />}
+                        </div>
                         <div className="sm:col-span-2">
                             <Input label="Rua" value={form.address_street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_street', e.target.value)} />
                         </div>
@@ -223,8 +275,23 @@ export function SuppliersPage() {
                     <div className="grid gap-4 sm:grid-cols-4">
                         <Input label="Complemento" value={form.address_complement} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_complement', e.target.value)} />
                         <Input label="Bairro" value={form.address_neighborhood} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_neighborhood', e.target.value)} />
-                        <Input label="Cidade" value={form.address_city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_city', e.target.value)} />
-                        <Input label="UF" value={form.address_state} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_state', e.target.value)} maxLength={2} />
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cidade</label>
+                            <select value={form.address_city} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('address_city', e.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                                disabled={!form.address_state}>
+                                <option value="">{form.address_state ? 'Selecione' : 'Selecione o UF primeiro'}</option>
+                                {ibgeCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">UF</label>
+                            <select value={form.address_state} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { set('address_state', e.target.value); set('address_city', ''); }}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                <option value="">Selecione</option>
+                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>

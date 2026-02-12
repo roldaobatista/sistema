@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\PermissionRegistrar;
 
 class AuthController extends Controller
 {
@@ -23,9 +25,28 @@ class AuthController extends Controller
                 'password' => 'required|string',
             ]);
 
+            // Brute force protection: 5 attempts per 15 minutes per IP+email
+            $throttleKey = 'login_attempts:' . $request->ip() . ':' . strtolower($request->email);
+            $attempts = (int) Cache::get($throttleKey, 0);
+
+            if ($attempts >= 5) {
+                $ttl = Cache::get($throttleKey . ':ttl', 0);
+                $remainingMinutes = ($ttl > 0 && $ttl > now()->timestamp)
+                    ? (int) ceil(($ttl - now()->timestamp) / 60)
+                    : 15;
+                $remainingMinutes = max(1, $remainingMinutes); // Nunca mostrar 0 minutos
+                return response()->json([
+                    'message' => "Muitas tentativas de login. Tente novamente em {$remainingMinutes} minutos.",
+                ], 429);
+            }
+
             $user = User::where('email', $request->email)->first();
 
             if (!$user || !Hash::check($request->password, $user->password)) {
+                // Increment failed attempts
+                Cache::put($throttleKey, $attempts + 1, now()->addMinutes(15));
+                Cache::put($throttleKey . ':ttl', now()->addMinutes(15)->timestamp, now()->addMinutes(15));
+
                 throw ValidationException::withMessages([
                     'email' => ['Credenciais inválidas.'],
                 ]);
@@ -34,6 +55,10 @@ class AuthController extends Controller
             if (!$user->is_active) {
                 return response()->json(['message' => 'Conta desativada.'], 403);
             }
+
+            // Clear failed attempts on successful login
+            Cache::forget($throttleKey);
+            Cache::forget($throttleKey . ':ttl');
 
             // Atualiza último login
             $user->update(['last_login_at' => now()]);
@@ -124,6 +149,10 @@ class AuthController extends Controller
         }
 
         $user->update(['current_tenant_id' => $validated['tenant_id']]);
+
+        // Invalidate Spatie permission cache to load new tenant permissions
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         return response()->json(['message' => 'Empresa alterada.', 'tenant_id' => $validated['tenant_id']]);
     }
 }

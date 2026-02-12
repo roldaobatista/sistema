@@ -1,412 +1,624 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 import {
     ArrowLeft, Phone, Clock, Truck, AlertCircle, CheckCircle, XCircle,
     UserCheck, ArrowRight, MapPin, ClipboardList, Wrench, Link as LinkIcon,
+    Send, AlertTriangle, RotateCcw, MessageSquare,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
+import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 
-interface UserLite {
-    id: number
-    name: string
+const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
+    [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', icon: AlertCircle },
+    [SERVICE_CALL_STATUS.SCHEDULED]: { label: 'Agendado', variant: 'warning', icon: Clock },
+    [SERVICE_CALL_STATUS.IN_TRANSIT]: { label: 'Em Trânsito', variant: 'info', icon: Truck },
+    [SERVICE_CALL_STATUS.IN_PROGRESS]: { label: 'Em Atendimento', variant: 'warning', icon: ArrowRight },
+    [SERVICE_CALL_STATUS.COMPLETED]: { label: 'Concluído', variant: 'success', icon: CheckCircle },
+    [SERVICE_CALL_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'danger', icon: XCircle },
 }
 
-interface EquipmentLite {
-    id: number
-    code?: string | null
-    type?: string | null
-    brand?: string | null
-    model?: string | null
-    serial_number?: string | null
-}
-
-interface ServiceCallData {
-    id: number
-    call_number: string
-    status: 'open' | 'scheduled' | 'in_transit' | 'in_progress' | 'completed' | 'cancelled'
-    priority: 'low' | 'normal' | 'high' | 'urgent'
-    customer?: { id: number; name: string; phone?: string | null; email?: string | null } | null
-    quote_id?: number | null
-    quote?: { id: number; quote_number: string; status: string } | null
-    technician?: UserLite | null
-    driver?: UserLite | null
-    scheduled_date?: string | null
-    city?: string | null
-    state?: string | null
-    address?: string | null
-    observations?: string | null
-    equipments?: EquipmentLite[]
-}
-
-const statusConfig: Record<ServiceCallData['status'], { label: string; variant: 'default' | 'info' | 'warning' | 'success' | 'danger'; icon: typeof Phone }> = {
-    open: { label: 'Aberto', variant: 'info', icon: Phone },
-    scheduled: { label: 'Agendado', variant: 'warning', icon: Clock },
-    in_transit: { label: 'Em Deslocamento', variant: 'info', icon: Truck },
-    in_progress: { label: 'Em Atendimento', variant: 'default', icon: AlertCircle },
-    completed: { label: 'Concluído', variant: 'success', icon: CheckCircle },
-    cancelled: { label: 'Cancelado', variant: 'danger', icon: XCircle },
-}
-
-const priorityConfig: Record<ServiceCallData['priority'], { label: string; variant: 'default' | 'info' | 'warning' | 'danger' }> = {
+const priorityConfig: Record<string, { label: string; variant: any }> = {
     low: { label: 'Baixa', variant: 'default' },
     normal: { label: 'Normal', variant: 'info' },
     high: { label: 'Alta', variant: 'warning' },
     urgent: { label: 'Urgente', variant: 'danger' },
 }
 
-const nextStatus: Partial<Record<ServiceCallData['status'], ServiceCallData['status']>> = {
-    open: 'scheduled',
-    scheduled: 'in_transit',
-    in_transit: 'in_progress',
-    in_progress: 'completed',
+const statusTransitions: Record<string, string[]> = {
+    open: ['scheduled', 'in_progress', 'cancelled'],
+    scheduled: ['in_transit', 'in_progress', 'cancelled'],
+    in_transit: ['in_progress', 'cancelled'],
+    in_progress: ['completed', 'cancelled'],
+    completed: [],
+    cancelled: ['open'],
+}
+
+function toLocalDateTimeInput(value?: string | null): string {
+    if (!value) return ''
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+
+    const timezoneOffset = date.getTimezoneOffset() * 60000
+    return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16)
 }
 
 export function ServiceCallDetailPage() {
-    const { id } = useParams()
+    const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
-    const qc = useQueryClient()
-    const [assignForm, setAssignForm] = useState({
+    const queryClient = useQueryClient()
+    const { hasPermission, hasRole } = useAuthStore()
+
+    const [cancelModalOpen, setCancelModalOpen] = useState(false)
+    const [completeModalOpen, setCompleteModalOpen] = useState(false)
+    const [reopenModalOpen, setReopenModalOpen] = useState(false)
+    const [resolutionNotes, setResolutionNotes] = useState('')
+    const [commentText, setCommentText] = useState('')
+    const [activeTab, setActiveTab] = useState<'info' | 'comments'>('info')
+    const [assignment, setAssignment] = useState({
         technician_id: '',
         driver_id: '',
         scheduled_date: '',
     })
-    const [editForm, setEditForm] = useState({ address: '', city: '', state: '', observations: '' })
-    const [isEditing, setIsEditing] = useState(false)
 
-    const { data: callRes, isLoading } = useQuery({
+    const canUpdate = hasRole('super_admin') || hasPermission('service_calls.service_call.update')
+    const canAssign = hasRole('super_admin') || hasPermission('service_calls.service_call.assign')
+    const canCreate = hasRole('super_admin') || hasPermission('service_calls.service_call.create')
+
+    const { data: call, isLoading, isError } = useQuery({
         queryKey: ['service-call', id],
-        queryFn: () => api.get<ServiceCallData>(`/service-calls/${id}`),
+        queryFn: () => api.get(`/service-calls/${id}`).then((r) => r.data),
         enabled: !!id,
     })
-    const call = callRes?.data
 
-    const { data: usersRes } = useQuery({
-        queryKey: ['users-all'],
-        queryFn: () => api.get('/users', { params: { per_page: 100 } }),
+    const { data: comments = [], refetch: refetchComments } = useQuery({
+        queryKey: ['service-call-comments', id],
+        queryFn: () => api.get(`/service-calls/${id}/comments`).then((r) => r.data),
+        enabled: !!id,
     })
-    const users = usersRes?.data?.data ?? []
+
+    const { data: assigneesRes } = useQuery({
+        queryKey: ['service-call-assignees'],
+        queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
+        enabled: canAssign || canCreate,
+    })
+
+    const invalidateAll = () => {
+        queryClient.invalidateQueries({ queryKey: ['service-call', id] })
+        queryClient.invalidateQueries({ queryKey: ['service-calls'] })
+        queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
+    }
 
     useEffect(() => {
         if (!call) return
-        setAssignForm({
-            technician_id: call.technician?.id ? String(call.technician.id) : '',
-            driver_id: call.driver?.id ? String(call.driver.id) : '',
-            scheduled_date: call.scheduled_date ? String(call.scheduled_date).slice(0, 16) : '',
+        setAssignment({
+            technician_id: call.technician_id ? String(call.technician_id) : '',
+            driver_id: call.driver_id ? String(call.driver_id) : '',
+            scheduled_date: toLocalDateTimeInput(call.scheduled_date),
         })
     }, [call])
 
-    useEffect(() => {
-        if (!call) return
-        setEditForm({
-            address: call.address ?? '',
-            city: call.city ?? '',
-            state: call.state ?? '',
-            observations: call.observations ?? '',
-        })
-    }, [call])
-
-    const statusMut = useMutation({
-        mutationFn: (status: ServiceCallData['status']) => api.put(`/service-calls/${id}/status`, { status }),
+    const statusMutation = useMutation({
+        mutationFn: (data: { status: string; resolution_notes?: string }) =>
+            api.put(`/service-calls/${id}/status`, data),
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-call', id] })
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            toast.success('Status atualizado!')
+            toast.success('Status atualizado com sucesso')
+            invalidateAll()
+            setCancelModalOpen(false)
+            setCompleteModalOpen(false)
+            setReopenModalOpen(false)
+            setResolutionNotes('')
         },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Erro ao atualizar status')
+        onError: (err: AxiosError<any>) => {
+            toast.error(err.response?.data?.message || 'Erro ao atualizar status')
         },
     })
 
-    const assignMut = useMutation({
-        mutationFn: () =>
-            api.put(`/service-calls/${id}/assign`, {
-                technician_id: assignForm.technician_id || null,
-                driver_id: assignForm.driver_id || null,
-                scheduled_date: assignForm.scheduled_date || null,
-            }),
+    const commentMutation = useMutation({
+        mutationFn: (content: string) => api.post(`/service-calls/${id}/comments`, { content }),
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-call', id] })
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            toast.success('Atribuição salva!')
+            toast.success('Comentário adicionado')
+            setCommentText('')
+            refetchComments()
         },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Erro ao atribuir técnico')
+        onError: (err: AxiosError<any>) => {
+            toast.error(err.response?.data?.message || 'Erro ao adicionar comentário')
         },
     })
 
-    const convertMut = useMutation({
+    const assignMutation = useMutation({
+        mutationFn: (data: { technician_id: number; driver_id?: number; scheduled_date?: string }) =>
+            api.put(`/service-calls/${id}/assign`, data),
+        onSuccess: (res) => {
+            toast.success('Atribuicao atualizada com sucesso')
+            invalidateAll()
+
+            setAssignment({
+                technician_id: res.data.technician_id ? String(res.data.technician_id) : '',
+                driver_id: res.data.driver_id ? String(res.data.driver_id) : '',
+                scheduled_date: toLocalDateTimeInput(res.data.scheduled_date),
+            })
+        },
+        onError: (err: AxiosError<any>) => {
+            toast.error(err.response?.data?.message || 'Erro ao atribuir tecnico')
+        },
+    })
+
+    const convertMutation = useMutation({
         mutationFn: () => api.post(`/service-calls/${id}/convert-to-os`),
         onSuccess: (res) => {
-            toast.success('Chamado convertido em OS!')
-            const workOrderId = res?.data?.id
-            if (workOrderId) {
-                navigate(`/os/${workOrderId}`)
-            }
+            toast.success('OS criada com sucesso!')
+            invalidateAll()
+            navigate(`/os/${res.data.id}`)
         },
-        onError: (error: AxiosError<{ message?: string; work_order?: { id?: number } }>) => {
-            const existingId = error.response?.data?.work_order?.id
-            if (existingId) {
-                toast.info('Este chamado já foi convertido em OS')
-                navigate(`/os/${existingId}`)
+        onError: (err: AxiosError<any>) => {
+            if (err.response?.status === 409) {
+                toast.error(err.response.data?.message || 'Chamado já possui OS')
             } else {
-                toast.error(error.response?.data?.message || 'Erro ao converter chamado')
+                toast.error(err.response?.data?.message || 'Erro ao converter')
             }
         },
     })
 
-    const cancelMut = useMutation({
-        mutationFn: () => api.put(`/service-calls/${id}/status`, { status: 'cancelled' }),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-call', id] })
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            qc.invalidateQueries({ queryKey: ['service-calls-summary'] })
-            toast.success('Chamado cancelado')
-        },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Erro ao cancelar chamado')
-        },
-    })
+    if (isLoading) {
+        return (
+            <div className="space-y-6 animate-pulse">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                </div>
+            </div>
+        )
+    }
 
-    const updateMut = useMutation({
-        mutationFn: () => api.put(`/service-calls/${id}`, editForm),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['service-call', id] })
-            qc.invalidateQueries({ queryKey: ['service-calls'] })
-            toast.success('Chamado atualizado!')
-            setIsEditing(false)
-        },
-        onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Erro ao atualizar chamado')
-        },
-    })
+    if (isError || !call) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                <AlertCircle className="w-12 h-12 mb-4 opacity-30" />
+                <p className="text-lg font-medium">Chamado não encontrado</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/chamados')}>
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+                </Button>
+            </div>
+        )
+    }
 
-    const statusInfo = call ? statusConfig[call.status] : null
-    const priorityInfo = call ? priorityConfig[call.priority] : null
+    const sc = statusConfig[call.status]
+    const pc = priorityConfig[call.priority]
+    const StatusIcon = sc?.icon || AlertCircle
+    const transitions = statusTransitions[call.status] || []
+    const technicians = assigneesRes?.technicians ?? []
+    const drivers = assigneesRes?.drivers ?? []
 
-    const next = useMemo(() => {
-        if (!call) return null
-        return nextStatus[call.status] ?? null
-    }, [call])
+    const handleStatusChange = (newStatus: string) => {
+        if (newStatus === 'cancelled') {
+            setCancelModalOpen(true)
+        } else if (newStatus === 'completed') {
+            setCompleteModalOpen(true)
+        } else if (newStatus === 'open' && call.status === 'cancelled') {
+            setReopenModalOpen(true)
+        } else {
+            statusMutation.mutate({ status: newStatus })
+        }
+    }
 
-    if (isLoading || !call) {
-        return <div className="py-16 text-center text-[13px] text-surface-500">Carregando...</div>
+    const handleAssign = () => {
+        if (!assignment.technician_id) {
+            toast.error('Selecione um tecnico')
+            return
+        }
+
+        assignMutation.mutate({
+            technician_id: Number(assignment.technician_id),
+            driver_id: assignment.driver_id ? Number(assignment.driver_id) : undefined,
+            scheduled_date: assignment.scheduled_date || undefined,
+        })
     }
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-6">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/chamados')} className="rounded-lg p-1.5 hover:bg-surface-100">
-                        <ArrowLeft className="h-5 w-5 text-surface-500" />
-                    </button>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/chamados')}>
+                        <ArrowLeft className="w-4 h-4" />
+                    </Button>
                     <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-lg font-semibold text-surface-900 tracking-tight">{call.call_number}</h1>
-                            {statusInfo && <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>}
-                            {priorityInfo && <Badge variant={priorityInfo.variant}>{priorityInfo.label}</Badge>}
-                        </div>
-                        <p className="text-[13px] text-surface-500">Chamado técnico</p>
+                        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            Chamado {call.call_number}
+                            <Badge variant={sc?.variant || 'default'}>
+                                <StatusIcon className="w-3 h-3 mr-1" />
+                                {sc?.label || call.status}
+                            </Badge>
+                            {pc && <Badge variant={pc.variant}>{pc.label}</Badge>}
+                            {call.sla_breached && (
+                                <Badge variant="danger">
+                                    <AlertTriangle className="w-3 h-3 mr-1" /> SLA Estourado
+                                </Badge>
+                            )}
+                        </h1>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {call.status !== 'cancelled' && call.status !== 'completed' && (
+                    {canCreate && ['completed', 'in_progress'].includes(call.status) && (
                         <Button
                             variant="outline"
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            loading={cancelMut.isPending}
-                            onClick={() => { if (window.confirm('Cancelar este chamado?')) cancelMut.mutate() }}
+                            size="sm"
+                            loading={convertMutation.isPending}
+                            onClick={() => convertMutation.mutate()}
                         >
-                            Cancelar Chamado
-                        </Button>
-                    )}
-                    {next && (
-                        <Button
-                            variant="outline"
-                            icon={<ArrowRight className="h-4 w-4" />}
-                            loading={statusMut.isPending}
-                            onClick={() => {
-                                if (call.status === 'open' && !call.technician?.id) {
-                                    toast.info('Atribua um técnico antes de avançar o status')
-                                    return
-                                }
-                                statusMut.mutate(next)
-                            }}
-                        >
-                            Avançar Status
-                        </Button>
-                    )}
-                    {(call.status === SERVICE_CALL_STATUS.IN_PROGRESS || call.status === SERVICE_CALL_STATUS.COMPLETED) && (
-                        <Button
-                            icon={<Wrench className="h-4 w-4" />}
-                            loading={convertMut.isPending}
-                            onClick={() => convertMut.mutate()}
-                        >
-                            Converter em OS
+                            <LinkIcon className="w-4 h-4 mr-1" /> Gerar OS
                         </Button>
                     )}
                 </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="space-y-5 lg:col-span-2">
-                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-surface-900">Atendimento</h3>
-                            {!isEditing && call.status !== 'cancelled' && call.status !== 'completed' && (
-                                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Editar</Button>
-                            )}
-                        </div>
-                        {isEditing ? (
-                            <div className="space-y-3">
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                    <Input label="Endereço" value={editForm.address} onChange={(e: any) => setEditForm(f => ({ ...f, address: e.target.value }))} />
-                                    <Input label="Cidade" value={editForm.city} onChange={(e: any) => setEditForm(f => ({ ...f, city: e.target.value }))} />
-                                    <Input label="UF" value={editForm.state} onChange={(e: any) => setEditForm(f => ({ ...f, state: e.target.value }))} />
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
-                                    <textarea
-                                        value={editForm.observations}
-                                        onChange={(e) => setEditForm(f => ({ ...f, observations: e.target.value }))}
-                                        className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm min-h-[80px]"
-                                    />
-                                </div>
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
-                                    <Button onClick={() => updateMut.mutate()} loading={updateMut.isPending}>Salvar</Button>
-                                </div>
+            {/* Status Actions */}
+            {canUpdate && transitions.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {transitions.map((t) => {
+                        const tc = statusConfig[t]
+                        const TIcon = tc?.icon || ArrowRight
+                        const isCancel = t === 'cancelled'
+                        const isReopen = t === 'open'
+                        return (
+                            <Button
+                                key={t}
+                                variant={isCancel ? 'danger' : isReopen ? 'outline' : 'outline'}
+                                size="sm"
+                                loading={statusMutation.isPending}
+                                onClick={() => handleStatusChange(t)}
+                            >
+                                {isReopen ? <RotateCcw className="w-4 h-4 mr-1" /> : <TIcon className="w-4 h-4 mr-1" />}
+                                {isReopen ? 'Reabrir' : tc?.label || t}
+                            </Button>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* Tabs */}
+            <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
+                <button
+                    onClick={() => setActiveTab('info')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'info'
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    <ClipboardList className="w-4 h-4 inline mr-1" /> Informações
+                </button>
+                <button
+                    onClick={() => setActiveTab('comments')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'comments'
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    <MessageSquare className="w-4 h-4 inline mr-1" /> Comentários
+                    {comments.length > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded-full">
+                            {comments.length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
+            {activeTab === 'info' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Customer & Contact */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Phone className="w-4 h-4" /> Cliente
+                        </h2>
+                        {call.customer ? (
+                            <div className="space-y-2 text-sm">
+                                <p className="font-medium text-gray-900 dark:text-white">{call.customer.name}</p>
+                                {call.customer.phone && <p className="text-gray-600 dark:text-gray-400">{call.customer.phone}</p>}
+                                {call.customer.email && <p className="text-gray-600 dark:text-gray-400">{call.customer.email}</p>}
+                                {call.customer.contacts?.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                        <p className="text-xs font-medium text-gray-500 mb-1">Contatos</p>
+                                        {call.customer.contacts.map((c: any) => (
+                                            <p key={c.id} className="text-gray-600 dark:text-gray-400">
+                                                {c.name} — {c.phone || c.email}
+                                            </p>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ) : (
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <p className="text-gray-400 text-sm">Nenhum cliente</p>
+                        )}
+                    </div>
+
+                    {/* Technician & Schedule */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <UserCheck className="w-4 h-4" /> Técnico & Agendamento
+                        </h2>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Técnico</span>
+                                <span className="font-medium">{call.technician?.name || <span className="text-gray-400 italic">Não atribuído</span>}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Motorista</span>
+                                <span className="font-medium">{call.driver?.name || <span className="text-gray-400">—</span>}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Agendado para</span>
+                                <span className="font-medium">
+                                    {call.scheduled_date
+                                        ? new Date(call.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : '—'}
+                                </span>
+                            </div>
+                            {call.started_at && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Iniciado em</span>
+                                    <span className="font-medium">{new Date(call.started_at).toLocaleString('pt-BR')}</span>
+                                </div>
+                            )}
+                            {call.completed_at && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Concluído em</span>
+                                    <span className="font-medium">{new Date(call.completed_at).toLocaleString('pt-BR')}</span>
+                                </div>
+                            )}
+                            {call.response_time_minutes != null && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Tempo de Resposta</span>
+                                    <span className="font-medium">{call.response_time_minutes} min</span>
+                                </div>
+                            )}
+                            {call.resolution_time_minutes != null && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Tempo de Resolução</span>
+                                    <span className="font-medium">{call.resolution_time_minutes} min</span>
+                                </div>
+                            )}
+                        </div>
+                        {canAssign && (
+                            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700 space-y-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Atribuicao
+                                </p>
+
                                 <div>
-                                    <p className="text-xs text-surface-500">Cliente</p>
-                                    <p className="text-[13px] font-medium text-surface-900">{call.customer?.name ?? '-'}</p>
+                                    <label className="mb-1 block text-xs text-gray-500">Tecnico</label>
+                                    <select
+                                        value={assignment.technician_id}
+                                        onChange={(e) => setAssignment((prev) => ({ ...prev, technician_id: e.target.value }))}
+                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                    >
+                                        <option value="">Selecione</option>
+                                        {technicians.map((tech: any) => (
+                                            <option key={tech.id} value={tech.id}>
+                                                {tech.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div>
-                                    <p className="text-xs text-surface-500">Agendamento</p>
-                                    <p className="text-[13px] font-medium text-surface-900">
-                                        {call.scheduled_date ? new Date(call.scheduled_date).toLocaleString('pt-BR') : '-'}
-                                    </p>
+                                    <label className="mb-1 block text-xs text-gray-500">Motorista</label>
+                                    <select
+                                        value={assignment.driver_id}
+                                        onChange={(e) => setAssignment((prev) => ({ ...prev, driver_id: e.target.value }))}
+                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                    >
+                                        <option value="">Sem motorista</option>
+                                        {drivers.map((driver: any) => (
+                                            <option key={driver.id} value={driver.id}>
+                                                {driver.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <div className="sm:col-span-2">
-                                    <p className="text-xs text-surface-500">Endereço</p>
-                                    <p className="text-[13px] font-medium text-surface-900">
-                                        {([call.address, call.city, call.state].filter(Boolean) as string[]).join(' - ') || <span className="text-surface-400 italic">Não informado</span>}
-                                    </p>
+
+                                <div>
+                                    <label className="mb-1 block text-xs text-gray-500">Data agendada</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={assignment.scheduled_date}
+                                        onChange={(e) => setAssignment((prev) => ({ ...prev, scheduled_date: e.target.value }))}
+                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                    />
                                 </div>
-                                <div className="sm:col-span-2">
-                                    <p className="text-xs text-surface-500">Observações</p>
-                                    <p className="text-sm text-surface-700 whitespace-pre-wrap">{call.observations || 'Sem observações'}</p>
+
+                                <div className="flex justify-end">
+                                    <Button size="sm" loading={assignMutation.isPending} onClick={handleAssign}>
+                                        Salvar atribuicao
+                                    </Button>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                        <h3 className="mb-3 text-sm font-semibold text-surface-900">Atribuição</h3>
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <div>
-                                <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico</label>
-                                <select
-                                    value={assignForm.technician_id}
-                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssignForm((p) => ({ ...p, technician_id: e.target.value }))}
-                                    className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm"
-                                >
-                                    <option value="">Não atribuído</option>
-                                    {users.map((u: UserLite) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Motorista</label>
-                                <select
-                                    value={assignForm.driver_id}
-                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssignForm((p) => ({ ...p, driver_id: e.target.value }))}
-                                    className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm"
-                                >
-                                    <option value="">Não atribuído</option>
-                                    {users.map((u: UserLite) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                                </select>
-                            </div>
-                            <Input
-                                label="Data do Agendamento"
-                                type="datetime-local"
-                                value={assignForm.scheduled_date}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssignForm((p) => ({ ...p, scheduled_date: e.target.value }))}
-                            />
-                        </div>
-                        <div className="mt-4 flex justify-end">
-                            <Button
-                                icon={<UserCheck className="h-4 w-4" />}
-                                loading={assignMut.isPending}
-                                onClick={() => { if (!assignForm.technician_id) { toast.info('Selecione um técnico antes de salvar'); return; } assignMut.mutate() }}
-                            >
-                                Salvar Atribuição
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    {call.quote_id && (
-                        <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-surface-500">Origem</h3>
-                            <button
-                                onClick={() => navigate(`/orcamentos/${call.quote_id}`)}
-                                className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline"
-                            >
-                                <LinkIcon className="h-4 w-4" />
-                                Orçamento {call.quote?.quote_number ?? `#${call.quote_id}`}
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-surface-500">Equipe</h3>
+                    {/* Location */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <MapPin className="w-4 h-4" /> Localização
+                        </h2>
                         <div className="space-y-2 text-sm">
-                            <p><span className="text-surface-500">Tecnico:</span> <span className="font-medium text-surface-800">{call.technician?.name ?? '-'}</span></p>
-                            <p><span className="text-surface-500">Motorista:</span> <span className="font-medium text-surface-800">{call.driver?.name ?? '-'}</span></p>
+                            {call.address && <p className="text-gray-700 dark:text-gray-300">{call.address}</p>}
+                            {call.city && <p className="text-gray-600 dark:text-gray-400">{call.city}/{call.state}</p>}
+                            {call.latitude && call.longitude && (
+                                <a
+                                    href={`https://www.google.com/maps?q=${call.latitude},${call.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary-600 hover:underline text-xs"
+                                >
+                                    Ver no Google Maps ↗
+                                </a>
+                            )}
+                            {!call.address && !call.city && <p className="text-gray-400">Sem endereço</p>}
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                        <h3 className="mb-3 flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-surface-500">
-                            <ClipboardList className="h-3.5 w-3.5" />
-                            Equipamentos
-                        </h3>
-                        {call.equipments && call.equipments.length > 0 ? (
+                    {/* Equipments */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Wrench className="w-4 h-4" /> Equipamentos ({call.equipments?.length || 0})
+                        </h2>
+                        {call.equipments?.length > 0 ? (
                             <div className="space-y-2">
-                                {call.equipments.map((eq) => (
-                                    <div key={eq.id} className="rounded-lg bg-surface-50 px-3 py-2">
-                                        <p className="text-sm font-medium text-surface-800">{eq.code || eq.type || `Equipamento #${eq.id}`}</p>
-                                        <p className="text-xs text-surface-500">{[eq.brand, eq.model, eq.serial_number].filter(Boolean).join(' - ')}</p>
+                                {call.equipments.map((eq: any) => (
+                                    <div key={eq.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg text-sm">
+                                        <div>
+                                            <p className="font-medium">{eq.tag || eq.model || `#${eq.id}`}</p>
+                                            {eq.serial_number && <p className="text-xs text-gray-500">S/N: {eq.serial_number}</p>}
+                                        </div>
+                                        {eq.pivot?.observations && (
+                                            <span className="text-xs text-gray-500 max-w-32 truncate">{eq.pivot.observations}</span>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-[13px] text-surface-500">Nenhum equipamento vinculado</p>
+                            <p className="text-gray-400 text-sm">Nenhum equipamento vinculado</p>
                         )}
                     </div>
 
-                    <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                        <h3 className="mb-3 flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-surface-500">
-                            <MapPin className="h-3.5 w-3.5" />
-                            Local
-                        </h3>
-                        <p className="text-sm text-surface-700">
-                            {([call.city, call.state].filter(Boolean) as string[]).join('/') || <span className="text-surface-400 italic">Não informado</span>}
+                    {/* Observations & Resolution */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4 lg:col-span-2">
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Observações</h2>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                            {call.observations || <span className="text-gray-400">Sem observações</span>}
                         </p>
+                        {call.resolution_notes && (
+                            <>
+                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white mt-4">Notas de Resolução</h2>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{call.resolution_notes}</p>
+                            </>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
+
+            {activeTab === 'comments' && (
+                <div className="space-y-4">
+                    {/* Add Comment */}
+                    {canCreate && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                            <textarea
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                placeholder="Adicionar comentário interno..."
+                                rows={3}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            />
+                            <div className="flex justify-end mt-2">
+                                <Button
+                                    size="sm"
+                                    disabled={!commentText.trim()}
+                                    loading={commentMutation.isPending}
+                                    onClick={() => commentText.trim() && commentMutation.mutate(commentText.trim())}
+                                >
+                                    <Send className="w-4 h-4 mr-1" /> Enviar
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Comment List */}
+                    {comments.length === 0 ? (
+                        <div className="flex flex-col items-center py-12 text-gray-500">
+                            <MessageSquare className="w-10 h-10 mb-3 opacity-30" />
+                            <p className="text-sm">Nenhum comentário ainda</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {comments.map((c: any) => (
+                                <div key={c.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                            {c.user?.name || 'Usuário'}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            {new Date(c.created_at).toLocaleString('pt-BR')}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{c.content}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Cancel Modal */}
+            <Modal open={cancelModalOpen} onOpenChange={setCancelModalOpen} title="Cancelar Chamado">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Tem certeza que deseja cancelar o chamado <strong>{call.call_number}</strong>?
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setCancelModalOpen(false)}>Voltar</Button>
+                        <Button
+                            variant="danger"
+                            loading={statusMutation.isPending}
+                            onClick={() => statusMutation.mutate({ status: 'cancelled' })}
+                        >
+                            <XCircle className="w-4 h-4 mr-1" /> Cancelar Chamado
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Complete Modal */}
+            <Modal open={completeModalOpen} onOpenChange={setCompleteModalOpen} title="Concluir Chamado">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Registre o que foi feito para concluir o chamado <strong>{call.call_number}</strong>.
+                    </p>
+                    <textarea
+                        value={resolutionNotes}
+                        onChange={(e) => setResolutionNotes(e.target.value)}
+                        placeholder="Notas de resolução (opcional)..."
+                        rows={4}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm resize-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setCompleteModalOpen(false)}>Voltar</Button>
+                        <Button
+                            loading={statusMutation.isPending}
+                            onClick={() => statusMutation.mutate({ status: 'completed', resolution_notes: resolutionNotes || undefined })}
+                        >
+                            <CheckCircle className="w-4 h-4 mr-1" /> Concluir
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Reopen Modal */}
+            <Modal open={reopenModalOpen} onOpenChange={setReopenModalOpen} title="Reabrir Chamado">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Deseja reabrir o chamado <strong>{call.call_number}</strong>?
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setReopenModalOpen(false)}>Voltar</Button>
+                        <Button
+                            loading={statusMutation.isPending}
+                            onClick={() => statusMutation.mutate({ status: 'open' })}
+                        >
+                            <RotateCcw className="w-4 h-4 mr-1" /> Reabrir
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }

@@ -121,7 +121,7 @@ class WorkOrder extends Model
         self::STATUS_COMPLETED        => [self::STATUS_DELIVERED, self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
         self::STATUS_DELIVERED        => [self::STATUS_INVOICED],
         self::STATUS_INVOICED         => [],
-        self::STATUS_CANCELLED        => [],
+        self::STATUS_CANCELLED        => [self::STATUS_OPEN],
     ];
 
     public function canTransitionTo(string $newStatus): bool
@@ -139,19 +139,21 @@ class WorkOrder extends Model
 
     public function recalculateTotal(): void
     {
-        $itemsTotal = (float) $this->items()->sum('total');
+        $itemsTotal = (string) $this->items()->sum('total');
 
         // Apply EITHER percentage discount OR fixed discount — not both
         if ($this->discount_percentage > 0) {
-            $discountAmount = round($itemsTotal * ($this->discount_percentage / 100), 2);
+            $discountAmount = bcmul($itemsTotal, bcdiv((string) $this->discount_percentage, '100', 4), 2);
         } else {
-            $discountAmount = (float) ($this->discount ?? 0);
+            $discountAmount = (string) ($this->discount ?? '0');
         }
 
-        $displacement = (float) ($this->displacement_value ?? 0);
+        $displacement = (string) ($this->displacement_value ?? '0');
+
+        $finalTotal = bcsub(bcadd($itemsTotal, $displacement, 2), $discountAmount, 2);
 
         $this->update([
-            'total' => max(0, $itemsTotal - $discountAmount + $displacement),
+            'total' => bccomp($finalTotal, '0', 2) < 0 ? '0.00' : $finalTotal,
             'discount_amount' => $discountAmount,
         ]);
     }

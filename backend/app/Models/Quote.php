@@ -77,28 +77,29 @@ class Quote extends Model
     {
         $this->load('equipments.items');
 
-        $subtotal = 0;
+        $subtotal = '0.00';
         foreach ($this->equipments as $eq) {
             foreach ($eq->items as $item) {
-                $subtotal += $item->subtotal;
+                $subtotal = bcadd($subtotal, (string) $item->subtotal, 2);
             }
         }
         $this->subtotal = $subtotal;
 
-        if ($this->discount_percentage > 0) {
-            $discountAmount = $subtotal * ($this->discount_percentage / 100);
+        if ((float) $this->discount_percentage > 0) {
+            $discountAmount = bcmul($subtotal, bcdiv((string) $this->discount_percentage, '100', 6), 2);
             $this->discount_amount = $discountAmount;
         } else {
-            $discountAmount = (float) ($this->discount_amount ?? 0);
+            $discountAmount = (string) ($this->discount_amount ?? '0.00');
         }
 
-        $this->total = max(0, $subtotal - $discountAmount);
+        $total = bcsub($subtotal, $discountAmount, 2);
+        $this->total = bccomp($total, '0', 2) < 0 ? '0.00' : $total;
         $this->saveQuietly();
     }
 
     public function isExpired(): bool
     {
-        return $this->valid_until && $this->valid_until->isPast() && $this->status === QuoteStatus::SENT->value;
+        return $this->valid_until && $this->valid_until->isPast() && $this->status === self::STATUS_SENT;
     }
 
     public static function nextNumber(int $tenantId): string
@@ -163,10 +164,12 @@ class Quote extends Model
             self::STATUS_INVOICED => CentralItemStatus::CONCLUIDO,
         ];
 
+        $rawStatus = $this->status instanceof QuoteStatus ? $this->status->value : $this->status;
+
         return [
             'titulo' => "Orçamento #{$this->quote_number}",
-            'status' => $statusMap[$this->status] ?? CentralItemStatus::ABERTO,
-            'prioridade' => in_array($this->status, [self::STATUS_SENT]) ? CentralItemPriority::ALTA : CentralItemPriority::MEDIA,
+            'status' => $statusMap[$rawStatus] ?? CentralItemStatus::ABERTO,
+            'prioridade' => $rawStatus === self::STATUS_SENT ? CentralItemPriority::ALTA : CentralItemPriority::MEDIA,
         ];
     }
 }

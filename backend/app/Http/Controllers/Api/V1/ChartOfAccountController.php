@@ -7,16 +7,59 @@ use App\Models\ChartOfAccount;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ChartOfAccountController extends Controller
 {
     use ApiResponseTrait;
 
+    private const TYPES = [
+        ChartOfAccount::TYPE_REVENUE,
+        ChartOfAccount::TYPE_EXPENSE,
+        ChartOfAccount::TYPE_ASSET,
+        ChartOfAccount::TYPE_LIABILITY,
+    ];
+
+    private function tenantId(Request $request): int
+    {
+        $user = $request->user();
+
+        return app()->bound('current_tenant_id')
+            ? (int) app('current_tenant_id')
+            : (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(Request $request): JsonResponse
     {
-        $accounts = ChartOfAccount::where('tenant_id', $request->user()->tenant_id)
-            ->with(['parent', 'children'])
-            ->when($request->type, fn ($q, $type) => $q->where('type', $type))
+        $tenantId = $this->tenantId($request);
+        $filters = $request->validate([
+            'type' => ['nullable', 'string', Rule::in(self::TYPES)],
+            'search' => 'nullable|string|max:120',
+            'is_active' => 'nullable|boolean',
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('chart_of_accounts', 'id')->where(
+                    fn ($q) => $q->where('tenant_id', $tenantId)
+                ),
+            ],
+        ]);
+
+        $accounts = ChartOfAccount::query()
+            ->where('tenant_id', $tenantId)
+            ->with('parent:id,code,name,type')
+            ->when(isset($filters['type']), fn ($q) => $q->where('type', $filters['type']))
+            ->when(isset($filters['search']), function ($q) use ($filters) {
+                $search = trim((string) $filters['search']);
+
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%");
+                });
+            })
+            ->when(array_key_exists('is_active', $filters), fn ($q) => $q->where('is_active', (bool) $filters['is_active']))
+            ->when(array_key_exists('parent_id', $filters), fn ($q) => $q->where('parent_id', $filters['parent_id']))
             ->orderBy('code')
             ->get();
 
@@ -25,50 +68,224 @@ class ChartOfAccountController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
         $data = $request->validate([
-            'parent_id' => 'nullable|integer|exists:chart_of_accounts,id',
-            'code' => 'required|string|max:20',
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('chart_of_accounts', 'id')->where(
+                    fn ($q) => $q->where('tenant_id', $tenantId)
+                ),
+            ],
+            'code' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('chart_of_accounts', 'code')->where(
+                    fn ($q) => $q->where('tenant_id', $tenantId)
+                ),
+            ],
             'name' => 'required|string|max:255',
-            'type' => 'required|string|in:revenue,expense,asset,liability',
+            'type' => ['required', 'string', Rule::in(self::TYPES)],
+            'is_active' => 'sometimes|boolean',
         ]);
 
-        $data['tenant_id'] = $request->user()->tenant_id;
+        $data['code'] = $this->normalizeCode($data['code']);
+        $data['name'] = trim((string) $data['name']);
 
-        $account = ChartOfAccount::create($data);
+        $parentError = $this->validateParentConstraints(
+            tenantId: $tenantId,
+            parentId: $data['parent_id'] ?? null,
+            targetType: $data['type']
+        );
 
-        return $this->success($account, 'Conta criada', 201);
+        if ($parentError !== null) {
+            return $parentError;
+        }
+
+        $data['tenant_id'] = $tenantId;
+
+        $account = DB::transaction(fn () => ChartOfAccount::create($data));
+
+        return $this->success($account->fresh('parent:id,code,name,type'), 'Conta criada', 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $account = ChartOfAccount::where('tenant_id', $request->user()->tenant_id)
+        $tenantId = $this->tenantId($request);
+
+        $account = ChartOfAccount::where('tenant_id', $tenantId)
             ->findOrFail($id);
 
         $data = $request->validate([
-            'parent_id' => 'nullable|integer|exists:chart_of_accounts,id',
-            'code' => 'string|max:20',
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('chart_of_accounts', 'id')->where(
+                    fn ($q) => $q->where('tenant_id', $tenantId)
+                ),
+            ],
+            'code' => [
+                'sometimes',
+                'string',
+                'max:20',
+                Rule::unique('chart_of_accounts', 'code')
+                    ->where(fn ($q) => $q->where('tenant_id', $tenantId))
+                    ->ignore($account->id),
+            ],
             'name' => 'string|max:255',
-            'type' => 'string|in:revenue,expense,asset,liability',
+            'type' => ['string', Rule::in(self::TYPES)],
             'is_active' => 'boolean',
         ]);
 
-        $account->update($data);
+        if ($account->is_system) {
+            foreach (['parent_id', 'type', 'code'] as $blockedKey) {
+                if (array_key_exists($blockedKey, $data)) {
+                    return $this->error('Conta do sistema nao permite alteracao estrutural.', 422);
+                }
+            }
+        }
 
-        return $this->success($account, 'Conta atualizada');
+        if (array_key_exists('code', $data)) {
+            $data['code'] = $this->normalizeCode($data['code']);
+        }
+
+        if (array_key_exists('name', $data)) {
+            $data['name'] = trim((string) $data['name']);
+        }
+
+        $targetType = $data['type'] ?? $account->type;
+        $targetParentId = array_key_exists('parent_id', $data)
+            ? ($data['parent_id'] === null ? null : (int) $data['parent_id'])
+            : $account->parent_id;
+
+        $parentError = $this->validateParentConstraints(
+            tenantId: $tenantId,
+            parentId: $targetParentId,
+            targetType: $targetType,
+            currentAccount: $account
+        );
+
+        if ($parentError !== null) {
+            return $parentError;
+        }
+
+        if (array_key_exists('type', $data)) {
+            $hasChildTypeConflict = $account->children()
+                ->where('type', '!=', $targetType)
+                ->exists();
+
+            if ($hasChildTypeConflict) {
+                return $this->error('Nao e possivel trocar tipo com sub-contas de tipo diferente.', 422);
+            }
+        }
+
+        DB::transaction(fn () => $account->update($data));
+
+        return $this->success($account->fresh('parent:id,code,name,type'), 'Conta atualizada');
     }
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $account = ChartOfAccount::where('tenant_id', $request->user()->tenant_id)
-            ->where('is_system', false)
+        $tenantId = $this->tenantId($request);
+
+        $account = ChartOfAccount::query()
+            ->where('tenant_id', $tenantId)
             ->findOrFail($id);
 
-        if ($account->children()->exists()) {
-            return $this->error('Não é possível excluir conta com sub-contas.', 422);
+        if ($account->is_system) {
+            return $this->error('Conta do sistema nao pode ser removida.', 422);
         }
 
-        $account->delete();
+        if ($account->children()->exists()) {
+            return $this->error('Nao e possivel excluir conta com sub-contas.', 422);
+        }
+
+        $usageCount = $account->receivables()->withTrashed()->count()
+            + $account->payables()->withTrashed()->count()
+            + $account->expenses()->withTrashed()->count();
+
+        if ($usageCount > 0) {
+            return $this->error('Nao e possivel excluir conta ja vinculada a lancamentos financeiros.', 422);
+        }
+
+        DB::transaction(fn () => $account->delete());
 
         return $this->success(null, 'Conta removida');
+    }
+
+    private function normalizeCode(string $code): string
+    {
+        $value = trim($code);
+        $value = preg_replace('/\s+/', '', $value);
+
+        return strtoupper((string) $value);
+    }
+
+    private function validateParentConstraints(
+        int $tenantId,
+        ?int $parentId,
+        string $targetType,
+        ?ChartOfAccount $currentAccount = null
+    ): ?JsonResponse {
+        if ($parentId === null) {
+            return null;
+        }
+
+        $parent = ChartOfAccount::query()
+            ->where('tenant_id', $tenantId)
+            ->find($parentId);
+
+        if ($parent === null) {
+            return $this->error('Conta pai informada nao existe neste tenant.', 422);
+        }
+
+        if ($currentAccount !== null && $parent->id === $currentAccount->id) {
+            return $this->error('Uma conta nao pode ser pai dela mesma.', 422);
+        }
+
+        if ($parent->type !== $targetType) {
+            return $this->error('Conta pai precisa ter o mesmo tipo da conta filha.', 422);
+        }
+
+        if (!$parent->is_active) {
+            return $this->error('Nao e possivel vincular a uma conta pai inativa.', 422);
+        }
+
+        if ($currentAccount !== null && $this->createsCycle($tenantId, $currentAccount->id, $parent->id)) {
+            return $this->error('Operacao invalida: geraria ciclo na hierarquia do plano de contas.', 422);
+        }
+
+        return null;
+    }
+
+    private function createsCycle(int $tenantId, int $currentAccountId, int $candidateParentId): bool
+    {
+        $visited = [];
+        $walkerId = $candidateParentId;
+
+        while ($walkerId !== null) {
+            if ($walkerId === $currentAccountId) {
+                return true;
+            }
+
+            if (isset($visited[$walkerId])) {
+                return true;
+            }
+            $visited[$walkerId] = true;
+
+            $walker = ChartOfAccount::query()
+                ->where('tenant_id', $tenantId)
+                ->find($walkerId);
+
+            if ($walker === null || $walker->parent_id === null) {
+                return false;
+            }
+
+            $walkerId = (int) $walker->parent_id;
+        }
+
+        return false;
     }
 }

@@ -18,6 +18,7 @@ class AccountReceivable extends Model
 
     protected $fillable = [
         'tenant_id', 'customer_id', 'work_order_id', 'created_by',
+        'chart_of_account_id',
         'description', 'amount', 'amount_paid', 'due_date', 'paid_at',
         'status', 'payment_method', 'notes',
     ];
@@ -99,6 +100,11 @@ class AccountReceivable extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function chartOfAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
     }
 
     public function payments(): MorphMany

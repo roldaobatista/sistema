@@ -1,301 +1,352 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    ArrowLeft, Send, CheckCircle, XCircle, Copy, ArrowRight, Package, Wrench,
-    FileText, User, DollarSign, MessageSquare, Download,
-    ChevronLeft, Pencil, Printer, Mail,
-} from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
+import { toast } from 'sonner'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { QUOTE_STATUS } from '@/lib/constants'
 import { QUOTE_STATUS_CONFIG } from '@/features/quotes/constants'
+import type { Quote } from '@/types/quote'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import {
+    ArrowLeft, Pencil, Send, CheckCircle, XCircle, Copy,
+    ArrowRightLeft, FileDown, Trash2, RefreshCw, Link as LinkIcon, Clock
+} from 'lucide-react'
 
-// Localized strings
-const STRINGS = {
-    loading: 'Carregando...',
-    dateFormat: 'pt-BR',
-    createdOn: 'Criado em',
-    send: 'Enviar',
-    reject: 'Rejeitar',
-    approve: 'Aprovar',
-    convertToOs: 'Converter em OS',
-    downloadPdf: 'Baixar PDF',
-    duplicate: 'Duplicar',
-    customer: 'Cliente',
-    details: 'Detalhes',
-    values: 'Valores',
-    seller: 'Vendedor',
-    validity: 'Validade',
-    equipments: 'Equipamentos',
-    observations: 'Observações',
-    rejectionReason: 'Motivo da Rejeição',
-    confirmRejection: 'Confirmar Rejeição',
-    cancel: 'Cancelar',
-    rejectionPlaceholder: 'Motivo da rejeição (opcional)',
+const formatCurrency = (v: number | string) => {
+    const n = typeof v === 'string' ? parseFloat(v) : v
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n || 0)
 }
 
 export function QuoteDetailPage() {
-    const { id } = useParams()
+    const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const qc = useQueryClient()
-    const [showRejectModal, setShowRejectModal] = useState(false)
-    const [rejectionReason, setRejectionReason] = useState('')
+    const { hasPermission } = useAuthStore()
 
-    const { data: quoteRes, isLoading } = useQuery({
+    const [rejectOpen, setRejectOpen] = useState(false)
+    const [rejectReason, setRejectReason] = useState('')
+    const [deleteOpen, setDeleteOpen] = useState(false)
+
+    const canUpdate = hasPermission('quotes.quote.update')
+    const canDelete = hasPermission('quotes.quote.delete')
+    const canSend = hasPermission('quotes.quote.send')
+    const canApprove = hasPermission('quotes.quote.approve')
+    const canCreate = hasPermission('quotes.quote.create')
+
+    const { data: quote, isLoading } = useQuery<Quote>({
         queryKey: ['quote', id],
-        queryFn: () => api.get(`/quotes/${id}`),
+        queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,
     })
-    const quote = quoteRes?.data
+
+    const invalidateAll = () => {
+        qc.invalidateQueries({ queryKey: ['quote', id] })
+        qc.invalidateQueries({ queryKey: ['quotes'] })
+        qc.invalidateQueries({ queryKey: ['quotes-summary'] })
+    }
 
     const sendMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/send`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['quote', id] }); }
+        onSuccess: () => { toast.success('Orçamento enviado!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao enviar'),
     })
 
     const approveMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/approve`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['quote', id] }); }
+        onSuccess: () => { toast.success('Orçamento aprovado!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao aprovar'),
     })
 
     const rejectMut = useMutation({
-        mutationFn: () => api.post(`/quotes/${id}/reject`, { reason: rejectionReason }),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['quote', id] });
-            setShowRejectModal(false);
-            setRejectionReason('');
-        }
+        mutationFn: () => api.post(`/quotes/${id}/reject`, { reason: rejectReason }),
+        onSuccess: () => { toast.success('Orçamento rejeitado'); setRejectOpen(false); setRejectReason(''); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao rejeitar'),
     })
 
     const convertMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/convert-to-os`),
-        onSuccess: (res) => {
-            qc.invalidateQueries({ queryKey: ['quote', id] });
-            navigate(`/ordens-servico/${res.data.id}`);
-        },
-        onError: (err: any) => {
-            if (err.response?.status === 409 && err.response?.data?.work_order) {
-                navigate(`/ordens-servico/${err.response.data.work_order.id}`);
-            } else {
-                alert(err.response?.data?.message || 'Erro ao converter');
-            }
-        }
+        onSuccess: () => { toast.success('OS criada a partir do orçamento!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao converter'),
     })
 
-    if (isLoading) return <div className="flex h-96 items-center justify-center text-surface-500">Carregando detalhes...</div>
-    if (!quote) return <div className="flex h-96 items-center justify-center text-surface-500">Orçamento não encontrado</div>
+    const duplicateMut = useMutation({
+        mutationFn: () => api.post(`/quotes/${id}/duplicate`),
+        onSuccess: (res: any) => { toast.success('Orçamento duplicado!'); navigate(`/orcamentos/${res.data.id}`) },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao duplicar'),
+    })
 
-    const sc = QUOTE_STATUS_CONFIG[quote.status] ?? QUOTE_STATUS_CONFIG[QUOTE_STATUS.DRAFT]
+    const deleteMut = useMutation({
+        mutationFn: () => api.delete(`/quotes/${id}`),
+        onSuccess: () => { toast.success('Orçamento excluído!'); navigate('/orcamentos') },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao excluir'); setDeleteOpen(false) },
+    })
+
+    const reopenMut = useMutation({
+        mutationFn: () => api.post(`/quotes/${id}/reopen`),
+        onSuccess: () => { toast.success('Orçamento reaberto!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao reabrir'),
+    })
+
+    const handleDownloadPdf = async () => {
+        try {
+            const res = await api.get(`/quotes/${id}/pdf`, { responseType: 'blob' })
+            const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+            const a = document.createElement('a')
+            a.href = url; a.download = `orcamento_${quote?.quote_number ?? id}.pdf`; a.click()
+            URL.revokeObjectURL(url)
+            toast.success('PDF baixado!')
+        } catch {
+            toast.error('Erro ao gerar PDF')
+        }
+    }
+
+    const handleCopyApprovalLink = () => {
+        if (!quote?.approval_url) {
+            toast.error('Link de aprovação não disponível')
+            return
+        }
+        navigator.clipboard.writeText(quote.approval_url)
+        toast.success('Link copiado para a área de transferência!')
+    }
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="h-8 w-48 bg-surface-100 rounded animate-pulse" />
+                <div className="grid gap-6 md:grid-cols-3">
+                    {[1, 2, 3].map(i => <div key={i} className="h-40 bg-surface-100 rounded-xl animate-pulse" />)}
+                </div>
+            </div>
+        )
+    }
+
+    if (!quote) {
+        return (
+            <div className="text-center py-20">
+                <p className="text-content-secondary">Orçamento não encontrado</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/orcamentos')}>Voltar</Button>
+            </div>
+        )
+    }
+
+    const cfg = QUOTE_STATUS_CONFIG[quote.status] ?? { label: quote.status, variant: 'default' }
+    const isDraft = quote.status === QUOTE_STATUS.DRAFT
+    const isSent = quote.status === QUOTE_STATUS.SENT
+    const isApproved = quote.status === QUOTE_STATUS.APPROVED
+    const isRejected = quote.status === QUOTE_STATUS.REJECTED
+    const isExpired = quote.status === QUOTE_STATUS.EXPIRED
+    const isMutable = isDraft || isRejected
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto pb-20">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/orcamentos')}>
-                        <ChevronLeft className="h-5 w-5" />
+                        <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold text-surface-900">{quote.quote_number}</h1>
-                            <Badge variant={sc.variant} className="gap-1.5 px-2.5 py-0.5">
-                                {sc.label}
-                            </Badge>
-                        </div>
-                        <p className="mt-1 text-sm text-surface-500">
-                            Criado em {new Date(quote.created_at).toLocaleDateString('pt-BR')} • Válido até {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('pt-BR') : '—'}
-                        </p>
+                        <h1 className="text-2xl font-bold text-content-primary">
+                            Orçamento {quote.quote_number}
+                            {quote.revision > 1 && <span className="text-base text-content-tertiary ml-2">rev.{quote.revision}</span>}
+                        </h1>
+                        <Badge variant={cfg.variant} className="mt-1">{cfg.label}</Badge>
                     </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" icon={<Download className="h-4 w-4" />}>PDF</Button>
-
-                    {quote.status === QUOTE_STATUS.DRAFT && (
+                <div className="flex gap-2 flex-wrap">
+                    {canUpdate && isMutable && (
+                        <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orcamentos/${id}/editar`)}>Editar</Button>
+                    )}
+                    {canSend && isDraft && (
+                        <Button size="sm" icon={<Send className="h-4 w-4" />} onClick={() => sendMut.mutate()} disabled={sendMut.isPending}>
+                            {sendMut.isPending ? 'Enviando...' : 'Enviar'}
+                        </Button>
+                    )}
+                    {canApprove && isSent && (
                         <>
-                            <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orcamentos/${id}/editar`)}>Editar</Button>
-                            <Button variant="primary" size="sm" icon={<Send className="h-4 w-4" />} onClick={() => sendMut.mutate()}>Enviar</Button>
+                            <Button size="sm" variant="success" icon={<CheckCircle className="h-4 w-4" />} onClick={() => approveMut.mutate()} disabled={approveMut.isPending}>
+                                Aprovar
+                            </Button>
+                            <Button size="sm" variant="danger" icon={<XCircle className="h-4 w-4" />} onClick={() => setRejectOpen(true)}>
+                                Rejeitar
+                            </Button>
                         </>
                     )}
-
-                    {quote.status === QUOTE_STATUS.SENT && (
-                        <>
-                            <Button variant="danger" size="sm" icon={<XCircle className="h-4 w-4" />} onClick={() => setShowRejectModal(true)}>Rejeitar</Button>
-                            <Button variant="success" size="sm" icon={<CheckCircle className="h-4 w-4" />} onClick={() => approveMut.mutate()}>Aprovar</Button>
-                        </>
+                    {canUpdate && isApproved && (
+                        <Button size="sm" icon={<ArrowRightLeft className="h-4 w-4" />} onClick={() => convertMut.mutate()} disabled={convertMut.isPending}>
+                            Converter em OS
+                        </Button>
                     )}
-
-                    {quote.status === QUOTE_STATUS.APPROVED && (
-                        <Button variant="primary" size="sm" icon={<ArrowRight className="h-4 w-4" />} onClick={() => convertMut.mutate()}>Gerar OS</Button>
+                    {canUpdate && (isRejected || isExpired) && (
+                        <Button size="sm" variant="outline" icon={<RefreshCw className="h-4 w-4" />} onClick={() => reopenMut.mutate()} disabled={reopenMut.isPending}>
+                            Reabrir
+                        </Button>
+                    )}
+                    <Button variant="outline" size="sm" icon={<FileDown className="h-4 w-4" />} onClick={handleDownloadPdf}>PDF</Button>
+                    {isSent && quote.approval_url && (
+                        <Button variant="outline" size="sm" icon={<LinkIcon className="h-4 w-4" />} onClick={handleCopyApprovalLink}>
+                            Copiar Link
+                        </Button>
+                    )}
+                    {canCreate && (
+                        <Button variant="outline" size="sm" icon={<Copy className="h-4 w-4" />} onClick={() => duplicateMut.mutate()} disabled={duplicateMut.isPending}>
+                            Duplicar
+                        </Button>
+                    )}
+                    {canDelete && isMutable && (
+                        <Button variant="danger" size="sm" icon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
+                            Excluir
+                        </Button>
                     )}
                 </div>
             </div>
 
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Rejection reason banner */}
+            {isRejected && quote.rejection_reason && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <p className="text-sm font-medium text-red-800">Motivo da rejeição:</p>
+                    <p className="text-sm text-red-700 mt-1">{quote.rejection_reason}</p>
+                </div>
+            )}
 
-                {/* Main Info */}
-                <div className="lg:col-span-2 space-y-6">
+            {/* Info cards */}
+            <div className="grid gap-6 md:grid-cols-3">
+                {/* Cliente */}
+                <Card className="p-5">
+                    <h3 className="text-sm font-semibold text-content-secondary mb-3">Cliente</h3>
+                    <p className="font-medium text-content-primary">{quote.customer?.name ?? '—'}</p>
+                    {quote.customer?.document && <p className="text-sm text-content-secondary mt-1">{quote.customer.document}</p>}
+                    {quote.customer?.email && <p className="text-sm text-content-secondary">{quote.customer.email}</p>}
+                    {quote.customer?.phone && <p className="text-sm text-content-secondary">{quote.customer.phone}</p>}
+                </Card>
 
-                    {/* Customer Card */}
-                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-surface-900">
-                            <User className="h-4 w-4 text-brand-500" />
-                            Dados do Cliente
-                        </h3>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div>
-                                <p className="text-xs text-surface-500">Cliente</p>
-                                <p className="font-medium text-surface-900">{quote.customer?.name}</p>
+                {/* Resumo Financeiro */}
+                <Card className="p-5">
+                    <h3 className="text-sm font-semibold text-content-secondary mb-3">Resumo Financeiro</h3>
+                    <div className="space-y-2">
+                        <div className="flex justify-between"><span className="text-sm text-content-secondary">Subtotal</span><span className="font-medium">{formatCurrency(quote.subtotal)}</span></div>
+                        {(parseFloat(String(quote.discount_amount)) > 0 || parseFloat(String(quote.discount_percentage)) > 0) && (
+                            <div className="flex justify-between text-red-600">
+                                <span className="text-sm">Desconto {parseFloat(String(quote.discount_percentage)) > 0 ? `(${quote.discount_percentage}%)` : ''}</span>
+                                <span className="font-medium">- {formatCurrency(quote.discount_amount)}</span>
                             </div>
-                            <div>
-                                <p className="text-xs text-surface-500">Documento</p>
-                                <p className="font-medium text-surface-900">{quote.customer?.document || '—'}</p>
-                            </div>
-                            {/* Add more customer fields as needed */}
+                        )}
+                        <div className="flex justify-between border-t border-default pt-2">
+                            <span className="font-semibold">Total</span>
+                            <span className="text-xl font-bold text-brand-600">{formatCurrency(quote.total)}</span>
                         </div>
                     </div>
+                </Card>
 
-                    {/* Equipments & Items */}
-                    <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
-                        <div className="border-b border-subtle bg-surface-50 px-5 py-3">
-                            <h3 className="flex items-center gap-2 text-sm font-semibold text-surface-900">
-                                <FileText className="h-4 w-4 text-brand-500" />
-                                Itens do Orçamento
-                            </h3>
-                        </div>
+                {/* Informações */}
+                <Card className="p-5">
+                    <h3 className="text-sm font-semibold text-content-secondary mb-3">Informações</h3>
+                    <div className="space-y-2 text-sm">
+                        <div className="flex justify-between"><span className="text-content-secondary">Vendedor</span><span>{quote.seller?.name ?? '—'}</span></div>
+                        <div className="flex justify-between"><span className="text-content-secondary">Validade</span><span>{quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('pt-BR') : '—'}</span></div>
+                        <div className="flex justify-between"><span className="text-content-secondary">Criado em</span><span>{quote.created_at ? new Date(quote.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
+                        {quote.sent_at && <div className="flex justify-between"><span className="text-content-secondary">Enviado em</span><span>{new Date(quote.sent_at).toLocaleDateString('pt-BR')}</span></div>}
+                        {quote.approved_at && <div className="flex justify-between"><span className="text-content-secondary">Aprovado em</span><span>{new Date(quote.approved_at).toLocaleDateString('pt-BR')}</span></div>}
+                    </div>
+                </Card>
+            </div>
 
-                        <div className="divide-y divide-subtle">
-                            {quote.equipments?.map((eq: any) => (
-                                <div key={eq.id} className="p-5">
-                                    <div className="mb-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-surface-100 text-surface-700">Equipamento</Badge>
-                                            <span className="font-medium text-surface-900">
-                                                {eq.equipment?.name || eq.description || 'Equipamento sem nome'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-lg border border-subtle overflow-hidden">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-surface-50">
-                                                <tr>
-                                                    <th className="px-3 py-2 text-left font-medium text-surface-600">Item</th>
-                                                    <th className="px-3 py-2 text-right font-medium text-surface-600 w-20">Qtd</th>
-                                                    <th className="px-3 py-2 text-right font-medium text-surface-600 w-32">Unitário</th>
-                                                    <th className="px-3 py-2 text-right font-medium text-surface-600 w-32">Total</th>
+            {/* Equipamentos e Itens */}
+            {quote.equipments && quote.equipments.length > 0 && (
+                <Card className="p-5">
+                    <h3 className="text-sm font-semibold text-content-secondary mb-4">Equipamentos e Itens</h3>
+                    <div className="space-y-6">
+                        {quote.equipments.map((eq) => (
+                            <div key={eq.id} className="border border-default rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="font-medium text-content-primary">{eq.equipment?.tag || eq.equipment?.model || 'Equipamento'}</span>
+                                    {eq.description && <span className="text-sm text-content-secondary">— {eq.description}</span>}
+                                </div>
+                                {eq.items && eq.items.length > 0 && (
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-content-secondary">
+                                                <th className="text-left py-1">Item</th>
+                                                <th className="text-right py-1">Qtd</th>
+                                                <th className="text-right py-1">Preço Unit.</th>
+                                                <th className="text-right py-1">Desc.</th>
+                                                <th className="text-right py-1">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {eq.items.map((item) => (
+                                                <tr key={item.id} className="border-t border-default/50">
+                                                    <td className="py-2">{item.custom_description || item.product?.name || item.service?.name || '—'}</td>
+                                                    <td className="text-right py-2">{item.quantity}</td>
+                                                    <td className="text-right py-2">{formatCurrency(item.unit_price)}</td>
+                                                    <td className="text-right py-2">{parseFloat(String(item.discount_percentage)) > 0 ? `${item.discount_percentage}%` : '—'}</td>
+                                                    <td className="text-right py-2 font-medium">{formatCurrency(item.subtotal)}</td>
                                                 </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-subtle">
-                                                {eq.items?.map((item: any) => (
-                                                    <tr key={item.id}>
-                                                        <td className="px-3 py-2 text-surface-900">
-                                                            {item.product?.name || item.service?.name || item.custom_description || 'Item sem nome'}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right text-surface-600">{item.quantity}</td>
-                                                        <td className="px-3 py-2 text-right text-surface-600">
-                                                            {Number(item.unit_price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right font-medium text-surface-900">
-                                                            {Number(item.subtotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            ))}
-                            {(!quote.equipments || quote.equipments.length === 0) && (
-                                <div className="p-8 text-center text-surface-500 text-sm">
-                                    Nenhum item adicionado
-                                </div>
-                            )}
-                        </div>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        ))}
                     </div>
+                </Card>
+            )}
+
+            {/* Observações */}
+            {(quote.observations || quote.internal_notes) && (
+                <div className="grid gap-6 md:grid-cols-2">
+                    {quote.observations && (
+                        <Card className="p-5">
+                            <h3 className="text-sm font-semibold text-content-secondary mb-2">Observações</h3>
+                            <p className="text-sm text-content-primary whitespace-pre-line">{quote.observations}</p>
+                        </Card>
+                    )}
+                    {quote.internal_notes && (
+                        <Card className="p-5">
+                            <h3 className="text-sm font-semibold text-content-secondary mb-2">Notas Internas</h3>
+                            <p className="text-sm text-content-primary whitespace-pre-line">{quote.internal_notes}</p>
+                        </Card>
+                    )}
                 </div>
+            )}
 
-                {/* Sidebar */}
-                <div className="space-y-6">
-                    {/* Values Summary */}
-                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-surface-900">
-                            <DollarSign className="h-4 w-4 text-brand-500" />
-                            Resumo Financeiro
-                        </h3>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-surface-500">Subtotal</span>
-                                <span className="text-surface-900">{Number(quote.subtotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-surface-500">Desconto</span>
-                                <span className="text-red-600">- {Number(quote.discount_amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                            </div>
-                            <div className="border-t border-dashed border-subtle pt-3 mt-3">
-                                <div className="flex justify-between items-baseline">
-                                    <span className="font-semibold text-surface-900">Total</span>
-                                    <span className="text-xl font-bold text-brand-600">{Number(quote.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Additional Info */}
-                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                        <h3 className="mb-4 text-sm font-semibold text-surface-900">Informações Adicionais</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-xs text-surface-500 mb-1">Vendedor</p>
-                                <div className="flex items-center gap-2">
-                                    <div className="h-6 w-6 rounded-full bg-brand-100 flex items-center justify-center text-[10px] font-bold text-brand-700">
-                                        {quote.seller?.name?.substring(0, 2).toUpperCase()}
-                                    </div>
-                                    <span className="text-sm text-surface-900">{quote.seller?.name}</span>
-                                </div>
-                            </div>
-                            {quote.internal_notes && (
-                                <div>
-                                    <p className="text-xs text-surface-500 mb-1">Notas Internas</p>
-                                    <p className="text-sm text-surface-700 bg-surface-50 p-2 rounded border border-subtle">
-                                        {quote.internal_notes}
-                                    </p>
-                                </div>
-                            )}
-                            {quote.rejection_reason && (
-                                <div>
-                                    <p className="text-xs text-red-500 mb-1 font-medium">Motivo da Rejeição</p>
-                                    <p className="text-sm text-red-700 bg-red-50 p-2 rounded border border-red-100">
-                                        {quote.rejection_reason}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Reject Modal */}
-            {showRejectModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md bg-surface-0 rounded-xl shadow-2xl p-6">
-                        <h3 className="text-lg font-bold text-surface-900 mb-2">Rejeitar Orçamento</h3>
-                        <p className="text-sm text-surface-500 mb-4">Por favor, informe o motivo da rejeição deste orçamento.</p>
-
+            {/* Reject modal */}
+            {rejectOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setRejectOpen(false)}>
+                    <div className="bg-surface-0 rounded-xl p-6 max-w-md mx-4 shadow-elevated w-full" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-content-primary mb-2">Rejeitar Orçamento</h3>
+                        <p className="text-content-secondary text-sm mb-4">Informe o motivo da rejeição (opcional):</p>
                         <textarea
-                            className="w-full h-32 rounded-lg border border-default bg-surface-50 p-3 text-sm focus:border-brand-500 focus:outline-none resize-none mb-4"
+                            className="w-full rounded-lg border border-default p-3 text-sm min-h-[100px] focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                             placeholder="Motivo da rejeição..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
                         />
+                        <div className="flex gap-3 justify-end mt-4">
+                            <Button variant="outline" size="sm" onClick={() => setRejectOpen(false)}>Cancelar</Button>
+                            <Button variant="danger" size="sm" onClick={() => rejectMut.mutate()} disabled={rejectMut.isPending}>
+                                {rejectMut.isPending ? 'Rejeitando...' : 'Rejeitar'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                        <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setShowRejectModal(false)}>Cancelar</Button>
-                            <Button variant="danger" onClick={() => rejectMut.mutate()} disabled={!rejectionReason.trim()}>
-                                Confirmar Rejeição
+            {/* Delete confirmation */}
+            {deleteOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setDeleteOpen(false)}>
+                    <div className="bg-surface-0 rounded-xl p-6 max-w-sm mx-4 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-content-primary mb-2">Excluir Orçamento</h3>
+                        <p className="text-content-secondary text-sm mb-6">
+                            Tem certeza que deseja excluir o orçamento <strong>{quote.quote_number}</strong>? Esta ação não pode ser desfeita.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <Button variant="outline" size="sm" onClick={() => setDeleteOpen(false)}>Cancelar</Button>
+                            <Button variant="danger" size="sm" onClick={() => deleteMut.mutate()} disabled={deleteMut.isPending}>
+                                {deleteMut.isPending ? 'Excluindo...' : 'Excluir'}
                             </Button>
                         </div>
                     </div>

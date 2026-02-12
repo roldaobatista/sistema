@@ -9,6 +9,7 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useWebSocket } from '@/hooks/useWebSocket'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface NotificationItem {
     id: number
@@ -51,6 +52,8 @@ export default function NotificationPanel() {
     const ref = useRef<HTMLDivElement>(null)
     const navigate = useNavigate()
     const qc = useQueryClient()
+    const { hasRole, hasPermission } = useAuthStore()
+    const canUpdateNotifications = hasRole('super_admin') || hasPermission('notifications.notification.update')
 
     // WebSocket real-time connection
     const wsUrl = import.meta.env.VITE_WS_URL || undefined
@@ -108,7 +111,7 @@ export default function NotificationPanel() {
     const notifications: NotificationItem[] = listData?.notifications ?? []
 
     const handleClick = (n: NotificationItem) => {
-        if (!n.read_at) markRead.mutate(n.id)
+        if (!n.read_at && canUpdateNotifications) markRead.mutate(n.id)
         if (n.link) {
             navigate(n.link)
             setOpen(false)
@@ -152,7 +155,7 @@ export default function NotificationPanel() {
                             )}
                         </h3>
                         <div className="flex items-center gap-1">
-                            {unread > 0 && (
+                            {unread > 0 && canUpdateNotifications && (
                                 <button
                                     onClick={() => markAllRead.mutate()}
                                     className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-brand-600 hover:bg-brand-50"
@@ -211,7 +214,7 @@ export default function NotificationPanel() {
                                             {timeAgo(n.created_at, nowTs)}
                                         </p>
                                     </div>
-                                    {!n.read_at && (
+                                    {!n.read_at && canUpdateNotifications && (
                                         <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand-500" />
                                     )}
                                 </button>

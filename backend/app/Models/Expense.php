@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Expense extends Model
 {
@@ -15,6 +16,7 @@ class Expense extends Model
 
     protected $fillable = [
         'tenant_id', 'expense_category_id', 'work_order_id', 'created_by', 'approved_by',
+        'chart_of_account_id',
         'description', 'amount', 'expense_date', 'payment_method',
         'notes', 'receipt_path', 'affects_technician_cash', 'status', 'rejection_reason',
     ];
@@ -40,6 +42,11 @@ class Expense extends Model
         self::STATUS_REIMBURSED => ['label' => 'Reembolsado', 'color' => 'success'],
     ];
 
+    public function scopeForTenant($query, int $tenantId)
+    {
+        return $query->where('tenant_id', $tenantId);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
@@ -58,5 +65,15 @@ class Expense extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function chartOfAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
+    }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(ExpenseStatusHistory::class)->orderByDesc('created_at');
     }
 }

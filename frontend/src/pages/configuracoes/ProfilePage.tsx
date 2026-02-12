@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     User, Mail, Phone, Shield, Building2, Key, Save, CheckCircle, Eye, EyeOff,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -42,16 +43,30 @@ export function ProfilePage() {
             setTimeout(() => setSaved(false), 3000)
         },
         onError: (err: any) => {
-            alert(err.response?.data?.message ?? 'Erro ao atualizar perfil.')
+            if (err.response?.status === 422 && err.response?.data?.errors) {
+                const firstError = Object.values(err.response.data.errors).flat()[0]
+                toast.error(String(firstError) || 'Erro de validação.')
+            } else {
+                toast.error(err.response?.data?.message ?? 'Erro ao atualizar perfil.')
+            }
         },
     })
 
     const passwordMut = useMutation({
         mutationFn: (data: typeof passwordForm) => api.post('/profile/change-password', data),
         onSuccess: () => {
+            toast.success('Senha alterada com sucesso!')
             setPwSaved(true)
             setPasswordForm({ current_password: '', new_password: '', new_password_confirmation: '' })
             setTimeout(() => setPwSaved(false), 3000)
+        },
+        onError: (err: any) => {
+            if (err.response?.status === 422 && err.response?.data?.errors) {
+                const firstError = Object.values(err.response.data.errors).flat()[0]
+                toast.error(String(firstError) || 'Erro de validação.')
+            } else {
+                toast.error(err.response?.data?.message ?? 'Erro ao alterar senha.')
+            }
         },
     })
 

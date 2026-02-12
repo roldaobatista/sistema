@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ServiceCall;
+use App\Models\ServiceCallComment;
+use App\Models\User;
 use App\Models\WorkOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ServiceCallController extends Controller
@@ -18,6 +21,23 @@ class ServiceCallController extends Controller
     {
         $user = auth()->user();
         return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
+    private function canAssignTechnician(): bool
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasRole('super_admin') || $user->can('service_calls.service_call.assign');
+    }
+
+    private function requestTouchesAssignmentFields(Request $request): bool
+    {
+        return $request->exists('technician_id')
+            || $request->exists('driver_id')
+            || $request->exists('scheduled_date');
     }
 
     public function index(Request $request): JsonResponse
@@ -43,6 +63,11 @@ class ServiceCallController extends Controller
     public function store(Request $request): JsonResponse
     {
         $tenantId = $this->currentTenantId();
+        if ($this->requestTouchesAssignmentFields($request) && !$this->canAssignTechnician()) {
+            return response()->json([
+                'message' => 'Sem permissao para atribuir tecnico/agenda no chamado.',
+            ], 403);
+        }
 
         $validated = $request->validate([
             'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
@@ -63,27 +88,34 @@ class ServiceCallController extends Controller
 
         $equipmentIds = $validated['equipment_ids'] ?? [];
         unset($validated['equipment_ids']);
+        // Prevent status override — always start as open
+        unset($validated['status']);
 
         try {
-            $call = ServiceCall::create([
-                ...$validated,
-                'tenant_id' => $tenantId,
-                'created_by' => $request->user()->id,
-                'call_number' => ServiceCall::nextNumber($tenantId),
-            ]);
+            $call = DB::transaction(function () use ($validated, $tenantId, $request, $equipmentIds) {
+                $call = ServiceCall::create([
+                    ...$validated,
+                    'tenant_id' => $tenantId,
+                    'created_by' => $request->user()->id,
+                    'call_number' => ServiceCall::nextNumber($tenantId),
+                    'status' => ServiceCall::STATUS_OPEN,
+                ]);
 
-            if (!empty($equipmentIds)) {
-                $call->equipments()->attach($equipmentIds);
-            }
+                if (!empty($equipmentIds)) {
+                    $call->equipments()->attach($equipmentIds);
+                }
 
-            AuditLog::log('created', "Chamado {$call->call_number} criado", $call);
+                AuditLog::log('created', "Chamado {$call->call_number} criado", $call);
+
+                return $call;
+            });
 
             event(new \App\Events\ServiceCallCreated($call, auth()->user()));
 
             return response()->json($call->load(['customer', 'technician', 'driver', 'equipments']), 201);
         } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao criar chamado: ' . $e->getMessage()], 500);
+            Log::error('ServiceCall create failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao criar chamado'], 500);
         }
     }
 
@@ -95,6 +127,7 @@ class ServiceCallController extends Controller
 
         return response()->json($serviceCall->load([
             'customer.contacts', 'quote', 'technician:id,name', 'driver:id,name', 'equipments',
+            'comments.user:id,name',
         ]));
     }
 
@@ -104,6 +137,12 @@ class ServiceCallController extends Controller
 
         if ((int) $serviceCall->tenant_id !== $tenantId) {
             abort(403);
+        }
+
+        if ($this->requestTouchesAssignmentFields($request) && !$this->canAssignTechnician()) {
+            return response()->json([
+                'message' => 'Sem permissao para atribuir tecnico/agenda no chamado.',
+            ], 403);
         }
 
         $validated = $request->validate([
@@ -118,26 +157,31 @@ class ServiceCallController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'observations' => 'nullable|string',
+            'resolution_notes' => 'nullable|string',
             'equipment_ids' => 'nullable|array',
             'equipment_ids.*' => [Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ]);
 
         $equipmentIds = $validated['equipment_ids'] ?? null;
         unset($validated['equipment_ids']);
+        // Prevent status override via update
+        unset($validated['status']);
 
         try {
-            $serviceCall->update($validated);
+            DB::transaction(function () use ($serviceCall, $validated, $equipmentIds) {
+                $serviceCall->update($validated);
 
-            if ($equipmentIds !== null) {
-                $serviceCall->equipments()->sync($equipmentIds);
-            }
+                if ($equipmentIds !== null) {
+                    $serviceCall->equipments()->sync($equipmentIds);
+                }
 
-            AuditLog::log('updated', "Chamado {$serviceCall->call_number} atualizado", $serviceCall);
+                AuditLog::log('updated', "Chamado {$serviceCall->call_number} atualizado", $serviceCall);
+            });
 
             return response()->json($serviceCall->fresh(['customer', 'technician', 'driver', 'equipments']));
         } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atualizar chamado: ' . $e->getMessage()], 500);
+            Log::error('ServiceCall update failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao atualizar chamado'], 500);
         }
     }
 
@@ -154,9 +198,17 @@ class ServiceCallController extends Controller
             ], 409);
         }
 
-        AuditLog::log('deleted', "Chamado {$serviceCall->call_number} excluído", $serviceCall);
-        $serviceCall->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(function () use ($serviceCall) {
+                $serviceCall->delete();
+                AuditLog::log('deleted', "Chamado {$serviceCall->call_number} excluído", $serviceCall);
+            });
+
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('ServiceCall delete failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao excluir chamado'], 500);
+        }
     }
 
     // ── Ações de Negócio ──
@@ -169,6 +221,7 @@ class ServiceCallController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', Rule::in(array_keys(ServiceCall::STATUSES))],
+            'resolution_notes' => 'nullable|string',
         ]);
 
         if (!$serviceCall->canTransitionTo($validated['status'])) {
@@ -185,31 +238,41 @@ class ServiceCallController extends Controller
             ], 422);
         }
 
-        $old = $serviceCall->status;
+        try {
+            $old = $serviceCall->status;
 
-        $updateData = [
-            'status' => $validated['status'],
-        ];
+            DB::transaction(function () use ($serviceCall, $validated, $old) {
+                $updateData = [
+                    'status' => $validated['status'],
+                ];
 
-        if ($validated['status'] === ServiceCall::STATUS_IN_PROGRESS && !$serviceCall->started_at) {
-            $updateData['started_at'] = now();
+                if ($validated['status'] === ServiceCall::STATUS_IN_PROGRESS && !$serviceCall->started_at) {
+                    $updateData['started_at'] = now();
+                }
+                if ($validated['status'] === ServiceCall::STATUS_COMPLETED) {
+                    $updateData['completed_at'] = now();
+                    if (!empty($validated['resolution_notes'])) {
+                        $updateData['resolution_notes'] = $validated['resolution_notes'];
+                    }
+                }
+                // Ao reabrir chamado, limpar timestamps
+                if ($validated['status'] === ServiceCall::STATUS_OPEN) {
+                    $updateData['started_at'] = null;
+                    $updateData['completed_at'] = null;
+                }
+
+                $serviceCall->update($updateData);
+
+                AuditLog::log('status_changed', "Chamado {$serviceCall->call_number}: $old → {$validated['status']}", $serviceCall);
+            });
+
+            event(new \App\Events\ServiceCallStatusChanged($serviceCall, $old, $validated['status'], auth()->user()));
+
+            return response()->json($serviceCall->fresh());
+        } catch (\Throwable $e) {
+            Log::error('ServiceCall status update failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar status'], 500);
         }
-        if ($validated['status'] === ServiceCall::STATUS_COMPLETED) {
-            $updateData['completed_at'] = now();
-        }
-        // Ao reabrir chamado, limpar timestamps
-        if ($validated['status'] === ServiceCall::STATUS_OPEN) {
-            $updateData['started_at'] = null;
-            $updateData['completed_at'] = null;
-        }
-
-        $serviceCall->update($updateData);
-
-        AuditLog::log('status_changed', "Chamado {$serviceCall->call_number}: $old → {$validated['status']}", $serviceCall);
-
-        event(new \App\Events\ServiceCallStatusChanged($serviceCall, $old, $validated['status'], auth()->user()));
-
-        return response()->json($serviceCall);
     }
 
     public function assignTechnician(Request $request, ServiceCall $serviceCall): JsonResponse
@@ -227,21 +290,24 @@ class ServiceCallController extends Controller
         ]);
 
         try {
-            $newStatus = $serviceCall->status;
-            if ($serviceCall->status === ServiceCall::STATUS_OPEN && $serviceCall->canTransitionTo(ServiceCall::STATUS_SCHEDULED)) {
-                $newStatus = ServiceCall::STATUS_SCHEDULED;
-            }
+            DB::transaction(function () use ($serviceCall, $validated) {
+                $newStatus = $serviceCall->status;
+                if ($serviceCall->status === ServiceCall::STATUS_OPEN && $serviceCall->canTransitionTo(ServiceCall::STATUS_SCHEDULED)) {
+                    $newStatus = ServiceCall::STATUS_SCHEDULED;
+                }
 
-            $serviceCall->update([
-                ...$validated,
-                'status' => $newStatus,
-            ]);
+                $serviceCall->update([
+                    ...$validated,
+                    'status' => $newStatus,
+                ]);
 
-            AuditLog::log('updated', "Técnico atribuído ao chamado {$serviceCall->call_number}", $serviceCall);
+                AuditLog::log('updated', "Técnico atribuído ao chamado {$serviceCall->call_number}", $serviceCall);
+            });
+
             return response()->json($serviceCall->fresh(['technician', 'driver']));
         } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atribuir técnico: ' . $e->getMessage()], 500);
+            Log::error('ServiceCall assign failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atribuir técnico'], 500);
         }
     }
 
@@ -298,15 +364,100 @@ class ServiceCallController extends Controller
                     ]);
                 }
 
+                // Update service call status to completed if it was in_progress
+                if ($serviceCall->status === ServiceCall::STATUS_IN_PROGRESS) {
+                    $serviceCall->update([
+                        'status' => ServiceCall::STATUS_COMPLETED,
+                        'completed_at' => now(),
+                    ]);
+                }
+
                 return $wo;
             });
 
             AuditLog::log('created', "OS criada a partir do chamado {$serviceCall->call_number}", $wo);
             return response()->json($wo->load('equipmentsList'), 201);
         } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao converter chamado em OS: ' . $e->getMessage()], 500);
+            Log::error('ServiceCall convert failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao converter chamado em OS'], 500);
         }
+    }
+
+    // ── Comentários Internos ──
+
+    public function comments(ServiceCall $serviceCall): JsonResponse
+    {
+        if ((int) $serviceCall->tenant_id !== $this->currentTenantId()) {
+            abort(403);
+        }
+
+        return response()->json($serviceCall->comments()->with('user:id,name')->get());
+    }
+
+    public function addComment(Request $request, ServiceCall $serviceCall): JsonResponse
+    {
+        if ((int) $serviceCall->tenant_id !== $this->currentTenantId()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'content' => 'required|string|max:2000',
+        ]);
+
+        try {
+            $comment = DB::transaction(function () use ($serviceCall, $validated, $request) {
+                $comment = $serviceCall->comments()->create([
+                    'user_id' => $request->user()->id,
+                    'content' => $validated['content'],
+                ]);
+
+                AuditLog::log('commented', "Comentário adicionado ao chamado {$serviceCall->call_number}", $serviceCall);
+
+                return $comment;
+            });
+
+            return response()->json($comment->load('user:id,name'), 201);
+        } catch (\Throwable $e) {
+            Log::error('ServiceCall comment failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao adicionar comentário'], 500);
+        }
+    }
+
+    // ── Exportação CSV ──
+
+    public function exportCsv(Request $request): JsonResponse
+    {
+        $tenantId = $this->currentTenantId();
+        $query = ServiceCall::with(['customer:id,name', 'technician:id,name'])
+            ->where('tenant_id', $tenantId);
+
+        if ($status = $request->get('status')) $query->where('status', $status);
+        if ($priority = $request->get('priority')) $query->where('priority', $priority);
+
+        $calls = $query->orderByDesc('created_at')->get();
+
+        $rows = [['Nº', 'Cliente', 'Técnico', 'Status', 'Prioridade', 'Cidade', 'UF', 'Agendado', 'Criado', 'SLA Estourado']];
+        foreach ($calls as $call) {
+            $rows[] = [
+                $call->call_number,
+                $call->customer?->name ?? '',
+                $call->technician?->name ?? '',
+                ServiceCall::STATUSES[$call->status]['label'] ?? $call->status,
+                ServiceCall::PRIORITIES[$call->priority]['label'] ?? $call->priority,
+                $call->city ?? '',
+                $call->state ?? '',
+                $call->scheduled_date ? Carbon::parse($call->scheduled_date)->format('d/m/Y H:i') : '',
+                $call->created_at->format('d/m/Y H:i'),
+                $call->sla_breached ? 'Sim' : 'Não',
+            ];
+        }
+
+        $csv = '';
+        foreach ($rows as $row) {
+            $csv .= implode(';', array_map(fn($v) => '"' . str_replace('"', '""', $v) . '"', $row)) . "\n";
+        }
+
+        return response()->json(['csv' => $csv, 'filename' => 'chamados_' . now()->format('Y-m-d') . '.csv']);
     }
 
     // ── Mapa ──
@@ -427,7 +578,42 @@ class ServiceCallController extends Controller
             'in_progress' => (clone $base)->where('status', ServiceCall::STATUS_IN_PROGRESS)->count(),
 
             'completed_today' => (clone $base)->where('status', ServiceCall::STATUS_COMPLETED)->whereDate('completed_at', today())->count(),
+            'sla_breached_active' => (clone $base)->whereNotIn('status', [ServiceCall::STATUS_COMPLETED, ServiceCall::STATUS_CANCELLED])->get()->filter(fn($c) => $c->sla_breached)->count(),
+        ]);
+    }
+
+    public function assignees(): JsonResponse
+    {
+        $tenantId = $this->currentTenantId();
+
+        $users = User::query()
+            ->where('is_active', true)
+            ->where(function ($query) use ($tenantId) {
+                $query
+                    ->where('tenant_id', $tenantId)
+                    ->orWhere('current_tenant_id', $tenantId)
+                    ->orWhereHas('tenants', fn ($tenantQuery) => $tenantQuery->where('tenants.id', $tenantId));
+            })
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['tecnico', 'motorista']))
+            ->with('roles:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        $toPayload = fn (User $user) => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ];
+
+        return response()->json([
+            'technicians' => $users
+                ->filter(fn (User $user) => $user->roles->contains('name', 'tecnico'))
+                ->values()
+                ->map($toPayload),
+            'drivers' => $users
+                ->filter(fn (User $user) => $user->roles->contains('name', 'motorista'))
+                ->values()
+                ->map($toPayload),
         ]);
     }
 }
-

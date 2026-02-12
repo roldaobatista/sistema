@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Bell, Check, CheckCheck, Trash2, AlertTriangle, Info, FileText, DollarSign, Wrench } from 'lucide-react'
+import { Bell, Check, CheckCheck, AlertTriangle, Info, DollarSign, Wrench } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Notification {
     id: number
@@ -33,10 +34,14 @@ const typeColors: Record<string, string> = {
 export function NotificationsPage() {
     const qc = useQueryClient()
     const [filter, setFilter] = useState<string>('')
+    const { hasRole, hasPermission } = useAuthStore()
+    const canViewNotifications = hasRole('super_admin') || hasPermission('notifications.notification.view')
+    const canUpdateNotifications = hasRole('super_admin') || hasPermission('notifications.notification.update')
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['notifications-full'],
         queryFn: () => api.get('/notifications?limit=100'),
+        enabled: canViewNotifications,
     })
     const allNotifications: Notification[] = res?.data?.notifications ?? []
     const unreadCount: number = res?.data?.unread_count ?? 0
@@ -54,6 +59,18 @@ export function NotificationsPage() {
         mutationFn: () => api.put('/notifications/read-all'),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications-full'] }),
     })
+
+    if (!canViewNotifications) {
+        return (
+            <div className="rounded-xl border border-default bg-surface-0 p-8 text-center shadow-card">
+                <Bell className="mx-auto mb-3 h-10 w-10 text-surface-300" />
+                <h1 className="text-base font-semibold text-surface-900">Sem acesso a notificações</h1>
+                <p className="mt-1 text-[13px] text-surface-500">
+                    Você não possui permissão para visualizar este módulo.
+                </p>
+            </div>
+        )
+    }
 
     const fmtDate = (d: string) => {
         const dt = new Date(d)
@@ -82,7 +99,7 @@ export function NotificationsPage() {
                         {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Todas lidas'}
                     </p>
                 </div>
-                {unreadCount > 0 && (
+                {unreadCount > 0 && canUpdateNotifications && (
                     <button
                         onClick={() => markAllMut.mutate()}
                         disabled={markAllMut.isPending}
@@ -151,7 +168,7 @@ export function NotificationsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <span className="text-xs text-surface-400">{fmtDate(n.created_at)}</span>
-                                    {isUnread && (
+                                    {isUnread && canUpdateNotifications && (
                                         <button
                                             onClick={() => markReadMut.mutate(n.id)}
                                             className="text-brand-600 hover:text-brand-700 p-1 rounded"

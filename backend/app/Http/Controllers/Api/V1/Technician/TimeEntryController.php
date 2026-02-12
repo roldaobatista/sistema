@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1\Technician;
 
 use App\Http\Controllers\Controller;
 use App\Models\TimeEntry;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class TimeEntryController extends Controller
 {
@@ -15,6 +17,38 @@ class TimeEntryController extends Controller
     {
         $user = $request->user();
         return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
+    private function hasRunningEntry(int $tenantId, int $technicianId, ?int $excludeEntryId = null): bool
+    {
+        return TimeEntry::query()
+            ->where('tenant_id', $tenantId)
+            ->where('technician_id', $technicianId)
+            ->whereNull('ended_at')
+            ->when($excludeEntryId, fn ($query) => $query->where('id', '!=', $excludeEntryId))
+            ->exists();
+    }
+
+    private function userBelongsToTenant(int $userId, int $tenantId): bool
+    {
+        return User::query()
+            ->where('id', $userId)
+            ->where(function ($query) use ($tenantId) {
+                $query
+                    ->where('tenant_id', $tenantId)
+                    ->orWhere('current_tenant_id', $tenantId)
+                    ->orWhereHas('tenants', fn ($tenantQuery) => $tenantQuery->where('tenants.id', $tenantId));
+            })
+            ->exists();
+    }
+
+    private function ensureTenantUser(int $userId, int $tenantId, string $field = 'technician_id'): void
+    {
+        if (!$this->userBelongsToTenant($userId, $tenantId)) {
+            throw ValidationException::withMessages([
+                $field => ['Usuario nao pertence ao tenant atual.'],
+            ]);
+        }
     }
 
     public function index(Request $request): JsonResponse
@@ -58,13 +92,21 @@ class TimeEntryController extends Controller
 
         $validated = $request->validate([
             'work_order_id' => ['required', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'technician_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'technician_id' => ['required', Rule::exists('users', 'id')],
             'schedule_id' => ['nullable', Rule::exists('schedules', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'started_at' => 'required|date',
             'ended_at' => 'nullable|date|after:started_at',
             'type' => ['sometimes', Rule::in(array_keys(TimeEntry::TYPES))],
             'description' => 'nullable|string',
         ]);
+        $this->ensureTenantUser((int) $validated['technician_id'], $tenantId);
+
+        $isOpenEntry = !array_key_exists('ended_at', $validated) || $validated['ended_at'] === null;
+        if ($isOpenEntry && $this->hasRunningEntry($tenantId, (int) $validated['technician_id'])) {
+            return response()->json([
+                'message' => 'Tecnico ja possui apontamento em andamento.',
+            ], 409);
+        }
 
         $entry = DB::transaction(function () use ($validated, $tenantId) {
             return TimeEntry::create([...$validated, 'tenant_id' => $tenantId]);
@@ -107,6 +149,12 @@ class TimeEntryController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        if ($this->hasRunningEntry($tenantId, (int) $request->user()->id)) {
+            return response()->json([
+                'message' => 'Voce ja possui apontamento em andamento.',
+            ], 409);
+        }
+
         $entry = TimeEntry::create([
             ...$validated,
             'tenant_id' => $tenantId,
@@ -128,7 +176,8 @@ class TimeEntryController extends Controller
 
         // Verifica ownership — só o próprio técnico ou admin pode parar
         $user = $request->user();
-        if ($timeEntry->technician_id !== $user->id && !$user->hasRole('admin')) {
+        $canManageOthers = $user->hasRole('super_admin') || $user->can('technicians.time_entry.update');
+        if ($timeEntry->technician_id !== $user->id && !$canManageOthers) {
             return response()->json(['message' => 'Sem permissão para finalizar este apontamento'], 403);
         }
 
@@ -157,3 +206,4 @@ class TimeEntryController extends Controller
         ]);
     }
 }
+

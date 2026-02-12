@@ -99,8 +99,9 @@ class CentralAutomationService
         $prioridade = isset($config['prioridade']) ? strtoupper((string) $config['prioridade']) : null;
 
         if ($prioridade && CentralItemPriority::tryFrom($prioridade)) {
+            $oldPriority = $item->prioridade?->value;
             $item->update(['prioridade' => $prioridade]);
-            $item->registrarHistorico('set_priority', $item->prioridade?->value, $prioridade);
+            $item->registrarHistorico('set_priority', $oldPriority, $prioridade);
         }
     }
 
@@ -213,7 +214,7 @@ class CentralAutomationService
             ->whereNotNull('responsavel_user_id')
             ->selectRaw('responsavel_user_id, COUNT(*) as total')
             ->selectRaw("SUM(CASE WHEN due_at < {$nowExpr} THEN 1 ELSE 0 END) as atrasadas")
-            ->selectRaw("SUM(CASE WHEN prioridade = 'urgente' THEN 1 ELSE 0 END) as urgentes")
+            ->selectRaw("SUM(CASE WHEN prioridade = ? THEN 1 ELSE 0 END) as urgentes", [CentralItemPriority::URGENTE->value])
             ->groupBy('responsavel_user_id')
             ->orderByDesc('total')
             ->get()

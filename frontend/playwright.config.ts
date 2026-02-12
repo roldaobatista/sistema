@@ -16,8 +16,9 @@ export default defineConfig({
         { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     ],
     webServer: {
-        command: 'npm run dev',
+        command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
         url: 'http://localhost:5173',
+        timeout: 180_000,
         reuseExistingServer: !process.env.CI,
     },
 })

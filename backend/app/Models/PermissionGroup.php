@@ -10,7 +10,7 @@ class PermissionGroup extends Model
 {
     protected $table = 'permission_groups';
 
-    protected $fillable = ['name', 'order'];
+    protected $fillable = ['name', 'slug', 'order'];
 
     public function permissions(): HasMany
     {
