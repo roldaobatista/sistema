@@ -50,7 +50,10 @@ export function BatchExportPage() {
             link.remove()
             window.URL.revokeObjectURL(url)
         },
-    })
+    ,
+    onSuccess: () => { toast.success('Operação realizada com sucesso') },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro na operação') }
+  })
 
     const currentEntity = entities?.find(e => e.key === selectedEntity)
 

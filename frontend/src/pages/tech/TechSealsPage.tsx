@@ -27,6 +27,7 @@ export default function TechSealsPage() {
 
     // Buscar equipamentos da OS
     const { data: woRes } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['tech-wo-detail', woId],
         queryFn: () => api.get(`/tech/os/${woId}`)
     })

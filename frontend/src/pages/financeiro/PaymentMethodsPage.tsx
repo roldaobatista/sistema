@@ -43,6 +43,7 @@ export function PaymentMethodsPage() {
     const canDelete = isSuperAdmin || hasPermission('finance.payable.delete')
 
     const { data: res, isLoading, isError } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['payment-methods'],
         queryFn: () => api.get('/payment-methods'),
     })

@@ -67,6 +67,8 @@ export function InmetroOwnerDetailPage() {
     }
 
     const handleDelete = () => {
+    if (!window.confirm('Tem certeza que deseja remover?')) return
+    {
         if (!owner) return
         deleteOwnerMutation.mutate(owner.id, {
             onSuccess: () => {

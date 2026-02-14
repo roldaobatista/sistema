@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface InmetroSeal {
     id: number
@@ -33,6 +34,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; badgeVariant
 }
 
 export default function InmetroSealManagement() {
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const qc = useQueryClient()
     const navigate = useNavigate()
     const [search, setSearch] = useState('')

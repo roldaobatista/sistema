@@ -33,6 +33,7 @@ export function CommissionDashboardPage() {
     const byRole = byRoleRes?.data?.data ?? byRoleRes?.data ?? []
     const isLoading = loadingOverview || loadingRanking || loadingEvolution || loadingByRule || loadingByRole
 
+  const [searchTerm, setSearchTerm] = useState('')
     const maxEvolution = Math.max(...(evolution as any[]).map((e: any) => e.total), 1)
     const maxByRule = Math.max(...(byRule as any[]).map((r: any) => r.total), 1)
 

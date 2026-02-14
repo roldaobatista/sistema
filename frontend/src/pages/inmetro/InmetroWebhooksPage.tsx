@@ -25,6 +25,7 @@ export default function InmetroWebhooksPage() {
     const deleteMut = useDeleteWebhook()
     const [form, setForm] = useState({ event_type: '', url: '', secret: '' })
 
+  const [searchTerm, setSearchTerm] = useState('')
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">

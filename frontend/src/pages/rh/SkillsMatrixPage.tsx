@@ -19,6 +19,7 @@ export default function SkillsMatrixPage() {
   const { hasPermission } = useAuthStore()
 
     const {
+  const [searchTerm, setSearchTerm] = useState('')
         skills, loadingSkills, matrix, loadingMatrix,
         createSkill, updateSkill, deleteSkill, assessUser
     } = useSkills()

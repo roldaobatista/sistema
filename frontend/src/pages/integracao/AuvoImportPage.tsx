@@ -68,6 +68,7 @@ export function AuvoImportPage() {
     const [showKey, setShowKey] = useState(false)
     const [showToken, setShowToken] = useState(false)
 
+  const [searchTerm, setSearchTerm] = useState('')
     useEffect(() => {
         if (savedConfig?.has_credentials) {
             setApiKey(savedConfig.api_key)
@@ -85,6 +86,7 @@ export function AuvoImportPage() {
         if (!apiKey.trim() || !apiToken.trim()) return
         saveConfig.mutate({ api_key: apiKey, api_token: apiToken }, {
             onSuccess: () => {
+        toast.success('Operação realizada com sucesso')
                 setShowConfig(false)
             },
         })

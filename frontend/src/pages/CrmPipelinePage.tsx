@@ -71,6 +71,7 @@ export function CrmPipelinePage() {
         mutationFn: ({ dealId, stageId }: { dealId: number; stageId: number }) =>
             crmApi.updateDealStage(dealId, stageId),
         onSuccess: () => {
+        toast.success('Operação realizada com sucesso')
             queryClient.invalidateQueries({ queryKey: ['crm'] })
         },
         onError: (error: any) => {

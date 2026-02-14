@@ -43,7 +43,8 @@ export function FuelingLogsPage() {
 
     const handleCreate = () => {
         createMutation.mutate(form, {
-            onSuccess: () => { setCreateOpen(false); setForm({ ...emptyForm }) },
+            onSuccess: () => {
+        toast.success('Operação realizada com sucesso') setCreateOpen(false); setForm({ ...emptyForm }) },
         })
     }
 

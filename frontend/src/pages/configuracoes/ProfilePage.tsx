@@ -21,6 +21,7 @@ export function ProfilePage() {
     const [pwSaved, setPwSaved] = useState(false)
 
     const { data: res, isLoading } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['profile'],
         queryFn: () => api.get('/profile'),
     })

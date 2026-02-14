@@ -21,6 +21,7 @@ export default function EmailComposePage() {
     const accounts = accountsData?.data || []
 
     const [form, setForm] = useState({
+  const [searchTerm, setSearchTerm] = useState('')
         account_id: '',
         to: '',
         subject: '',

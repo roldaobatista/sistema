@@ -22,6 +22,7 @@ export default function PerformancePage() {
 
     const navigate = useNavigate()
     const {
+  const [searchTerm, setSearchTerm] = useState('')
         reviews, loadingReviews, createReview, updateReview,
         feedbackList, loadingFeedback, sendFeedback
     } = usePerformance()

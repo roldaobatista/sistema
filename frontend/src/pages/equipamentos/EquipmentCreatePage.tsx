@@ -14,6 +14,7 @@ export default function EquipmentCreatePage() {
     const navigate = useNavigate()
 
     const { data: constants, isError: constantsError } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['equipments-constants'],
         queryFn: () => api.get('/equipments-constants').then(r => r.data),
         meta: { errorMessage: 'Erro ao carregar constantes de equipamentos' },

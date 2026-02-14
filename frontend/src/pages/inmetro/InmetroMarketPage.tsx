@@ -36,6 +36,7 @@ export function InmetroMarketPage() {
 
     const isLoading = loadingOverview || loadingComp || loadingRegional || loadingBrands || loadingForecast
 
+  const [searchTerm, setSearchTerm] = useState('')
     if (isLoading) {
         return (
             <div className="space-y-6 animate-pulse">

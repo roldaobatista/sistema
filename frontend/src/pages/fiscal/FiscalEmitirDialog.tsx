@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { X, Plus, Trash2, Loader2, FileText } from 'lucide-react'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Props {
     type: 'nfe' | 'nfse'
@@ -19,6 +20,8 @@ interface ItemRow {
 }
 
 export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) {
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const isNFe = type === 'nfe'
     const title = isNFe ? 'Emitir NF-e' : 'Emitir NFS-e'
 

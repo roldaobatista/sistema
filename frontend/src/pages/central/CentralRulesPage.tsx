@@ -36,6 +36,7 @@ export function CentralRulesPage() {
     const [form, setForm] = useState({ ...emptyForm })
 
     const { data: rulesRes, isLoading } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['central-rules'],
         queryFn: () => api.get('/central/rules'),
     })

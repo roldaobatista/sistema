@@ -31,6 +31,7 @@ export default function TechPhotoAnnotationPage() {
 
     const handleLoadImage = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
+  const [searchTerm, setSearchTerm] = useState('')
         if (!file || !canvasRef.current) return
 
         const url = URL.createObjectURL(file)

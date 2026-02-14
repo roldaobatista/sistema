@@ -25,6 +25,7 @@ export function ChecklistPage() {
     const [isSheetOpen, setIsSheetOpen] = useState(false)
 
     const { data: checklists, isLoading, refetch } = useQuery<Checklist[]>({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['checklists'],
         queryFn: async () => {
             const response = await api.get('/checklists')

@@ -656,6 +656,7 @@ export default function AIAnalyticsPage() {
     const [activeTab, setActiveTab] = useState<TabId>('predictive')
 
     const tabContent: Record<TabId, React.ReactNode> = {
+  const [searchTerm, setSearchTerm] = useState('')
         predictive: <PredictiveTab />,
         expenses: <ExpensesTab />,
         triage: <TriageTab />,

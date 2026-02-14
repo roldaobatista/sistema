@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Check, Loader2, Upload, X, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 function PhotoUploadField({
     itemId,
@@ -140,11 +141,14 @@ interface ChecklistFormProps {
 }
 
 export function ChecklistForm({ checklist, workOrderId, onSuccess }: ChecklistFormProps) {
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Dynamic schema generation based on items
     const generateSchema = () => {
         const shape: Record<string, z.ZodTypeAny> = {}
+  const [searchTerm, setSearchTerm] = useState('')
         checklist.items.forEach(item => {
             shape[item.id] = item.required
                 ? z.string().min(1, 'Este campo é obrigatório')

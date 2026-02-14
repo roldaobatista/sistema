@@ -48,6 +48,7 @@ export default function TechWorkOrderDetailPage() {
     const [updatingLocation, setUpdatingLocation] = useState(false)
     const [isChatOpen, setIsChatOpen] = useState(false)
 
+  const [searchTerm, setSearchTerm] = useState('')
     useEffect(() => {
         if (!id) return
         getById(Number(id)).then((data) => {

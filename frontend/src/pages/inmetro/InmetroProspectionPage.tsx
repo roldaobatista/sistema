@@ -65,6 +65,7 @@ export default function InmetroProspectionPage() {
     const logInteraction = useLogInteraction()
     const { data: history } = useInteractionHistory(interactionOwnerId)
 
+  const [searchTerm, setSearchTerm] = useState('')
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">

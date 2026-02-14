@@ -38,6 +38,7 @@ export function QuoteDetailPage() {
     const canConvert = hasPermission('quotes.quote.convert')
 
     const { data: quote, isLoading } = useQuery<Quote>({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['quote', id],
         queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,

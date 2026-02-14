@@ -64,6 +64,7 @@ export function ServiceCallDetailPage() {
     const [commentText, setCommentText] = useState('')
     const [activeTab, setActiveTab] = useState<'info' | 'comments'>('info')
     const [assignment, setAssignment] = useState({
+  const [searchTerm, setSearchTerm] = useState('')
         technician_id: '',
         driver_id: '',
         scheduled_date: '',

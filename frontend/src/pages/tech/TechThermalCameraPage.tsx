@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect , useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
     ArrowLeft, Camera, Thermometer, Loader2, Trash2, Download,

@@ -1175,7 +1175,10 @@ function CommissionSimulator() {
     const simMut = useMutation({
         mutationFn: (workOrderId: string) => api.post('/commission-simulate', { work_order_id: Number(workOrderId) }),
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao simular comissão')
-    })
+    ,
+    onSuccess: () => { toast.success('Operação realizada com sucesso') },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro na operação') }
+  })
     const genMut = useMutation({
         mutationFn: (workOrderId: string) => api.post('/commission-events/generate', { work_order_id: Number(workOrderId) }),
         onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] }); qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Comissões geradas com sucesso!') },

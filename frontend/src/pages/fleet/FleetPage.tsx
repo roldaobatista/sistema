@@ -67,6 +67,7 @@ export default function FleetPage() {
     const ActiveComponent = tabComponents[activeTab]
 
     const { data: fleetSummary, isLoading, isError, error } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['fleet-summary'],
         queryFn: () => api.get('/fleet/dashboard-summary').then(r => r.data),
         retry: 1,

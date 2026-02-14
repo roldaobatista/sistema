@@ -52,6 +52,7 @@ export default function JourneyPage() {
     const [selectedUser, setSelectedUser] = useState<number | null>(null)
     const [yearMonth, setYearMonth] = useState(() => {
         const now = new Date()
+  const [searchTerm, setSearchTerm] = useState('')
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     })
 

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Recommendation {
     id: number
@@ -27,6 +28,8 @@ interface TechnicianRecommendationSelectorProps {
 }
 
 export function TechnicianRecommendationSelector({
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     start,
     end,
     serviceId,

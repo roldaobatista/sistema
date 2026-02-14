@@ -121,19 +121,22 @@ export function TimeEntriesPage() {
 
     const saveMut = useMutation({
         mutationFn: (data: typeof form) => api.post('/time-entries', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }); setShowForm(false) },
+        onSuccess: () => {
+        toast.success('Operação realizada com sucesso') qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }); setShowForm(false) },
         onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao salvar apontamento'),
     })
 
     const stopMut = useMutation({
         mutationFn: (id: number) => api.post(`/time-entries/${id}/stop`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }) },
+        onSuccess: () => {
+        toast.success('Operação realizada com sucesso') qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }) },
         onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao parar timer'),
     })
 
     const delMut = useMutation({
         mutationFn: (id: number) => api.delete(`/time-entries/${id}`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }) },
+        onSuccess: () => {
+        toast.success('Operação realizada com sucesso') qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }) },
         onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao excluir apontamento'),
     })
 

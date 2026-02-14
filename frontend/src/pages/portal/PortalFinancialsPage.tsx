@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo , useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { DollarSign, Clock, CheckCircle, AlertTriangle, Receipt } from 'lucide-react'
@@ -21,6 +21,7 @@ export function PortalFinancialsPage() {
   const { hasPermission } = useAuthStore()
 
     const { data, isLoading, isError, refetch } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['portal-financials'],
         queryFn: () => api.get('/portal/financials').then(res => res.data),
     })

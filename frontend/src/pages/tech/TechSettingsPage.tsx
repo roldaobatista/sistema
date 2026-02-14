@@ -23,6 +23,7 @@ export default function TechSettingsPage() {
     const kiosk = useKioskMode()
     const { user } = useAuthStore()
     const [notificationsEnabled, setNotificationsEnabled] = useState(() =>
+  const [searchTerm, setSearchTerm] = useState('')
         Notification.permission === 'granted'
     )
 

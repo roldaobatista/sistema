@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect , useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { useUpdateOwner } from '@/hooks/useInmetro'
 import { Loader2 } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 const schema = z.object({
     name: z.string().min(1, 'Nome é obrigatório'),
@@ -28,6 +29,8 @@ interface InmetroOwnerEditModalProps {
 }
 
 export function InmetroOwnerEditModal({ open, onOpenChange, owner }: InmetroOwnerEditModalProps) {
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const updateOwnerMutation = useUpdateOwner()
     const {
         register,

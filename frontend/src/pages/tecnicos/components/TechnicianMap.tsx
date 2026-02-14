@@ -21,6 +21,7 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 import type { Technician, Customer, ScheduleItem } from '@/types/operational'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface TechnicianMapProps {
     items: ScheduleItem[]
@@ -45,6 +46,8 @@ function MapBounds({ items }: { items: ScheduleItem[] }) {
 }
 
 export function TechnicianMap({ items, technicianId }: TechnicianMapProps) {
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const [optimizing, setOptimizing] = useState(false)
     const [optimizedRoute, setOptimizedRoute] = useState<ScheduleItem[]>([])
 

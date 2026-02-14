@@ -19,6 +19,7 @@ export default function TechProfilePage() {
     const [clearing, setClearing] = useState(false)
 
     const handleLogout = () => {
+  const [searchTerm, setSearchTerm] = useState('')
         logout()
         navigate('/login')
     }

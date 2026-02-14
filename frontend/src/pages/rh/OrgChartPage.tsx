@@ -18,6 +18,7 @@ export default function OrgChartPage() {
   const { hasPermission } = useAuthStore()
 
     const {
+  const [searchTerm, setSearchTerm] = useState('')
         departments, loadingDepts, createDept, updateDept, deleteDept,
         positions, loadingPositions, createPosition, updatePosition, deletePosition
     } = useOrganization()

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo , useState } from 'react'
 import { format, differenceInMinutes, startOfDay, addHours, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import type { Technician, ScheduleItem } from '@/types/operational'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface TechnicianGanttProps {
     date: Date
@@ -20,6 +22,8 @@ const START_HOUR = 6 // 06:00
 const END_HOUR = 20 // 20:00
 
 export function TechnicianGantt({ date, technicians, items, onItemClick }: TechnicianGanttProps) {
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     // Filter items for the selected date
     const dailyItems = useMemo(() => {
         return items.filter(item => isSameDay(new Date(item.start), date))

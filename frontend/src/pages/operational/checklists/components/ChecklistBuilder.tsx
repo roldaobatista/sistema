@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 const checklistSchema = z.object({
     name: z.string().min(3, 'Nome é obrigatório'),
@@ -30,9 +31,12 @@ type ChecklistFormInput = z.input<typeof checklistSchema>
 type ChecklistFormValues = z.output<typeof checklistSchema>
 
 export function ChecklistBuilder({ onSuccess }: { onSuccess?: () => void }) {
+  const { user } = useAuthStore()
+  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<ChecklistFormInput, unknown, ChecklistFormValues>({
+  const [searchTerm, setSearchTerm] = useState('')
         resolver: zodResolver(checklistSchema),
         defaultValues: {
             name: '',

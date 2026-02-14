@@ -35,6 +35,7 @@ export default function PerformanceReviewDetailPage() {
     const [nineBox, setNineBox] = useState({ potential: 'medium', performance: 'medium' })
     const [actionPlan, setActionPlan] = useState('')
 
+  const [searchTerm, setSearchTerm] = useState('')
     useEffect(() => {
         if (review) {
             setRatings(review.ratings as Record<string, number> || {})

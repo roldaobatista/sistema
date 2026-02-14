@@ -21,6 +21,7 @@ export default function TechChatPage() {
     const inputRef = useRef<HTMLInputElement>(null)
 
     const scrollToBottom = () => {
+  const [searchTerm, setSearchTerm] = useState('')
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 

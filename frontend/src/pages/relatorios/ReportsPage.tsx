@@ -59,6 +59,7 @@ export function ReportsPage() {
     const isFinancialTab = ['financial', 'commissions', 'profitability', 'technician_cash'].includes(tab)
 
     const endpoint: Record<Tab, string> = {
+  const [searchTerm, setSearchTerm] = useState('')
         os: '/reports/work-orders',
         productivity: '/reports/productivity',
         financial: '/reports/financial',

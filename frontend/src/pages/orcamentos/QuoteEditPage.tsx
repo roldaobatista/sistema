@@ -43,6 +43,7 @@ export function QuoteEditPage() {
     const [newItem, setNewItem] = useState<ItemForm>({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
 
     const { data: quote, isLoading } = useQuery<Quote>({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['quote', id],
         queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,

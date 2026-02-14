@@ -30,6 +30,7 @@ export function SlaPoliciesPage() {
     const [modal, setModal] = useState<{ mode: 'create' | 'edit'; policy?: SlaPolicy } | null>(null)
 
     const { data: res, isLoading } = useQuery({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['sla-policies'],
         queryFn: () => api.get('/sla-policies'),
     })

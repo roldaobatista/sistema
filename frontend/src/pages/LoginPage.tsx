@@ -14,6 +14,7 @@ export function LoginPage() {
     const [error, setError] = useState('')
 
     const handleSubmit = async (e: React.FormEvent) => {
+  const [searchTerm, setSearchTerm] = useState('')
         e.preventDefault()
         setError('')
 

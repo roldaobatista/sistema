@@ -37,6 +37,7 @@ export default function ClockInPage() {
 
     // Clock status
     const { data: statusData, isLoading: statusLoading } = useQuery<ClockStatus>({
+  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['clock-status'],
         queryFn: () => api.get('/hr/advanced/clock/status').then(r => r.data?.data),
         refetchInterval: 60_000,

@@ -30,6 +30,7 @@ export function InmetroDashboardPage() {
     const { data: cities } = useInmetroCities()
     const { isSyncing, triggerSync } = useInmetroAutoSync()
 
+  const [searchTerm, setSearchTerm] = useState('')
     useEffect(() => {
         if (isError) toast.error('Erro ao carregar dados do INMETRO')
     }, [isError])
