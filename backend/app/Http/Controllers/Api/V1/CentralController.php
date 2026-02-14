@@ -9,6 +9,8 @@ use App\Services\CentralAutomationService;
 use App\Services\CentralService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class CentralController extends Controller
@@ -30,20 +32,27 @@ class CentralController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'tipo' => 'required|string', // Enum validation in service/model cast
-            'titulo' => 'required|string|max:255',
-            'descricao_curta' => 'nullable|string|max:255',
-            'responsavel_user_id' => 'nullable|exists:users,id',
-            'prioridade' => 'nullable|string',
-            'due_at' => 'nullable|date',
-            'contexto' => 'nullable|array',
-            'tags' => 'nullable|array',
-        ]);
+        try {
+            $validated = $request->validate([
+                'tipo' => 'required|string',
+                'titulo' => 'required|string|max:255',
+                'descricao_curta' => 'nullable|string|max:255',
+                'responsavel_user_id' => 'nullable|exists:users,id',
+                'prioridade' => 'nullable|string',
+                'due_at' => 'nullable|date',
+                'contexto' => 'nullable|array',
+                'tags' => 'nullable|array',
+            ]);
 
-        $item = $this->service->criar($validated);
+            $item = DB::transaction(fn () => $this->service->criar($validated));
 
-        return response()->json($item, 201);
+            return response()->json($item, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Dados invalidos', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Central store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar item'], 500);
+        }
     }
 
     public function show(CentralItem $centralItem): JsonResponse
@@ -152,17 +161,24 @@ class CentralController extends Controller
 
     public function storeRule(Request $request): JsonResponse
     {
-        $validated = $request->validate($this->ruleValidationRules($request));
-        $validated = $this->normalizeRulePayload($validated);
+        try {
+            $validated = $request->validate($this->ruleValidationRules($request));
+            $validated = $this->normalizeRulePayload($validated);
 
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-        $validated['tenant_id'] = $this->currentTenantId($request);
-        $validated['created_by'] = $user->id;
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $validated['tenant_id'] = $this->currentTenantId($request);
+            $validated['created_by'] = $user->id;
 
-        $rule = CentralRule::create($validated);
+            $rule = DB::transaction(fn () => CentralRule::create($validated));
 
-        return response()->json($rule->load('responsavel:id,name'), 201);
+            return response()->json($rule->load('responsavel:id,name'), 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Dados invalidos', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Central storeRule failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar regra'], 500);
+        }
     }
 
     public function updateRule(Request $request, CentralRule $centralRule): JsonResponse

@@ -16,13 +16,20 @@ use App\Models\AccountPayable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
     public function stats(Request $request): JsonResponse
     {
-        $from = $request->date('date_from') ?? now()->startOfMonth();
-        $to   = $request->date('date_to')   ?? now()->endOfDay();
+        try {
+            $request->validate([
+                'date_from' => 'nullable|date',
+                'date_to' => 'nullable|date|after_or_equal:date_from',
+            ]);
+
+            $from = $request->date('date_from') ?? now()->startOfMonth();
+            $to   = $request->date('date_to')   ?? now()->endOfDay();
 
         $openOs = WorkOrder::whereNotIn('status', [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_CANCELLED])->count();
         $inProgressOs = WorkOrder::where('status', WorkOrder::STATUS_IN_PROGRESS)->count();
@@ -156,5 +163,11 @@ class DashboardController extends Controller
             'monthly_revenue' => $monthlyRevenue,
             'avg_completion_hours' => $avgCompletionHours,
         ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Parametros invalidos', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Dashboard stats failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao carregar dashboard'], 500);
+        }
     }
 }

@@ -6,45 +6,60 @@ use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class NotificationController extends Controller
 {
     /**
-     * Listar notificações do usuário.
+     * Listar notificacoes do usuario.
      */
     public function index(Request $request): JsonResponse
     {
-        $limit = max(1, min(100, (int) $request->input('limit', 30)));
+        try {
+            $request->validate([
+                'limit' => 'nullable|integer|min:1|max:100',
+            ]);
 
-        $notifications = Notification::where('user_id', $request->user()->id)
-            ->orderByDesc('created_at')
-            ->take($limit)
-            ->get();
+            $limit = max(1, min(100, (int) $request->input('limit', 30)));
 
-        $unreadCount = Notification::where('user_id', $request->user()->id)
-            ->unread()
-            ->count();
+            $notifications = Notification::where('user_id', $request->user()->id)
+                ->orderByDesc('created_at')
+                ->take($limit)
+                ->get();
 
-        return response()->json([
-            'notifications' => $notifications,
-            'unread_count' => $unreadCount,
-        ]);
+            $unreadCount = Notification::where('user_id', $request->user()->id)
+                ->unread()
+                ->count();
+
+            return response()->json([
+                'notifications' => $notifications,
+                'unread_count' => $unreadCount,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Notification index failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao listar notificacoes'], 500);
+        }
     }
 
     /**
-     * Marcar uma notificação como lida.
+     * Marcar uma notificacao como lida.
      */
     public function markRead(Request $request, Notification $notification): JsonResponse
     {
-        if ($notification->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Acesso negado.'], 403);
-        }
+        try {
+            if ($notification->user_id !== $request->user()->id) {
+                return response()->json(['message' => 'Acesso negado.'], 403);
+            }
 
-        if (!$notification->read_at) {
-            $notification->update(['read_at' => now()]);
-        }
+            if (!$notification->read_at) {
+                $notification->update(['read_at' => now()]);
+            }
 
-        return response()->json(['notification' => $notification]);
+            return response()->json(['notification' => $notification]);
+        } catch (\Exception $e) {
+            Log::error('Notification markRead failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao marcar notificacao'], 500);
+        }
     }
 
     /**
@@ -52,22 +67,32 @@ class NotificationController extends Controller
      */
     public function markAllRead(Request $request): JsonResponse
     {
-        $updated = Notification::where('user_id', $request->user()->id)
-            ->unread()
-            ->update(['read_at' => now()]);
+        try {
+            $updated = Notification::where('user_id', $request->user()->id)
+                ->unread()
+                ->update(['read_at' => now()]);
 
-        return response()->json(['success' => true, 'updated' => $updated]);
+            return response()->json(['success' => true, 'updated' => $updated]);
+        } catch (\Exception $e) {
+            Log::error('Notification markAllRead failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao marcar notificacoes'], 500);
+        }
     }
 
     /**
-     * Contar não lidas (polling leve).
+     * Contar nao lidas (polling leve).
      */
     public function unreadCount(Request $request): JsonResponse
     {
-        $count = Notification::where('user_id', $request->user()->id)
-            ->unread()
-            ->count();
+        try {
+            $count = Notification::where('user_id', $request->user()->id)
+                ->unread()
+                ->count();
 
-        return response()->json(['unread_count' => $count]);
+            return response()->json(['unread_count' => $count]);
+        } catch (\Exception $e) {
+            Log::error('Notification unreadCount failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao contar notificacoes'], 500);
+        }
     }
 }

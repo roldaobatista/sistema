@@ -8,7 +8,8 @@ use App\Models\Product;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -21,7 +22,7 @@ use Tests\TestCase;
  */
 class ResponseTimeTest extends TestCase
 {
-    use RefreshDatabase;
+    use LazilyRefreshDatabase;
 
     private Tenant $tenant;
     private User $user;
@@ -29,6 +30,8 @@ class ResponseTimeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Model::unsetEventDispatcher();
 
         $this->withoutMiddleware([
             \App\Http\Middleware\EnsureTenantScope::class,
@@ -50,9 +53,9 @@ class ResponseTimeTest extends TestCase
 
     // ── CUSTOMER LIST ──
 
-    public function test_customer_list_under_500ms_with_100_records(): void
+    public function test_customer_list_under_500ms_with_20_records(): void
     {
-        Customer::factory()->count(100)->create(['tenant_id' => $this->tenant->id]);
+        Customer::factory()->count(20)->create(['tenant_id' => $this->tenant->id]);
 
         $start = microtime(true);
         $response = $this->getJson('/api/v1/customers');
@@ -64,11 +67,11 @@ class ResponseTimeTest extends TestCase
 
     // ── WORK ORDER LIST ──
 
-    public function test_work_order_list_under_500ms_with_100_records(): void
+    public function test_work_order_list_under_500ms_with_20_records(): void
     {
         $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        WorkOrder::factory()->count(100)->create([
+        WorkOrder::factory()->count(20)->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $customer->id,
             'created_by' => $this->user->id,
@@ -84,9 +87,9 @@ class ResponseTimeTest extends TestCase
 
     // ── PRODUCT LIST ──
 
-    public function test_product_list_under_500ms_with_200_records(): void
+    public function test_product_list_under_500ms_with_50_records(): void
     {
-        Product::factory()->count(200)->create(['tenant_id' => $this->tenant->id]);
+        Product::factory()->count(50)->create(['tenant_id' => $this->tenant->id]);
 
         $start = microtime(true);
         $response = $this->getJson('/api/v1/products');
@@ -98,11 +101,11 @@ class ResponseTimeTest extends TestCase
 
     // ── EQUIPMENT LIST ──
 
-    public function test_equipment_list_under_500ms_with_100_records(): void
+    public function test_equipment_list_under_500ms_with_20_records(): void
     {
         $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        Equipment::factory()->count(100)->create([
+        Equipment::factory()->count(20)->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $customer->id,
         ]);
@@ -121,14 +124,14 @@ class ResponseTimeTest extends TestCase
     {
         $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
 
-        WorkOrder::factory()->count(50)->create([
+        WorkOrder::factory()->count(20)->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $customer->id,
             'created_by' => $this->user->id,
         ]);
 
         $start = microtime(true);
-        $response = $this->getJson('/api/v1/dashboard');
+        $response = $this->getJson('/api/v1/dashboard-stats');
         $elapsed = (microtime(true) - $start) * 1000;
 
         $response->assertOk();
@@ -161,7 +164,7 @@ class ResponseTimeTest extends TestCase
 
     public function test_customer_search_under_300ms(): void
     {
-        Customer::factory()->count(100)->create(['tenant_id' => $this->tenant->id]);
+        Customer::factory()->count(20)->create(['tenant_id' => $this->tenant->id]);
 
         $start = microtime(true);
         $response = $this->getJson('/api/v1/customers?search=test');

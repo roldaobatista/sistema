@@ -8,6 +8,7 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ChartOfAccountController extends Controller
@@ -68,47 +69,55 @@ class ChartOfAccountController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        try {
+            $tenantId = $this->tenantId($request);
 
-        $data = $request->validate([
-            'parent_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('chart_of_accounts', 'id')->where(
-                    fn ($q) => $q->where('tenant_id', $tenantId)
-                ),
-            ],
-            'code' => [
-                'required',
-                'string',
-                'max:20',
-                Rule::unique('chart_of_accounts', 'code')->where(
-                    fn ($q) => $q->where('tenant_id', $tenantId)
-                ),
-            ],
-            'name' => 'required|string|max:255',
-            'type' => ['required', 'string', Rule::in(self::TYPES)],
-            'is_active' => 'sometimes|boolean',
-        ]);
+            $data = $request->validate([
+                'parent_id' => [
+                    'nullable',
+                    'integer',
+                    Rule::exists('chart_of_accounts', 'id')->where(
+                        fn ($q) => $q->where('tenant_id', $tenantId)
+                    ),
+                ],
+                'code' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('chart_of_accounts', 'code')->where(
+                        fn ($q) => $q->where('tenant_id', $tenantId)
+                    ),
+                ],
+                'name' => 'required|string|max:255',
+                'type' => ['required', 'string', Rule::in(self::TYPES)],
+                'is_active' => 'sometimes|boolean',
+            ]);
 
-        $data['code'] = $this->normalizeCode($data['code']);
-        $data['name'] = trim((string) $data['name']);
+            $data['code'] = $this->normalizeCode($data['code']);
+            $data['name'] = trim((string) $data['name']);
 
-        $parentError = $this->validateParentConstraints(
-            tenantId: $tenantId,
-            parentId: $data['parent_id'] ?? null,
-            targetType: $data['type']
-        );
+            $parentError = $this->validateParentConstraints(
+                tenantId: $tenantId,
+                parentId: $data['parent_id'] ?? null,
+                targetType: $data['type']
+            );
 
-        if ($parentError !== null) {
-            return $parentError;
+            if ($parentError !== null) {
+                return $parentError;
+            }
+
+            $data['tenant_id'] = $tenantId;
+
+            $account = DB::transaction(fn () => ChartOfAccount::create($data));
+
+            return $this->success($account->fresh('parent:id,code,name,type'), 'Conta criada', 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Dados inválidos', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('ChartOfAccount store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar conta'], 500);
         }
-
-        $data['tenant_id'] = $tenantId;
-
-        $account = DB::transaction(fn () => ChartOfAccount::create($data));
-
-        return $this->success($account->fresh('parent:id,code,name,type'), 'Conta criada', 201);
     }
 
     public function update(Request $request, int $id): JsonResponse

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\Operational\ExpressWorkOrderController;
@@ -30,18 +30,18 @@ use App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes â�,��?� /api/v1/*
+| API Routes Ã¢ï¿½,ï¿½ï¿½?ï¿½ /api/v1/*
 |--------------------------------------------------------------------------
 */
 
 Route::prefix('v1')->group(function () {
 
-    // --- Auth (público) ---
+    // --- Auth (pÃºblico) ---
     Route::middleware('throttle:60,1')->post('/login', [AuthController::class, 'login']);
 
-    // â�?��,�â�?��,�â�?��,� Portal do Cliente (Fase 6.1) â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�
+    // Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½ Portal do Cliente (Fase 6.1) Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½
     Route::prefix('portal')->group(function () {
-        Route::post('login', [\App\Http\Controllers\Api\V1\Portal\PortalAuthController::class, 'login']);
+        Route::middleware('throttle:20,1')->post('login', [\App\Http\Controllers\Api\V1\Portal\PortalAuthController::class, 'login']);
 
         Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('logout', [\App\Http\Controllers\Api\V1\Portal\PortalAuthController::class, 'logout']);
@@ -67,7 +67,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:finance.cashflow.view')->get('/cash-flow', [\App\Http\Controllers\Api\V1\CashFlowController::class, 'cashFlow']);
         Route::middleware('check.permission:finance.dre.view')->get('/dre', [\App\Http\Controllers\Api\V1\CashFlowController::class, 'dre']);
 
-        // IAM �?" rota específica registrada ANTES do apiResource para evitar conflito com {user}
+        // IAM ï¿½?" rota especÃ­fica registrada ANTES do apiResource para evitar conflito com {user}
         Route::middleware('check.permission:iam.user.view')->get('users/stats', [UserController::class, 'stats']);
         Route::middleware('check.permission:iam.user.view')->get('users/by-role/{role}', [UserController::class, 'byRole']);
         Route::middleware('check.permission:iam.user.view')->get('users/export', [UserController::class, 'exportCsv']);
@@ -164,14 +164,14 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:cadastros.supplier.update')->put('suppliers/{supplier}', [SupplierController::class, 'update']);
         Route::middleware('check.permission:cadastros.supplier.delete')->delete('suppliers/{supplier}', [SupplierController::class, 'destroy']);
 
-        // Histórico de Preços
+        // HistÃ³rico de PreÃ§os
         Route::middleware('check.permission:cadastros.product.view')->group(function () {
             Route::get('price-history', [\App\Http\Controllers\Api\V1\PriceHistoryController::class, 'index']);
             Route::get('products/{product}/price-history', [\App\Http\Controllers\Api\V1\PriceHistoryController::class, 'forProduct']);
             Route::get('services/{service}/price-history', [\App\Http\Controllers\Api\V1\PriceHistoryController::class, 'forService']);
         });
 
-        // Exportação em Lote
+        // ExportaÃ§Ã£o em Lote
         Route::middleware('check.permission:cadastros.customer.view')->group(function () {
             Route::get('batch-export/entities', [\App\Http\Controllers\Api\V1\BatchExportController::class, 'entities']);
             Route::post('batch-export/csv', [\App\Http\Controllers\Api\V1\BatchExportController::class, 'exportCsv']);
@@ -197,7 +197,7 @@ Route::prefix('v1')->group(function () {
             Route::post('products/{product}/kit', [ProductKitController::class, 'store']);
             Route::delete('products/{product}/kit/{childId}', [ProductKitController::class, 'destroy']);
 
-            // Inventário Cego
+            // InventÃ¡rio Cego
             Route::get('inventories', [InventoryController::class, 'index']);
             Route::post('inventories', [InventoryController::class, 'store']);
             Route::get('inventories/{inventory}', [InventoryController::class, 'show']);
@@ -205,10 +205,20 @@ Route::prefix('v1')->group(function () {
             Route::post('inventories/{inventory}/complete', [InventoryController::class, 'complete']);
             Route::post('inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
 
+            // Aliases de compatibilidade para frontend legado
+            Route::get('stock/inventories', [InventoryController::class, 'index']);
+            Route::post('stock/inventories', [InventoryController::class, 'store']);
+            Route::get('stock/inventories/{inventory}', [InventoryController::class, 'show']);
+            Route::put('stock/inventories/{inventory}/items/{item}', [InventoryController::class, 'updateItem']);
+            Route::post('stock/inventories/{inventory}/complete', [InventoryController::class, 'complete']);
+            Route::post('stock/inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
+            Route::get('stock/warehouses', [WarehouseController::class, 'index']);
+
             // Kardex
             Route::get('products/{product}/kardex', [KardexController::class, 'show']);
+            Route::get('stock/products/{product}/kardex', [KardexController::class, 'show']);
 
-            // Inteligência de Estoque
+            // InteligÃªncia de Estoque
             Route::get('stock/intelligence/abc-curve', [StockIntelligenceController::class, 'abcCurve']);
             Route::get('stock/intelligence/turnover', [StockIntelligenceController::class, 'turnover']);
             Route::get('stock/intelligence/average-cost', [StockIntelligenceController::class, 'averageCost']);
@@ -220,7 +230,7 @@ Route::prefix('v1')->group(function () {
             Route::post('stock/import-xml', [\App\Http\Controllers\Api\V1\XmlImportController::class, 'import']);
         });
 
-        // ═══ Cotação de Compras ═══
+        // â•â•â• CotaÃ§Ã£o de Compras â•â•â•
         Route::middleware('check.permission:estoque.movement.view')->group(function () {
             Route::get('purchase-quotes', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'purchaseQuoteIndex']);
             Route::post('purchase-quotes', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'purchaseQuoteStore']);
@@ -229,7 +239,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('purchase-quotes/{purchaseQuote}', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'purchaseQuoteDestroy']);
         });
 
-        // ═══ Solicitação de Material ═══
+        // â•â•â• SolicitaÃ§Ã£o de Material â•â•â•
         Route::middleware('check.permission:estoque.movement.view')->group(function () {
             Route::get('material-requests', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'materialRequestIndex']);
             Route::post('material-requests', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'materialRequestStore']);
@@ -237,7 +247,7 @@ Route::prefix('v1')->group(function () {
             Route::put('material-requests/{materialRequest}', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'materialRequestUpdate']);
         });
 
-        // ═══ Tags RFID/QR ═══
+        // â•â•â• Tags RFID/QR â•â•â•
         Route::middleware('check.permission:estoque.movement.view')->group(function () {
             Route::get('asset-tags', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'assetTagIndex']);
             Route::post('asset-tags', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'assetTagStore']);
@@ -246,7 +256,7 @@ Route::prefix('v1')->group(function () {
             Route::post('asset-tags/{assetTag}/scan', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'assetTagScan']);
         });
 
-        // ═══ RMA (Devolução) ═══
+        // â•â•â• RMA (DevoluÃ§Ã£o) â•â•â•
         Route::middleware('check.permission:estoque.movement.view')->group(function () {
             Route::get('rma', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'rmaIndex']);
             Route::post('rma', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'rmaStore']);
@@ -254,7 +264,7 @@ Route::prefix('v1')->group(function () {
             Route::put('rma/{rmaRequest}', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'rmaUpdate']);
         });
 
-        // ═══ Descarte Ecológico ═══
+        // â•â•â• Descarte EcolÃ³gico â•â•â•
         Route::middleware('check.permission:estoque.movement.view')->group(function () {
             Route::get('stock-disposals', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'disposalIndex']);
             Route::post('stock-disposals', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'disposalStore']);
@@ -262,7 +272,7 @@ Route::prefix('v1')->group(function () {
             Route::put('stock-disposals/{stockDisposal}', [\App\Http\Controllers\Api\V1\StockIntegrationController::class, 'disposalUpdate']);
         });
 
-        // Armazéns e Saldos por Local
+        // ArmazÃ©ns e Saldos por Local
         Route::middleware('check.permission:estoque.warehouse.view')->group(function () {
             Route::apiResource('warehouses', \App\Http\Controllers\Api\V1\WarehouseController::class);
             Route::apiResource('batches', \App\Http\Controllers\Api\V1\BatchController::class);
@@ -271,7 +281,7 @@ Route::prefix('v1')->group(function () {
             Route::get('products/{product}/warehouse-stocks', \App\Http\Controllers\Api\V1\WarehouseStockController::class . '@byProduct');
         });
 
-        // Conciliação Bancária (expandido com Motor de Regras)
+        // ConciliaÃ§Ã£o BancÃ¡ria (expandido com Motor de Regras)
         Route::middleware('check.permission:finance.receivable.view')->group(function () {
             Route::get('bank-reconciliation/summary', [\App\Http\Controllers\Api\V1\BankReconciliationController::class, 'summary']);
             Route::get('bank-reconciliation/statements', [\App\Http\Controllers\Api\V1\BankReconciliationController::class, 'statements']);
@@ -293,7 +303,7 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:finance.receivable.delete')->delete('bank-reconciliation/statements/{statement}', [\App\Http\Controllers\Api\V1\BankReconciliationController::class, 'destroyStatement']);
 
-        // Regras de Conciliação Automática
+        // Regras de ConciliaÃ§Ã£o AutomÃ¡tica
         Route::middleware('check.permission:finance.receivable.view')->group(function () {
             Route::get('reconciliation-rules', [\App\Http\Controllers\Api\V1\ReconciliationRuleController::class, 'index']);
             Route::get('reconciliation-rules/{rule}', [\App\Http\Controllers\Api\V1\ReconciliationRuleController::class, 'show']);
@@ -306,7 +316,7 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:finance.receivable.delete')->delete('reconciliation-rules/{rule}', [\App\Http\Controllers\Api\V1\ReconciliationRuleController::class, 'destroy']);
 
-        // Fiscal — NF-e / NFS-e
+        // Fiscal â€” NF-e / NFS-e
         Route::middleware('check.permission:fiscal.note.view')->group(function () {
             Route::get('fiscal/notas', [\App\Http\Controllers\Api\V1\FiscalController::class, 'index']);
             Route::get('fiscal/notas/{id}', [\App\Http\Controllers\Api\V1\FiscalController::class, 'show']);
@@ -335,6 +345,8 @@ Route::prefix('v1')->group(function () {
             Route::get('work-orders', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'index']);
             Route::get('work-orders/{work_order}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'show']);
             Route::get('work-orders-metadata', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'metadata']);
+            Route::get('technician/work-orders', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'index']);
+            Route::get('tech/os/{work_order}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'show']);
         });
         Route::middleware('check.permission:os.work_order.create')->group(function () {
             Route::post('work-orders', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'store']);
@@ -362,7 +374,7 @@ Route::prefix('v1')->group(function () {
             Route::post('work-orders/{work_order}/attachments', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'storeAttachment']);
             Route::delete('work-orders/{work_order}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'destroyAttachment']);
             Route::post('work-orders/{work_order}/signature', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'storeSignature']);
-            // Equipamentos da OS (m�fºltiplos)
+            // Equipamentos da OS (mï¿½fÂºltiplos)
             Route::post('work-orders/{work_order}/equipments', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'attachEquipment']);
             Route::delete('work-orders/{work_order}/equipments/{equipment}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'detachEquipment']);
         });
@@ -379,7 +391,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:os.work_order.update')->put('recurring-contracts/{recurring_contract}', [\App\Http\Controllers\Api\V1\Os\RecurringContractController::class, 'update']);
         Route::middleware('check.permission:os.work_order.delete')->delete('recurring-contracts/{recurring_contract}', [\App\Http\Controllers\Api\V1\Os\RecurringContractController::class, 'destroy']);
 
-        // Tf©cnicos / Campo
+        // TfÂ©cnicos / Campo
         Route::middleware('check.permission:technicians.schedule.view')->group(function () {
             Route::get('schedules-unified', [\App\Http\Controllers\Api\V1\Technician\ScheduleController::class, 'unified']);
             Route::get('schedules', [\App\Http\Controllers\Api\V1\Technician\ScheduleController::class, 'index']);
@@ -392,12 +404,12 @@ Route::prefix('v1')->group(function () {
             Route::delete('schedules/{schedule}', [\App\Http\Controllers\Api\V1\Technician\ScheduleController::class, 'destroy']);
         });
 
-        // Atualização de Localização do Cliente pelo Técnico
+        // AtualizaÃ§Ã£o de LocalizaÃ§Ã£o do Cliente pelo TÃ©cnico
         Route::middleware('check.permission:technicians.schedule.view')->group(function () {
              Route::post('technicians/customers/{customer}/geolocation', [\App\Http\Controllers\Api\V1\Technician\CustomerLocationController::class, 'update']);
         });
 
-        // Checklists (Pré-Visita)
+        // Checklists (PrÃ©-Visita)
         Route::middleware('check.permission:technicians.checklist.view')->group(function () {
             Route::get('checklists', [ChecklistController::class, 'index']);
             Route::get('checklists/{checklist}', [ChecklistController::class, 'show']);
@@ -424,10 +436,10 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:technicians.time_entry.update')->put('time-entries/{time_entry}', [\App\Http\Controllers\Api\V1\Technician\TimeEntryController::class, 'update']);
         Route::middleware('check.permission:technicians.time_entry.delete')->delete('time-entries/{time_entry}', [\App\Http\Controllers\Api\V1\Technician\TimeEntryController::class, 'destroy']);
 
-        // Otimização de Rotas
+        // OtimizaÃ§Ã£o de Rotas
         Route::middleware('check.permission:os.work_order.view')->post('operational/route-optimization', [\App\Http\Controllers\Api\V1\Operational\RouteOptimizationController::class, 'optimize']);
 
-        // Financeiro â,? Contas a Receber
+        // Financeiro Ã¢,? Contas a Receber
         Route::middleware('check.permission:finance.receivable.view')->group(function () {
             Route::get('accounts-receivable', [\App\Http\Controllers\Api\V1\Financial\AccountReceivableController::class, 'index']);
             Route::get('accounts-receivable/{account_receivable}', [\App\Http\Controllers\Api\V1\Financial\AccountReceivableController::class, 'show']);
@@ -442,7 +454,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:finance.receivable.update')->put('accounts-receivable/{account_receivable}', [\App\Http\Controllers\Api\V1\Financial\AccountReceivableController::class, 'update']);
         Route::middleware('check.permission:finance.receivable.delete')->delete('accounts-receivable/{account_receivable}', [\App\Http\Controllers\Api\V1\Financial\AccountReceivableController::class, 'destroy']);
 
-        // Financeiro â�,��?� Contas a Pagar
+        // Financeiro Ã¢ï¿½,ï¿½ï¿½?ï¿½ Contas a Pagar
         Route::middleware('check.permission:finance.payable.view')->group(function () {
             Route::get('accounts-payable', [\App\Http\Controllers\Api\V1\Financial\AccountPayableController::class, 'index']);
             Route::get('accounts-payable/{account_payable}', [\App\Http\Controllers\Api\V1\Financial\AccountPayableController::class, 'show']);
@@ -453,13 +465,13 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:finance.payable.update')->put('accounts-payable/{account_payable}', [\App\Http\Controllers\Api\V1\Financial\AccountPayableController::class, 'update']);
         Route::middleware('check.permission:finance.payable.delete')->delete('accounts-payable/{account_payable}', [\App\Http\Controllers\Api\V1\Financial\AccountPayableController::class, 'destroy']);
 
-        // Exportação Financeira (#27) �?" ambos os tipos via ?type=receivable|payable
+        // ExportaÃ§Ã£o Financeira (#27) ï¿½?" ambos os tipos via ?type=receivable|payable
         Route::middleware('check.permission:finance.receivable.view')->group(function () {
             Route::get('financial/export/ofx', [\App\Http\Controllers\Api\V1\Financial\FinancialExportController::class, 'ofx']);
             Route::get('financial/export/csv', [\App\Http\Controllers\Api\V1\Financial\FinancialExportController::class, 'csv']);
         });
 
-        // Comiss�fµes
+        // Comissï¿½fÂµes
         Route::middleware('check.permission:commissions.rule.view')->group(function () {
             Route::get('commission-rules', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'rules']);
             Route::get('commission-rules/{commission_rule}', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'showRule']);
@@ -483,7 +495,7 @@ Route::prefix('v1')->group(function () {
             Route::post('commission-settlements/{commission_settlement}/pay', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'paySettlement']);
             Route::post('commission-settlements/{commission_settlement}/reopen', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'reopenSettlement']);
         });
-        // GAP-25: Settlement approval workflow (Nayara closes → Roldão approves)
+        // GAP-25: Settlement approval workflow (Nayara closes â†’ RoldÃ£o approves)
         Route::middleware('check.permission:commissions.settlement.approve')->group(function () {
             Route::post('commission-settlements/{commission_settlement}/approve', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'approveSettlement']);
             Route::post('commission-settlements/{commission_settlement}/reject', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'rejectSettlement']);
@@ -499,7 +511,7 @@ Route::prefix('v1')->group(function () {
             Route::get('commission-settlements/export', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'exportSettlements']);
             Route::get('commission-statement/pdf', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'downloadStatement']);
         });
-        // Dashboard Anal�f­tico
+        // Dashboard Analï¿½fÂ­tico
         Route::middleware('check.permission:commissions.rule.view')->group(function () {
             Route::get('commission-dashboard/overview', [\App\Http\Controllers\Api\V1\Financial\CommissionDashboardController::class, 'overview']);
             Route::get('commission-dashboard/ranking', [\App\Http\Controllers\Api\V1\Financial\CommissionDashboardController::class, 'ranking']);
@@ -507,7 +519,7 @@ Route::prefix('v1')->group(function () {
             Route::get('commission-dashboard/by-rule', [\App\Http\Controllers\Api\V1\Financial\CommissionDashboardController::class, 'byRule']);
             Route::get('commission-dashboard/by-role', [\App\Http\Controllers\Api\V1\Financial\CommissionDashboardController::class, 'byRole']);
         });
-        // Contestações / Disputas
+        // ContestaÃ§Ãµes / Disputas
         Route::middleware('check.permission:commissions.dispute.view')->group(function () {
             Route::get('commission-disputes', [\App\Http\Controllers\Api\V1\Financial\CommissionDisputeController::class, 'index']);
         });
@@ -540,7 +552,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:commissions.campaign.create')->post('commission-campaigns', [\App\Http\Controllers\Api\V1\Financial\CommissionCampaignController::class, 'store']);
         Route::middleware('check.permission:commissions.campaign.update')->put('commission-campaigns/{campaign}', [\App\Http\Controllers\Api\V1\Financial\CommissionCampaignController::class, 'update']);
         Route::middleware('check.permission:commissions.campaign.delete')->delete('commission-campaigns/{campaign}', [\App\Http\Controllers\Api\V1\Financial\CommissionCampaignController::class, 'destroy']);
-        // Comissões Recorrentes
+        // ComissÃµes Recorrentes
         Route::middleware('check.permission:commissions.recurring.view')->group(function () {
             Route::get('recurring-commissions', [\App\Http\Controllers\Api\V1\Financial\RecurringCommissionController::class, 'index']);
         });
@@ -571,7 +583,7 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:expenses.expense.approve')->put('expenses/{expense}/status', [\App\Http\Controllers\Api\V1\Financial\ExpenseController::class, 'updateStatus']);
         Route::middleware('check.permission:expenses.expense.approve')->post('expenses/batch-status', [\App\Http\Controllers\Api\V1\Financial\ExpenseController::class, 'batchUpdateStatus']);
-        // GAP-20: Expense review step (conferência before approval)
+        // GAP-20: Expense review step (conferÃªncia before approval)
         Route::middleware('check.permission:expenses.expense.review')->post('expenses/{expense}/review', [\App\Http\Controllers\Api\V1\Financial\ExpenseController::class, 'review']);
         Route::middleware('check.permission:expenses.expense.view')->get('expenses-export', [\App\Http\Controllers\Api\V1\Financial\ExpenseController::class, 'export']);
         Route::middleware('check.permission:expenses.expense.view')->get('expense-analytics', [\App\Http\Controllers\Api\V1\Financial\ExpenseController::class, 'analytics']);
@@ -590,37 +602,37 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:expenses.fueling_log.approve')->post('fueling-logs/{fuelingLog}/approve', [\App\Http\Controllers\Api\V1\Financial\FuelingLogController::class, 'approve']);
         Route::middleware('check.permission:expenses.fueling_log.delete')->delete('fueling-logs/{fuelingLog}', [\App\Http\Controllers\Api\V1\Financial\FuelingLogController::class, 'destroy']);
 
-        // --- Módulo Frota Avançado ---
+        // --- MÃ³dulo Frota AvanÃ§ado ---
         Route::middleware('check.permission:fleet.management')->group(function () {
-            // Gestão de Pneus
+            // GestÃ£o de Pneus
             Route::get('fleet/tires', [\App\Http\Controllers\Api\V1\Fleet\VehicleTireController::class, 'index']);
             Route::post('fleet/tires', [\App\Http\Controllers\Api\V1\Fleet\VehicleTireController::class, 'store']);
             Route::get('fleet/tires/{tire}', [\App\Http\Controllers\Api\V1\Fleet\VehicleTireController::class, 'show']);
             Route::put('fleet/tires/{tire}', [\App\Http\Controllers\Api\V1\Fleet\VehicleTireController::class, 'update']);
             Route::delete('fleet/tires/{tire}', [\App\Http\Controllers\Api\V1\Fleet\VehicleTireController::class, 'destroy']);
 
-            // Gestão de Abastecimento Avançado (API unificada)
+            // GestÃ£o de Abastecimento AvanÃ§ado (API unificada)
             Route::get('fleet/fuel-logs', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'index']);
             Route::post('fleet/fuel-logs', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'store']);
             Route::get('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'show']);
             Route::put('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'update']);
             Route::delete('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'destroy']);
 
-            // Pool de Veículos
+            // Pool de VeÃ­culos
             Route::get('fleet/pool-requests', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'index']);
             Route::post('fleet/pool-requests', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'store']);
             Route::get('fleet/pool-requests/{request}', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'show']);
             Route::patch('fleet/pool-requests/{request}/status', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'updateStatus']);
             Route::delete('fleet/pool-requests/{request}', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'destroy']);
 
-            // Gestão de Acidentes
+            // GestÃ£o de Acidentes
             Route::get('fleet/accidents', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'index']);
             Route::post('fleet/accidents', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'store']);
             Route::get('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'show']);
             Route::put('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'update']);
             Route::delete('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'destroy']);
 
-            // Inspeções / Checklists Móveis
+            // InspeÃ§Ãµes / Checklists MÃ³veis
             Route::get('fleet/inspections', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'index']);
             Route::post('fleet/inspections', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'store']);
             Route::get('fleet/inspections/{inspection}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'show']);
@@ -635,7 +647,7 @@ Route::prefix('v1')->group(function () {
             Route::put('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'update']);
             Route::delete('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'destroy']);
 
-            // Dashboard Avançado & Ferramentas
+            // Dashboard AvanÃ§ado & Ferramentas
             Route::get('fleet/dashboard', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'dashboard']);
             Route::post('fleet/fuel-comparison', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'fuelComparison']);
             Route::post('fleet/trip-simulation', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'tripSimulation']);
@@ -647,7 +659,7 @@ Route::prefix('v1')->group(function () {
             Route::post('fleet/gps/update', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'updatePosition']);
             Route::get('fleet/gps/history/{vehicleId}', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'history']);
 
-            // Integração de Pedágio
+            // IntegraÃ§Ã£o de PedÃ¡gio
             Route::get('fleet/tolls', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'index']);
             Route::post('fleet/tolls', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'store']);
             Route::get('fleet/tolls/summary', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'summary']);
@@ -671,7 +683,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:finance.receivable.update')->put('invoices/{invoice}', [\App\Http\Controllers\Api\V1\InvoiceController::class, 'update']);
         Route::middleware('check.permission:finance.receivable.delete')->delete('invoices/{invoice}', [\App\Http\Controllers\Api\V1\InvoiceController::class, 'destroy']);
 
-        // Categorias de Contas a Pagar (edit�f¡veis)
+        // Categorias de Contas a Pagar (editï¿½fÂ¡veis)
         Route::middleware('check.permission:finance.payable.view')->get('account-payable-categories', [\App\Http\Controllers\Api\V1\Financial\AccountPayableCategoryController::class, 'index']);
         Route::middleware('check.permission:finance.payable.view')->get('accounts-payable-categories', [\App\Http\Controllers\Api\V1\Financial\AccountPayableCategoryController::class, 'index']); // compat
         Route::middleware('check.permission:finance.payable.create')->post('account-payable-categories', [\App\Http\Controllers\Api\V1\Financial\AccountPayableCategoryController::class, 'store']);
@@ -687,7 +699,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:finance.payable.update')->put('payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
         Route::middleware('check.permission:finance.payable.delete')->delete('payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy']);
 
-        // Relat�f³rios
+        // Relatï¿½fÂ³rios
         Route::middleware('check.permission:reports.os_report.view')->get('reports/work-orders', [\App\Http\Controllers\Api\V1\ReportController::class, 'workOrders']);
         Route::middleware('check.permission:reports.productivity_report.view')->get('reports/productivity', [\App\Http\Controllers\Api\V1\ReportController::class, 'productivity']);
         Route::middleware('check.permission:reports.financial_report.view')->get('reports/financial', [\App\Http\Controllers\Api\V1\ReportController::class, 'financial']);
@@ -702,7 +714,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:reports.stock_report.view')->get('reports/stock', [\App\Http\Controllers\Api\V1\ReportController::class, 'stock']);
         Route::middleware('check.permission:reports.customers_report.view')->get('reports/customers', [\App\Http\Controllers\Api\V1\ReportController::class, 'customers']);
         Route::middleware('check.report.export')->get('reports/{type}/export', [\App\Http\Controllers\Api\V1\PdfController::class, 'reportExport']);
-        // Importa�f§�f£o
+        // Importaï¿½fÂ§ï¿½fÂ£o
         Route::middleware('check.permission:import.data.view')->group(function () {
             Route::get('import/fields/{entity}', [\App\Http\Controllers\Api\V1\ImportController::class, 'fields']);
             Route::get('import/history', [\App\Http\Controllers\Api\V1\ImportController::class, 'history']);
@@ -726,13 +738,14 @@ Route::prefix('v1')->group(function () {
             Route::delete('import/{id}', [\App\Http\Controllers\Api\V1\ImportController::class, 'destroy']);
         });
 
-        // Integração Auvo API v2
+        // IntegraÃ§Ã£o Auvo API v2
         Route::middleware('check.permission:auvo.import.view')->group(function () {
             Route::get('auvo/status', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'testConnection']);
             Route::get('auvo/sync-status', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'syncStatus']);
             Route::get('auvo/preview/{entity}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'preview']);
             Route::get('auvo/history', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'history']);
             Route::get('auvo/mappings', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'mappings']);
+            Route::get('auvo/config', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'getConfig']);
         });
         Route::middleware('check.permission:auvo.import.execute')->group(function () {
             Route::post('auvo/import/{entity}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'import']);
@@ -743,7 +756,7 @@ Route::prefix('v1')->group(function () {
             Route::post('auvo/rollback/{id}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'rollback']);
         });
 
-        // Inteligência INMETRO
+        // InteligÃªncia INMETRO
         Route::middleware('check.permission:inmetro.intelligence.view')->group(function () {
             Route::get('inmetro/dashboard', [\App\Http\Controllers\Api\V1\InmetroController::class, 'dashboard']);
             Route::get('inmetro/owners', [\App\Http\Controllers\Api\V1\InmetroController::class, 'owners']);
@@ -799,7 +812,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('inmetro/owners/{id}', [\App\Http\Controllers\Api\V1\InmetroController::class, 'destroy']);
         });
 
-        // ─── INMETRO Advanced (50 Features) ─────────────────────────
+        // â”€â”€â”€ INMETRO Advanced (50 Features) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Prospection & Lead Management (view-level)
         Route::middleware('check.permission:inmetro.intelligence.view')->group(function () {
             Route::get('inmetro/advanced/contact-queue', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'getContactQueue']);
@@ -847,7 +860,7 @@ Route::prefix('v1')->group(function () {
             Route::get('inmetro/advanced/webhook-events', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'availableWebhookEvents']);
         });
 
-        // INMETRO Advanced — Write operations (manage permission)
+        // INMETRO Advanced â€” Write operations (manage permission)
         Route::middleware('check.permission:inmetro.intelligence.convert')->group(function () {
             // Prospection actions
             Route::post('inmetro/advanced/generate-queue', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'generateDailyQueue']);
@@ -873,7 +886,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('inmetro/advanced/webhooks/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'deleteWebhook']);
         });
 
-        // ─── Integração Auvo ─────────────────────────────────────────
+        // â”€â”€â”€ IntegraÃ§Ã£o Auvo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::middleware('check.permission:auvo.import.view')->group(function () {
             Route::get('auvo/status', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'testConnection']);
             Route::get('auvo/sync-status', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'syncStatus']);
@@ -896,11 +909,11 @@ Route::prefix('v1')->group(function () {
             Route::post('auvo/export/quote/{quote}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportQuote']);
         });
 
-        // Configurações + Auditoria
+        // ConfiguraÃ§Ãµes + Auditoria
         Route::middleware('check.permission:platform.settings.view')->get('settings', [\App\Http\Controllers\Api\V1\SettingsController::class, 'index']);
         Route::middleware('check.permission:platform.settings.manage')->put('settings', [\App\Http\Controllers\Api\V1\SettingsController::class, 'update']);
 
-        // Orçamentos
+        // OrÃ§amentos
         Route::middleware('check.permission:quotes.quote.view')->group(function () {
             Route::get('quotes', [\App\Http\Controllers\Api\V1\QuoteController::class, 'index']);
             Route::get('quotes/{quote}', [\App\Http\Controllers\Api\V1\QuoteController::class, 'show']);
@@ -935,7 +948,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:quotes.quote.convert')->post('quotes/{quote}/convert-to-chamado', [\App\Http\Controllers\Api\V1\QuoteController::class, 'convertToServiceCall']);
         Route::middleware('check.permission:quotes.quote.delete')->delete('quotes/{quote}', [\App\Http\Controllers\Api\V1\QuoteController::class, 'destroy']);
 
-        // Chamados T�f©cnicos
+        // Chamados Tï¿½fÂ©cnicos
         Route::middleware('check.permission:service_calls.service_call.view')->group(function () {
             Route::get('service-calls', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'index']);
             Route::get('service-calls-assignees', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'assignees']);
@@ -960,7 +973,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:service_calls.service_call.assign')->put('service-calls/{serviceCall}/assign', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'assignTechnician']);
         Route::middleware('check.permission:service_calls.service_call.delete')->delete('service-calls/{serviceCall}', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'destroy']);
 
-        // Caixa do T�f©cnico
+        // Caixa do Tï¿½fÂ©cnico
         Route::middleware('check.permission:technicians.cashbox.view')->group(function () {
             Route::get('technician-cash', [\App\Http\Controllers\Api\V1\TechnicianCashController::class, 'index']);
             Route::get('technician-cash/{userId}', [\App\Http\Controllers\Api\V1\TechnicianCashController::class, 'show']);
@@ -971,7 +984,7 @@ Route::prefix('v1')->group(function () {
             Route::post('technician-cash/debit', [\App\Http\Controllers\Api\V1\TechnicianCashController::class, 'addDebit']);
         });
 
-        // Contas Bancárias
+        // Contas BancÃ¡rias
         Route::middleware('check.permission:financial.bank_account.view')->group(function () {
             Route::get('bank-accounts', [\App\Http\Controllers\Api\V1\Financial\BankAccountController::class, 'index']);
             Route::get('bank-accounts/{bankAccount}', [\App\Http\Controllers\Api\V1\Financial\BankAccountController::class, 'show']);
@@ -980,7 +993,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:financial.bank_account.update')->put('bank-accounts/{bankAccount}', [\App\Http\Controllers\Api\V1\Financial\BankAccountController::class, 'update']);
         Route::middleware('check.permission:financial.bank_account.delete')->delete('bank-accounts/{bankAccount}', [\App\Http\Controllers\Api\V1\Financial\BankAccountController::class, 'destroy']);
 
-        // Transferências para Técnicos
+        // TransferÃªncias para TÃ©cnicos
         Route::middleware('check.permission:financial.fund_transfer.view')->group(function () {
             Route::get('fund-transfers', [\App\Http\Controllers\Api\V1\Financial\FundTransferController::class, 'index']);
             Route::get('fund-transfers/summary', [\App\Http\Controllers\Api\V1\Financial\FundTransferController::class, 'summary']);
@@ -1011,7 +1024,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('equipment-documents/{document}', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'deleteDocument']);
         });
 
-        // Pesos Padrão (Standard Weights)
+        // Pesos PadrÃ£o (Standard Weights)
         Route::middleware('check.permission:equipments.standard_weight.view')->group(function () {
             Route::get('standard-weights', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'index']);
             Route::get('standard-weights/expiring', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'expiring']);
@@ -1023,14 +1036,14 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:equipments.standard_weight.update')->put('standard-weights/{standardWeight}', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'update']);
         Route::middleware('check.permission:equipments.standard_weight.delete')->delete('standard-weights/{standardWeight}', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'destroy']);
 
-        // Numeração / Sequências
+        // NumeraÃ§Ã£o / SequÃªncias
         Route::middleware('check.permission:platform.settings.manage')->group(function () {
             Route::get('numbering-sequences', [\App\Http\Controllers\Api\V1\NumberingSequenceController::class, 'index']);
             Route::put('numbering-sequences/{numberingSequence}', [\App\Http\Controllers\Api\V1\NumberingSequenceController::class, 'update']);
             Route::get('numbering-sequences/{numberingSequence}/preview', [\App\Http\Controllers\Api\V1\NumberingSequenceController::class, 'preview']);
         });
 
-        // Notificações�f§�fµes
+        // NotificaÃ§Ãµesï¿½fÂ§ï¿½fÂµes
         Route::middleware('check.permission:notifications.notification.view')->group(function () {
             Route::get('notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'index']);
             Route::get('notifications/unread-count', [\App\Http\Controllers\Api\V1\NotificationController::class, 'unreadCount']);
@@ -1044,10 +1057,10 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/pdf', [\App\Http\Controllers\Api\V1\PdfController::class, 'workOrder']);
         Route::middleware('check.permission:quotes.quote.view')->get('quotes/{quote}/pdf', [\App\Http\Controllers\Api\V1\PdfController::class, 'quote']);
         Route::middleware('check.permission:equipments.equipment.view')->get('equipments/{equipment}/calibrations/{calibration}/pdf', [\App\Http\Controllers\Api\V1\PdfController::class, 'calibrationCertificate']);
-        // (Rota reports/{type}/export já registrada na seção de Relatórios acima — L477)
+        // (Rota reports/{type}/export jÃ¡ registrada na seÃ§Ã£o de RelatÃ³rios acima â€” L477)
 
-        // Perfil do Usu�f¡rio (com permiss�fµes/roles expandidos)
-        // FIX-B1: Usar FQCN para Api\V1\UserController (n�f£o confundir com Iam\UserController importado no topo)
+        // Perfil do Usuï¿½fÂ¡rio (com permissï¿½fÂµes/roles expandidos)
+        // FIX-B1: Usar FQCN para Api\V1\UserController (nï¿½fÂ£o confundir com Iam\UserController importado no topo)
         Route::get('profile', [\App\Http\Controllers\Api\V1\UserController::class, 'me']);
         Route::put('profile', [\App\Http\Controllers\Api\V1\UserController::class, 'updateProfile']);
 
@@ -1128,13 +1141,13 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // â?,â?,â?, Perfil do Usuf¡rio â?,â?,â?,
-        // FIX-B5: Usar o controller de perfil (Api\V1\UserController), nf£o o IAM
+        // Ã¢?,Ã¢?,Ã¢?, Perfil do UsufÂ¡rio Ã¢?,Ã¢?,Ã¢?,
+        // FIX-B5: Usar o controller de perfil (Api\V1\UserController), nfÂ£o o IAM
         Route::post('profile/change-password', [\App\Http\Controllers\Api\V1\UserController::class, 'changePassword']);
 
-        // (Rotas reports/suppliers e reports/stock já registradas na seção de Relatórios — L474-475)
+        // (Rotas reports/suppliers e reports/stock jÃ¡ registradas na seÃ§Ã£o de RelatÃ³rios â€” L474-475)
 
-        // â?,â?,â?, Operaf§fµes (Fase 5) â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,
+        // Ã¢?,Ã¢?,Ã¢?, OperafÂ§fÂµes (Fase 5) Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,
         Route::middleware('check.permission:os.work_order.view')->group(function () {
             Route::apiResource('service-checklists', \App\Http\Controllers\Api\V1\ServiceChecklistController::class);
             Route::apiResource('sla-policies', \App\Http\Controllers\Api\V1\SlaPolicyController::class);
@@ -1151,7 +1164,7 @@ Route::prefix('v1')->group(function () {
             Route::get('work-orders/{work_order}/audit-trail', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'auditTrail']);
         });
 
-        // ═══ Kits de Peças ═══════════════════════════════════════════
+        // â•â•â• Kits de PeÃ§as â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::middleware('check.permission:os.work_order.view')->group(function () {
             Route::get('parts-kits', [\App\Http\Controllers\Api\V1\Os\PartsKitController::class, 'index']);
             Route::get('parts-kits/{id}', [\App\Http\Controllers\Api\V1\Os\PartsKitController::class, 'show']);
@@ -1163,30 +1176,31 @@ Route::prefix('v1')->group(function () {
             Route::post('work-orders/{work_order}/apply-kit/{parts_kit}', [\App\Http\Controllers\Api\V1\Os\PartsKitController::class, 'applyToWorkOrder']);
         });
 
-        // â�?��,�â�?��,�â�?��,� Agendamento T�f©cnico (Fase 5.4) â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�
+        // Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½ Agendamento Tï¿½fÂ©cnico (Fase 5.4) Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½
         Route::middleware('check.permission:technicians.schedule.view')->group(function () {
             Route::get('schedules/conflicts', [\App\Http\Controllers\Api\V1\Technician\ScheduleController::class, 'conflicts']);
+            Route::get('technician/schedules/conflicts', [\App\Http\Controllers\Api\V1\Technician\ScheduleController::class, 'conflicts']);
             Route::get('schedules/workload', [\App\Http\Controllers\Api\V1\Technician\ScheduleController::class, 'workloadSummary']);
             Route::get('schedules/suggest-routing', [\App\Http\Controllers\Api\V1\Technician\ScheduleController::class, 'suggestRouting']);
         });
 
-        // �?"�?"�?" Fusão de Clientes (Fase 6.2) �?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"
+        // ï¿½?"ï¿½?"ï¿½?" FusÃ£o de Clientes (Fase 6.2) ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"
         Route::prefix('customers')->middleware('check.permission:cadastros.customer.update')->group(function () {
             Route::post('merge', [\App\Http\Controllers\Api\V1\Customer\CustomerMergeController::class, 'merge']);
             Route::get('search-duplicates', [\App\Http\Controllers\Api\V1\Customer\CustomerMergeController::class, 'searchDuplicates']);
         });
 
-        // �?"�?"�?" SLA Dashboard (Brainstorm #13) �?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"
+        // ï¿½?"ï¿½?"ï¿½?" SLA Dashboard (Brainstorm #13) ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"ï¿½?"
         Route::prefix('sla-dashboard')->middleware('check.permission:os.work_order.view')->group(function () {
             Route::get('overview', [\App\Http\Controllers\Api\V1\SlaDashboardController::class, 'overview']);
             Route::get('breached', [\App\Http\Controllers\Api\V1\SlaDashboardController::class, 'breachedOrders']);
             Route::get('by-policy', [\App\Http\Controllers\Api\V1\SlaDashboardController::class, 'byPolicy']);
         });
 
-        // â�?��,�â�?��,�â�?��,� DRE Comparativo (Brainstorm #7) â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�
+        // Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½ DRE Comparativo (Brainstorm #7) Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½
         Route::middleware('check.permission:finance.dre.view')->get('cash-flow/dre-comparativo', [\App\Http\Controllers\Api\V1\CashFlowController::class, 'dreComparativo']);
 
-        // â�?��,�â�?��,�â�?��,� Central (Inbox de Trabalho) â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�
+        // Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½ Central (Inbox de Trabalho) Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½Ã¢ï¿½?ï¿½ï¿½,ï¿½
         Route::prefix('central')->group(function () {
             Route::middleware('check.permission:central.item.view')->group(function () {
                 Route::get('summary', [\App\Http\Controllers\Api\V1\CentralController::class, 'summary']);
@@ -1217,7 +1231,7 @@ Route::prefix('v1')->group(function () {
         });
 
 
-        // ─── APIs Externas (CEP, CNPJ, IBGE, Feriados) ──────────────
+        // â”€â”€â”€ APIs Externas (CEP, CNPJ, IBGE, Feriados) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('external')->group(function () {
             Route::get('cep/{cep}', [\App\Http\Controllers\Api\V1\ExternalApiController::class, 'cep']);
             Route::get('cnpj/{cnpj}', [\App\Http\Controllers\Api\V1\ExternalApiController::class, 'cnpj']);
@@ -1228,14 +1242,14 @@ Route::prefix('v1')->group(function () {
             Route::get('states/{uf}/cities', [\App\Http\Controllers\Api\V1\ExternalApiController::class, 'cities']);
         });
 
-        // ─── Tech Sync (PWA Mobile Offline) ─────────────────────────
+        // â”€â”€â”€ Tech Sync (PWA Mobile Offline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('tech')->group(function () {
             Route::get('sync', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'pull']);
             Route::post('sync/batch', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'batchPush']);
             Route::post('sync/photo', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'uploadPhoto']);
         });
 
-        // ─── FLEET (Frota) ─────────────────────────────────────────
+        // â”€â”€â”€ FLEET (Frota) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('fleet')->group(function () {
             Route::middleware('check.permission:fleet.vehicle.view')->group(function () {
                 Route::get('vehicles', [\App\Http\Controllers\Api\V1\FleetController::class, 'indexVehicles']);
@@ -1258,7 +1272,7 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // ─── HR (RH & Equipe) ────────────────────────────────────────
+        // â”€â”€â”€ HR (RH & Equipe) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('hr')->group(function () {
             Route::middleware('check.permission:hr.schedule.view')->group(function () {
                 Route::get('schedules', [\App\Http\Controllers\Api\V1\HRController::class, 'indexSchedules']);
@@ -1289,7 +1303,7 @@ Route::prefix('v1')->group(function () {
                 Route::put('reviews/{review}', [\App\Http\Controllers\Api\V1\HRController::class, 'updateReview']);
             });
 
-            // ─── ADVANCED: Ponto Digital Avançado (Wave 1) ──────────
+            // â”€â”€â”€ ADVANCED: Ponto Digital AvanÃ§ado (Wave 1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.clock.manage')->group(function () {
                 Route::post('advanced/clock-in', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'advancedClockIn']);
                 Route::post('advanced/clock-out', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'advancedClockOut']);
@@ -1303,7 +1317,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('advanced/clock/{id}/reject', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'rejectClockEntry']);
             });
 
-            // ─── ADVANCED: Geofences ────────────────────────────────
+            // â”€â”€â”€ ADVANCED: Geofences â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.geofence.view')->get('geofences', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexGeofences']);
             Route::middleware('check.permission:hr.geofence.manage')->group(function () {
                 Route::post('geofences', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'storeGeofence']);
@@ -1311,7 +1325,7 @@ Route::prefix('v1')->group(function () {
                 Route::delete('geofences/{geofence}', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'destroyGeofence']);
             });
 
-            // ─── ADVANCED: Ajustes de Ponto ─────────────────────────
+            // â”€â”€â”€ ADVANCED: Ajustes de Ponto â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.adjustment.view')->get('adjustments', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexAdjustments']);
             Route::middleware('check.permission:hr.adjustment.create')->post('adjustments', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'storeAdjustment']);
             Route::middleware('check.permission:hr.adjustment.approve')->group(function () {
@@ -1319,7 +1333,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('adjustments/{id}/reject', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'rejectAdjustment']);
             });
 
-            // ─── ADVANCED: Jornada & Banco de Horas (Wave 1) ────────
+            // â”€â”€â”€ ADVANCED: Jornada & Banco de Horas (Wave 1) â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.journey.view')->group(function () {
                 Route::get('journey-rules', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexJourneyRules']);
                 Route::get('journey-entries', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'journeyEntries']);
@@ -1331,14 +1345,14 @@ Route::prefix('v1')->group(function () {
                 Route::post('journey/calculate', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'calculateJourney']);
             });
 
-            // ─── ADVANCED: Feriados ─────────────────────────────────
+            // â”€â”€â”€ ADVANCED: Feriados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.holiday.view')->get('holidays', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexHolidays']);
             Route::middleware('check.permission:hr.holiday.manage')->group(function () {
                 Route::post('holidays', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'storeHoliday']);
                 Route::delete('holidays/{holiday}', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'destroyHoliday']);
             });
 
-            // ─── ADVANCED: Férias & Afastamentos (Wave 2) ───────────
+            // â”€â”€â”€ ADVANCED: FÃ©rias & Afastamentos (Wave 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.leave.view')->group(function () {
                 Route::get('leaves', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexLeaves']);
                 Route::get('vacation-balances', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'vacationBalances']);
@@ -1349,7 +1363,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('leaves/{leave}/reject', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'rejectLeave']);
             });
 
-            // ─── ADVANCED: Documentos do Colaborador (Wave 2) ───────
+            // â”€â”€â”€ ADVANCED: Documentos do Colaborador (Wave 2) â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.document.view')->group(function () {
                 Route::get('documents', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexDocuments']);
                 Route::get('documents/expiring', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'expiringDocuments']);
@@ -1359,7 +1373,7 @@ Route::prefix('v1')->group(function () {
                 Route::delete('documents/{document}', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'destroyDocument']);
             });
 
-            // ─── ADVANCED: Onboarding (Wave 2) ─────────────────────
+            // â”€â”€â”€ ADVANCED: Onboarding (Wave 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.onboarding.view')->group(function () {
                 Route::get('onboarding/templates', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexTemplates']);
                 Route::get('onboarding/checklists', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexChecklists']);
@@ -1370,11 +1384,24 @@ Route::prefix('v1')->group(function () {
                 Route::post('onboarding/items/{itemId}/complete', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'completeChecklistItem']);
             });
 
-            // ─── ADVANCED: Dashboard Expandido ──────────────────────
+            // â”€â”€â”€ ADVANCED: Dashboard Expandido â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Route::middleware('check.permission:hr.dashboard.view')->get('advanced/dashboard', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'advancedDashboard']);
         });
 
-        // ─── QUALITY (Qualidade & SGQ) ───────────────────────────────
+        Route::prefix('hr')->group(function () {
+            Route::middleware('check.permission:hr.journey.view')->get('journey/entries', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'journeyEntries']);
+            Route::middleware('check.permission:hr.journey.manage')->delete('journey-rules/{rule}', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'destroyJourneyRule']);
+
+            Route::middleware('check.permission:hr.holiday.view')->get('holidays', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'indexHolidays']);
+            Route::middleware('check.permission:hr.holiday.manage')->group(function () {
+                Route::post('holidays', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'storeHoliday']);
+                Route::put('holidays/{holiday}', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'updateHoliday']);
+                Route::delete('holidays/{holiday}', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'destroyHoliday']);
+                Route::post('holidays/import-national', [\App\Http\Controllers\Api\V1\HRAdvancedController::class, 'importNationalHolidays']);
+            });
+        });
+
+        // â”€â”€â”€ QUALITY (Qualidade & SGQ) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('quality')->group(function () {
             Route::middleware('check.permission:quality.procedure.view')->group(function () {
                 Route::get('procedures', [\App\Http\Controllers\Api\V1\QualityController::class, 'indexProcedures']);
@@ -1404,7 +1431,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('check.permission:quality.dashboard.view')->get('dashboard', [\App\Http\Controllers\Api\V1\QualityController::class, 'dashboard']);
         });
 
-        // ─── AUTOMATION (Automações & Webhooks) ──────────────────────
+        // â”€â”€â”€ AUTOMATION (AutomaÃ§Ãµes & Webhooks) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('automation')->group(function () {
             Route::middleware('check.permission:automation.rule.view')->group(function () {
                 Route::get('rules', [\App\Http\Controllers\Api\V1\AutomationController::class, 'indexRules']);
@@ -1414,6 +1441,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('check.permission:automation.rule.manage')->group(function () {
                 Route::post('rules', [\App\Http\Controllers\Api\V1\AutomationController::class, 'storeRule']);
                 Route::put('rules/{rule}', [\App\Http\Controllers\Api\V1\AutomationController::class, 'updateRule']);
+                Route::patch('rules/{rule}/toggle', [\App\Http\Controllers\Api\V1\AutomationController::class, 'toggleRule']);
                 Route::delete('rules/{rule}', [\App\Http\Controllers\Api\V1\AutomationController::class, 'destroyRule']);
             });
             Route::middleware('check.permission:automation.webhook.view')->group(function () {
@@ -1433,7 +1461,7 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // ─── EMAIL INTEGRATION ───────────────────────────────────────
+        // â”€â”€â”€ EMAIL INTEGRATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Inbox (view, read, star, archive, batch)
         Route::middleware('check.permission:email.inbox.view')->group(function () {
             Route::get('emails', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'index']);
@@ -1478,7 +1506,7 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:email.rule.delete')->delete('email-rules/{emailRule}', [\App\Http\Controllers\Api\V1\Email\EmailRuleController::class, 'destroy']);
 
-        // ─── EMAIL ADVANCED (Phase 2) ───────────────────────────────
+        // â”€â”€â”€ EMAIL ADVANCED (Phase 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Templates
         Route::middleware('check.permission:email.template.view')->group(function () {
             Route::get('email-templates', [\App\Http\Controllers\Api\V1\Email\EmailTemplateController::class, 'index']);
@@ -1520,7 +1548,7 @@ Route::prefix('v1')->group(function () {
         });
 
 
-        // ─── ADVANCED FEATURES ───────────────────────────────────────
+        // â”€â”€â”€ ADVANCED FEATURES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('advanced')->group(function () {
             // Follow-ups
             Route::middleware('check.permission:commercial.followup.view')->get('follow-ups', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexFollowUps']);
@@ -1538,33 +1566,15 @@ Route::prefix('v1')->group(function () {
                 Route::put('price-tables/{priceTable}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'updatePriceTable']);
                 Route::delete('price-tables/{priceTable}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'destroyPriceTable']);
             });
-        });
 
-        // ─── PUBLIC ROUTES ───────────────────────────────────────────
-        Route::get('pixel/{tracking_id}', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'track']);
-
-            // Customer documents
-            Route::middleware('check.permission:customer.document.view')->get('customers/{customer}/documents', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCustomerDocuments']);
-            Route::middleware('check.permission:customer.document.manage')->group(function () {
-                Route::post('customers/{customer}/documents', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeCustomerDocument']);
-                Route::delete('customer-documents/{document}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'destroyCustomerDocument']);
-            });
-            // Cost centers
+            // Aliases compatÃƒÂ­veis com frontend
             Route::middleware('check.permission:finance.cost_center.view')->get('cost-centers', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCostCenters']);
-            Route::middleware('check.permission:finance.cost_center.manage')->group(function () {
-                Route::post('cost-centers', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeCostCenter']);
-                Route::put('cost-centers/{costCenter}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'updateCostCenter']);
-                Route::delete('cost-centers/{costCenter}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'destroyCostCenter']);
-            });
-            // Collection rules
-            Route::middleware('check.permission:finance.collection.view')->get('collection-rules', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCollectionRules']);
-            Route::middleware('check.permission:finance.collection.manage')->group(function () {
-                Route::post('collection-rules', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeCollectionRule']);
-                Route::put('collection-rules/{rule}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'updateCollectionRule']);
-            });
-            // Route plans
             Route::middleware('check.permission:route.plan.view')->get('route-plans', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexRoutePlans']);
-            Route::middleware('check.permission:route.plan.manage')->post('route-plans', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeRoutePlan']);
+            Route::middleware('check.permission:customer.document.view')->get('customer-documents', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCustomerDocumentsGlobal']);
+            Route::middleware('check.permission:customer.document.view')->get('customers/{customer}/documents', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCustomerDocuments']);
+            Route::middleware('check.permission:customer.document.manage')->post('customers/{customer}/documents', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeCustomerDocument']);
+            Route::middleware('check.permission:customer.document.manage')->delete('customer-documents/{document}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'destroyCustomerDocument']);
+            Route::middleware('check.permission:os.work_order.rating.view')->get('ratings', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexRatings']);
         });
 
         // Recrutamento (Vagas e Candidatos)
@@ -1581,7 +1591,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:hr.analytics.view')
             ->get('hr/analytics/dashboard', [\App\Http\Controllers\Api\V1\PeopleAnalyticsController::class, 'dashboard']);
 
-        // Relatórios Contábeis
+        // RelatÃ³rios ContÃ¡beis
         Route::middleware('check.permission:hr.reports.view')->group(function () {
             Route::get('hr/reports/accounting', [\App\Http\Controllers\Api\V1\AccountingReportController::class, 'index']);
             Route::get('hr/reports/accounting/export', [\App\Http\Controllers\Api\V1\AccountingReportController::class, 'export']);
@@ -1640,7 +1650,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('hr/benefits', \App\Http\Controllers\Api\V1\EmployeeBenefitController::class)->only(['store', 'update', 'destroy']);
         });
 
-        // ═══ Financeiro Avançado ══════════════════════════════════════
+        // â•â•â• Financeiro AvanÃ§ado â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('financial')->middleware('check.permission:financeiro.view')->group(function () {
             Route::get('supplier-contracts', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'supplierContracts']);
             Route::post('supplier-contracts', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'storeSupplierContract']);
@@ -1657,7 +1667,7 @@ Route::prefix('v1')->group(function () {
             Route::post('supplier-advances', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'storeSupplierAdvance']);
         });
 
-        // ═══ Estoque Avançado ═════════════════════════════════════════
+        // â•â•â• Estoque AvanÃ§ado â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('stock-advanced')->middleware('check.permission:estoque.view')->group(function () {
             // Purchase Quotations
             Route::get('purchase-quotations', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'purchaseQuotations']);
@@ -1688,7 +1698,7 @@ Route::prefix('v1')->group(function () {
             Route::post('import-nfe-xml', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'importNfeXml']);
         });
 
-        // ═══ CRM Avançado ═════════════════════════════════════════════
+        // â•â•â• CRM AvanÃ§ado â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('crm-advanced')->middleware('check.permission:crm.view')->group(function () {
             Route::get('proposal-pdf/{quoteId}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'generateProposalPdf']);
             Route::get('multi-option-quotes', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'multiOptionQuotes']);
@@ -1704,7 +1714,7 @@ Route::prefix('v1')->group(function () {
             Route::post('self-service/quote-request', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'selfServiceQuoteRequest']);
         });
 
-        // ═══ Laboratório Avançado ═════════════════════════════════════
+        // â•â•â• LaboratÃ³rio AvanÃ§ado â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('lab-advanced')->middleware('check.permission:qualidade.view')->group(function () {
             Route::post('rr-study', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'rrStudy']);
             Route::get('sensor-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'sensorReadings']);
@@ -1720,7 +1730,7 @@ Route::prefix('v1')->group(function () {
             Route::post('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeScaleReading']);
         });
 
-        // ═══ Portal do Cliente ════════════════════════════════════════
+        // â•â•â• Portal do Cliente â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('portal')->group(function () {
             Route::get('dashboard/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'executiveDashboard']);
             Route::post('certificates/batch-download', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'batchCertificateDownload']);
@@ -1745,8 +1755,8 @@ Route::prefix('v1')->group(function () {
             Route::post('bi-report/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'biSelfServiceReport']);
         });
 
-        // ═══ Integrações ══════════════════════════════════════════════
-        Route::prefix('integrations')->group(function () {
+        // â•â•â• IntegraÃ§Ãµes â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        Route::prefix('integrations')->middleware('check.permission:platform.settings.manage')->group(function () {
             Route::get('webhooks', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'webhooks']);
             Route::post('webhooks', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'storeWebhook']);
             Route::delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'deleteWebhook']);
@@ -1767,8 +1777,8 @@ Route::prefix('v1')->group(function () {
             Route::post('power-bi/export', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'powerBiDataExport']);
         });
 
-        // ═══ Segurança ════════════════════════════════════════════════
-        Route::prefix('security')->group(function () {
+        // â•â•â• SeguranÃ§a â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        Route::prefix('security')->middleware('check.permission:platform.settings.manage')->group(function () {
             Route::post('2fa/enable', [\App\Http\Controllers\Api\V1\SecurityController::class, 'enable2fa']);
             Route::post('2fa/verify', [\App\Http\Controllers\Api\V1\SecurityController::class, 'verify2fa']);
             Route::get('sessions', [\App\Http\Controllers\Api\V1\SecurityController::class, 'activeSessions']);
@@ -1791,8 +1801,8 @@ Route::prefix('v1')->group(function () {
             Route::post('vulnerability-scans', [\App\Http\Controllers\Api\V1\SecurityController::class, 'triggerScan']);
         });
 
-        // ═══ Frota Avançada (GPS, Pedágio, Rotas) ═════════════════════
-        Route::prefix('fleet-advanced')->group(function () {
+        // â•â•â• Frota AvanÃ§ada (GPS, PedÃ¡gio, Rotas) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        Route::prefix('fleet-advanced')->middleware('check.permission:fleet.vehicle.view')->group(function () {
             Route::get('tolls', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'tollTransactions']);
             Route::post('tolls', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeTollTransaction']);
             Route::get('gps', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'gpsTracking']);
@@ -1800,8 +1810,8 @@ Route::prefix('v1')->group(function () {
             Route::get('route-analysis', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'routeAnalysis']);
         });
 
-        // ═══ RH Avançado (Portal, EPI, Gamificação, Organograma) ══════
-        Route::prefix('hr-advanced')->group(function () {
+        // â•â•â• RH AvanÃ§ado (Portal, EPI, GamificaÃ§Ã£o, Organograma) â•â•â•â•â•â•
+        Route::prefix('hr-advanced')->middleware('check.permission:hr.dashboard.view')->group(function () {
             Route::get('employee-portal', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'employeePortal']);
             Route::get('epi', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'epiList']);
             Route::post('epi', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeEpi']);
@@ -1809,7 +1819,7 @@ Route::prefix('v1')->group(function () {
             Route::get('org-chart', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'orgChart']);
         });
 
-        // ═══ Financeiro Avançado (Boleto, NFS-e, Gateway, Portal, Bloqueio) ═
+        // â•â•â• Financeiro AvanÃ§ado (Boleto, NFS-e, Gateway, Portal, Bloqueio) â•
         Route::prefix('financial-extra')->middleware('check.permission:financeiro.view')->group(function () {
             Route::post('boleto', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'generateBoleto']);
             Route::post('nfse', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'emitNfse']);
@@ -1819,8 +1829,8 @@ Route::prefix('v1')->group(function () {
             Route::post('customers/{customerId}/block', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'toggleCustomerBlock']);
         });
 
-        // ═══ Mobile ═══════════════════════════════════════════════════
-        Route::prefix('mobile')->group(function () {
+        // â•â•â• Mobile â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        Route::prefix('mobile')->middleware('check.permission:technicians.schedule.view|technicians.time_entry.view|technicians.cashbox.view')->group(function () {
             Route::get('preferences', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'userPreferences']);
             Route::put('preferences', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'updatePreferences']);
             Route::get('sync-queue', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'syncQueue']);
@@ -1841,8 +1851,8 @@ Route::prefix('v1')->group(function () {
             Route::get('offline-map-regions', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'offlineMapRegions']);
         });
 
-        // ═══ Inovação ════════════════════════════════════════════════
-        Route::prefix('innovation')->group(function () {
+        // â•â•â• InovaÃ§Ã£o â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        Route::prefix('innovation')->middleware('check.permission:platform.settings.manage')->group(function () {
             Route::get('theme', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'themeConfig']);
             Route::put('theme', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'updateThemeConfig']);
             Route::get('referrals', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'referralProgram']);
@@ -1852,7 +1862,7 @@ Route::prefix('v1')->group(function () {
             Route::get('easter-egg/{code}', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'easterEgg']);
         });
 
-        // Inventário e Selos INMETRO
+        // InventÃ¡rio e Selos INMETRO
         Route::prefix('inventory')->group(function () {
             Route::middleware('check.permission:inmetro.intelligence.view')->group(function () {
                 Route::get('seals', [\App\Http\Controllers\Inventory\InmetroSealController::class, 'index']);
@@ -1865,9 +1875,21 @@ Route::prefix('v1')->group(function () {
                 Route::post('seals/assign', [\App\Http\Controllers\Inventory\InmetroSealController::class, 'assignToTechnician']);
                 Route::post('seals/{id}/use', [\App\Http\Controllers\Inventory\InmetroSealController::class, 'useSeal']);
             });
+
+            Route::middleware('check.permission:estoque.movement.view')->group(function () {
+                Route::get('inventories', [InventoryController::class, 'index']);
+                Route::get('inventories/{inventory}', [InventoryController::class, 'show']);
+                Route::get('warehouses', [WarehouseController::class, 'index']);
+            });
+            Route::middleware('check.permission:estoque.movement.create')->group(function () {
+                Route::post('inventories', [InventoryController::class, 'store']);
+                Route::put('inventories/{inventory}/items/{item}', [InventoryController::class, 'updateItem']);
+                Route::post('inventories/{inventory}/complete', [InventoryController::class, 'complete']);
+                Route::post('inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
+            });
         });
 
-        // ═══ Análise Financeira ═══════════════════════════════════════
+        // â•â•â• AnÃ¡lise Financeira â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('financial')->middleware('check.permission:financeiro.view')->group(function () {
             Route::get('cash-flow-projection', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'cashFlowProjection']);
             Route::get('dre', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'dre']);
@@ -1879,7 +1901,7 @@ Route::prefix('v1')->group(function () {
             ->middleware('check.permission:financeiro.approve');
 
 
-        // ═══ Análise Comercial ════════════════════════════════════════
+        // â•â•â• AnÃ¡lise Comercial â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('sales')->middleware('check.permission:comercial.view')->group(function () {
             Route::get('quote-rentability/{quote}', [\App\Http\Controllers\Api\V1\SalesAnalyticsController::class, 'quoteRentability']);
             Route::get('follow-up-queue', [\App\Http\Controllers\Api\V1\SalesAnalyticsController::class, 'followUpQueue']);
@@ -1889,13 +1911,13 @@ Route::prefix('v1')->group(function () {
             Route::get('discount-requests', [\App\Http\Controllers\Api\V1\SalesAnalyticsController::class, 'discountRequests']);
         });
 
-        // ═══ Kardex de Produto ═══════════════════════════════════════
+        // â•â•â• Kardex de Produto â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::middleware('check.permission:estoque.view')->group(function () {
             Route::get('products/{product}/kardex', [\App\Http\Controllers\Api\V1\ProductKardexController::class, 'index']);
             Route::get('products/{product}/kardex/summary', [\App\Http\Controllers\Api\V1\ProductKardexController::class, 'monthlySummary']);
         });
 
-        // ═══ Rastreamento de Ferramentas ═════════════════════════════
+        // â•â•â• Rastreamento de Ferramentas â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('tools')->middleware('check.permission:estoque.manage')->group(function () {
             Route::get('checkouts', [\App\Http\Controllers\Api\V1\ToolTrackingController::class, 'index']);
             Route::post('checkout', [\App\Http\Controllers\Api\V1\ToolTrackingController::class, 'checkout']);
@@ -1903,7 +1925,7 @@ Route::prefix('v1')->group(function () {
             Route::get('overdue', [\App\Http\Controllers\Api\V1\ToolTrackingController::class, 'overdue']);
         });
 
-        // ═══ IA & Análise ═══════════════════════════════════════════════
+        // â•â•â• IA & AnÃ¡lise â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('ai')->middleware('check.permission:ai.analytics.view')->group(function () {
             Route::get('predictive-maintenance', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'predictiveMaintenance']);
             Route::get('expense-ocr-analysis', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'expenseOcrAnalysis']);
@@ -1925,20 +1947,21 @@ Route::prefix('v1')->group(function () {
     });
 
 
-// ─── PUBLIC: Work Order Rating ───────────────────────────────
-Route::post('rate/{token}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'submitRating']);
+});
+// â”€â”€â”€ PUBLIC: Work Order Rating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+Route::middleware('throttle:30,1')->post('rate/{token}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'submitRating']);
 
-// â?,â?,â?, Webhooks (verificaf§f£o por assinatura) â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,
-Route::prefix('webhooks')->middleware('verify.webhook')->group(function () {
+// Ã¢?,Ã¢?,Ã¢?, Webhooks (verificafÂ§fÂ£o por assinatura) Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,
+Route::prefix('webhooks')->middleware(['verify.webhook', 'throttle:240,1'])->group(function () {
     Route::post('whatsapp', [\App\Http\Controllers\Api\V1\CrmMessageController::class, 'webhookWhatsApp']);
     Route::post('email', [\App\Http\Controllers\Api\V1\CrmMessageController::class, 'webhookEmail']);
 });
 
-// â?,â?,â?, Rotas pfºblicas (sem autenticaf§f£o, com token) â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,
+// Ã¢?,Ã¢?,Ã¢?, Rotas pfÂºblicas (sem autenticafÂ§fÂ£o, com token) Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,
 Route::prefix('quotes')->group(function () {
-    Route::get('{quote}/public-view', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicView']);
-    Route::post('{quote}/public-approve', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicApprove']);
+    Route::middleware('throttle:120,1')->get('{quote}/public-view', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicView']);
+    Route::middleware('throttle:30,1')->post('{quote}/public-approve', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicApprove']);
 });
 
 // Email Tracking (Pixel)
-Route::get('pixel/{trackingId}', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'track']);
+Route::middleware('throttle:600,1')->get('pixel/{trackingId}', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'track']);

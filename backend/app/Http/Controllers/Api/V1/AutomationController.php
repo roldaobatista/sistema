@@ -82,6 +82,24 @@ class AutomationController extends Controller
         }
     }
 
+    public function toggleRule(AutomationRule $rule): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            $rule->update(['is_active' => !$rule->is_active]);
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Status da automação atualizado',
+                'data' => $rule->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('AutomationRule toggle failed', ['id' => $rule->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar status da automação'], 500);
+        }
+    }
+
     public function availableEvents(): JsonResponse
     {
         return response()->json(['data' => [

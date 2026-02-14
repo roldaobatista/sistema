@@ -22,9 +22,13 @@ class NuvemFiscalProvider implements FiscalProvider
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(config('services.nuvemfiscal.url', 'https://api.nuvemfiscal.com.br'), '/');
-        $this->clientId = config('services.nuvemfiscal.client_id', '');
-        $this->clientSecret = config('services.nuvemfiscal.client_secret', '');
+        $configuredBaseUrl = config('services.nuvemfiscal.url', 'https://api.nuvemfiscal.com.br');
+        $configuredClientId = config('services.nuvemfiscal.client_id', '');
+        $configuredClientSecret = config('services.nuvemfiscal.client_secret', '');
+
+        $this->baseUrl = rtrim((string) ($configuredBaseUrl ?? 'https://api.nuvemfiscal.com.br'), '/');
+        $this->clientId = (string) ($configuredClientId ?? '');
+        $this->clientSecret = (string) ($configuredClientSecret ?? '');
     }
 
     public function emitirNFe(array $data): FiscalResult

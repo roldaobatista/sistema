@@ -24,7 +24,11 @@ class EnsureTenantScope
 
         // Disponibiliza o tenant_id globalmente
         app()->instance('current_tenant_id', $tenantId);
-        $request->merge(['tenant_id' => $tenantId]);
+
+        // Preserve explicit tenant payload for the tenant switch endpoint.
+        if (!$request->is('api/v1/switch-tenant')) {
+            $request->merge(['tenant_id' => $tenantId]);
+        }
 
         // FIX-18: Configura escopo Spatie Permission para o tenant atual
         setPermissionsTeamId($tenantId);

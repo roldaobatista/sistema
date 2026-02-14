@@ -99,6 +99,11 @@ class ReportController extends Controller
     public function workOrders(Request $request): JsonResponse
     {
         try {
+            $request->validate([
+                'from' => 'nullable|date',
+                'to' => 'nullable|date',
+                'branch_id' => 'nullable|integer|exists:branches,id',
+            ]);
             $tenantId = $this->tenantId();
             $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
             $to = $this->validatedDate($request, 'to', now()->toDateString());

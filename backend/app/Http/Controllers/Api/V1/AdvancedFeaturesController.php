@@ -182,6 +182,26 @@ class AdvancedFeaturesController extends Controller
         );
     }
 
+    public function indexCustomerDocumentsGlobal(Request $request): JsonResponse
+    {
+        $query = CustomerDocument::where('tenant_id', $request->user()->tenant_id)
+            ->with(['uploader:id,name', 'customer:id,name']);
+
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($builder) use ($search) {
+                $builder->where('title', 'like', "%{$search}%")
+                    ->orWhere('file_name', 'like', "%{$search}%")
+                    ->orWhereHas('customer', fn ($customerQuery) => $customerQuery->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        return response()->json(
+            $query->orderByDesc('created_at')
+                ->paginate($request->input('per_page', 20))
+        );
+    }
+
     public function storeCustomerDocument(Request $request, int $customerId): JsonResponse
     {
         $validated = $request->validate([
@@ -391,6 +411,21 @@ class AdvancedFeaturesController extends Controller
     }
 
     // ─── WORK ORDER RATINGS (public endpoint for clients) ────────
+
+    public function indexRatings(Request $request): JsonResponse
+    {
+        $query = WorkOrderRating::query()
+            ->whereHas('workOrder', fn ($workOrderQuery) => $workOrderQuery->where('tenant_id', $request->user()->tenant_id))
+            ->with([
+                'workOrder:id,number,os_number,customer_id',
+                'customer:id,name',
+            ]);
+
+        return response()->json(
+            $query->orderByDesc('created_at')
+                ->paginate($request->input('per_page', 20))
+        );
+    }
 
     public function submitRating(Request $request, string $token): JsonResponse
     {

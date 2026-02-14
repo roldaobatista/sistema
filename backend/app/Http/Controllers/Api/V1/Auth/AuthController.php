@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -125,7 +126,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $token = $user?->currentAccessToken();
+
+        if ($token) {
+            $token->delete();
+        } else {
+            $rawToken = $request->bearerToken();
+            if ($rawToken) {
+                PersonalAccessToken::findToken($rawToken)?->delete();
+            }
+        }
+
+        auth('sanctum')->forgetUser();
 
         return response()->json(['message' => 'Logout realizado.']);
     }

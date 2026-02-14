@@ -321,6 +321,19 @@ class HRAdvancedController extends Controller
         }
     }
 
+    public function destroyJourneyRule(JourneyRule $rule): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            $rule->delete();
+            DB::commit();
+            return response()->json(['message' => 'Regra removida']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Erro ao remover regra'], 500);
+        }
+    }
+
     public function calculateJourney(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -390,6 +403,80 @@ class HRAdvancedController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Erro ao cadastrar feriado'], 500);
+        }
+    }
+
+    public function updateHoliday(Request $request, Holiday $holiday): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'date' => 'sometimes|date',
+            'is_national' => 'sometimes|boolean',
+            'is_recurring' => 'sometimes|boolean',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            $holiday->update($validated);
+            DB::commit();
+            return response()->json(['message' => 'Feriado atualizado', 'data' => $holiday->fresh()]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Erro ao atualizar feriado'], 500);
+        }
+    }
+
+    public function importNationalHolidays(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'year' => 'required|integer|min:2000|max:2100',
+        ]);
+
+        $year = (int) $validated['year'];
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
+
+        $fixedHolidays = [
+            ['Confraternização Universal', "$year-01-01"],
+            ['Tiradentes', "$year-04-21"],
+            ['Dia do Trabalhador', "$year-05-01"],
+            ['Independência do Brasil', "$year-09-07"],
+            ['Nossa Senhora Aparecida', "$year-10-12"],
+            ['Finados', "$year-11-02"],
+            ['Proclamação da República', "$year-11-15"],
+            ['Natal', "$year-12-25"],
+        ];
+
+        try {
+            DB::beginTransaction();
+
+            $imported = 0;
+            foreach ($fixedHolidays as [$name, $date]) {
+                $holiday = Holiday::firstOrCreate(
+                    [
+                        'tenant_id' => $tenantId,
+                        'date' => $date,
+                        'name' => $name,
+                    ],
+                    [
+                        'is_national' => true,
+                        'is_recurring' => true,
+                    ]
+                );
+
+                if ($holiday->wasRecentlyCreated) {
+                    $imported++;
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Feriados nacionais importados',
+                'data' => ['year' => $year, 'created' => $imported, 'total' => count($fixedHolidays)],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Holiday import failed', ['error' => $e->getMessage(), 'year' => $year]);
+            return response()->json(['message' => 'Erro ao importar feriados nacionais'], 500);
         }
     }
 

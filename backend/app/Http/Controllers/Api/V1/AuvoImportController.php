@@ -230,30 +230,42 @@ class AuvoImportController extends Controller
             'api_token' => 'required|string|min:5',
         ]);
 
-        // Test credentials before saving
-        $client = new AuvoApiClient($request->api_key, $request->api_token);
-        $result = $client->testConnection();
-
-        if (!$result['connected']) {
-            return response()->json([
-                'message' => 'Credenciais inválidas: ' . $result['message'],
-            ], 422);
-        }
-
-        // Persist to runtime config (immediately available for this request cycle)
+        // Always save credentials first
         config([
             'services.auvo.api_key' => $request->api_key,
             'services.auvo.api_token' => $request->api_token,
         ]);
 
-        // Write to .env file for persistence across requests
         $this->updateEnvFile('AUVO_API_KEY', $request->api_key);
         $this->updateEnvFile('AUVO_API_TOKEN', $request->api_token);
 
+        // Test connection after saving (non-blocking)
+        $client = new AuvoApiClient($request->api_key, $request->api_token);
+        $result = $client->testConnection();
+
+        $message = $result['connected']
+            ? 'Credenciais Auvo salvas e conexão verificada com sucesso'
+            : 'Credenciais salvas, mas a conexão falhou: ' . $result['message'];
+
         return response()->json([
-            'message' => 'Credenciais Auvo salvas com sucesso',
+            'message' => $message,
             'saved' => true,
-            'connected' => true,
+            'connected' => $result['connected'],
+        ]);
+    }
+
+    /**
+     * Get current Auvo API credentials.
+     */
+    public function getConfig(): JsonResponse
+    {
+        $apiKey = config('services.auvo.api_key', '');
+        $apiToken = config('services.auvo.api_token', '');
+
+        return response()->json([
+            'has_credentials' => !empty($apiKey) && !empty($apiToken),
+            'api_key' => $apiKey ?: '',
+            'api_token' => $apiToken ?: '',
         ]);
     }
 
