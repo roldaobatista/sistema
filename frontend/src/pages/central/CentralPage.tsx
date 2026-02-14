@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Inbox, Plus, Search, CheckCircle, Clock, AlertTriangle, ArrowRight,
@@ -6,19 +7,19 @@ import {
     FileText, Phone, DollarSign, Wrench, BarChart3, X,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
+import { Input } from '@/components/ui/input'
 
-// ── Configurações visuais ──
+// â”€â”€ ConfiguraÃ§Ãµes visuais â”€â”€
 
 const tipoConfig: Record<string, { label: string; icon: any; color: string }> = {
     os: { label: 'OS', icon: Wrench, color: 'text-blue-600 bg-blue-50' },
     chamado: { label: 'Chamado', icon: Phone, color: 'text-cyan-600 bg-cyan-50' },
-    orcamento: { label: 'Orçamento', icon: FileText, color: 'text-amber-600 bg-amber-50' },
+    orcamento: { label: 'OrÃ§amento', icon: FileText, color: 'text-amber-600 bg-amber-50' },
     financeiro: { label: 'Financeiro', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50' },
-    calibracao: { label: 'Calibração', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50' },
+    calibracao: { label: 'CalibraÃ§Ã£o', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50' },
     contrato: { label: 'Contrato', icon: FileText, color: 'text-rose-600 bg-rose-50' },
     tarefa: { label: 'Tarefa', icon: CheckCircle, color: 'text-surface-600 bg-surface-50' },
     lembrete: { label: 'Lembrete', icon: Clock, color: 'text-surface-500 bg-surface-50' },
@@ -27,14 +28,14 @@ const tipoConfig: Record<string, { label: string; icon: any; color: string }> = 
 const statusConfig: Record<string, { label: string; variant: any }> = {
     aberto: { label: 'Aberto', variant: 'info' },
     em_andamento: { label: 'Em Andamento', variant: 'warning' },
-    concluido: { label: 'Concluído', variant: 'success' },
+    concluido: { label: 'ConcluÃ­do', variant: 'success' },
     cancelado: { label: 'Cancelado', variant: 'danger' },
     aguardando: { label: 'Aguardando', variant: 'default' },
 }
 
 const prioridadeConfig: Record<string, { label: string; color: string; bg: string }> = {
     baixa: { label: 'Baixa', color: 'text-surface-500', bg: '' },
-    media: { label: 'Média', color: 'text-blue-600', bg: '' },
+    media: { label: 'MÃ©dia', color: 'text-blue-600', bg: '' },
     alta: { label: 'Alta', color: 'text-amber-600', bg: 'bg-amber-50' },
     urgente: { label: 'Urgente', color: 'text-red-600', bg: 'bg-red-50' },
 }
@@ -62,7 +63,7 @@ export function CentralPage() {
         prioridade: 'media', due_at: '', visibilidade: 'equipe',
     })
 
-    // ── Queries ──
+    // â”€â”€ Queries â”€â”€
 
     const { data: summaryRes } = useQuery({
         queryKey: ['central-summary'],
@@ -91,11 +92,12 @@ export function CentralPage() {
     })
     const users = usersRes?.data?.data ?? []
 
-    // ── Mutations ──
+    // â”€â”€ Mutations â”€â”€
 
     const createMut = useMutation({
         mutationFn: () => api.post('/central/items', form),
         onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-items'] })
             qc.invalidateQueries({ queryKey: ['central-summary'] })
             setShowCreate(false)
@@ -106,6 +108,7 @@ export function CentralPage() {
     const updateMut = useMutation({
         mutationFn: ({ id, data }: { id: number; data: any }) => api.patch(`/central/items/${id}`, data),
         onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-items'] })
             qc.invalidateQueries({ queryKey: ['central-summary'] })
         },
@@ -114,26 +117,27 @@ export function CentralPage() {
     const assignMut = useMutation({
         mutationFn: ({ id, userId }: { id: number; userId: number }) =>
             api.post(`/central/items/${id}/assign`, { responsavel_user_id: userId }),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['central-items'] }),
+        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['central-items'] }),
     })
 
     const commentMut = useMutation({
         mutationFn: ({ id, body }: { id: number; body: string }) =>
             api.post(`/central/items/${id}/comments`, { body }),
-        onSuccess: () => { setComment(''); if (showDetail) fetchDetail(showDetail.id) },
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso') setComment(''); if (showDetail) fetchDetail(showDetail.id) },
     })
 
-    // ── Detail ──
+    // â”€â”€ Detail â”€â”€
 
     const fetchDetail = async (id: number) => {
         const res = await api.get(`/central/items/${id}`)
         setShowDetail(res.data?.data ?? res.data)
     }
 
-    // ── Helpers ──
+    // â”€â”€ Helpers â”€â”€
 
     const formatDate = (d: string | null) => {
-        if (!d) return '—'
+        if (!d) return 'â€”'
         return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     }
 
@@ -155,7 +159,7 @@ export function CentralPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Central</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Inbox unificado de trabalho — OS, Chamados, Tarefas e mais</p>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Inbox unificado de trabalho â€” OS, Chamados, Tarefas e mais</p>
                 </div>
                 <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowCreate(true)}>Nova Tarefa</Button>
             </div>
@@ -271,11 +275,11 @@ export function CentralPage() {
                 })}
             </div>
 
-            {/* ── Modal Criar Tarefa ── */}
+            {/* â”€â”€ Modal Criar Tarefa â”€â”€ */}
             <Modal open={showCreate} onOpenChange={(v) => { if (!v) setShowCreate(false) }} title="Nova Tarefa">
                 <div className="space-y-4">
-                    <Input label="Título" value={form.titulo} onChange={(e: any) => setForm(f => ({ ...f, titulo: e.target.value }))} />
-                    <Input label="Descrição" value={form.descricao_curta} onChange={(e: any) => setForm(f => ({ ...f, descricao_curta: e.target.value }))} />
+                    <Input label="TÃ­tulo" value={form.titulo} onChange={(e: any) => setForm(f => ({ ...f, titulo: e.target.value }))} />
+                    <Input label="DescriÃ§Ã£o" value={form.descricao_curta} onChange={(e: any) => setForm(f => ({ ...f, descricao_curta: e.target.value }))} />
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-[13px] font-medium text-surface-700">Tipo</label>
@@ -312,7 +316,7 @@ export function CentralPage() {
                 </div>
             </Modal>
 
-            {/* ── Modal Detalhes ── */}
+            {/* â”€â”€ Modal Detalhes â”€â”€ */}
             <Modal open={!!showDetail} onOpenChange={(v) => { if (!v) setShowDetail(null) }} title={showDetail?.titulo ?? 'Detalhes'}>
                 {showDetail && (
                     <div className="space-y-4">
@@ -322,7 +326,7 @@ export function CentralPage() {
                             <div><span className="text-surface-500">Prioridade:</span> <span className={`font-medium ${prioridadeConfig[showDetail.prioridade]?.color ?? ''}`}>{prioridadeConfig[showDetail.prioridade]?.label ?? showDetail.prioridade}</span></div>
                             <div><span className="text-surface-500">Tipo:</span> {tipoConfig[showDetail.tipo]?.label ?? showDetail.tipo}</div>
                             <div><span className="text-surface-500">Prazo:</span> {formatDate(showDetail.due_at)}</div>
-                            <div><span className="text-surface-500">Responsável:</span> {showDetail.responsavel?.name ?? '—'}</div>
+                            <div><span className="text-surface-500">ResponsÃ¡vel:</span> {showDetail.responsavel?.name ?? 'â€”'}</div>
                             <div><span className="text-surface-500">Criado em:</span> {formatDate(showDetail.created_at)}</div>
                         </div>
 
@@ -348,17 +352,17 @@ export function CentralPage() {
 
                         {/* Comments */}
                         <div className="border-t border-subtle pt-3">
-                            <h4 className="text-sm font-semibold text-surface-700 mb-2">Comentários</h4>
+                            <h4 className="text-sm font-semibold text-surface-700 mb-2">ComentÃ¡rios</h4>
                             <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {(showDetail.comments ?? []).map((c: any) => (
                                     <div key={c.id} className="rounded-lg bg-surface-50 p-2">
                                         <p className="text-xs text-surface-900">{c.body}</p>
-                                        <p className="text-[10px] text-surface-400 mt-1">{c.user?.name ?? 'Sistema'} • {formatDate(c.created_at)}</p>
+                                        <p className="text-[10px] text-surface-400 mt-1">{c.user?.name ?? 'Sistema'} â€¢ {formatDate(c.created_at)}</p>
                                     </div>
                                 ))}
                             </div>
                             <div className="mt-2 flex gap-2">
-                                <input value={comment} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComment(e.target.value)} placeholder="Adicionar comentário..."
+                                <input value={comment} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComment(e.target.value)} placeholder="Adicionar comentÃ¡rio..."
                                     className="flex-1 rounded-lg border border-surface-300 px-3 py-2 text-sm" />
                                 <Button size="sm" onClick={() => commentMut.mutate({ id: showDetail.id, body: comment })} loading={commentMut.isPending}
                                     disabled={!comment.trim()}>Enviar</Button>
@@ -368,12 +372,12 @@ export function CentralPage() {
                         {/* History */}
                         {(showDetail.history ?? []).length > 0 && (
                             <div className="border-t border-subtle pt-3">
-                                <h4 className="text-sm font-semibold text-surface-700 mb-2">Histórico</h4>
+                                <h4 className="text-sm font-semibold text-surface-700 mb-2">HistÃ³rico</h4>
                                 <div className="space-y-1 text-xs text-surface-500 max-h-32 overflow-y-auto">
                                     {(showDetail.history ?? []).map((h: any) => (
                                         <div key={h.id} className="flex gap-2">
                                             <span className="text-surface-400">{formatDate(h.created_at)}</span>
-                                            <span>{h.action}: {h.from_value ?? ''} → {h.to_value ?? ''}</span>
+                                            <span>{h.action}: {h.from_value ?? ''} â†’ {h.to_value ?? ''}</span>
                                             <span className="text-surface-300">{h.user?.name}</span>
                                         </div>
                                     ))}

@@ -1,53 +1,32 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Plus, Trash2, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, User, Calendar, BarChartHorizontal, Map as MapIcon } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
 import { useAuthStore } from '@/stores/auth-store'
+import { TechnicianGantt } from './components/TechnicianGantt'
+import { TechnicianRecommendationSelector } from './components/TechnicianRecommendationSelector'
+import { TechnicianMap } from './components/TechnicianMap'
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'brand' | 'success' | 'danger' | 'warning' | 'info' }> = {
+const statusConfig: Record<string, { label: string; variant: 'default' | 'brand' | 'success' | 'danger' | 'warning' | 'info' | 'secondary' }> = {
     scheduled: { label: 'Agendado', variant: 'info' },
     confirmed: { label: 'Confirmado', variant: 'brand' },
     completed: { label: 'Concluido', variant: 'success' },
     cancelled: { label: 'Cancelado', variant: 'danger' },
+    // CRM / Service Call statuses
+    pending: { label: 'Pendente', variant: 'warning' },
+    in_progress: { label: 'Em Andamento', variant: 'brand' },
+    done: { label: 'Feito', variant: 'success' },
+    open: { label: 'Aberto', variant: 'warning' },
 }
 
-interface Technician {
-    id: number
-    name: string
-}
-
-interface Customer {
-    id: number
-    name: string
-}
-
-interface WorkOrder {
-    id: number
-    number: string
-    os_number?: string | null
-    business_number?: string | null
-    status: string
-    customer?: { name: string }
-}
-
-interface Schedule {
-    id: number
-    title: string
-    notes: string | null
-    status: string
-    scheduled_start: string
-    scheduled_end: string
-    address: string | null
-    technician: Technician
-    customer: Customer | null
-    work_order: WorkOrder | null
-}
+import type { Technician, Customer, ScheduleItem, WorkOrder } from '@/types/operational'
 
 const emptyForm = {
     title: '',
@@ -63,7 +42,7 @@ const emptyForm = {
 
 function getWeekDays(date: Date) {
     const start = new Date(date)
-    start.setDate(start.getDate() - start.getDay() + 1)
+    start.setDate(start.getDate() - start.getDay() + 1) // Start Monday
 
     return Array.from({ length: 7 }, (_, index) => {
         const current = new Date(start)
@@ -89,29 +68,34 @@ export function SchedulesPage() {
     const { hasPermission, hasRole } = useAuthStore()
     const canManageSchedules = hasRole('super_admin') || hasPermission('technicians.schedule.manage')
 
+    const [viewMode, setViewMode] = useState<'week' | 'timeline' | 'map'>('week')
     const [weekOf, setWeekOf] = useState(() => new Date())
+    const [selectedDate, setSelectedDate] = useState(() => new Date()) // For timeline view
+
     const [showForm, setShowForm] = useState(false)
-    const [editing, setEditing] = useState<Schedule | null>(null)
+    const [showDetail, setShowDetail] = useState(false)
+    const [editing, setEditing] = useState<ScheduleItem | null>(null)
     const [form, setForm] = useState(emptyForm)
     const [technicianFilter, setTechnicianFilter] = useState('')
 
     const weekDays = getWeekDays(weekOf)
-    const from = formatDateISO(weekDays[0])
-    const to = `${formatDateISO(weekDays[6])}T23:59:59`
+    const from = viewMode === 'week' ? formatDateISO(weekDays[0]) : formatDateISO(selectedDate)
+    const to = viewMode === 'week' ? `${formatDateISO(weekDays[6])}` : formatDateISO(selectedDate)
 
-    const { data: schedulesResponse } = useQuery({
-        queryKey: ['schedules', from, to, technicianFilter],
+    const { data: unifiedResponse } = useQuery({
+        queryKey: ['schedules-unified', from, to, technicianFilter],
         queryFn: () =>
-            api.get('/schedules', {
+            api.get('/schedules-unified', {
                 params: {
                     from,
                     to,
                     technician_id: technicianFilter || undefined,
-                    per_page: 200,
                 },
             }),
     })
-    const schedules: Schedule[] = schedulesResponse?.data?.data ?? []
+
+    // Normalize data from unified endpoint
+    const scheduleItems: ScheduleItem[] = unifiedResponse?.data?.data ?? []
 
     const { data: techniciansResponse } = useQuery({
         queryKey: ['technicians-schedules'],
@@ -133,29 +117,56 @@ export function SchedulesPage() {
     })
     const customers: Customer[] = customersResponse?.data?.data ?? []
 
+    const { data: conflictData } = useQuery({
+        queryKey: ['schedule-conflict', form.technician_id, form.scheduled_start, form.scheduled_end, editing?.id],
+        queryFn: () => api.get('/technician/schedules/conflicts', {
+            params: {
+                technician_id: form.technician_id,
+                start: form.scheduled_start,
+                end: form.scheduled_end,
+                exclude_schedule_id: editing?.source === 'schedule' ? editing.id : undefined,
+            }
+        }),
+        enabled: !!(showForm && form.technician_id && form.scheduled_start && form.scheduled_end),
+    })
+
     const saveMutation = useMutation({
-        mutationFn: (payload: typeof form) =>
-            editing ? api.put(`/schedules/${editing.id}`, payload) : api.post('/schedules', payload),
+        mutationFn: (payload: typeof form) => {
+            // Only support editing standard schedules for now
+            if (editing && editing.source !== 'schedule') {
+                return Promise.reject(new Error('Apenas agendamentos podem ser editados aqui.'))
+            }
+            return editing
+                ? api.put(`/schedules/${editing.id}`, payload)
+                : api.post('/schedules', payload)
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['schedules'] })
+            queryClient.invalidateQueries({ queryKey: ['schedules-unified'] })
             setShowForm(false)
             setEditing(null)
             setForm(emptyForm)
+            toast.success('Salvo com sucesso')
         },
-        onError: (error: { response?: { data?: { message?: string } } }) => {
+        onError: (error: any) => {
             toast.error(error?.response?.data?.message ?? 'Erro ao salvar agendamento')
         },
     })
 
     const deleteMutation = useMutation({
-        mutationFn: (id: number) => api.delete(`/schedules/${id}`),
+        mutationFn: (id: number | string) => {
+            if (editing && editing.source !== 'schedule') {
+                return Promise.reject(new Error('Apenas agendamentos podem ser excluídos aqui.'))
+            }
+            return api.delete(`/schedules/${id}`)
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['schedules'] })
+            queryClient.invalidateQueries({ queryKey: ['schedules-unified'] })
             setShowForm(false)
             setEditing(null)
             setForm(emptyForm)
+            toast.success('Excluído com sucesso')
         },
-        onError: (error: { response?: { data?: { message?: string } } }) => {
+        onError: (error: any) => {
             toast.error(error?.response?.data?.message ?? 'Erro ao excluir agendamento')
         },
     })
@@ -164,158 +175,267 @@ export function SchedulesPage() {
         setForm((previous) => ({ ...previous, [key]: value }))
     }
 
-    const previousWeek = () => setWeekOf((current) => {
-        const next = new Date(current)
-        next.setDate(next.getDate() - 7)
-        return next
-    })
+    const previousPeriod = () => {
+        if (viewMode === 'week') {
+            setWeekOf((current) => {
+                const next = new Date(current)
+                next.setDate(next.getDate() - 7)
+                return next
+            })
+        } else {
+            setSelectedDate((current) => {
+                const next = new Date(current)
+                next.setDate(next.getDate() - 1)
+                return next
+            })
+        }
+    }
 
-    const nextWeek = () => setWeekOf((current) => {
-        const next = new Date(current)
-        next.setDate(next.getDate() + 7)
-        return next
-    })
+    const nextPeriod = () => {
+        if (viewMode === 'week') {
+            setWeekOf((current) => {
+                const next = new Date(current)
+                next.setDate(next.getDate() + 7)
+                return next
+            })
+        } else {
+            setSelectedDate((current) => {
+                const next = new Date(current)
+                next.setDate(next.getDate() + 1)
+                return next
+            })
+        }
+    }
 
-    const goToToday = () => setWeekOf(new Date())
+    const goToToday = () => {
+        setWeekOf(new Date())
+        setSelectedDate(new Date())
+    }
 
     const openCreate = (day?: Date) => {
         if (!canManageSchedules) return
-        const start = day ? `${formatDateISO(day)}T09:00` : ''
-        const end = day ? `${formatDateISO(day)}T10:00` : ''
+        const targetDay = day || (viewMode === 'timeline' ? selectedDate : new Date())
+        const start = `${formatDateISO(targetDay)}T09:00`
+        const end = `${formatDateISO(targetDay)}T10:00`
 
         setEditing(null)
         setForm({ ...emptyForm, scheduled_start: start, scheduled_end: end })
         setShowForm(true)
     }
 
-    const openEdit = (schedule: Schedule) => {
+    const openEdit = (item: ScheduleItem) => {
+        if (item.source !== 'schedule') {
+            // CRM/Chamados: abrir detalhe read-only em modal
+            setEditing(item)
+            setForm({
+                title: item.title,
+                technician_id: item.technician.id,
+                customer_id: item.customer?.id ?? '',
+                work_order_id: item.work_order?.id ?? '',
+                scheduled_start: item.start.replace(' ', 'T').slice(0, 16),
+                scheduled_end: item.end.replace(' ', 'T').slice(0, 16),
+                notes: item.notes ?? '',
+                address: item.address ?? '',
+                status: item.status,
+            })
+            setShowDetail(true)
+            return
+        }
         if (!canManageSchedules) return
-        setEditing(schedule)
+
+        setEditing(item)
         setForm({
-            title: schedule.title,
-            technician_id: schedule.technician.id,
-            customer_id: schedule.customer?.id ?? '',
-            work_order_id: schedule.work_order?.id ?? '',
-            scheduled_start: schedule.scheduled_start.replace(' ', 'T').slice(0, 16),
-            scheduled_end: schedule.scheduled_end.replace(' ', 'T').slice(0, 16),
-            notes: schedule.notes ?? '',
-            address: schedule.address ?? '',
-            status: schedule.status,
+            title: item.title,
+            technician_id: item.technician.id,
+            customer_id: item.customer?.id ?? '',
+            work_order_id: item.work_order?.id ?? '',
+            scheduled_start: item.start.replace(' ', 'T').slice(0, 16),
+            scheduled_end: item.end.replace(' ', 'T').slice(0, 16),
+            notes: item.notes ?? '',
+            address: item.address ?? '',
+            status: item.status,
         })
         setShowForm(true)
     }
 
-    const getSchedulesForDay = (day: Date) => schedules.filter((schedule) => schedule.scheduled_start.startsWith(formatDateISO(day)))
+    const getItemsForDay = (day: Date) => scheduleItems.filter((item) => item.start.startsWith(formatDateISO(day)))
     const isToday = (day: Date) => formatDateISO(day) === formatDateISO(new Date())
 
     return (
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold tracking-tight text-surface-900">Agenda</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Agendamentos e visitas dos tecnicos</p>
+                    <h1 className="text-lg font-semibold tracking-tight text-surface-900">Agenda Técnica</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Gestão visual de visitas e atividades</p>
                 </div>
-                {canManageSchedules && (
-                    <Button icon={<Plus className="h-4 w-4" />} onClick={() => openCreate()}>
-                        Novo Agendamento
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    <div className="flex rounded-lg border border-surface-200 bg-surface-50 p-1">
+                        <button
+                            onClick={() => setViewMode('week')}
+                            className={cn(
+                                "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+                                viewMode === 'week' ? "bg-white text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
+                            )}
+                        >
+                            <Calendar className="h-3.5 w-3.5" /> Semana
+                        </button>
+                        <button
+                            onClick={() => setViewMode('timeline')}
+                            className={cn(
+                                "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+                                viewMode === 'timeline' ? "bg-white text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
+                            )}
+                        >
+                            <BarChartHorizontal className="h-3.5 w-3.5" /> Timeline
+                        </button>
+                        <button
+                            onClick={() => setViewMode('map')}
+                            className={cn(
+                                "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+                                viewMode === 'map' ? "bg-white text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
+                            )}
+                        >
+                            <MapIcon className="h-3.5 w-3.5" /> Mapa
+                        </button>
+                    </div>
+
+                    {canManageSchedules && (
+                        <Button icon={<Plus className="h-4 w-4" />} onClick={() => openCreate()}>
+                            Novo
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={previousWeek}><ChevronLeft className="h-4 w-4" /></Button>
+                    <IconButton label="Anterior" icon={<ChevronLeft className="h-4 w-4" />} onClick={previousPeriod} />
                     <button onClick={goToToday} className="rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100 transition-colors">
                         Hoje
                     </button>
-                    <Button variant="ghost" size="sm" onClick={nextWeek}><ChevronRight className="h-4 w-4" /></Button>
+                    <IconButton label="Próximo" icon={<ChevronRight className="h-4 w-4" />} onClick={nextPeriod} />
                     <span className="ml-2 text-sm font-medium text-surface-600">
-                        {weekDays[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {viewMode === 'week' && (
+                            <>{weekDays[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</>
+                        )}
+                        {viewMode === 'timeline' && (
+                            <>{selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</>
+                        )}
                     </span>
                 </div>
 
                 <select
                     value={technicianFilter}
+                    title="Filtrar por técnico"
                     onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setTechnicianFilter(event.target.value)}
-                    className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                    className="rounded-lg border border-default bg-surface-50 px-3.5 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                 >
-                    <option value="">Todos os tecnicos</option>
+                    <option value="">Todos os técnicos</option>
                     {technicians.map((technician) => (
                         <option key={technician.id} value={technician.id}>{technician.name}</option>
                     ))}
                 </select>
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
-                {weekDays.map((day) => (
-                    <div
-                        key={formatDateISO(day)}
-                        className={cn(
-                            'min-h-[200px] rounded-xl border bg-surface-0 p-2 transition-colors',
-                            isToday(day) ? 'border-brand-300 bg-brand-50/50' : 'border-default'
-                        )}
-                    >
-                        <div className="mb-2 flex items-center justify-between">
-                            <span className={cn('text-xs font-semibold uppercase', isToday(day) ? 'text-brand-700' : 'text-surface-500')}>
-                                {formatDayLabel(day)}
-                            </span>
-                            {canManageSchedules && (
-                                <button onClick={() => openCreate(day)} className="rounded p-0.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600">
-                                    <Plus className="h-3 w-3" />
-                                </button>
+            {viewMode === 'week' ? (
+                <div className="grid grid-cols-7 gap-2">
+                    {weekDays.map((day) => (
+                        <div
+                            key={formatDateISO(day)}
+                            className={cn(
+                                'min-h-[200px] rounded-xl border bg-surface-0 p-2 transition-colors',
+                                isToday(day) ? 'border-brand-300 bg-brand-50/50' : 'border-default'
                             )}
-                        </div>
+                        >
+                            <div className="mb-2 flex items-center justify-between">
+                                <span className={cn('text-xs font-semibold uppercase', isToday(day) ? 'text-brand-700' : 'text-surface-500')}>
+                                    {formatDayLabel(day)}
+                                </span>
+                                {canManageSchedules && (
+                                    <button onClick={() => openCreate(day)} title="Novo agendamento" className="rounded p-0.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600">
+                                        <Plus className="h-3 w-3" />
+                                    </button>
+                                )}
+                            </div>
 
-                        <div className="space-y-1.5">
-                            {getSchedulesForDay(day).map((schedule) => (
-                                <button
-                                    key={schedule.id}
-                                    onClick={() => openEdit(schedule)}
-                                    className={cn(
-                                        'group w-full rounded-lg border border-surface-100 bg-white p-2 text-left shadow-sm transition-all',
-                                        canManageSchedules ? 'hover:shadow-card' : 'cursor-default'
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-medium text-surface-400">{formatTime(schedule.scheduled_start)}</span>
-                                        <Badge variant={statusConfig[schedule.status]?.variant ?? 'default'} className="px-1 py-0 text-[9px]">
-                                            {statusConfig[schedule.status]?.label}
-                                        </Badge>
-                                    </div>
-                                    <p className="mt-0.5 truncate text-xs font-medium text-surface-800">{schedule.title}</p>
-                                    <p className="flex items-center gap-0.5 truncate text-[10px] text-surface-500">
-                                        <User className="h-2.5 w-2.5" />
-                                        {schedule.technician.name}
-                                    </p>
-                                    {schedule.work_order && (
-                                        <p className="truncate text-[10px] text-brand-500">{workOrderIdentifier(schedule.work_order)}</p>
-                                    )}
-                                </button>
-                            ))}
+                            <div className="space-y-1.5">
+                                {getItemsForDay(day).map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => openEdit(item)}
+                                        className={cn(
+                                            'group w-full rounded-lg border border-surface-100 bg-white p-2 text-left shadow-sm transition-all',
+                                            canManageSchedules ? 'hover:shadow-card' : 'cursor-default'
+                                        )}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-medium text-surface-400">{formatTime(item.start)}</span>
+                                            <Badge variant={statusConfig[item.status]?.variant ?? 'default'} className="px-1 py-0 text-[9px]">
+                                                {statusConfig[item.status]?.label ?? item.status}
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-0.5 truncate text-xs font-medium text-surface-800">{item.title}</p>
+                                        <p className="flex items-center gap-0.5 truncate text-[10px] text-surface-500">
+                                            <User className="h-2.5 w-2.5" />
+                                            {item.technician?.name}
+                                        </p>
+                                        {item.work_order && (
+                                            <p className="truncate text-[10px] text-brand-500">{workOrderIdentifier(item.work_order)}</p>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : viewMode === 'timeline' ? (
+                <TechnicianGantt
+                    date={selectedDate}
+                    technicians={technicianFilter ? technicians.filter(t => t.id === Number(technicianFilter)) : technicians}
+                    items={scheduleItems}
+                    onItemClick={openEdit}
+                />
+            ) : (
+                <TechnicianMap
+                    items={scheduleItems}
+                    technicianId={technicianFilter}
+                />
+            )}
 
             <Modal open={showForm && canManageSchedules} onOpenChange={setShowForm} title={editing ? 'Editar Agendamento' : 'Novo Agendamento'} size="lg">
                 <form onSubmit={(event) => { event.preventDefault(); saveMutation.mutate(form) }} className="space-y-4">
+                    {conflictData?.data?.conflict && (
+                        <div className="rounded-lg bg-danger-50 p-3 text-xs text-danger-600 border border-danger-100 flex items-center gap-2">
+                            <span className="font-bold">Aviso de Conflito:</span>
+                            <span>{conflictData.data.message} ({conflictData.data.details.title})</span>
+                        </div>
+                    )}
+
                     <Input label="Titulo" value={form.title} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('title', event.target.value)} required placeholder="Ex: Manutencao preventiva" />
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tecnico *</label>
-                            <select value={form.technician_id} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('technician_id', event.target.value)} required
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico *</label>
+                            <select value={form.technician_id} title="Técnico" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('technician_id', event.target.value)} required
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecionar</option>
                                 {technicians.map((technician) => (
                                     <option key={technician.id} value={technician.id}>{technician.name}</option>
                                 ))}
                             </select>
+
+                            <TechnicianRecommendationSelector
+                                start={form.scheduled_start}
+                                end={form.scheduled_end}
+                                serviceId={undefined} // TODO: Add service selection later
+                                currentTechnicianId={form.technician_id}
+                                onSelect={(techId) => setFormField('technician_id', techId)}
+                            />
                         </div>
 
                         <div>
                             <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS Vinculada</label>
-                            <select value={form.work_order_id} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('work_order_id', event.target.value)}
+                            <select value={form.work_order_id} title="OS Vinculada" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('work_order_id', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhuma</option>
                                 {workOrders.map((workOrder) => (
@@ -330,7 +450,7 @@ export function SchedulesPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cliente</label>
-                            <select value={form.customer_id} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('customer_id', event.target.value)}
+                            <select value={form.customer_id} title="Cliente" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('customer_id', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
                                 {customers.map((customer) => (
@@ -341,9 +461,9 @@ export function SchedulesPage() {
 
                         <div>
                             <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Status</label>
-                            <select value={form.status} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('status', event.target.value)}
+                            <select value={form.status} title="Status" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('status', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                                {Object.entries(statusConfig).map(([key, value]) => (
+                                {Object.entries(statusConfig).filter(([key]) => ['scheduled', 'confirmed', 'completed', 'cancelled'].includes(key)).map(([key, value]) => (
                                     <option key={key} value={key}>{value.label}</option>
                                 ))}
                             </select>
@@ -373,7 +493,6 @@ export function SchedulesPage() {
                                     onClick={() => {
                                         if (confirm('Excluir?')) {
                                             deleteMutation.mutate(editing.id)
-                                            setShowForm(false)
                                         }
                                     }}
                                 >
@@ -387,6 +506,59 @@ export function SchedulesPage() {
                         </div>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Modal de Detalhe (read-only para CRM/Chamados) */}
+            <Modal open={showDetail} onOpenChange={setShowDetail} title={`Detalhe: ${editing?.title ?? ''}`} size="lg">
+                {editing && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Badge variant={statusConfig[editing.status]?.variant ?? 'default'}>
+                                {statusConfig[editing.status]?.label ?? editing.status}
+                            </Badge>
+                            <span className="text-xs text-surface-500 capitalize">Origem: {editing.source}</span>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <p className="text-xs font-medium text-surface-500">Técnico</p>
+                                <p className="text-sm text-surface-900">{editing.technician?.name ?? '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-surface-500">Cliente</p>
+                                <p className="text-sm text-surface-900">{editing.customer?.name ?? '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-surface-500">Início</p>
+                                <p className="text-sm text-surface-900">{formatTime(editing.start)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-surface-500">Fim</p>
+                                <p className="text-sm text-surface-900">{formatTime(editing.end)}</p>
+                            </div>
+                            {editing.work_order && (
+                                <div>
+                                    <p className="text-xs font-medium text-surface-500">OS Vinculada</p>
+                                    <p className="text-sm text-brand-600">{workOrderIdentifier(editing.work_order)}</p>
+                                </div>
+                            )}
+                            {editing.address && (
+                                <div>
+                                    <p className="text-xs font-medium text-surface-500">Endereço</p>
+                                    <p className="text-sm text-surface-900">{editing.address}</p>
+                                </div>
+                            )}
+                        </div>
+                        {editing.notes && (
+                            <div>
+                                <p className="text-xs font-medium text-surface-500">Observações</p>
+                                <p className="text-sm text-surface-700 bg-surface-50 rounded-lg p-3 border border-subtle">{editing.notes}</p>
+                            </div>
+                        )}
+                        <div className="flex justify-end border-t border-subtle pt-4">
+                            <Button variant="outline" onClick={() => setShowDetail(false)}>Fechar</Button>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </div>
     )

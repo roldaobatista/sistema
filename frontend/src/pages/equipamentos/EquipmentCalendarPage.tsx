@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/pageheader'
 
 interface Alert {
     id: number
@@ -61,7 +62,6 @@ export default function EquipmentCalendarPage() {
     const todayDay = new Date().getDate()
     const isCurrentMonth = new Date().getFullYear() === year && new Date().getMonth() === month
 
-    // Grouped list for sidebar
     const overdueAlerts = alerts.filter(a => a.days_remaining < 0)
     const upcomingAlerts = alerts.filter(a => a.days_remaining >= 0 && a.days_remaining <= 30)
 
@@ -69,20 +69,18 @@ export default function EquipmentCalendarPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Agenda de Calibrações</h1>
-                    <p className="text-[13px] text-surface-500">Visualize os vencimentos de calibração por mês</p>
-                </div>
-                <Link
-                    to="/equipamentos"
-                    className="flex items-center gap-2 rounded-lg border border-surface-200 px-4 py-2.5 text-[13px] font-medium text-surface-700 hover:bg-surface-50"
-                >
-                    <Scale size={16} />
-                    Ver Equipamentos
-                </Link>
-            </div>
+            <PageHeader
+                title="Agenda de Calibrações"
+                subtitle="Visualize os vencimentos de calibração por mês"
+                actions={[
+                    {
+                        label: 'Ver Equipamentos',
+                        icon: <Scale size={16} />,
+                        variant: 'outline' as const,
+                        href: '/equipamentos',
+                    },
+                ]}
+            />
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                 {/* Calendar */}

@@ -5,9 +5,9 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 import { QUOTE_STATUS } from '@/lib/constants'
 import type { Quote, QuoteEquipment, QuoteItem } from '@/types/quote'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
 import { ArrowLeft, Save, Plus, Trash2, Package, Wrench } from 'lucide-react'
 
 const formatCurrency = (v: number | string) => {
@@ -103,6 +103,15 @@ export function QuoteEditPage() {
         })
     }
 
+    const isMutable = quote ? (quote.status === QUOTE_STATUS.DRAFT || quote.status === QUOTE_STATUS.REJECTED) : true
+
+    useEffect(() => {
+        if (quote && !isMutable) {
+            toast.error('Orçamento não pode ser editado neste status')
+            navigate(`/orcamentos/${id}`)
+        }
+    }, [quote, isMutable, navigate, id])
+
     if (isLoading) {
         return (
             <div className="space-y-6">
@@ -121,10 +130,7 @@ export function QuoteEditPage() {
         )
     }
 
-    const isMutable = quote.status === QUOTE_STATUS.DRAFT || quote.status === QUOTE_STATUS.REJECTED
     if (!isMutable) {
-        toast.error('Orçamento não pode ser editado neste status')
-        navigate(`/orcamentos/${id}`)
         return null
     }
 

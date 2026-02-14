@@ -1,0 +1,188 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: K
+      - generic [ref=e7]: KALIBRIUM
+    - navigation [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]: Principal
+        - generic [ref=e11]:
+          - link "Dashboard" [ref=e13] [cursor=pointer]:
+            - /url: /
+            - img [ref=e14]
+            - generic [ref=e19]: Dashboard
+            - button "Adicionar aos favoritos" [ref=e20]:
+              - img [ref=e21]
+          - button "Central" [ref=e24]:
+            - img [ref=e25]
+            - generic [ref=e28]: Central
+            - img [ref=e29]
+          - link "Notificações" [ref=e32] [cursor=pointer]:
+            - /url: /notificacoes
+            - img [ref=e33]
+            - generic [ref=e36]: Notificações
+            - button "Adicionar aos favoritos" [ref=e37]:
+              - img [ref=e38]
+      - generic [ref=e40]:
+        - generic [ref=e41]: Comercial
+        - generic [ref=e42]:
+          - button "CRM" [ref=e44]:
+            - img [ref=e45]
+            - generic [ref=e48]: CRM
+            - img [ref=e49]
+          - link "Orçamentos" [ref=e52] [cursor=pointer]:
+            - /url: /orcamentos
+            - img [ref=e53]
+            - generic [ref=e56]: Orçamentos
+            - button "Adicionar aos favoritos" [ref=e57]:
+              - img [ref=e58]
+          - button "Chamados" [ref=e61]:
+            - img [ref=e62]
+            - generic [ref=e64]: Chamados
+            - img [ref=e65]
+      - generic [ref=e67]:
+        - generic [ref=e68]: Operacional
+        - generic [ref=e69]:
+          - button "Ordens de Serviço" [ref=e71]:
+            - img [ref=e72]
+            - generic [ref=e75]: Ordens de Serviço
+            - img [ref=e76]
+          - link "Contratos Recorrentes" [ref=e79] [cursor=pointer]:
+            - /url: /os/contratos-recorrentes
+            - img [ref=e80]
+            - generic [ref=e83]: Contratos Recorrentes
+            - button "Adicionar aos favoritos" [ref=e84]:
+              - img [ref=e85]
+          - button "Técnicos" [ref=e88]:
+            - img [ref=e89]
+            - generic [ref=e91]: Técnicos
+            - img [ref=e92]
+          - button "Equipamentos" [ref=e95]:
+            - img [ref=e96]
+            - generic [ref=e100]: Equipamentos
+            - img [ref=e101]
+      - generic [ref=e103]:
+        - generic [ref=e104]: Cadastros & Estoque
+        - generic [ref=e105]:
+          - button "Cadastros" [ref=e107]:
+            - img [ref=e108]
+            - generic [ref=e112]: Cadastros
+            - img [ref=e113]
+          - generic [ref=e115]:
+            - button "Estoque" [ref=e116]:
+              - img [ref=e117]
+              - generic [ref=e120]: Estoque
+              - img [ref=e121]
+            - generic [ref=e123]:
+              - link "Dashboard" [ref=e124] [cursor=pointer]:
+                - /url: /estoque
+                - img [ref=e125]
+                - generic [ref=e127]: Dashboard
+              - link "Movimentações" [ref=e128] [cursor=pointer]:
+                - /url: /estoque/movimentacoes
+                - img [ref=e129]
+                - generic [ref=e132]: Movimentações
+      - generic [ref=e133]:
+        - generic [ref=e134]: Financeiro
+        - generic [ref=e135]:
+          - button "Financeiro" [ref=e137]:
+            - img [ref=e138]
+            - generic [ref=e140]: Financeiro
+            - img [ref=e141]
+          - link "Relatórios" [ref=e144] [cursor=pointer]:
+            - /url: /relatorios
+            - img [ref=e145]
+            - generic [ref=e147]: Relatórios
+            - button "Adicionar aos favoritos" [ref=e148]:
+              - img [ref=e149]
+      - generic [ref=e151]:
+        - generic [ref=e152]: Administração
+        - generic [ref=e153]:
+          - button "Intel. INMETRO" [ref=e155]:
+            - img [ref=e156]
+            - generic [ref=e159]: Intel. INMETRO
+            - img [ref=e160]
+          - link "Importação" [ref=e163] [cursor=pointer]:
+            - /url: /importacao
+            - img [ref=e164]
+            - generic [ref=e167]: Importação
+            - button "Adicionar aos favoritos" [ref=e168]:
+              - img [ref=e169]
+          - button "IAM" [ref=e172]:
+            - img [ref=e173]
+            - generic [ref=e175]: IAM
+            - img [ref=e176]
+          - button "Configurações" [ref=e179]:
+            - img [ref=e180]
+            - generic [ref=e183]: Configurações
+            - img [ref=e184]
+    - button [ref=e187]:
+      - img [ref=e188]
+  - generic [ref=e190]:
+    - banner [ref=e191]:
+      - generic [ref=e192]:
+        - generic [ref=e193]:
+          - img [ref=e194]
+          - text: Calibrações Brasil
+        - button [ref=e199]:
+          - img [ref=e200]
+        - button "Modo Escuro" [ref=e203]:
+          - img [ref=e204]
+        - link "A Administrador" [ref=e206] [cursor=pointer]:
+          - /url: /perfil
+          - generic [ref=e207]: A
+          - generic [ref=e208]: Administrador
+        - button "Sair" [ref=e209]:
+          - img [ref=e210]
+    - main [ref=e213]:
+      - generic [ref=e214]:
+        - generic [ref=e215]:
+          - generic [ref=e216]:
+            - heading "Estoque" [level=1] [ref=e218]
+            - paragraph [ref=e219]: Visão geral do controle de estoque
+          - button "Ver Movimentações" [ref=e221] [cursor=pointer]:
+            - img
+            - text: Ver Movimentações
+        - generic [ref=e222]:
+          - generic [ref=e224]:
+            - img [ref=e226]
+            - generic [ref=e230]:
+              - paragraph [ref=e231]: Total de Produtos
+              - paragraph [ref=e232]: "0"
+          - generic [ref=e234]:
+            - img [ref=e236]
+            - generic [ref=e238]:
+              - paragraph [ref=e239]: Valor em Estoque
+              - paragraph [ref=e240]: R$ 0,00
+          - generic [ref=e242]:
+            - img [ref=e244]
+            - generic [ref=e247]:
+              - paragraph [ref=e248]: Estoque Baixo
+              - paragraph [ref=e249]: "0"
+          - generic [ref=e251]:
+            - img [ref=e253]
+            - generic [ref=e255]:
+              - paragraph [ref=e256]: Sem Estoque
+              - paragraph [ref=e257]: "0"
+        - generic [ref=e258]:
+          - heading "Alertas de Estoque Baixo" [level=2] [ref=e260]:
+            - img [ref=e261]
+            - text: Alertas de Estoque Baixo
+          - table [ref=e264]:
+            - rowgroup [ref=e265]:
+              - row "Produto Categoria Atual Mínimo Deficit" [ref=e266]:
+                - columnheader "Produto" [ref=e267]
+                - columnheader "Categoria" [ref=e268]
+                - columnheader "Atual" [ref=e269]
+                - columnheader "Mínimo" [ref=e270]
+                - columnheader "Deficit" [ref=e271]
+            - rowgroup [ref=e272]:
+              - row "Nenhum produto com estoque baixo 🎉" [ref=e273]:
+                - cell "Nenhum produto com estoque baixo 🎉" [ref=e274]:
+                  - generic [ref=e275]:
+                    - img [ref=e276]
+                    - text: Nenhum produto com estoque baixo 🎉
+```

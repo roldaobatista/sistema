@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Building2, Plus, Pencil, Trash2, Phone, Mail, MapPin, X, Check,
@@ -9,10 +9,10 @@ import { useIbgeStates, useIbgeCities } from '@/hooks/useIbge'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
 
 interface Branch {
     id: number
@@ -101,7 +101,7 @@ export function BranchesPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['branches'] })
             setShowConfirmDelete(null)
-            toast.success('Filial excluída com sucesso!')
+            toast.success('Filial excluÃ­da com sucesso!')
         },
         onError: (err: any) => {
             if (err.response?.status === 409 || err.response?.status === 422) {
@@ -156,7 +156,7 @@ export function BranchesPage() {
         <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
             <XCircle className="h-12 w-12 text-red-400 mb-3" />
             <p className="text-sm font-medium text-surface-700">Erro ao carregar filiais</p>
-            <p className="text-xs text-surface-400 mt-1">Não foi possível buscar os dados. Tente novamente.</p>
+            <p className="text-xs text-surface-400 mt-1">NÃ£o foi possÃ­vel buscar os dados. Tente novamente.</p>
             <Button variant="outline" className="mt-4" icon={<RefreshCw className="h-4 w-4" />} onClick={() => refetch()}>Tentar Novamente</Button>
         </div>
     )
@@ -187,7 +187,7 @@ export function BranchesPage() {
                 <div className="rounded-xl border border-dashed border-surface-300 bg-surface-50 py-16 text-center">
                     <Building2 className="mx-auto mb-3 h-10 w-10 text-surface-300" />
                     <p className="text-sm font-medium text-surface-500">Nenhuma filial cadastrada</p>
-                    <p className="mt-1 text-xs text-surface-400">Crie sua primeira filial para começar</p>
+                    <p className="mt-1 text-xs text-surface-400">Crie sua primeira filial para comeÃ§ar</p>
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -226,7 +226,7 @@ export function BranchesPage() {
                                 {b.address_city && (
                                     <p className="flex items-center gap-1.5">
                                         <MapPin className="h-3 w-3" />
-                                        {b.address_street && `${b.address_street}, ${b.address_number || 'S/N'} — `}
+                                        {b.address_street && `${b.address_street}, ${b.address_number || 'S/N'} â€” `}
                                         {b.address_city}/{b.address_state}
                                     </p>
                                 )}
@@ -242,11 +242,11 @@ export function BranchesPage() {
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                         <Input label="Nome *" value={form.name} onChange={set('name')} required />
-                        <Input label="Código" value={form.code} onChange={set('code')} />
+                        <Input label="CÃ³digo" value={form.code} onChange={set('code')} />
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                         <div className="col-span-2"><Input label="Rua" value={form.address_street} onChange={set('address_street')} /></div>
-                        <Input label="Número" value={form.address_number} onChange={set('address_number')} />
+                        <Input label="NÃºmero" value={form.address_number} onChange={set('address_number')} />
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                         <Input label="Complemento" value={form.address_complement} onChange={set('address_complement')} />
@@ -271,7 +271,7 @@ export function BranchesPage() {
                             <select value={form.address_state} onChange={e => setForm(f => ({ ...f, address_state: e.target.value, address_city: '' }))}
                                 className="w-full rounded-md border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
                                 <option value="">Selecione</option>
-                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
+                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} â€” {s.name}</option>)}
                             </select>
                         </div>
                         <Input label="Telefone" value={form.phone} onChange={set('phone')} />
@@ -302,14 +302,14 @@ export function BranchesPage() {
 
                         {deleteMessage && (
                             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-100">
-                                <p className="font-medium mb-1">Não é possível excluir:</p>
+                                <p className="font-medium mb-1">NÃ£o Ã© possÃ­vel excluir:</p>
                                 <p>{deleteMessage}</p>
                             </div>
                         )}
 
                         {deleteDependencies && (
                             <div className="space-y-2">
-                                <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
+                                <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">VÃ­nculos encontrados:</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     {Object.entries(deleteDependencies).map(([key, count]) => (
                                         <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
@@ -325,11 +325,11 @@ export function BranchesPage() {
                             <Button variant="outline" onClick={() => setShowConfirmDelete(null)}>Cancelar</Button>
                             {deleteDependencies ? (
                                 <Button variant="ghost" disabled className="text-surface-400 cursor-not-allowed">
-                                    Resolva as pendências acima
+                                    Resolva as pendÃªncias acima
                                 </Button>
                             ) : (
                                 <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
-                                    onClick={() => deleteMut.mutate(showConfirmDelete.id)}>
+                                    onClick={() => { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(showConfirmDelete.id) }}>
                                     Excluir Filial
                                 </Button>
                             )}

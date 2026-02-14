@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Merge, AlertTriangle, ArrowRight, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
 
 interface DuplicateGroup {

@@ -1,11 +1,14 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, CreditCard } from 'lucide-react'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 
@@ -107,15 +110,12 @@ export function PaymentMethodsPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Formas de Pagamento</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Metodos de pagamento configuraveis</p>
-                </div>
-                {canCreate && (
-                    <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Forma</Button>
-                )}
-            </div>
+            <PageHeader
+                title="Formas de Pagamento"
+                subtitle="Métodos de pagamento configuráveis"
+                count={methods.length}
+                actions={canCreate ? [{ label: 'Nova Forma', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []}
+            />
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
@@ -123,7 +123,7 @@ export function PaymentMethodsPage() {
                 ) : isError ? (
                     <p className="col-span-full py-12 text-center text-[13px] text-red-600">Nao foi possivel carregar as formas de pagamento.</p>
                 ) : methods.length === 0 ? (
-                    <p className="col-span-full py-12 text-center text-[13px] text-surface-500">Nenhuma forma cadastrada</p>
+                    <div className="col-span-full"><EmptyState icon={<CreditCard className="h-5 w-5 text-surface-300" />} message="Nenhuma forma cadastrada" action={canCreate ? { label: 'Nova Forma', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} /></div>
                 ) : methods.map(method => (
                     <div key={method.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-0 p-4 shadow-card transition-shadow hover:shadow-md">
                         <div className="flex items-center gap-3">
@@ -140,12 +140,10 @@ export function PaymentMethodsPage() {
                                 {method.is_active ? 'Ativo' : 'Inativo'}
                             </Badge>
                             {canUpdate && (
-                                <Button variant="ghost" size="sm" onClick={() => openEdit(method)}><Pencil className="h-4 w-4" /></Button>
+                                <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(method)} className="hover:text-brand-600" />
                             )}
                             {canDelete && (
-                                <Button variant="ghost" size="sm" onClick={() => openDelete(method)}>
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
+                                <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => openDelete(method)} className="hover:text-red-600" />
                             )}
                         </div>
                     </div>

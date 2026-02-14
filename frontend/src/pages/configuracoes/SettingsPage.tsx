@@ -1,18 +1,24 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    Settings, History, Save, Search,
+    Settings, History, Save, Search, Hash, Bell,
     User, Calendar, ArrowRight, Shield,
     MessageSquare, Mail, Building2, GitBranch,
-    ChevronDown, ChevronUp, Download, CheckCircle2,
+    ChevronDown, ChevronUp, Download, CheckCircle2, Eye, Loader2,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { toast } from 'sonner'
 
-type Tab = 'settings' | 'audit'
+type Tab = 'settings' | 'numbering' | 'notifications' | 'audit'
+
+interface NumberingSeq {
+    id: number; entity: string; prefix: string; next_number: number; padding: number
+}
 
 const actionLabels: Record<string, { label: string; variant: any }> = {
     created: { label: 'Criado', variant: 'success' },
@@ -60,6 +66,13 @@ const defaultSettings: SettingItem[] = [
     { key: 'notify_overdue', value: 'true', type: 'boolean', group: 'notification' },
     { key: 'notify_os_completed', value: 'true', type: 'boolean', group: 'notification' },
     { key: 'notify_new_deal', value: 'true', type: 'boolean', group: 'notification' },
+    { key: 'notify_client_os_created', value: 'true', type: 'boolean', group: 'notification' },
+    { key: 'notify_client_os_awaiting', value: 'true', type: 'boolean', group: 'notification' },
+    { key: 'notify_client_os_completed', value: 'true', type: 'boolean', group: 'notification' },
+    { key: 'notify_client_quote_ready', value: 'true', type: 'boolean', group: 'notification' },
+    { key: 'alert_os_no_billing', value: 'true', type: 'boolean', group: 'notification' },
+    { key: 'alert_contract_expiring', value: 'true', type: 'boolean', group: 'notification' },
+    { key: 'alert_certificate_expiring', value: 'true', type: 'boolean', group: 'notification' },
     // WhatsApp
     { key: 'evolution_api_url', value: '', type: 'string', group: 'whatsapp' },
     { key: 'evolution_api_key', value: '', type: 'string', group: 'whatsapp' },
@@ -97,6 +110,13 @@ const settingLabels: Record<string, string> = {
     notify_overdue: 'Notificar Vencimentos',
     notify_os_completed: 'Notificar OS Concluída',
     notify_new_deal: 'Notificar Novo Negócio CRM',
+    notify_client_os_created: 'Notificar Cliente: OS Criada',
+    notify_client_os_awaiting: 'Notificar Cliente: OS Aguardando Aprovação',
+    notify_client_os_completed: 'Notificar Cliente: OS Concluída',
+    notify_client_quote_ready: 'Notificar Cliente: Orçamento Pronto',
+    alert_os_no_billing: 'Alerta Admin: OS Concluída sem Faturamento',
+    alert_contract_expiring: 'Alerta Admin: Contrato Vencendo',
+    alert_certificate_expiring: 'Alerta Admin: Certificado Vencendo',
     evolution_api_url: 'URL da Evolution API',
     evolution_api_key: 'API Key',
     evolution_instance: 'Nome da Instância',
@@ -113,6 +133,15 @@ const settingLabels: Record<string, string> = {
     crm_deal_rot_days: 'Dias Sem Atividade para "Rot" do Negócio',
     crm_enable_scoring: 'Ativar Lead Scoring',
 }
+const entityLabels: Record<string, string> = {
+    equipment: 'Equipamentos',
+    standard_weight: 'Pesos Padrão',
+    work_order: 'Ordens de Serviço',
+    quote: 'Orçamentos',
+    certificate: 'Certificados',
+    invoice: 'Faturas',
+}
+
 export function SettingsPage() {
     const qc = useQueryClient()
     const [tab, setTab] = useState<Tab>('settings')
@@ -121,6 +150,7 @@ export function SettingsPage() {
     const [dateFrom, setDateFrom] = useState('')
     const [dateTo, setDateTo] = useState('')
     const [expandedLog, setExpandedLog] = useState<number | null>(null)
+    const [seqEdits, setSeqEdits] = useState<Record<number, Partial<NumberingSeq>>>({})
 
     // Settings
     const { data: settingsRes } = useQuery({
@@ -156,6 +186,38 @@ export function SettingsPage() {
             setTimeout(() => setSuccessMessage(null), 4000)
         },
     })
+
+    // Numbering Sequences
+    const { data: seqRes } = useQuery({
+        queryKey: ['numbering-sequences'],
+        queryFn: () => api.get('/numbering-sequences'),
+        enabled: tab === 'numbering',
+    })
+    const sequences: NumberingSeq[] = seqRes?.data ?? []
+
+    const seqMut = useMutation({
+        mutationFn: ({ id, data }: { id: number; data: Partial<NumberingSeq> }) =>
+            api.put(`/numbering-sequences/${id}`, data),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['numbering-sequences'] })
+            setSeqEdits({})
+            setSuccessMessage('Numeração atualizada com sucesso!')
+            setTimeout(() => setSuccessMessage(null), 4000)
+        },
+    })
+
+    const getSeqVal = (seq: NumberingSeq, field: keyof NumberingSeq) =>
+        seqEdits[seq.id]?.[field] ?? seq[field]
+
+    const setSeqVal = (id: number, field: string, value: string | number) =>
+        setSeqEdits(p => ({ ...p, [id]: { ...p[id], [field]: value } }))
+
+    const previewNumber = (seq: NumberingSeq) => {
+        const prefix = String(getSeqVal(seq, 'prefix'))
+        const next = Number(getSeqVal(seq, 'next_number'))
+        const pad = Number(getSeqVal(seq, 'padding'))
+        return prefix + String(next).padStart(pad, '0')
+    }
 
     // Audit
     const { data: auditRes } = useQuery({
@@ -194,7 +256,7 @@ export function SettingsPage() {
 
             {/* Tabs */}
             <div className="flex rounded-lg border border-surface-200 bg-surface-50 p-0.5 w-fit">
-                {([{ key: 'settings' as const, label: 'Configurações', icon: Settings }, { key: 'audit' as const, label: 'Auditoria', icon: History }]).map(t => {
+                {([{ key: 'settings' as const, label: 'Configurações', icon: Settings }, { key: 'numbering' as const, label: 'Numeração', icon: Hash }, { key: 'notifications' as const, label: 'Notificações', icon: Bell }, { key: 'audit' as const, label: 'Auditoria', icon: History }]).map(t => {
                     const Icon = t.icon
                     return (
                         <button key={t.key} onClick={() => setTab(t.key)}
@@ -240,6 +302,80 @@ export function SettingsPage() {
                     ))}
                 </div>
             )}
+
+            {/* Numbering Tab */}
+            {tab === 'numbering' && (
+                <div className="space-y-4">
+                    <p className="text-[13px] text-surface-500">Configure o prefixo, próximo número e padding de cada entidade. A numeração é aplicada automaticamente ao criar novos registros.</p>
+                    <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-subtle bg-surface-50">
+                                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Entidade</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Prefixo</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Próximo Nº</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Dígitos</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">
+                                        <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> Preview</span>
+                                    </th>
+                                    <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-subtle">
+                                {sequences.length === 0 ? (
+                                    <tr><td colSpan={6} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhuma sequência configurada. Crie um registro de equipamento ou peso padrão para inicializar.</td></tr>
+                                ) : sequences.map((seq) => (
+                                    <tr key={seq.id} className="hover:bg-surface-50 transition-colors">
+                                        <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{entityLabels[seq.entity] ?? seq.entity}</td>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                value={String(getSeqVal(seq, 'prefix'))}
+                                                onChange={(e) => setSeqVal(seq.id, 'prefix', e.target.value)}
+                                                aria-label={`Prefixo ${entityLabels[seq.entity] ?? seq.entity}`}
+                                                className="w-24 rounded-lg border border-default bg-surface-50 px-2.5 py-1.5 text-sm font-mono focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                type="number" min={1}
+                                                value={Number(getSeqVal(seq, 'next_number'))}
+                                                onChange={(e) => setSeqVal(seq.id, 'next_number', parseInt(e.target.value) || 1)}
+                                                aria-label={`Próximo número ${entityLabels[seq.entity] ?? seq.entity}`}
+                                                className="w-24 rounded-lg border border-default bg-surface-50 px-2.5 py-1.5 text-sm font-mono focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                type="number" min={1} max={10}
+                                                value={Number(getSeqVal(seq, 'padding'))}
+                                                onChange={(e) => setSeqVal(seq.id, 'padding', parseInt(e.target.value) || 1)}
+                                                aria-label={`Dígitos ${entityLabels[seq.entity] ?? seq.entity}`}
+                                                className="w-20 rounded-lg border border-default bg-surface-50 px-2.5 py-1.5 text-sm font-mono focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="inline-flex items-center rounded-md bg-brand-50 px-2.5 py-1 text-sm font-mono font-semibold text-brand-700">
+                                                {previewNumber(seq)}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <Button
+                                                size="sm"
+                                                icon={<Save className="h-3.5 w-3.5" />}
+                                                disabled={!seqEdits[seq.id]}
+                                                loading={seqMut.isPending}
+                                                onClick={() => seqEdits[seq.id] && seqMut.mutate({ id: seq.id, data: seqEdits[seq.id] })}
+                                            >
+                                                Salvar
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Notifications Tab */}
+            {tab === 'notifications' && <NotificationsTab />}
 
             {/* Audit Tab */}
             {tab === 'audit' && (
@@ -379,3 +515,133 @@ export function SettingsPage() {
 }
 
 
+function NotificationsTab() {
+    const { permission, isSubscribed, isLoading, subscribe, unsubscribe, sendTest } = usePushNotifications()
+
+    const statusMap: Record<string, { text: string; color: string }> = {
+        granted: { text: 'Permitido', color: 'text-emerald-600' },
+        denied: { text: 'Bloqueado', color: 'text-red-600' },
+        default: { text: 'Não solicitado', color: 'text-amber-600' },
+        unsupported: { text: 'Não suportado', color: 'text-surface-400' },
+    }
+    const status = statusMap[permission] ?? statusMap.default
+
+    return (
+        <div className="space-y-5">
+            {/* Push Notifications */}
+            <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-surface-700">
+                    <Bell className="h-4 w-4 text-brand-500" />
+                    Push Notifications (Navegador)
+                </h3>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-surface-700">Status da permissão</p>
+                            <p className={cn('text-xs mt-0.5', status.color)}>{status.text}</p>
+                        </div>
+                        {permission === 'denied' && (
+                            <p className="text-xs text-red-500 max-w-xs text-right">
+                                Permissão bloqueada. Altere nas configurações do navegador.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-surface-700">Receber notificações push</p>
+                            <p className="text-xs text-surface-500 mt-0.5">
+                                {isSubscribed
+                                    ? 'Este dispositivo está recebendo notificações'
+                                    : 'Ative para receber notificações neste dispositivo'}
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => isSubscribed ? unsubscribe() : subscribe()}
+                            disabled={isLoading || permission === 'denied' || permission === 'unsupported'}
+                            aria-label={isSubscribed ? 'Desativar push' : 'Ativar push'}
+                            className={cn('relative h-6 w-11 rounded-full transition-colors disabled:opacity-50',
+                                isSubscribed ? 'bg-brand-500' : 'bg-surface-300')}
+                        >
+                            {isLoading ? (
+                                <Loader2 className="absolute top-1 left-3 h-4 w-4 animate-spin text-white" />
+                            ) : (
+                                <span className={cn('absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform shadow',
+                                    isSubscribed && 'translate-x-5')} />
+                            )}
+                        </button>
+                    </div>
+
+                    {isSubscribed && (
+                        <div className="pt-2 border-t border-subtle">
+                            <button
+                                onClick={async () => {
+                                    await sendTest()
+                                    toast.success('Notificação de teste enviada!')
+                                }}
+                                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                            >
+                                Enviar notificação de teste →
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Channel Info */}
+            <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-surface-700">
+                    <Mail className="h-4 w-4 text-brand-500" />
+                    Canais de Notificação
+                </h3>
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-50">
+                        <Mail className="h-5 w-5 text-surface-400" />
+                        <div>
+                            <p className="text-sm font-medium text-surface-700">E-mail</p>
+                            <p className="text-xs text-surface-500">Configure SMTP na aba Configurações → E-mail/SMTP</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-50">
+                        <MessageSquare className="h-5 w-5 text-emerald-500" />
+                        <div>
+                            <p className="text-sm font-medium text-surface-700">WhatsApp</p>
+                            <p className="text-xs text-surface-500">Configure Evolution API na aba Configurações → WhatsApp</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-50">
+                        <Bell className="h-5 w-5 text-brand-500" />
+                        <div>
+                            <p className="text-sm font-medium text-surface-700">Push (Browser/PWA)</p>
+                            <p className="text-xs text-surface-500">Configure VAPID keys no .env do servidor</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Alert Settings Info */}
+            <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-700">
+                    <Shield className="h-4 w-4 text-amber-500" />
+                    Alertas de Negócio
+                </h3>
+                <p className="text-xs text-surface-500 mb-3">
+                    Ative/desative alertas individuais na aba <strong>Configurações → Notificações</strong>.
+                    Os alertas são enviados automaticamente via WhatsApp e Push para os administradores.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                        { label: 'OS sem faturamento', icon: '⚠️' },
+                        { label: 'Contrato vencendo', icon: '📋' },
+                        { label: 'Certificado vencendo', icon: '⚖️' },
+                    ].map(alert => (
+                        <div key={alert.label} className="flex items-center gap-2 p-2.5 rounded-lg border border-subtle bg-surface-50">
+                            <span>{alert.icon}</span>
+                            <span className="text-xs font-medium text-surface-600">{alert.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}

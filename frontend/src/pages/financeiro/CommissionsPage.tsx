@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Plus, Search, CheckCircle, XCircle, AlertCircle, Calendar,
@@ -6,11 +6,12 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
-import { Badge } from '@/components/ui/Badge'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -22,12 +23,10 @@ export function CommissionsPage() {
 
     return (
         <div className='space-y-6'>
-            <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-                <div>
-                    <h1 className='text-xl font-bold text-surface-900 tracking-tight'>Gestão de Comissões</h1>
-                    <p className='text-sm text-surface-500'>Configure regras, acompanhe eventos e realize fechamentos.</p>
-                </div>
-            </div>
+            <PageHeader
+                title='Gestão de Comissões'
+                subtitle='Configure regras, acompanhe eventos e realize fechamentos.'
+            />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className='space-y-4'>
                 <TabsList>

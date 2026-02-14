@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Plus, Trash2, Package, Briefcase, Users, Truck } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/pageheader'
 
 interface ItemForm {
     type: 'product' | 'service'
@@ -155,16 +156,11 @@ export function WorkOrderCreatePage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/os')} className="rounded-lg p-1.5 hover:bg-surface-100">
-                    <ArrowLeft className="h-5 w-5 text-surface-500" />
-                </button>
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Nova Ordem de Serviço</h1>
-                    <p className="text-[13px] text-surface-500">Preencha os dados para abrir uma OS</p>
-                </div>
-            </div>
+            <PageHeader
+                title="Nova Ordem de ServiÃ§o"
+                subtitle="Preencha os dados para abrir uma OS"
+                backTo="/os"
+            />
 
             <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Cliente + Prioridade */}
@@ -194,7 +190,7 @@ export function WorkOrderCreatePage() {
                             )}
                             {form.customer_id && (
                                 <button type="button" onClick={() => { set('customer_id', ''); setCustomerSearch('') }}
-                                    className="mt-1 text-xs text-red-500 hover:underline">Limpar seleção</button>
+                                    className="mt-1 text-xs text-red-500 hover:underline">Limpar seleÃ§Ã£o</button>
                             )}
                         </div>
 
@@ -210,36 +206,36 @@ export function WorkOrderCreatePage() {
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico</label>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">TÃ©cnico</label>
                             <select value={form.assigned_to} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('assigned_to', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                                <option value="">Sem atribuição</option>
+                                <option value="">Sem atribuiÃ§Ã£o</option>
                                 {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
                         </div>
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Defeito Relatado / Descrição *</label>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Defeito Relatado / DescriÃ§Ã£o *</label>
                         <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)}
                             rows={3} required placeholder="Descreva o problema..."
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações Internas</label>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">ObservaÃ§Ãµes Internas</label>
                         <textarea value={form.internal_notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('internal_notes', e.target.value)}
                             rows={2} placeholder="Notas internas..."
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
                 </div>
 
-                {/* Campos v2: Vendedor, Motorista, Nº Manual, Multi-Técnico */}
+                {/* Campos v2: Vendedor, Motorista, NÂº Manual, Multi-TÃ©cnico */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-4">
                     <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2"><Users className="h-4 w-4 text-brand-500" />Equipe e Origem</h2>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Nº OS (manual)</label>
+                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">NÂº OS (manual)</label>
                             <input value={form.os_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('os_number', e.target.value)} placeholder="Ex: 001234"
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                         </div>
@@ -260,9 +256,9 @@ export function WorkOrderCreatePage() {
                             </select>
                         </div>
                     </div>
-                    {/* Multi-técnico */}
+                    {/* Multi-tÃ©cnico */}
                     <div>
-                        <label className="mb-2 block text-[13px] font-medium text-surface-700">Técnicos (múltiplos)</label>
+                        <label className="mb-2 block text-[13px] font-medium text-surface-700">TÃ©cnicos (mÃºltiplos)</label>
                         <div className="flex flex-wrap gap-2">
                             {technicians.map((t: any) => (
                                 <button key={t.id} type="button" onClick={() => setSelectedTechIds(prev => prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id])}
@@ -287,7 +283,7 @@ export function WorkOrderCreatePage() {
                             <Input label="Tipo *" value={newEquip.type} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, type: e.target.value }))} placeholder="Ex: Impressora" />
                             <Input label="Marca" value={newEquip.brand} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, brand: e.target.value }))} />
                             <Input label="Modelo" value={newEquip.model} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, model: e.target.value }))} />
-                            <Input label="Nº Série" value={newEquip.serial_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, serial_number: e.target.value }))} />
+                            <Input label="NÂº SÃ©rie" value={newEquip.serial_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, serial_number: e.target.value }))} />
                         </div>
                     )}
                 </div>
@@ -295,7 +291,7 @@ export function WorkOrderCreatePage() {
                 {/* Itens */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-semibold text-surface-900">Itens (Produtos & Serviços)</h2>
+                        <h2 className="text-sm font-semibold text-surface-900">Itens (Produtos & ServiÃ§os)</h2>
                         <Button variant="ghost" size="sm" type="button" onClick={addItem} icon={<Plus className="h-4 w-4" />}>
                             Adicionar
                         </Button>
@@ -318,26 +314,26 @@ export function WorkOrderCreatePage() {
                                             <button type="button" onClick={() => updateItem(i, 'type', 'service')}
                                                 className={cn('flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors',
                                                     item.type === 'service' ? 'bg-emerald-50 text-emerald-700' : 'text-surface-500 hover:bg-surface-50')}>
-                                                <Briefcase className="h-3 w-3" /> Serviço
+                                                <Briefcase className="h-3 w-3" /> ServiÃ§o
                                             </button>
                                         </div>
                                         <div className="flex-1">
                                             <select value={item.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateItem(i, 'reference_id', e.target.value)}
                                                 className="w-full rounded-lg border border-default bg-surface-0 px-2.5 py-1.5 text-xs focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                                                <option value="">— Selecionar {item.type === 'product' ? 'produto' : 'serviço'} —</option>
+                                                <option value="">â€” Selecionar {item.type === 'product' ? 'produto' : 'serviÃ§o'} â€”</option>
                                                 {(item.type === 'product' ? products : services).map((r: any) => (
-                                                    <option key={r.id} value={r.id}>{r.name} — R$ {item.type === 'product' ? r.sell_price : r.default_price}</option>
+                                                    <option key={r.id} value={r.id}>{r.name} â€” R$ {item.type === 'product' ? r.sell_price : r.default_price}</option>
                                                 ))}
                                             </select>
                                         </div>
-                                        <Button variant="ghost" size="sm" type="button" onClick={() => removeItem(i)}>
+                                        <Button variant="ghost" size="sm" type="button" onClick={() => { if (window.confirm('Deseja realmente excluir?')) removeItem(i) }}>
                                             <Trash2 className="h-4 w-4 text-red-500" />
                                         </Button>
                                     </div>
                                     <div className="grid gap-3 sm:grid-cols-4">
-                                        <Input label="Descrição" value={item.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'description', e.target.value)} />
+                                        <Input label="DescriÃ§Ã£o" value={item.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'description', e.target.value)} />
                                         <Input label="Qtd" type="number" step="0.01" value={item.quantity} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'quantity', e.target.value)} />
-                                        <Input label="Preço Unitário" type="number" step="0.01" value={item.unit_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'unit_price', e.target.value)} />
+                                        <Input label="PreÃ§o UnitÃ¡rio" type="number" step="0.01" value={item.unit_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'unit_price', e.target.value)} />
                                         <div>
                                             <Input label="Desconto" type="number" step="0.01" value={item.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'discount', e.target.value)} />
                                             <p className="mt-1 text-right text-xs font-medium text-surface-600">
@@ -369,7 +365,7 @@ export function WorkOrderCreatePage() {
                                 className="w-28 rounded-lg border border-surface-200 px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
                         </div>
                         {parseFloat(form.discount) > 0 && parseFloat(form.discount_percentage) > 0 && (
-                            <p className="text-xs text-amber-600">⚠ Apenas um tipo de desconto pode ser aplicado. O desconto percentual terá prioridade.</p>
+                            <p className="text-xs text-amber-600">âš  Apenas um tipo de desconto pode ser aplicado. O desconto percentual terÃ¡ prioridade.</p>
                         )}
                         <div className="flex items-center justify-between gap-4 text-sm">
                             <span className="text-surface-600">Valor Deslocamento (R$)</span>
@@ -383,7 +379,7 @@ export function WorkOrderCreatePage() {
                     </div>
                 </div>
 
-                {/* Ações */}
+                {/* AÃ§Ãµes */}
                 <div className="flex items-center justify-end gap-3">
                     <Button variant="outline" type="button" onClick={() => navigate('/os')}>Cancelar</Button>
                     <Button type="submit" loading={saveMut.isPending} disabled={!form.customer_id || !form.description}>

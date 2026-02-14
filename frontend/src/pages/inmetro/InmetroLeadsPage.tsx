@@ -1,6 +1,7 @@
 import { useState, useEffect, type ElementType } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Users, Search, Phone, Mail, ArrowRight, RefreshCw, UserPlus, AlertTriangle, Clock, CheckCircle, Loader2, Download } from 'lucide-react'
+import { Users, Search, Phone, Mail, ArrowRight, RefreshCw, UserPlus, AlertTriangle, AlertOctagon, Clock, CheckCircle, Loader2, Download, LinkIcon, MessageCircle, FileText } from 'lucide-react'
+import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
 import {
     useInmetroLeads,
     useEnrichOwner,
@@ -8,17 +9,22 @@ import {
     useUpdateLeadStatus,
     useEnrichBatch,
     useDeleteOwner,
+    useConversionStats,
+    useCrossReference,
+    useCrossReferenceStats,
+    useExportLeadsPdf,
     type InmetroOwner
 } from '@/hooks/useInmetro'
 import { useAuthStore } from '@/stores/auth-store'
-import { Modal } from '@/components/ui/Modal'
-import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { InmetroOwnerEditModal } from './InmetroOwnerEditModal'
 import { InmetroStatusUpdateModal } from './InmetroStatusUpdateModal'
 
-const priorityConfig: Record<string, { label: string; color: string; icon: ElementType }> = {
+const priorityConfig: Record<string, { label: string; color: string; icon: ElementType; pulse?: boolean }> = {
+    critical: { label: 'CRÍTICO', color: 'bg-red-600 text-white border-red-700', icon: AlertOctagon, pulse: true },
     urgent: { label: 'Urgente', color: 'bg-red-100 text-red-700 border-red-200', icon: AlertTriangle },
     high: { label: 'Alta', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
     normal: { label: 'Normal', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Clock },
@@ -69,9 +75,14 @@ export function InmetroLeadsPage() {
     const enrichBatchMutation = useEnrichBatch()
     const convertMutation = useConvertToCustomer()
     const deleteOwnerMutation = useDeleteOwner()
+    const crossRefMutation = useCrossReference()
+    const exportPdf = useExportLeadsPdf()
 
     const leads: InmetroOwner[] = data?.data ?? []
     const pagination = data || {}
+    const { data: convStats } = useConversionStats()
+    const { data: crossRefStats } = useCrossReferenceStats()
+    const { isSyncing, triggerSync } = useInmetroAutoSync()
 
     const handleEnrich = (ownerId: number) => {
         enrichMutation.mutate(ownerId, {
@@ -168,7 +179,73 @@ export function InmetroLeadsPage() {
                             Exportar CSV
                         </button>
                     )}
+                    {canConvert && (
+                        <button
+                            onClick={() => crossRefMutation.mutate()}
+                            disabled={crossRefMutation.isPending}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
+                        >
+                            {crossRefMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
+                            Cross-Reference CRM
+                        </button>
+                    )}
+                    <button
+                        onClick={triggerSync}
+                        disabled={isSyncing}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors disabled:opacity-50"
+                    >
+                        {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        Atualizar dados
+                    </button>
+                    <button
+                        onClick={() => exportPdf.mutate()}
+                        disabled={exportPdf.isPending}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors disabled:opacity-50"
+                    >
+                        {exportPdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                        Relatório PDF
+                    </button>
                 </div>
+
+                {/* Sync Banner */}
+                {isSyncing && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex items-center gap-3 animate-pulse">
+                        <Loader2 className="h-5 w-5 text-blue-600 animate-spin shrink-0" />
+                        <div>
+                            <p className="text-sm font-medium text-blue-800">Buscando dados do INMETRO...</p>
+                            <p className="text-xs text-blue-600">Importando proprietários e instrumentos do portal RBMLQ.</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* KPI Cards */}
+                {convStats && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="rounded-xl border border-default bg-surface-0 p-4">
+                            <p className="text-xs text-surface-500 font-medium">Total Leads</p>
+                            <p className="text-2xl font-bold text-surface-900 mt-1">{convStats.total_leads}</p>
+                        </div>
+                        <div className="rounded-xl border border-default bg-surface-0 p-4">
+                            <p className="text-xs text-surface-500 font-medium">Convertidos</p>
+                            <p className="text-2xl font-bold text-green-600 mt-1">{convStats.converted}</p>
+                        </div>
+                        <div className="rounded-xl border border-default bg-surface-0 p-4">
+                            <p className="text-xs text-surface-500 font-medium">Taxa de Conversão</p>
+                            <p className="text-2xl font-bold text-brand-600 mt-1">{convStats.conversion_rate}%</p>
+                        </div>
+                        <div className="rounded-xl border border-default bg-surface-0 p-4">
+                            <p className="text-xs text-surface-500 font-medium">Tempo Médio (dias)</p>
+                            <p className="text-2xl font-bold text-amber-600 mt-1">{convStats.avg_days_to_convert ?? '—'}</p>
+                        </div>
+                        {crossRefStats && (
+                            <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                                <p className="text-xs text-green-700 font-medium">Vinculados ao CRM</p>
+                                <p className="text-2xl font-bold text-green-600 mt-1">{crossRefStats.linked}</p>
+                                <p className="text-xs text-green-500">{crossRefStats.link_percentage}% de {crossRefStats.total_owners}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3">
@@ -186,6 +263,7 @@ export function InmetroLeadsPage() {
                         value={filters.priority}
                         onChange={e => setFilters({ ...filters, priority: e.target.value, page: 1 })}
                         className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm"
+                        aria-label="Filtrar por prioridade"
                     >
                         <option value="">Todas prioridades</option>
                         <option value="urgent">🔴 Urgente</option>
@@ -197,6 +275,7 @@ export function InmetroLeadsPage() {
                         value={filters.lead_status}
                         onChange={e => setFilters({ ...filters, lead_status: e.target.value, page: 1 })}
                         className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm"
+                        aria-label="Filtrar por status"
                     >
                         <option value="">Todos status</option>
                         {Object.entries(statusConfig).map(([key, cfg]) => (
@@ -214,6 +293,7 @@ export function InmetroLeadsPage() {
                         value={filters.type}
                         onChange={e => setFilters({ ...filters, type: e.target.value, page: 1 })}
                         className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm"
+                        aria-label="Filtrar por tipo"
                     >
                         <option value="">Todos tipos</option>
                         <option value="PJ">🏢 PJ</option>
@@ -228,13 +308,18 @@ export function InmetroLeadsPage() {
                             <div key={i} className="h-16 bg-surface-100 rounded-xl" />
                         ))}
                     </div>
-                ) : leads.length === 0 ? (
+                ) : leads.length === 0 && !isSyncing ? (
                     <div className="text-center py-16">
                         <Users className="h-12 w-12 text-surface-300 mx-auto mb-3" />
                         <p className="text-surface-500 text-sm">Nenhum lead encontrado.</p>
-                        <p className="text-surface-400 text-xs mt-1">Tente ajustar os filtros ou importe dados primeiro.</p>
+                        <button
+                            onClick={triggerSync}
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+                        >
+                            <RefreshCw className="h-4 w-4" /> Buscar dados do INMETRO
+                        </button>
                     </div>
-                ) : (
+                ) : leads.length === 0 && isSyncing ? null : (
                     <>
                         {/* Table */}
                         <div className="overflow-x-auto rounded-xl border border-default bg-surface-0">
@@ -247,6 +332,7 @@ export function InmetroLeadsPage() {
                                                 checked={selectedIds.length === leads.length && leads.length > 0}
                                                 onChange={toggleAll}
                                                 className="rounded border-surface-300"
+                                                aria-label="Selecionar todos"
                                             />
                                         </th>
                                         <th className="px-3 py-2.5 text-left font-medium text-surface-600">Prioridade</th>
@@ -272,6 +358,7 @@ export function InmetroLeadsPage() {
                                                         checked={selectedIds.includes(lead.id)}
                                                         onChange={() => toggleSelect(lead.id)}
                                                         className="rounded border-surface-300"
+                                                        aria-label={`Selecionar ${lead.name}`}
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2.5">
@@ -295,8 +382,21 @@ export function InmetroLeadsPage() {
                                                 <td className="px-3 py-2.5 text-center font-bold text-surface-700">{lead.instruments_count ?? 0}</td>
                                                 <td className="px-3 py-2.5">
                                                     <div className="flex items-center gap-1">
-                                                        {lead.phone && <span title={lead.phone}><Phone className="h-3.5 w-3.5 text-green-500" /></span>}
-                                                        {lead.email && <span title={lead.email}><Mail className="h-3.5 w-3.5 text-blue-500" /></span>}
+                                                        {lead.phone && (
+                                                            <>
+                                                                <span title={lead.phone}><Phone className="h-3.5 w-3.5 text-green-500" /></span>
+                                                                <a
+                                                                    href={`https://wa.me/55${lead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${lead.name}, somos da Solution e identificamos que seu instrumento necessita de verificação metrológica. Podemos ajudar?`)}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-0.5 rounded hover:bg-green-100 text-green-600 transition-colors"
+                                                                    title="Contato via WhatsApp"
+                                                                >
+                                                                    <MessageCircle className="h-3.5 w-3.5" />
+                                                                </a>
+                                                            </>
+                                                        )}
+                                                        {!lead.phone && lead.email && <span title={lead.email}><Mail className="h-3.5 w-3.5 text-blue-500" /></span>}
                                                         {!lead.phone && !lead.email && <span className="text-xs text-surface-400">—</span>}
                                                     </div>
                                                 </td>

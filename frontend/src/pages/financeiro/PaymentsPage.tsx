@@ -4,9 +4,11 @@ import { ArrowDownCircle, ArrowUpCircle, Calendar, DollarSign, RotateCcw } from 
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 
 interface Payment {
     id: number
@@ -168,15 +170,11 @@ export function PaymentsPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Pagamentos</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Historico consolidado de recebimentos e pagamentos</p>
-                </div>
-                <div className="text-right text-xs text-surface-500">
-                    <p>Total de registros: <strong>{total}</strong></p>
-                </div>
-            </div>
+            <PageHeader
+                title="Pagamentos"
+                subtitle="Historico consolidado de recebimentos e pagamentos"
+                count={total}
+            />
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -254,7 +252,7 @@ export function PaymentsPage() {
                         ) : listError ? (
                             <tr><td colSpan={6} className="px-4 py-12 text-center text-[13px] text-red-600">Erro ao carregar pagamentos</td></tr>
                         ) : payments.length === 0 ? (
-                            <tr><td colSpan={6} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum pagamento encontrado</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-2"><EmptyState icon={<DollarSign className="h-5 w-5 text-surface-300" />} message="Nenhum pagamento encontrado" compact /></td></tr>
                         ) : payments.map(payment => {
                             const isReceivable = payment.payable_type.includes('AccountReceivable')
                             const canReverse = canReversePayment(payment)

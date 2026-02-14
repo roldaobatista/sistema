@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     DollarSign, Plus, Search, ArrowUp, AlertTriangle,
@@ -8,10 +8,13 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { FINANCIAL_STATUS } from '@/lib/constants'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 import { FinancialExportButtons } from '@/components/financial/FinancialExportButtons'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -305,20 +308,15 @@ export function AccountsPayablePage() {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Contas a Pagar</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Despesas, fornecedores e pagamentos</p>
-                </div>
-                <div className="flex gap-2">
-                    <FinancialExportButtons type="payable" />
-                    {canCreate && (
-                        <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-                            Nova Conta
-                        </Button>
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="Contas a Pagar"
+                subtitle="Despesas, fornecedores e pagamentos"
+                count={pagination.total}
+                actions={[
+                    ...(canCreate ? [{ label: 'Nova Conta', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []),
+                ]}
+            />
+            <FinancialExportButtons type="payable" />
 
             {/* Summary Cards */}
             <div className="grid gap-3 sm:grid-cols-5">
@@ -416,7 +414,7 @@ export function AccountsPayablePage() {
                                 </td>
                             </tr>
                         ) : records.length === 0 ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhuma conta encontrada</td></tr>
+                            <tr><td colSpan={7} className="px-4 py-2"><EmptyState icon={<DollarSign className="h-5 w-5 text-surface-300" />} message="Nenhuma conta encontrada" action={canCreate ? { label: 'Nova Conta', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} compact /></td></tr>
                         ) : records.map(r => (
                             <tr key={r.id} className="hover:bg-surface-50 transition-colors duration-100">
                                 <td className="px-4 py-3">
@@ -434,26 +432,20 @@ export function AccountsPayablePage() {
                                 <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-surface-900">{fmtBRL(r.amount)}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => loadDetail(r)}><Eye className="h-4 w-4" /></Button>
+                                        <IconButton label="Ver detalhes" icon={<Eye className="h-4 w-4" />} onClick={() => loadDetail(r)} />
                                         {canUpdate && r.status !== FINANCIAL_STATUS.PAID && r.status !== FINANCIAL_STATUS.CANCELLED && (
-                                            <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
-                                                <Pencil className="h-4 w-4 text-surface-500" />
-                                            </Button>
+                                            <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(r)} className="hover:text-brand-600" />
                                         )}
                                         {canSettle && r.status !== FINANCIAL_STATUS.PAID && r.status !== FINANCIAL_STATUS.CANCELLED && (
-                                            <Button variant="ghost" size="sm" onClick={() => {
+                                            <IconButton label="Registrar pagamento" icon={<ArrowUp className="h-4 w-4" />} onClick={() => {
                                                 setShowPay(r)
                                                 const remaining = Number(r.amount) - Number(r.amount_paid)
                                                 setPayForm({ amount: remaining.toFixed(2), payment_method: 'pix', payment_date: new Date().toISOString().split('T')[0], notes: '' })
                                                 setPayErrors({})
-                                            }}>
-                                                <ArrowUp className="h-4 w-4 text-emerald-600" />
-                                            </Button>
+                                            }} className="hover:text-emerald-600" />
                                         )}
                                         {canDelete && (
-                                            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)}>
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </Button>
+                                            <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteTarget(r)} className="hover:text-red-600" />
                                         )}
                                     </div>
                                 </td>

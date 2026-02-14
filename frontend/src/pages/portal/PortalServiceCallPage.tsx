@@ -47,8 +47,14 @@ export function PortalServiceCallPage() {
             await api.post('/portal/service-calls', payload)
             toast.success('Chamado aberto com sucesso!')
             navigate('/portal/os')
-        } catch {
-            toast.error('Erro ao abrir chamado.')
+        } catch (error: any) {
+            if (error?.response?.status === 422) {
+                toast.error(error.response.data?.message || 'Verifique os campos do formulário')
+            } else if (error?.response?.status === 403) {
+                toast.error('Sem permissão para abrir chamado')
+            } else {
+                toast.error(error?.response?.data?.message || 'Erro ao abrir chamado')
+            }
         }
     }
 

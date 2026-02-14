@@ -1,8 +1,8 @@
 {
-  "name": "Sistema OS",
-  "short_name": "SistemaOS",
+  "name": "Kalibrium - Sistema OS",
+  "short_name": "Kalibrium",
   "description": "Sistema de Ordens de Serviço — Gestão completa de OS, financeiro e equipe",
-  "start_url": "/",
+  "start_url": "/tech",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#2563eb",
@@ -21,10 +21,62 @@
       "purpose": "any maskable"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Ordens de Serviço",
+      "short_name": "OS",
+      "description": "Ver minhas ordens de serviço",
+      "url": "/tech",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Escanear Código",
+      "short_name": "Escanear",
+      "description": "Abrir leitor de código de barras",
+      "url": "/tech/barcode",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Acesso Rápido",
+      "short_name": "Widget",
+      "description": "Visão rápida de OS e atalhos",
+      "url": "/tech/widget",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Configurações",
+      "short_name": "Config",
+      "description": "Configurações do app",
+      "url": "/tech/configuracoes",
+      "icons": [
+        {
+          "src": "/icons/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
   "categories": [
     "business",
     "productivity"
   ],
   "lang": "pt-BR",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": []
 }

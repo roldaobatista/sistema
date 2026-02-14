@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Shield, Trash2, Copy, ShieldOff, Pencil } from 'lucide-react'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
+import { Modal } from '@/components/ui/modal'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -144,15 +146,12 @@ export function RolesPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Roles</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Gerencie os perfis de acesso{!isLoading && roles.length > 0 ? ` · ${roles.length} perfis` : ''}</p>
-                </div>
-                {canCreate && (
-                    <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Role</Button>
-                )}
-            </div>
+            <PageHeader
+                title="Roles"
+                subtitle="Gerencie os perfis de acesso"
+                count={roles.length}
+                actions={canCreate ? [{ label: 'Nova Role', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []}
+            />
 
             {/* Roles Grid */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -178,15 +177,12 @@ export function RolesPage() {
                         <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Tentar novamente</Button>
                     </div>
                 ) : roles.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-                        <div className="rounded-full bg-surface-100 p-4 mb-4">
-                            <ShieldOff className="h-8 w-8 text-surface-400" />
-                        </div>
-                        <p className="text-sm font-medium text-surface-700">Nenhuma role encontrada</p>
-                        <p className="mt-1 text-xs text-surface-500">Crie a primeira role para definir níveis de acesso.</p>
-                        {canCreate && (
-                            <Button icon={<Plus className="h-4 w-4" />} className="mt-4" onClick={openCreate}>Nova Role</Button>
-                        )}
+                    <div className="col-span-full">
+                        <EmptyState
+                            icon={<ShieldOff className="h-5 w-5 text-surface-300" />}
+                            message="Nenhuma role encontrada. Crie a primeira role para definir níveis de acesso."
+                            action={canCreate ? { label: 'Nova Role', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined}
+                        />
                     </div>
                 ) : roles.map((role) => (
                     <div

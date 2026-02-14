@@ -17,6 +17,10 @@
       }
     }
   </script>
+  <script>
+    // Dark mode — apply before first paint to avoid FOUC
+    try { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); } catch(e) {}
+  </script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
   <link rel="apple-touch-icon" href="/icons/icon-192.svg" />

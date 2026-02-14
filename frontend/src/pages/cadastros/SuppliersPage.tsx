@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Truck, AlertTriangle, Loader2 } from 'lucide-react'
@@ -7,10 +7,13 @@ import { useCnpjLookup } from '@/hooks/useCnpjLookup'
 import { useIbgeStates, useIbgeCities } from '@/hooks/useIbge'
 import { toast } from 'sonner'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 
 interface Supplier {
     id: number; type: 'PF' | 'PJ'; name: string; document: string | null
@@ -106,7 +109,7 @@ export function SuppliersPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['suppliers'] })
             setShowConfirmDelete(null)
-            toast.success('Fornecedor excluído com sucesso!')
+            toast.success('Fornecedor excluÃ­do com sucesso!')
         },
         onError: (err: any) => {
             if (err.response?.status === 409 || err.response?.status === 422) {
@@ -154,13 +157,12 @@ export function SuppliersPage() {
 
     return (
         <div className="space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-bold text-surface-900 tracking-tight">Fornecedores</h1>
-                    <p className="mt-0.5 text-sm text-surface-500">Cadastro de fornecedores e parceiros</p>
-                </div>
-                <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Novo Fornecedor</Button>
-            </div>
+            <PageHeader
+                title="Fornecedores"
+                subtitle="Cadastro de fornecedores e parceiros"
+                count={suppliers.length}
+                actions={[{ label: 'Novo Fornecedor', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }]}
+            />
 
             <div className="max-w-sm">
                 <div className="relative">
@@ -180,12 +182,19 @@ export function SuppliersPage() {
                             <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Contato</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Cidade/UF</th>
                             <th className="px-3.5 py-2.5 text-center text-[11px] font-medium uppercase tracking-wider text-surface-500">Status</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
+                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {suppliers.length === 0 ? (
-                            <tr><td colSpan={6} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum fornecedor encontrado</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-2">
+                                <EmptyState
+                                    icon={<Truck className="h-5 w-5 text-surface-300" />}
+                                    message="Nenhum fornecedor encontrado"
+                                    action={{ label: 'Novo Fornecedor', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }}
+                                    compact
+                                />
+                            </td></tr>
                         ) : suppliers.map(s => (
                             <tr key={s.id} className="hover:bg-surface-50 transition-colors duration-100 cursor-pointer" onClick={() => setShowDetail(s)}>
                                 <td className="px-4 py-3">
@@ -200,14 +209,14 @@ export function SuppliersPage() {
                                     </div>
                                 </td>
                                 <td className="hidden px-4 py-3 text-[13px] text-surface-600 md:table-cell">
-                                    {s.document || <span className="text-surface-400">—</span>}
+                                    {s.document || <span className="text-surface-400">â€”</span>}
                                 </td>
                                 <td className="hidden px-4 py-3 lg:table-cell">
-                                    <div className="text-[13px] text-surface-600">{s.email || '—'}</div>
+                                    <div className="text-[13px] text-surface-600">{s.email || 'â€”'}</div>
                                     <div className="text-xs text-surface-400">{s.phone || ''}</div>
                                 </td>
                                 <td className="hidden px-4 py-3 text-[13px] text-surface-600 lg:table-cell">
-                                    {s.address_city ? `${s.address_city}/${s.address_state}` : '—'}
+                                    {s.address_city ? `${s.address_city}/${s.address_state}` : 'â€”'}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-center">
                                     <Badge variant={s.is_active ? 'success' : 'danger'}>
@@ -216,14 +225,12 @@ export function SuppliersPage() {
                                 </td>
                                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="sm" onClick={() => {
+                                        <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(s)} className="hover:text-brand-600" />
+                                        <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => {
                                             setShowConfirmDelete(s)
                                             setDeleteDependencies(null)
                                             setDeleteMessage(null)
-                                        }}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                        </Button>
+                                        }} className="hover:text-red-600" />
                                     </div>
                                 </td>
                             </tr>
@@ -241,8 +248,8 @@ export function SuppliersPage() {
                             <select value={form.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('type', e.target.value as 'PF' | 'PJ')}
                                 aria-label="Tipo de pessoa"
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                                <option value="PJ">Pessoa Jurídica</option>
-                                <option value="PF">Pessoa Física</option>
+                                <option value="PJ">Pessoa JurÃ­dica</option>
+                                <option value="PF">Pessoa FÃ­sica</option>
                             </select>
                         </div>
                         <div className="relative">
@@ -255,7 +262,7 @@ export function SuppliersPage() {
                                 </button>
                             )}
                         </div>
-                        <Input label={form.type === 'PJ' ? 'Razão Social' : 'Nome'} value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
+                        <Input label={form.type === 'PJ' ? 'RazÃ£o Social' : 'Nome'} value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <Input label="Nome Fantasia" value={form.trade_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('trade_name', e.target.value)} />
@@ -270,7 +277,7 @@ export function SuppliersPage() {
                         <div className="sm:col-span-2">
                             <Input label="Rua" value={form.address_street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_street', e.target.value)} />
                         </div>
-                        <Input label="Número" value={form.address_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_number', e.target.value)} />
+                        <Input label="NÃºmero" value={form.address_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_number', e.target.value)} />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-4">
                         <Input label="Complemento" value={form.address_complement} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_complement', e.target.value)} />
@@ -289,12 +296,12 @@ export function SuppliersPage() {
                             <select value={form.address_state} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { set('address_state', e.target.value); set('address_city', ''); }}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecione</option>
-                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
+                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} â€” {s.name}</option>)}
                             </select>
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">ObservaÃ§Ãµes</label>
                         <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
@@ -315,27 +322,27 @@ export function SuppliersPage() {
                 {showDetail && (
                     <div className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <div><span className="text-xs text-surface-500">Tipo</span><p className="text-sm font-medium">{showDetail.type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}</p></div>
-                            <div><span className="text-xs text-surface-500">Documento</span><p className="text-sm font-medium font-mono">{showDetail.document || '—'}</p></div>
-                            <div><span className="text-xs text-surface-500">{showDetail.type === 'PJ' ? 'Razão Social' : 'Nome'}</span><p className="text-sm font-medium">{showDetail.name}</p></div>
-                            <div><span className="text-xs text-surface-500">Nome Fantasia</span><p className="text-sm font-medium">{showDetail.trade_name ?? '—'}</p></div>
-                            <div><span className="text-xs text-surface-500">E-mail</span><p className="text-sm font-medium">{showDetail.email ?? '—'}</p></div>
-                            <div><span className="text-xs text-surface-500">Telefone</span><p className="text-sm font-medium">{showDetail.phone ?? '—'}</p></div>
+                            <div><span className="text-xs text-surface-500">Tipo</span><p className="text-sm font-medium">{showDetail.type === 'PJ' ? 'Pessoa JurÃ­dica' : 'Pessoa FÃ­sica'}</p></div>
+                            <div><span className="text-xs text-surface-500">Documento</span><p className="text-sm font-medium font-mono">{showDetail.document || 'â€”'}</p></div>
+                            <div><span className="text-xs text-surface-500">{showDetail.type === 'PJ' ? 'RazÃ£o Social' : 'Nome'}</span><p className="text-sm font-medium">{showDetail.name}</p></div>
+                            <div><span className="text-xs text-surface-500">Nome Fantasia</span><p className="text-sm font-medium">{showDetail.trade_name ?? 'â€”'}</p></div>
+                            <div><span className="text-xs text-surface-500">E-mail</span><p className="text-sm font-medium">{showDetail.email ?? 'â€”'}</p></div>
+                            <div><span className="text-xs text-surface-500">Telefone</span><p className="text-sm font-medium">{showDetail.phone ?? 'â€”'}</p></div>
                         </div>
                         {(showDetail.address_street || showDetail.address_city) && (
                             <div className="border-t border-subtle pt-3">
-                                <span className="text-xs text-surface-500">Endereço</span>
+                                <span className="text-xs text-surface-500">EndereÃ§o</span>
                                 <p className="text-sm font-medium">
                                     {[showDetail.address_street, showDetail.address_number, showDetail.address_complement].filter(Boolean).join(', ')}
                                 </p>
                                 <p className="text-[13px] text-surface-600">
-                                    {[showDetail.address_neighborhood, showDetail.address_city, showDetail.address_state].filter(Boolean).join(' — ')} {showDetail.address_zip && `• CEP ${showDetail.address_zip}`}
+                                    {[showDetail.address_neighborhood, showDetail.address_city, showDetail.address_state].filter(Boolean).join(' â€” ')} {showDetail.address_zip && `â€¢ CEP ${showDetail.address_zip}`}
                                 </p>
                             </div>
                         )}
                         {showDetail.notes && (
                             <div className="border-t border-subtle pt-3">
-                                <span className="text-xs text-surface-500">Observações</span>
+                                <span className="text-xs text-surface-500">ObservaÃ§Ãµes</span>
                                 <p className="text-sm whitespace-pre-wrap">{showDetail.notes}</p>
                             </div>
                         )}
@@ -360,14 +367,14 @@ export function SuppliersPage() {
 
                     {deleteMessage && (
                         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-100">
-                            <p className="font-medium mb-1">Não é possível excluir:</p>
+                            <p className="font-medium mb-1">NÃ£o Ã© possÃ­vel excluir:</p>
                             <p>{deleteMessage}</p>
                         </div>
                     )}
 
                     {deleteDependencies && (
                         <div className="space-y-2">
-                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
+                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">VÃ­nculos encontrados:</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(deleteDependencies).map(([key, count]) => (
                                     <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
@@ -383,11 +390,11 @@ export function SuppliersPage() {
                         <Button variant="outline" onClick={() => setShowConfirmDelete(null)}>Cancelar</Button>
                         {deleteDependencies ? (
                             <Button variant="ghost" disabled className="text-surface-400 cursor-not-allowed">
-                                Resolva as pendências acima
+                                Resolva as pendÃªncias acima
                             </Button>
                         ) : (
                             <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
-                                onClick={() => showConfirmDelete && deleteMut.mutate(showConfirmDelete.id)}>
+                                onClick={() => showConfirmDelete && { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(showConfirmDelete.id) }}>
                                 Excluir Fornecedor
                             </Button>
                         )}

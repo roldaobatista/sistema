@@ -1,4 +1,5 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DollarSign, Check, X, FileText, Clock, CheckCircle, XCircle } from 'lucide-react'
 import api from '@/lib/api'
@@ -29,13 +30,13 @@ export function PortalQuotesPage() {
 
     const approveMut = useMutation({
         mutationFn: (id: number) => api.post(`/portal/quotes/${id}/status`, { action: 'approve' }),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['portal-quotes'] }),
+        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['portal-quotes'] }),
     })
 
     const rejectMut = useMutation({
         mutationFn: ({ id, comments }: { id: number; comments?: string }) =>
             api.post(`/portal/quotes/${id}/status`, { action: 'reject', comments }),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['portal-quotes'] }),
+        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['portal-quotes'] }),
     })
 
     const quotes: any[] = data?.data ?? []
@@ -45,9 +46,9 @@ export function PortalQuotesPage() {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Orçamentos</h1>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">OrÃ§amentos</h1>
                     <p className="mt-0.5 text-[13px] text-surface-500">
-                        {pendingCount > 0 ? `${pendingCount} orçamento(s) aguardando aprovação` : 'Todos os orçamentos'}
+                        {pendingCount > 0 ? `${pendingCount} orÃ§amento(s) aguardando aprovaÃ§Ã£o` : 'Todos os orÃ§amentos'}
                     </p>
                 </div>
             </div>
@@ -57,7 +58,7 @@ export function PortalQuotesPage() {
             ) : quotes.length === 0 ? (
                 <div className="text-center py-12">
                     <FileText className="mx-auto h-10 w-10 text-surface-300" />
-                    <p className="mt-2 text-sm text-surface-400">Nenhum orçamento encontrado</p>
+                    <p className="mt-2 text-sm text-surface-400">Nenhum orÃ§amento encontrado</p>
                 </div>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -78,7 +79,7 @@ export function PortalQuotesPage() {
                                                 <StatusIcon className={cn('h-4 w-4', cfg.color)} />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-surface-900">Orçamento #{q.quote_number ?? q.id}</p>
+                                                <p className="text-sm font-bold text-surface-900">OrÃ§amento #{q.quote_number ?? q.id}</p>
                                                 <p className="text-xs text-surface-400">{fmtDate(q.created_at)}</p>
                                             </div>
                                         </div>
@@ -140,15 +141,15 @@ export function PortalQuotesPage() {
         <>
             {content}
 
-            {/* Modal de Rejeição */}
+            {/* Modal de RejeiÃ§Ã£o */}
             {rejectingId !== null && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-                        <h3 className="text-lg font-semibold text-surface-900 mb-3">Rejeitar Orçamento</h3>
+                        <h3 className="text-lg font-semibold text-surface-900 mb-3">Rejeitar OrÃ§amento</h3>
                         <textarea
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
-                            placeholder="Motivo da rejeição (opcional)..."
+                            placeholder="Motivo da rejeiÃ§Ã£o (opcional)..."
                             rows={3}
                             className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 mb-4"
                         />
@@ -168,7 +169,7 @@ export function PortalQuotesPage() {
                                 disabled={!rejectReason.trim() || rejectMut.isPending}
                                 className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                             >
-                                Confirmar Rejeição
+                                Confirmar RejeiÃ§Ã£o
                             </button>
                         </div>
                     </div>

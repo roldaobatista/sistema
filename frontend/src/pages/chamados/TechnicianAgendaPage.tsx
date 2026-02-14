@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
     ArrowLeft,
@@ -16,8 +16,8 @@ import {
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 const statusLabels: Record<string, { label: string; variant: any; color: string }> = {
     [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', color: '#3b82f6' },

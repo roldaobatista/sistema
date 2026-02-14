@@ -5,10 +5,12 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 
 type AccountType = 'asset' | 'liability' | 'revenue' | 'expense'
 
@@ -356,23 +358,15 @@ export function ChartOfAccountsPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Plano de Contas</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Estrutura contabil para classificacao financeira</p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" icon={<RefreshCw className="h-4 w-4" />} onClick={() => listQuery.refetch()} loading={listQuery.isFetching && !listQuery.isLoading}>
-                        Atualizar
-                    </Button>
-                    {canCreate ? (
-                        <Button icon={<Plus className="h-4 w-4" />} onClick={() => openCreate()}>
-                            Nova Conta
-                        </Button>
-                    ) : null}
-                </div>
-            </div>
+            <PageHeader
+                title="Plano de Contas"
+                subtitle="Estrutura contábil para classificação financeira"
+                count={accounts.length}
+                actions={[
+                    { label: 'Atualizar', onClick: () => listQuery.refetch(), icon: <RefreshCw className="h-4 w-4" />, variant: 'outline' as const },
+                    ...(canCreate ? [{ label: 'Nova Conta', onClick: () => openCreate(), icon: <Plus className="h-4 w-4" /> }] : []),
+                ]}
+            />
 
             <div className="grid gap-3 rounded-xl border border-default bg-surface-0 p-4 shadow-card md:grid-cols-[1fr_180px_180px_auto]">
                 <div className="relative">
@@ -422,15 +416,11 @@ export function ChartOfAccountsPage() {
                 {listQuery.isLoading ? (
                     <p className="py-12 text-center text-sm text-surface-500">Carregando plano de contas...</p>
                 ) : tree.length === 0 ? (
-                    <div className="py-12 text-center">
-                        <FolderTree className="mx-auto h-12 w-12 text-surface-300" />
-                        <p className="mt-3 text-sm text-surface-500">Nenhuma conta encontrada para os filtros atuais</p>
-                        {canCreate ? (
-                            <Button className="mt-4" icon={<Plus className="h-4 w-4" />} onClick={() => openCreate()}>
-                                Criar primeira conta
-                            </Button>
-                        ) : null}
-                    </div>
+                    <EmptyState
+                        icon={<FolderTree className="h-5 w-5 text-surface-300" />}
+                        message="Nenhuma conta encontrada para os filtros atuais"
+                        action={canCreate ? { label: 'Criar primeira conta', onClick: () => openCreate(), icon: <Plus className="h-4 w-4" /> } : undefined}
+                    />
                 ) : (
                     <div className="space-y-1">{tree.map((node) => renderNode(node))}</div>
                 )}

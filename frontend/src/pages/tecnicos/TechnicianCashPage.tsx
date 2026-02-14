@@ -5,9 +5,9 @@ import {
     User, Plus, Minus,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 

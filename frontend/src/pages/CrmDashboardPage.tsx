@@ -8,7 +8,7 @@ import {
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { DEAL_STATUS } from '@/lib/constants'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

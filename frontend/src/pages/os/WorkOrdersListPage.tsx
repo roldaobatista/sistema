@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -7,18 +7,21 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; variant: any; dot?: boolean }> = {
     open: { label: 'Aberta', variant: 'info', dot: true },
     in_progress: { label: 'Em Andamento', variant: 'warning', dot: true },
-    waiting_parts: { label: 'Aguard. Peças', variant: 'warning' },
-    waiting_approval: { label: 'Aguard. Aprovação', variant: 'brand' },
-    completed: { label: 'Concluída', variant: 'success', dot: true },
+    waiting_parts: { label: 'Aguard. PeÃ§as', variant: 'warning' },
+    waiting_approval: { label: 'Aguard. AprovaÃ§Ã£o', variant: 'brand' },
+    completed: { label: 'ConcluÃ­da', variant: 'success', dot: true },
     delivered: { label: 'Entregue', variant: 'success' },
     invoiced: { label: 'Faturada', variant: 'brand' },
     cancelled: { label: 'Cancelada', variant: 'danger' },
@@ -39,7 +42,7 @@ interface WorkOrder {
     equipment: { id: number; type: string; brand: string | null; model: string | null } | null
 }
 const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
-    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
+    wo?.business_number ?? wo?.os_number ?? wo?.number ?? 'â€”'
 
 export function WorkOrdersListPage() {
     const navigate = useNavigate()
@@ -73,7 +76,7 @@ export function WorkOrdersListPage() {
 
     const formatBRL = (v: string) => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
-    // Status stats — from backend status_counts (global, not paginated)
+    // Status stats â€” from backend status_counts (global, not paginated)
     const statusCounts: Record<string, number> = res?.data?.status_counts ?? {}
     const totalRecords = res?.data?.total ?? 0
     const openCount = statusCounts['open'] ?? 0
@@ -89,7 +92,7 @@ export function WorkOrdersListPage() {
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/work-orders/${id}`),
         onSuccess: () => {
-            toast.success('OS excluída com sucesso')
+            toast.success('OS excluÃ­da com sucesso')
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             setDeleteId(null)
         },
@@ -117,7 +120,7 @@ export function WorkOrdersListPage() {
             link.click()
             link.remove()
             window.URL.revokeObjectURL(url)
-            toast.success('Exportação concluída')
+            toast.success('ExportaÃ§Ã£o concluÃ­da')
         } catch {
             toast.error('Erro ao exportar CSV')
         }
@@ -126,22 +129,15 @@ export function WorkOrdersListPage() {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Ordens de Serviço</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Gerencie suas ordens de serviço</p>
-                </div>
-                <div className="flex gap-2">
-                    {hasPermission('os.work_order.export') && (
-                        <Button variant="outline" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Exportar</Button>
-                    )}
-                    {hasPermission('os.work_order.create') && (
-                        <Button icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/os/nova')}>
-                            Nova OS
-                        </Button>
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="Ordens de ServiÃ§o"
+                subtitle="Gerencie suas ordens de serviÃ§o"
+                count={totalRecords}
+                actions={[
+                    ...(hasPermission('os.work_order.export') ? [{ label: 'Exportar', onClick: handleExport, icon: <Download className="h-4 w-4" />, variant: 'outline' as const }] : []),
+                    ...(hasPermission('os.work_order.create') ? [{ label: 'Nova OS', onClick: () => navigate('/os/nova'), icon: <Plus className="h-4 w-4" /> }] : []),
+                ]}
+            />
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -158,7 +154,7 @@ export function WorkOrdersListPage() {
                 ))}
             </div>
 
-            {/* Status flow bar — uses global status_counts */}
+            {/* Status flow bar â€” uses global status_counts */}
             {Object.keys(statusCounts).length > 0 && (() => {
                 const groups = Object.entries(statusConfig).map(([k, v]) => ({
                     key: k, label: v.label, count: statusCounts[k] ?? 0,
@@ -199,21 +195,23 @@ export function WorkOrdersListPage() {
                 </div>
                 <div className="flex gap-2">
                     <select value={statusFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleStatusFilter(e.target.value)}
-                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                        aria-label="Filtrar por status"
+                        className="cursor-pointer rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                         <option value="">Todos os status</option>
                         {Object.entries(statusConfig).map(([k, v]) => (
                             <option key={k} value={k}>{v.label}</option>
                         ))}
                     </select>
                     <select value={priorityFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handlePriorityFilter(e.target.value)}
-                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                        aria-label="Filtrar por prioridade"
+                        className="cursor-pointer rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                         <option value="">Todas prioridades</option>
                         {Object.entries(priorityConfig).map(([k, v]) => (
                             <option key={k} value={k}>{v.label}</option>
                         ))}
                     </select>
                     <input type="date" value={dateFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDateFrom(e.target.value); setPage(1) }}
-                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" title="Data início" />
+                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" title="Data inÃ­cio" />
                     <input type="date" value={dateTo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDateTo(e.target.value); setPage(1) }}
                         className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" title="Data fim" />
                 </div>
@@ -248,15 +246,15 @@ export function WorkOrdersListPage() {
                 ) : isError ? (
                     <div className="py-16 text-center">
                         <RefreshCw className="mx-auto h-12 w-12 text-red-300" />
-                        <p className="mt-3 text-[13px] text-surface-500">Erro ao carregar ordens de serviço</p>
+                        <p className="mt-3 text-[13px] text-surface-500">Erro ao carregar ordens de serviÃ§o</p>
                         <Button className="mt-3" variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
                     </div>
                 ) : orders.length === 0 ? (
-                    <div className="py-16 text-center">
-                        <FileText className="mx-auto h-12 w-12 text-surface-300" />
-                        <p className="mt-3 text-[13px] text-surface-500">Nenhuma OS encontrada</p>
-                        <Button className="mt-3" onClick={() => navigate('/os/nova')}>Criar primeira OS</Button>
-                    </div>
+                    <EmptyState
+                        icon={<FileText className="h-5 w-5 text-surface-300" />}
+                        message="Nenhuma OS encontrada"
+                        action={hasPermission('os.work_order.create') ? { label: 'Criar primeira OS', onClick: () => navigate('/os/nova'), icon: <Plus className="h-4 w-4" /> } : undefined}
+                    />
                 ) : orders.map(order => (
                     <Link
                         key={order.id}
@@ -288,7 +286,7 @@ export function WorkOrdersListPage() {
                                     )}
                                     {order.assignee && (
                                         <span className="flex items-center gap-1">
-                                            → {order.assignee.name}
+                                            â†’ {order.assignee.name}
                                         </span>
                                     )}
                                 </div>
@@ -302,13 +300,12 @@ export function WorkOrdersListPage() {
                                     </p>
                                 </div>
                                 {hasPermission('os.work_order.delete') && (
-                                    <button
+                                    <IconButton
+                                        label="Excluir OS"
+                                        icon={<Trash2 className="h-4 w-4" />}
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(order.id) }}
-                                        className="rounded-lg p-1.5 text-surface-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
-                                        title="Excluir OS"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                        className="opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+                                    />
                                 )}
                             </div>
                         </div>
@@ -320,26 +317,26 @@ export function WorkOrdersListPage() {
             {!isLoading && !isError && totalPages > 1 && (
                 <div className="flex items-center justify-between rounded-xl border border-default bg-surface-0 px-4 py-3 shadow-card">
                     <p className="text-xs text-surface-500">
-                        Página {page} de {totalPages} — {res?.data?.total ?? 0} registros
+                        PÃ¡gina {page} de {totalPages} â€” {res?.data?.total ?? 0} registros
                     </p>
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}
                             icon={<ChevronLeft className="h-4 w-4" />}>Anterior</Button>
                         <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-                            icon={<ChevronRight className="h-4 w-4" />}>Próximo</Button>
+                            icon={<ChevronRight className="h-4 w-4" />}>PrÃ³ximo</Button>
                     </div>
                 </div>
             )}
 
             {/* Delete Confirmation Modal */}
-            <Modal open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null) }} title="Confirmar Exclusão">
+            <Modal open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null) }} title="Confirmar ExclusÃ£o">
                 <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta OS? Esta ação não pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta OS? Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
                         <Button
                             variant="danger"
-                            onClick={() => { if (deleteId) deleteMut.mutate(deleteId) }}
+                            onClick={() => { if (deleteId) { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(deleteId) } }}
                             loading={deleteMut.isPending}
                         >
                             Excluir

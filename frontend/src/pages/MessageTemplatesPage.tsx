@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { crmApi } from '@/lib/crm-api'
 import type { CrmMessageTemplate } from '@/lib/crm-api'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
     Plus, Edit, Trash2, MessageCircle, Mail, Smartphone,
     X, Save, Loader2, FileText
@@ -31,7 +32,7 @@ export function MessageTemplatesPage() {
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => crmApi.deleteMessageTemplate(id),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }),
+        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }),
     })
 
     const filtered = filterChannel
@@ -44,7 +45,7 @@ export function MessageTemplatesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Templates de Mensagem</h1>
-                    <p className="text-[13px] text-surface-500 mt-1">Modelos reutilizáveis para WhatsApp e E-mail</p>
+                    <p className="text-[13px] text-surface-500 mt-1">Modelos reutilizÃ¡veis para WhatsApp e E-mail</p>
                 </div>
                 <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
                     <Plus className="h-4 w-4 mr-1" />
@@ -133,7 +134,7 @@ export function MessageTemplatesPage() {
 
                                 {/* Subject */}
                                 {t.subject && (
-                                    <p className="text-xs font-medium text-surface-600 mb-2">📧 {t.subject}</p>
+                                    <p className="text-xs font-medium text-surface-600 mb-2">ðŸ“§ {t.subject}</p>
                                 )}
 
                                 {/* Body preview */}
@@ -176,7 +177,7 @@ export function MessageTemplatesPage() {
     )
 }
 
-// ─── Template Form Modal ────────────────────────────
+// â”€â”€â”€ Template Form Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate | null; onClose: () => void }) {
     const qc = useQueryClient()
@@ -190,12 +191,14 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
 
     const createMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.createMessageTemplate(data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }); onClose() },
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }); onClose() },
     })
 
     const updateMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.updateMessageTemplate(template!.id, data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }); onClose() },
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }); onClose() },
     })
 
     const isPending = createMut.isPending || updateMut.isPending
@@ -298,12 +301,12 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <label className="text-xs font-medium text-surface-500">Corpo da mensagem</label>
-                                <span className="text-[10px] text-surface-400">Use {'{{nome}}'}, {'{{valor}}'} para variáveis</span>
+                                <span className="text-[10px] text-surface-400">Use {'{{nome}}'}, {'{{valor}}'} para variÃ¡veis</span>
                             </div>
                             <textarea
                                 value={body}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
-                                placeholder="Olá {{nome}}, ..."
+                                placeholder="OlÃ¡ {{nome}}, ..."
                                 rows={6}
                                 className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2.5 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none font-mono"
                             />

@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { BarChart3, Users, Scale, AlertTriangle, Clock, CheckCircle, XCircle, TrendingUp, MapPin } from 'lucide-react'
+import { BarChart3, Users, Scale, AlertTriangle, Clock, CheckCircle, XCircle, TrendingUp, MapPin, RefreshCw, Loader2 } from 'lucide-react'
 import { useInmetroDashboard, useInmetroCities } from '@/hooks/useInmetro'
+import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
+import { InmetroHeatmapWidget } from '@/components/inmetro/InmetroHeatmapWidget'
 import { Link } from 'react-router-dom'
 
 const statusLabels: Record<string, string> = {
@@ -20,6 +22,7 @@ const statusColors: Record<string, string> = {
 export function InmetroDashboardPage() {
     const { data: dashboard, isLoading } = useInmetroDashboard()
     const { data: cities } = useInmetroCities()
+    const { isSyncing, triggerSync } = useInmetroAutoSync()
 
     if (isLoading) {
         return (
@@ -47,6 +50,14 @@ export function InmetroDashboardPage() {
                     <p className="text-sm text-surface-500 mt-0.5">Prospecção inteligente baseada em dados públicos</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={triggerSync}
+                        disabled={isSyncing}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors disabled:opacity-50"
+                    >
+                        {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        Atualizar dados
+                    </button>
                     <Link
                         to="/inmetro/import"
                         className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3 py-1.5 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors"
@@ -68,6 +79,17 @@ export function InmetroDashboardPage() {
                 </div>
             </div>
 
+            {/* Sync Banner */}
+            {isSyncing && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex items-center gap-3 animate-pulse">
+                    <Loader2 className="h-5 w-5 text-blue-600 animate-spin shrink-0" />
+                    <div>
+                        <p className="text-sm font-medium text-blue-800">Buscando dados do INMETRO...</p>
+                        <p className="text-xs text-blue-600">Importando oficinas e instrumentos do portal RBMLQ. Isso pode levar alguns segundos.</p>
+                    </div>
+                </div>
+            )}
+
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <KPICard label="Proprietários" value={totals.owners} icon={Users} color="brand" to="/inmetro/leads" />
@@ -83,7 +105,7 @@ export function InmetroDashboardPage() {
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* By City */}
-                <div className="col-span-1 lg:col-span-2 rounded-xl border border-default bg-surface-0 p-5">
+                <div className="col-span-1 rounded-xl border border-default bg-surface-0 p-5">
                     <h2 className="text-sm font-semibold text-surface-800 mb-4 flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-brand-500" /> Instrumentos por Cidade
                     </h2>
@@ -107,12 +129,14 @@ export function InmetroDashboardPage() {
                             </Link>
                         ))}
                         {(!by_city || by_city.length === 0) && (
-                            <p className="text-sm text-surface-400 text-center py-4">Nenhum dado importado. Importe dados primeiro.</p>
+                            <p className="text-sm text-surface-400 text-center py-4">
+                                {isSyncing ? 'Importando dados...' : 'Nenhum dado disponível. Clique em "Atualizar dados" para buscar.'}
+                            </p>
                         )}
                     </div>
                 </div>
 
-                {/* By Status + Brand */}
+                {/* Status + Brand */}
                 <div className="space-y-6">
                     <div className="rounded-xl border border-default bg-surface-0 p-5">
                         <h2 className="text-sm font-semibold text-surface-800 mb-4">Status dos Instrumentos</h2>
@@ -140,6 +164,9 @@ export function InmetroDashboardPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Heatmap Widget */}
+                <InmetroHeatmapWidget />
             </div>
 
             {/* Lead Pipeline */}

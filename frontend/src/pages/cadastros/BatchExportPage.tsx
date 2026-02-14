@@ -1,4 +1,5 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Download, Printer, FileSpreadsheet, Loader2, CheckSquare, Square, Package, Users, Wrench, HardDrive, ClipboardList, FileText } from 'lucide-react'
 import api from '@/lib/api'
@@ -75,7 +76,7 @@ export function BatchExportPage() {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Exportação em Lote</h1>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">ExportaÃ§Ã£o em Lote</h1>
                     <p className="text-[13px] text-surface-500 mt-1">Exporte dados do sistema em arquivo CSV</p>
                 </div>
                 <button
@@ -121,7 +122,7 @@ export function BatchExportPage() {
                 <div className="bg-white rounded-xl border border-surface-200 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-surface-900">
-                            Campos para exportar — {currentEntity.label}
+                            Campos para exportar â€” {currentEntity.label}
                         </h2>
                         <button
                             onClick={toggleAllFields}

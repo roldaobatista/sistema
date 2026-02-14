@@ -1,4 +1,5 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ClipboardList, Trash2, Edit, CheckSquare, ToggleLeft, ToggleRight, GripVertical } from 'lucide-react'
 import api from '@/lib/api'
@@ -6,9 +7,9 @@ import api from '@/lib/api'
 const itemTypes = [
     { value: 'check', label: 'Checkbox' },
     { value: 'text', label: 'Texto' },
-    { value: 'number', label: 'Número' },
+    { value: 'number', label: 'NÃºmero' },
     { value: 'photo', label: 'Foto' },
-    { value: 'yes_no', label: 'Sim/Não' },
+    { value: 'yes_no', label: 'Sim/NÃ£o' },
 ]
 
 interface ChecklistItem {
@@ -47,6 +48,7 @@ export function ServiceChecklistsPage() {
                 ? api.put(`/service-checklists/${editing.id}`, payload)
                 : api.post('/service-checklists', payload),
         onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['service-checklists'] })
             resetForm()
         },
@@ -54,7 +56,7 @@ export function ServiceChecklistsPage() {
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/service-checklists/${id}`),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['service-checklists'] }),
+        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['service-checklists'] }),
     })
 
     const resetForm = () => {
@@ -101,7 +103,7 @@ export function ServiceChecklistsPage() {
     return (
         <div className="space-y-5">
             <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Checklists de Serviço</h1>
+                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Checklists de ServiÃ§o</h1>
                 <button onClick={openNew} className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors">
                     <Plus className="h-4 w-4" /> Novo Checklist
                 </button>
@@ -117,7 +119,7 @@ export function ServiceChecklistsPage() {
                             <input value={formName} onChange={e => setFormName(e.target.value)} className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
                         </div>
                         <div>
-                            <label className="block text-[13px] font-medium text-surface-700 mb-1">Descrição</label>
+                            <label className="block text-[13px] font-medium text-surface-700 mb-1">DescriÃ§Ã£o</label>
                             <input value={formDesc} onChange={e => setFormDesc(e.target.value)} className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
                         </div>
                     </div>
@@ -133,7 +135,7 @@ export function ServiceChecklistsPage() {
                                 <input
                                     value={item.description}
                                     onChange={e => updateItem(idx, 'description', e.target.value)}
-                                    placeholder="Descrição do item..."
+                                    placeholder="DescriÃ§Ã£o do item..."
                                     className="flex-1 rounded border border-surface-300 px-2 py-1.5 text-sm"
                                 />
                                 <select
@@ -197,7 +199,7 @@ export function ServiceChecklistsPage() {
                                 <button onClick={() => openEdit(c)} className="flex-1 text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center justify-center gap-1">
                                     <Edit className="h-3.5 w-3.5" /> Editar
                                 </button>
-                                <button onClick={() => deleteMut.mutate(c.id)} className="flex-1 text-sm text-red-500 hover:text-red-700 font-medium flex items-center justify-center gap-1">
+                                <button onClick={() => { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(c.id) }} className="flex-1 text-sm text-red-500 hover:text-red-700 font-medium flex items-center justify-center gap-1">
                                     <Trash2 className="h-3.5 w-3.5" /> Excluir
                                 </button>
                             </div>

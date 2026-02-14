@@ -4,9 +4,11 @@ import { CheckCircle, Eye, FileText, Plus, Search, Send, Trash2, XCircle } from 
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 
 type InvoiceStatus = 'draft' | 'issued' | 'sent' | 'cancelled'
 
@@ -254,14 +256,12 @@ export function InvoicesPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Faturamento / NF</h1>
-                {canCreate ? (
-                    <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowModal(true)}>
-                        Nova Fatura
-                    </Button>
-                ) : null}
-            </div>
+            <PageHeader
+                title="Faturamento / NF"
+                subtitle="Notas fiscais e faturamento"
+                count={total}
+                actions={canCreate ? [{ label: 'Nova Fatura', onClick: () => setShowModal(true), icon: <Plus className="h-4 w-4" /> }] : []}
+            />
 
             <div className="flex flex-wrap items-center gap-3">
                 <div className="relative min-w-[220px] flex-1">
@@ -316,12 +316,9 @@ export function InvoicesPage() {
                             {invoicesQuery.isLoading ? (
                                 <tr><td colSpan={7} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>
                             ) : invoices.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="px-4 py-12 text-center text-surface-400">
-                                        <FileText className="mx-auto mb-2 h-8 w-8 text-surface-300" />
-                                        Nenhuma fatura encontrada
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={7} className="px-4 py-2">
+                                    <EmptyState icon={<FileText className="h-5 w-5 text-surface-300" />} message="Nenhuma fatura encontrada" action={canCreate ? { label: 'Nova Fatura', onClick: () => setShowModal(true), icon: <Plus className="h-4 w-4" /> } : undefined} compact />
+                                </td></tr>
                             ) : invoices.map((invoice) => (
                                 <tr key={invoice.id} className="transition-colors duration-100 hover:bg-surface-50">
                                     <td className="px-4 py-3 font-bold text-brand-600">{invoice.invoice_number}</td>

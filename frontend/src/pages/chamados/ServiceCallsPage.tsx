@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import {
     Plus, Search, Phone, MapPin, UserCheck, ArrowRight, Trash2,
     AlertCircle, Clock, Truck, CheckCircle, XCircle, Map, Calendar,
-    Download, ChevronLeft, ChevronRight, AlertTriangle,
+    Download, ChevronLeft, ChevronRight, AlertTriangle, Pencil,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 
@@ -103,6 +103,7 @@ export function ServiceCallsPage() {
     const pagination = data ? { current_page: data.current_page, last_page: data.last_page, total: data.total } : null
 
     const canCreate = hasRole('super_admin') || hasPermission('service_calls.service_call.create')
+    const canUpdate = hasRole('super_admin') || hasPermission('service_calls.service_call.update')
     const canDelete = hasRole('super_admin') || hasPermission('service_calls.service_call.delete')
 
     return (
@@ -169,6 +170,7 @@ export function ServiceCallsPage() {
                     />
                 </div>
                 <select
+                    aria-label="Filtrar por status"
                     value={statusFilter}
                     onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
                     className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
@@ -179,6 +181,7 @@ export function ServiceCallsPage() {
                     ))}
                 </select>
                 <select
+                    aria-label="Filtrar por prioridade"
                     value={priorityFilter}
                     onChange={(e) => { setPriorityFilter(e.target.value); setPage(1) }}
                     className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
@@ -231,6 +234,7 @@ export function ServiceCallsPage() {
                                         <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Técnico</th>
                                         <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Cidade</th>
                                         <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Agendado</th>
+                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Criado em</th>
                                         <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Ações</th>
                                     </tr>
                                 </thead>
@@ -280,8 +284,22 @@ export function ServiceCallsPage() {
                                                         ? new Date(call.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
                                                         : '—'}
                                                 </td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                    {call.created_at
+                                                        ? new Date(call.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                                                        : '—'}
+                                                </td>
                                                 <td className="px-4 py-3 text-right">
                                                     <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                        {canUpdate && (
+                                                            <button
+                                                                onClick={() => navigate(`/chamados/${call.id}/editar`)}
+                                                                className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                                                                title="Editar"
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                         {canDelete && (
                                                             <button
                                                                 onClick={() => setDeleteTarget(call)}

@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react'
+﻿import React, { useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
     Upload, FileSpreadsheet, ArrowRight, ArrowLeft, Check,
@@ -54,7 +55,7 @@ interface ImportResult {
 const entities: { key: Entity; label: string }[] = [
     { key: 'customers', label: 'Clientes' },
     { key: 'products', label: 'Produtos' },
-    { key: 'services', label: 'Serviços' },
+    { key: 'services', label: 'ServiÃ§os' },
     { key: 'equipments', label: 'Equipamentos' },
     { key: 'suppliers', label: 'Fornecedores' },
 ]
@@ -70,7 +71,7 @@ const isValidFile = (file: File): boolean => {
     return ACCEPTED_FILE_TYPES.includes(ext) || ACCEPTED_MIME_TYPES.includes(file.type)
 }
 
-const stepLabels = ['Upload', 'Mapeamento', 'Validação', 'Resultado']
+const stepLabels = ['Upload', 'Mapeamento', 'ValidaÃ§Ã£o', 'Resultado']
 const strategyLabels: Record<DuplicateStrategy, string> = {
     skip: 'Pular duplicatas',
     update: 'Atualizar existentes',
@@ -113,7 +114,7 @@ export default function ImportPage() {
         queryFn: () => api.get(`/import/templates?entity_type=${entity}`).then(r => r.data.templates),
     })
 
-    // Estatísticas
+    // EstatÃ­sticas
     const { data: statsData } = useQuery({
         queryKey: ['import-stats'],
         queryFn: () => api.get('/import-stats').then(r => r.data.stats),
@@ -136,7 +137,7 @@ export default function ImportPage() {
         setSuccessMessage(`Re-importar: selecione o arquivo CSV para ${entities.find(e => e.key === h.entity_type)?.label ?? h.entity_type}. O mapeamento anterior foi carregado.`)
     }, [])
 
-    // Histórico
+    // HistÃ³rico
     const { data: historyResponse, isLoading: historyLoading } = useQuery({
         queryKey: ['import-history', historyEntityFilter, historyStatusFilter, historyDateFrom, historyDateTo, historySearchTerm, historyPage],
         queryFn: () => {
@@ -156,7 +157,7 @@ export default function ImportPage() {
     const historyLastPage = historyResponse?.last_page ?? 1
     const historyTotal = historyResponse?.total ?? 0
 
-    // Map de entity para queryKey usada nos módulos
+    // Map de entity para queryKey usada nos mÃ³dulos
     const entityQueryKeyMap: Record<Entity, string[]> = {
         customers: ['customers'],
         products: ['products'],
@@ -192,8 +193,9 @@ export default function ImportPage() {
             setStep(1)
         },
         onError: (err: any) => {
+            toast.error('Ocorreu um erro. Tente novamente.')
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para realizar upload.')
+                setErrorMessage('Sem permissÃ£o para realizar upload.')
             } else {
                 setErrorMessage('Erro ao processar arquivo. Verifique o formato e tente novamente.')
             }
@@ -215,8 +217,9 @@ export default function ImportPage() {
             setStep(2)
         },
         onError: (err: any) => {
+            toast.error('Ocorreu um erro. Tente novamente.')
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para validar preview.')
+                setErrorMessage('Sem permissÃ£o para validar preview.')
             } else {
                 setErrorMessage('Erro ao validar preview. Verifique o mapeamento e tente novamente.')
             }
@@ -243,10 +246,11 @@ export default function ImportPage() {
             if (keys) queryClient.invalidateQueries({ queryKey: keys })
         },
         onError: (err: any) => {
+            toast.error('Ocorreu um erro. Tente novamente.')
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para executar importação.')
+                setErrorMessage('Sem permissÃ£o para executar importaÃ§Ã£o.')
             } else {
-                setErrorMessage(err?.response?.data?.message || 'Erro ao executar importação. Tente novamente.')
+                setErrorMessage(err?.response?.data?.message || 'Erro ao executar importaÃ§Ã£o. Tente novamente.')
             }
         },
     })
@@ -259,13 +263,15 @@ export default function ImportPage() {
             mapping,
         }),
         onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
             setSuccessMessage('Template salvo com sucesso!')
             queryClient.invalidateQueries({ queryKey: ['import-templates'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
         onError: (err: any) => {
+            toast.error('Ocorreu um erro. Tente novamente.')
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para salvar template.')
+                setErrorMessage('Sem permissÃ£o para salvar template.')
             } else {
                 setErrorMessage('Erro ao salvar template.')
             }
@@ -276,13 +282,15 @@ export default function ImportPage() {
     const deleteTemplateMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/import/templates/${id}`),
         onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
             setSuccessMessage('Template removido!')
             queryClient.invalidateQueries({ queryKey: ['import-templates'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
         onError: (err: any) => {
+            toast.error('Ocorreu um erro. Tente novamente.')
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para remover template.')
+                setErrorMessage('Sem permissÃ£o para remover template.')
             } else {
                 setErrorMessage('Erro ao remover template.')
             }
@@ -298,10 +306,11 @@ export default function ImportPage() {
             setTimeout(() => setSuccessMessage(null), 5000)
         },
         onError: (err: any) => {
+            toast.error('Ocorreu um erro. Tente novamente.')
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para desfazer importação.')
+                setErrorMessage('Sem permissÃ£o para desfazer importaÃ§Ã£o.')
             } else {
-                setErrorMessage(err?.response?.data?.message || 'Erro ao desfazer importação.')
+                setErrorMessage(err?.response?.data?.message || 'Erro ao desfazer importaÃ§Ã£o.')
             }
         },
     })
@@ -310,13 +319,15 @@ export default function ImportPage() {
     const deleteImportMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/import/${id}`),
         onSuccess: () => {
-            setSuccessMessage('Registro de importação removido.')
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            setSuccessMessage('Registro de importaÃ§Ã£o removido.')
             queryClient.invalidateQueries({ queryKey: ['import-history'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
         onError: (err: any) => {
+            toast.error('Ocorreu um erro. Tente novamente.')
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para remover registro.')
+                setErrorMessage('Sem permissÃ£o para remover registro.')
             } else {
                 setErrorMessage(err?.response?.data?.message || 'Erro ao remover registro.')
             }
@@ -354,7 +365,7 @@ export default function ImportPage() {
             setTimeout(() => setSuccessMessage(null), 3000)
         } catch (err: any) {
             if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para exportar dados.')
+                setErrorMessage('Sem permissÃ£o para exportar dados.')
             } else {
                 setErrorMessage('Erro ao exportar dados.')
             }
@@ -384,7 +395,7 @@ export default function ImportPage() {
         const file = e.dataTransfer.files[0]
         if (file) {
             if (!isValidFile(file)) {
-                setErrorMessage('Tipo de arquivo inválido. Aceitos: CSV, TXT.')
+                setErrorMessage('Tipo de arquivo invÃ¡lido. Aceitos: CSV, TXT.')
                 return
             }
             setErrorMessage(null)
@@ -396,7 +407,7 @@ export default function ImportPage() {
         const file = e.target.files?.[0]
         if (file) {
             if (!isValidFile(file)) {
-                setErrorMessage('Tipo de arquivo inválido. Aceitos: CSV, TXT.')
+                setErrorMessage('Tipo de arquivo invÃ¡lido. Aceitos: CSV, TXT.')
                 return
             }
             uploadMutation.mutate(file)
@@ -446,9 +457,9 @@ export default function ImportPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Importação de Dados</h1>
+                        <h1 className="text-lg font-semibold text-surface-900 tracking-tight">ImportaÃ§Ã£o de Dados</h1>
                         <p className="text-[13px] text-surface-500">
-                            Importe clientes, produtos, serviços, equipamentos e fornecedores via CSV
+                            Importe clientes, produtos, serviÃ§os, equipamentos e fornecedores via CSV
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -460,7 +471,7 @@ export default function ImportPage() {
                             )}
                         >
                             <BarChart3 size={16} />
-                            Estatísticas
+                            EstatÃ­sticas
                         </button>
                         <button
                             onClick={() => { setShowHistory(!showHistory); if (!showHistory) setShowStats(false) }}
@@ -470,7 +481,7 @@ export default function ImportPage() {
                             )}
                         >
                             <History size={16} />
-                            Histórico
+                            HistÃ³rico
                         </button>
                     </div>
                 </div>
@@ -495,12 +506,12 @@ export default function ImportPage() {
                     </div>
                 )}
 
-                {/* Histórico */}
+                {/* HistÃ³rico */}
                 {showHistory && (
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <div className="mb-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-surface-900">Histórico de Importações</h3>
+                                <h3 className="font-semibold text-surface-900">HistÃ³rico de ImportaÃ§Ãµes</h3>
                                 {historyTotal > 0 && (
                                     <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
                                         {historyTotal}
@@ -535,7 +546,7 @@ export default function ImportPage() {
                                 className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm"
                             >
                                 <option value="">Todos os status</option>
-                                <option value="done">Concluído</option>
+                                <option value="done">ConcluÃ­do</option>
                                 <option value="failed">Falhou</option>
                                 <option value="processing">Processando</option>
                                 <option value="rolled_back">Desfeito</option>
@@ -546,7 +557,7 @@ export default function ImportPage() {
                                 value={historyDateFrom}
                                 onChange={(e) => { setHistoryDateFrom(e.target.value); setHistoryPage(1) }}
                                 className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm"
-                                placeholder="Data início"
+                                placeholder="Data inÃ­cio"
                             />
                             <input
                                 type="date"
@@ -577,7 +588,7 @@ export default function ImportPage() {
                             {!historyLoading && (history ?? []).length === 0 && (
                                 <div className="flex flex-col items-center justify-center py-8 text-surface-400">
                                     <History size={32} className="mb-2" />
-                                    <p className="text-sm font-medium">Nenhuma importação encontrada</p>
+                                    <p className="text-sm font-medium">Nenhuma importaÃ§Ã£o encontrada</p>
                                     {hasActiveFilters && (
                                         <p className="mt-1 text-xs">Tente ajustar os filtros</p>
                                     )}
@@ -600,15 +611,15 @@ export default function ImportPage() {
                                                 h.status === 'rolled_back' && 'bg-amber-100 text-amber-700',
                                                 h.status === 'partially_rolled_back' && 'bg-orange-100 text-orange-700',
                                             )}>
-                                                {h.status === 'done' ? 'Concluído' : h.status === 'failed' ? 'Falhou' : h.status === 'processing' ? 'Processando' : h.status === 'rolled_back' ? 'Desfeito' : h.status === 'partially_rolled_back' ? 'Parcial' : 'Pendente'}
+                                                {h.status === 'done' ? 'ConcluÃ­do' : h.status === 'failed' ? 'Falhou' : h.status === 'processing' ? 'Processando' : h.status === 'rolled_back' ? 'Desfeito' : h.status === 'partially_rolled_back' ? 'Parcial' : 'Pendente'}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="text-surface-400 text-xs" title="Total de linhas">{h.total_rows} linhas</span>
                                             <span className="text-emerald-600">+{h.inserted}</span>
-                                            <span className="text-blue-600">↻{h.updated}</span>
-                                            <span className="text-surface-400">⊘{h.skipped}</span>
-                                            {h.errors > 0 && <span className="text-red-600">✕{h.errors}</span>}
+                                            <span className="text-blue-600">â†»{h.updated}</span>
+                                            <span className="text-surface-400">âŠ˜{h.skipped}</span>
+                                            {h.errors > 0 && <span className="text-red-600">âœ•{h.errors}</span>}
                                             <span className="text-surface-400 text-xs">
                                                 {new Date(h.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                                             </span>
@@ -640,12 +651,12 @@ export default function ImportPage() {
                                                 <button
                                                     onClick={() => setConfirmDialog({
                                                         open: true,
-                                                        title: 'Desfazer Importação',
-                                                        message: 'Tem certeza que deseja desfazer esta importação? Os registros importados serão excluídos.',
+                                                        title: 'Desfazer ImportaÃ§Ã£o',
+                                                        message: 'Tem certeza que deseja desfazer esta importaÃ§Ã£o? Os registros importados serÃ£o excluÃ­dos.',
                                                         onConfirm: () => { rollbackMutation.mutate(h.id); setConfirmDialog(prev => ({ ...prev, open: false })) },
                                                     })}
                                                     disabled={rollbackMutation.isPending}
-                                                    title="Desfazer importação"
+                                                    title="Desfazer importaÃ§Ã£o"
                                                     className="rounded p-1 text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                                 >
                                                     <Undo2 size={14} />
@@ -656,7 +667,7 @@ export default function ImportPage() {
                                                     onClick={() => setConfirmDialog({
                                                         open: true,
                                                         title: 'Remover Registro',
-                                                        message: 'Remover este registro do histórico?',
+                                                        message: 'Remover este registro do histÃ³rico?',
                                                         onConfirm: () => { deleteImportMutation.mutate(h.id); setConfirmDialog(prev => ({ ...prev, open: false })) },
                                                     })}
                                                     disabled={deleteImportMutation.isPending}
@@ -680,9 +691,9 @@ export default function ImportPage() {
                                     {expandedImportId === h.id && (
                                         <div className="mt-2 rounded-lg bg-surface-100 p-3 text-xs space-y-2">
                                             <div className="flex gap-4">
-                                                <span><strong>Usuário:</strong> {(h as any).user?.name ?? '—'}</span>
-                                                <span><strong>Estratégia:</strong> {(h as any).duplicate_strategy ?? '—'}</span>
-                                                <span><strong>Separador:</strong> {(h as any).separator ?? '—'}</span>
+                                                <span><strong>UsuÃ¡rio:</strong> {(h as any).user?.name ?? 'â€”'}</span>
+                                                <span><strong>EstratÃ©gia:</strong> {(h as any).duplicate_strategy ?? 'â€”'}</span>
+                                                <span><strong>Separador:</strong> {(h as any).separator ?? 'â€”'}</span>
                                             </div>
                                             {(h as any).mapping && (
                                                 <div>
@@ -690,7 +701,7 @@ export default function ImportPage() {
                                                     <div className="mt-1 flex flex-wrap gap-1">
                                                         {Object.entries((h as any).mapping).map(([field, header]) => (
                                                             <span key={field} className="rounded bg-surface-200 px-2 py-0.5">
-                                                                {String(field)} → {String(header)}
+                                                                {String(field)} â†’ {String(header)}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -718,11 +729,11 @@ export default function ImportPage() {
                             ))}
                         </div>
 
-                        {/* Paginação */}
+                        {/* PaginaÃ§Ã£o */}
                         {historyLastPage > 1 && (
                             <div className="mt-3 flex items-center justify-between text-sm">
                                 <span className="text-surface-500">
-                                    {historyTotal} importações
+                                    {historyTotal} importaÃ§Ãµes
                                 </span>
                                 <div className="flex items-center gap-2">
                                     <button
@@ -748,11 +759,11 @@ export default function ImportPage() {
                     </div>
                 )}
 
-                {/* Estatísticas */}
+                {/* EstatÃ­sticas */}
                 {showStats && (
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <div className="mb-3 flex items-center justify-between">
-                            <h3 className="font-semibold text-surface-900">Estatísticas de Importação</h3>
+                            <h3 className="font-semibold text-surface-900">EstatÃ­sticas de ImportaÃ§Ã£o</h3>
                             <button onClick={() => setShowStats(false)}><X size={16} /></button>
                         </div>
                         {!statsData ? (
@@ -762,8 +773,8 @@ export default function ImportPage() {
                         ) : Object.values(statsData as Record<string, { total_imports: number }>).every(s => s.total_imports === 0) ? (
                             <div className="flex flex-col items-center justify-center py-8 text-surface-400">
                                 <BarChart3 size={40} className="mb-2" />
-                                <p className="text-sm font-medium">Nenhuma importação realizada ainda</p>
-                                <p className="text-xs">As estatísticas aparecerão após a primeira importação</p>
+                                <p className="text-sm font-medium">Nenhuma importaÃ§Ã£o realizada ainda</p>
+                                <p className="text-xs">As estatÃ­sticas aparecerÃ£o apÃ³s a primeira importaÃ§Ã£o</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -775,7 +786,7 @@ export default function ImportPage() {
                                             <h4 className="text-sm font-semibold text-surface-800">{ent.label}</h4>
                                             <div className="text-xs text-surface-500 space-y-1">
                                                 <div className="flex justify-between">
-                                                    <span>Importações</span>
+                                                    <span>ImportaÃ§Ãµes</span>
                                                     <span className="font-medium text-surface-700">{s.total_imports}</span>
                                                 </div>
                                                 <div className="flex justify-between">
@@ -795,7 +806,7 @@ export default function ImportPage() {
                                                 </div>
                                                 {s.last_import_at && (
                                                     <div className="flex justify-between">
-                                                        <span>Última</span>
+                                                        <span>Ãšltima</span>
                                                         <span className="font-medium text-surface-600">
                                                             {new Date(s.last_import_at).toLocaleDateString('pt-BR')}
                                                         </span>
@@ -856,7 +867,7 @@ export default function ImportPage() {
                             ))}
                         </div>
 
-                        {/* Área de drop */}
+                        {/* Ãrea de drop */}
                         <div
                             onDragOver={e => e.preventDefault()}
                             onDrop={handleDrop}
@@ -890,15 +901,15 @@ export default function ImportPage() {
                             <div>
                                 <h4 className="mb-2 font-semibold flex items-center gap-2">
                                     <AlertCircle size={16} />
-                                    Dicas de Formatação
+                                    Dicas de FormataÃ§Ã£o
                                 </h4>
                                 <ul className="list-disc pl-5 space-y-1 text-blue-700">
-                                    <li>Arquivos <strong>CSV</strong> ou <strong>TXT</strong> com codificação UTF-8 ou ISO-8859-1.</li>
-                                    <li>Separadores aceitos: Ponto e vírgula (;), Vírgula (,) ou Tabulação.</li>
-                                    <li>Para valores monetários, use o formato brasileiro (ex: <strong>1.234,56</strong>) ou internacional (ex: <strong>1234.56</strong>).</li>
+                                    <li>Arquivos <strong>CSV</strong> ou <strong>TXT</strong> com codificaÃ§Ã£o UTF-8 ou ISO-8859-1.</li>
+                                    <li>Separadores aceitos: Ponto e vÃ­rgula (;), VÃ­rgula (,) ou TabulaÃ§Ã£o.</li>
+                                    <li>Para valores monetÃ¡rios, use o formato brasileiro (ex: <strong>1.234,56</strong>) ou internacional (ex: <strong>1234.56</strong>).</li>
                                     <li>Datas devem estar no formato <strong>DD/MM/AAAA</strong> ou <strong>AAAA-MM-DD</strong>.</li>
-                                    <li>Campos de CPF/CNPJ serão limpos automaticamente (removendo pontos e traços).</li>
-                                    <li>O tipo PF/PJ será detectado automaticamente pelo CPF/CNPJ.</li>
+                                    <li>Campos de CPF/CNPJ serÃ£o limpos automaticamente (removendo pontos e traÃ§os).</li>
+                                    <li>O tipo PF/PJ serÃ¡ detectado automaticamente pelo CPF/CNPJ.</li>
                                 </ul>
                             </div>
                             <div className="flex gap-2 ml-4 shrink-0">
@@ -936,7 +947,7 @@ export default function ImportPage() {
                                         {uploadData.file_name}
                                     </h3>
                                     <p className="text-[13px] text-surface-500">
-                                        {uploadData.total_rows} linhas • Encoding: {uploadData.encoding} • Separador: {uploadData.separator === 'tab' ? 'TAB' : uploadData.separator}
+                                        {uploadData.total_rows} linhas â€¢ Encoding: {uploadData.encoding} â€¢ Separador: {uploadData.separator === 'tab' ? 'TAB' : uploadData.separator}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -1012,7 +1023,7 @@ export default function ImportPage() {
                                                     : 'border-default bg-surface-0'
                                             )}
                                         >
-                                            <option value="">— Não importar —</option>
+                                            <option value="">â€” NÃ£o importar â€”</option>
                                             {uploadData.headers.map(h => (
                                                 <option key={h} value={h}>{h}</option>
                                             ))}
@@ -1080,7 +1091,7 @@ export default function ImportPage() {
                             </div>
                         </div>
 
-                        {/* Estratégia de duplicatas */}
+                        {/* EstratÃ©gia de duplicatas */}
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <h4 className="mb-3 text-sm font-semibold text-surface-700">Duplicatas encontradas</h4>
                             <div className="flex gap-3">
@@ -1106,7 +1117,7 @@ export default function ImportPage() {
 
                         <div className="flex justify-between">
                             <button onClick={reset} className="rounded-lg border border-surface-200 px-4 py-2 text-sm hover:bg-surface-50">
-                                ← Voltar
+                                â† Voltar
                             </button>
                             <button
                                 onClick={() => previewMutation.mutate()}
@@ -1128,7 +1139,7 @@ export default function ImportPage() {
                             <div className="rounded-xl border border-emerald-200/50 bg-emerald-50 p-4 text-center">
                                 <CheckCircle2 size={20} className="mx-auto mb-1 text-emerald-600" />
                                 <p className="text-2xl font-bold text-emerald-700">{previewStats.valid}</p>
-                                <p className="text-xs text-emerald-600">Válidas</p>
+                                <p className="text-xs text-emerald-600">VÃ¡lidas</p>
                             </div>
                             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
                                 <AlertTriangle size={20} className="mx-auto mb-1 text-amber-600" />
@@ -1170,7 +1181,7 @@ export default function ImportPage() {
                                             </td>
                                             {Object.keys(mapping).filter(k => mapping[k]).map(k => (
                                                 <td key={k} className="max-w-[200px] truncate px-3 py-2">
-                                                    {row.data[k] || '—'}
+                                                    {row.data[k] || 'â€”'}
                                                 </td>
                                             ))}
                                             <td className="px-3 py-2 text-xs text-surface-500">
@@ -1184,15 +1195,15 @@ export default function ImportPage() {
 
                         <div className="flex justify-between">
                             <button onClick={() => setStep(1)} className="rounded-lg border border-surface-200 px-4 py-2 text-sm hover:bg-surface-50">
-                                ← Ajustar Mapeamento
+                                â† Ajustar Mapeamento
                             </button>
                             <button
                                 onClick={() => {
                                     if ((uploadData?.total_rows ?? 0) > 500) {
                                         setConfirmDialog({
                                             open: true,
-                                            title: 'Importação Grande',
-                                            message: `Você está prestes a importar ${uploadData?.total_rows?.toLocaleString('pt-BR')} linhas. Deseja continuar?`,
+                                            title: 'ImportaÃ§Ã£o Grande',
+                                            message: `VocÃª estÃ¡ prestes a importar ${uploadData?.total_rows?.toLocaleString('pt-BR')} linhas. Deseja continuar?`,
                                             onConfirm: () => { executeMutation.mutate(); setConfirmDialog(prev => ({ ...prev, open: false })) },
                                         })
                                     } else {
@@ -1224,19 +1235,19 @@ export default function ImportPage() {
                         {result.errors > 0 && result.inserted === 0 && result.updated === 0 ? (
                             <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
                                 <AlertCircle size={48} className="mx-auto mb-3 text-red-500" />
-                                <h2 className="text-xl font-bold text-red-800">Importação Falhou</h2>
+                                <h2 className="text-xl font-bold text-red-800">ImportaÃ§Ã£o Falhou</h2>
                                 <p className="mt-1 text-sm text-red-600">Nenhum registro foi importado. Verifique os erros abaixo.</p>
                             </div>
                         ) : result.errors > 0 ? (
                             <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
                                 <AlertTriangle size={48} className="mx-auto mb-3 text-amber-500" />
-                                <h2 className="text-xl font-bold text-amber-800">Importação Concluída com Avisos</h2>
+                                <h2 className="text-xl font-bold text-amber-800">ImportaÃ§Ã£o ConcluÃ­da com Avisos</h2>
                                 <p className="mt-1 text-sm text-amber-600">{result.inserted + result.updated} registros importados, {result.errors} com erro.</p>
                             </div>
                         ) : (
                             <div className="rounded-xl border border-emerald-200/50 bg-emerald-50 p-8 text-center">
                                 <CheckCircle2 size={48} className="mx-auto mb-3 text-emerald-500" />
-                                <h2 className="text-xl font-bold text-emerald-800">Importação Concluída!</h2>
+                                <h2 className="text-xl font-bold text-emerald-800">ImportaÃ§Ã£o ConcluÃ­da!</h2>
                             </div>
                         )}
 
@@ -1288,7 +1299,7 @@ export default function ImportPage() {
                                 </button>
                             )}
                             <button onClick={reset} className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700">
-                                Nova Importação
+                                Nova ImportaÃ§Ã£o
                             </button>
                         </div>
                     </div>

@@ -1,14 +1,18 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Pencil, Trash2, Briefcase, Clock, AlertTriangle } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Briefcase, Clock, AlertTriangle, UploadCloud } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { useAuvoExport } from '@/hooks/useAuvoExport'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 
 interface Service {
     id: number; code: string | null; name: string; description: string | null
@@ -23,6 +27,7 @@ const emptyForm = {
 
 export function ServicesPage() {
     const qc = useQueryClient()
+    const { exportService } = useAuvoExport()
     const [search, setSearch] = useState('')
     const debouncedSearch = useDebounce(search, 400)
     const [showForm, setShowForm] = useState(false)
@@ -53,10 +58,10 @@ export function ServicesPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['services'] })
             setShowForm(false)
-            toast.success(editing ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!')
+            toast.success(editing ? 'ServiÃ§o atualizado com sucesso!' : 'ServiÃ§o criado com sucesso!')
         },
         onError: (err: any) => {
-            toast.error(err.response?.data?.message ?? 'Erro ao salvar serviço.')
+            toast.error(err.response?.data?.message ?? 'Erro ao salvar serviÃ§o.')
         }
     })
 
@@ -65,14 +70,14 @@ export function ServicesPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['services'] })
             setShowConfirmDelete(null)
-            toast.success('Serviço excluído com sucesso!')
+            toast.success('ServiÃ§o excluÃ­do com sucesso!')
         },
         onError: (err: any) => {
             if (err.response?.status === 409 || err.response?.status === 422) {
                 setDeleteDependencies(err.response.data.dependencies)
                 setDeleteMessage(err.response.data.message)
             } else {
-                toast.error(err.response?.data?.message ?? 'Erro ao excluir serviço.')
+                toast.error(err.response?.data?.message ?? 'Erro ao excluir serviÃ§o.')
                 setShowConfirmDelete(null)
             }
         },
@@ -104,7 +109,7 @@ export function ServicesPage() {
 
     const formatBRL = (v: string) => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     const formatTime = (m: number | null) => {
-        if (!m) return '—'
+        if (!m) return 'â€”'
         const h = Math.floor(m / 60)
         const min = m % 60
         return h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2, '0') : ''}` : `${min}min`
@@ -126,19 +131,18 @@ export function ServicesPage() {
 
     return (
         <div className="space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-bold text-surface-900 tracking-tight">Serviços</h1>
-                    <p className="mt-0.5 text-sm text-surface-500">Catálogo de serviços prestados</p>
-                </div>
-                <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Novo Serviço</Button>
-            </div>
+            <PageHeader
+                title="ServiÃ§os"
+                subtitle="CatÃ¡logo de serviÃ§os prestados"
+                count={services.length}
+                actions={[{ label: 'Novo ServiÃ§o', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }]}
+            />
 
             <div className="max-w-sm">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
                     <input type="text" value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-                        placeholder="Buscar por nome ou código..."
+                        placeholder="Buscar por nome ou cÃ³digo..."
                         className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-4 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                 </div>
             </div>
@@ -147,16 +151,23 @@ export function ServicesPage() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Serviço</th>
+                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">ServiÃ§o</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Categoria</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Preço</th>
+                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">PreÃ§o</th>
                             <th className="hidden px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Tempo</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
+                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {services.length === 0 ? (
-                            <tr><td colSpan={5} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum serviço encontrado</td></tr>
+                            <tr><td colSpan={5} className="px-4 py-2">
+                                <EmptyState
+                                    icon={<Briefcase className="h-5 w-5 text-surface-300" />}
+                                    message="Nenhum serviÃ§o encontrado"
+                                    action={{ label: 'Novo ServiÃ§o', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }}
+                                    compact
+                                />
+                            </td></tr>
                         ) : services.map(s => (
                             <tr key={s.id} className="hover:bg-surface-50 transition-colors duration-100">
                                 <td className="px-4 py-3">
@@ -171,7 +182,7 @@ export function ServicesPage() {
                                     </div>
                                 </td>
                                 <td className="hidden px-4 py-3 md:table-cell">
-                                    {s.category ? <Badge variant="success">{s.category.name}</Badge> : <span className="text-xs text-surface-400">—</span>}
+                                    {s.category ? <Badge variant="success">{s.category.name}</Badge> : <span className="text-xs text-surface-400">â€”</span>}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-right text-[13px] font-medium text-surface-900">{formatBRL(s.default_price)}</td>
                                 <td className="hidden px-3.5 py-2.5 text-right lg:table-cell">
@@ -181,14 +192,20 @@ export function ServicesPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="sm" onClick={() => {
+                                        <IconButton
+                                            icon={<UploadCloud className="h-4 w-4" />}
+                                            aria-label="Exportar para Auvo"
+                                            tooltip="Exportar para Auvo"
+                                            onClick={() => exportService.mutate(s.id)}
+                                            className="hover:text-blue-600 hover:bg-blue-50"
+                                            disabled={exportService.isPending}
+                                        />
+                                        <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(s)} className="hover:text-brand-600" />
+                                        <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => {
                                             setShowConfirmDelete(s)
                                             setDeleteDependencies(null)
                                             setDeleteMessage(null)
-                                        }}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                        </Button>
+                                        }} className="hover:text-red-600" />
                                     </div>
                                 </td>
                             </tr>
@@ -198,11 +215,11 @@ export function ServicesPage() {
             </div>
 
             {/* Form */}
-            <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Serviço' : 'Novo Serviço'} size="lg">
+            <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar ServiÃ§o' : 'Novo ServiÃ§o'} size="lg">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Input label="Nome" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
-                        <Input label="Código" value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('code', e.target.value)} placeholder="Opcional" />
+                        <Input label="CÃ³digo" value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('code', e.target.value)} placeholder="Opcional" />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
@@ -219,11 +236,11 @@ export function ServicesPage() {
                                     onClick={() => catMut.mutate(newCat)}>+</Button>
                             </div>
                         </div>
-                        <Input label="Preço Padrão (R$)" type="number" step="0.01" value={form.default_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('default_price', e.target.value)} />
+                        <Input label="PreÃ§o PadrÃ£o (R$)" type="number" step="0.01" value={form.default_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('default_price', e.target.value)} />
                         <Input label="Tempo Estimado (min)" type="number" value={form.estimated_minutes} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('estimated_minutes', e.target.value)} placeholder="Ex: 60" />
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Descrição</label>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">DescriÃ§Ã£o</label>
                         <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
@@ -235,7 +252,7 @@ export function ServicesPage() {
             </Modal>
 
             {/* Confirm Delete Modal */}
-            <Modal open={!!showConfirmDelete} onOpenChange={() => setShowConfirmDelete(null)} size="sm" title="Excluir Serviço">
+            <Modal open={!!showConfirmDelete} onOpenChange={() => setShowConfirmDelete(null)} size="sm" title="Excluir ServiÃ§o">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 flex-shrink-0">
@@ -251,14 +268,14 @@ export function ServicesPage() {
 
                     {deleteMessage && (
                         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-100">
-                            <p className="font-medium mb-1">Não é possível excluir:</p>
+                            <p className="font-medium mb-1">NÃ£o Ã© possÃ­vel excluir:</p>
                             <p>{deleteMessage}</p>
                         </div>
                     )}
 
                     {deleteDependencies && (
                         <div className="space-y-2">
-                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
+                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">VÃ­nculos encontrados:</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(deleteDependencies).map(([key, count]) => (
                                     <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
@@ -274,12 +291,12 @@ export function ServicesPage() {
                         <Button variant="outline" onClick={() => setShowConfirmDelete(null)}>Cancelar</Button>
                         {deleteDependencies ? (
                             <Button variant="ghost" disabled className="text-surface-400 cursor-not-allowed">
-                                Resolva as pendências acima
+                                Resolva as pendÃªncias acima
                             </Button>
                         ) : (
                             <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
-                                onClick={() => showConfirmDelete && deleteMut.mutate(showConfirmDelete.id)}>
-                                Excluir Serviço
+                                onClick={() => showConfirmDelete && { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(showConfirmDelete.id) }}>
+                                Excluir ServiÃ§o
                             </Button>
                         )}
                     </div>

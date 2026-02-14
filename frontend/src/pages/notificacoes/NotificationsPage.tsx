@@ -1,4 +1,5 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Bell, Check, CheckCheck, AlertTriangle, Info, DollarSign, Wrench } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -52,21 +53,21 @@ export function NotificationsPage() {
 
     const markReadMut = useMutation({
         mutationFn: (id: number) => api.put(`/notifications/${id}/read`),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications-full'] }),
+        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['notifications-full'] }),
     })
 
     const markAllMut = useMutation({
         mutationFn: () => api.put('/notifications/read-all'),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications-full'] }),
+        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['notifications-full'] }),
     })
 
     if (!canViewNotifications) {
         return (
             <div className="rounded-xl border border-default bg-surface-0 p-8 text-center shadow-card">
                 <Bell className="mx-auto mb-3 h-10 w-10 text-surface-300" />
-                <h1 className="text-base font-semibold text-surface-900">Sem acesso a notificações</h1>
+                <h1 className="text-base font-semibold text-surface-900">Sem acesso a notificaÃ§Ãµes</h1>
                 <p className="mt-1 text-[13px] text-surface-500">
-                    Você não possui permissão para visualizar este módulo.
+                    VocÃª nÃ£o possui permissÃ£o para visualizar este mÃ³dulo.
                 </p>
             </div>
         )
@@ -94,9 +95,9 @@ export function NotificationsPage() {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Notificações</h1>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">NotificaÃ§Ãµes</h1>
                     <p className="text-[13px] text-surface-500 mt-1">
-                        {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Todas lidas'}
+                        {unreadCount > 0 ? `${unreadCount} nÃ£o lida${unreadCount > 1 ? 's' : ''}` : 'Todas lidas'}
                     </p>
                 </div>
                 {unreadCount > 0 && canUpdateNotifications && (
@@ -138,7 +139,7 @@ export function NotificationsPage() {
                 ) : notifications.length === 0 ? (
                     <div className="p-12 text-center text-surface-400">
                         <Bell className="h-10 w-10 mx-auto mb-3 text-surface-300" />
-                        Nenhuma notificação encontrada.
+                        Nenhuma notificaÃ§Ã£o encontrada.
                     </div>
                 ) : (
                     notifications.map(n => {

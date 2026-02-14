@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Package, AlertTriangle, TrendingDown, DollarSign, ArrowRight } from 'lucide-react'
+import { Package, AlertTriangle, TrendingDown, DollarSign, ArrowRight, Warehouse, Tag, ClipboardCheck, ScrollText, ArrowLeftRight, BarChart3, QrCode } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/badge'
+import { PageHeader } from '@/components/ui/pageheader'
 
 interface StockSummary {
     total_products: number
@@ -46,18 +47,17 @@ export function StockDashboardPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Estoque</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Visão geral do controle de estoque</p>
-                </div>
-                <Link
-                    to="/estoque/movimentacoes"
-                    className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
-                >
-                    Ver Movimentações <ArrowRight className="h-4 w-4" />
-                </Link>
-            </div>
+            <PageHeader
+                title="Estoque"
+                subtitle="Visão geral do controle de estoque"
+                actions={[
+                    {
+                        label: 'Ver Movimentações',
+                        icon: <ArrowRight className="h-4 w-4" />,
+                        href: '/estoque/movimentacoes',
+                    },
+                ]}
+            />
 
             {/* Summary Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -116,6 +116,32 @@ export function StockDashboardPage() {
                     </div>
                 )
             })()}
+
+            {/* Quick Access Links */}
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-5">
+                {[
+                    { label: 'Armazéns', icon: Warehouse, path: '/estoque/armazens', color: 'text-blue-600 bg-blue-50 hover:bg-blue-100' },
+                    { label: 'Lotes', icon: Tag, path: '/estoque/lotes', color: 'text-purple-600 bg-purple-50 hover:bg-purple-100' },
+                    { label: 'Movimentações', icon: ArrowLeftRight, path: '/estoque/movimentacoes', color: 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' },
+                    { label: 'Inventário Cego', icon: ClipboardCheck, path: '/estoque/inventarios', color: 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' },
+                    { label: 'Kardex', icon: ScrollText, path: '/estoque/kardex', color: 'text-amber-600 bg-amber-50 hover:bg-amber-100' },
+                    { label: 'Inteligência', icon: BarChart3, path: '/estoque/inteligencia', color: 'text-rose-600 bg-rose-50 hover:bg-rose-100' },
+                    { label: 'Integração', icon: QrCode, path: '/estoque/integracao', color: 'text-cyan-600 bg-cyan-50 hover:bg-cyan-100' },
+                ].map(link => (
+                    <Link
+                        key={link.path}
+                        to={link.path}
+                        className={cn(
+                            'flex items-center gap-3 rounded-xl border border-default p-4 transition-colors duration-150',
+                            link.color,
+                        )}
+                    >
+                        <link.icon className="h-5 w-5" />
+                        <span className="text-sm font-semibold">{link.label}</span>
+                        <ArrowRight className="ml-auto h-4 w-4 opacity-40" />
+                    </Link>
+                ))}
+            </div>
 
             {/* Low Stock Alerts */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">

@@ -5,6 +5,94 @@
    Precision · Traceability · Confidence
    ============================================ */
 
+/* ── shadcn/ui Token Bridge ──
+   Maps shadcn's expected CSS variables to Kalibrium tokens.
+   This allows shadcn components to use our design system. */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.20 0.008 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.008 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.008 260);
+  --primary: oklch(0.47 0.18 245);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.965 0.005 260);
+  --secondary-foreground: oklch(0.20 0.008 260);
+  --muted: oklch(0.965 0.005 260);
+  --muted-foreground: oklch(0.55 0.008 260);
+  --accent: oklch(0.965 0.005 260);
+  --accent-foreground: oklch(0.20 0.008 260);
+  --destructive: oklch(0.55 0.20 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0 0 0 / 0.09);
+  --input: oklch(0 0 0 / 0.09);
+  --ring: oklch(0.55 0.18 245);
+  --radius: 0.5rem;
+  --chart-1: oklch(0.55 0.18 245);
+  --chart-2: oklch(0.60 0.17 145);
+  --chart-3: oklch(0.75 0.15 75);
+  --chart-4: oklch(0.60 0.15 245);
+  --chart-5: oklch(0.55 0.20 27);
+  --sidebar-background: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.20 0.008 260);
+  --sidebar-primary: oklch(0.47 0.18 245);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.965 0.005 260);
+  --sidebar-accent-foreground: oklch(0.20 0.008 260);
+  --sidebar-border: oklch(0 0 0 / 0.06);
+  --sidebar-ring: oklch(0.55 0.18 245);
+}
+
+/* ── Dark Mode ── */
+.dark {
+  --background: oklch(0.14 0.008 260);
+  --foreground: oklch(0.93 0.005 260);
+  --card: oklch(0.18 0.008 260);
+  --card-foreground: oklch(0.93 0.005 260);
+  --popover: oklch(0.18 0.008 260);
+  --popover-foreground: oklch(0.93 0.005 260);
+  --primary: oklch(0.60 0.18 245);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.22 0.008 260);
+  --secondary-foreground: oklch(0.93 0.005 260);
+  --muted: oklch(0.22 0.008 260);
+  --muted-foreground: oklch(0.60 0.008 260);
+  --accent: oklch(0.22 0.008 260);
+  --accent-foreground: oklch(0.93 0.005 260);
+  --destructive: oklch(0.55 0.20 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.08);
+  --ring: oklch(0.60 0.18 245);
+  --sidebar-background: oklch(0.14 0.008 260);
+  --sidebar-foreground: oklch(0.93 0.005 260);
+  --sidebar-primary: oklch(0.60 0.18 245);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.22 0.008 260);
+  --sidebar-accent-foreground: oklch(0.93 0.005 260);
+  --sidebar-border: oklch(1 0 0 / 0.06);
+  --sidebar-ring: oklch(0.60 0.18 245);
+
+  color-scheme: dark;
+}
+
+/* Dark Mode surface overrides */
+.dark .bg-surface-0 { background-color: oklch(0.18 0.008 260) !important; }
+.dark .bg-surface-50 { background-color: oklch(0.20 0.008 260) !important; }
+.dark .bg-surface-100 { background-color: oklch(0.22 0.008 260) !important; }
+.dark .text-surface-900 { color: oklch(0.93 0.005 260) !important; }
+.dark .text-surface-800 { color: oklch(0.87 0.008 260) !important; }
+.dark .text-surface-700 { color: oklch(0.80 0.008 260) !important; }
+.dark .text-surface-600 { color: oklch(0.70 0.008 260) !important; }
+.dark .text-surface-500 { color: oklch(0.60 0.008 260) !important; }
+.dark .text-surface-400 { color: oklch(0.55 0.008 260) !important; }
+.dark .border-default { border-color: oklch(1 0 0 / 0.08) !important; }
+.dark .border-subtle { border-color: oklch(1 0 0 / 0.06) !important; }
+.dark .shadow-card { box-shadow: 0 1px 3px oklch(0 0 0 / 0.3) !important; }
+.dark .bg-brand-50 { background-color: oklch(0.22 0.05 245) !important; }
+.dark .text-brand-700 { color: oklch(0.70 0.14 245) !important; }
+
 @theme {
   /* ── Brand (Azul-Instrumento, hue 245) ── */
   --color-brand-50: oklch(0.97 0.01 245);
@@ -116,28 +204,59 @@
 
 /* ── Animations ── */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.97); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @utility animate-fade-in {
@@ -164,12 +283,29 @@
 
 /* ── Stagger Delays ── */
 @layer utilities {
-  .stagger-1 { animation-delay: 0.04s; }
-  .stagger-2 { animation-delay: 0.08s; }
-  .stagger-3 { animation-delay: 0.12s; }
-  .stagger-4 { animation-delay: 0.16s; }
-  .stagger-5 { animation-delay: 0.20s; }
-  .stagger-6 { animation-delay: 0.24s; }
+  .stagger-1 {
+    animation-delay: 0.04s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.08s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.12s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.16s;
+  }
+
+  .stagger-5 {
+    animation-delay: 0.20s;
+  }
+
+  .stagger-6 {
+    animation-delay: 0.24s;
+  }
 }
 
 /* ── Skeleton Loader ── */
@@ -186,4 +322,109 @@
     scrollbar-width: thin;
     scrollbar-color: oklch(0.80 0.005 260) transparent;
   }
+}
+
+/* ── Reduced Motion (WCAG accessibility) ── */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Responsive: Table Scroll Indicator ── */
+@utility table-scroll-container {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@layer utilities {
+  /* Fade hints on scrollable tables */
+  .table-scroll-fade {
+    position: relative;
+  }
+
+  .table-scroll-fade::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, oklch(0.985 0.003 260));
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .table-scroll-fade[data-has-scroll="true"]::after {
+    opacity: 1;
+  }
+}
+
+/* ── Responsive: Touch Targets (WCAG 2.5.8) ── */
+@media (pointer: coarse) {
+  /* Ensure minimum 44px hit area on touch devices */
+  button,
+  a,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  select,
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Compact table cells get more padding on touch */
+  td, th {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
+
+  /* Increase spacing between action buttons */
+  .action-buttons-row {
+    gap: 0.5rem;
+  }
+}
+
+/* ── Responsive: Mobile Adjustments ── */
+@media (max-width: 639px) {
+  /* Stack forms vertically on small screens */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Full-width buttons on mobile */
+  .btn-mobile-full {
+    width: 100%;
+  }
+}
+
+/* ── Responsive: TV / Dashboard Mode ── */
+@media (min-width: 1920px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 2560px) {
+  html {
+    font-size: 19px;
+  }
+}
+
+/* ── Content Container (prevents stretching on ultra-wide) ── */
+@utility content-container {
+  max-width: 1536px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }

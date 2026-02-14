@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Download, FileSpreadsheet, Landmark } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import api from '@/lib/api'
 
 interface ExportButtonsProps {

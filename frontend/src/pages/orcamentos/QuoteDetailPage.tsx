@@ -7,9 +7,9 @@ import api from '@/lib/api'
 import { QUOTE_STATUS } from '@/lib/constants'
 import { QUOTE_STATUS_CONFIG } from '@/features/quotes/constants'
 import type { Quote } from '@/types/quote'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
     ArrowLeft, Pencil, Send, CheckCircle, XCircle, Copy,
     ArrowRightLeft, FileDown, Trash2, RefreshCw, Link as LinkIcon, Clock
@@ -35,6 +35,7 @@ export function QuoteDetailPage() {
     const canSend = hasPermission('quotes.quote.send')
     const canApprove = hasPermission('quotes.quote.approve')
     const canCreate = hasPermission('quotes.quote.create')
+    const canConvert = hasPermission('quotes.quote.convert')
 
     const { data: quote, isLoading } = useQuery<Quote>({
         queryKey: ['quote', id],
@@ -175,9 +176,9 @@ export function QuoteDetailPage() {
                             </Button>
                         </>
                     )}
-                    {canUpdate && isApproved && (
+                    {canConvert && isApproved && (
                         <Button size="sm" icon={<ArrowRightLeft className="h-4 w-4" />} onClick={() => convertMut.mutate()} disabled={convertMut.isPending}>
-                            Converter em OS
+                            {convertMut.isPending ? 'Convertendo...' : 'Converter em OS'}
                         </Button>
                     )}
                     {canUpdate && (isRejected || isExpired) && (

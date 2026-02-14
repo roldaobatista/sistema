@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { ArrowLeft, Phone, Mail, MapPin, Scale, CheckCircle, XCircle, Wrench, Clock, RefreshCw, UserPlus, Pencil, Trash2, Loader2 } from 'lucide-react'
-import { useInmetroOwner, useEnrichOwner, useConvertToCustomer, useDeleteOwner, type InmetroInstrument, type InmetroLocation } from '@/hooks/useInmetro'
+import { ArrowLeft, Phone, Mail, MapPin, Scale, CheckCircle, XCircle, Wrench, Clock, RefreshCw, UserPlus, Pencil, Trash2, Loader2, History, Building2, Navigation, AlertTriangle, DollarSign, Globe } from 'lucide-react'
+import { useInmetroOwner, useEnrichOwner, useConvertToCustomer, useDeleteOwner, useEnrichFromDadosGov, type InmetroInstrument, type InmetroLocation, type InmetroHistoryEntry } from '@/hooks/useInmetro'
 import { useAuthStore } from '@/stores/auth-store'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Modal } from '@/components/ui/modal'
 import { InmetroOwnerEditModal } from './InmetroOwnerEditModal'
 
 const statusIcons: Record<string, { icon: React.ElementType; color: string; label: string }> = {
@@ -19,6 +19,7 @@ const statusIcons: Record<string, { icon: React.ElementType; color: string; labe
 }
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
+    critical: { label: 'CRÍTICO', color: 'bg-red-600 text-white border-red-700 animate-pulse' },
     urgent: { label: 'Urgente', color: 'bg-red-100 text-red-700 border-red-200' },
     high: { label: 'Alta', color: 'bg-amber-100 text-amber-700 border-amber-200' },
     normal: { label: 'Normal', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -41,6 +42,7 @@ export function InmetroOwnerDetailPage() {
     const enrichMutation = useEnrichOwner()
     const convertMutation = useConvertToCustomer()
     const deleteOwnerMutation = useDeleteOwner()
+    const dadosGovMutation = useEnrichFromDadosGov()
 
     const handleEnrich = () => {
         if (!owner) return
@@ -111,6 +113,10 @@ export function InmetroOwnerDetailPage() {
     }
 
     const allInstruments: InmetroInstrument[] = owner.locations?.flatMap((l: InmetroLocation) => l.instruments ?? []) ?? []
+    const allHistory: (InmetroHistoryEntry & { instrumentNumber?: string; instrumentBrand?: string })[] =
+        allInstruments.flatMap(inst =>
+            (inst.history ?? []).map(h => ({ ...h, instrumentNumber: inst.inmetro_number, instrumentBrand: inst.brand ?? '' }))
+        ).sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime())
 
     return (
         <div className="space-y-6">
@@ -148,6 +154,13 @@ export function InmetroOwnerDetailPage() {
                         <Button variant="outline" size="sm" onClick={handleEnrich} disabled={enrichMutation.isPending}>
                             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${enrichMutation.isPending ? 'animate-spin' : ''}`} />
                             Enriquecer
+                        </Button>
+                    )}
+                    {canEnrich && owner.type === 'PJ' && (
+                        <Button variant="outline" size="sm" onClick={() => dadosGovMutation.mutate(owner.id)} disabled={dadosGovMutation.isPending}
+                            className="border-green-300 text-green-700 hover:bg-green-50">
+                            {dadosGovMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Globe className="mr-1.5 h-3.5 w-3.5" />}
+                            DadosGov
                         </Button>
                     )}
                     {canConvert && !owner.converted_to_customer_id && (
@@ -208,10 +221,21 @@ export function InmetroOwnerDetailPage() {
                                     color="text-red-600"
                                 />
                                 <StatBox
+                                    label="Reprovados"
+                                    value={allInstruments.filter(i => i.current_status === 'rejected').length}
+                                    color="text-red-600"
+                                />
+                                <StatBox
                                     label="Em dia"
                                     value={allInstruments.filter(i => i.current_status === 'approved').length}
                                     color="text-green-600"
                                 />
+                                {owner.estimated_revenue > 0 && (
+                                    <div className="rounded-lg border border-default bg-green-50 p-3 text-center">
+                                        <p className="text-lg font-bold text-green-700">R$ {Number(owner.estimated_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                        <p className="text-xs text-green-600 mt-0.5">Receita Estimada</p>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -227,6 +251,9 @@ export function InmetroOwnerDetailPage() {
                             <TabsTrigger value="instruments">
                                 <span className="inline-flex items-center gap-1.5"><Scale className="h-3.5 w-3.5" /> Instrumentos ({allInstruments.length})</span>
                             </TabsTrigger>
+                            <TabsTrigger value="history">
+                                <span className="inline-flex items-center gap-1.5"><History className="h-3.5 w-3.5" /> Histórico ({allHistory.length})</span>
+                            </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="locations" className="mt-4 space-y-3">
@@ -236,26 +263,56 @@ export function InmetroOwnerDetailPage() {
                                     Nenhuma localização registrada
                                 </div>
                             ) : (
-                                owner.locations.map((loc: InmetroLocation) => (
-                                    <Card key={loc.id}>
-                                        <CardContent className="py-4">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <p className="font-medium text-surface-800">
-                                                        {loc.address_city}/{loc.address_state}
+                                owner.locations.map((loc: InmetroLocation) => {
+                                    const fullAddress = [loc.address_street, loc.address_number, loc.address_complement, loc.address_neighborhood].filter(Boolean).join(', ')
+                                    return (
+                                        <Card key={loc.id}>
+                                            <CardContent className="py-4 space-y-2">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <p className="font-medium text-surface-800">
+                                                            {loc.address_city}/{loc.address_state}
+                                                        </p>
+                                                        {loc.farm_name && <p className="text-xs text-surface-500 flex items-center gap-1"><Building2 className="h-3 w-3" /> {loc.farm_name}</p>}
+                                                        {loc.state_registration && (
+                                                            <p className="text-xs text-surface-500 font-mono">IE: {loc.state_registration}</p>
+                                                        )}
+                                                    </div>
+                                                    <Badge>
+                                                        {loc.instruments?.length ?? 0} instrumento(s)
+                                                    </Badge>
+                                                </div>
+                                                {fullAddress && (
+                                                    <p className="text-xs text-surface-600 flex items-center gap-1.5">
+                                                        <MapPin className="h-3 w-3 text-surface-400 shrink-0" />
+                                                        {fullAddress}{loc.address_zip && ` — CEP: ${loc.address_zip}`}
                                                     </p>
-                                                    {loc.farm_name && <p className="text-xs text-surface-500">{loc.farm_name}</p>}
-                                                    {loc.state_registration && (
-                                                        <p className="text-xs text-surface-500 font-mono">IE: {loc.state_registration}</p>
+                                                )}
+                                                <div className="flex flex-wrap gap-3 text-xs text-surface-600">
+                                                    {loc.phone_local && (
+                                                        <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3 text-green-500" /> {loc.phone_local}</span>
+                                                    )}
+                                                    {loc.email_local && (
+                                                        <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3 text-blue-500" /> {loc.email_local}</span>
+                                                    )}
+                                                    {loc.distance_from_base_km != null && (
+                                                        <span className="inline-flex items-center gap-1"><Navigation className="h-3 w-3 text-amber-500" /> {loc.distance_from_base_km.toFixed(0)} km da base</span>
+                                                    )}
+                                                    {loc.latitude && loc.longitude && (
+                                                        <a
+                                                            href={`https://maps.google.com/?q=${loc.latitude},${loc.longitude}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 underline"
+                                                        >
+                                                            <MapPin className="h-3 w-3" /> Ver no mapa
+                                                        </a>
                                                     )}
                                                 </div>
-                                                <Badge>
-                                                    {loc.instruments?.length ?? 0} instrumento(s)
-                                                </Badge>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))
+                                            </CardContent>
+                                        </Card>
+                                    )
+                                })
                             )}
                         </TabsContent>
 
@@ -271,9 +328,12 @@ export function InmetroOwnerDetailPage() {
                                         <thead>
                                             <tr className="border-b border-default bg-surface-50">
                                                 <th className="px-3 py-2.5 text-left font-medium text-surface-600">Nº INMETRO</th>
+                                                <th className="px-3 py-2.5 text-left font-medium text-surface-600">Nº Série</th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-surface-600">Marca/Modelo</th>
+                                                <th className="px-3 py-2.5 text-left font-medium text-surface-600">Tipo</th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-surface-600">Capacidade</th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-surface-600">Status</th>
+                                                <th className="px-3 py-2.5 text-left font-medium text-surface-600">Executor</th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-surface-600">Última Verif.</th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-surface-600">Próxima</th>
                                             </tr>
@@ -286,15 +346,18 @@ export function InmetroOwnerDetailPage() {
                                                 return (
                                                     <tr key={inst.id} className="border-b border-subtle hover:bg-surface-25">
                                                         <td className="px-3 py-2.5 font-mono text-xs">{inst.inmetro_number}</td>
+                                                        <td className="px-3 py-2.5 text-surface-600 text-xs font-mono">{inst.serial_number || '—'}</td>
                                                         <td className="px-3 py-2.5 text-surface-700">
                                                             {inst.brand || '—'} {inst.model && `/ ${inst.model}`}
                                                         </td>
+                                                        <td className="px-3 py-2.5 text-surface-600 text-xs">{inst.instrument_type || '—'}</td>
                                                         <td className="px-3 py-2.5 text-surface-600 text-xs">{inst.capacity || '—'}</td>
                                                         <td className="px-3 py-2.5">
                                                             <span className={`inline-flex items-center gap-1 text-xs font-medium ${si.color}`}>
                                                                 <StatusIcon className="h-3.5 w-3.5" /> {si.label}
                                                             </span>
                                                         </td>
+                                                        <td className="px-3 py-2.5 text-xs text-surface-600">{inst.last_executor || '—'}</td>
                                                         <td className="px-3 py-2.5 text-xs text-surface-600">
                                                             {inst.last_verification_at ? new Date(inst.last_verification_at).toLocaleDateString('pt-BR') : '—'}
                                                         </td>
@@ -307,6 +370,79 @@ export function InmetroOwnerDetailPage() {
                                             })}
                                         </tbody>
                                     </table>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        {/* Histórico Tab */}
+                        <TabsContent value="history" className="mt-4">
+                            {allHistory.length === 0 ? (
+                                <div className="text-center py-8 text-surface-400 text-sm">
+                                    <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                    Nenhum histórico de verificação registrado
+                                    <p className="text-xs mt-1 text-surface-400">Importe dados do PSIE para ver o histórico completo</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-0 relative">
+                                    {/* Timeline line */}
+                                    <div className="absolute left-4 top-3 bottom-3 w-px bg-surface-200" />
+
+                                    {allHistory.map((h, idx) => {
+                                        const eventConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
+                                            verification: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100', label: 'Verificação' },
+                                            repair: { icon: Wrench, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Reparo' },
+                                            rejection: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Reprovação' },
+                                            initial: { icon: Scale, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Verificação Inicial' },
+                                        }
+                                        const config = eventConfig[h.event_type] || eventConfig.verification
+                                        const EventIcon = config.icon
+                                        const resultLabels: Record<string, string> = {
+                                            approved: 'Aprovado',
+                                            rejected: 'Reprovado',
+                                            repaired: 'Reparado',
+                                        }
+                                        return (
+                                            <div key={`${h.id}-${idx}`} className="relative flex items-start gap-3 py-3 pl-1">
+                                                <div className={`relative z-10 h-7 w-7 rounded-full ${config.bg} flex items-center justify-center shrink-0`}>
+                                                    <EventIcon className={`h-3.5 w-3.5 ${config.color}`} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="text-sm font-medium text-surface-800">{config.label}</span>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${h.result === 'approved' ? 'bg-green-100 text-green-700' :
+                                                            h.result === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                                'bg-amber-100 text-amber-700'
+                                                            }`}>
+                                                            {resultLabels[h.result] || h.result}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-surface-500 mt-0.5 space-y-0.5">
+                                                        <p>
+                                                            <span className="font-mono">{h.instrumentNumber}</span>
+                                                            {h.instrumentBrand && ` — ${h.instrumentBrand}`}
+                                                        </p>
+                                                        <p>
+                                                            {new Date(h.event_date).toLocaleDateString('pt-BR')}
+                                                            {h.validity_date && ` • Validade: ${new Date(h.validity_date).toLocaleDateString('pt-BR')}`}
+                                                        </p>
+                                                        {h.executor && (
+                                                            <p className="flex items-center gap-1">
+                                                                <Building2 className="h-3 w-3" />
+                                                                <span className="font-medium">{h.executor}</span>
+                                                                {h.competitor_name && (
+                                                                    <span className="ml-1 inline-flex items-center gap-0.5 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-amber-700 font-medium">
+                                                                        <Wrench className="h-2.5 w-2.5" />
+                                                                        {h.competitor_name}
+                                                                    </span>
+                                                                )}
+                                                            </p>
+                                                        )}
+                                                        {h.notes && <p className="italic text-surface-400">{h.notes}</p>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             )}
                         </TabsContent>

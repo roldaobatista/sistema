@@ -7,10 +7,10 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
 import { useAuthStore } from '@/stores/auth-store'
 
 const typeConfig: Record<string, { label: string; variant: 'default' | 'brand' | 'success' | 'danger' | 'warning' | 'info'; icon: typeof Briefcase }> = {

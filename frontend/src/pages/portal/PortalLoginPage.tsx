@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2, LogIn } from 'lucide-react'
 import { usePortalAuthStore } from '@/stores/portal-auth-store'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const loginSchema = z.object({
     email: z.string().email('E-mail inválido'),

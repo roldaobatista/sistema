@@ -1,14 +1,42 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import {
-    FileText, DollarSign, TrendingUp,
+    FileText, DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
     Clock, CheckCircle2, Wallet, Receipt, AlertCircle, Scale, AlertTriangle, Package,
+    Plus, Search, Zap, Users, Rocket,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/badge'
 import api from '@/lib/api'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+function TrendBadge({ current, previous, suffix = '', invert = false }: {
+    current: number
+    previous: number
+    suffix?: string
+    invert?: boolean
+}) {
+    if (previous === 0 && current === 0) return null
+    const pct = previous === 0 ? 100 : Math.round(((current - previous) / previous) * 100)
+    if (pct === 0) return null
+
+    const isPositive = invert ? pct < 0 : pct > 0
+    const Icon = pct > 0 ? ArrowUpRight : ArrowDownRight
+
+    return (
+        <span className={cn(
+            'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums',
+            isPositive
+                ? 'bg-emerald-50 text-emerald-600'
+                : 'bg-red-50 text-red-600'
+        )}>
+            <Icon className="h-3 w-3" />
+            {Math.abs(pct)}%{suffix}
+        </span>
+    )
+}
 
 const statusConfig: Record<string, { label: string; variant: any; color: string }> = {
     pending: { label: 'Pendente', variant: 'warning', color: 'text-amber-600' },
@@ -19,6 +47,7 @@ const statusConfig: Record<string, { label: string; variant: any; color: string 
 
 export function DashboardPage() {
     const { user } = useAuthStore()
+    const navigate = useNavigate()
 
     const { data: statsRes, isLoading } = useQuery({
         queryKey: ['dashboard-stats'],
@@ -33,6 +62,14 @@ export function DashboardPage() {
     const eqAlerts = s.eq_alerts ?? []
     const eqOverdue = s.eq_overdue ?? 0
     const eqDue7 = s.eq_due_7 ?? 0
+    const isEmpty = !isLoading && (s.open_os ?? 0) === 0 && (s.completed_month ?? 0) === 0 && (s.revenue_month ?? 0) === 0
+
+    const quickActions = [
+        { label: 'Nova OS', icon: Plus, path: '/os/criar', color: 'bg-brand-500 text-white hover:bg-brand-600' },
+        { label: 'Novo Orçamento', icon: FileText, path: '/orcamentos/criar', color: 'bg-surface-100 text-surface-700 hover:bg-surface-200' },
+        { label: 'Novo Cliente', icon: Users, path: '/cadastros/clientes/novo', color: 'bg-surface-100 text-surface-700 hover:bg-surface-200' },
+        { label: 'Buscar', icon: Search, path: '', color: 'bg-surface-100 text-surface-700 hover:bg-surface-200', kbd: 'Ctrl+K' },
+    ]
 
     return (
         <div className="space-y-5">
@@ -44,18 +81,70 @@ export function DashboardPage() {
                 </p>
             </div>
 
-            {/* Hero KPIs — varied hierarchy, not identical cards */}
+            {/* Onboarding empty state */}
+            {isEmpty && (
+                <div className="rounded-xl border-2 border-dashed border-surface-200 bg-surface-50/50 p-8 text-center">
+                    <Rocket className="mx-auto h-10 w-10 text-brand-400 mb-3" />
+                    <h2 className="text-[15px] font-semibold text-surface-900">Bem-vindo ao Kalibrium!</h2>
+                    <p className="mt-1 text-[13px] text-surface-500 max-w-md mx-auto">
+                        Comece cadastrando seus clientes e criando sua primeira ordem de serviço.
+                    </p>
+                    <div className="mt-4 flex justify-center gap-2">
+                        <button
+                            onClick={() => navigate('/cadastros/clientes/novo')}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-surface-100 px-3.5 py-2 text-[13px] font-medium text-surface-700 hover:bg-surface-200 transition-colors"
+                        >
+                            <Users className="h-4 w-4" /> Cadastrar Cliente
+                        </button>
+                        <button
+                            onClick={() => navigate('/os/criar')}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-brand-600 transition-colors"
+                        >
+                            <Plus className="h-4 w-4" /> Criar OS
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap gap-2">
+                {quickActions.map(a => (
+                    <button
+                        key={a.label}
+                        onClick={() => a.path ? navigate(a.path) : document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+                        className={cn(
+                            'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors duration-100',
+                            a.color
+                        )}
+                    >
+                        <a.icon className="h-3.5 w-3.5" />
+                        {a.label}
+                        {a.kbd && <kbd className="ml-1 rounded bg-surface-200/60 px-1 py-0.5 text-[10px] font-mono text-surface-400">{a.kbd}</kbd>}
+                    </button>
+                ))}
+            </div>
+
+            {/* Hero KPIs — with trend indicators */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Hero: OS Abertas — larger, more prominent */}
-                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                {/* Hero: OS Abertas */}
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-md transition-shadow duration-200 cursor-default">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-[11px] font-medium text-surface-500 uppercase tracking-wider">OS Abertas</span>
                         <FileText className="h-4 w-4 text-brand-400" />
                     </div>
-                    <p className="text-3xl font-bold text-surface-900 tabular-nums tracking-tight">
-                        {isLoading ? '—' : s.open_os ?? 0}
-                    </p>
-                    {/* Tolerance bar — signature element */}
+                    <div className="flex items-end gap-2">
+                        <p className="text-3xl font-bold text-surface-900 tabular-nums tracking-tight">
+                            {isLoading ? '—' : s.open_os ?? 0}
+                        </p>
+                        {!isLoading && (
+                            <TrendBadge
+                                current={s.open_os ?? 0}
+                                previous={s.prev_open_os ?? s.open_os ?? 0}
+                                invert
+                            />
+                        )}
+                    </div>
+                    {/* Tolerance bar */}
                     <div className="mt-3 flex gap-0.5">
                         <div className="h-1 flex-[3] rounded-l-full bg-emerald-400/70" />
                         <div className="h-1 flex-[1] bg-amber-400/70" />
@@ -64,38 +153,62 @@ export function DashboardPage() {
                 </div>
 
                 {/* Em Andamento */}
-                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-md transition-shadow duration-200 cursor-default">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-[11px] font-medium text-surface-500 uppercase tracking-wider">Em Andamento</span>
                         <Clock className="h-4 w-4 text-amber-400" />
                     </div>
-                    <p className="text-3xl font-bold text-surface-900 tabular-nums tracking-tight">
-                        {isLoading ? '—' : s.in_progress_os ?? 0}
-                    </p>
+                    <div className="flex items-end gap-2">
+                        <p className="text-3xl font-bold text-surface-900 tabular-nums tracking-tight">
+                            {isLoading ? '—' : s.in_progress_os ?? 0}
+                        </p>
+                        {!isLoading && (
+                            <TrendBadge
+                                current={s.in_progress_os ?? 0}
+                                previous={s.prev_in_progress_os ?? s.in_progress_os ?? 0}
+                            />
+                        )}
+                    </div>
                     <p className="mt-2 text-[11px] text-surface-400">ordens ativas</p>
                 </div>
 
                 {/* Concluídas */}
-                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-md transition-shadow duration-200 cursor-default">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-[11px] font-medium text-surface-500 uppercase tracking-wider">Concluídas</span>
                         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                     </div>
-                    <p className="text-3xl font-bold text-surface-900 tabular-nums tracking-tight">
-                        {isLoading ? '—' : s.completed_month ?? 0}
-                    </p>
+                    <div className="flex items-end gap-2">
+                        <p className="text-3xl font-bold text-surface-900 tabular-nums tracking-tight">
+                            {isLoading ? '—' : s.completed_month ?? 0}
+                        </p>
+                        {!isLoading && (
+                            <TrendBadge
+                                current={s.completed_month ?? 0}
+                                previous={s.prev_completed_month ?? s.completed_month ?? 0}
+                            />
+                        )}
+                    </div>
                     <p className="mt-2 text-[11px] text-surface-400">este mês</p>
                 </div>
 
-                {/* Faturamento — currency style */}
-                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                {/* Faturamento */}
+                <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-md transition-shadow duration-200 cursor-default">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-[11px] font-medium text-surface-500 uppercase tracking-wider">Faturamento</span>
                         <DollarSign className="h-4 w-4 text-brand-400" />
                     </div>
-                    <p className="text-lg font-semibold text-surface-900 tracking-tight tabular-nums tracking-tight">
-                        {isLoading ? '—' : fmtBRL(s.revenue_month ?? 0)}
-                    </p>
+                    <div className="flex items-end gap-2">
+                        <p className="text-lg font-semibold text-surface-900 tracking-tight tabular-nums">
+                            {isLoading ? '—' : fmtBRL(s.revenue_month ?? 0)}
+                        </p>
+                        {!isLoading && (
+                            <TrendBadge
+                                current={s.revenue_month ?? 0}
+                                previous={s.prev_revenue_month ?? s.revenue_month ?? 0}
+                            />
+                        )}
+                    </div>
                     <p className="mt-2 text-[11px] text-surface-400">receita mensal</p>
                 </div>
             </div>
@@ -108,7 +221,7 @@ export function DashboardPage() {
                     { label: 'Estoque Baixo', value: s.stock_low ?? 0, icon: Package, iconColor: 'text-amber-400' },
                     { label: 'SLA Estourado', value: (s.sla_response_breached ?? 0) + (s.sla_resolution_breached ?? 0), icon: AlertTriangle, iconColor: 'text-red-400' },
                 ].map((stat) => (
-                    <div key={stat.label} className="flex items-center gap-3 rounded-lg border border-subtle bg-surface-0 px-3.5 py-2.5">
+                    <div key={stat.label} className="flex items-center gap-3 rounded-lg border border-subtle bg-surface-0 px-3.5 py-2.5 hover:shadow-md transition-shadow duration-200 cursor-default">
                         <stat.icon className={cn('h-4 w-4 shrink-0', stat.iconColor)} />
                         <div className="min-w-0 flex-1">
                             <p className="text-[11px] text-surface-400 truncate">{stat.label}</p>

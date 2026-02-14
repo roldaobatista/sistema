@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Package, ArrowDownToLine, ArrowUpFromLine, RotateCcw, Wrench, ArrowLeftRight } from 'lucide-react'
+import { Search, Plus, Package, ArrowDownToLine, ArrowUpFromLine, RotateCcw, Wrench, ArrowLeftRight, MapPin, FileUp } from 'lucide-react'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
 
 interface StockMovement {
     id: number
@@ -18,6 +19,7 @@ interface StockMovement {
     unit_cost: string
     reference: string | null
     notes: string | null
+    warehouse: { id: number; name: string } | null
     created_by_user: { id: number; name: string } | null
     created_at: string
 }
@@ -34,6 +36,7 @@ const woIdentifier = (wo?: { number: string; os_number?: string | null; business
 
 const emptyForm = {
     product_id: '' as string | number,
+    warehouse_id: '' as string | number,
     type: 'entry' as 'entry' | 'adjustment',
     quantity: '',
     unit_cost: '0',
@@ -45,8 +48,12 @@ export function StockMovementsPage() {
     const [search, setSearch] = useState('')
     const [typeFilter, setTypeFilter] = useState('')
     const [showForm, setShowForm] = useState(false)
+    const [showXmlModal, setShowXmlModal] = useState(false)
+    const [importingXml, setImportingXml] = useState(false)
     const [form, setForm] = useState(emptyForm)
     const [page, setPage] = useState(1)
+    const [xmlFile, setXmlFile] = useState<File | null>(null)
+    const [xmlWarehouseId, setXmlWarehouseId] = useState('')
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['stock-movements', search, typeFilter, page],
@@ -60,6 +67,12 @@ export function StockMovementsPage() {
         queryFn: () => api.get('/products', { params: { per_page: 200 } }),
     })
     const products = productsRes?.data?.data ?? []
+
+    const { data: warehousesRes } = useQuery({
+        queryKey: ['warehouses-select'],
+        queryFn: () => api.get('/warehouses'),
+    })
+    const warehouses = warehousesRes?.data?.data ?? []
 
     const saveMut = useMutation({
         mutationFn: (data: typeof form) => api.post('/stock/movements', data),
@@ -78,6 +91,34 @@ export function StockMovementsPage() {
         },
     })
 
+    const importXmlMut = useMutation({
+        mutationFn: (data: FormData) => api.post('/stock/import-xml', data, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+        onSuccess: (res) => {
+            qc.invalidateQueries({ queryKey: ['stock-movements'] })
+            toast.success('XML processado com sucesso!')
+            setShowXmlModal(false)
+            setXmlFile(null)
+            const errors = res.data.data.errors
+            if (errors && errors.length > 0) {
+                toast.warning(`${errors.length} itens não puderam ser importados. Verifique o log.`)
+            }
+        },
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.message || 'Erro ao importar XML')
+        }
+    })
+
+    const handleXmlSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!xmlFile || !xmlWarehouseId) return
+        const formData = new FormData()
+        formData.append('xml_file', xmlFile)
+        formData.append('warehouse_id', xmlWarehouseId)
+        importXmlMut.mutate(formData)
+    }
+
     const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
         setForm(prev => ({ ...prev, [k]: v }))
 
@@ -86,15 +127,23 @@ export function StockMovementsPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Movimentações de Estoque</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Registro de entradas, saídas e ajustes</p>
-                </div>
-                <Button icon={<Plus className="h-4 w-4" />} onClick={() => { setForm(emptyForm); setShowForm(true) }}>
-                    Nova Movimentação
-                </Button>
-            </div>
+            <PageHeader
+                title="Movimentações de Estoque"
+                subtitle="Registro de entradas, saídas e ajustes"
+                actions={[
+                    {
+                        label: 'Importar XML',
+                        icon: <FileUp className="h-4 w-4" />,
+                        onClick: () => setShowXmlModal(true),
+                        variant: 'outline'
+                    },
+                    {
+                        label: 'Nova Movimentação',
+                        icon: <Plus className="h-4 w-4" />,
+                        onClick: () => { setForm(emptyForm); setShowForm(true) },
+                    },
+                ]}
+            />
 
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
@@ -128,6 +177,7 @@ export function StockMovementsPage() {
                         <tr className="border-b border-subtle bg-surface-50">
                             <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Data</th>
                             <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Produto</th>
+                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Local</th>
                             <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Tipo</th>
                             <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Quantidade</th>
                             <th className="hidden px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Custo Unit.</th>
@@ -155,6 +205,12 @@ export function StockMovementsPage() {
                                         <div>
                                             <p className="text-[13px] font-medium text-surface-900">{m.product?.name}</p>
                                             {m.product?.code && <p className="text-xs text-surface-400">#{m.product.code}</p>}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-[13px] text-surface-600 whitespace-nowrap">
+                                        <div className="flex items-center gap-1.5">
+                                            <MapPin className="h-3 w-3 text-surface-400" />
+                                            {m.warehouse?.name ?? '—'}
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
@@ -216,6 +272,18 @@ export function StockMovementsPage() {
                             {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` (#${p.code})` : ''}</option>)}
                         </select>
                     </div>
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Depósito / Veículo</label>
+                        <select
+                            value={form.warehouse_id}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('warehouse_id', e.target.value)}
+                            required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                        >
+                            <option value="">Selecione um local</option>
+                            {warehouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                        </select>
+                    </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tipo</label>
@@ -249,6 +317,43 @@ export function StockMovementsPage() {
                     <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
                         <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancelar</Button>
                         <Button type="submit" loading={saveMut.isPending}>Registrar</Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* XML Import Modal */}
+            <Modal open={showXmlModal} onOpenChange={setShowXmlModal} title="Importação de NF-e (XML)" size="md">
+                <form onSubmit={handleXmlSubmit} className="space-y-4">
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Arquivo XML da NF-e</label>
+                        <input
+                            type="file"
+                            accept=".xml"
+                            onChange={(e) => setXmlFile(e.target.files?.[0] || null)}
+                            required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Depósito para entrada</label>
+                        <select
+                            value={xmlWarehouseId}
+                            onChange={(e) => setXmlWarehouseId(e.target.value)}
+                            required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                        >
+                            <option value="">Selecione um local</option>
+                            {warehouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="rounded-lg bg-surface-50 p-3 text-xs text-surface-500 italic">
+                        Nota: O sistema tentará localizar os produtos pelo código (cProd) indicado na nota.
+                    </div>
+                    <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
+                        <Button variant="outline" type="button" onClick={() => setShowXmlModal(false)}>Cancelar</Button>
+                        <Button type="submit" loading={importXmlMut.isPending} disabled={!xmlFile || !xmlWarehouseId}>
+                            Processar XML
+                        </Button>
                     </div>
                 </form>
             </Modal>

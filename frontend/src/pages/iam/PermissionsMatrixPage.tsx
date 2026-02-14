@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, X, Shield, RefreshCw, ShieldOff, Search, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -115,16 +117,13 @@ export function PermissionsMatrixPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Matriz de Permissões</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">
-                        {canEditRoles ? 'Clique nas células para ativar/desativar permissões' : 'Visualização de todas as permissões atribuídas a cada role'}
-                        {!isLoading && rawMatrix.length > 0
-                            ? ` · ${rawMatrix.reduce((acc: number, g: any) => acc + g.permissions.length, 0)} permissões em ${rawMatrix.length} grupos`
-                            : ''}
-                    </p>
-                </div>
+            <PageHeader
+                title="Matriz de Permissões"
+                subtitle={canEditRoles ? 'Clique nas células para ativar/desativar permissões' : 'Visualização de todas as permissões atribuídas a cada role'}
+                count={rawMatrix.reduce((acc: number, g: any) => acc + g.permissions.length, 0)}
+            />
+
+            <div className="flex items-center justify-end">
                 <div className="relative max-w-xs w-full">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
                     <input
@@ -169,15 +168,10 @@ export function PermissionsMatrixPage() {
 
             {/* Matrix Table */}
             {matrix.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-default bg-surface-0 shadow-card">
-                    <div className="rounded-full bg-surface-100 p-4 mb-4">
-                        <ShieldOff className="h-8 w-8 text-surface-400" />
-                    </div>
-                    <p className="text-sm font-medium text-surface-700">Nenhuma permissão encontrada</p>
-                    <p className="mt-1 text-xs text-surface-500">
-                        {searchFilter ? 'Tente buscar por outro termo.' : 'Não há permissões cadastradas no sistema.'}
-                    </p>
-                </div>
+                <EmptyState
+                    icon={<ShieldOff className="h-5 w-5 text-surface-300" />}
+                    message={searchFilter ? 'Nenhuma permissão encontrada. Tente buscar por outro termo.' : 'Não há permissões cadastradas no sistema.'}
+                />
             ) : (
                 <div className="overflow-x-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full min-w-[800px]">

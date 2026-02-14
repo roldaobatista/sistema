@@ -4,16 +4,17 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { useAuvoExport } from '@/hooks/useAuvoExport'
 import { QUOTE_STATUS } from '@/lib/constants'
 import { QUOTE_STATUS_CONFIG } from '@/features/quotes/constants'
 import type { Quote, QuoteSummary } from '@/types/quote'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
 import {
     Plus, Search, Send, CheckCircle, Copy, ArrowRightLeft,
-    Trash2, FileText, X, RefreshCw, Download
+    Trash2, FileText, X, RefreshCw, Download, UploadCloud
 } from 'lucide-react'
 
 const STATUS_FILTERS = [
@@ -35,6 +36,7 @@ export function QuotesListPage() {
     const navigate = useNavigate()
     const qc = useQueryClient()
     const { hasPermission } = useAuthStore()
+    const { exportQuote } = useAuvoExport()
 
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -256,6 +258,9 @@ export function QuotesListPage() {
                                                             <Send className="h-4 w-4" />
                                                         </button>
                                                     )}
+                                                    <button title="Exportar para Auvo" onClick={() => exportQuote.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-cyan-600" disabled={exportQuote.isPending}>
+                                                        <UploadCloud className="h-4 w-4" />
+                                                    </button>
                                                     {canApprove && isSent && (
                                                         <button title="Aprovar" onClick={() => approveMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-green-600">
                                                             <CheckCircle className="h-4 w-4" />

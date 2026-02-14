@@ -1,12 +1,15 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 
 interface Category {
     id: number
@@ -174,12 +177,12 @@ export function AccountPayableCategoriesPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Categorias de Contas a Pagar</h1>
-                {canCreate && (
-                    <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Categoria</Button>
-                )}
-            </div>
+            <PageHeader
+                title="Categorias de Contas a Pagar"
+                subtitle="Gerencie as categorias de classificação"
+                count={categories.length}
+                actions={canCreate ? [{ label: 'Nova Categoria', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []}
+            />
 
             {categoriesQuery.isLoading ? (
                 <div className="py-12 text-center text-[13px] text-surface-500">Carregando...</div>
@@ -188,7 +191,7 @@ export function AccountPayableCategoriesPage() {
                     Erro ao carregar categorias. <button className="underline" onClick={() => categoriesQuery.refetch()}>Tentar novamente</button>
                 </div>
             ) : categories.length === 0 ? (
-                <div className="py-12 text-center text-[13px] text-surface-500">Nenhuma categoria cadastrada.</div>
+                <EmptyState icon={<Plus className="h-5 w-5 text-surface-300" />} message="Nenhuma categoria cadastrada" action={canCreate ? { label: 'Nova Categoria', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} />
             ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {categories.map((category) => (
@@ -200,14 +203,10 @@ export function AccountPayableCategoriesPage() {
                             </div>
                             <div className="flex gap-1">
                                 {canUpdate && (
-                                    <Button variant="ghost" size="sm" onClick={() => openEdit(category)}>
-                                        <Edit className="h-3.5 w-3.5 text-surface-500" />
-                                    </Button>
+                                    <IconButton label="Editar" icon={<Edit className="h-3.5 w-3.5" />} onClick={() => openEdit(category)} className="hover:text-brand-600" />
                                 )}
                                 {canDelete && (
-                                    <Button variant="ghost" size="sm" onClick={() => openDelete(category)}>
-                                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                                    </Button>
+                                    <IconButton label="Excluir" icon={<Trash2 className="h-3.5 w-3.5" />} onClick={() => openDelete(category)} className="hover:text-red-600" />
                                 )}
                             </div>
                         </div>

@@ -29,9 +29,10 @@ import { useNavigate } from 'react-router-dom'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
+import { PageHeader } from '@/components/ui/pageheader'
 
 // --- Types ---
 interface WorkOrder {
@@ -267,11 +268,18 @@ export function WorkOrderKanbanPage() {
     return (
         <div className="h-full flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex-none px-6 py-4 flex items-center justify-between border-b border-default bg-surface-0">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Kanban de OS</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Visualize e gerencie o fluxo de trabalho</p>
-                </div>
+            <div className="flex-none px-6 py-4 border-b border-default bg-surface-0 space-y-3">
+                <PageHeader
+                    title="Kanban de OS"
+                    subtitle="Visualize e gerencie o fluxo de trabalho"
+                    actions={hasPermission('os.work_order.create') ? [
+                        {
+                            label: 'Nova OS',
+                            icon: <Plus className="h-4 w-4" />,
+                            onClick: () => navigate('/os/nova'),
+                        },
+                    ] : []}
+                />
                 <div className="flex items-center gap-3">
                     <div className="relative w-64">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -291,11 +299,6 @@ export function WorkOrderKanbanPage() {
                         <option value="high">Alta</option>
                         <option value="urgent">Urgente</option>
                     </select>
-                    {hasPermission('os.work_order.create') && (
-                        <Button icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/os/nova')}>
-                            Nova OS
-                        </Button>
-                    )}
                 </div>
             </div>
 

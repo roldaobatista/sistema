@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -7,6 +8,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/pageheader'
 
 interface Equipment {
     id: number
@@ -51,8 +53,8 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
     ativo: 'Ativo',
-    em_calibracao: 'Em Calibração',
-    em_manutencao: 'Em Manutenção',
+    em_calibracao: 'Em CalibraÃ§Ã£o',
+    em_manutencao: 'Em ManutenÃ§Ã£o',
     fora_de_uso: 'Fora de Uso',
     descartado: 'Descartado',
 }
@@ -104,29 +106,23 @@ export default function EquipmentListPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Equipamentos</h1>
-                    <p className="text-[13px] text-surface-500">Gestão de balanças, instrumentos e metrologia</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => window.open(`${(api.defaults as any).baseURL}/equipments-export`, '_blank')}
-                        className="flex items-center gap-2 rounded-lg border border-surface-200 px-4 py-2.5 text-[13px] font-medium text-surface-700 hover:bg-surface-50"
-                    >
-                        <Download size={16} />
-                        Exportar CSV
-                    </button>
-                    <Link
-                        to="/equipamentos/novo"
-                        className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-                    >
-                        <Plus size={16} />
-                        Novo Equipamento
-                    </Link>
-                </div>
-            </div>
+            <PageHeader
+                title="Equipamentos"
+                subtitle="GestÃ£o de balanÃ§as, instrumentos e metrologia"
+                actions={[
+                    {
+                        label: 'Exportar CSV',
+                        icon: <Download size={16} />,
+                        variant: 'outline' as const,
+                        onClick: () => window.open(`${(api.defaults as any).baseURL}/equipments-export`, '_blank'),
+                    },
+                    {
+                        label: 'Novo Equipamento',
+                        icon: <Plus size={16} />,
+                        href: '/equipamentos/novo',
+                    },
+                ]}
+            />
 
             {/* KPI Cards */}
             {dashboard && (
@@ -172,7 +168,7 @@ export default function EquipmentListPage() {
                             <div className="rounded-lg bg-surface-100 p-2"><Shield size={20} className="text-surface-600" /></div>
                             <div>
                                 <p className="text-lg font-semibold text-surface-900 tracking-tight">{dashboard.critical_count}</p>
-                                <p className="text-xs text-surface-500">Críticos</p>
+                                <p className="text-xs text-surface-500">CrÃ­ticos</p>
                             </div>
                         </div>
                     </div>
@@ -190,7 +186,7 @@ export default function EquipmentListPage() {
                 }
                 return (
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                        <h3 className="text-sm font-semibold text-surface-900 mb-3">Distribuição por Categoria</h3>
+                        <h3 className="text-sm font-semibold text-surface-900 mb-3">DistribuiÃ§Ã£o por Categoria</h3>
                         <div className="flex h-6 overflow-hidden rounded-full">
                             {cats.map(([key, count]) => (
                                 <div key={key} className={cn('transition-all', catColors[key] ?? 'bg-surface-300')}
@@ -217,7 +213,7 @@ export default function EquipmentListPage() {
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
                     <input
                         type="text"
-                        placeholder="Buscar por código, série, marca, modelo, tag..."
+                        placeholder="Buscar por cÃ³digo, sÃ©rie, marca, modelo, tag..."
                         value={search}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setSearch(e.target.value); setPage(1) }}
                         className="w-full rounded-lg border border-default bg-surface-0 py-2.5 pl-10 pr-4 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
@@ -262,14 +258,14 @@ export default function EquipmentListPage() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Código</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">CÃ³digo</th>
                             <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Equipamento</th>
-                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Série</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">SÃ©rie</th>
                             <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Cliente</th>
                             <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Categoria</th>
                             <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Status</th>
-                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Calibração</th>
-                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">Ações</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">CalibraÃ§Ã£o</th>
+                            <th className="px-3.5 py-2.5 text-left font-semibold text-surface-600">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -286,7 +282,7 @@ export default function EquipmentListPage() {
                                     <td className="px-4 py-3">
                                         <span className="font-mono text-xs font-medium text-brand-600">{eq.code}</span>
                                         {eq.is_critical && (
-                                            <span className="ml-1 inline-block h-2 w-2 rounded-full bg-red-500" title="Crítico" />
+                                            <span className="ml-1 inline-block h-2 w-2 rounded-full bg-red-500" title="CrÃ­tico" />
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -296,10 +292,10 @@ export default function EquipmentListPage() {
                                         <div className="text-xs text-surface-500">{eq.type}</div>
                                     </td>
                                     <td className="px-4 py-3 font-mono text-xs text-surface-600">
-                                        {eq.serial_number || '—'}
+                                        {eq.serial_number || 'â€”'}
                                     </td>
                                     <td className="max-w-[150px] truncate px-4 py-3 text-surface-700">
-                                        {eq.customer?.name || '—'}
+                                        {eq.customer?.name || 'â€”'}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-surface-600">
                                         {categories[eq.category] as string || eq.category}
@@ -330,7 +326,7 @@ export default function EquipmentListPage() {
                 </table>
             </div>
 
-            {/* Paginação */}
+            {/* PaginaÃ§Ã£o */}
             {lastPage > 1 && (
                 <div className="flex items-center justify-center gap-2">
                     <button
@@ -340,7 +336,7 @@ export default function EquipmentListPage() {
                     >
                         <ChevronLeft size={16} />
                     </button>
-                    <span className="text-[13px] text-surface-600">Página {page} de {lastPage}</span>
+                    <span className="text-[13px] text-surface-600">PÃ¡gina {page} de {lastPage}</span>
                     <button
                         onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                         disabled={page === lastPage}

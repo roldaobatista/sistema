@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowDownRight, ArrowRight, ArrowUpRight, DollarSign, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 import { useAuthStore } from '@/stores/auth-store'
 
 type CashFlowRow = {
@@ -103,9 +105,7 @@ export function CashFlowPage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Fluxo de Caixa e DRE</h1>
-            </div>
+            <PageHeader title="Fluxo de Caixa e DRE" subtitle="Visão consolidada de receitas, custos e resultado" />
 
             <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-1">
@@ -320,7 +320,7 @@ export function CashFlowPage() {
                             })}
                             {!isLoading && cashFlow.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-surface-400">Sem dados no periodo</td>
+                                    <td colSpan={7} className="px-4 py-2"><EmptyState icon={<Wallet className="h-5 w-5 text-surface-300" />} message="Sem dados no período" compact /></td>
                                 </tr>
                             ) : null}
                             {isLoading ? (

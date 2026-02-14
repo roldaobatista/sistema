@@ -5,13 +5,13 @@ import type { AxiosError } from 'axios'
 import {
     ArrowLeft, Phone, Clock, Truck, AlertCircle, CheckCircle, XCircle,
     UserCheck, ArrowRight, MapPin, ClipboardList, Wrench, Link as LinkIcon,
-    Send, AlertTriangle, RotateCcw, MessageSquare,
+    Send, AlertTriangle, RotateCcw, MessageSquare, Pencil,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 
@@ -31,10 +31,11 @@ const priorityConfig: Record<string, { label: string; variant: any }> = {
     urgent: { label: 'Urgente', variant: 'danger' },
 }
 
+// Must stay in sync with ServiceCall::ALLOWED_TRANSITIONS on backend
 const statusTransitions: Record<string, string[]> = {
-    open: ['scheduled', 'in_progress', 'cancelled'],
-    scheduled: ['in_transit', 'in_progress', 'cancelled'],
-    in_transit: ['in_progress', 'cancelled'],
+    open: ['scheduled', 'cancelled'],
+    scheduled: ['in_transit', 'open', 'cancelled'],
+    in_transit: ['in_progress', 'scheduled', 'cancelled'],
     in_progress: ['completed', 'cancelled'],
     completed: [],
     cancelled: ['open'],
@@ -249,6 +250,11 @@ export function ServiceCallDetailPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {canUpdate && (
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/chamados/${id}/editar`)}>
+                            <Pencil className="w-4 h-4 mr-1" /> Editar
+                        </Button>
+                    )}
                     {canCreate && ['completed', 'in_progress'].includes(call.status) && (
                         <Button
                             variant="outline"
@@ -387,6 +393,31 @@ export function ServiceCallDetailPage() {
                                     <span className="font-medium">{call.resolution_time_minutes} min</span>
                                 </div>
                             )}
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Criado em</span>
+                                <span className="font-medium">
+                                    {call.created_at
+                                        ? new Date(call.created_at).toLocaleString('pt-BR')
+                                        : '—'}
+                                </span>
+                            </div>
+                            {call.created_by && typeof call.created_by === 'object' && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Criado por</span>
+                                    <span className="font-medium">{call.created_by.name}</span>
+                                </div>
+                            )}
+                            {call.quote && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Orçamento</span>
+                                    <button
+                                        onClick={() => navigate(`/orcamentos/${call.quote.id}`)}
+                                        className="font-medium text-primary-600 hover:underline"
+                                    >
+                                        {call.quote.quote_number || `#${call.quote.id}`}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         {canAssign && (
                             <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700 space-y-3">
@@ -395,8 +426,9 @@ export function ServiceCallDetailPage() {
                                 </p>
 
                                 <div>
-                                    <label className="mb-1 block text-xs text-gray-500">Tecnico</label>
+                                    <label htmlFor="assign-technician" className="mb-1 block text-xs text-gray-500">Tecnico</label>
                                     <select
+                                        id="assign-technician"
                                         value={assignment.technician_id}
                                         onChange={(e) => setAssignment((prev) => ({ ...prev, technician_id: e.target.value }))}
                                         className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
@@ -411,8 +443,9 @@ export function ServiceCallDetailPage() {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs text-gray-500">Motorista</label>
+                                    <label htmlFor="assign-driver" className="mb-1 block text-xs text-gray-500">Motorista</label>
                                     <select
+                                        id="assign-driver"
                                         value={assignment.driver_id}
                                         onChange={(e) => setAssignment((prev) => ({ ...prev, driver_id: e.target.value }))}
                                         className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
@@ -427,8 +460,9 @@ export function ServiceCallDetailPage() {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs text-gray-500">Data agendada</label>
+                                    <label htmlFor="assign-scheduled-date" className="mb-1 block text-xs text-gray-500">Data agendada</label>
                                     <input
+                                        id="assign-scheduled-date"
                                         type="datetime-local"
                                         value={assignment.scheduled_date}
                                         onChange={(e) => setAssignment((prev) => ({ ...prev, scheduled_date: e.target.value }))}

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     DollarSign, Plus, Search, ArrowDown, AlertTriangle,
@@ -8,10 +8,13 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { FINANCIAL_STATUS } from '@/lib/constants'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/iconbutton'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/ui/pageheader'
+import { EmptyState } from '@/components/ui/emptystate'
 import { FinancialExportButtons } from '@/components/financial/FinancialExportButtons'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -326,25 +329,16 @@ export function AccountsReceivablePage() {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Contas a Receber</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">TÃ­tulos, recebimentos e cobranÃ§as</p>
-                </div>
-                <div className="flex gap-2">
-                    <FinancialExportButtons type="receivable" />
-                    {canCreate && (
-                        <Button variant="outline" icon={<FileText className="h-4 w-4" />} onClick={() => { setGenForm({ work_order_id: '', due_date: '', payment_method: '' }); setShowGenOS(true) }}>
-                            Gerar da OS
-                        </Button>
-                    )}
-                    {canCreate && (
-                        <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-                            Novo Titulo
-                        </Button>
-                    )}
-            </div>
-            </div>
+            <PageHeader
+                title="Contas a Receber"
+                subtitle="Títulos, recebimentos e cobranças"
+                count={pagination.total}
+                actions={[
+                    ...(canCreate ? [{ label: 'Gerar da OS', onClick: () => { setGenForm({ work_order_id: '', due_date: '', payment_method: '' }); setShowGenOS(true) }, icon: <FileText className="h-4 w-4" />, variant: 'outline' as const }] : []),
+                    ...(canCreate ? [{ label: 'Novo Titulo', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []),
+                ]}
+            />
+            <FinancialExportButtons type="receivable" />
 
             {/* Summary Cards */}
             <div className="grid gap-3 sm:grid-cols-5">
@@ -433,7 +427,7 @@ export function AccountsReceivablePage() {
                         ) : isError ? (
                             <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-red-600">Erro ao carregar titulos. <button className="underline" onClick={() => refetch()}>Tentar novamente</button></td></tr>
                         ) : records.length === 0 ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum titulo encontrado</td></tr>
+                            <tr><td colSpan={7} className="px-4 py-2"><EmptyState icon={<DollarSign className="h-5 w-5 text-surface-300" />} message="Nenhum titulo encontrado" action={canCreate ? { label: 'Novo Titulo', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} compact /></td></tr>
                         ) : records.map(r => (
                             <tr key={r.id} className="hover:bg-surface-50 transition-colors duration-100">
                                 <td className="px-4 py-3">
@@ -448,24 +442,20 @@ export function AccountsReceivablePage() {
                                 <td className="px-3.5 py-2.5 text-right text-[13px] text-surface-600">{fmtBRL(r.amount_paid)}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" size="sm" onClick={() => loadDetail(r)}><Eye className="h-4 w-4" /></Button>
+                                        <IconButton label="Ver detalhes" icon={<Eye className="h-4 w-4" />} onClick={() => loadDetail(r)} />
                                         {canUpdate && r.status !== FINANCIAL_STATUS.PAID && r.status !== FINANCIAL_STATUS.CANCELLED && (
-                                            <Button variant="ghost" size="sm" onClick={() => openEdit(r)}><Pencil className="h-4 w-4 text-surface-500" /></Button>
+                                            <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(r)} className="hover:text-brand-600" />
                                         )}
                                         {canSettle && r.status !== FINANCIAL_STATUS.PAID && r.status !== FINANCIAL_STATUS.CANCELLED && (
-                                            <Button variant="ghost" size="sm" onClick={() => {
+                                            <IconButton label="Registrar recebimento" icon={<ArrowDown className="h-4 w-4" />} onClick={() => {
                                                 setShowPay(r)
                                                 const remaining = Number(r.amount) - Number(r.amount_paid)
                                                 setPayForm({ amount: remaining.toFixed(2), payment_method: 'pix', payment_date: new Date().toISOString().split('T')[0], notes: '' })
                                                 setPayErrors({})
-                                            }}>
-                                                <ArrowDown className="h-4 w-4 text-emerald-600" />
-                                            </Button>
+                                            }} className="hover:text-emerald-600" />
                                         )}
                                         {canDelete && (
-                                            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)}>
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </Button>
+                                            <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteTarget(r)} className="hover:text-red-600" />
                                         )}
                                     </div>
                                 </td>
@@ -481,8 +471,8 @@ export function AccountsReceivablePage() {
                     <span className="text-[13px] text-surface-500">{pagination.total} registro(s)</span>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" disabled={pagination.currentPage <= 1} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                        <span className="text-sm text-surface-700">PÃ¡gina {pagination.currentPage} de {pagination.lastPage}</span>
-                        <Button variant="outline" size="sm" disabled={pagination.currentPage >= pagination.lastPage} onClick={() => setPage(p => p + 1)}>PrÃ³xima</Button>
+                        <span className="text-sm text-surface-700">Página {pagination.currentPage} de {pagination.lastPage}</span>
+                        <Button variant="outline" size="sm" disabled={pagination.currentPage >= pagination.lastPage} onClick={() => setPage(p => p + 1)}>Próxima</Button>
                     </div>
                 </div>
             )}

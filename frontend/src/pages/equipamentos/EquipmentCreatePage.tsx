@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Save, Loader2, Scale } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/pageheader'
 
 export default function EquipmentCreatePage() {
     const navigate = useNavigate()
@@ -20,7 +22,7 @@ export default function EquipmentCreatePage() {
 
     const [form, setForm] = useState({
         customer_id: '',
-        type: 'Balança',
+        type: 'BalanÃ§a',
         category: 'balanca_plataforma',
         brand: '',
         manufacturer: '',
@@ -63,22 +65,18 @@ export default function EquipmentCreatePage() {
 
     return (
         <div className="space-y-5">
-            <div className="flex items-center gap-4">
-                <button onClick={() => navigate('/equipamentos')} className="rounded-lg border border-surface-200 p-2 hover:bg-surface-50">
-                    <ArrowLeft size={18} />
-                </button>
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Novo Equipamento</h1>
-                    <p className="text-[13px] text-surface-500">Cadastrar equipamento / instrumento de medição</p>
-                </div>
-            </div>
+            <PageHeader
+                title="Novo Equipamento"
+                subtitle="Cadastrar equipamento / instrumento de mediÃ§Ã£o"
+                backTo="/equipamentos"
+            />
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Identificação */}
+                {/* IdentificaÃ§Ã£o */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
                     <h3 className="mb-4 flex items-center gap-2 font-semibold text-surface-900">
                         <Scale size={18} className="text-brand-500" />
-                        Identificação
+                        IdentificaÃ§Ã£o
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
@@ -90,7 +88,7 @@ export default function EquipmentCreatePage() {
                         </div>
                         <div>
                             <label className="mb-1 block text-xs font-medium text-surface-600">Tipo *</label>
-                            <input value={form.type} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('type', e.target.value)} required className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: Balança, Termômetro" />
+                            <input value={form.type} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('type', e.target.value)} required className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: BalanÃ§a, TermÃ´metro" />
                         </div>
                         <div>
                             <label className="mb-1 block text-xs font-medium text-surface-600">Categoria</label>
@@ -111,23 +109,23 @@ export default function EquipmentCreatePage() {
                             <input value={form.model} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('model', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: 2098" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Nº Série</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">NÂº SÃ©rie</label>
                             <input value={form.serial_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('serial_number', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Tag / Patrimônio</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Tag / PatrimÃ´nio</label>
                             <input value={form.tag} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('tag', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Localização</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">LocalizaÃ§Ã£o</label>
                             <input value={form.location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('location', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                     </div>
                 </div>
 
-                {/* Especificações Técnicas */}
+                {/* EspecificaÃ§Ãµes TÃ©cnicas */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
-                    <h3 className="mb-4 font-semibold text-surface-900">Especificações Técnicas</h3>
+                    <h3 className="mb-4 font-semibold text-surface-900">EspecificaÃ§Ãµes TÃ©cnicas</h3>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
                             <label className="mb-1 block text-xs font-medium text-surface-600">Capacidade</label>
@@ -139,42 +137,42 @@ export default function EquipmentCreatePage() {
                             </div>
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Resolução</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">ResoluÃ§Ã£o</label>
                             <input type="number" step="any" value={form.resolution} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('resolution', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Classe de Precisão</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Classe de PrecisÃ£o</label>
                             <select value={form.precision_class} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('precision_class', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm">
-                                <option value="">—</option>
+                                <option value="">â€”</option>
                                 {Object.entries(classes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Nº INMETRO</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">NÂº INMETRO</label>
                             <input value={form.inmetro_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('inmetro_number', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Intervalo Calibração (meses)</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Intervalo CalibraÃ§Ã£o (meses)</label>
                             <input type="number" value={form.calibration_interval_months} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('calibration_interval_months', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div className="flex items-end">
                             <label className="flex cursor-pointer items-center gap-2">
                                 <input type="checkbox" checked={form.is_critical} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('is_critical', e.target.checked)} className="accent-red-600" />
-                                <span className="text-[13px] font-medium text-surface-700">Equipamento Crítico</span>
+                                <span className="text-[13px] font-medium text-surface-700">Equipamento CrÃ­tico</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                {/* Observações */}
+                {/* ObservaÃ§Ãµes */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
-                    <h3 className="mb-4 font-semibold text-surface-900">Observações</h3>
+                    <h3 className="mb-4 font-semibold text-surface-900">ObservaÃ§Ãµes</h3>
                     <textarea
                         value={form.notes}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update('notes', e.target.value)}
                         rows={3}
                         className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm"
-                        placeholder="Observações gerais sobre o equipamento..."
+                        placeholder="ObservaÃ§Ãµes gerais sobre o equipamento..."
                     />
                 </div>
 

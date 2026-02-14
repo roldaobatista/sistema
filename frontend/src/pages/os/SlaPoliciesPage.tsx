@@ -1,4 +1,5 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Edit2, Trash2, Shield, Clock, X, AlertTriangle } from 'lucide-react'
 import api from '@/lib/api'
@@ -15,10 +16,10 @@ interface SlaPolicy {
 }
 
 const priorityConfig: Record<string, { label: string; color: string; icon: string }> = {
-    low: { label: 'Baixa', color: 'text-surface-600 bg-surface-100', icon: '🟢' },
-    medium: { label: 'Média', color: 'text-amber-700 bg-amber-50', icon: '🟡' },
-    high: { label: 'Alta', color: 'text-orange-700 bg-orange-50', icon: '🟠' },
-    critical: { label: 'Crítica', color: 'text-red-700 bg-red-50', icon: '🔴' },
+    low: { label: 'Baixa', color: 'text-surface-600 bg-surface-100', icon: 'ðŸŸ¢' },
+    medium: { label: 'MÃ©dia', color: 'text-amber-700 bg-amber-50', icon: 'ðŸŸ¡' },
+    high: { label: 'Alta', color: 'text-orange-700 bg-orange-50', icon: 'ðŸŸ ' },
+    critical: { label: 'CrÃ­tica', color: 'text-red-700 bg-red-50', icon: 'ðŸ”´' },
 }
 
 export function SlaPoliciesPage() {
@@ -34,12 +35,14 @@ export function SlaPoliciesPage() {
     const saveMut = useMutation({
         mutationFn: (data: any) =>
             data.id ? api.put(`/sla-policies/${data.id}`, data) : api.post('/sla-policies', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['sla-policies'] }); setModal(null) },
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['sla-policies'] }); setModal(null) },
     })
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/sla-policies/${id}`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['sla-policies'] }) },
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['sla-policies'] }) },
     })
 
     const fmtHours = (h: number) => h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h`
@@ -48,12 +51,12 @@ export function SlaPoliciesPage() {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Políticas de SLA</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Defina tempos de resposta e resolução por prioridade</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">PolÃ­ticas de SLA</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Defina tempos de resposta e resoluÃ§Ã£o por prioridade</p>
                 </div>
                 <button onClick={() => setModal({ mode: 'create' })}
                     className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-brand-600 transition-colors">
-                    <Plus className="h-4 w-4" /> Nova Política
+                    <Plus className="h-4 w-4" /> Nova PolÃ­tica
                 </button>
             </div>
 
@@ -62,7 +65,7 @@ export function SlaPoliciesPage() {
             {!isLoading && policies.length === 0 && (
                 <div className="rounded-xl border border-dashed border-default bg-surface-50 p-12 text-center">
                     <Shield className="mx-auto h-12 w-12 text-surface-300" />
-                    <p className="mt-3 text-[13px] text-surface-500">Nenhuma política de SLA cadastrada</p>
+                    <p className="mt-3 text-[13px] text-surface-500">Nenhuma polÃ­tica de SLA cadastrada</p>
                 </div>
             )}
 
@@ -88,7 +91,7 @@ export function SlaPoliciesPage() {
                                     <button onClick={() => setModal({ mode: 'edit', policy: p })} className="rounded-lg p-1.5 hover:bg-surface-100">
                                         <Edit2 className="h-3.5 w-3.5 text-surface-500" />
                                     </button>
-                                    <button onClick={() => { if (confirm('Excluir esta política?')) deleteMut.mutate(p.id) }} className="rounded-lg p-1.5 hover:bg-red-50">
+                                    <button onClick={() => { if (confirm('Excluir esta polÃ­tica?')) deleteMut.mutate(p.id) }} className="rounded-lg p-1.5 hover:bg-red-50">
                                         <Trash2 className="h-3.5 w-3.5 text-red-500" />
                                     </button>
                                 </div>
@@ -106,7 +109,7 @@ export function SlaPoliciesPage() {
                                 </div>
                                 <div className="rounded-lg bg-emerald-50 p-3 text-center">
                                     <AlertTriangle className="mx-auto h-4 w-4 text-emerald-500 mb-1" />
-                                    <p className="text-xs text-emerald-600 font-medium">Resolução</p>
+                                    <p className="text-xs text-emerald-600 font-medium">ResoluÃ§Ã£o</p>
                                     <p className="text-[15px] font-semibold tabular-nums text-emerald-700">{fmtHours(p.resolution_time_hours)}</p>
                                 </div>
                             </div>
@@ -124,7 +127,7 @@ export function SlaPoliciesPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
                     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
-                            <h3 className="text-[15px] font-semibold tabular-nums text-surface-900">{modal.mode === 'edit' ? 'Editar Política' : 'Nova Política SLA'}</h3>
+                            <h3 className="text-[15px] font-semibold tabular-nums text-surface-900">{modal.mode === 'edit' ? 'Editar PolÃ­tica' : 'Nova PolÃ­tica SLA'}</h3>
                             <button onClick={() => setModal(null)}><X className="h-5 w-5 text-surface-400" /></button>
                         </div>
                         <form onSubmit={e => {
@@ -145,7 +148,7 @@ export function SlaPoliciesPage() {
                                 <input name="name" required defaultValue={modal.policy?.name} className="mt-1 block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm" />
                             </div>
                             <div>
-                                <label className="text-xs font-medium text-surface-700">Descrição</label>
+                                <label className="text-xs font-medium text-surface-700">DescriÃ§Ã£o</label>
                                 <textarea name="description" rows={2} defaultValue={modal.policy?.description ?? ''} className="mt-1 block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm" />
                             </div>
                             <div>
@@ -161,7 +164,7 @@ export function SlaPoliciesPage() {
                                         className="mt-1 block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm" />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-surface-700">Resolução (horas)</label>
+                                    <label className="text-xs font-medium text-surface-700">ResoluÃ§Ã£o (horas)</label>
                                     <input name="resolution_time_hours" type="number" min={1} required defaultValue={modal.policy?.resolution_time_hours ?? 24}
                                         className="mt-1 block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm" />
                                 </div>

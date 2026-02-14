@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/badge'
 
 // ── Configuração de tipos ──
 

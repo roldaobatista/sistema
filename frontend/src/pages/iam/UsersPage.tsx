@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Search, Trash2, UserCheck, UserX, KeyRound, Download, CheckSquare, Square, Monitor, LogOut, Users, UserPlus, UserMinus, AlertCircle } from 'lucide-react'
+import { Plus, Search, Trash2, UserCheck, UserX, KeyRound, Download, CheckSquare, Square, Monitor, LogOut, Users, UserPlus, UserMinus, AlertCircle, History } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/pageheader'
+import { Badge } from '@/components/ui/badge'
+import { Modal } from '@/components/ui/modal'
+import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/stores/auth-store'
 
 interface Role {
@@ -66,6 +67,7 @@ export function UsersPage() {
     const [selectedIds, setSelectedIds] = useState<number[]>([])
     const [deleteConfirmUser, setDeleteConfirmUser] = useState<User | null>(null)
     const [sessionsUser, setSessionsUser] = useState<User | null>(null)
+    const [auditTrailUser, setAuditTrailUser] = useState<User | null>(null)
 
     const debouncedSearch = useCallback(
         (() => {
@@ -276,27 +278,15 @@ export function UsersPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Usuários</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">
-                        Gerencie os usuários do sistema{totalUsers > 0 ? ` · ${totalUsers} usuário(s)` : ''}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    {canView && (
-                        <Button variant="outline" size="sm" onClick={handleExportCsv} icon={<Download className="h-4 w-4" />}>
-                            Exportar CSV
-                        </Button>
-                    )}
-                    {canCreate && (
-                        <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>
-                            Novo Usuário
-                        </Button>
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="Usuários"
+                subtitle="Gerencie os usuários do sistema"
+                count={totalUsers}
+                actions={[
+                    ...(canView ? [{ label: 'Exportar CSV', onClick: handleExportCsv, icon: <Download className="h-4 w-4" />, variant: 'outline' as const }] : []),
+                    ...(canCreate ? [{ label: 'Novo Usuário', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []),
+                ]}
+            />
 
             {/* Stats Cards */}
             {canView && statsData && (
@@ -543,6 +533,16 @@ export function UsersPage() {
                                                 title="Sessões Ativas"
                                             >
                                                 <Monitor className="h-4 w-4 text-blue-500" />
+                                            </Button>
+                                        )}
+                                        {canUpdate && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setAuditTrailUser(user)}
+                                                title="Histórico de Ações"
+                                            >
+                                                <History className="h-4 w-4 text-purple-500" />
                                             </Button>
                                         )}
                                         {canUpdate && (
@@ -831,6 +831,92 @@ export function UsersPage() {
                     </Button>
                 </div>
             </Modal>
+
+            {/* Modal Audit Trail */}
+            <AuditTrailModal user={auditTrailUser} onClose={() => setAuditTrailUser(null)} />
         </div>
+    )
+}
+
+function AuditTrailModal({ user, onClose }: { user: User | null; onClose: () => void }) {
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ['user-audit-trail', user?.id],
+        queryFn: () => api.get(`/users/${user!.id}/audit-trail`).then(r => r.data),
+        enabled: !!user,
+    })
+    const entries: any[] = data?.data ?? data ?? []
+
+    const actionColors: Record<string, string> = {
+        created: 'bg-emerald-100 text-emerald-700',
+        updated: 'bg-blue-100 text-blue-700',
+        deleted: 'bg-red-100 text-red-700',
+        login: 'bg-purple-100 text-purple-700',
+        logout: 'bg-orange-100 text-orange-700',
+        status_changed: 'bg-amber-100 text-amber-700',
+    }
+
+    const actionLabels: Record<string, string> = {
+        created: 'Criado',
+        updated: 'Atualizado',
+        deleted: 'Excluído',
+        login: 'Login',
+        logout: 'Logout',
+        status_changed: 'Status',
+    }
+
+    return (
+        <Modal
+            open={!!user}
+            onOpenChange={(open) => { if (!open) onClose() }}
+            title={`Histórico: ${user?.name ?? ''}`}
+            size="lg"
+        >
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+                {isLoading ? (
+                    <div className="space-y-3 py-2">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="flex gap-3 animate-pulse">
+                                <div className="h-6 w-16 rounded bg-surface-200" />
+                                <div className="flex-1 space-y-1">
+                                    <div className="h-4 w-3/4 rounded bg-surface-200" />
+                                    <div className="h-3 w-1/3 rounded bg-surface-200" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : isError ? (
+                    <p className="text-center text-sm text-red-500 py-6">Erro ao carregar histórico.</p>
+                ) : entries.length === 0 ? (
+                    <div className="text-center py-8">
+                        <History className="h-8 w-8 text-surface-300 mx-auto mb-2" />
+                        <p className="text-sm text-surface-500">Nenhum registro de atividade encontrado.</p>
+                    </div>
+                ) : (
+                    entries.map((entry: any, idx: number) => (
+                        <div key={entry.id ?? idx} className="flex items-start gap-3 rounded-lg border border-default bg-surface-50 px-4 py-3">
+                            <span className={cn('mt-0.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase', actionColors[entry.action] ?? 'bg-surface-200 text-surface-700')}>
+                                {actionLabels[entry.action] ?? entry.action}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm text-surface-800">{entry.description}</p>
+                                <div className="flex items-center gap-3 mt-1 text-xs text-surface-500">
+                                    {entry.created_at && (
+                                        <span>
+                                            {new Date(entry.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
+                                    {entry.ip_address && <span>IP: {entry.ip_address}</span>}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+            <div className="flex justify-end border-t border-subtle pt-4">
+                <Button variant="outline" onClick={onClose}>
+                    Fechar
+                </Button>
+            </div>
+        </Modal>
     )
 }

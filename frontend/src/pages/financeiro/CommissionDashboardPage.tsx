@@ -5,7 +5,8 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/badge'
+import { PageHeader } from '@/components/ui/pageheader'
 
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -42,10 +43,7 @@ export function CommissionDashboardPage() {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <div>
-                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Dashboard de Comissões</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Visão analítica e KPIs de comissões</p>
-            </div>
+            <PageHeader title="Dashboard de Comissões" subtitle="Visão analítica e KPIs de comissões" />
 
             {/* KPI Cards */}
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -6,40 +6,40 @@ import {
     ArrowLeft, ArrowRight, Plus, Trash2, Search, Package, Wrench, Save,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // Strings constant for easy localization in the future
 const STRINGS = {
-    newQuote: 'Novo Orçamento',
-    fillInfo: 'Preencha as informações do orçamento',
+    newQuote: 'Novo OrÃ§amento',
+    fillInfo: 'Preencha as informaÃ§Ãµes do orÃ§amento',
     stepCustomer: 'Cliente',
     stepEquipments: 'Equipamentos e Itens',
-    stepReview: 'Revisão',
+    stepReview: 'RevisÃ£o',
     selectCustomer: 'Selecionar Cliente',
     searchPlaceholder: 'Pesquisar cliente por nome, CPF/CNPJ...',
     validity: 'Validade',
-    observations: 'Observações',
-    next: 'Próximo',
+    observations: 'ObservaÃ§Ãµes',
+    next: 'PrÃ³ximo',
     back: 'Voltar',
     customerEquipments: 'Equipamentos do Cliente',
     noEquipments: 'Nenhum equipamento cadastrado para este cliente',
-    descriptionPlaceholder: 'Descrição do que será feito neste equipamento...',
+    descriptionPlaceholder: 'DescriÃ§Ã£o do que serÃ¡ feito neste equipamento...',
     addProduct: '+ Produto',
-    addService: '+ Serviço',
+    addService: '+ ServiÃ§o',
     type: 'Tipo',
     item: 'Item',
     quantity: 'Qtd',
-    unitPrice: 'Preço Unit.',
+    unitPrice: 'PreÃ§o Unit.',
     discount: 'Desc %',
     subtotal: 'Subtotal',
-    summary: 'Resumo do Orçamento',
+    summary: 'Resumo do OrÃ§amento',
     totalItems: 'Total de itens',
     globalDiscount: 'Desconto global (%)',
     total: 'Total',
-    saveQuote: 'Salvar Orçamento',
+    saveQuote: 'Salvar OrÃ§amento',
     saving: 'Salvando...',
-    errorSaving: 'Erro ao salvar orçamento. Verifique os dados e tente novamente.',
+    errorSaving: 'Erro ao salvar orÃ§amento. Verifique os dados e tente novamente.',
 }
 
 type Step = 'customer' | 'equipments' | 'review'
@@ -147,7 +147,7 @@ export function QuoteCreatePage() {
             })
         },
         onSuccess: () => {
-            toast.success('Orçamento criado com sucesso!')
+            toast.success('OrÃ§amento criado com sucesso!')
             qc.invalidateQueries({ queryKey: ['quotes'] })
             qc.invalidateQueries({ queryKey: ['quotes-summary'] })
             navigate('/orcamentos')
@@ -160,8 +160,24 @@ export function QuoteCreatePage() {
     })
 
     const handleNext = () => {
-        if (step === 'customer' && !customerId) return
-        setStep(step === 'customer' ? 'equipments' : 'review')
+        if (step === 'customer') {
+            if (!customerId) {
+                toast.error('Selecione um cliente antes de continuar')
+                return
+            }
+            setStep('equipments')
+        } else if (step === 'equipments') {
+            if (blocks.length === 0) {
+                toast.error('Adicione pelo menos um equipamento')
+                return
+            }
+            const hasEmptyBlock = blocks.some(b => b.items.length === 0)
+            if (hasEmptyBlock) {
+                toast.error('Todos os equipamentos devem ter pelo menos um item')
+                return
+            }
+            setStep('review')
+        }
     }
 
     const handleBack = () => {
@@ -222,7 +238,7 @@ export function QuoteCreatePage() {
                                         <button key={c.id} type="button"
                                             onClick={() => { setCustomerId(c.id); setCustomerSearch(c.name) }}
                                             className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-50 ${customerId === c.id ? 'bg-brand-50 text-brand-700' : 'text-surface-700'}`}>
-                                            {c.name} {c.document && <span className="text-surface-400">— {c.document}</span>}
+                                            {c.name} {c.document && <span className="text-surface-400">â€” {c.document}</span>}
                                         </button>
                                     ))}
                                 </div>
@@ -283,7 +299,7 @@ export function QuoteCreatePage() {
                                 {/* Items */}
                                 {block.items.map((it, iIdx) => (
                                     <div key={iIdx} className="flex items-center gap-2 rounded-lg bg-surface-50 p-2 text-sm">
-                                        <span className="w-16 text-xs text-surface-500">{it.type === 'product' ? 'Produto' : 'Serviço'}</span>
+                                        <span className="w-16 text-xs text-surface-500">{it.type === 'product' ? 'Produto' : 'ServiÃ§o'}</span>
                                         <span className="flex-1 font-medium text-surface-800">{it.name}</span>
                                         <input type="number" min={1} value={it.quantity}
                                             onChange={e => updateItem(bIdx, iIdx, 'quantity', Number(e.target.value))}
@@ -297,7 +313,7 @@ export function QuoteCreatePage() {
                                         <span className="w-24 text-right font-medium text-surface-900">
                                             {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
                                         </span>
-                                        <button onClick={() => removeItem(bIdx, iIdx)} className="text-surface-400 hover:text-red-500">
+                                        <button onClick={() => { if (window.confirm('Deseja realmente excluir?')) removeItem(bIdx, iIdx) }} className="text-surface-400 hover:text-red-500">
                                             <Trash2 className="h-3.5 w-3.5" />
                                         </button>
                                     </div>
@@ -347,7 +363,7 @@ export function QuoteCreatePage() {
                                 {block.description && <p className="text-xs text-surface-500 mb-2">{block.description}</p>}
                                 {block.items.map((it, i) => (
                                     <div key={i} className="flex justify-between text-sm py-1">
-                                        <span className="text-surface-700">{it.name} × {it.quantity}</span>
+                                        <span className="text-surface-700">{it.name} Ã— {it.quantity}</span>
                                         <span className="font-medium text-surface-900">
                                             {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
                                         </span>

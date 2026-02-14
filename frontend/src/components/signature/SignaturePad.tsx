@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { PenTool, RotateCcw, Check } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 interface SignaturePadProps {
     onSave: (data: { signature: string; signer_name: string }) => void
