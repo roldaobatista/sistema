@@ -11,6 +11,7 @@ use App\Models\WorkOrder;
 use App\Models\Quote;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BatchExportController extends Controller
@@ -33,99 +34,109 @@ class BatchExportController extends Controller
         'quotes' => ['id','customer_id','status','total','valid_until','created_at'],
     ];
 
-    /**
-     * GET /batch-export/entities — list available entities for export.
-     */
     public function entities(): \Illuminate\Http\JsonResponse
     {
-        $result = [];
-        foreach (self::ENTITIES as $key => $class) {
-            $result[] = [
-                'key' => $key,
-                'label' => $this->entityLabel($key),
-                'fields' => self::FIELD_MAPS[$key] ?? [],
-                'count' => $class::count(),
-            ];
+        try {
+            $result = [];
+            foreach (self::ENTITIES as $key => $class) {
+                $result[] = [
+                    'key' => $key,
+                    'label' => $this->entityLabel($key),
+                    'fields' => self::FIELD_MAPS[$key] ?? [],
+                    'count' => $class::count(),
+                ];
+            }
+            return response()->json(['data' => $result]);
+        } catch (\Exception $e) {
+            Log::error('BatchExport entities failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao listar entidades'], 500);
         }
-        return response()->json(['data' => $result]);
     }
 
-    /**
-     * POST /batch-export/csv — export selected entity as CSV.
-     */
     public function exportCsv(Request $request): StreamedResponse
     {
-        $validated = $request->validate([
-            'entity' => 'required|string|in:' . implode(',', array_keys(self::ENTITIES)),
-            'fields' => 'nullable|array',
-            'fields.*' => 'string',
-            'ids' => 'nullable|array',
-            'ids.*' => 'integer',
-            'filters' => 'nullable|array',
-        ]);
+        try {
+            $validated = $request->validate([
+                'entity' => 'required|string|in:' . implode(',', array_keys(self::ENTITIES)),
+                'fields' => 'nullable|array',
+                'fields.*' => 'string',
+                'ids' => 'nullable|array',
+                'ids.*' => 'integer',
+                'filters' => 'nullable|array',
+            ]);
 
-        $entity = $validated['entity'];
-        $modelClass = self::ENTITIES[$entity];
-        $fields = $validated['fields'] ?? self::FIELD_MAPS[$entity] ?? ['*'];
+            $entity = $validated['entity'];
+            $modelClass = self::ENTITIES[$entity];
+            $fields = $validated['fields'] ?? self::FIELD_MAPS[$entity] ?? ['*'];
 
-        $query = $modelClass::query();
+            $query = $modelClass::query();
 
-        if (!empty($validated['ids'])) {
-            $query->whereIn('id', $validated['ids']);
-        }
-
-        if (!empty($validated['filters'])) {
-            foreach ($validated['filters'] as $field => $value) {
-                $query->where($field, $value);
+            if (!empty($validated['ids'])) {
+                $query->whereIn('id', $validated['ids']);
             }
-        }
 
-        $filename = "{$entity}_export_" . now()->format('Y-m-d_His') . '.csv';
-
-        return response()->streamDownload(function () use ($query, $fields) {
-            $handle = fopen('php://output', 'w');
-
-            // BOM for UTF-8 Excel compatibility
-            fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, $fields, ';');
-
-            $query->select($fields)->chunk(500, function ($rows) use ($handle, $fields) {
-                foreach ($rows as $row) {
-                    $data = [];
-                    foreach ($fields as $field) {
-                        $data[] = $row->{$field} ?? '';
-                    }
-                    fputcsv($handle, $data, ';');
+            if (!empty($validated['filters'])) {
+                foreach ($validated['filters'] as $field => $value) {
+                    $query->where($field, $value);
                 }
-            });
+            }
 
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+            $filename = "{$entity}_export_" . now()->format('Y-m-d_His') . '.csv';
+
+            return response()->streamDownload(function () use ($query, $fields) {
+                $handle = fopen('php://output', 'w');
+                fwrite($handle, "\xEF\xBB\xBF");
+                fputcsv($handle, $fields, ';');
+
+                $query->select($fields)->chunk(500, function ($rows) use ($handle, $fields) {
+                    foreach ($rows as $row) {
+                        $data = [];
+                        foreach ($fields as $field) {
+                            $data[] = $row->{$field} ?? '';
+                        }
+                        fputcsv($handle, $data, ';');
+                    }
+                });
+
+                fclose($handle);
+            }, $filename, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->streamDownload(function () {
+                echo 'Validação falhou';
+            }, 'error.txt');
+        } catch (\Exception $e) {
+            Log::error('BatchExport exportCsv failed', ['error' => $e->getMessage()]);
+            return response()->streamDownload(function () {
+                echo 'Erro na exportação';
+            }, 'error.txt');
+        }
     }
 
-    /**
-     * POST /batch-export/print — batch print selected records as PDF.
-     */
     public function batchPrint(Request $request): \Illuminate\Http\JsonResponse
     {
-        $validated = $request->validate([
-            'entity' => 'required|string|in:work_orders,quotes',
-            'ids' => 'required|array|min:1|max:50',
-            'ids.*' => 'integer',
-        ]);
+        try {
+            $validated = $request->validate([
+                'entity' => 'required|string|in:work_orders,quotes',
+                'ids' => 'required|array|min:1|max:50',
+                'ids.*' => 'integer',
+            ]);
 
-        // Return the IDs validated — the frontend will sequentially
-        // open the existing PDF endpoints for each ID.
-        return response()->json([
-            'entity' => $validated['entity'],
-            'ids' => $validated['ids'],
-            'pdf_base_url' => $validated['entity'] === 'work_orders'
-                ? '/api/v1/work-orders/{id}/pdf'
-                : '/api/v1/quotes/{id}/pdf',
-            'message' => count($validated['ids']) . ' documentos prontos para impressão.',
-        ]);
+            return response()->json([
+                'entity' => $validated['entity'],
+                'ids' => $validated['ids'],
+                'pdf_base_url' => $validated['entity'] === 'work_orders'
+                    ? '/api/v1/work-orders/{id}/pdf'
+                    : '/api/v1/quotes/{id}/pdf',
+                'message' => count($validated['ids']) . ' documentos prontos para impressão.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Validação falhou', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('BatchExport batchPrint failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro na impressão em lote'], 500);
+        }
     }
 
     private function entityLabel(string $key): string
