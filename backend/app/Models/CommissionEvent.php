@@ -13,13 +13,13 @@ class CommissionEvent extends Model
     use BelongsToTenant, HasFactory, Auditable;
 
     protected $fillable = [
-        'tenant_id', 'commission_rule_id', 'work_order_id', 'user_id',
-        'base_amount', 'commission_amount', 'status', 'notes',
+        'tenant_id', 'commission_rule_id', 'work_order_id', 'account_receivable_id', 'user_id',
+        'base_amount', 'commission_amount', 'proportion', 'status', 'notes',
     ];
 
     protected function casts(): array
     {
-        return ['base_amount' => 'decimal:2', 'commission_amount' => 'decimal:2'];
+        return ['base_amount' => 'decimal:2', 'commission_amount' => 'decimal:2', 'proportion' => 'decimal:4'];
     }
 
     public const STATUS_PENDING = 'pending';
@@ -47,5 +47,10 @@ class CommissionEvent extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function accountReceivable(): BelongsTo
+    {
+        return $this->belongsTo(AccountReceivable::class);
     }
 }

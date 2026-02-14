@@ -35,6 +35,7 @@ class StoreExpenseRequest extends FormRequest
             'payment_method' => ['nullable', Rule::in(['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'boleto', 'transferencia'])],
             'notes' => 'nullable|string',
             'affects_technician_cash' => 'boolean',
+            'affects_net_value' => 'boolean',
             'receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // Max 5MB
         ];
     }

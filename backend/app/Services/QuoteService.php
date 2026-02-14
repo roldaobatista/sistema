@@ -67,8 +67,8 @@ class QuoteService
 
     public function sendQuote(Quote $quote): Quote
     {
-        if ($quote->status !== Quote::STATUS_DRAFT) {
-            throw new \DomainException('Orçamento precisa estar em rascunho para enviar');
+        if (!in_array($quote->status, [Quote::STATUS_DRAFT, Quote::STATUS_INTERNALLY_APPROVED])) {
+            throw new \DomainException('Orçamento precisa estar em rascunho ou aprovado internamente para enviar');
         }
 
         $hasItems = $quote->equipments()->whereHas('items')->exists();
@@ -244,6 +244,7 @@ class QuoteService
                 'customer_id' => $quote->customer_id,
                 'quote_id' => $quote->id,
                 'origin_type' => WorkOrder::ORIGIN_QUOTE,
+                'lead_source' => $quote->source, // Propagar origem comercial para comissão
                 'seller_id' => $quote->seller_id,
                 'created_by' => $userId,
                 'status' => WorkOrder::STATUS_OPEN,
@@ -284,6 +285,41 @@ class QuoteService
             AuditLog::log('created', "OS criada a partir do orçamento {$quote->quote_number}", $wo);
 
             return $wo;
+        });
+    }
+
+
+    public function convertToServiceCall(Quote $quote, int $userId): \App\Models\ServiceCall
+    {
+        if ($quote->status !== Quote::STATUS_APPROVED) {
+            throw new \DomainException('Orçamento precisa estar aprovado para converter em chamado');
+        }
+
+        $existingCall = \App\Models\ServiceCall::query()
+            ->where('tenant_id', $quote->tenant_id)
+            ->where('quote_id', $quote->id)
+            ->first();
+
+        if ($existingCall) {
+            throw new \DomainException("Orçamento já convertido no chamado #{$existingCall->call_number}");
+        }
+
+        return DB::transaction(function () use ($quote, $userId) {
+            $call = \App\Models\ServiceCall::create([
+                'tenant_id' => $quote->tenant_id,
+                'call_number' => \App\Models\ServiceCall::nextNumber($quote->tenant_id),
+                'customer_id' => $quote->customer_id,
+                'quote_id' => $quote->id,
+                'status' => 'open',
+                'priority' => 'normal',
+                'description' => $quote->observations ?? "Chamado gerado a partir do orçamento {$quote->quote_number}",
+                'created_by' => $userId,
+            ]);
+
+            $quote->update(['status' => Quote::STATUS_INVOICED]);
+            AuditLog::log('created', "Chamado {$call->call_number} criado a partir do orçamento {$quote->quote_number}", $call);
+
+            return $call;
         });
     }
 

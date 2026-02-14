@@ -578,10 +578,15 @@ class ExpenseController extends Controller
                     'count' => $row->count,
                 ]);
 
+            $driver = DB::getDriverName();
+            $monthExpr = $driver === 'sqlite'
+                ? "strftime('%Y-%m', expense_date)"
+                : "DATE_FORMAT(expense_date, '%Y-%m')";
+
             $byMonth = Expense::where('tenant_id', $tenantId)
                 ->whereNotIn('status', [Expense::STATUS_REJECTED])
                 ->where('expense_date', '>=', now()->subMonths(6)->startOfMonth()->toDateString())
-                ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total")
+                ->selectRaw("{$monthExpr} as month, SUM(amount) as total")
                 ->groupBy('month')
                 ->orderBy('month')
                 ->get()
@@ -787,6 +792,54 @@ class ExpenseController extends Controller
         } catch (\Exception $e) {
             Log::error('Expense history failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao carregar histórico'], 500);
+        }
+    }
+
+    /**
+     * GAP-20: Conferência de despesa (review step antes da aprovação).
+     * Marca a despesa como conferida, registrando quem e quando.
+     */
+    public function review(Request $request, Expense $expense): JsonResponse
+    {
+        try {
+            if ($expense->tenant_id !== $this->tenantId($request)) {
+                return response()->json(['message' => 'Acesso negado'], 403);
+            }
+
+            if ($expense->status !== Expense::STATUS_PENDING) {
+                return response()->json([
+                    'message' => 'Apenas despesas pendentes podem ser conferidas',
+                ], 422);
+            }
+
+            // Não permitir conferir própria despesa (exceto super_admin)
+            if ($expense->created_by === $request->user()->id && !$request->user()->hasRole('super_admin')) {
+                return response()->json([
+                    'message' => 'Não é permitido conferir sua própria despesa',
+                ], 403);
+            }
+
+            DB::transaction(function () use ($expense, $request) {
+                $expense->update([
+                    'status' => Expense::STATUS_REVIEWED,
+                    'reviewed_by' => $request->user()->id,
+                    'reviewed_at' => now(),
+                ]);
+
+                ExpenseStatusHistory::create([
+                    'expense_id' => $expense->id,
+                    'changed_by' => $request->user()->id,
+                    'from_status' => Expense::STATUS_PENDING,
+                    'to_status' => Expense::STATUS_REVIEWED,
+                ]);
+            });
+
+            return response()->json(
+                $expense->fresh()->load(['category:id,name,color', 'approver:id,name', 'chartOfAccount:id,code,name,type'])
+            );
+        } catch (\Exception $e) {
+            Log::error('Expense review failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao conferir despesa'], 500);
         }
     }
 

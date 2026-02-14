@@ -40,4 +40,25 @@ return [
         'instance' => env('EVOLUTION_INSTANCE', 'default'),
     ],
 
+    'fiscal' => [
+        'provider' => env('FISCAL_PROVIDER', 'nuvemfiscal'),
+    ],
+
+    'nuvemfiscal' => [
+        'url' => env('NUVEMFISCAL_URL', 'https://api.nuvemfiscal.com.br'),
+        'client_id' => env('NUVEMFISCAL_CLIENT_ID'),
+        'client_secret' => env('NUVEMFISCAL_CLIENT_SECRET'),
+    ],
+
+    'auvo' => [
+        'api_key' => env('AUVO_API_KEY'),
+        'api_token' => env('AUVO_API_TOKEN'),
+    ],
+
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', env('APP_URL', 'http://localhost')),
+    ],
+
 ];

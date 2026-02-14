@@ -59,7 +59,8 @@ class StockController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        $query = Product::where('is_active', true);
+        $tenantId = app('current_tenant_id');
+        $query = Product::where('tenant_id', $tenantId)->where('is_active', true);
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -96,6 +97,9 @@ class StockController extends Controller
         try {
             $validated = $request->validate([
                 'product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
+                'warehouse_id' => "required|exists:warehouses,id,tenant_id,{$tenantId}",
+                'batch_id' => "nullable|exists:batches,id,tenant_id,{$tenantId}",
+                'product_serial_id' => "nullable|exists:product_serials,id,tenant_id,{$tenantId}",
                 'type' => 'required|in:entry,adjustment',
                 'quantity' => 'required|numeric|min:0.01',
                 'unit_cost' => 'nullable|numeric|min:0',
@@ -109,6 +113,9 @@ class StockController extends Controller
                 StockMovementType::Entry => $this->stockService->manualEntry(
                     product: $product,
                     qty: $validated['quantity'],
+                    warehouseId: $validated['warehouse_id'],
+                    batchId: $validated['batch_id'] ?? null,
+                    serialId: $validated['product_serial_id'] ?? null,
                     unitCost: $validated['unit_cost'] ?? $product->cost_price,
                     notes: $validated['notes'] ?? null,
                     user: $request->user(),
@@ -116,6 +123,9 @@ class StockController extends Controller
                 StockMovementType::Adjustment => $this->stockService->manualAdjustment(
                     product: $product,
                     qty: $validated['quantity'],
+                    warehouseId: $validated['warehouse_id'],
+                    batchId: $validated['batch_id'] ?? null,
+                    serialId: $validated['product_serial_id'] ?? null,
                     notes: $validated['notes'] ?? null,
                     user: $request->user(),
                 ),
@@ -138,7 +148,9 @@ class StockController extends Controller
 
     public function lowStockAlerts(): JsonResponse
     {
-        $products = Product::where('is_active', true)
+        $tenantId = app('current_tenant_id');
+        $products = Product::where('tenant_id', $tenantId)
+            ->where('is_active', true)
             ->where('stock_min', '>', 0)
             ->whereColumn('stock_qty', '<=', 'stock_min')
             ->select(['id', 'code', 'name', 'unit', 'stock_qty', 'stock_min', 'cost_price', 'category_id'])

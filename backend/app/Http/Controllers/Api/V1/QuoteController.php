@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Quote\StoreQuoteRequest;
 use App\Http\Requests\Quote\UpdateQuoteRequest;
@@ -10,6 +11,7 @@ use App\Models\Quote;
 use App\Models\QuoteEquipment;
 use App\Models\QuoteItem;
 use App\Models\QuotePhoto;
+use App\Models\WorkOrder;
 use App\Services\QuoteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -121,6 +123,15 @@ class QuoteController extends Controller
             return $error;
         }
 
+        // B4: Impedir exclusão se já convertido em OS
+        $linkedWo = WorkOrder::where('quote_id', $quote->id)->first();
+        if ($linkedWo) {
+            $woNumber = $linkedWo->os_number ?? $linkedWo->number;
+            return response()->json([
+                'message' => "Orçamento vinculado à OS {$woNumber}. Exclua a OS primeiro.",
+            ], 409);
+        }
+
         try {
             DB::transaction(function () use ($quote) {
                 foreach ($quote->equipments as $eq) {
@@ -145,7 +156,7 @@ class QuoteController extends Controller
     {
         try {
             $this->service->sendQuote($quote);
-            return response()->json($quote);
+            return response()->json($quote->fresh()->load(['customer', 'seller', 'equipments.items']));
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
@@ -160,7 +171,7 @@ class QuoteController extends Controller
             /** @var \App\Models\User $user */
             $user = auth()->user();
             $this->service->approveQuote($quote, $user);
-            return response()->json($quote);
+            return response()->json($quote->fresh()->load(['customer', 'seller', 'equipments.items']));
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
@@ -169,11 +180,42 @@ class QuoteController extends Controller
         }
     }
 
+    /**
+     * GAP-01: Internal approval (before sending to client).
+     * Only quotes in 'draft' or 'pending_internal_approval' can be internally approved.
+     */
+    public function internalApprove(Quote $quote): JsonResponse
+    {
+        try {
+            if (!in_array($quote->status, [Quote::STATUS_DRAFT, Quote::STATUS_PENDING_INTERNAL], true)) {
+                return response()->json(['message' => 'Orçamento não está em status que permite aprovação interna'], 422);
+            }
+
+            /** @var \App\Models\User $user */
+            $user = auth()->user();
+
+            DB::transaction(function () use ($quote, $user) {
+                $quote->update([
+                    'status' => Quote::STATUS_INTERNALLY_APPROVED,
+                    'internal_approved_by' => $user->id,
+                    'internal_approved_at' => now(),
+                ]);
+
+                AuditLog::log('internal_approved', "Orçamento {$quote->quote_number} aprovado internamente por {$user->name}", $quote);
+            });
+
+            return response()->json($quote->fresh()->load(['customer', 'seller', 'equipments.items']));
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao aprovar internamente'], 500);
+        }
+    }
+
     public function reject(Request $request, Quote $quote): JsonResponse
     {
         try {
             $this->service->rejectQuote($quote, $request->get('reason'));
-            return response()->json($quote);
+            return response()->json($quote->fresh()->load(['customer', 'seller', 'equipments.items']));
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
@@ -225,6 +267,21 @@ class QuoteController extends Controller
     }
 
     // ── Equipamentos, Itens e Fotos ──
+
+    public function convertToServiceCall(Quote $quote): JsonResponse
+    {
+        try {
+            $call = $this->service->convertToServiceCall($quote, (int) auth()->id());
+            return response()->json($call, 201);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao converter orçamento em chamado'], 500);
+        }
+    }
+
+    // ── Equipamentos, Itens e Fotos (original section continues) ──
 
     public function addEquipment(Request $request, Quote $quote): JsonResponse
     {
@@ -318,6 +375,11 @@ class QuoteController extends Controller
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        // GAP-24: Gate de desconto
+        if ((float) ($validated['discount_percentage'] ?? 0) > 0 && !$request->user()->can('os.work_order.apply_discount')) {
+            return response()->json(['message' => 'Apenas gerentes/admin podem aplicar descontos.'], 403);
+        }
+
         try {
             $item = DB::transaction(function () use ($equipment, $tenantId, $validated) {
                 $item = $equipment->items()->create([
@@ -338,6 +400,7 @@ class QuoteController extends Controller
 
     public function updateItem(QuoteItem $item): JsonResponse
     {
+        $item->loadMissing('quoteEquipment.quote');
         $quote = $item->quoteEquipment?->quote;
         if ($quote && ($error = $this->ensureQuoteMutable($quote))) {
             return $error;
@@ -351,6 +414,11 @@ class QuoteController extends Controller
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        // GAP-24: Gate de desconto
+        if ((float) ($validated['discount_percentage'] ?? 0) > 0 && !request()->user()->can('os.work_order.apply_discount')) {
+            return response()->json(['message' => 'Apenas gerentes/admin podem aplicar descontos.'], 403);
+        }
+
         try {
             $item = $this->service->updateItem($item, $validated);
             return response()->json($item);
@@ -362,6 +430,7 @@ class QuoteController extends Controller
 
     public function removeItem(QuoteItem $item): JsonResponse
     {
+        $item->loadMissing('quoteEquipment.quote');
         $quote = $item->quoteEquipment?->quote;
         if ($quote && ($error = $this->ensureQuoteMutable($quote))) {
             return $error;
@@ -419,6 +488,7 @@ class QuoteController extends Controller
 
     public function removePhoto(QuotePhoto $photo): JsonResponse
     {
+        $photo->loadMissing('quoteEquipment.quote');
         $quote = $photo->quoteEquipment?->quote;
         if ($quote && ($error = $this->ensureQuoteMutable($quote))) {
             return $error;
@@ -490,12 +560,13 @@ class QuoteController extends Controller
             fputcsv($handle, ['Número', 'Cliente', 'Vendedor', 'Status', 'Subtotal', 'Desconto', 'Total', 'Validade', 'Criado em'], ';');
 
             foreach ($quotes as $q) {
-                $rawStatus = $q->status instanceof \App\Enums\QuoteStatus ? $q->status->value : $q->status;
+                $rawStatus = $q->status instanceof QuoteStatus ? $q->status->value : $q->status;
+                $statusLabel = QuoteStatus::tryFrom($rawStatus)?->label() ?? $rawStatus;
                 fputcsv($handle, [
                     $q->quote_number,
                     $q->customer?->name ?? '',
                     $q->seller?->name ?? '',
-                    Quote::STATUSES[$rawStatus]['label'] ?? $rawStatus,
+                    $statusLabel,
                     number_format((float) $q->subtotal, 2, ',', '.'),
                     number_format((float) $q->discount_amount, 2, ',', '.'),
                     number_format((float) $q->total, 2, ',', '.'),

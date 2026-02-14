@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 use App\Models\Role;
+use App\Models\AuditLog;
 
 class PermissionController extends Controller
 {
@@ -120,6 +121,8 @@ class PermissionController extends Controller
             }
 
             app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+            AuditLog::log('updated', "Permissão '{$permission->name}' " . (!$hasPermission ? 'concedida' : 'revogada') . " para role '{$role->name}'", $role);
 
             return response()->json([
                 'granted' => !$hasPermission,

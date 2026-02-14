@@ -30,12 +30,14 @@ class Tenant extends Model
         'email',
         'phone',
         'status',
+        'inmetro_config',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => 'string',
+            'inmetro_config' => 'array',
         ];
     }
 

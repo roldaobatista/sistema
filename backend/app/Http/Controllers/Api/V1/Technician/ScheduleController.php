@@ -164,8 +164,13 @@ class ScheduleController extends Controller
     {
         abort_unless($schedule->tenant_id === $this->tenantId($request), 404);
 
-        $schedule->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $schedule->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Schedule destroy failed', ['id' => $schedule->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir agendamento'], 500);
+        }
     }
 
     /**
@@ -179,7 +184,7 @@ class ScheduleController extends Controller
         $techId = $request->get('technician_id');
 
         // Schedules normais
-        $schedulesQuery = Schedule::with(['technician:id,name', 'customer:id,name', 'workOrder:id,number,os_number,status'])
+        $schedulesQuery = Schedule::with(['technician:id,name', 'customer:id,name,latitude,longitude', 'workOrder:id,number,os_number,status'])
             ->where('tenant_id', $tenantId)
             ->where('scheduled_start', '>=', $from)
             ->where('scheduled_end', '<=', "$to 23:59:59");
@@ -278,7 +283,7 @@ class ScheduleController extends Controller
     /**
      * Verifica conflitos de horário antes de salvar (API pública para frontend)
      */
-    public function conflicts(Request $request): JsonResponse
+    public function conflicts(Request $request, \App\Services\Search\ConflictDetectionService $service): JsonResponse
     {
         $tenantId = $this->tenantId($request);
 
@@ -290,7 +295,7 @@ class ScheduleController extends Controller
         ]);
         $this->ensureTenantUser((int) $validated['technician_id'], $tenantId);
 
-        $hasConflict = Schedule::hasConflict(
+        $result = $service->check(
             $validated['technician_id'],
             $validated['start'],
             $validated['end'],
@@ -298,28 +303,11 @@ class ScheduleController extends Controller
             $tenantId
         );
 
-        if ($hasConflict) {
-            $conflict = Schedule::where('technician_id', $validated['technician_id'])
-                ->where('tenant_id', $tenantId)
-                ->where(function ($q) use ($validated) {
-                    $q->whereBetween('scheduled_start', [$validated['start'], $validated['end']])
-                      ->orWhereBetween('scheduled_end', [$validated['start'], $validated['end']])
-                      ->orWhere(function ($q2) use ($validated) {
-                          $q2->where('scheduled_start', '<=', $validated['start'])
-                             ->where('scheduled_end', '>=', $validated['end']);
-                      });
-                });
-
-            if (!empty($validated['exclude_schedule_id'])) {
-                $conflict->where('id', '!=', $validated['exclude_schedule_id']);
-            }
-
-            $conflictingSchedule = $conflict->with('customer:id,name')->first();
-
+        if ($result['conflict']) {
             return response()->json([
                 'conflict' => true,
                 'message' => 'Horário indisponível.',
-                'details' => $conflictingSchedule
+                'details' => $result
             ]);
         }
 

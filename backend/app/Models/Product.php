@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Batch;
+use App\Models\WarehouseStock;
+use App\Models\ProductSerial;
+use App\Models\ProductKit;
 
 class Product extends Model
 {
@@ -28,6 +32,10 @@ class Product extends Model
         'stock_min',
         'is_active',
         'track_stock',
+        'is_kit',
+        'track_batch',
+        'track_serial',
+        'min_repo_point',
     ];
 
     protected function casts(): array
@@ -38,6 +46,10 @@ class Product extends Model
             'stock_qty' => 'decimal:2',
             'stock_min' => 'decimal:2',
             'is_active' => 'boolean',
+            'is_kit' => 'boolean',
+            'track_batch' => 'boolean',
+            'track_serial' => 'boolean',
+            'min_repo_point' => 'decimal:2',
         ];
     }
 
@@ -49,6 +61,31 @@ class Product extends Model
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(Batch::class);
+    }
+
+    public function warehouseStocks(): HasMany
+    {
+        return $this->hasMany(WarehouseStock::class);
+    }
+
+    public function serials(): HasMany
+    {
+        return $this->hasMany(ProductSerial::class);
+    }
+
+    public function kitItems(): HasMany
+    {
+        return $this->hasMany(ProductKit::class, 'parent_id');
+    }
+
+    public function isChildOf(): HasMany
+    {
+        return $this->hasMany(ProductKit::class, 'child_id');
     }
 
     public function priceHistories()

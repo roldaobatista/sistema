@@ -9,6 +9,8 @@ use App\Models\EquipmentMaintenance;
 use App\Models\EquipmentDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class EquipmentController extends Controller
@@ -58,7 +60,7 @@ class EquipmentController extends Controller
      */
     public function show(Request $request, Equipment $equipment): JsonResponse
     {
-        $this->authorize($request, $equipment);
+        $this->checkTenantAccess($request, $equipment);
 
         $equipment->load([
             'customer:id,name,document,phone',
@@ -119,9 +121,13 @@ class EquipmentController extends Controller
         $data['tenant_id'] = $tenantId;
         $data['code'] = Equipment::generateCode($tenantId);
 
-        $equipment = Equipment::create($data);
-
-        return response()->json(['equipment' => $equipment->load('customer:id,name')], 201);
+        try {
+            $equipment = DB::transaction(fn () => Equipment::create($data));
+            return response()->json(['equipment' => $equipment->load('customer:id,name')], 201);
+        } catch (\Throwable $e) {
+            Log::error('Equipment store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar equipamento'], 500);
+        }
     }
 
     /**
@@ -129,7 +135,7 @@ class EquipmentController extends Controller
      */
     public function update(Request $request, Equipment $equipment): JsonResponse
     {
-        $this->authorize($request, $equipment);
+        $this->checkTenantAccess($request, $equipment);
 
         $tenantId = $this->tenantId($request);
 
@@ -186,9 +192,15 @@ class EquipmentController extends Controller
      */
     public function destroy(Request $request, Equipment $equipment): JsonResponse
     {
-        $this->authorize($request, $equipment);
-        $equipment->delete();
-        return response()->json(null, 204);
+        $this->checkTenantAccess($request, $equipment);
+
+        try {
+            DB::transaction(fn () => $equipment->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('Equipment destroy failed', ['id' => $equipment->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir equipamento'], 500);
+        }
     }
 
     /**
@@ -263,10 +275,47 @@ class EquipmentController extends Controller
 
     // ─── Calibrações ────────────────────────────────────────
 
+    public function history(Request $request, Equipment $equipment): JsonResponse
+    {
+        $this->checkTenantAccess($request, $equipment);
+
+        $calibrations = $equipment->calibrations()
+            ->with(['performer:id,name', 'workOrder:id,number,os_number,status'])
+            ->get()
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'type' => 'calibration',
+                'date' => $c->calibration_date,
+                'title' => "Calibração: {$c->certificate_number}",
+                'result' => $c->result,
+                'performer' => $c->performer?->name,
+                'work_order' => $c->workOrder,
+                'details' => $c,
+            ]);
+
+        $maintenances = $equipment->maintenances()
+            ->with(['performer:id,name', 'workOrder:id,number,os_number,status'])
+            ->get()
+            ->map(fn($m) => [
+                'id' => $m->id,
+                'type' => 'maintenance',
+                'date' => $m->created_at,
+                'title' => "Manutenção: " . (ucfirst($m->type)),
+                'result' => null,
+                'performer' => $m->performer?->name,
+                'work_order' => $m->workOrder,
+                'details' => $m,
+            ]);
+
+        $all = $calibrations->concat($maintenances)->sortByDesc('date')->values();
+
+        return response()->json(['history' => $all]);
+    }
+
     public function calibrationHistory(Equipment $equipment): JsonResponse
     {
         $calibrations = $equipment->calibrations()
-            ->with(['performer:id,name', 'approver:id,name'])
+            ->with(['performer:id,name', 'approver:id,name', 'standardWeights:id,code,nominal_value,unit,certificate_number'])
             ->get();
 
         return response()->json(['calibrations' => $calibrations]);
@@ -274,7 +323,7 @@ class EquipmentController extends Controller
 
     public function addCalibration(Request $request, Equipment $equipment): JsonResponse
     {
-        $this->authorize($request, $equipment);
+        $this->checkTenantAccess($request, $equipment);
 
         $data = $request->validate([
             'calibration_date' => 'required|date',
@@ -284,6 +333,8 @@ class EquipmentController extends Controller
             'certificate_number' => 'nullable|string|max:50',
             'certificate_pdf_path' => 'nullable|string|max:255',
             'standard_used' => 'nullable|string|max:255',
+            'standard_weight_ids' => 'nullable|array',
+            'standard_weight_ids.*' => 'exists:standard_weights,id',
             'uncertainty' => 'nullable|numeric',
             'error_found' => 'nullable|numeric',
             'errors_found' => 'nullable|array',
@@ -297,9 +348,14 @@ class EquipmentController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $standardWeightIds = $data['standard_weight_ids'] ?? [];
+        unset($data['standard_weight_ids']);
+
         $data['performed_by'] = $request->user()->id;
 
         try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
             // Calcular próximo vencimento
             if ($equipment->calibration_interval_months) {
                 $data['next_due_date'] = \Carbon\Carbon::parse($data['calibration_date'])
@@ -307,6 +363,11 @@ class EquipmentController extends Controller
             }
 
             $calibration = $equipment->calibrations()->create($data);
+
+            // Attach standard weights (pesos padrão)
+            if (!empty($standardWeightIds)) {
+                $calibration->standardWeights()->attach($standardWeightIds);
+            }
 
             // Atualizar equipamento
             $equipment->update([
@@ -316,8 +377,11 @@ class EquipmentController extends Controller
                 'status' => Equipment::STATUS_ACTIVE,
             ]);
 
-            return response()->json(['calibration' => $calibration], 201);
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json(['calibration' => $calibration->load('standardWeights')], 201);
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             report($e);
             return response()->json(['message' => 'Erro ao registrar calibração: ' . $e->getMessage()], 500);
         }
@@ -327,7 +391,7 @@ class EquipmentController extends Controller
 
     public function addMaintenance(Request $request, Equipment $equipment): JsonResponse
     {
-        $this->authorize($request, $equipment);
+        $this->checkTenantAccess($request, $equipment);
 
         $data = $request->validate([
             'type' => 'required|in:preventiva,corretiva,ajuste,limpeza',
@@ -354,7 +418,7 @@ class EquipmentController extends Controller
 
     public function uploadDocument(Request $request, Equipment $equipment): JsonResponse
     {
-        $this->authorize($request, $equipment);
+        $this->checkTenantAccess($request, $equipment);
 
         $request->validate([
             'file' => 'required|file|max:10240',
@@ -379,7 +443,7 @@ class EquipmentController extends Controller
     public function deleteDocument(Request $request, EquipmentDocument $document): JsonResponse
     {
         $equipment = $document->equipment;
-        $this->authorize($request, $equipment);
+        $this->checkTenantAccess($request, $equipment);
 
         $document->delete();
         return response()->json(null, 204);
@@ -473,7 +537,7 @@ class EquipmentController extends Controller
 
     // ─── Helpers ─────────────────────────────────────────────
 
-    private function authorize(Request $request, Equipment $equipment): void
+    private function checkTenantAccess(Request $request, Equipment $equipment): void
     {
         if ($equipment->tenant_id !== $this->tenantId($request)) {
             abort(403);

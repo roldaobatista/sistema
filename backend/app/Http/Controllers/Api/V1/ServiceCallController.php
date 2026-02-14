@@ -126,8 +126,8 @@ class ServiceCallController extends Controller
         }
 
         return response()->json($serviceCall->load([
-            'customer.contacts', 'quote', 'technician:id,name', 'driver:id,name', 'equipments',
-            'comments.user:id,name',
+            'customer.contacts', 'quote', 'technician:id,name', 'driver:id,name',
+            'createdBy:id,name', 'equipments', 'comments.user:id,name',
         ]));
     }
 
@@ -571,14 +571,20 @@ class ServiceCallController extends Controller
     public function summary(): JsonResponse
     {
         $base = ServiceCall::where('tenant_id', $this->currentTenantId());
+
+        $activeBreached = (clone $base)
+            ->whereNotIn('status', [ServiceCall::STATUS_COMPLETED, ServiceCall::STATUS_CANCELLED])
+            ->get()
+            ->filter(fn ($c) => $c->sla_breached)
+            ->count();
+
         return response()->json([
             'open' => (clone $base)->where('status', ServiceCall::STATUS_OPEN)->count(),
             'scheduled' => (clone $base)->where('status', ServiceCall::STATUS_SCHEDULED)->count(),
             'in_transit' => (clone $base)->where('status', ServiceCall::STATUS_IN_TRANSIT)->count(),
             'in_progress' => (clone $base)->where('status', ServiceCall::STATUS_IN_PROGRESS)->count(),
-
             'completed_today' => (clone $base)->where('status', ServiceCall::STATUS_COMPLETED)->whereDate('completed_at', today())->count(),
-            'sla_breached_active' => (clone $base)->whereNotIn('status', [ServiceCall::STATUS_COMPLETED, ServiceCall::STATUS_CANCELLED])->get()->filter(fn($c) => $c->sla_breached)->count(),
+            'sla_breached_active' => $activeBreached,
         ]);
     }
 

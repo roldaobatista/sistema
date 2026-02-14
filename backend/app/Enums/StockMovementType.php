@@ -9,6 +9,7 @@ enum StockMovementType: string
     case Reserve = 'reserve';
     case Return = 'return';
     case Adjustment = 'adjustment';
+    case Transfer = 'transfer';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum StockMovementType: string
             self::Reserve => 'Reserva',
             self::Return => 'Devolução',
             self::Adjustment => 'Ajuste',
+            self::Transfer => 'Transferência',
         };
     }
 
@@ -26,7 +28,7 @@ enum StockMovementType: string
         return match ($this) {
             self::Entry, self::Return => 1,
             self::Exit, self::Reserve => -1,
-            self::Adjustment => 0, // handled by sign of quantity
+            self::Adjustment, self::Transfer => 0, // Adjustment uses sign; Transfer is special
         };
     }
 }

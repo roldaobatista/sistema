@@ -12,11 +12,27 @@ use Illuminate\Support\Facades\Log;
 class InmetroLeadService
 {
     /**
-     * Recalculate priorities for all owners based on instrument expiration.
+     * Recalculate priorities for all owners based on instrument status and expiration.
+     * critical = any rejected instrument (INMETRO reprovação — contato imediato)
+     * urgent = overdue or expiring within 30 days
+     * high = expiring within 60 days
+     * normal = expiring within 90 days
+     * low = everything else
      */
     public function recalculatePriorities(int $tenantId, int $urgent = 30, int $high = 60, int $normal = 90): array
     {
-        $stats = ['urgent' => 0, 'high' => 0, 'normal' => 0, 'low' => 0];
+        $stats = ['critical' => 0, 'urgent' => 0, 'high' => 0, 'normal' => 0, 'low' => 0];
+
+        // Average revenue per calibration by instrument type (R$)
+        $revenuePerCalibration = [
+            'Balança' => 350.00,
+            'Balança Rodoferroviária' => 1200.00,
+            'Balança Comercial' => 300.00,
+            'Medidor de Combustível' => 450.00,
+            'Taxímetro' => 250.00,
+            'Cronotacógrafo' => 200.00,
+        ];
+        $defaultRevenue = 350.00;
 
         $owners = InmetroOwner::where('tenant_id', $tenantId)
             ->whereNull('converted_to_customer_id')
@@ -24,23 +40,36 @@ class InmetroLeadService
             ->get();
 
         foreach ($owners as $owner) {
-            $minDays = $owner->instruments
+            $instruments = $owner->instruments;
+            $hasRejected = $instruments->contains('current_status', 'rejected');
+            $totalInstruments = $instruments->count();
+
+            // Calculate estimated revenue
+            $estimatedRevenue = $instruments->sum(function ($i) use ($revenuePerCalibration, $defaultRevenue) {
+                return $revenuePerCalibration[$i->instrument_type] ?? $defaultRevenue;
+            });
+
+            $minDays = $instruments
                 ->filter(fn($i) => $i->next_verification_at !== null)
                 ->map(fn($i) => (int) now()->startOfDay()->diffInDays($i->next_verification_at, false))
                 ->min();
 
+            // Rejected instruments = ALWAYS critical priority
             $priority = match (true) {
+                $hasRejected => 'critical',
                 $minDays === null => 'low',
-                $minDays <= 0 => 'urgent',     // Overdue
+                $minDays <= 0 => 'urgent',
                 $minDays <= $urgent => 'urgent',
                 $minDays <= $high => 'high',
                 $minDays <= $normal => 'normal',
                 default => 'low',
             };
 
-            if ($owner->priority !== $priority) {
-                $owner->update(['priority' => $priority]);
-            }
+            $owner->update([
+                'priority' => $priority,
+                'estimated_revenue' => $estimatedRevenue,
+                'total_instruments' => $totalInstruments,
+            ]);
 
             $stats[$priority]++;
         }
@@ -100,6 +129,17 @@ class InmetroLeadService
             ->limit(10)
             ->get();
 
+        $byType = InmetroInstrument::query()
+            ->join('inmetro_locations', 'inmetro_instruments.location_id', '=', 'inmetro_locations.id')
+            ->join('inmetro_owners', 'inmetro_locations.owner_id', '=', 'inmetro_owners.id')
+            ->where('inmetro_owners.tenant_id', $tenantId)
+            ->whereNotNull('inmetro_instruments.instrument_type')
+            ->where('inmetro_instruments.instrument_type', '!=', '')
+            ->selectRaw('instrument_type, COUNT(*) as total')
+            ->groupBy('instrument_type')
+            ->orderByDesc('total')
+            ->get();
+
         return [
             'totals' => [
                 'owners' => $totalOwners,
@@ -119,6 +159,7 @@ class InmetroLeadService
             'by_city' => $byCity,
             'by_status' => $byStatus,
             'by_brand' => $byBrand,
+            'by_type' => $byType,
         ];
     }
 
@@ -291,5 +332,152 @@ class InmetroLeadService
         }
     
         return $count;
+    }
+
+    /**
+     * Cross-reference INMETRO owners with CRM customers by document (CNPJ/CPF).
+     * Auto-links owners to existing customers without converting (preserves lead data).
+     */
+    public function crossReferenceWithCRM(int $tenantId): array
+    {
+        $stats = ['matched' => 0, 'already_linked' => 0, 'unmatched' => 0];
+
+        $owners = InmetroOwner::where('tenant_id', $tenantId)
+            ->whereNull('converted_to_customer_id')
+            ->whereNotNull('document')
+            ->where('document', '!=', '')
+            ->get();
+
+        foreach ($owners as $owner) {
+            $cleanDoc = preg_replace('/[^0-9]/', '', $owner->document);
+            if (empty($cleanDoc)) {
+                $stats['unmatched']++;
+                continue;
+            }
+
+            // Try to match by cleaned document
+            $customer = Customer::where('tenant_id', $tenantId)
+                ->whereRaw("REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), '/', '') = ?", [$cleanDoc])
+                ->first();
+
+            if ($customer) {
+                $owner->update([
+                    'converted_to_customer_id' => $customer->id,
+                    'lead_status' => 'converted',
+                ]);
+                $stats['matched']++;
+            } else {
+                $stats['unmatched']++;
+            }
+        }
+
+        // Also check already-linked owners
+        $stats['already_linked'] = InmetroOwner::where('tenant_id', $tenantId)
+            ->whereNotNull('converted_to_customer_id')
+            ->count();
+
+        return $stats;
+    }
+
+    /**
+     * Get INMETRO intelligence profile for a specific CRM customer.
+     */
+    public function getCustomerInmetroProfile(int $tenantId, int $customerId): ?array
+    {
+        $customer = Customer::where('tenant_id', $tenantId)->findOrFail($customerId);
+
+        // Find linked owner(s) by converted_to_customer_id
+        $owners = InmetroOwner::where('tenant_id', $tenantId)
+            ->where('converted_to_customer_id', $customerId)
+            ->with(['locations', 'instruments'])
+            ->get();
+
+        // Also try matching by document if no link exists
+        if ($owners->isEmpty() && $customer->document) {
+            $cleanDoc = preg_replace('/[^0-9]/', '', $customer->document);
+            if (!empty($cleanDoc)) {
+                $owners = InmetroOwner::where('tenant_id', $tenantId)
+                    ->whereRaw("REPLACE(REPLACE(REPLACE(document, '.', ''), '-', ''), '/', '') = ?", [$cleanDoc])
+                    ->with(['locations', 'instruments'])
+                    ->get();
+            }
+        }
+
+        if ($owners->isEmpty()) {
+            return null;
+        }
+
+        $instruments = $owners->flatMap(fn($o) => $o->instruments);
+        $locations = $owners->flatMap(fn($o) => $o->locations);
+
+        $overdue = $instruments->filter(fn($i) =>
+            $i->next_verification_at && $i->next_verification_at->isPast()
+        )->count();
+
+        $expiring30 = $instruments->filter(fn($i) =>
+            $i->next_verification_at &&
+            $i->next_verification_at->isFuture() &&
+            $i->next_verification_at->diffInDays(now()) <= 30
+        )->count();
+
+        $expiring90 = $instruments->filter(fn($i) =>
+            $i->next_verification_at &&
+            $i->next_verification_at->isFuture() &&
+            $i->next_verification_at->diffInDays(now()) <= 90
+        )->count();
+
+        $byType = $instruments->groupBy('instrument_type')->map(fn($group) => $group->count());
+
+        return [
+            'linked' => true,
+            'owner_ids' => $owners->pluck('id')->toArray(),
+            'owner_names' => $owners->pluck('name')->toArray(),
+            'total_instruments' => $instruments->count(),
+            'total_locations' => $locations->count(),
+            'overdue' => $overdue,
+            'expiring_30d' => $expiring30,
+            'expiring_90d' => $expiring90,
+            'by_type' => $byType,
+            'instruments' => $instruments->map(fn($i) => [
+                'id' => $i->id,
+                'inmetro_number' => $i->inmetro_number,
+                'instrument_type' => $i->instrument_type,
+                'brand' => $i->brand,
+                'model' => $i->model,
+                'current_status' => $i->current_status,
+                'last_verification_at' => $i->last_verification_at?->toDateString(),
+                'next_verification_at' => $i->next_verification_at?->toDateString(),
+            ])->values()->toArray(),
+            'locations' => $locations->map(fn($l) => [
+                'id' => $l->id,
+                'address_city' => $l->address_city,
+                'address_state' => $l->address_state,
+                'farm_name' => $l->farm_name,
+            ])->values()->toArray(),
+        ];
+    }
+
+    /**
+     * Get cross-reference summary stats.
+     */
+    public function getCrossReferenceStats(int $tenantId): array
+    {
+        $totalOwners = InmetroOwner::where('tenant_id', $tenantId)->count();
+        $linked = InmetroOwner::where('tenant_id', $tenantId)->whereNotNull('converted_to_customer_id')->count();
+        $unlinked = $totalOwners - $linked;
+
+        $withDocument = InmetroOwner::where('tenant_id', $tenantId)
+            ->whereNull('converted_to_customer_id')
+            ->whereNotNull('document')
+            ->where('document', '!=', '')
+            ->count();
+
+        return [
+            'total_owners' => $totalOwners,
+            'linked' => $linked,
+            'unlinked' => $unlinked,
+            'with_document' => $withDocument,
+            'link_percentage' => $totalOwners > 0 ? round(($linked / $totalOwners) * 100, 1) : 0,
+        ];
     }
 }

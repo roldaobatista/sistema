@@ -65,12 +65,14 @@ class PdfController extends Controller
     public function calibrationCertificate(Request $request, Equipment $equipment, EquipmentCalibration $calibration): Response
     {
         $equipment->load('customer');
-        $calibration->load(['performer', 'approver']);
+        $calibration->load(['performer', 'approver', 'standardWeights', 'workOrder']);
 
         $pdf = Pdf::loadView('pdf.calibration-certificate', [
             'equipment' => $equipment,
             'calibration' => $calibration,
             'tenant' => $this->tenant($request),
+            'standardWeights' => $calibration->standardWeights,
+            'workOrder' => $calibration->workOrder,
         ]);
 
         $pdf->setPaper('A4', 'portrait');

@@ -6,10 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\InmetroOwner;
 use App\Models\InmetroInstrument;
 use App\Models\InmetroCompetitor;
+use App\Models\Tenant;
 use App\Services\InmetroXmlImportService;
 use App\Services\InmetroPsieScraperService;
 use App\Services\InmetroEnrichmentService;
 use App\Services\InmetroLeadService;
+use App\Services\InmetroGeocodingService;
+use App\Services\InmetroMarketIntelService;
+use App\Services\InmetroDadosGovService;
+use App\Models\InmetroBaseConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +27,9 @@ class InmetroController extends Controller
         private InmetroPsieScraperService $scraperService,
         private InmetroEnrichmentService $enrichmentService,
         private InmetroLeadService $leadService,
+        private InmetroGeocodingService $geocodingService,
+        private InmetroMarketIntelService $marketIntelService,
+        private InmetroDadosGovService $dadosGovService,
     ) {}
 
     private function priorityOrderExpression(): string
@@ -101,10 +109,20 @@ class InmetroController extends Controller
     {
         $owner = InmetroOwner::where('tenant_id', $request->user()->current_tenant_id)
             ->with([
-                'locations.instruments.history',
+                'locations.instruments.history.competitor',
                 'convertedCustomer',
             ])
             ->findOrFail($id);
+
+        // Append competitor_name to each history entry for frontend
+        $owner->locations->each(function ($location) {
+            $location->instruments->each(function ($instrument) {
+                $instrument->history->each(function ($entry) {
+                    $entry->competitor_name = $entry->competitor?->name;
+                    unset($entry->competitor);
+                });
+            });
+        });
 
         return response()->json($owner);
     }
@@ -145,6 +163,10 @@ class InmetroController extends Controller
 
         if ($request->boolean('overdue')) {
             $query->where('inmetro_instruments.next_verification_at', '<', now());
+        }
+
+        if ($instrumentType = $request->input('instrument_type')) {
+            $query->where('inmetro_instruments.instrument_type', $instrumentType);
         }
 
         $query->orderBy('inmetro_instruments.next_verification_at', 'asc');
@@ -204,7 +226,8 @@ class InmetroController extends Controller
     {
         $tenantId = $request->user()->current_tenant_id;
 
-        $query = InmetroCompetitor::where('tenant_id', $tenantId);
+        $query = InmetroCompetitor::where('tenant_id', $tenantId)
+            ->withCount('repairs');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -220,36 +243,155 @@ class InmetroController extends Controller
 
         $competitors = $query->orderBy('city')->paginate($request->input('per_page', 25));
 
+        // Append repairs with instrument info for expanded detail
+        $competitors->getCollection()->transform(function ($competitor) {
+            $competitor->repairs = $competitor->repairs()
+                ->with('instrument:id,inmetro_number,instrument_type')
+                ->latest('created_at')
+                ->limit(20)
+                ->get()
+                ->map(fn($r) => [
+                    'id' => $r->id,
+                    'instrument_id' => $r->instrument_id,
+                    'instrument_number' => $r->instrument?->inmetro_number,
+                    'instrument_type' => $r->instrument?->instrument_type,
+                    'repair_date' => $r->created_at->toDateString(),
+                    'result' => null,
+                ]);
+
+            return $competitor;
+        });
+
         return response()->json($competitors);
     }
 
     /**
-     * Import XML data from PSIE open data.
+     * Import XML data from RBMLQ open data — multi-UF, multi-type.
      */
     public function importXml(Request $request): JsonResponse
     {
         $tenantId = $request->user()->current_tenant_id;
-        $uf = $request->input('uf', 'MT');
         $type = $request->input('type', 'all');
+        $tenant = Tenant::findOrFail($tenantId);
+        $config = $tenant->inmetro_config ?? InmetroXmlImportService::defaultConfig();
+
+        // Determine UFs: from request, or from tenant config
+        $ufsInput = $request->input('ufs');
+        $ufs = $ufsInput
+            ? (is_array($ufsInput) ? $ufsInput : explode(',', $ufsInput))
+            : ($config['monitored_ufs'] ?? ['MT']);
+
+        // Fallback single UF param for backward compat
+        if (!$ufsInput && $request->has('uf')) {
+            $ufs = [$request->input('uf')];
+        }
+
+        $instrumentTypes = $request->input('instrument_types');
+        $typesArray = $instrumentTypes
+            ? (is_array($instrumentTypes) ? $instrumentTypes : explode(',', $instrumentTypes))
+            : null;
 
         try {
             $results = [];
 
             if ($type === 'all' || $type === 'competitors') {
-                $results['competitors'] = $this->xmlImportService->importCompetitors($tenantId, $uf);
+                $results['competitors'] = [];
+                foreach ($ufs as $uf) {
+                    $results['competitors'][$uf] = $this->xmlImportService->importCompetitors($tenantId, $uf);
+                }
             }
 
             if ($type === 'all' || $type === 'instruments') {
-                $results['instruments'] = $this->xmlImportService->importInstruments($tenantId, $uf);
+                $results['instruments'] = $this->xmlImportService->importAllForConfig($tenantId, $ufs, $typesArray);
             }
 
             $this->leadService->recalculatePriorities($tenantId);
+            $this->leadService->crossReferenceWithCRM($tenantId);
 
             return response()->json(['message' => 'Import completed', 'results' => $results]);
         } catch (\Exception $e) {
             Log::error('INMETRO XML import error', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Import failed', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get available instrument types for import.
+     */
+    public function instrumentTypes(): JsonResponse
+    {
+        $types = collect(InmetroXmlImportService::INSTRUMENT_TYPES)
+            ->map(fn($label, $slug) => ['slug' => $slug, 'label' => $label])
+            ->values();
+
+        return response()->json($types);
+    }
+
+    /**
+     * Get available Brazilian UFs.
+     */
+    public function availableUfs(): JsonResponse
+    {
+        return response()->json(InmetroXmlImportService::BRAZILIAN_UFS);
+    }
+
+    /**
+     * Get tenant INMETRO config.
+     */
+    public function getConfig(Request $request): JsonResponse
+    {
+        $tenant = Tenant::findOrFail($request->user()->current_tenant_id);
+        $config = $tenant->inmetro_config ?? InmetroXmlImportService::defaultConfig();
+
+        return response()->json($config);
+    }
+
+    /**
+     * Update tenant INMETRO config.
+     */
+    public function updateConfig(Request $request): JsonResponse
+    {
+        $request->validate([
+            'monitored_ufs' => 'required|array|min:1',
+            'monitored_ufs.*' => 'string|size:2',
+            'instrument_types' => 'required|array|min:1',
+            'instrument_types.*' => 'string',
+            'auto_sync_enabled' => 'boolean',
+            'sync_interval_days' => 'integer|min:1|max:30',
+        ]);
+
+        $tenant = Tenant::findOrFail($request->user()->current_tenant_id);
+
+        // Validate UFs against allowed list
+        $validUfs = InmetroXmlImportService::BRAZILIAN_UFS;
+        $requestedUfs = $request->input('monitored_ufs');
+        $invalidUfs = array_diff($requestedUfs, $validUfs);
+        if (!empty($invalidUfs)) {
+            return response()->json([
+                'message' => 'Invalid UFs: ' . implode(', ', $invalidUfs),
+            ], 422);
+        }
+
+        // Validate types against allowed list
+        $validTypes = array_keys(InmetroXmlImportService::INSTRUMENT_TYPES);
+        $requestedTypes = $request->input('instrument_types');
+        $invalidTypes = array_diff($requestedTypes, $validTypes);
+        if (!empty($invalidTypes)) {
+            return response()->json([
+                'message' => 'Invalid types: ' . implode(', ', $invalidTypes),
+            ], 422);
+        }
+
+        $config = [
+            'monitored_ufs' => $requestedUfs,
+            'instrument_types' => $requestedTypes,
+            'auto_sync_enabled' => $request->boolean('auto_sync_enabled', true),
+            'sync_interval_days' => $request->input('sync_interval_days', 7),
+        ];
+
+        $tenant->update(['inmetro_config' => $config]);
+
+        return response()->json(['message' => 'Config updated', 'config' => $config]);
     }
 
     /**
@@ -638,4 +780,328 @@ class InmetroController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Cross-reference INMETRO owners with CRM customers by document.
+     */
+    public function crossReference(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+
+        try {
+            $stats = $this->leadService->crossReferenceWithCRM($tenantId);
+            return response()->json(['message' => 'Cross-reference completed', 'stats' => $stats]);
+        } catch (\Exception $e) {
+            Log::error('INMETRO cross-reference error', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Cross-reference failed', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get INMETRO profile for a specific CRM customer.
+     */
+    public function customerInmetroProfile(Request $request, int $customerId): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+
+        try {
+            $profile = $this->leadService->getCustomerInmetroProfile($tenantId, $customerId);
+            return response()->json($profile ?? ['linked' => false]);
+        } catch (\Exception $e) {
+            Log::error('INMETRO customer profile error', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to get profile', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get cross-reference summary stats.
+     */
+    public function crossReferenceStats(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $stats = $this->leadService->getCrossReferenceStats($tenantId);
+        return response()->json($stats);
+    }
+
+    /**
+     * Get map data: geolocated locations with instruments.
+     */
+    public function mapData(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->geocodingService->getMapData($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Geocode locations without coordinates.
+     */
+    public function geocodeLocations(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $limit = $request->input('limit', 50);
+
+        try {
+            $stats = $this->geocodingService->geocodeAll($tenantId, (int) $limit);
+            return response()->json([
+                'message' => "Geocoding concluído: {$stats['geocoded']} locais geocodificados",
+                'stats' => $stats,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Geocoding failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro no geocoding'], 500);
+        }
+    }
+
+    /**
+     * Calculate distances from a base point.
+     */
+    public function calculateDistances(Request $request): JsonResponse
+    {
+        $request->validate([
+            'base_lat' => 'required|numeric|between:-90,90',
+            'base_lng' => 'required|numeric|between:-180,180',
+        ]);
+
+        $tenantId = $request->user()->current_tenant_id;
+        $updated = $this->geocodingService->calculateDistances(
+            $tenantId,
+            (float) $request->input('base_lat'),
+            (float) $request->input('base_lng')
+        );
+
+        return response()->json([
+            'message' => "Distâncias calculadas para {$updated} locais",
+            'updated' => $updated,
+        ]);
+    }
+
+    // ─── Market Intelligence ───────────────────────────────────────
+
+    /**
+     * Market overview KPIs.
+     */
+    public function marketOverview(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->marketIntelService->getMarketOverview($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Competitor analysis.
+     */
+    public function competitorAnalysis(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->marketIntelService->getCompetitorAnalysis($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Regional market analysis.
+     */
+    public function regionalAnalysis(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->marketIntelService->getRegionalAnalysis($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Brand and type analysis.
+     */
+    public function brandAnalysis(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->marketIntelService->getBrandAnalysis($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Expiration forecast (12 months).
+     */
+    public function expirationForecast(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->marketIntelService->getExpirationForecast($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Monthly trends (12-month tracking).
+     */
+    public function monthlyTrends(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->marketIntelService->getMonthlyTrends($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Revenue ranking (top 20 leads by estimated revenue).
+     */
+    public function revenueRanking(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $data = $this->marketIntelService->getRevenueRanking($tenantId);
+        return response()->json($data);
+    }
+
+    /**
+     * Export leads as PDF report.
+     */
+    public function exportLeadsPdf(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->current_tenant_id;
+        $tenant = Tenant::findOrFail($tenantId);
+
+        try {
+            $leads = InmetroOwner::where('tenant_id', $tenantId)
+                ->with(['locations.instruments'])
+                ->orderByRaw($this->priorityOrderExpression())
+                ->limit(100)
+                ->get();
+
+            $priorityLabels = [
+                'critical' => 'CRÍTICO', 'urgent' => 'Urgente',
+                'high' => 'Alta', 'normal' => 'Normal', 'low' => 'Baixa',
+            ];
+
+            $rows = $leads->map(function ($lead) use ($priorityLabels) {
+                $instrumentCount = $lead->locations->sum(fn($l) => $l->instruments->count());
+                $cities = $lead->locations->pluck('address_city')->unique()->filter()->implode(', ');
+                return [
+                    'name' => $lead->name,
+                    'document' => $lead->document,
+                    'priority' => $priorityLabels[$lead->priority] ?? $lead->priority,
+                    'instruments' => $instrumentCount,
+                    'cities' => $cities ?: '—',
+                    'lead_status' => $lead->lead_status ?? 'new',
+                    'estimated_revenue' => $lead->estimated_revenue
+                        ? 'R$ ' . number_format($lead->estimated_revenue, 2, ',', '.')
+                        : '—',
+                ];
+            });
+
+            $html = view('reports.inmetro-leads', [
+                'tenant' => $tenant,
+                'leads' => $rows,
+                'generated_at' => now()->format('d/m/Y H:i'),
+                'total_leads' => $leads->count(),
+                'critical_count' => $leads->where('priority', 'critical')->count(),
+                'urgent_count' => $leads->where('priority', 'urgent')->count(),
+            ])->render();
+
+            return response()->json([
+                'html' => $html,
+                'filename' => 'relatorio-oportunidades-inmetro-' . now()->format('Y-m-d') . '.pdf',
+                'total_leads' => $leads->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PDF export failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Falha ao gerar relatório'], 500);
+        }
+    }
+
+    /**
+     * Get tenant base geolocation config.
+     */
+    public function getBaseConfig(Request $request): JsonResponse
+    {
+        $config = InmetroBaseConfig::firstOrCreate(
+            ['tenant_id' => $request->user()->current_tenant_id],
+            ['max_distance_km' => 200]
+        );
+
+        return response()->json($config);
+    }
+
+    /**
+     * Update tenant base geolocation config.
+     */
+    public function updateBaseConfig(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'base_lat' => 'nullable|numeric|between:-90,90',
+            'base_lng' => 'nullable|numeric|between:-180,180',
+            'base_address' => 'nullable|string|max:500',
+            'base_city' => 'nullable|string|max:100',
+            'base_state' => 'nullable|string|size:2',
+            'max_distance_km' => 'integer|min:10|max:2000',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $config = InmetroBaseConfig::updateOrCreate(
+                ['tenant_id' => $request->user()->current_tenant_id],
+                $validated
+            );
+
+            DB::commit();
+
+            return response()->json(['message' => 'Base atualizada', 'config' => $config]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Base config update failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar base'], 500);
+        }
+    }
+
+    /**
+     * Enrich owner data from dados.gov.br (enterprise CNPJ data).
+     */
+    public function enrichFromDadosGov(Request $request, int $ownerId): JsonResponse
+    {
+        $owner = InmetroOwner::where('tenant_id', $request->user()->current_tenant_id)
+            ->findOrFail($ownerId);
+
+        if (!$owner->document || strlen(preg_replace('/\D/', '', $owner->document)) !== 14) {
+            return response()->json(['message' => 'Owner does not have a valid CNPJ'], 422);
+        }
+
+        $result = $this->dadosGovService->fetchEnterpriseData($owner->document);
+
+        if (!$result['success']) {
+            return response()->json(['message' => 'Não foi possível consultar dados'], 503);
+        }
+
+        // Update owner with enriched data
+        $enrichment = $result['data'];
+        $updateData = array_filter([
+            'trade_name' => $enrichment['nome_fantasia'] ?? null,
+            'phone' => $enrichment['telefone'] ?? null,
+            'email' => $enrichment['email'] ?? null,
+        ]);
+
+        if (!empty($updateData)) {
+            $owner->update($updateData);
+        }
+
+        // Store full enrichment in metadata
+        $owner->update([
+            'enrichment_data' => array_merge(
+                $owner->enrichment_data ?? [],
+                ['dados_gov' => $enrichment, 'enriched_at' => now()->toISOString()]
+            ),
+        ]);
+
+        return response()->json([
+            'message' => 'Dados enriquecidos com sucesso',
+            'enrichment' => $enrichment,
+            'source' => $result['source'],
+            'cached' => $result['cached'],
+        ]);
+    }
+
+    /**
+     * Get available datasets from dados.gov.br.
+     */
+    public function availableDatasets(): JsonResponse
+    {
+        $datasets = $this->dadosGovService->getAvailableDatasets();
+        return response()->json(['datasets' => $datasets]);
+    }
 }
+

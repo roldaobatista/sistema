@@ -7,6 +7,8 @@ use App\Models\AuditLog;
 use App\Models\SystemSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
@@ -32,28 +34,38 @@ class SettingsController extends Controller
             'settings.*.group' => 'sometimes|string|max:50',
         ]);
 
-        $saved = [];
-        foreach ($validated['settings'] as $item) {
-            if (($item['key'] ?? '') === 'quote_sequence_start') {
-                $start = filter_var($item['value'], FILTER_VALIDATE_INT);
-                if ($start === false || (int) $start < 1) {
-                    throw ValidationException::withMessages([
-                        'settings' => 'quote_sequence_start deve ser um inteiro maior ou igual a 1.',
-                    ]);
+        try {
+            $saved = DB::transaction(function () use ($validated) {
+                $saved = [];
+                foreach ($validated['settings'] as $item) {
+                    if (($item['key'] ?? '') === 'quote_sequence_start') {
+                        $start = filter_var($item['value'], FILTER_VALIDATE_INT);
+                        if ($start === false || (int) $start < 1) {
+                            throw ValidationException::withMessages([
+                                'settings' => 'quote_sequence_start deve ser um inteiro maior ou igual a 1.',
+                            ]);
+                        }
+                    }
+
+                    $saved[] = SystemSetting::setValue(
+                        $item['key'],
+                        $item['value'],
+                        $item['type'] ?? 'string',
+                        $item['group'] ?? 'general'
+                    );
                 }
-            }
+                return $saved;
+            });
 
-            $saved[] = SystemSetting::setValue(
-                $item['key'],
-                $item['value'],
-                $item['type'] ?? 'string',
-                $item['group'] ?? 'general'
-            );
+            AuditLog::log('updated', 'Configurações atualizadas');
+
+            return response()->json($saved);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Settings update failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar configurações'], 500);
         }
-
-        AuditLog::log('updated', 'Configurações atualizadas');
-
-        return response()->json($saved);
     }
 
     // ── Audit Logs ──

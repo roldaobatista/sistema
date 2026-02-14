@@ -11,7 +11,7 @@ class InmetroHistory extends Model
 
     protected $fillable = [
         'instrument_id', 'event_type', 'event_date',
-        'result', 'executor', 'validity_date', 'notes', 'source',
+        'result', 'executor', 'competitor_id', 'validity_date', 'notes', 'source',
     ];
 
     protected function casts(): array
@@ -25,6 +25,11 @@ class InmetroHistory extends Model
     public function instrument(): BelongsTo
     {
         return $this->belongsTo(InmetroInstrument::class, 'instrument_id');
+    }
+
+    public function competitor(): BelongsTo
+    {
+        return $this->belongsTo(InmetroCompetitor::class, 'competitor_id');
     }
 
     public function getEventTypeLabelAttribute(): string

@@ -75,11 +75,13 @@ class AccountReceivableController extends Controller
         ]);
 
         try {
-            $record = AccountReceivable::create([
-                ...$validated,
-                'tenant_id' => $tenantId,
-                'created_by' => $request->user()->id,
-            ]);
+            $record = DB::transaction(function () use ($validated, $tenantId, $request) {
+                return AccountReceivable::create([
+                    ...$validated,
+                    'tenant_id' => $tenantId,
+                    'created_by' => $request->user()->id,
+                ]);
+            });
 
             return response()->json($record->load(['customer:id,name', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type']), 201);
         } catch (\Throwable $e) {
@@ -116,7 +118,7 @@ class AccountReceivableController extends Controller
         // Block amount change if payments exist
         if (isset($validated['amount']) && $accountReceivable->payments()->exists()) {
             if (bccomp((string) $validated['amount'], (string) $accountReceivable->amount_paid, 2) < 0) {
-                return response()->json(['message' => 'O valor não pode ser menor que o já pago (R$ ' . number_format($accountReceivable->amount_paid, 2, ',', '.') . ')'], 422);
+                return response()->json(['message' => 'O valor não pode ser menor que o já pago (R$ ' . number_format((float) $accountReceivable->amount_paid, 2, ',', '.') . ')'], 422);
             }
         }
 
@@ -143,8 +145,13 @@ class AccountReceivableController extends Controller
             ], 422);
         }
 
-        $accountReceivable->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $accountReceivable->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('AR destroy failed', ['id' => $accountReceivable->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir título'], 500);
+        }
     }
 
     public function pay(Request $request, AccountReceivable $accountReceivable): JsonResponse
@@ -210,16 +217,18 @@ class AccountReceivableController extends Controller
         }
 
         try {
-            $record = AccountReceivable::create([
-                'tenant_id' => $tenantId,
-                'customer_id' => $wo->customer_id,
-                'work_order_id' => $wo->id,
-                'created_by' => $request->user()->id,
-                'description' => "OS {$wo->business_number}",
-                'amount' => $wo->total,
-                'due_date' => $validated['due_date'],
-                'payment_method' => $validated['payment_method'] ?? null,
-            ]);
+            $record = DB::transaction(function () use ($tenantId, $wo, $request, $validated) {
+                return AccountReceivable::create([
+                    'tenant_id' => $tenantId,
+                    'customer_id' => $wo->customer_id,
+                    'work_order_id' => $wo->id,
+                    'created_by' => $request->user()->id,
+                    'description' => "OS {$wo->business_number}",
+                    'amount' => $wo->total,
+                    'due_date' => $validated['due_date'],
+                    'payment_method' => $validated['payment_method'] ?? null,
+                ]);
+            });
 
             return response()->json($record->load(['customer:id,name', 'workOrder:id,number,os_number']), 201);
         } catch (\Throwable $e) {

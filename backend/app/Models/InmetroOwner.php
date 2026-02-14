@@ -16,12 +16,14 @@ class InmetroOwner extends Model
         'tenant_id', 'document', 'name', 'trade_name', 'type',
         'phone', 'phone2', 'email', 'contact_source', 'contact_enriched_at',
         'lead_status', 'priority', 'converted_to_customer_id', 'notes',
+        'estimated_revenue', 'total_instruments',
     ];
 
     protected function casts(): array
     {
         return [
             'contact_enriched_at' => 'datetime',
+            'estimated_revenue' => 'decimal:2',
         ];
     }
 
@@ -55,6 +57,16 @@ class InmetroOwner extends Model
         return $query->where('priority', $priority);
     }
 
+    public function scopeCritical($query)
+    {
+        return $query->where('priority', 'critical');
+    }
+
+    public function scopeWithRejectedInstruments($query)
+    {
+        return $query->whereHas('instruments', fn ($q) => $q->where('current_status', 'rejected'));
+    }
+
     public function scopeWithExpiringInstruments($query, int $days = 90)
     {
         return $query->whereHas('instruments', function ($q) use ($days) {
@@ -66,6 +78,11 @@ class InmetroOwner extends Model
     public function getInstrumentCountAttribute(): int
     {
         return $this->instruments()->count();
+    }
+
+    public function getRejectedCountAttribute(): int
+    {
+        return $this->instruments()->where('current_status', 'rejected')->count();
     }
 
     public function getExpiringCountAttribute(): int

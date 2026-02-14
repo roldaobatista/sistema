@@ -14,27 +14,49 @@ class CommissionSettlement extends Model
     use BelongsToTenant, HasFactory, Auditable;
 
     protected $fillable = [
-        'tenant_id', 'user_id', 'period', 'total_amount', 'events_count', 'status', 'paid_at',
+        'tenant_id', 'user_id', 'period', 'total_amount', 'events_count', 'status',
+        'closed_by', 'closed_at', 'approved_by', 'approved_at', 'rejection_reason', 'paid_at',
     ];
 
     protected function casts(): array
     {
-        return ['total_amount' => 'decimal:2', 'paid_at' => 'date'];
+        return [
+            'total_amount' => 'decimal:2',
+            'paid_at' => 'date',
+            'closed_at' => 'datetime',
+            'approved_at' => 'datetime',
+        ];
     }
 
     public const STATUS_OPEN = 'open';
     public const STATUS_CLOSED = 'closed';
+    public const STATUS_PENDING_APPROVAL = 'pending_approval';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_REJECTED = 'rejected';
     public const STATUS_PAID = 'paid';
 
     public const STATUSES = [
         self::STATUS_OPEN => ['label' => 'Aberto', 'color' => 'warning'],
         self::STATUS_CLOSED => ['label' => 'Fechado', 'color' => 'info'],
+        self::STATUS_PENDING_APPROVAL => ['label' => 'Aguard. Aprovação', 'color' => 'amber'],
+        self::STATUS_APPROVED => ['label' => 'Aprovado', 'color' => 'success'],
+        self::STATUS_REJECTED => ['label' => 'Rejeitado', 'color' => 'danger'],
         self::STATUS_PAID => ['label' => 'Pago', 'color' => 'success'],
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function closer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function events(): HasMany

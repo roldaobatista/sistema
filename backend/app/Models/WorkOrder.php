@@ -19,17 +19,21 @@ class WorkOrder extends Model
 
     protected $appends = [
         'business_number',
+        'waze_link',
+        'google_maps_link',
     ];
 
     protected $fillable = [
         'tenant_id', 'os_number', 'number', 'customer_id', 'equipment_id',
-        'quote_id', 'service_call_id', 'recurring_contract_id', 'seller_id', 'driver_id', 'origin_type',
+        'quote_id', 'service_call_id', 'recurring_contract_id', 'seller_id', 'driver_id', 'origin_type', 'lead_source',
         'branch_id', 'created_by', 'assigned_to',
         'status', 'priority', 'description', 'internal_notes', 'technical_report',
         'received_at', 'started_at', 'completed_at', 'delivered_at',
         'discount', 'discount_percentage', 'discount_amount', 'displacement_value', 'total',
         'signature_path', 'signature_signer', 'signature_at', 'signature_ip',
         'checklist_id', 'sla_policy_id', 'sla_due_at', 'sla_responded_at',
+        'dispatch_authorized_by', 'dispatch_authorized_at',
+        'parent_id', 'is_master',
     ];
 
     protected function casts(): array
@@ -47,6 +51,7 @@ class WorkOrder extends Model
             'discount_amount' => 'decimal:2',
             'displacement_value' => 'decimal:2',
             'total' => 'decimal:2',
+            'is_master' => 'boolean',
         ];
     }
 
@@ -73,7 +78,30 @@ class WorkOrder extends Model
         return Attribute::get(fn (): string => (string) ($this->os_number ?: $this->number));
     }
 
+    public function wazeLink(): Attribute
+    {
+        return Attribute::get(function () {
+            if (!$this->customer) return null;
+            $lat = $this->customer->latitude;
+            $lng = $this->customer->longitude;
+            if (!$lat || !$lng) return null;
+            return "waze://?ll={$lat},{$lng}&navigate=yes";
+        });
+    }
+
+    public function googleMapsLink(): Attribute
+    {
+        return Attribute::get(function () {
+            if (!$this->customer) return null;
+            $lat = $this->customer->latitude;
+            $lng = $this->customer->longitude;
+            if (!$lat || !$lng) return null;
+            return "https://www.google.com/maps/search/?api=1&query={$lat},{$lng}";
+        });
+    }
+
     public const STATUS_OPEN = 'open';
+    public const STATUS_AWAITING_DISPATCH = 'awaiting_dispatch';
     public const STATUS_IN_PROGRESS = 'in_progress';
     public const STATUS_WAITING_PARTS = 'waiting_parts';
     public const STATUS_WAITING_APPROVAL = 'waiting_approval';
@@ -89,6 +117,14 @@ class WorkOrder extends Model
     public const ORIGIN_MANUAL = 'manual';
     public const ORIGIN_DIRECT = 'manual'; // Alias for legacy/frontend compatibility
 
+    // ── Lead Sources (Commercial Origin — affects commission %) ──
+    public const LEAD_SOURCES = [
+        'prospeccao' => 'Prospecção',
+        'retorno' => 'Retorno',
+        'contato_direto' => 'Contato Direto',
+        'indicacao' => 'Indicação',
+    ];
+
     // ── Priority Constants ──
     public const PRIORITY_LOW = 'low';
     public const PRIORITY_NORMAL = 'normal';
@@ -97,6 +133,7 @@ class WorkOrder extends Model
 
     public const STATUSES = [
         self::STATUS_OPEN => ['label' => 'Aberta', 'color' => 'info'],
+        self::STATUS_AWAITING_DISPATCH => ['label' => 'Aguard. Despacho', 'color' => 'amber'],
         self::STATUS_IN_PROGRESS => ['label' => 'Em Andamento', 'color' => 'warning'],
         self::STATUS_WAITING_PARTS => ['label' => 'Aguard. Pecas', 'color' => 'warning'],
         self::STATUS_WAITING_APPROVAL => ['label' => 'Aguard. Aprovacao', 'color' => 'brand'],
@@ -114,7 +151,8 @@ class WorkOrder extends Model
     ];
 
     public const ALLOWED_TRANSITIONS = [
-        self::STATUS_OPEN             => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
+        self::STATUS_OPEN             => [self::STATUS_AWAITING_DISPATCH, self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
+        self::STATUS_AWAITING_DISPATCH => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
         self::STATUS_IN_PROGRESS      => [self::STATUS_WAITING_PARTS, self::STATUS_WAITING_APPROVAL, self::STATUS_COMPLETED, self::STATUS_CANCELLED],
         self::STATUS_WAITING_PARTS    => [self::STATUS_IN_PROGRESS, self::STATUS_CANCELLED],
         self::STATUS_WAITING_APPROVAL => [self::STATUS_IN_PROGRESS, self::STATUS_COMPLETED, self::STATUS_CANCELLED],
@@ -132,7 +170,10 @@ class WorkOrder extends Model
 
     public static function nextNumber(int $tenantId): string
     {
-        $last = static::withTrashed()->where('tenant_id', $tenantId)->max('number');
+        $last = static::withTrashed()
+            ->where('tenant_id', $tenantId)
+            ->lockForUpdate()
+            ->max('number');
         $seq = $last ? (int) str_replace('OS-', '', $last) + 1 : 1;
         return 'OS-' . str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
     }
@@ -158,6 +199,16 @@ class WorkOrder extends Model
         ]);
     }
 
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(WorkOrder::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class, 'parent_id');
+    }
+
     public function customer(): BelongsTo { return $this->belongsTo(Customer::class); }
     public function equipment(): BelongsTo { return $this->belongsTo(Equipment::class); }
     public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
@@ -168,12 +219,14 @@ class WorkOrder extends Model
     public function recurringContract(): BelongsTo { return $this->belongsTo(RecurringContract::class); }
     public function seller(): BelongsTo { return $this->belongsTo(User::class, 'seller_id'); }
     public function driver(): BelongsTo { return $this->belongsTo(User::class, 'driver_id'); }
+    public function dispatchAuthorizer(): BelongsTo { return $this->belongsTo(User::class, 'dispatch_authorized_by'); }
     public function items(): HasMany { return $this->hasMany(WorkOrderItem::class); }
     public function statusHistory(): HasMany { return $this->hasMany(WorkOrderStatusHistory::class)->orderByDesc('created_at'); }
 
     public function checklist(): BelongsTo { return $this->belongsTo(ServiceChecklist::class); }
     public function checklistResponses(): HasMany { return $this->hasMany(WorkOrderChecklistResponse::class); }
     public function slaPolicy(): BelongsTo { return $this->belongsTo(SlaPolicy::class); }
+    public function chats(): HasMany { return $this->hasMany(WorkOrderChat::class)->orderBy('created_at'); }
 
     public function technicians(): BelongsToMany
     {
@@ -189,15 +242,27 @@ class WorkOrder extends Model
             ->withTimestamps();
     }
 
-    public const WARRANTY_DAYS = 90;
+    // GAP-23: Configurable warranty days (no hardcode)
+    public static function warrantyDays(?int $tenantId = null): int
+    {
+        if ($tenantId) {
+            $val = SystemSetting::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('key', 'warranty_days')
+                ->value('value');
+            if ($val !== null) {
+                return max(0, (int) $val);
+            }
+        }
+        return 90; // Fallback only
+    }
 
     public function getWarrantyUntilAttribute(): ?\Carbon\Carbon
     {
         if (!$this->completed_at) {
             return null;
         }
-
-        return $this->completed_at->copy()->addDays(self::WARRANTY_DAYS);
+        return $this->completed_at->copy()->addDays(self::warrantyDays($this->tenant_id));
     }
 
     public function getIsUnderWarrantyAttribute(): bool
@@ -214,6 +279,7 @@ class WorkOrder extends Model
     {
         $statusMap = [
             self::STATUS_OPEN => \App\Enums\CentralItemStatus::ABERTO,
+            self::STATUS_AWAITING_DISPATCH => \App\Enums\CentralItemStatus::ABERTO,
             self::STATUS_IN_PROGRESS => \App\Enums\CentralItemStatus::EM_ANDAMENTO,
             self::STATUS_WAITING_PARTS => \App\Enums\CentralItemStatus::EM_ANDAMENTO,
             self::STATUS_WAITING_APPROVAL => \App\Enums\CentralItemStatus::EM_ANDAMENTO,

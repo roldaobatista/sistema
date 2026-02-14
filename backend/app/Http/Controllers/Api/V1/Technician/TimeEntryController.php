@@ -134,8 +134,13 @@ class TimeEntryController extends Controller
     {
         abort_unless($timeEntry->tenant_id === $this->tenantId($request), 404);
 
-        $timeEntry->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $timeEntry->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('TimeEntry destroy failed', ['id' => $timeEntry->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir apontamento'], 500);
+        }
     }
 
     // Timer: inicia um apontamento (sem ended_at)

@@ -7,6 +7,8 @@ use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
+use App\Models\WarehouseStock;
 
 class StockMovement extends Model
 {
@@ -16,6 +18,10 @@ class StockMovement extends Model
         'tenant_id',
         'product_id',
         'work_order_id',
+        'warehouse_id',
+        'batch_id',
+        'product_serial_id',
+        'target_warehouse_id',
         'type',
         'quantity',
         'unit_cost',
@@ -66,13 +72,54 @@ class StockMovement extends Model
             return;
         }
 
-        $direction = $this->type->affectsStock();
-        $delta = $direction === 0
-            ? $this->quantity  // adjustment: qty já pode ser + ou -
-            : $this->quantity * $direction;
+        \DB::transaction(function () use ($product) {
+            if ($this->type === StockMovementType::Transfer) {
+                $this->handleTransfer();
+            } else {
+                $this->handleRegularMovement();
+            }
 
-        $product->update([
-            'stock_qty' => $product->stock_qty + $delta,
+            // Atualiza saldo global cacheado no produto para compatibilidade e performance de listagem
+            $product->update([
+                'stock_qty' => WarehouseStock::where('product_id', $product->id)->sum('quantity'),
+            ]);
+        });
+    }
+
+    protected function handleRegularMovement(): void
+    {
+        $direction = $this->type->affectsStock();
+        $delta = $direction === 0 ? $this->quantity : $this->quantity * $direction;
+
+        $stock = WarehouseStock::firstOrCreate([
+            'warehouse_id' => $this->warehouse_id,
+            'product_id' => $this->product_id,
+            'batch_id' => $this->batch_id,
         ]);
+
+        $stock->increment('quantity', $delta);
+    }
+
+    protected function handleTransfer(): void
+    {
+        if (!$this->warehouse_id || !$this->target_warehouse_id) {
+            return;
+        }
+
+        // Saída do armazém de origem
+        $sourceStock = WarehouseStock::firstOrCreate([
+            'warehouse_id' => $this->warehouse_id,
+            'product_id' => $this->product_id,
+            'batch_id' => $this->batch_id,
+        ]);
+        $sourceStock->decrement('quantity', $this->quantity);
+
+        // Entrada no armazém de destino
+        $targetStock = WarehouseStock::firstOrCreate([
+            'warehouse_id' => $this->target_warehouse_id,
+            'product_id' => $this->product_id,
+            'batch_id' => $this->batch_id,
+        ]);
+        $targetStock->increment('quantity', $this->quantity);
     }
 }

@@ -7,6 +7,8 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -54,8 +56,13 @@ class ProductController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $product = Product::create($validated);
-        return response()->json($product->load('category:id,name'), 201);
+        try {
+            $product = DB::transaction(fn () => Product::create($validated));
+            return response()->json($product->load('category:id,name'), 201);
+        } catch (\Throwable $e) {
+            Log::error('Product store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar produto'], 500);
+        }
     }
 
     public function show(Product $product): JsonResponse
@@ -105,8 +112,13 @@ class ProductController extends Controller
             ], 409);
         }
 
-        $product->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $product->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('Product destroy failed', ['id' => $product->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir produto'], 500);
+        }
     }
 
     // --- Categorias ---
@@ -134,7 +146,19 @@ class ProductController extends Controller
 
     public function destroyCategory(ProductCategory $category): JsonResponse
     {
-        $category->delete();
-        return response()->json(null, 204);
+        $linkedCount = Product::where('category_id', $category->id)->count();
+        if ($linkedCount > 0) {
+            return response()->json([
+                'message' => "Não é possível excluir. Categoria vinculada a {$linkedCount} produto(s).",
+            ], 409);
+        }
+
+        try {
+            DB::transaction(fn () => $category->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('ProductCategory destroy failed', ['id' => $category->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir categoria'], 500);
+        }
     }
 }

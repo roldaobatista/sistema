@@ -15,11 +15,12 @@ class Customer extends Model
     use BelongsToTenant, SoftDeletes, HasFactory, Auditable;
 
     protected $fillable = [
-        'tenant_id', 'type', 'name', 'document', 'email',
+        'tenant_id', 'type', 'name', 'trade_name', 'document', 'email',
         'phone', 'phone2', 'notes', 'is_active',
         'address_zip', 'address_street', 'address_number',
         'address_complement', 'address_neighborhood',
         'address_city', 'address_state',
+        'latitude', 'longitude', 'google_maps_link',
         // CRM fields
         'source', 'segment', 'company_size', 'annual_revenue_estimate',
         'contract_type', 'contract_start', 'contract_end', 'health_score',
@@ -37,6 +38,8 @@ class Customer extends Model
             'last_contact_at' => 'datetime',
             'next_follow_up_at' => 'datetime',
             'tags' => 'array',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 
@@ -213,6 +216,18 @@ class Customer extends Model
         return $this->hasMany(Equipment::class);
     }
 
+    /**
+     * GAP-26: Computed — próxima calibração mais urgente entre todos os equipamentos do cliente.
+     */
+    public function getNearestCalibrationAtAttribute(): ?string
+    {
+        return $this->equipments()
+            ->whereNotNull('next_calibration_at')
+            ->min('next_calibration_at');
+    }
+
+    protected $appends = ['nearest_calibration_at'];
+
     public function workOrders(): HasMany
     {
         return $this->hasMany(WorkOrder::class);
@@ -241,6 +256,7 @@ class Customer extends Model
             ['key' => 'name', 'label' => 'Nome', 'required' => true],
             ['key' => 'document', 'label' => 'CPF/CNPJ', 'required' => true],
             ['key' => 'type', 'label' => 'Tipo (PF/PJ)', 'required' => false],
+            ['key' => 'trade_name', 'label' => 'Nome Fantasia', 'required' => false],
             ['key' => 'email', 'label' => 'E-mail', 'required' => false],
             ['key' => 'phone', 'label' => 'Telefone', 'required' => false],
             ['key' => 'phone2', 'label' => 'Telefone 2', 'required' => false],

@@ -19,6 +19,8 @@ class Quote extends Model
 
     // Backward-compatible constants
     public const STATUS_DRAFT = 'draft';
+    public const STATUS_PENDING_INTERNAL = 'pending_internal_approval';
+    public const STATUS_INTERNALLY_APPROVED = 'internally_approved';
     public const STATUS_SENT = 'sent';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_REJECTED = 'rejected';
@@ -28,6 +30,8 @@ class Quote extends Model
     /** Map used by PDF template (quote.blade.php) */
     public const STATUSES = [
         self::STATUS_DRAFT => ['label' => 'Rascunho', 'color' => 'gray'],
+        self::STATUS_PENDING_INTERNAL => ['label' => 'Aguard. Aprovação Interna', 'color' => 'amber'],
+        self::STATUS_INTERNALLY_APPROVED => ['label' => 'Aprovado Internamente', 'color' => 'teal'],
         self::STATUS_SENT => ['label' => 'Enviado', 'color' => 'blue'],
         self::STATUS_APPROVED => ['label' => 'Aprovado', 'color' => 'green'],
         self::STATUS_REJECTED => ['label' => 'Rejeitado', 'color' => 'red'],
@@ -35,12 +39,21 @@ class Quote extends Model
         self::STATUS_INVOICED => ['label' => 'Faturado', 'color' => 'purple'],
     ];
 
+    // GAP-03: Commercial source (affects seller commission %)
+    public const SOURCES = [
+        'prospeccao' => 'Prospecção',
+        'retorno' => 'Retorno',
+        'contato_direto' => 'Contato Direto',
+        'indicacao' => 'Indicação',
+    ];
+
     public const ACTIVITY_TYPE_APPROVED = 'quote_approved';
 
     protected $fillable = [
         'tenant_id', 'quote_number', 'revision', 'customer_id', 'seller_id', 'status',
-        'valid_until', 'discount_percentage', 'discount_amount',
+        'source', 'valid_until', 'discount_percentage', 'discount_amount',
         'subtotal', 'total', 'observations', 'internal_notes',
+        'internal_approved_by', 'internal_approved_at',
         'sent_at', 'approved_at', 'rejected_at', 'rejection_reason',
     ];
 
@@ -52,6 +65,7 @@ class Quote extends Model
             'discount_amount' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'total' => 'decimal:2',
+            'internal_approved_at' => 'datetime',
             'sent_at' => 'datetime',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
@@ -66,6 +80,21 @@ class Quote extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    public function internalApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'internal_approved_by');
+    }
+
+    public function canSendToClient(): bool
+    {
+        return in_array($this->status, [self::STATUS_INTERNALLY_APPROVED]);
+    }
+
+    public function requiresInternalApproval(): bool
+    {
+        return $this->status === self::STATUS_PENDING_INTERNAL;
     }
 
     public function equipments(): HasMany

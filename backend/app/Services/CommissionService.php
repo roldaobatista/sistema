@@ -51,16 +51,38 @@ class CommissionService
                     ->orderByDesc('priority')
                     ->get();
 
+                // GAP-22: Determine commercial source for seller filter
+                $quoteSource = null;
+                if ($b['role'] === CommissionRule::ROLE_SELLER && $wo->quote_id) {
+                    $quoteSource = $wo->quote?->source;
+                }
+
                 foreach ($rules as $rule) {
+                    // GAP-22: If rule has a source filter, check match
+                    if ($b['role'] === CommissionRule::ROLE_SELLER && $rule->source_filter && $quoteSource) {
+                        if ($rule->source_filter !== $quoteSource) {
+                            continue;
+                        }
+                    }
+
                     $commissionAmount = $rule->calculateCommission((float) $wo->total, $context);
 
                     if (bccomp((string) $commissionAmount, '0', 2) <= 0) {
                         continue;
                     }
 
+                    // GAP-05: Apply tech split divisor
+                    $splitDivisor = $b['split_divisor'] ?? 1;
+                    if ($splitDivisor > 1) {
+                        $commissionAmount = bcdiv((string) $commissionAmount, (string) $splitDivisor, 2);
+                    }
+
                     $campaignResult = $this->applyCampaignMultiplier($campaigns, $b['role'], $rule->calculation_type, (string) $commissionAmount);
 
                     $notes = "Regra: {$rule->name} ({$rule->calculation_type})";
+                    if ($splitDivisor > 1) {
+                        $notes .= " | Divisão 1/{$splitDivisor}";
+                    }
                     if ($campaignResult['campaign_name']) {
                         $notes .= " | Campanha: {$campaignResult['campaign_name']} (x{$campaignResult['multiplier']})";
                     }
@@ -72,6 +94,7 @@ class CommissionService
                         'user_id' => $b['id'],
                         'base_amount' => $wo->total,
                         'commission_amount' => $campaignResult['final_amount'],
+                        'proportion' => 1.0000,
                         'status' => CommissionEvent::STATUS_PENDING,
                         'notes' => $notes,
                     ]);
@@ -132,41 +155,63 @@ class CommissionService
     private function identifyBeneficiaries(\App\Models\WorkOrder $wo): array
     {
         $list = [];
+        $techIds = [];
 
         // 1. Técnico Principal
         if ($wo->assigned_to) {
             $list[] = ['id' => $wo->assigned_to, 'role' => CommissionRule::ROLE_TECHNICIAN];
-        }
-
-        // 2. Vendedor
-        if ($wo->seller_id) {
-             // Evita duplicar se for a mesma pessoa, mas papeis diferentes podem acumular comissao?
-             // Geralmente sim (ex: tecnico que vendeu). Deixaremos acumular.
-            $list[] = ['id' => $wo->seller_id, 'role' => CommissionRule::ROLE_SELLER];
-        }
-
-        // 3. Motorista
-        if ($wo->driver_id) {
-            $list[] = ['id' => $wo->driver_id, 'role' => CommissionRule::ROLE_DRIVER];
+            $techIds[] = $wo->assigned_to;
         }
 
         // 4. Técnicos Auxiliares (N:N)
         foreach ($wo->technicians as $tech) {
             $role = $tech->pivot->role ?? CommissionRule::ROLE_TECHNICIAN;
-            
-            // Verifica se já não adicionamos este user com este role (ex: assigned_to tbm está na pivot)
             $exists = collect($list)->contains(fn ($item) => $item['id'] == $tech->id && $item['role'] == $role);
-            
             if (!$exists) {
                 $list[] = ['id' => $tech->id, 'role' => $role];
+                if ($role === CommissionRule::ROLE_TECHNICIAN) {
+                    $techIds[] = $tech->id;
+                }
             }
+        }
+
+        // GAP-05: Count technicians for 50% auto-split
+        $techCount = count(array_unique($techIds));
+
+        // Mark each tech entry with the split divisor
+        $list = array_map(function ($item) use ($techCount) {
+            if ($item['role'] === CommissionRule::ROLE_TECHNICIAN && $techCount > 1) {
+                $item['split_divisor'] = $techCount;
+            } else {
+                $item['split_divisor'] = 1;
+            }
+            return $item;
+        }, $list);
+
+        // 2. Vendedor
+        if ($wo->seller_id) {
+            // GAP-07: Block same person from earning both tech + seller on same OS
+            $isAlsoTech = in_array($wo->seller_id, $techIds);
+            if (!$isAlsoTech) {
+                $list[] = ['id' => $wo->seller_id, 'role' => CommissionRule::ROLE_SELLER, 'split_divisor' => 1];
+            } else {
+                Log::info('CommissionService: Seller #{id} is also a technician on OS #{os}. Seller commission blocked (GAP-07).', [
+                    'id' => $wo->seller_id, 'os' => $wo->os_number,
+                ]);
+            }
+        }
+
+        // 3. Motorista
+        if ($wo->driver_id) {
+            $list[] = ['id' => $wo->driver_id, 'role' => CommissionRule::ROLE_DRIVER, 'split_divisor' => 1];
         }
 
         return $list;
     }
 
     /**
-     * Libera comissões quando uma conta a receber é paga (se a regra for 'ao receber').
+     * GAP-04: Libera comissões proporcionalmente quando um pagamento é recebido.
+     * Se a OS tem total R$10.000 e o pagamento é R$5.000, libera 50% da comissão.
      */
     public function releaseByPayment(AccountReceivable $ar): void
     {
@@ -175,6 +220,18 @@ class CommissionService
         }
 
         DB::transaction(function () use ($ar) {
+            $wo = WorkOrder::find($ar->work_order_id);
+            if (!$wo || bccomp((string) $wo->total, '0', 2) <= 0) {
+                return;
+            }
+
+            // Calculate proportion: payment_amount / os_total
+            $proportion = bcdiv((string) $ar->amount, (string) $wo->total, 4);
+            // Cap at 1.0
+            if (bccomp($proportion, '1', 4) > 0) {
+                $proportion = '1.0000';
+            }
+
             $pendingEvents = CommissionEvent::where('work_order_id', $ar->work_order_id)
                 ->where('tenant_id', $ar->tenant_id)
                 ->where('status', CommissionEvent::STATUS_PENDING)
@@ -182,10 +239,41 @@ class CommissionService
                 ->get();
 
             foreach ($pendingEvents as $event) {
-                $event->update([
-                    'status' => CommissionEvent::STATUS_APPROVED,
-                    'notes' => ($event->notes ?? '') . " | Liberada por pagamento #{$ar->id} em " . now()->format('d/m/Y'),
-                ]);
+                // Calculate proportional commission
+                $proportionalAmount = bcmul((string) $event->commission_amount, $proportion, 2);
+
+                // Create new event for this partial release
+                if (bccomp($proportion, '1', 4) < 0) {
+                    // Partial payment → create a released portion, reduce original
+                    $remainingAmount = bcsub((string) $event->commission_amount, $proportionalAmount, 2);
+
+                    CommissionEvent::create([
+                        'tenant_id' => $event->tenant_id,
+                        'commission_rule_id' => $event->commission_rule_id,
+                        'work_order_id' => $event->work_order_id,
+                        'account_receivable_id' => $ar->id,
+                        'user_id' => $event->user_id,
+                        'base_amount' => $ar->amount,
+                        'commission_amount' => $proportionalAmount,
+                        'proportion' => $proportion,
+                        'status' => CommissionEvent::STATUS_APPROVED,
+                        'notes' => ($event->notes ?? '') . " | Liberada proporcional ({$proportion}) pgto #{$ar->id}",
+                    ]);
+
+                    // Reduce original event amount to remaining
+                    $event->update([
+                        'commission_amount' => $remainingAmount,
+                        'notes' => ($event->notes ?? '') . " | Restante após pgto parcial #{$ar->id}",
+                    ]);
+                } else {
+                    // Full payment → approve the event directly
+                    $event->update([
+                        'status' => CommissionEvent::STATUS_APPROVED,
+                        'account_receivable_id' => $ar->id,
+                        'proportion' => $proportion,
+                        'notes' => ($event->notes ?? '') . " | Liberada por pagamento #{$ar->id} em " . now()->format('d/m/Y'),
+                    ]);
+                }
             }
         });
     }

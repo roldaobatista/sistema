@@ -72,11 +72,13 @@ class AccountPayableController extends Controller
         ]);
 
         try {
-            $record = AccountPayable::create([
-                ...$validated,
-                'tenant_id' => $tenantId,
-                'created_by' => $request->user()->id,
-            ]);
+            $record = DB::transaction(function () use ($validated, $tenantId, $request) {
+                return AccountPayable::create([
+                    ...$validated,
+                    'tenant_id' => $tenantId,
+                    'created_by' => $request->user()->id,
+                ]);
+            });
 
             return response()->json($record->refresh()->load(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'chartOfAccount:id,code,name,type', 'creator:id,name']), 201);
         } catch (\Throwable $e) {
@@ -119,7 +121,7 @@ class AccountPayableController extends Controller
         // Block amount change below already paid
         if (isset($validated['amount']) && $accountPayable->payments()->exists()) {
             if (bccomp((string) $validated['amount'], (string) $accountPayable->amount_paid, 2) < 0) {
-                return response()->json(['message' => 'O valor não pode ser menor que o já pago (R$ ' . number_format($accountPayable->amount_paid, 2, ',', '.') . ')'], 422);
+                return response()->json(['message' => 'O valor não pode ser menor que o já pago (R$ ' . number_format((float) $accountPayable->amount_paid, 2, ',', '.') . ')'], 422);
             }
         }
 
@@ -143,8 +145,13 @@ class AccountPayableController extends Controller
             return response()->json(['message' => 'Não é possível excluir título com pagamentos vinculados'], 409);
         }
 
-        $accountPayable->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $accountPayable->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('AP destroy failed', ['id' => $accountPayable->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir título'], 500);
+        }
     }
 
     public function pay(Request $request, AccountPayable $accountPayable): JsonResponse

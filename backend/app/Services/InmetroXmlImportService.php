@@ -16,6 +16,19 @@ class InmetroXmlImportService
 {
     private const BASE_URL = 'https://servicos.rbmlq.gov.br/dados-abertos';
 
+    public const INSTRUMENT_TYPES = [
+        'balanca-rodoferroviaria' => 'Balança Rodoferroviária',
+        'balanca-dinamica'        => 'Balança Dinâmica',
+        'balanca-comercial'       => 'Balança Comercial',
+        'bomba-combustivel'       => 'Bomba de Combustível',
+        'veiculotanque'           => 'Veículo Tanque',
+        'cronotacografo'          => 'Cronotacógrafo',
+        'taximetro'               => 'Taxímetro',
+        'medidores'               => 'Medidor de Velocidade',
+        'etilometro'              => 'Etilômetro',
+        'esfigmomanometro'        => 'Esfigmomanômetro',
+    ];
+
     public function importCompetitors(int $tenantId, string $uf = 'MT'): array
     {
         $url = self::BASE_URL . "/{$uf}/oficinas.xml";
@@ -101,13 +114,132 @@ class InmetroXmlImportService
         }
     }
 
+    /**
+     * Import all instrument types for a given UF.
+     * Iterates through each type, accumulates stats, and handles failures per type.
+     */
+    public function importAllInstruments(int $tenantId, string $uf = 'MT', ?array $types = null): array
+    {
+        $typesToImport = $types ?? array_keys(self::INSTRUMENT_TYPES);
+        $allStats = [
+            'total_types_attempted' => 0,
+            'total_types_success' => 0,
+            'total_types_skipped' => 0,
+            'owners_created' => 0,
+            'owners_updated' => 0,
+            'instruments_created' => 0,
+            'instruments_updated' => 0,
+            'history_added' => 0,
+            'errors' => 0,
+            'by_type' => [],
+        ];
+
+        foreach ($typesToImport as $type) {
+            $allStats['total_types_attempted']++;
+            $label = self::INSTRUMENT_TYPES[$type] ?? $type;
+
+            try {
+                $result = $this->importInstruments($tenantId, $uf, $type);
+
+                $allStats['by_type'][$type] = [
+                    'label' => $label,
+                    'success' => $result['success'],
+                    'stats' => $result['stats'] ?? [],
+                    'error' => $result['error'] ?? null,
+                ];
+
+                if ($result['success']) {
+                    $allStats['total_types_success']++;
+                    $allStats['owners_created'] += $result['stats']['owners_created'] ?? 0;
+                    $allStats['owners_updated'] += $result['stats']['owners_updated'] ?? 0;
+                    $allStats['instruments_created'] += $result['stats']['instruments_created'] ?? 0;
+                    $allStats['instruments_updated'] += $result['stats']['instruments_updated'] ?? 0;
+                    $allStats['history_added'] += $result['stats']['history_added'] ?? 0;
+                    $allStats['errors'] += $result['stats']['errors'] ?? 0;
+                } else {
+                    $allStats['total_types_skipped']++;
+                    Log::info("INMETRO: Skipped type {$type} for {$uf}", ['error' => $result['error'] ?? 'unknown']);
+                }
+            } catch (\Exception $e) {
+                $allStats['total_types_skipped']++;
+                $allStats['by_type'][$type] = [
+                    'label' => $label,
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ];
+                Log::warning("INMETRO: Exception importing type {$type}", ['error' => $e->getMessage()]);
+            }
+        }
+
+        return ['success' => true, 'stats' => $allStats];
+    }
+
+    /**
+     * All 27 Brazilian UFs available for import.
+     */
+    public const BRAZILIAN_UFS = [
+        'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO',
+        'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR',
+        'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO',
+    ];
+
+    /**
+     * Default INMETRO config for new tenants.
+     */
+    public static function defaultConfig(): array
+    {
+        return [
+            'monitored_ufs' => ['MT'],
+            'instrument_types' => array_keys(self::INSTRUMENT_TYPES),
+            'auto_sync_enabled' => true,
+            'sync_interval_days' => 7,
+        ];
+    }
+
+    /**
+     * Import instruments for multiple UFs based on tenant config.
+     * Iterates UF × type, accumulates stats per UF.
+     */
+    public function importAllForConfig(int $tenantId, array $ufs, ?array $types = null): array
+    {
+        $results = [
+            'total_ufs' => count($ufs),
+            'by_uf' => [],
+            'grand_totals' => [
+                'owners_created' => 0,
+                'owners_updated' => 0,
+                'instruments_created' => 0,
+                'instruments_updated' => 0,
+                'history_added' => 0,
+                'errors' => 0,
+            ],
+        ];
+
+        foreach ($ufs as $uf) {
+            $ufResult = $this->importAllInstruments($tenantId, $uf, $types);
+            $results['by_uf'][$uf] = $ufResult;
+
+            if ($ufResult['success']) {
+                $stats = $ufResult['stats'];
+                $results['grand_totals']['owners_created'] += $stats['owners_created'] ?? 0;
+                $results['grand_totals']['owners_updated'] += $stats['owners_updated'] ?? 0;
+                $results['grand_totals']['instruments_created'] += $stats['instruments_created'] ?? 0;
+                $results['grand_totals']['instruments_updated'] += $stats['instruments_updated'] ?? 0;
+                $results['grand_totals']['history_added'] += $stats['history_added'] ?? 0;
+                $results['grand_totals']['errors'] += $stats['errors'] ?? 0;
+            }
+        }
+
+        return ['success' => true, 'results' => $results];
+    }
+
     public function importInstruments(int $tenantId, string $uf = 'MT', string $type = 'balanca-rodoferroviaria'): array
     {
         $url = self::BASE_URL . "/{$uf}/{$type}.xml";
         $stats = ['owners_created' => 0, 'owners_updated' => 0, 'instruments_created' => 0, 'instruments_updated' => 0, 'history_added' => 0, 'errors' => 0];
 
         try {
-            $response = Http::timeout(30)->get($url);
+            $response = Http::timeout(60)->get($url);
             if (!$response->successful()) {
                 Log::error('INMETRO instrument XML import failed', ['url' => $url, 'status' => $response->status()]);
                 return ['success' => false, 'error' => "HTTP {$response->status()}", 'stats' => $stats];
@@ -163,6 +295,9 @@ class InmetroXmlImportService
                         $location = $owner->locations()->create([
                             'address_city' => $city,
                             'address_state' => $uf,
+                            'address_street' => trim((string) ($item->Endereco ?? $item->endereco ?? '')),
+                            'address_neighborhood' => trim((string) ($item->Bairro ?? $item->bairro ?? '')),
+                            'address_zip' => trim((string) ($item->CEP ?? $item->Cep ?? $item->cep ?? '')),
                         ]);
                     }
 
@@ -187,7 +322,7 @@ class InmetroXmlImportService
                         'brand' => trim((string) ($item->Marca ?? $item->marca ?? '')),
                         'model' => trim((string) ($item->Modelo ?? $item->modelo ?? '')),
                         'capacity' => trim((string) ($item->Capacidade ?? $item->capacidade ?? '')),
-                        'instrument_type' => trim((string) ($item->Tipo ?? $item->tipo ?? $type)),
+                        'instrument_type' => trim((string) ($item->Tipo ?? $item->tipo ?? '')) ?: (self::INSTRUMENT_TYPES[$type] ?? $type),
                         'current_status' => $status,
                         'last_verification_at' => $lastVerification,
                         'next_verification_at' => $nextVerification,
@@ -244,6 +379,78 @@ class InmetroXmlImportService
         }
     }
 
+    /**
+     * Match history repair records to competitor workshops by executor name.
+     * Also creates CompetitorInstrumentRepair pivot records.
+     */
+    public function linkRepairsToCompetitors(int $tenantId): int
+    {
+        $linked = 0;
+
+        // Get all competitors for this tenant
+        $competitors = InmetroCompetitor::where('tenant_id', $tenantId)->get();
+        if ($competitors->isEmpty()) return 0;
+
+        // Build lookup: lowercase name → competitor
+        $competitorMap = [];
+        foreach ($competitors as $competitor) {
+            $competitorMap[mb_strtolower(trim($competitor->name))] = $competitor;
+        }
+
+        // Find unlinked repair/verification history records with executor names
+        $historyRecords = InmetroHistory::whereNull('competitor_id')
+            ->whereNotNull('executor')
+            ->where('executor', '!=', '')
+            ->whereIn('event_type', ['repair', 'verification'])
+            ->with('instrument')
+            ->get();
+
+        foreach ($historyRecords as $record) {
+            $executorLower = mb_strtolower(trim($record->executor));
+
+            // Try exact match first
+            $matched = $competitorMap[$executorLower] ?? null;
+
+            // If no exact match, try fuzzy (contains)
+            if (!$matched) {
+                foreach ($competitorMap as $name => $comp) {
+                    if (str_contains($executorLower, $name) || str_contains($name, $executorLower)) {
+                        $matched = $comp;
+                        break;
+                    }
+                }
+            }
+
+            if ($matched) {
+                $record->update(['competitor_id' => $matched->id]);
+                $linked++;
+
+                // Also create pivot record for repair events
+                if ($record->event_type === 'repair' && $record->instrument) {
+                    \App\Models\CompetitorInstrumentRepair::firstOrCreate(
+                        [
+                            'competitor_id' => $matched->id,
+                            'instrument_id' => $record->instrument_id,
+                            'repair_date' => $record->event_date,
+                        ],
+                        [
+                            'notes' => $record->notes,
+                            'source' => $record->source,
+                        ]
+                    );
+
+                    // Update competitor stats
+                    $matched->increment('total_repairs_done');
+                    if (!$matched->last_repair_date || $record->event_date > $matched->last_repair_date) {
+                        $matched->update(['last_repair_date' => $record->event_date]);
+                    }
+                }
+            }
+        }
+
+        return $linked;
+    }
+
     private function parseDate(string $dateStr): ?Carbon
     {
         if (empty($dateStr)) return null;
@@ -259,3 +466,4 @@ class InmetroXmlImportService
         return null;
     }
 }
+

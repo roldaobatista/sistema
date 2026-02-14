@@ -39,23 +39,28 @@ class ServiceChecklistController extends Controller
             'items.*.order_index' => 'integer',
         ]);
 
-        $checklist = DB::transaction(function () use ($data, $request) {
-            $checklist = ServiceChecklist::create([
-                'tenant_id' => $this->tenantId($request),
-                'name' => $data['name'],
-                'description' => $data['description'] ?? null,
-                'is_active' => $data['is_active'] ?? true,
-            ]);
+        try {
+            $checklist = DB::transaction(function () use ($data, $request) {
+                $checklist = ServiceChecklist::create([
+                    'tenant_id' => $this->tenantId($request),
+                    'name' => $data['name'],
+                    'description' => $data['description'] ?? null,
+                    'is_active' => $data['is_active'] ?? true,
+                ]);
 
-            if (!empty($data['items'])) {
-                foreach ($data['items'] as $itemData) {
-                    $checklist->items()->create($itemData);
+                if (!empty($data['items'])) {
+                    foreach ($data['items'] as $itemData) {
+                        $checklist->items()->create($itemData);
+                    }
                 }
-            }
-            return $checklist;
-        });
+                return $checklist;
+            });
 
-        return response()->json(['data' => $checklist->load('items')], 201);
+            return response()->json(['data' => $checklist->load('items')], 201);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ServiceChecklist store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar checklist'], 500);
+        }
     }
 
     public function show(Request $request, int $id): JsonResponse
@@ -95,8 +100,24 @@ class ServiceChecklistController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $checklist = ServiceChecklist::where('tenant_id', $this->tenantId($request))->findOrFail($id);
-        $checklist->delete();
 
-        return response()->json(['message' => 'Checklist excluído com sucesso']);
+        // Verificar dependências
+        $woCount = \App\Models\WorkOrder::where('checklist_id', $checklist->id)->count();
+        if ($woCount > 0) {
+            return response()->json([
+                'message' => "Não é possível excluir. Este checklist está vinculado a {$woCount} ordem(ns) de serviço.",
+            ], 409);
+        }
+
+        try {
+            DB::transaction(function () use ($checklist) {
+                $checklist->items()->delete();
+                $checklist->delete();
+            });
+            return response()->json(['message' => 'Checklist excluído com sucesso']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ServiceChecklist destroy failed', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir checklist'], 500);
+        }
     }
 }

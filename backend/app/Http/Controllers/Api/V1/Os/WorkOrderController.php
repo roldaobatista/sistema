@@ -156,6 +156,15 @@ class WorkOrderController extends Controller
             'items.*.discount' => 'sometimes|numeric|min:0',
         ]);
 
+        // GAP-24: Gate de desconto — só admin/gerente pode aplicar
+        $hasDiscount = (float) ($validated['discount'] ?? 0) > 0
+            || (float) ($validated['discount_percentage'] ?? 0) > 0;
+        if ($hasDiscount && !$request->user()->can('os.work_order.apply_discount')) {
+            return response()->json([
+                'message' => 'Apenas gerentes/admin podem aplicar descontos.',
+            ], 403);
+        }
+
         if (!empty($validated['items'])) {
             foreach ($validated['items'] as $index => $item) {
                 $message = $this->validateItemReference(
@@ -243,9 +252,18 @@ class WorkOrderController extends Controller
 
     public function show(WorkOrder $workOrder): JsonResponse
     {
-        $data = $workOrder->load([
+        $workOrder->load([
+            'customer:id,name',
+            'equipment:id,name,serial_number',
+            'service:id,name',
+            'assignedTo:id,name',
+            'items.product:id,name',
+            'items.service:id,name',
+            'attachments.uploader:id,name',
+            'statusHistory.user:id,name',
+            'parent:id,os_number,number',
+            'children:id,os_number,number,status',
             'customer.contacts',
-            'equipment',
             'branch:id,name',
             'creator:id,name',
             'assignee:id,name',
@@ -257,10 +275,10 @@ class WorkOrderController extends Controller
             'equipmentsList',
             'items',
             'attachments',
-            'statusHistory.user:id,name',
             'checklistResponses.item',
-        ])->toArray();
+        ]);
 
+        $data = $workOrder->toArray();
         $data['allowed_transitions'] = WorkOrder::ALLOWED_TRANSITIONS[$workOrder->status] ?? [];
 
         return response()->json($data);
@@ -286,6 +304,15 @@ class WorkOrderController extends Controller
             'discount_percentage' => 'sometimes|numeric|min:0|max:100',
             'displacement_value' => 'sometimes|numeric|min:0',
         ]);
+
+        // GAP-24: Gate de desconto — só admin/gerente pode aplicar
+        $hasDiscount = (float) ($validated['discount'] ?? 0) > 0
+            || (float) ($validated['discount_percentage'] ?? 0) > 0;
+        if ($hasDiscount && !$request->user()->can('os.work_order.apply_discount')) {
+            return response()->json([
+                'message' => 'Apenas gerentes/admin podem aplicar descontos.',
+            ], 403);
+        }
 
         try {
             DB::beginTransaction();
@@ -358,6 +385,19 @@ class WorkOrderController extends Controller
             ], 422);
         }
 
+        if ($to === WorkOrder::STATUS_COMPLETED && $workOrder->checklist_id) {
+            $requiredItemsCount = $workOrder->checklist->items()->count();
+            $providedResponsesCount = $workOrder->checklistResponses()->count();
+
+            if ($providedResponsesCount < $requiredItemsCount) {
+                return response()->json([
+                    'message' => 'O checklist desta OS está incompleto. Todos os itens devem ser respondidos antes de concluir.',
+                    'required_items' => $requiredItemsCount,
+                    'provided_responses' => $providedResponsesCount,
+                ], 422);
+            }
+        }
+
         DB::beginTransaction();
         try {
             $workOrder->update([
@@ -378,6 +418,14 @@ class WorkOrderController extends Controller
                     'notes' => $validated['notes'] ?? null,
                 ]);
             }
+
+            // Automate System Chat Message for Status Change (Brainstorm #13 / Wave 1)
+            $workOrder->chats()->create([
+                'tenant_id' => $workOrder->tenant_id,
+                'user_id' => $request->user()->id,
+                'type' => 'system',
+                'message' => "OS alterada de **" . (WorkOrder::STATUSES[$from]['label'] ?? $from) . "** para **" . (WorkOrder::STATUSES[$to]['label'] ?? $to) . "**" . (isset($validated['notes']) && $validated['notes'] ? ": {$validated['notes']}" : ""),
+            ]);
 
             // #26 — Notificar técnico responsável e criador por email
             if (in_array($to, [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_DELIVERED, WorkOrder::STATUS_CANCELLED, WorkOrder::STATUS_WAITING_APPROVAL])) {
@@ -537,7 +585,12 @@ class WorkOrderController extends Controller
     public function storeAttachment(Request $request, WorkOrder $workOrder): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|max:10240',
+            'file' => [
+                'required',
+                'file',
+                'max:51200', // 50MB
+                'mimetypes:image/jpeg,image/png,image/gif,application/pdf,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska'
+            ],
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -865,5 +918,116 @@ class WorkOrderController extends Controller
             Log::error('WorkOrder reopen failed', ['id' => $workOrder->id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao reabrir OS'], 500);
         }
+    }
+
+    /**
+     * GAP-02: Authorize dispatch for a work order.
+     * Records who authorized and creates a status history entry.
+     */
+    public function authorizeDispatch(Request $request, WorkOrder $workOrder): JsonResponse
+    {
+        $allowedStatuses = [WorkOrder::STATUS_OPEN, WorkOrder::STATUS_IN_PROGRESS];
+        if (!in_array($workOrder->status, $allowedStatuses, true)) {
+            return response()->json([
+                'message' => 'Autorização de deslocamento só é permitida para OS abertas ou em andamento',
+            ], 422);
+        }
+
+        if ($workOrder->dispatch_authorized_at) {
+            return response()->json([
+                'message' => 'Deslocamento já autorizado em ' . $workOrder->dispatch_authorized_at->format('d/m/Y H:i'),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $workOrder->update([
+                'dispatch_authorized_by' => $request->user()->id,
+                'dispatch_authorized_at' => now(),
+            ]);
+
+            WorkOrderStatusHistory::create([
+                'tenant_id' => $workOrder->tenant_id,
+                'work_order_id' => $workOrder->id,
+                'user_id' => $request->user()->id,
+                'from_status' => $workOrder->status,
+                'to_status' => $workOrder->status,
+                'notes' => 'Deslocamento autorizado',
+            ]);
+
+            DB::commit();
+
+            return response()->json($workOrder->fresh()->load(['statusHistory.user:id,name', 'driver:id,name']));
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('WorkOrder authorizeDispatch failed', ['id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao autorizar deslocamento'], 500);
+        }
+    }
+    /**
+     * GET /work-orders/{work_order}/audit-trail
+     * Returns all audit log entries related to this work order.
+     */
+    public function auditTrail(WorkOrder $workOrder): JsonResponse
+    {
+        $logs = \App\Models\AuditLog::with('user:id,name')
+            ->where(function ($q) use ($workOrder) {
+                // Direct WO changes
+                $q->where(function ($sub) use ($workOrder) {
+                    $sub->where('auditable_type', WorkOrder::class)
+                        ->where('auditable_id', $workOrder->id);
+                })
+                // Item changes
+                ->orWhere(function ($sub) use ($workOrder) {
+                    $sub->where('auditable_type', WorkOrderItem::class)
+                        ->whereIn('auditable_id', $workOrder->items()->pluck('id'));
+                });
+            })
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action' => $log->action,
+                    'action_label' => \App\Models\AuditLog::ACTIONS[$log->action] ?? $log->action,
+                    'description' => $log->description,
+                    'entity_type' => $log->auditable_type ? class_basename($log->auditable_type) : null,
+                    'entity_id' => $log->auditable_id,
+                    'user' => $log->user,
+                    'old_values' => $log->old_values,
+                    'new_values' => $log->new_values,
+                    'ip_address' => $log->ip_address,
+                    'created_at' => $log->created_at,
+                ];
+            });
+
+        // Also include status history and chat system messages for a complete timeline
+        $statusHistory = $workOrder->statusHistory()
+            ->with('user:id,name')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($h) {
+                return [
+                    'id' => 'sh_' . $h->id,
+                    'action' => 'status_changed',
+                    'action_label' => 'Status Alterado',
+                    'description' => ($h->from_status ? "De {$h->from_status} " : '') . "para {$h->to_status}" . ($h->notes ? ": {$h->notes}" : ''),
+                    'entity_type' => 'WorkOrder',
+                    'entity_id' => $h->work_order_id,
+                    'user' => $h->user,
+                    'old_values' => ['status' => $h->from_status],
+                    'new_values' => ['status' => $h->to_status],
+                    'ip_address' => null,
+                    'created_at' => $h->created_at,
+                ];
+            });
+
+        $combined = $logs->concat($statusHistory)
+            ->sortByDesc('created_at')
+            ->values();
+
+        return response()->json(['data' => $combined]);
     }
 }

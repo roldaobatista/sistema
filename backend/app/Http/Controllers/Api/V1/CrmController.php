@@ -13,6 +13,9 @@ use App\Models\Equipment;
 use App\Models\EquipmentDocument;
 use App\Models\WorkOrder;
 use App\Models\Quote;
+use App\Models\ServiceCall;
+use App\Models\FiscalNote;
+use App\Models\EquipmentCalibration;
 use Illuminate\Http\JsonResponse;
 use App\Models\AccountReceivable;
 use Illuminate\Http\Request;
@@ -282,8 +285,13 @@ class CrmController extends Controller
             ], 422);
         }
 
-        $stage->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $stage->delete());
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            Log::error('Erro ao excluir estágio', ['id' => $stage->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir estágio'], 500);
+        }
     }
 
     public function stagesReorder(Request $request, CrmPipeline $pipeline): JsonResponse
@@ -507,8 +515,16 @@ class CrmController extends Controller
 
     public function dealsDestroy(CrmDeal $deal): JsonResponse
     {
-        $deal->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(function () use ($deal) {
+                $deal->activities()->delete();
+                $deal->delete();
+            });
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            Log::error('Erro ao excluir deal', ['id' => $deal->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir deal'], 500);
+        }
     }
 
     // ─── Activities ─────────────────────────────────────
@@ -604,19 +620,25 @@ class CrmController extends Controller
 
     public function activitiesDestroy(CrmActivity $activity): JsonResponse
     {
-        $activity->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $activity->delete());
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            Log::error('Erro ao excluir atividade', ['id' => $activity->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir atividade'], 500);
+        }
     }
 
     // ─── Customer 360 ───────────────────────────────────
 
-    public function customer360(Customer $customer): JsonResponse
+    public function customer360(Request $request, Customer $customer): JsonResponse
     {
         $customer->load([
             'contacts',
             'assignedSeller:id,name',
         ]);
 
+        $tenantId = $customer->tenant_id;
         // Health score breakdown
         $healthBreakdown = $customer->health_score_breakdown;
 
@@ -631,27 +653,78 @@ class CrmController extends Controller
             ->orderByDesc('updated_at')
             ->get();
 
-        // Timeline (últimas 30 atividades)
-        $timeline = $customer->activities()
-            ->with(['user:id,name', 'deal:id,title'])
-            ->orderByDesc('created_at')
-            ->take(30)
-            ->get();
+        // Filtro por técnico (Regra de Negócio: Técnico só vê o que é dele)
+        $user = $request->user();
+        $isAdmin = $user->hasRole('admin') || $user->hasRole('super_admin') || $user->hasPermission('platform.dashboard.view');
 
-        // Financeiro
-        $workOrders = $customer->workOrders()
+        // Timeline (Atividades CRM)
+        $timeline = CrmActivity::where('customer_id', $customer->id)
+            ->with('user:id,name')
             ->orderByDesc('created_at')
-            ->take(10)
-            ->get(['id', 'number', 'os_number', 'status', 'total', 'created_at', 'completed_at']);
+            ->take(30);
 
-        $quotes = $customer->quotes()
+        if (!$isAdmin) {
+             $timeline->where('user_id', $user->id);
+        }
+        $timeline = $timeline->get();
+
+        // Orçamentos
+        $quotesQuery = $customer->quotes()
             ->orderByDesc('created_at')
-            ->take(10)
-            ->get(['id', 'quote_number', 'status', 'total', 'created_at', 'approved_at']);
+            ->take(10);
+        
+        if (!$isAdmin) {
+            $quotesQuery->where('user_id', $user->id);
+        }
+        $quotes = $quotesQuery->get(['id', 'quote_number', 'status', 'total', 'created_at', 'approved_at']);
 
-        $pendingReceivables = $customer->accountsReceivable()
-            ->whereIn('status', [AccountReceivable::STATUS_PENDING, AccountReceivable::STATUS_OVERDUE])
-            ->sum('amount');
+        // Ordens de Serviço
+        $workOrdersQuery = $customer->workOrders()
+            ->orderByDesc('created_at')
+            ->take(10);
+        
+        if (!$isAdmin) {
+            $workOrdersQuery->where(function($q) use ($user) {
+                $q->where('technician_id', $user->id)
+                  ->orWhere('user_id', $user->id);
+            });
+        }
+        $workOrders = $workOrdersQuery->get(['id', 'number', 'os_number', 'status', 'total', 'created_at', 'completed_at']);
+
+        // Financeiro - Receivables (todas as pendentes e recentes)
+        $receivables = [];
+        $pendingReceivablesSum = 0;
+
+        if ($isAdmin || $user->hasPermission('finance.receivable.view')) {
+            $receivables = $customer->accountsReceivable()
+                ->with(['workOrder:id,number'])
+                ->orderByDesc('due_date')
+                ->take(50)
+                ->get();
+
+            $pendingReceivablesSum = $customer->accountsReceivable()
+                ->whereIn('status', [AccountReceivable::STATUS_PENDING, AccountReceivable::STATUS_OVERDUE])
+                ->sum('amount');
+        }
+
+        // Notas Fiscais
+        $fiscalNotes = [];
+        if ($isAdmin || $user->hasPermission('fiscal.note.view')) {
+            $fiscalNotes = FiscalNote::where('customer_id', $customer->id)
+                ->orderByDesc('created_at')
+                ->take(20)
+                ->get();
+        }
+
+        // Chamados
+        $serviceCallsQuery = $customer->serviceCalls()
+            ->orderByDesc('created_at')
+            ->take(20);
+        
+        if (!$isAdmin) {
+            $serviceCallsQuery->where('user_id', $user->id);
+        }
+        $serviceCalls = $serviceCallsQuery->get();
 
         // Documentos (certificados e documentos dos equipamentos do cliente)
         $equipmentIds = $customer->equipments()->pluck('id');
@@ -660,6 +733,98 @@ class CrmController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        // ─── Fase 2: Métricas de Inteligência ────────────────
+        
+        // 1. Health Metrics (Churn)
+        $lastActivity = CrmActivity::where('customer_id', $customer->id)->latest()->first();
+        $lastContactDays = $lastActivity ? now()->diffInDays($lastActivity->created_at) : 999;
+        $churnRisk = $lastContactDays > 150 ? 'crítico' : ($lastContactDays > 90 ? 'alto' : ($lastContactDays > 45 ? 'médio' : 'baixo'));
+
+        // 2. Commercial Metrics (LTV & Conversão)
+        $wonQuotesSum = $customer->quotes()->where('status', 'Aprovado')->sum('total');
+        $paidOsSum = $customer->workOrders()->where('status', 'Concluído')->sum('total');
+        $ltv = (float)$wonQuotesSum + (float)$paidOsSum;
+
+        $totalQuotesCount = $customer->quotes()->count();
+        $approvedQuotesCount = $customer->quotes()->where('status', 'Aprovado')->count();
+        $conversionRate = $totalQuotesCount > 0 ? round(($approvedQuotesCount / $totalQuotesCount) * 100, 1) : 0;
+
+        // 3. Forecast de Calibrações (Próximos 6 meses)
+        $forecast = [];
+        for ($i = 0; $i < 6; $i++) {
+            $monthDate = now()->addMonths($i);
+            $count = $customer->equipments()
+                ->where('next_calibration_at', '>=', $monthDate->startOfMonth()->toDateString())
+                ->where('next_calibration_at', '<=', $monthDate->endOfMonth()->toDateString())
+                ->count();
+            
+            $forecast[] = [
+                'name' => $monthDate->translatedFormat('M/y'),
+                'count' => $count
+            ];
+        }
+
+        // 4. Trend Data (Tendência do Equipamento Principal)
+        $mainEquipment = $customer->equipments()->withCount('calibrations')->orderByDesc('calibrations_count')->first();
+        $trendData = [];
+        if ($mainEquipment) {
+            $trendData = EquipmentCalibration::where('equipment_id', $mainEquipment->id)
+                ->orderBy('calibration_date')
+                ->take(10)
+                ->get()
+                ->map(fn($c) => [
+                    'date' => $c->calibration_date instanceof \DateTimeInterface ? $c->calibration_date->format('d/m/y') : ($c->calibration_date ? date('d/m/y', strtotime($c->calibration_date)) : 'N/A'),
+                    'error' => (float)($c->error_found ?? 0),
+                    'uncertainty' => (float)($c->uncertainty ?? 0)
+                ]);
+        }
+
+        // 5. Radar de Saúde (Holístico)
+        $financeScore = $pendingReceivablesSum > 0 ? 50 : 100;
+        $engagementScore = max(0, 100 - ($lastContactDays / 1.5));
+        $metrologyScore = $customer->equipments()->count() > 0 
+            ? ($customer->equipments()->where('calibration_status', 'em_dia')->count() / $customer->equipments()->count() * 100)
+            : 100;
+
+        $radarData = [
+            ['subject' => 'Financeiro', 'value' => $financeScore],
+            ['subject' => 'Comercial', 'value' => $conversionRate],
+            ['subject' => 'Engajamento', 'value' => $engagementScore],
+            ['subject' => 'Metrologia', 'value' => $metrologyScore],
+            ['subject' => 'Lealdade', 'value' => $customer->is_active ? 100 : 0],
+        ];
+
+        // 6. Benchmarking (Segmento)
+        $segmentAvgRevenue = Customer::where('tenant_id', $tenantId)
+            ->where('segment', $customer->segment)
+            ->where('id', '!=', $customer->id)
+            ->withSum('workOrders', 'total')
+            ->get()
+            ->avg('work_orders_sum_total') ?? 0;
+
+        // 7. Automação de Retenção (CRM Proativo)
+        if (in_array($churnRisk, ['crítico', 'alto'])) {
+            $hasOpenFollowUp = CrmActivity::where('customer_id', $customer->id)
+                ->where('type', 'call')
+                ->where('status', 'pending')
+                ->where('title', 'LIKE', '%Retenção%')
+                ->exists();
+
+            if (!$hasOpenFollowUp) {
+                CrmActivity::create([
+                    'tenant_id' => $tenantId,
+                    'customer_id' => $customer->id,
+                    'assigned_to' => $customer->assigned_seller_id ?? $request->user()->id,
+                    'title' => '🚨 Retenção: Cliente com Risco de Churn ' . ucfirst($churnRisk),
+                    'description' => "Automação: O sistema detectou risco de perda devido à inatividade de {$lastContactDays} dias. Favor entrar em contato.",
+                    'type' => 'call',
+                    'priority' => 'high',
+                    'status' => 'pending',
+                    'due_date' => now()->addDays(2),
+                ]);
+            }
+        }
+
         return response()->json([
             'customer' => $customer,
             'health_breakdown' => $healthBreakdown,
@@ -667,10 +832,40 @@ class CrmController extends Controller
             'deals' => $deals,
             'timeline' => $timeline,
             'work_orders' => $workOrders,
+            'service_calls' => $serviceCalls,
             'quotes' => $quotes,
-            'pending_receivables' => (float) $pendingReceivables,
+            'receivables' => $receivables,
+            'pending_receivables' => (float) $pendingReceivablesSum,
+            'fiscal_notes' => $fiscalNotes,
             'documents' => $documents,
+            'metrics' => [
+                'churn_risk' => $churnRisk,
+                'last_contact_days' => $lastContactDays,
+                'ltv' => $ltv,
+                'conversion_rate' => $conversionRate,
+                'forecast' => $forecast,
+                'trend' => $trendData,
+                'radar' => $radarData,
+                'benchmarking' => [
+                    ['name' => 'Este Cliente', 'value' => (float)$paidOsSum],
+                    ['name' => 'Média do Segmento', 'value' => (float)$segmentAvgRevenue]
+                ],
+                'main_equipment_name' => $mainEquipment ? ($mainEquipment->brand . ' ' . $mainEquipment->model) : null
+            ]
         ]);
+    }
+
+    public function export360($id)
+    {
+        $data = $this->customer360(new \Illuminate\Http\Request(['id' => $id]), $id);
+        
+        if ($data->getStatusCode() !== 200) return $data;
+
+        $content = $data->getData(true);
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.customer-360', $content)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download("Universo_Cliente_{$id}.pdf");
     }
 
     // ─── Constants ──────────────────────────────────────

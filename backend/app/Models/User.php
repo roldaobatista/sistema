@@ -11,6 +11,8 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Concerns\Auditable;
+use App\Models\Tenant;
+use App\Models\Branch;
 
 class User extends Authenticatable
 {
@@ -26,6 +28,10 @@ class User extends Authenticatable
         'branch_id',
         'current_tenant_id',
         'last_login_at',
+        'location_lat',
+        'location_lng',
+        'location_updated_at',
+        'status',
     ];
 
     protected $hidden = [
@@ -40,10 +46,63 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'location_lat' => 'float',
+            'location_lng' => 'float',
+            'location_updated_at' => 'datetime',
         ];
     }
 
     // Relacionamentos
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
+    }
+
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function subordinates()
+    {
+        return $this->hasMany(User::class, 'manager_id');
+    }
+
+    public function skills()
+    {
+        return $this->hasMany(UserSkill::class);
+    }
+
+    public function performanceReviews()
+    {
+        return $this->hasMany(PerformanceReview::class, 'user_id'); // as reviewee
+    }
+
+    public function reviewsGiven()
+    {
+        return $this->hasMany(PerformanceReview::class, 'reviewer_id');
+    }
+
+    public function receivedFeedback()
+    {
+        return $this->hasMany(ContinuousFeedback::class, 'to_user_id');
+    }
+
+    public function sentFeedback()
+    {
+        return $this->hasMany(ContinuousFeedback::class, 'from_user_id');
+    }
+
+    public function timeClockEntries()
+    {
+        return $this->hasMany(TimeClockEntry::class);
+    }
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
@@ -92,3 +151,4 @@ class User extends Authenticatable
         return $this->refresh();
     }
 }
+

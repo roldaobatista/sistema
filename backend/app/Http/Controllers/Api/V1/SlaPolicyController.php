@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\SlaPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SlaPolicyController extends Controller
 {
@@ -42,9 +44,14 @@ class SlaPolicyController extends Controller
         ]);
 
         $data['tenant_id'] = $tenantId;
-        $policy = SlaPolicy::create($data);
 
+    try {
+        $policy = DB::transaction(fn () => SlaPolicy::create($data));
         return response()->json(['data' => $policy], 201);
+    } catch (\Throwable $e) {
+        Log::error('SlaPolicy store failed', ['error' => $e->getMessage()]);
+        return response()->json(['message' => 'Erro ao criar política SLA'], 500);
+    }
     }
 
     public function show(Request $request, int $id): JsonResponse
@@ -75,9 +82,14 @@ class SlaPolicyController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $tenantId = $this->tenantId($request);
-        $policy = SlaPolicy::where('tenant_id', $tenantId)->findOrFail($id);
-        $policy->delete();
+    $policy = SlaPolicy::where('tenant_id', $tenantId)->findOrFail($id);
 
+    try {
+        DB::transaction(fn () => $policy->delete());
         return response()->json(['message' => 'Política SLA excluída com sucesso']);
+    } catch (\Throwable $e) {
+        Log::error('SlaPolicy destroy failed', ['id' => $id, 'error' => $e->getMessage()]);
+        return response()->json(['message' => 'Erro ao excluir política SLA'], 500);
+    }
     }
 }

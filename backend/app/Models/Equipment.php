@@ -62,6 +62,8 @@ class Equipment extends Model
         'tag', 'qr_code', 'photo_url', 'is_critical', 'is_active', 'notes',
     ];
 
+    protected $appends = ['calibration_status', 'tracking_url'];
+
     protected function casts(): array
     {
         return [
@@ -111,10 +113,19 @@ class Equipment extends Model
 
     public function getCalibrationStatusAttribute(): string
     {
-        if (!$this->next_calibration_at) return 'sem_data';
-        if ($this->next_calibration_at->isPast()) return 'vencida';
-        if ($this->next_calibration_at->diffInDays(now()) <= 30) return 'vence_em_breve';
+        $next = $this->next_calibration_at;
+        if (!$next) return 'sem_data';
+        
+        $carbonNext = ($next instanceof \Carbon\Carbon) ? $next : \Carbon\Carbon::parse($next);
+
+        if ($carbonNext->isPast()) return 'vencida';
+        if ($carbonNext->diffInDays(now()) <= 30) return 'vence_em_breve';
         return 'em_dia';
+    }
+
+    public function getTrackingUrlAttribute(): string
+    {
+        return config('app.url') . "/portal/equipamentos/" . $this->id;
     }
 
     // ─── Methods ────────────────────────────────────────────
@@ -122,8 +133,10 @@ class Equipment extends Model
     public function scheduleNextCalibration(): void
     {
         if ($this->calibration_interval_months && $this->last_calibration_at) {
-            $this->next_calibration_at = $this->last_calibration_at
-                ->addMonths($this->calibration_interval_months);
+            $last = $this->last_calibration_at;
+            $carbonLast = ($last instanceof \Carbon\Carbon) ? $last : \Carbon\Carbon::parse($last);
+            
+            $this->next_calibration_at = $carbonLast->addMonths($this->calibration_interval_months);
             $this->save();
         }
     }

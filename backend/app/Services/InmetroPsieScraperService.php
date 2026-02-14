@@ -239,6 +239,7 @@ class InmetroPsieScraperService
                         'current_status' => $status,
                         'last_verification_at' => $lastVerification,
                         'next_verification_at' => $nextVerification,
+                        'last_executor' => $record['executor'] ?? null,
                         'source' => $source,
                     ]);
                     $stats['instruments_created']++;
@@ -247,6 +248,7 @@ class InmetroPsieScraperService
                         'current_status' => $status,
                         'last_verification_at' => $lastVerification,
                         'next_verification_at' => $nextVerification,
+                        'last_executor' => $record['executor'] ?? $instrument->last_executor,
                     ]);
                 }
 

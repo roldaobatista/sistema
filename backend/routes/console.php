@@ -86,3 +86,52 @@ Schedule::command('inmetro:generate-leads')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/inmetro-leads.log'));
 
+// ─── GAP-12: Overdue Follow-ups (diário às 08:15) ───
+Schedule::command('customers:check-overdue-follow-ups')
+    ->dailyAt('08:15')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/overdue-follow-ups.log'));
+
+// ─── Contratos Recorrentes Vencendo (diário às 07:00) ───
+Schedule::command('contracts:check-expiring')
+    ->dailyAt('07:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/expiring-contracts.log'));
+
+// ─── 🔴 CRÍTICO: OS Concluída Sem Faturamento (diário às 08:30) ───
+Schedule::command('work-orders:check-unbilled')
+    ->dailyAt('08:30')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/unbilled-work-orders.log'));
+
+// ─── Email IMAP Sync (a cada 2 min) ───
+Schedule::call(function () {
+    \App\Models\EmailAccount::where('is_active', true)->each(function ($account) {
+        \App\Jobs\SyncEmailAccountJob::dispatch($account);
+    });
+})
+    ->everyTwoMinutes()
+    ->name('email-imap-sync')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/email-sync.log'));
+
+// ─── Email AI Classification (a cada 5 min) ───
+Schedule::call(function () {
+    \App\Models\Email::whereNull('ai_classified_at')
+        ->where('created_at', '>=', now()->subDay())
+        ->each(function ($email) {
+            \App\Jobs\ClassifyEmailJob::dispatch($email);
+        });
+})
+    ->everyFiveMinutes()
+    ->name('email-ai-classify')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/email-classify.log'));
+
+// ─── Send Scheduled Emails (a cada minuto) ───
+Schedule::job(new \App\Jobs\SendScheduledEmails)
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/email-scheduled-send.log'));
+
+

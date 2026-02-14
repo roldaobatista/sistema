@@ -105,6 +105,8 @@ class UserController extends Controller
 
             $user->load('roles:id,name');
 
+            AuditLog::log('created', "Usuário {$user->name} criado", $user);
+
             return response()->json($user, 201);
         } catch (\Exception $e) {
             Log::error('User store failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
@@ -155,6 +157,8 @@ class UserController extends Controller
             });
 
             $user->load('roles:id,name');
+
+            AuditLog::log('updated', "Usuário {$user->name} atualizado", $user);
 
             return response()->json($user);
         } catch (\Exception $e) {
@@ -211,6 +215,8 @@ class UserController extends Controller
                 $user->delete();
             });
 
+            AuditLog::log('deleted', "Usuário {$user->name} excluído", $user);
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
             Log::error('User delete failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
@@ -236,6 +242,8 @@ class UserController extends Controller
             }
 
             DB::commit();
+
+            AuditLog::log('status_changed', "Usuário {$user->name} " . ($user->is_active ? 'ativado' : 'desativado'), $user);
 
             return response()->json(['is_active' => $user->is_active]);
         } catch (\Exception $e) {
@@ -264,6 +272,8 @@ class UserController extends Controller
             $user->tokens()->delete();
 
             DB::commit();
+
+            AuditLog::log('updated', "Senha do usuário {$user->name} resetada", $user);
 
             return response()->json(['message' => 'Senha atualizada.']);
         } catch (\Exception $e) {
@@ -419,6 +429,8 @@ class UserController extends Controller
         try {
             $count = $user->tokens()->count();
             $user->tokens()->delete();
+
+            AuditLog::log('logout', "Forçado logout do usuário {$user->name} ({$count} sessões)", $user);
 
             return response()->json([
                 'message' => "{$count} sessão(ões) revogada(s) com sucesso.",

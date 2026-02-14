@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Concerns\BelongsToTenant;
 
 class EquipmentCalibration extends Model
@@ -17,7 +18,7 @@ class EquipmentCalibration extends Model
         'error_found', 'uncertainty', 'errors_found', 'technician_notes',
         'temperature', 'humidity', 'pressure',
         'corrections_applied', 'performed_by', 'approved_by',
-        'cost', 'work_order_id', 'notes',
+        'cost', 'work_order_id', 'notes', 'eccentricity_data',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class EquipmentCalibration extends Model
             'humidity' => 'decimal:2',
             'pressure' => 'decimal:2',
             'cost' => 'decimal:2',
+            'eccentricity_data' => 'array',
         ];
     }
 
@@ -39,4 +41,14 @@ class EquipmentCalibration extends Model
     public function performer(): BelongsTo { return $this->belongsTo(User::class, 'performed_by'); }
     public function approver(): BelongsTo { return $this->belongsTo(User::class, 'approved_by'); }
     public function workOrder(): BelongsTo { return $this->belongsTo(WorkOrder::class); }
+
+    public function standardWeights(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            StandardWeight::class,
+            'calibration_standard_weight',
+            'equipment_calibration_id',
+            'standard_weight_id'
+        )->withTimestamps();
+    }
 }

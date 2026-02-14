@@ -265,8 +265,11 @@ class CommissionRule extends Model
     {
         $productsTotal = $wo->items()->where('type', 'product')->sum('total');
         $servicesTotal = $wo->items()->where('type', 'service')->sum('total');
+
+        // Only expenses that affect net value should be deducted for commission calculation
         $expenses = Expense::where('tenant_id', $wo->tenant_id)
             ->where('work_order_id', $wo->id)
+            ->where('affects_net_value', true)
             ->sum('amount');
 
         return $this->calculateCommission((float) $wo->total, [

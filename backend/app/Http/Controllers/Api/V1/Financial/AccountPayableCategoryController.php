@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountPayableCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AccountPayableCategoryController extends Controller
 {
@@ -36,13 +38,20 @@ class AccountPayableCategoryController extends Controller
             'description' => 'nullable|string|max:255',
         ]);
 
-        $category = AccountPayableCategory::create([
-            ...$validated,
-            'tenant_id' => $tenantId,
-            'is_active' => true,
-        ]);
+        try {
+            $category = DB::transaction(function () use ($validated, $tenantId) {
+                return AccountPayableCategory::create([
+                    ...$validated,
+                    'tenant_id' => $tenantId,
+                    'is_active' => true,
+                ]);
+            });
 
-        return response()->json($category, 201);
+            return response()->json($category, 201);
+        } catch (\Throwable $e) {
+            Log::error('AP Category store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar categoria'], 500);
+        }
     }
 
     public function update(Request $request, AccountPayableCategory $category): JsonResponse
@@ -75,7 +84,12 @@ class AccountPayableCategoryController extends Controller
             ], 422); // Changed to 422 to match other modules
         }
 
-        $category->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $category->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('AP Category destroy failed', ['id' => $category->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir categoria'], 500);
+        }
     }
 }

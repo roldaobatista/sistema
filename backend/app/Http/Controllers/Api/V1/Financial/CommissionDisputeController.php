@@ -199,4 +199,65 @@ class CommissionDisputeController extends Controller
 
         return $this->success(null, "Contestação {$validated['status']}");
     }
+
+    public function show(int $id): JsonResponse
+    {
+        $dispute = DB::table('commission_disputes')
+            ->where('commission_disputes.id', $id)
+            ->where('commission_disputes.tenant_id', $this->tenantId())
+            ->join('users', 'commission_disputes.user_id', '=', 'users.id')
+            ->join('commission_events', 'commission_disputes.commission_event_id', '=', 'commission_events.id')
+            ->leftJoin('work_orders', 'commission_events.work_order_id', '=', 'work_orders.id')
+            ->leftJoin('users as resolver', 'commission_disputes.resolved_by', '=', 'resolver.id')
+            ->select(
+                'commission_disputes.*',
+                'users.name as user_name',
+                'commission_events.commission_amount',
+                'commission_events.base_amount',
+                'commission_events.work_order_id',
+                'commission_events.type as event_type',
+                'work_orders.os_number',
+                'work_orders.number as work_order_number',
+                'resolver.name as resolved_by_name'
+            )
+            ->first();
+
+        if (!$dispute) {
+            return $this->error('Contestação não encontrada', 404);
+        }
+
+        return $this->success($dispute);
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $dispute = DB::table('commission_disputes')
+            ->where('id', $id)
+            ->where('tenant_id', $this->tenantId())
+            ->first();
+
+        if (!$dispute) {
+            return $this->error('Contestação não encontrada', 404);
+        }
+
+        if ($dispute->status !== self::STATUS_OPEN) {
+            return $this->error('Apenas contestações abertas podem ser canceladas', 422);
+        }
+
+        $userId = auth()->id();
+        $isOwner = (int) $dispute->user_id === (int) $userId;
+        $isAdmin = auth()->user()->hasRole(['super_admin', 'admin']);
+
+        if (!$isOwner && !$isAdmin) {
+            return $this->error('Sem permissão para cancelar esta contestação', 403);
+        }
+
+        try {
+            DB::table('commission_disputes')->where('id', $id)->delete();
+            return $this->success(null, 'Contestação cancelada');
+        } catch (\Exception $e) {
+            Log::error('Falha ao cancelar contestação', ['error' => $e->getMessage()]);
+            return $this->error('Erro ao cancelar contestação', 500);
+        }
+    }
 }

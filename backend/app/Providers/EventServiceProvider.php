@@ -12,6 +12,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         \App\Events\WorkOrderCompleted::class => [
             \App\Listeners\HandleWorkOrderCompletion::class,
+            \App\Listeners\TriggerNpsSurvey::class,
         ],
         \App\Events\WorkOrderInvoiced::class => [
             \App\Listeners\HandleWorkOrderInvoicing::class,

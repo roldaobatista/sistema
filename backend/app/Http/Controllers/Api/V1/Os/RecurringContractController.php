@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\RecurringContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class RecurringContractController extends Controller
@@ -78,13 +80,20 @@ class RecurringContractController extends Controller
         $items = $validated['items'] ?? [];
         unset($validated['items']);
 
-        $contract = RecurringContract::create($validated);
+        try {
+            $contract = DB::transaction(function () use ($validated, $items) {
+                $contract = RecurringContract::create($validated);
+                foreach ($items as $item) {
+                    $contract->items()->create($item);
+                }
+                return $contract;
+            });
 
-        foreach ($items as $item) {
-            $contract->items()->create($item);
+            return response()->json($contract->load('items'), 201);
+        } catch (\Throwable $e) {
+            Log::error('RecurringContract store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar contrato recorrente'], 500);
         }
-
-        return response()->json($contract->load('items'), 201);
     }
 
     public function update(Request $request, RecurringContract $recurringContract): JsonResponse
@@ -111,22 +120,43 @@ class RecurringContractController extends Controller
         $items = $validated['items'] ?? null;
         unset($validated['items']);
 
-        $recurringContract->update($validated);
+        try {
+            $result = DB::transaction(function () use ($recurringContract, $validated, $items) {
+                $recurringContract->update($validated);
 
-        if ($items !== null) {
-            $recurringContract->items()->delete();
-            foreach ($items as $item) {
-                $recurringContract->items()->create($item);
-            }
+                if ($items !== null) {
+                    $recurringContract->items()->delete();
+                    foreach ($items as $item) {
+                        $recurringContract->items()->create($item);
+                    }
+                }
+
+                return $recurringContract;
+            });
+
+            return response()->json($result->load('items'));
+        } catch (\Throwable $e) {
+            Log::error('RecurringContract update failed', ['id' => $recurringContract->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar contrato'], 500);
         }
-
-        return response()->json($recurringContract->load('items'));
     }
 
-    public function destroy(RecurringContract $recurringContract): JsonResponse
+    public function destroy(Request $request, RecurringContract $recurringContract): JsonResponse
     {
-        $recurringContract->delete();
-        return response()->json(null, 204);
+        if ((int) $recurringContract->tenant_id !== $this->tenantId($request)) {
+            return response()->json(['message' => 'Contrato não encontrado'], 404);
+        }
+
+        try {
+            DB::transaction(function () use ($recurringContract) {
+                $recurringContract->items()->delete();
+                $recurringContract->delete();
+            });
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('RecurringContract destroy failed', ['id' => $recurringContract->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir contrato'], 500);
+        }
     }
 
     /** Gerar OS manualmente a partir do contrato */

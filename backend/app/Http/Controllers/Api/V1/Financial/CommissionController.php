@@ -538,6 +538,72 @@ class CommissionController extends Controller
         return response()->json($commissionSettlement->fresh()->load('user:id,name'));
     }
 
+    /**
+     * GAP-25: Aprovar settlement (workflow: Nayara fecha → Roldão aprova → pode pagar).
+     */
+    public function approveSettlement(Request $request, CommissionSettlement $commissionSettlement): JsonResponse
+    {
+        $tenantId = $this->tenantId();
+        if ((int) $commissionSettlement->tenant_id !== $tenantId) {
+            return response()->json(['message' => 'Registro não encontrado'], 404);
+        }
+
+        if ($commissionSettlement->status !== CommissionSettlement::STATUS_CLOSED) {
+            return $this->error('Somente fechamentos com status "fechado" podem ser aprovados', 422);
+        }
+
+        try {
+            DB::transaction(function () use ($commissionSettlement, $request) {
+                $commissionSettlement->update([
+                    'status' => CommissionSettlement::STATUS_APPROVED,
+                    'approved_by' => $request->user()->id,
+                    'approved_at' => now(),
+                ]);
+            });
+
+            return response()->json($commissionSettlement->fresh()->load('user:id,name'));
+        } catch (\Exception $e) {
+            Log::error('Falha ao aprovar settlement', ['error' => $e->getMessage(), 'id' => $commissionSettlement->id]);
+            return $this->error('Erro interno ao aprovar fechamento', 500);
+        }
+    }
+
+    /**
+     * GAP-25: Rejeitar settlement (volta para "open" com motivo).
+     */
+    public function rejectSettlement(Request $request, CommissionSettlement $commissionSettlement): JsonResponse
+    {
+        $tenantId = $this->tenantId();
+        if ((int) $commissionSettlement->tenant_id !== $tenantId) {
+            return response()->json(['message' => 'Registro não encontrado'], 404);
+        }
+
+        if ($commissionSettlement->status !== CommissionSettlement::STATUS_CLOSED) {
+            return $this->error('Somente fechamentos com status "fechado" podem ser rejeitados', 422);
+        }
+
+        $validated = $request->validate([
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            DB::transaction(function () use ($commissionSettlement, $validated) {
+                $commissionSettlement->update([
+                    'status' => CommissionSettlement::STATUS_OPEN,
+                    'rejection_reason' => $validated['rejection_reason'],
+                    'approved_by' => null,
+                    'approved_at' => null,
+                    'paid_at' => null,
+                ]);
+            });
+
+            return response()->json($commissionSettlement->fresh()->load('user:id,name'));
+        } catch (\Exception $e) {
+            Log::error('Falha ao rejeitar settlement', ['error' => $e->getMessage(), 'id' => $commissionSettlement->id]);
+            return $this->error('Erro interno ao rejeitar fechamento', 500);
+        }
+    }
+
     // ── Export ──
 
     public function exportEvents(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse

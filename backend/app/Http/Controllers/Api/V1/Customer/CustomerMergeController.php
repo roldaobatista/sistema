@@ -17,10 +17,7 @@ class CustomerMergeController extends Controller
      */
     public function merge(Request $request)
     {
-        $user = $request->user();
-        $tenantId = app()->bound('current_tenant_id')
-            ? (int) app('current_tenant_id')
-            : (int) ($user->current_tenant_id ?? $user->tenant_id);
+        $tenantId = (int) app('current_tenant_id');
 
         $request->validate([
             'primary_id' => [
@@ -128,7 +125,7 @@ class CustomerMergeController extends Controller
         $duplicates = [];
 
         if ($type === 'document') {
-             $duplicates = Customer::select('document', DB::raw('count(*) as count'), DB::raw('GROUP_CONCAT(id) as ids'))
+             $duplicates = Customer::select('document', DB::raw('count(*) as count'), DB::raw('group_concat(id) as ids'))
                 ->whereNotNull('document')
                 ->where('document', '!=', '')
                 ->groupBy('document')
@@ -136,7 +133,7 @@ class CustomerMergeController extends Controller
                 ->limit(20)
                 ->get();
         } elseif ($type === 'email') {
-             $duplicates = Customer::select('email', DB::raw('count(*) as count'), DB::raw('GROUP_CONCAT(id) as ids'))
+             $duplicates = Customer::select('email', DB::raw('count(*) as count'), DB::raw('group_concat(id) as ids'))
                 ->whereNotNull('email')
                 ->where('email', '!=', '')
                 ->groupBy('email')
@@ -146,7 +143,7 @@ class CustomerMergeController extends Controller
         } else {
             // Name fuzzy search is hard in pure SQL efficiently without fulltext, 
             // but we can look for exact matches first.
-            $duplicates = Customer::select('name', DB::raw('count(*) as count'), DB::raw('GROUP_CONCAT(id) as ids'))
+            $duplicates = Customer::select('name', DB::raw('count(*) as count'), DB::raw('group_concat(id) as ids'))
                 ->groupBy('name')
                 ->having('count', '>', 1)
                 ->limit(20)

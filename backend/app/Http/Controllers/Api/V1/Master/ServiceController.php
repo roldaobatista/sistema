@@ -7,6 +7,8 @@ use App\Models\Service;
 use App\Models\ServiceCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ServiceController extends Controller
 {
@@ -47,8 +49,13 @@ class ServiceController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $service = Service::create($validated);
-        return response()->json($service->load('category:id,name'), 201);
+        try {
+            $service = DB::transaction(fn () => Service::create($validated));
+            return response()->json($service->load('category:id,name'), 201);
+        } catch (\Throwable $e) {
+            Log::error('Service store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar serviço'], 500);
+        }
     }
 
     public function show(Service $service): JsonResponse
@@ -91,8 +98,13 @@ class ServiceController extends Controller
             ], 409);
         }
 
-        $service->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $service->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('Service destroy failed', ['id' => $service->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir serviço'], 500);
+        }
     }
 
     // --- Categorias ---
@@ -120,7 +132,19 @@ class ServiceController extends Controller
 
     public function destroyCategory(ServiceCategory $category): JsonResponse
     {
-        $category->delete();
-        return response()->json(null, 204);
+        $linkedCount = Service::where('category_id', $category->id)->count();
+        if ($linkedCount > 0) {
+            return response()->json([
+                'message' => "Não é possível excluir. Categoria vinculada a {$linkedCount} serviço(s).",
+            ], 409);
+        }
+
+        try {
+            DB::transaction(fn () => $category->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('ServiceCategory destroy failed', ['id' => $category->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir categoria'], 500);
+        }
     }
 }

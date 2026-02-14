@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class SupplierController extends Controller
@@ -41,7 +43,7 @@ class SupplierController extends Controller
     public function store(Request $request): JsonResponse
     {
         /** @var \App\Models\User $user */
-        $user = auth()->user();
+        $user = $request->user();
         $tenantId = $user?->tenant_id;
 
         $validated = $request->validate([
@@ -68,8 +70,13 @@ class SupplierController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $supplier = Supplier::create($validated);
-        return response()->json($supplier, 201);
+        try {
+            $supplier = DB::transaction(fn () => Supplier::create($validated));
+            return response()->json($supplier, 201);
+        } catch (\Throwable $e) {
+            Log::error('Supplier store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar fornecedor'], 500);
+        }
     }
 
     public function show(Supplier $supplier): JsonResponse
@@ -122,7 +129,12 @@ class SupplierController extends Controller
             ], 409);
         }
 
-        $supplier->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(fn () => $supplier->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('Supplier destroy failed', ['id' => $supplier->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir fornecedor'], 500);
+        }
     }
 }

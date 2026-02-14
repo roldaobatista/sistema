@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Iam;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Traits\AppliesTenantScope;
 use App\Models\User;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Role;
@@ -80,6 +81,8 @@ class RoleController extends Controller
 
             $role->load('permissions:id,name');
 
+            AuditLog::log('created', "Role {$role->name} criada", $role);
+
             return response()->json($role, 201);
         } catch (\Exception $e) {
             Log::error('Role store failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
@@ -108,7 +111,7 @@ class RoleController extends Controller
 
         $tenantId = (int) app('current_tenant_id');
 
-        // Impedir edição de roles de outros tenants (caso o scope falhe ou seja burlado)
+        // Impedir edição de roles de outros tenants (caso o scope fale ou seja burlado)
         if ($role->tenant_id && (int) $role->tenant_id !== $tenantId) {
             abort(403, 'Acesso negado a esta role.');
         }
@@ -122,6 +125,7 @@ class RoleController extends Controller
                     return $query->where('tenant_id', $tenantId);
                 }),
             ],
+            'description' => 'nullable|string|max:500',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
         ]);
@@ -150,6 +154,8 @@ class RoleController extends Controller
             });
 
             $role->load('permissions:id,name');
+
+            AuditLog::log('updated', "Role {$role->name} atualizada", $role);
 
             return response()->json($role);
         } catch (\Exception $e) {
@@ -184,7 +190,11 @@ class RoleController extends Controller
         }
 
         try {
+            $roleName = $role->name;
             $role->delete();
+
+            AuditLog::log('deleted', "Role {$roleName} excluída");
+
             return response()->json(null, 204);
         } catch (\Exception $e) {
             Log::error('Role delete failed', ['role_id' => $role->id, 'error' => $e->getMessage()]);
@@ -249,6 +259,8 @@ class RoleController extends Controller
             });
 
             $newRole->load('permissions:id,name');
+
+            AuditLog::log('created', "Role {$newRole->name} clonada de {$role->name}", $newRole);
 
             return response()->json($newRole, 201);
         } catch (\Exception $e) {

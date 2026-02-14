@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BankStatement extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, \Illuminate\Database\Eloquent\Factories\HasFactory;
 
     protected $fillable = [
-        'tenant_id', 'filename', 'imported_at', 'created_by',
-        'total_entries', 'matched_entries',
+        'tenant_id', 'bank_account_id', 'filename', 'format', 'imported_at',
+        'created_by', 'total_entries', 'matched_entries',
     ];
 
     protected function casts(): array
@@ -29,5 +29,10 @@ class BankStatement extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 }
