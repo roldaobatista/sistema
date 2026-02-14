@@ -1,6 +1,6 @@
-﻿import { useState , useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     BarChart3, TrendingUp, Trophy, Award, Users, PieChart, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react'
@@ -13,10 +13,16 @@ import { useAuthStore } from '@/stores/auth-store'
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CommissionDashboardPage() {
+    const queryClient = useQueryClient()
+    const { hasPermission } = useAuthStore()
 
-  // MVP: Action feedback
-  const handleAction = () => { toast.success('Ação realizada com sucesso') }
-  const { hasPermission } = useAuthStore()
+    // MVP: Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/commissions/${id}`),
+        onSuccess: () => { toast.success('Comissão removida com sucesso'); queryClient.invalidateQueries({ queryKey: ['commission-overview'] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover comissão') },
+    })
+    const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover esta comissão?')) deleteMutation.mutate(id) }
 
     const [months, setMonths] = useState(6)
 
@@ -36,7 +42,7 @@ export function CommissionDashboardPage() {
     const byRole = byRoleRes?.data?.data ?? byRoleRes?.data ?? []
     const isLoading = loadingOverview || loadingRanking || loadingEvolution || loadingByRule || loadingByRole
 
-  const [searchTerm, setSearchTerm] = useState('')
+    const [searchTerm, setSearchTerm] = useState('')
     const maxEvolution = Math.max(...(evolution as any[]).map((e: any) => e.total), 1)
     const maxByRule = Math.max(...(byRule as any[]).map((r: any) => r.total), 1)
 

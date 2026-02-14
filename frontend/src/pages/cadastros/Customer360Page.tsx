@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import * as Tabs from '@radix-ui/react-tabs'
 import {
@@ -38,10 +38,21 @@ const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', cur
 export function Customer360Page() {
     const { id } = useParams()
     const customerId = Number(id)
+    const queryClient = useQueryClient()
     const { hasPermission, hasRole } = useAuthStore()
     const [nowTs] = useState(() => Date.now())
     const [activityFormOpen, setActivityFormOpen] = useState(false)
     const [sendMessageOpen, setSendMessageOpen] = useState(false)
+
+    // MVP: Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: (noteId: number) => api.delete(`/crm/activities/${noteId}`),
+        onSuccess: () => { toast.success('Atividade removida'); queryClient.invalidateQueries({ queryKey: ['customer-360', id] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    })
+    const handleDeleteActivity = (noteId: number) => {
+        if (window.confirm('Tem certeza que deseja remover esta atividade?')) deleteMutation.mutate(noteId)
+    }
 
     // Travas de Permissão do Negócio
     const isAdmin = hasRole('super_admin') || hasRole('admin')

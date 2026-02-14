@@ -1,6 +1,6 @@
-import { useState , useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
-import { useMutation , useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fuel, ArrowRight, Calculator, TrendingDown, CheckCircle2 } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -8,16 +8,25 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 export function FuelComparisonTab() {
+    const queryClient = useQueryClient()
+    const { hasPermission } = useAuthStore()
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['fuel-comparison'],
-    queryFn: () => api.get('/fuel-comparison').then(r => r.data?.data ?? r.data ?? []),
-  })
+    // MVP: Data fetching
+    const { data: items, isLoading, isError, refetch } = useQuery({
+        queryKey: ['fuel-comparison'],
+        queryFn: () => api.get('/fuel-comparison').then(r => r.data?.data ?? r.data ?? []),
+    })
 
-  // MVP: Search
-  const [searchTerm, setSearchTerm] = useState('')
-  const { hasPermission } = useAuthStore()
+    // MVP: Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/fleet/fuel-comparison/${id}`),
+        onSuccess: () => { toast.success('Registro removido'); queryClient.invalidateQueries({ queryKey: ['fuel-comparison'] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    })
+    const handleDelete = (id: number) => { if (window.confirm('Tem certeza?')) deleteMutation.mutate(id) }
+
+    // MVP: Search
+    const [searchTerm, setSearchTerm] = useState('')
 
     const [gasolinePrice, setGasolinePrice] = useState('')
     const [ethanolPrice, setEthanolPrice] = useState('')
@@ -26,7 +35,8 @@ export function FuelComparisonTab() {
 
     const compareMutation = useMutation({
         mutationFn: (data: any) => api.post('/fleet/fuel-comparison', data).then(r => r.data?.data),
-        onSuccess: (data) => setResult(data),
+        onSuccess: (data) => { setResult(data); toast.success('Comparação realizada com sucesso') },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao comparar combustíveis') },
     })
 
     const handleCompare = () => {
