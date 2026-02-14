@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CustomerLocationController extends Controller
@@ -25,13 +26,12 @@ class CustomerLocationController extends Controller
         ]);
 
         try {
-            // Optional: verify if the technician has an active work order for this customer
-            // For now, we rely on the middleware check.permission:technicians.schedule.view
-            
+            DB::beginTransaction();
             $customer->update([
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
             ]);
+            DB::commit();
 
             Log::info("Customer location updated by technician", [
                 'technician_id' => auth()->id(),
@@ -50,6 +50,7 @@ class CustomerLocationController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error("Error updating customer location", ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao atualizar localização.'], 500);
         }

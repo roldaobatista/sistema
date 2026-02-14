@@ -106,6 +106,8 @@ class StockController extends Controller
                 'notes' => 'nullable|string|max:500',
             ]);
 
+            DB::beginTransaction();
+
             $product = Product::findOrFail($validated['product_id']);
             $type = StockMovementType::from($validated['type']);
 
@@ -132,6 +134,8 @@ class StockController extends Controller
                 default => abort(422, 'Tipo de movimentação inválido para entrada manual.'),
             };
 
+            DB::commit();
+
             $movement->load(['product:id,name,code,stock_qty', 'createdByUser:id,name']);
 
             return response()->json([
@@ -139,8 +143,10 @@ class StockController extends Controller
                 'data' => $movement,
             ], 201);
         } catch (ValidationException $e) {
+            DB::rollBack();
             return response()->json(['message' => 'Erro de validação', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('StockController::store failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Erro ao registrar movimentação.'], 500);
         }

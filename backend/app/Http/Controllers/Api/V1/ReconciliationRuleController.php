@@ -75,15 +75,18 @@ class ReconciliationRuleController extends Controller
         ]);
 
         try {
+            DB::beginTransaction();
             $tenantId = $this->tenantId($request);
             $validated['tenant_id'] = $tenantId;
             $validated['priority'] = $validated['priority'] ?? 50;
             $validated['is_active'] = $validated['is_active'] ?? true;
 
             $rule = ReconciliationRule::create($validated);
+            DB::commit();
 
             return $this->success($rule->load(['customer:id,name', 'supplier:id,name']), 'Regra criada com sucesso', 201);
         } catch (\Throwable $e) {
+            DB::rollBack();
             Log::error('ReconciliationRule store failed', ['error' => $e->getMessage()]);
             return $this->error('Erro ao criar regra.', 500);
         }
@@ -124,12 +127,15 @@ class ReconciliationRuleController extends Controller
         ]);
 
         try {
+            DB::beginTransaction();
             $tenantId = $this->tenantId($request);
             $rule = ReconciliationRule::where('tenant_id', $tenantId)->findOrFail($id);
             $rule->update($validated);
+            DB::commit();
 
             return $this->success($rule->load(['customer:id,name', 'supplier:id,name']), 'Regra atualizada');
         } catch (\Throwable $e) {
+            DB::rollBack();
             Log::error('ReconciliationRule update failed', ['error' => $e->getMessage()]);
             return $this->error('Erro ao atualizar regra.', 500);
         }
@@ -138,12 +144,15 @@ class ReconciliationRuleController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         try {
+            DB::beginTransaction();
             $tenantId = $this->tenantId($request);
             $rule = ReconciliationRule::where('tenant_id', $tenantId)->findOrFail($id);
             $rule->delete();
+            DB::commit();
 
             return $this->success(null, 'Regra excluída');
         } catch (\Throwable $e) {
+            DB::rollBack();
             Log::error('ReconciliationRule destroy failed', ['error' => $e->getMessage()]);
             return $this->error('Erro ao excluir regra.', 500);
         }
@@ -152,13 +161,16 @@ class ReconciliationRuleController extends Controller
     public function toggleActive(Request $request, int $id): JsonResponse
     {
         try {
+            DB::beginTransaction();
             $tenantId = $this->tenantId($request);
             $rule = ReconciliationRule::where('tenant_id', $tenantId)->findOrFail($id);
             $rule->update(['is_active' => !$rule->is_active]);
+            DB::commit();
 
             $label = $rule->is_active ? 'ativada' : 'desativada';
             return $this->success($rule, "Regra {$label}");
         } catch (\Throwable $e) {
+            DB::rollBack();
             Log::error('ReconciliationRule toggle failed', ['error' => $e->getMessage()]);
             return $this->error('Erro ao alternar regra.', 500);
         }

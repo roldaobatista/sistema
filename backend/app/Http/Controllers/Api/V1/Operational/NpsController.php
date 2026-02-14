@@ -29,6 +29,7 @@ class NpsController extends Controller
         $tenantId = $workOrder->tenant_id;
 
         try {
+            DB::beginTransaction();
             $response = NpsResponse::create([
                 'tenant_id' => $tenantId,
                 'work_order_id' => $validated['work_order_id'],
@@ -36,12 +37,14 @@ class NpsController extends Controller
                 'score' => $validated['score'],
                 'comment' => $validated['comment'],
             ]);
+            DB::commit();
 
             return response()->json([
                 'message' => 'Feedback registrado com sucesso',
                 'data' => $response
             ], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('NPS feedback failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao registrar feedback'], 500);
         }

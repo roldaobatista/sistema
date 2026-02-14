@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Iam;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class UserLocationController extends Controller
@@ -17,6 +18,8 @@ class UserLocationController extends Controller
                 'longitude' => ['required', 'numeric', 'between:-180,180'],
             ]);
 
+            DB::beginTransaction();
+
             $user = $request->user();
 
             $user->forceFill([
@@ -24,6 +27,8 @@ class UserLocationController extends Controller
                 'location_lng' => $validated['longitude'],
                 'location_updated_at' => now(),
             ])->save();
+
+            DB::commit();
 
             broadcast(new \App\Events\TechnicianLocationUpdated($user));
 
@@ -38,6 +43,7 @@ class UserLocationController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['message' => 'Validação falhou', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('UserLocation update failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao atualizar localização'], 500);
         }
