@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Search, ClipboardCheck, AlertTriangle, MessageSquare, ThumbsUp,
     ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Clock
@@ -18,11 +18,20 @@ const tabLabels: Record<Tab, string> = {
 }
 
 export default function QualityPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const [tab, setTab] = useState<Tab>('dashboard')
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
+    const queryClient = useQueryClient()
+
+    // MVP: Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/quality/procedures/${id}`),
+        onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    })
+    const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
 
     const { data: proceduresData, isLoading: loadingProc, isError: errorProc } = useQuery({
         queryKey: ['quality-procedures', search, page],

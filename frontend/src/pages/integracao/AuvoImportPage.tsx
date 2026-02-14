@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import {
@@ -49,7 +49,16 @@ const ENTITY_LABELS: Record<string, string> = {
 }
 
 export function AuvoImportPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
+    const queryClient = useQueryClient()
+
+    // MVP: Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/auvo/history/${id}`),
+        onSuccess: () => { toast.success('Registro removido'); queryClient.invalidateQueries({ queryKey: ['auvo'] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    })
+    const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover este registro?')) deleteMutation.mutate(id) }
 
     const { data: connection, isLoading: loadingConn, isError: isErrorConn, refetch: retestConnection } = useAuvoConnectionStatus()
     const { data: syncStatus, isLoading: loadingSync, isError: isErrorSync } = useAuvoSyncStatus()
@@ -68,7 +77,7 @@ export function AuvoImportPage() {
     const [showKey, setShowKey] = useState(false)
     const [showToken, setShowToken] = useState(false)
 
-  const [searchTerm, setSearchTerm] = useState('')
+    const [searchTerm, setSearchTerm] = useState('')
     useEffect(() => {
         if (savedConfig?.has_credentials) {
             setApiKey(savedConfig.api_key)
@@ -86,7 +95,7 @@ export function AuvoImportPage() {
         if (!apiKey.trim() || !apiToken.trim()) return
         saveConfig.mutate({ api_key: apiKey, api_token: apiToken }, {
             onSuccess: () => {
-        toast.success('Operação realizada com sucesso')
+                toast.success('Operação realizada com sucesso')
                 setShowConfig(false)
             },
         })

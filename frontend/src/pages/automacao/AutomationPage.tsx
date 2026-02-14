@@ -17,7 +17,7 @@ const tabLabels: Record<Tab, string> = {
 }
 
 export default function AutomationPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const [tab, setTab] = useState<Tab>('rules')
     const [page, setPage] = useState(1)
@@ -48,7 +48,15 @@ export default function AutomationPage() {
             toast.success('Operação realizada com sucesso')
             queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
         },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao alterar regra') },
     })
+
+    const deleteRule = useMutation({
+        mutationFn: (id: number) => api.delete(`/automation/rules/${id}`),
+        onSuccess: () => { toast.success('Regra removida com sucesso'); queryClient.invalidateQueries({ queryKey: ['automation-rules'] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover regra') },
+    })
+    const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover esta regra?')) deleteRule.mutate(id) }
 
     const rules = rulesData?.data ?? []
     const webhooks = webhooksData?.data ?? []

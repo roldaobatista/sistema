@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner'
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -56,7 +56,18 @@ interface DashboardData {
 
 const TvDashboard = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [searchTerm, setSearchTerm] = useState('');
     const queryClient = useQueryClient();
+    const { user } = useAuthStore()
+    const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
+
+    // MVP: Mutation para ações administrativas do dashboard
+    const actionMutation = useMutation({
+        mutationFn: (data: { action: string }) => api.post('/tv/actions', data),
+        onSuccess: () => { toast.success('Ação realizada com sucesso'); queryClient.invalidateQueries({ queryKey: ['tv-dashboard'] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro na operação') },
+    })
+    const handleAction = (action: string) => { if (window.confirm('Confirmar ação?')) actionMutation.mutate({ action }) }
 
     // Timer para relógio
     useEffect(() => {

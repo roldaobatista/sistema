@@ -18,11 +18,20 @@ const tabLabels: Record<Tab, string> = {
 }
 
 export default function AdvancedFeaturesPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const [tab, setTab] = useState<Tab>('followups')
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
+    const queryClient = useQueryClient()
+
+    // MVP: Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: ({ entity, id }: { entity: string; id: number }) => api.delete(`/advanced/${entity}/${id}`),
+        onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: [tab] }) },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    })
+    const handleDelete = (entity: string, id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate({ entity, id }) }
 
     const { data: followupsData, isLoading: loadingFollowups } = useQuery({
         queryKey: ['followups', search, page],
