@@ -489,62 +489,62 @@ function analyzeCrossModule(mod, routeContent) {
 }
 
 // ── CAMADA 4: API Health Check ──
-async function analyzeAPIHealth(mod) {
-
-    const results = [];
-    if (!WITH_HEALTH) return results;
-
+async function getAuthToken() {
     try {
-        // Login first
         const loginRes = await fetch('http://localhost:8000/api/v1/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ email: 'superadmin@kalibrium.com', password: 'password' }),
+            body: JSON.stringify({ email: 'admin@sistema.local', password: 'password' }),
         });
-
-        if (!loginRes.ok) {
-            results.push({ check: 'API Health: Auth', status: 'FAIL', detail: `Login falhou: ${loginRes.status}` });
-            return results;
-        }
-
+        if (!loginRes.ok) return null;
         const loginData = await loginRes.json();
-        const token = loginData.token || loginData.access_token;
-        if (!token) {
-            results.push({ check: 'API Health: Auth', status: 'FAIL', detail: 'Token não retornado' });
-            return results;
-        }
+        return loginData.token || loginData.access_token || null;
+    } catch {
+        return null;
+    }
+}
 
-        results.push({ check: 'API Health: Auth', status: 'PASS', detail: 'Login OK, token obtido' });
+async function analyzeAPIHealth(mod, token) {
+    const results = [];
+    if (!WITH_HEALTH) return results;
 
-        // Test main GET endpoints
-        for (const rp of mod.routePatterns) {
-            const endpoint = rp.startsWith('/') ? rp : `/${rp}`;
-            if (endpoint.includes('{') || endpoint.includes('login') || endpoint.includes('logout')) continue;
+    if (!token) {
+        results.push({ check: 'API Health: Auth', status: 'FAIL', detail: 'Token não disponível' });
+        return results;
+    }
 
-            const url = `http://localhost:8000/api/v1${endpoint}`;
-            const start = Date.now();
+    results.push({ check: 'API Health: Auth', status: 'PASS', detail: 'Token reutilizado' });
 
-            try {
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
-                    signal: AbortSignal.timeout(5000),
-                });
-                const elapsed = Date.now() - start;
-                const isJson = res.headers.get('content-type')?.includes('json');
+    for (const rp of mod.routePatterns) {
+        let endpoint = rp.startsWith('/') ? rp : `/${rp}`;
+        // Skip route group prefixes (ending with /) and generic patterns
+        if (endpoint.endsWith('/')) continue;
+        if (endpoint.includes('{') || endpoint.includes('login') || endpoint.includes('logout')) continue;
 
-                if (res.ok && isJson) {
-                    results.push({ check: `GET ${endpoint}`, status: 'PASS', detail: `${res.status} (${elapsed}ms)` });
-                } else if (res.status === 403) {
-                    results.push({ check: `GET ${endpoint}`, status: 'WARN', detail: `403 Forbidden (${elapsed}ms) — pode ser permissão` });
-                } else {
-                    results.push({ check: `GET ${endpoint}`, status: 'FAIL', detail: `${res.status} (${elapsed}ms)` });
-                }
-            } catch (err) {
-                results.push({ check: `GET ${endpoint}`, status: 'FAIL', detail: `Timeout/Erro: ${err.message}` });
+        const url = `http://localhost:8000/api/v1${endpoint}`;
+        const start = Date.now();
+
+        try {
+            const res = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+                signal: AbortSignal.timeout(5000),
+            });
+            const elapsed = Date.now() - start;
+            const isJson = res.headers.get('content-type')?.includes('json');
+
+            if (res.ok && isJson) {
+                results.push({ check: `GET ${endpoint}`, status: 'PASS', detail: `${res.status} (${elapsed}ms)` });
+            } else if (res.status === 403) {
+                results.push({ check: `GET ${endpoint}`, status: 'WARN', detail: `403 Forbidden (${elapsed}ms) — pode ser permissão` });
+            } else if (res.status === 404 && !endpoint.slice(1).includes('/')) {
+                // Simple segment without sub-route (e.g., /central, /portal) = route group prefix, not a real endpoint
+                results.push({ check: `GET ${endpoint}`, status: 'INFO', detail: `grupo sem index (${elapsed}ms)` });
+            } else {
+                results.push({ check: `GET ${endpoint}`, status: 'FAIL', detail: `${res.status} (${elapsed}ms)` });
             }
+        } catch (err) {
+            results.push({ check: `GET ${endpoint}`, status: 'FAIL', detail: `Timeout/Erro: ${err.message}` });
         }
-    } catch (err) {
-        results.push({ check: 'API Health', status: 'FAIL', detail: `Backend não acessível: ${err.message}` });
     }
 
     return results;
@@ -628,6 +628,18 @@ async function main() {
 
     const routeContent = readFile(API_ROUTES) || '';
 
+    // Login once, reuse token for all modules
+    let authToken = null;
+    if (WITH_HEALTH) {
+        authToken = await getAuthToken();
+        if (authToken) {
+            console.log(`  ${C.green}✅ Login OK — token obtido para health checks${C.reset}`);
+        } else {
+            console.log(`  ${C.red}❌ Login falhou — health checks desabilitados${C.reset}`);
+        }
+        console.log('');
+    }
+
     const allResults = [];
     const filtered = FILTER_MODULE ? modules.filter(m => m.name.toLowerCase().includes(FILTER_MODULE.toLowerCase())) : modules;
 
@@ -636,7 +648,7 @@ async function main() {
         const backend = analyzeBackend(mod);
         const frontend = analyzeFrontend(mod);
         const cross = analyzeCrossModule(mod, routeContent);
-        const health = await analyzeAPIHealth(mod);
+        const health = await analyzeAPIHealth(mod, authToken);
         allResults.push(printModuleReport(mod, backend, frontend, cross, health));
 
         const allChecks = [...backend, ...frontend, ...cross, ...health];
