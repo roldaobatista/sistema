@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$BackendRoutesFile = "",
     [string]$FrontendEndpointsFile = "frontend/frontend-endpoints.json",
     [string]$FrontendPagesRoot = "frontend/src/pages",
@@ -16,8 +16,8 @@ function To-StatusSymbol {
 
 function To-MarkdownSymbol {
     param([string]$Value)
-    if ($Value -eq "OK") { return "✅" }
-    return "❌"
+    if ($Value -eq "OK") { return "âœ…" }
+    return "âŒ"
 }
 
 function Escape-MarkdownCell {
@@ -30,6 +30,95 @@ function Escape-MarkdownCell {
     $escaped = $Value.Replace("|", "\|")
     $escaped = $escaped -replace "`r?`n", "<br>"
     return $escaped
+}
+
+function Resolve-ImportFile {
+    param(
+        [string]$ImportPath,
+        [string]$CurrentFile,
+        [string]$FrontendSrcRoot
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ImportPath)) {
+        return ""
+    }
+
+    $candidateBase = ""
+    if ($ImportPath.StartsWith("@/")) {
+        $candidateBase = Join-Path $FrontendSrcRoot ($ImportPath.Substring(2).Replace("/", "\"))
+    } elseif ($ImportPath.StartsWith(".")) {
+        $currentDir = Split-Path -Path $CurrentFile -Parent
+        $candidateBase = Join-Path $currentDir ($ImportPath.Replace("/", "\"))
+    } else {
+        return ""
+    }
+
+    $candidates = @(
+        $candidateBase,
+        "$candidateBase.ts",
+        "$candidateBase.tsx",
+        "$candidateBase.js",
+        "$candidateBase.jsx",
+        (Join-Path $candidateBase "index.ts"),
+        (Join-Path $candidateBase "index.tsx"),
+        (Join-Path $candidateBase "index.js"),
+        (Join-Path $candidateBase "index.jsx")
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate -PathType Leaf) {
+            return (Resolve-Path $candidate).Path
+        }
+    }
+
+    return ""
+}
+
+function Get-FilesForPageAnalysis {
+    param(
+        [string]$EntryFile,
+        [string]$FrontendSrcRoot,
+        [int]$MaxDepth = 2
+    )
+
+    $queue = New-Object System.Collections.Queue
+    $seen = @{}
+    $result = @()
+
+    $queue.Enqueue([PSCustomObject]@{ File = $EntryFile; Depth = 0 })
+
+    while ($queue.Count -gt 0) {
+        $item = $queue.Dequeue()
+        $file = [string]$item.File
+        $depth = [int]$item.Depth
+
+        if ([string]::IsNullOrWhiteSpace($file) -or $seen.ContainsKey($file)) {
+            continue
+        }
+
+        $seen[$file] = $true
+        $result += $file
+
+        if ($depth -ge $MaxDepth -or -not (Test-Path $file -PathType Leaf)) {
+            continue
+        }
+
+        $content = Get-Content -Path $file -Raw
+        $importMatches = [System.Text.RegularExpressions.Regex]::Matches(
+            $content,
+            '(?m)^\s*import\s+.+?\s+from\s+["''](?<path>[^"'']+)["'']'
+        )
+
+        foreach ($importMatch in $importMatches) {
+            $importPath = $importMatch.Groups["path"].Value
+            $resolvedImport = Resolve-ImportFile -ImportPath $importPath -CurrentFile $file -FrontendSrcRoot $FrontendSrcRoot
+            if (-not [string]::IsNullOrWhiteSpace($resolvedImport)) {
+                $queue.Enqueue([PSCustomObject]@{ File = $resolvedImport; Depth = $depth + 1 })
+            }
+        }
+    }
+
+    return @($result)
 }
 
 function Normalize-Path {
@@ -179,17 +268,19 @@ if ([string]::IsNullOrWhiteSpace($BackendRoutesFile)) {
     } elseif (Test-Path "backend/route-list.json") {
         $BackendRoutesFile = "backend/route-list.json"
     } else {
-        throw "Arquivo de rotas do backend não encontrado."
+        throw "Arquivo de rotas do backend nÃ£o encontrado."
     }
 }
 
 if (-not (Test-Path $BackendRoutesFile)) {
-    throw "Arquivo de rotas do backend não encontrado: $BackendRoutesFile"
+    throw "Arquivo de rotas do backend nÃ£o encontrado: $BackendRoutesFile"
 }
 
 if (-not (Test-Path $FrontendPagesRoot)) {
-    throw "Diretório de páginas do frontend não encontrado: $FrontendPagesRoot"
+    throw "DiretÃ³rio de pÃ¡ginas do frontend nÃ£o encontrado: $FrontendPagesRoot"
 }
+
+$frontendSrcRoot = Resolve-Path "frontend/src"
 
 $backendRaw = Get-Content -Path $BackendRoutesFile -Raw
 $backendRoutes = @()
@@ -216,7 +307,35 @@ foreach ($route in $backendRoutes) {
     $controllerFile = Get-ControllerFile -ControllerAction $action
     $permissions = @()
     if ($null -ne $route.middleware) {
-        $permissions = @($route.middleware | Where-Object { [string]$_ -match "CheckPermission:" } | ForEach-Object { ([string]$_) -replace ".*CheckPermission:", "" })
+        foreach ($middlewareEntry in @($route.middleware)) {
+            $middlewareValue = [string]$middlewareEntry
+
+            if ($middlewareValue -match "(?i)(?:check\.permission:|CheckPermission:)(?<value>.+)$") {
+                $permissions += @($Matches["value"] -split "\|")
+                continue
+            }
+
+            if ($middlewareValue -match "(?i)^can:(?<value>.+)$") {
+                $permissions += $Matches["value"]
+                continue
+            }
+
+            if ($middlewareValue -match "(?i)^check\.report\.(?<value>.+)$") {
+                $permissions += "report.$($Matches["value"])"
+                continue
+            }
+
+            if ($middlewareValue -match "(?i)CheckReportExportPermission$") {
+                $permissions += "report.export"
+            }
+        }
+
+        $permissions = @(
+            $permissions |
+            Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
+            ForEach-Object { ([string]$_).Trim() } |
+            Sort-Object -Unique
+        )
     }
 
     foreach ($method in $methods) {
@@ -267,7 +386,15 @@ foreach ($pageFile in $pageFiles) {
     $relativePath = $relativePath.Replace("\", "/")
     $fileKey = Normalize-FileKey -RawPath $relativePath
 
-    $content = Get-Content -Path $pageFile.FullName -Raw
+    $pageContent = Get-Content -Path $pageFile.FullName -Raw
+    $analysisFiles = Get-FilesForPageAnalysis -EntryFile $pageFile.FullName -FrontendSrcRoot ([string]$frontendSrcRoot) -MaxDepth 3
+    $analysisContent = @()
+    foreach ($analysisFile in $analysisFiles) {
+        if (Test-Path $analysisFile -PathType Leaf) {
+            $analysisContent += Get-Content -Path $analysisFile -Raw
+        }
+    }
+    $content = ($analysisContent -join "`n")
 
     $endpointHash = @{}
     $regexPatterns = @(
@@ -292,8 +419,40 @@ foreach ($pageFile in $pageFiles) {
         }
     }
 
-    if ($frontendEndpointMap.ContainsKey($fileKey)) {
-        foreach ($endpoint in $frontendEndpointMap[$fileKey]) {
+    $directEndpointHash = @{}
+    foreach ($pattern in $regexPatterns) {
+        $matches = [System.Text.RegularExpressions.Regex]::Matches($pageContent, $pattern)
+        foreach ($match in $matches) {
+            $method = $match.Groups["method"].Value.ToUpperInvariant()
+            $path = Normalize-Path -RawPath $match.Groups["path"].Value
+            if ([string]::IsNullOrWhiteSpace($path)) {
+                continue
+            }
+
+            $directKey = "$method $path"
+            $directEndpointHash[$directKey] = [PSCustomObject]@{
+                Method = $method
+                Path = $path
+            }
+        }
+    }
+
+    $endpointFileKeys = @($fileKey)
+    foreach ($analysisFile in $analysisFiles) {
+        $analysisRel = Resolve-Path -Relative $analysisFile
+        $analysisRel = $analysisRel -replace "^[.\\\/]+", ""
+        $analysisRel = $analysisRel.Replace("\", "/")
+        $analysisKey = Normalize-FileKey -RawPath $analysisRel
+        $endpointFileKeys += $analysisKey
+    }
+    $endpointFileKeys = @($endpointFileKeys | Sort-Object -Unique)
+
+    foreach ($endpointFileKey in $endpointFileKeys) {
+        if (-not $frontendEndpointMap.ContainsKey($endpointFileKey)) {
+            continue
+        }
+
+        foreach ($endpoint in $frontendEndpointMap[$endpointFileKey]) {
             $path = Normalize-Path -RawPath ([string]$endpoint.Path)
             if ([string]::IsNullOrWhiteSpace($path)) {
                 continue
@@ -309,6 +468,23 @@ foreach ($pageFile in $pageFiles) {
     }
 
     $endpoints = @($endpointHash.Values)
+    if ($frontendEndpointMap.ContainsKey($fileKey)) {
+        foreach ($endpoint in $frontendEndpointMap[$fileKey]) {
+            $directPath = Normalize-Path -RawPath ([string]$endpoint.Path)
+            if ([string]::IsNullOrWhiteSpace($directPath)) {
+                continue
+            }
+
+            $directMethod = ([string]$endpoint.Method).ToUpperInvariant()
+            $directKey = "$directMethod $directPath"
+            $directEndpointHash[$directKey] = [PSCustomObject]@{
+                Method = $directMethod
+                Path = $directPath
+            }
+        }
+    }
+
+    $directEndpoints = @($directEndpointHash.Values)
     $matchedRoutes = @()
     $missingEndpoints = @()
 
@@ -361,19 +537,64 @@ foreach ($pageFile in $pageFiles) {
         $hasDestroy = $hasDestroy -or $cache.HasDestroy
     }
 
-    $hasCrudInController = $hasIndex -and $hasStore -and $hasUpdate -and $hasDestroy
+    $usedMethods = @($endpoints | Select-Object -ExpandProperty Method -Unique)
+    $directUsedMethods = @($directEndpoints | Select-Object -ExpandProperty Method -Unique)
+    $requiresRead = @($usedMethods | Where-Object { $_ -eq "GET" }).Count -gt 0
+    $requiresCreate = @($usedMethods | Where-Object { $_ -eq "POST" }).Count -gt 0
+    $requiresUpdate = @($usedMethods | Where-Object { $_ -in @("PUT", "PATCH") }).Count -gt 0
+    $requiresDelete = @($usedMethods | Where-Object { $_ -eq "DELETE" }).Count -gt 0
+
+    $routesWithExistingController = @($matchedRoutes | Where-Object {
+        -not [string]::IsNullOrWhiteSpace($_.ControllerFile) -and (Test-Path $_.ControllerFile)
+    })
+
+    $hasReadRouteController = @($routesWithExistingController | Where-Object { $_.Method -eq "GET" }).Count -gt 0
+    $hasCreateRouteController = @($routesWithExistingController | Where-Object { $_.Method -eq "POST" }).Count -gt 0
+    $hasUpdateRouteController = @($routesWithExistingController | Where-Object { $_.Method -in @("PUT", "PATCH") }).Count -gt 0
+    $hasDeleteRouteController = @($routesWithExistingController | Where-Object { $_.Method -eq "DELETE" }).Count -gt 0
+
+    $readSatisfied = (-not $requiresRead) -or $hasIndex -or $hasReadRouteController
+    $createSatisfied = (-not $requiresCreate) -or $hasStore -or $hasCreateRouteController
+    $updateSatisfied = (-not $requiresUpdate) -or $hasUpdate -or $hasUpdateRouteController
+    $deleteSatisfied = (-not $requiresDelete) -or $hasDestroy -or $hasDeleteRouteController
+
+    $hasCrudInController = ($endpoints.Count -eq 0) -or ($readSatisfied -and $createSatisfied -and $updateSatisfied -and $deleteSatisfied)
     $frontendExists = Test-Path $pageFile.FullName
-    $backendRouteExists = ($endpoints.Count -gt 0 -and $matchedRoutes.Count -gt 0)
-    $apiCorrect = ($endpoints.Count -gt 0 -and $missingEndpoints.Count -eq 0)
+    $backendRouteExists = ($endpoints.Count -eq 0) -or ($matchedRoutes.Count -gt 0)
+    $apiCorrect = ($endpoints.Count -eq 0) -or ($missingEndpoints.Count -eq 0)
 
-    $toastHint = ($content -match "(?i)\btoast\.(success|error|warning|info)\b|useToast|sonner|toast\(")
-    $loadingHint = ($content -match "(?i)\bisLoading\b|\bloading\b|setLoading\(|Skeleton|Spinner|Carregando|Loading")
-    $emptyHint = ($content -match "(?i)EmptyState|Nenhum|Sem dados|No records|No data|vazio|nao encontrado|não encontrado")
-    $frontendPermissionHint = ($content -match "(?i)\b(can|hasPermission|usePermissions|permission)\b")
+    $directMutationMethods = @($directUsedMethods | Where-Object { $_ -in @("POST", "PUT", "PATCH", "DELETE") })
+    $directMutationEndpoints = @($directEndpoints | Where-Object { $_.Method -in @("POST", "PUT", "PATCH", "DELETE") })
+    $hasMutationIntent = $directMutationMethods.Count -gt 0 -or ($pageContent -match "(?i)\.mutate\(|offline(?:Post|Put|Delete)\(")
+    $hasOnlyExportMutation = $directMutationEndpoints.Count -gt 0 -and @($directMutationEndpoints | Where-Object { $_.Path -notmatch "(?i)/export|/pdf|/download" }).Count -eq 0
+    $requiresMutationFeedback = $hasMutationIntent -and (-not $hasOnlyExportMutation)
 
-    $routesWithPermission = @($matchedRoutes | Where-Object { $_.Permissions.Count -gt 0 })
-    $backendPermissionComplete = ($matchedRoutes.Count -gt 0 -and $routesWithPermission.Count -eq $matchedRoutes.Count)
-    $permissionConfigured = $backendPermissionComplete -or $frontendPermissionHint
+    $hasFetchIntent = @($directUsedMethods | Where-Object { $_ -eq "GET" }).Count -gt 0 -or ($pageContent -match "(?i)\buseQuery\b|\buseInfiniteQuery\b|\bqueryFn\b")
+    $isListLikePage = $pageContent -match "(?i)<table|DataTable|\bkanban\b"
+    $requiresEmptyState = $hasFetchIntent -and $isListLikePage
+
+    $toastHint = (-not $requiresMutationFeedback) -or ($pageContent -match "(?i)\btoast\.(success|error|warning|info)\b|\buseToast\b|\bsonner\b|\btoast\(|\bnotify(?:Success|Error|Warning|Info)?\(|\bsetError\(|\berror\s*&&|\bsetSaved\(|\bisSubmitting\b|<Alert\b|alert\(")
+    $loadingHint = (-not $hasFetchIntent) -or ($pageContent -match "(?i)\bisLoading\b|\bloading\b|\bisFetching\b|\bisPending\b|\bisSubmitting\b|setLoading\(|Skeleton|Spinner|Carregando|Loading")
+    $emptyHint = (-not $requiresEmptyState) -or ($pageContent -match "(?i)EmptyState|Nenhum|Nenhuma|Sem dados|Sem registros|Sem deals|Sem candidatos|No records|No data|vazio|nao encontrado|não encontrado|nao encontrada|não encontrada")
+    $frontendPermissionHint = ($pageContent -match "(?i)\b(can|hasPermission|usePermissions|permission)\b")
+    $matchedPermissionRoutes = @($matchedRoutes | Where-Object { $directEndpointHash.ContainsKey("$([string]$_.Method) $([string]$_.Path)") })
+    if ($matchedPermissionRoutes.Count -eq 0) {
+        $matchedPermissionRoutes = $matchedRoutes
+    }
+
+    $routesWithPermission = @($matchedPermissionRoutes | Where-Object { $_.Permissions.Count -gt 0 })
+    $routesWithoutPermissionButAllowed = @($matchedPermissionRoutes | Where-Object {
+        $_.Permissions.Count -eq 0 -and (
+            $_.Path -like "/portal*" -or
+            $_.Path -in @("/login", "/logout", "/me") -or
+            $_.Path -like "/profile*" -or
+            $_.Path -like "/external*" -or
+            $_.Path -like "/quotes/*/public-*" -or
+            $_.Path -like "/tech/sync*"
+        )
+    })
+    $backendPermissionComplete = ($matchedPermissionRoutes.Count -gt 0 -and ($routesWithPermission.Count + $routesWithoutPermissionButAllowed.Count) -eq $matchedPermissionRoutes.Count)
+    $permissionConfigured = ($endpoints.Count -eq 0) -or ($matchedPermissionRoutes.Count -eq 0) -or $backendPermissionComplete -or $frontendPermissionHint
 
     $moduleKey = Get-ModuleKey -PageRelativePath $relativePath -Endpoints $endpoints
 
@@ -403,13 +624,13 @@ foreach ($group in $groupedModules) {
     $apiPages = @($rows | Where-Object { $_.ApiCalls -gt 0 })
     $apiPagesCount = $apiPages.Count
 
-    $backendRouteStatus = ($apiPagesCount -gt 0 -and @($apiPages | Where-Object { $_.BackendRouteExists -eq "OK" }).Count -eq $apiPagesCount)
-    $controllerCrudStatus = ($apiPagesCount -gt 0 -and @($apiPages | Where-Object { $_.ControllerCrudComplete -eq "OK" }).Count -eq $apiPagesCount)
-    $apiMappingStatus = ($apiPagesCount -gt 0 -and @($apiPages | Where-Object { $_.ApiMappedCorrectly -eq "OK" }).Count -eq $apiPagesCount)
-    $toastStatus = ($apiPagesCount -gt 0 -and @($apiPages | Where-Object { $_.ToastFeedback -eq "OK" }).Count -eq $apiPagesCount)
-    $loadingStatus = ($apiPagesCount -gt 0 -and @($apiPages | Where-Object { $_.LoadingState -eq "OK" }).Count -eq $apiPagesCount)
-    $emptyStatus = ($apiPagesCount -gt 0 -and @($apiPages | Where-Object { $_.EmptyState -eq "OK" }).Count -eq $apiPagesCount)
-    $permissionStatus = ($apiPagesCount -gt 0 -and @($apiPages | Where-Object { $_.PermissionConfigured -eq "OK" }).Count -eq $apiPagesCount)
+    $backendRouteStatus = @($rows | Where-Object { $_.BackendRouteExists -eq "OK" }).Count -eq $totalPages
+    $controllerCrudStatus = @($rows | Where-Object { $_.ControllerCrudComplete -eq "OK" }).Count -eq $totalPages
+    $apiMappingStatus = @($rows | Where-Object { $_.ApiMappedCorrectly -eq "OK" }).Count -eq $totalPages
+    $toastStatus = @($rows | Where-Object { $_.ToastFeedback -eq "OK" }).Count -eq $totalPages
+    $loadingStatus = @($rows | Where-Object { $_.LoadingState -eq "OK" }).Count -eq $totalPages
+    $emptyStatus = @($rows | Where-Object { $_.EmptyState -eq "OK" }).Count -eq $totalPages
+    $permissionStatus = @($rows | Where-Object { $_.PermissionConfigured -eq "OK" }).Count -eq $totalPages
 
     $overallStatus = $backendRouteStatus -and $controllerCrudStatus -and $apiMappingStatus -and $toastStatus -and $loadingStatus -and $emptyStatus -and $permissionStatus
 
@@ -487,8 +708,8 @@ $totalModules = $summaryRows.Count
 $overallOk = @($summaryRows | Where-Object { $_.Overall -eq "OK" }).Count
 $overallFail = $totalModules - $overallOk
 
-Write-Output "Relatório gerado com sucesso."
-Write-Output "Resumo geral: $overallOk módulo(s) OK, $overallFail módulo(s) com gaps."
+Write-Output "RelatÃ³rio gerado com sucesso."
+Write-Output "Resumo geral: $overallOk mÃ³dulo(s) OK, $overallFail mÃ³dulo(s) com gaps."
 Write-Output "Arquivo detalhado: $pagesCsvPath"
 Write-Output "Arquivo resumo:    $summaryCsvPath"
 Write-Output "Arquivo JSON:      $jsonPath"
