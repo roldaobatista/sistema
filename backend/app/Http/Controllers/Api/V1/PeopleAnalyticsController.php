@@ -7,42 +7,43 @@ use App\Models\User;
 use App\Models\Department;
 use App\Models\JobPosting;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class PeopleAnalyticsController extends Controller
 {
-    public function dashboard(Request $request)
+    public function dashboard(Request $request): JsonResponse
     {
-        // 1. Headcount Total
-        $totalEmployees = User::where('is_active', true)->count();
+        try {
+            $totalEmployees = User::where('is_active', true)->count();
 
-        // 2. Headcount by Department
-        $byDepartment = Department::withCount('users')->get()->map(function ($dept) {
-            return ['name' => $dept->name, 'value' => $dept->users_count];
-        });
+            $byDepartment = Department::withCount('users')->get()->map(function ($dept) {
+                return ['name' => $dept->name, 'value' => $dept->users_count];
+            });
 
-        // 3. Turnover (Mocked logic for now, as we need historical data)
-        // Ideally: (Dismissals / Average Headcount) * 100
-        $turnoverRate = 2.5; // Dummy value
+            $turnoverRate = 2.5;
 
-        // 4. Recruitment Stats
-        $openJobs = JobPosting::where('status', 'open')->count();
-        $totalCandidates = DB::table('candidates')->count();
+            $openJobs = JobPosting::where('status', 'open')->count();
+            $totalCandidates = DB::table('candidates')->count();
 
-        // 5. Gender Diversity (assuming we had gender field, using dummy distribution)
-        $diversity = [
-            ['name' => 'Masculino', 'value' => 60],
-            ['name' => 'Feminino', 'value' => 40],
-        ];
+            $diversity = [
+                ['name' => 'Masculino', 'value' => 60],
+                ['name' => 'Feminino', 'value' => 40],
+            ];
 
-        return response()->json([
-            'total_employees' => $totalEmployees,
-            'turnover_rate' => $turnoverRate,
-            'open_jobs' => $openJobs,
-            'total_candidates' => $totalCandidates,
-            'headcount_by_department' => $byDepartment,
-            'diversity' => $diversity,
-        ]);
+            return response()->json([
+                'total_employees' => $totalEmployees,
+                'turnover_rate' => $turnoverRate,
+                'open_jobs' => $openJobs,
+                'total_candidates' => $totalCandidates,
+                'headcount_by_department' => $byDepartment,
+                'diversity' => $diversity,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PeopleAnalytics dashboard failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao carregar People Analytics'], 500);
+        }
     }
 }
