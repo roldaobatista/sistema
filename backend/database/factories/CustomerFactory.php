@@ -12,25 +12,48 @@ class CustomerFactory extends Factory
 
     public function definition(): array
     {
+        $type = fake()->randomElement(['PF', 'PJ']);
+
         return [
             'tenant_id' => Tenant::factory(),
             'name' => fake()->company(),
-            'type' => fake()->randomElement(['pf', 'pj']),
-            'document' => fake()->numerify('##.###.###/####-##'),
+            'trade_name' => $type === 'PJ' ? fake()->company() : null,
+            'type' => $type,
+            'document' => $type === 'PJ'
+                ? fake()->numerify('##.###.###/####-##')
+                : fake()->numerify('###.###.###-##'),
             'email' => fake()->unique()->companyEmail(),
             'phone' => fake()->phoneNumber(),
             'is_active' => true,
-            'source' => fake()->randomElement(['indicacao', 'prospeccao', 'chamado', null]),
-            'segment' => fake()->randomElement(['industrial', 'comercial', 'laboratorial', null]),
-            'company_size' => fake()->randomElement(['micro', 'pequena', 'media', null]),
-            'rating' => fake()->randomElement(['A', 'B', 'C', null]),
+            'source' => fake()->randomElement(array_merge(array_keys(Customer::SOURCES), [null])),
+            'segment' => fake()->randomElement(array_merge(array_keys(Customer::SEGMENTS), [null])),
+            'company_size' => fake()->randomElement(array_merge(array_keys(Customer::COMPANY_SIZES), [null])),
+            'rating' => fake()->randomElement(array_merge(array_keys(Customer::RATINGS), [null])),
         ];
+    }
+
+    public function pf(): static
+    {
+        return $this->state(fn () => [
+            'type' => 'PF',
+            'trade_name' => null,
+            'document' => fake()->numerify('###.###.###-##'),
+        ]);
+    }
+
+    public function pj(): static
+    {
+        return $this->state(fn () => [
+            'type' => 'PJ',
+            'trade_name' => fake()->company(),
+            'document' => fake()->numerify('##.###.###/####-##'),
+        ]);
     }
 
     public function withContract(): static
     {
         return $this->state(fn () => [
-            'contract_type' => 'anual',
+            'contract_type' => fake()->randomElement(array_keys(Customer::CONTRACT_TYPES)),
             'contract_start' => now()->subMonths(10),
             'contract_end' => now()->addMonths(2),
         ]);
@@ -40,6 +63,13 @@ class CustomerFactory extends Factory
     {
         return $this->state(fn () => [
             'last_contact_at' => now()->subDays($days),
+        ]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn () => [
+            'is_active' => false,
         ]);
     }
 }

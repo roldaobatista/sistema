@@ -14,7 +14,7 @@ class InmetroLocationFactory extends Factory
     {
         return [
             'owner_id' => InmetroOwner::factory(),
-            'postal_code' => $this->faker->postcode,
+            'address_zip' => $this->faker->postcode,
             'address_street' => $this->faker->streetName,
             'address_number' => $this->faker->buildingNumber,
             'address_city' => $this->faker->city,

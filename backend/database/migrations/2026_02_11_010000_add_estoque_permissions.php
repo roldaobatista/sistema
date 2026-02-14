@@ -14,8 +14,8 @@ return new class extends Migration
         $now = now();
 
         $permissions = [
-            ['name' => 'estoque.movement.view', 'guard_name' => $guard, 'created_at' => $now, 'updated_at' => $now],
-            ['name' => 'estoque.movement.create', 'guard_name' => $guard, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'estoque.movement.view', 'guard_name' => $guard, 'created_at' => $now, 'updated_at' => $now, 'criticality' => 'MED'],
+            ['name' => 'estoque.movement.create', 'guard_name' => $guard, 'created_at' => $now, 'updated_at' => $now, 'criticality' => 'MED'],
         ];
 
         foreach ($permissions as $perm) {
@@ -25,7 +25,7 @@ return new class extends Migration
                 DB::table('permissions')->where('name', $perm['name'])->whereNull('group_id')->update(['group_id' => null]);
             }
             if (Schema::hasColumn('permissions', 'criticality')) {
-                DB::table('permissions')->where('name', $perm['name'])->whereNull('criticality')->update(['criticality' => 'medium']);
+                DB::table('permissions')->where('name', $perm['name'])->whereNull('criticality')->update(['criticality' => 'MED']);
             }
         }
 

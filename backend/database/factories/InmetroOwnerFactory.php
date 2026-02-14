@@ -18,8 +18,8 @@ class InmetroOwnerFactory extends Factory
             'name' => $this->faker->company,
             'trade_name' => $this->faker->company,
             'type' => 'PJ',
-            'phone' => $this->faker->phoneNumber,
-            'email' => $this->faker->companyEmail,
+            'phone' => $this->faker->unique()->phoneNumber,
+            'email' => $this->faker->unique()->companyEmail,
             'lead_status' => 'new',
             'priority' => 'normal',
         ];

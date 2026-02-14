@@ -16,6 +16,11 @@ class DatabaseSeeder extends Seeder
         // 1. Criar permissões agrupadas
         $this->createPermissions();
 
+        // Seeders de Câmeras
+        $this->call([
+            CameraSeeder::class,
+        ]);
+
         // ─── TENANT 1 ─── Calibrações Brasil ──────────────────
         $t1 = Tenant::create([
             'name' => 'Calibrações Brasil',
@@ -56,6 +61,8 @@ class DatabaseSeeder extends Seeder
         $seller = Role::create(['name' => 'vendedor', 'guard_name' => 'web']);
         $driver = Role::create(['name' => 'motorista', 'guard_name' => 'web']);
         $financeiro = Role::create(['name' => 'financeiro', 'guard_name' => 'web']);
+        $tecnicoVendedor = Role::create(['name' => 'tecnico_vendedor', 'guard_name' => 'web']);
+        $inmetroManager = Role::create(['name' => 'inmetro_manager', 'guard_name' => 'web']);
 
         // Permissões por role
         $superAdmin->givePermissionTo(Permission::all());
@@ -65,7 +72,7 @@ class DatabaseSeeder extends Seeder
             'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
             'cadastros.product.view', 'cadastros.service.view',
             'os.work_order.view', 'os.work_order.create', 'os.work_order.update', 'os.work_order.delete',
-            'os.work_order.assign', 'os.work_order.change_status',
+            'os.work_order.assign', 'os.work_order.change_status', 'os.work_order.apply_discount',
             'technicians.technician.view', 'technicians.schedule.view', 'technicians.schedule.manage',
             'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
             'finance.receivable.update', 'finance.receivable.delete',
@@ -87,10 +94,16 @@ class DatabaseSeeder extends Seeder
             'reports.suppliers_report.view', 'reports.suppliers_report.export',
             'reports.stock_report.view', 'reports.stock_report.export',
             'reports.customers_report.view', 'reports.customers_report.export',
-            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.delete', 'quotes.quote.approve', 'quotes.quote.send',
-            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update', 'service_calls.service_call.assign',
+            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.delete', 'quotes.quote.approve', 'quotes.quote.send', 'quotes.quote.convert',
+            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update', 'service_calls.service_call.delete', 'service_calls.service_call.assign',
             'central.item.view', 'central.create.task', 'central.assign', 'central.close.self', 'central.manage.kpis', 'central.manage.rules',
             'notifications.notification.view', 'notifications.notification.update',
+            'fiscal.note.view', 'fiscal.note.create', 'fiscal.note.cancel', 'fiscal.note.export',
+            'inmetro.intelligence.view',
+            'email.inbox.view', 'email.inbox.send', 'email.inbox.create_task',
+            'email.account.view', 'email.rule.view',
+            'hr.performance.view', 'hr.performance.create', 'hr.performance.update', 'hr.performance.delete', 'hr.performance.view_all', 'hr.performance.manage',
+            'hr.feedback.view', 'hr.feedback.create', 'hr.feedback.update', 'hr.feedback.delete', 'hr.feedback.view_all',
         ]);
         $technician->givePermissionTo([
             'cadastros.customer.view', 'cadastros.product.view', 'cadastros.service.view',
@@ -110,6 +123,8 @@ class DatabaseSeeder extends Seeder
             'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update',
             'central.item.view', 'central.create.task', 'central.close.self',
             'notifications.notification.view', 'notifications.notification.update',
+            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
+            'hr.feedback.view', 'hr.feedback.create',
         ]);
         $seller->givePermissionTo([
             'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
@@ -118,15 +133,21 @@ class DatabaseSeeder extends Seeder
             'commissions.rule.view', 'commissions.settlement.view',
             'reports.os_report.view', 'reports.quotes_report.view',
             'reports.customers_report.view',
-            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.send',
+            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.send', 'quotes.quote.convert',
             'service_calls.service_call.view', 'service_calls.service_call.create',
             'central.item.view', 'central.create.task', 'central.close.self',
             'notifications.notification.view', 'notifications.notification.update',
+            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
+            'hr.feedback.view', 'hr.feedback.create',
         ]);
         $driver->givePermissionTo([
             'os.work_order.view',
             'technicians.time_entry.create', 'technicians.time_entry.view',
+            'expenses.expense.create', 'expenses.expense.view',
+            'expenses.fueling_log.view', 'expenses.fueling_log.create',
             'notifications.notification.view', 'notifications.notification.update',
+            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
+            'hr.feedback.view', 'hr.feedback.create',
         ]);
         $financeiro->givePermissionTo([
             'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
@@ -147,6 +168,48 @@ class DatabaseSeeder extends Seeder
             'reports.margin_report.view', 'reports.margin_report.export',
             'central.item.view', 'central.create.task', 'central.close.self', 'central.manage.kpis', 'central.manage.rules',
             'notifications.notification.view', 'notifications.notification.update',
+            'fiscal.note.view', 'fiscal.note.create', 'fiscal.note.cancel', 'fiscal.note.export',
+            'email.inbox.view', 'email.inbox.send', 'email.inbox.create_task',
+            'email.account.view', 'email.rule.view',
+            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
+            'hr.feedback.view', 'hr.feedback.create',
+        ]);
+
+        // GAP-16: tecnico_vendedor — combina permissões de técnico + vendedor
+        $tecnicoVendedor->givePermissionTo([
+            // Cadastros
+            'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
+            'cadastros.product.view', 'cadastros.service.view',
+            // OS
+            'os.work_order.view', 'os.work_order.create', 'os.work_order.update', 'os.work_order.change_status',
+            // Técnico
+            'technicians.time_entry.create', 'technicians.time_entry.view',
+            'technicians.cashbox.view', 'technicians.cashbox.manage',
+            // Despesas
+            'expenses.expense.create', 'expenses.expense.view', 'expenses.expense.update',
+            // Comissões (somente visualização)
+            'commissions.rule.view', 'commissions.settlement.view',
+            // Orçamentos
+            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.send', 'quotes.quote.convert',
+            // Relatórios
+            'reports.os_report.view', 'reports.quotes_report.view', 'reports.customers_report.view',
+            // Chamados
+            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update',
+            // Sistema
+            'notifications.notification.view', 'notifications.notification.update',
+            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
+            'hr.feedback.view', 'hr.feedback.create',
+        ]);
+
+        // inmetro_manager — full INMETRO intelligence + customer view
+        $inmetroManager->givePermissionTo([
+            'inmetro.intelligence.view', 'inmetro.intelligence.import',
+            'inmetro.intelligence.enrich', 'inmetro.intelligence.convert',
+            'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
+            'cadastros.product.view', 'cadastros.service.view',
+            'reports.customers_report.view', 'reports.customers_report.export',
+            'notifications.notification.view', 'notifications.notification.update',
+            'platform.dashboard.view',
         ]);
 
         // ── Usuários ──────────────────
@@ -237,7 +300,7 @@ class DatabaseSeeder extends Seeder
                 'supplier' => ['view', 'create', 'update', 'delete'],
             ],
             'os' => [
-                'work_order' => ['view', 'create', 'update', 'delete', 'assign', 'change_status', 'print', 'export'],
+                'work_order' => ['view', 'create', 'update', 'delete', 'assign', 'change_status', 'print', 'export', 'authorize_dispatch', 'apply_discount'],
             ],
             'technicians' => [
                 'technician' => ['view', 'create', 'update', 'delete'],
@@ -254,14 +317,15 @@ class DatabaseSeeder extends Seeder
             ],
             'commissions' => [
                 'rule' => ['view', 'create', 'update', 'delete'],
-                'settlement' => ['view', 'create', 'approve'],
+                'settlement' => ['view', 'create', 'approve', 'reject'],
                 'dispute' => ['view', 'create', 'resolve'],
                 'goal' => ['view', 'create', 'update', 'delete'],
                 'campaign' => ['view', 'create', 'update', 'delete'],
                 'recurring' => ['view', 'create', 'update', 'delete'],
             ],
             'expenses' => [
-                'expense' => ['view', 'create', 'update', 'delete', 'approve'],
+                'expense' => ['view', 'create', 'update', 'delete', 'review', 'approve'],
+                'fueling_log' => ['view', 'create', 'update', 'delete', 'approve'],
             ],
             'settings' => [
                 'general' => ['view', 'manage'],
@@ -269,7 +333,7 @@ class DatabaseSeeder extends Seeder
                 'template' => ['view', 'manage'],
             ],
             'quotes' => [
-                'quote' => ['view', 'create', 'update', 'delete', 'approve', 'send'],
+                'quote' => ['view', 'create', 'update', 'delete', 'internal_approve', 'approve', 'send', 'convert'],
             ],
             'service_calls' => [
                 'service_call' => ['view', 'create', 'update', 'delete', 'assign'],
@@ -308,6 +372,21 @@ class DatabaseSeeder extends Seeder
             ],
             'inmetro' => [
                 'intelligence' => ['view', 'import', 'enrich', 'convert'],
+            ],
+            'fiscal' => [
+                'note' => ['view', 'create', 'cancel', 'export'],
+            ],
+            'email' => [
+                'inbox' => ['view', 'send', 'create_task'],
+                'account' => ['view', 'create', 'update', 'delete', 'sync'],
+                'rule' => ['view', 'create', 'update', 'delete'],
+            ],
+            'hr' => [
+                'performance' => ['view', 'create', 'update', 'delete', 'view_all', 'manage'],
+                'feedback' => ['view', 'create', 'update', 'delete', 'view_all'],
+            ],
+            'ai' => [
+                'analytics' => ['view'],
             ],
         ];
 
