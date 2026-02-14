@@ -66,7 +66,7 @@ export default function InmetroProspectionPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">ProspecÃ§Ã£o Inteligente</h1>
+                    <h1 className="text-2xl font-bold">Prospecção Inteligente</h1>
                     <p className="text-muted-foreground">Fila de contatos, follow-ups e alertas</p>
                 </div>
                 <Button onClick={() => generateQueue.mutate()} disabled={generateQueue.isPending}>
@@ -152,7 +152,7 @@ export default function InmetroProspectionPage() {
                                             <TableHead>Lead</TableHead>
                                             <TableHead>Motivo</TableHead>
                                             <TableHead>Status</TableHead>
-                                            <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                                            <TableHead className="text-right">Ações</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -200,7 +200,7 @@ export default function InmetroProspectionPage() {
                                                                 </DialogTrigger>
                                                                 <DialogContent>
                                                                     <DialogHeader>
-                                                                        <DialogTitle>Registrar InteraÃ§Ã£o</DialogTitle>
+                                                                        <DialogTitle>Registrar Interação</DialogTitle>
                                                                     </DialogHeader>
                                                                     <div className="space-y-4">
                                                                         <Select value={interactionForm.channel} onValueChange={v => setInteractionForm(f => ({ ...f, channel: v }))}>
@@ -290,7 +290,7 @@ export default function InmetroProspectionPage() {
 
                 <TabsContent value="rejected">
                     <Card>
-                        <CardHeader><CardTitle>Instrumentos Reprovados â€” AÃ§Ã£o Imediata</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Instrumentos Reprovados â€” Ação Imediata</CardTitle></CardHeader>
                         <CardContent>
                             {!rejectAlerts?.alerts?.length ? (
                                 <p className="text-center py-8 text-muted-foreground">Nenhum instrumento reprovado recente</p>
@@ -299,9 +299,9 @@ export default function InmetroProspectionPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>NÂº INMETRO</TableHead>
-                                            <TableHead>ProprietÃ¡rio</TableHead>
+                                            <TableHead>Proprietário</TableHead>
                                             <TableHead>Tipo</TableHead>
-                                            <TableHead>Data ReprovaÃ§Ã£o</TableHead>
+                                            <TableHead>Data Reprovação</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -331,7 +331,7 @@ export default function InmetroProspectionPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Cliente</TableHead>
-                                            <TableHead>Ãšltima CalibraÃ§Ã£o</TableHead>
+                                            <TableHead>Ãšltima Calibração</TableHead>
                                             <TableHead>Instrumentos</TableHead>
                                             <TableHead>Risco</TableHead>
                                         </TableRow>

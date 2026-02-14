@@ -36,13 +36,13 @@ const ENTITY_LABELS: Record<string, string> = {
     customer_groups: 'Grupos',
     equipments: 'Equipamentos',
     products: 'Produtos',
-    services: 'ServiÃ§os',
-    tasks: 'Ordens de ServiÃ§o',
+    services: 'Serviços',
+    tasks: 'Ordens de Serviço',
     task_types: 'Tipos de Tarefa',
-    quotations: 'OrÃ§amentos',
+    quotations: 'Orçamentos',
     tickets: 'Chamados',
     expenses: 'Despesas',
-    users: 'UsuÃ¡rios',
+    users: 'Usuários',
     teams: 'Equipes',
     keywords: 'Palavras-chave',
 }
@@ -103,7 +103,7 @@ export function AuvoImportPage() {
     }
 
     const handleRollback = (id: number) => {
-        if (confirm('Tem certeza que deseja reverter esta importaÃ§Ã£o? Todos os registros importados serÃ£o excluÃ­dos.')) {
+        if (confirm('Tem certeza que deseja reverter esta importação? Todos os registros importados serão excluídos.')) {
             rollback.mutate(id)
         }
     }
@@ -113,7 +113,7 @@ export function AuvoImportPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-surface-900">IntegraÃ§Ã£o Auvo</h1>
+                    <h1 className="text-xl font-bold text-surface-900">Integração Auvo</h1>
                     <p className="text-sm text-surface-500 mt-0.5">
                         Importe dados do Auvo para o Kalibrium
                     </p>
@@ -122,7 +122,7 @@ export function AuvoImportPage() {
                     <select
                         value={strategy}
                         onChange={e => setStrategy(e.target.value as 'skip' | 'update')}
-                        aria-label="EstratÃ©gia de importaÃ§Ã£o"
+                        aria-label="Estratégia de importação"
                         className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm font-medium text-surface-700"
                     >
                         <option value="skip">Pular duplicados</option>
@@ -164,7 +164,7 @@ export function AuvoImportPage() {
                                 {connection?.connected ? 'Conectado ao Auvo' : 'Desconectado'}
                             </p>
                             <p className="text-xs text-surface-500 mt-0.5">
-                                {connection?.message || 'Verificando conexÃ£o...'}
+                                {connection?.message || 'Verificando conexão...'}
                             </p>
                         </div>
                     </div>
@@ -192,7 +192,7 @@ export function AuvoImportPage() {
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-sm">
                     <h2 className="text-sm font-semibold text-surface-900 mb-3">Credenciais da API Auvo</h2>
                     <p className="text-xs text-surface-500 mb-4">
-                        Insira a API Key e o API Token da sua conta Auvo. VocÃª encontra essas credenciais no painel administrativo do Auvo.
+                        Insira a API Key e o API Token da sua conta Auvo. Você encontra essas credenciais no painel administrativo do Auvo.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -336,7 +336,7 @@ export function AuvoImportPage() {
             {(history?.data?.length ?? 0) > 0 && (
                 <div className="rounded-xl border border-default bg-surface-0 shadow-sm">
                     <div className="border-b border-subtle px-5 py-3">
-                        <h2 className="text-sm font-semibold text-surface-900">HistÃ³rico de ImportaÃ§Ãµes</h2>
+                        <h2 className="text-sm font-semibold text-surface-900">Histórico de Importações</h2>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -349,8 +349,8 @@ export function AuvoImportPage() {
                                     <th className="px-4 py-2.5 text-right font-medium text-surface-500">Atualizados</th>
                                     <th className="px-4 py-2.5 text-right font-medium text-surface-500">Erros</th>
                                     <th className="px-4 py-2.5 text-left font-medium text-surface-500">Data</th>
-                                    <th className="px-4 py-2.5 text-left font-medium text-surface-500">UsuÃ¡rio</th>
-                                    <th className="px-4 py-2.5 text-right font-medium text-surface-500">AÃ§Ãµes</th>
+                                    <th className="px-4 py-2.5 text-left font-medium text-surface-500">Usuário</th>
+                                    <th className="px-4 py-2.5 text-right font-medium text-surface-500">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-subtle">
@@ -413,11 +413,11 @@ export function AuvoImportPage() {
                     <div className="rounded-2xl border border-default bg-surface-0 p-6 shadow-xl max-w-md w-full mx-4">
                         <h3 className="text-lg font-bold text-surface-900">Importar Tudo</h3>
                         <p className="mt-2 text-sm text-surface-600">
-                            Isso irÃ¡ importar todas as entidades do Auvo na ordem correta de dependÃªncia.
+                            Isso irá importar todas as entidades do Auvo na ordem correta de dependência.
                             O processo pode levar alguns minutos.
                         </p>
                         <p className="mt-2 text-xs text-surface-500">
-                            EstratÃ©gia: <strong>{strategy === 'skip' ? 'Pular duplicados' : 'Atualizar existentes'}</strong>
+                            Estratégia: <strong>{strategy === 'skip' ? 'Pular duplicados' : 'Atualizar existentes'}</strong>
                         </p>
                         <div className="mt-5 flex justify-end gap-2">
                             <button
@@ -430,7 +430,7 @@ export function AuvoImportPage() {
                                 onClick={handleImportAll}
                                 className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
                             >
-                                Confirmar ImportaÃ§Ã£o
+                                Confirmar Importação
                             </button>
                         </div>
                     </div>

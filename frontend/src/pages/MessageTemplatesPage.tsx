@@ -33,7 +33,7 @@ export function MessageTemplatesPage() {
     const deleteMut = useMutation({
         mutationFn: (id: number) => crmApi.deleteMessageTemplate(id),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
         },
     })
@@ -48,7 +48,7 @@ export function MessageTemplatesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Templates de Mensagem</h1>
-                    <p className="text-[13px] text-surface-500 mt-1">Modelos reutilizÃ¡veis para WhatsApp e E-mail</p>
+                    <p className="text-[13px] text-surface-500 mt-1">Modelos reutilizáveis para WhatsApp e E-mail</p>
                 </div>
                 <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
                     <Plus className="h-4 w-4 mr-1" />
@@ -195,7 +195,7 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
     const createMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.createMessageTemplate(data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
             onClose()
         },
@@ -204,7 +204,7 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
     const updateMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.updateMessageTemplate(template!.id, data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
             onClose()
         },
@@ -310,12 +310,12 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <label className="text-xs font-medium text-surface-500">Corpo da mensagem</label>
-                                <span className="text-[10px] text-surface-400">Use {'{{nome}}'}, {'{{valor}}'} para variÃ¡veis</span>
+                                <span className="text-[10px] text-surface-400">Use {'{{nome}}'}, {'{{valor}}'} para variáveis</span>
                             </div>
                             <textarea
                                 value={body}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
-                                placeholder="OlÃ¡ {{nome}}, ..."
+                                placeholder="Olá {{nome}}, ..."
                                 rows={6}
                                 className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2.5 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none font-mono"
                             />

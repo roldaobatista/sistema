@@ -24,7 +24,7 @@ const tabs = ['schedules', 'clock', 'trainings', 'reviews', 'feedback', 'dashboa
 type Tab = typeof tabs[number]
 const tabLabels: Record<Tab, string> = {
     schedules: 'Escalas', clock: 'Ponto', trainings: 'Treinamentos',
-    reviews: 'AvaliaÃ§Ãµes', feedback: 'Feedback', dashboard: 'Dashboard'
+    reviews: 'Avaliações', feedback: 'Feedback', dashboard: 'Dashboard'
 }
 
 export default function HRPage() {
@@ -109,7 +109,7 @@ export default function HRPage() {
 
     return (
         <div className="space-y-5">
-            <PageHeader title="Recursos Humanos" subtitle="Escalas, ponto, treinamentos e avaliaÃ§Ãµes" />
+            <PageHeader title="Recursos Humanos" subtitle="Escalas, ponto, treinamentos e avaliações" />
 
             <div className="flex gap-1 rounded-xl border border-default bg-surface-50 p-1">
                 {tabs.map(t => (
@@ -127,7 +127,7 @@ export default function HRPage() {
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">TÃ©cnico</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Técnico</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Tipo</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Turno</th>
@@ -141,7 +141,7 @@ export default function HRPage() {
                                     <td className="px-4 py-3 text-surface-600">{s.schedule_date ? new Date(s.schedule_date).toLocaleDateString('pt-BR') : 'â€”'}</td>
                                     <td className="px-4 py-3"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                                         s.type === 'work' ? 'bg-emerald-100 text-emerald-700' : s.type === 'off' ? 'bg-surface-100 text-surface-600' : 'bg-amber-100 text-amber-700'
-                                    )}>{s.type === 'work' ? 'Trabalho' : s.type === 'off' ? 'Folga' : s.type === 'vacation' ? 'FÃ©rias' : s.type}</span></td>
+                                    )}>{s.type === 'work' ? 'Trabalho' : s.type === 'off' ? 'Folga' : s.type === 'vacation' ? 'Férias' : s.type}</span></td>
                                     <td className="px-4 py-3 text-surface-600">{s.shift ?? 'â€”'}</td>
                                 </tr>
                             ))}
@@ -155,9 +155,9 @@ export default function HRPage() {
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">TÃ©cnico</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Técnico</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Entrada</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">SaÃ­da</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Saída</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Horas</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">GPS</th>
                         </tr></thead>
@@ -183,8 +183,8 @@ export default function HRPage() {
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">TÃ­tulo</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">TÃ©cnico</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Título</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Técnico</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Tipo</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
@@ -200,7 +200,7 @@ export default function HRPage() {
                                     <td className="px-4 py-3 text-surface-600">{t.completed_at ? new Date(t.completed_at).toLocaleDateString('pt-BR') : 'â€”'}</td>
                                     <td className="px-4 py-3"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                                         t.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
-                                    )}>{t.status === 'completed' ? 'ConcluÃ­do' : 'Pendente'}</span></td>
+                                    )}>{t.status === 'completed' ? 'Concluído' : 'Pendente'}</span></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -213,19 +213,19 @@ export default function HRPage() {
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">TÃ­tulo</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Título</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Colaborador</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Avaliador</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Ciclo</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
-                            <th className="px-4 py-2.5 text-right font-semibold text-surface-600">AÃ§Ãµes</th>
+                            <th className="px-4 py-2.5 text-right font-semibold text-surface-600">Ações</th>
                         </tr></thead>
                         <tbody className="divide-y divide-subtle">
                             {loadingReviews && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
-                            {!loadingReviews && reviews?.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Nenhuma avaliaÃ§Ã£o encontrada.</td></tr>}
+                            {!loadingReviews && reviews?.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Nenhuma avaliação encontrada.</td></tr>}
                             {reviews?.map((review: any) => (
                                 <tr key={review.id} className="transition-colors hover:bg-surface-50/50">
-                                    <td className="px-4 py-3 font-medium text-surface-900">{review.title || 'AvaliaÃ§Ã£o'}</td>
+                                    <td className="px-4 py-3 font-medium text-surface-900">{review.title || 'Avaliação'}</td>
                                     <td className="px-4 py-3 text-surface-600">{review.user?.name}</td>
                                     <td className="px-4 py-3 text-surface-600">{review.reviewer?.name}</td>
                                     <td className="px-4 py-3 text-surface-600">{review.cycle}</td>
@@ -238,7 +238,7 @@ export default function HRPage() {
                                         )}>
                                             {review.status === 'in_progress' ? 'Em Andamento' :
                                                 review.status === 'draft' ? 'Rascunho' :
-                                                    review.status === 'completed' ? 'ConcluÃ­do' : review.status}
+                                                    review.status === 'completed' ? 'Concluído' : review.status}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-right">
@@ -299,8 +299,8 @@ export default function HRPage() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="praise">Elogio</SelectItem>
-                                                    <SelectItem value="suggestion">SugestÃ£o</SelectItem>
-                                                    <SelectItem value="concern">PreocupaÃ§Ã£o</SelectItem>
+                                                    <SelectItem value="suggestion">Sugestão</SelectItem>
+                                                    <SelectItem value="concern">Preocupação</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -314,7 +314,7 @@ export default function HRPage() {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="public">PÃºblico</SelectItem>
+                                                    <SelectItem value="public">Público</SelectItem>
                                                     <SelectItem value="private">Privado</SelectItem>
                                                     <SelectItem value="manager_only">Apenas Gestor</SelectItem>
                                                 </SelectContent>
@@ -360,7 +360,7 @@ export default function HRPage() {
                                                     f.type === 'suggestion' ? "bg-blue-100 text-blue-700" :
                                                         "bg-amber-100 text-amber-700"
                                             )}>
-                                                {f.type === 'praise' ? 'Elogio' : f.type === 'suggestion' ? 'SugestÃ£o' : 'PreocupaÃ§Ã£o'}
+                                                {f.type === 'praise' ? 'Elogio' : f.type === 'suggestion' ? 'Sugestão' : 'Preocupação'}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-surface-600 max-w-md truncate" title={f.content}>{f.content}</td>
@@ -381,7 +381,7 @@ export default function HRPage() {
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-brand-50 p-2"><Users size={20} className="text-brand-600" /></div>
-                            <div><p className="text-2xl font-bold text-surface-900">{dashboard.total_technicians}</p><p className="text-xs text-surface-500">TÃ©cnicos</p></div>
+                            <div><p className="text-2xl font-bold text-surface-900">{dashboard.total_technicians}</p><p className="text-xs text-surface-500">Técnicos</p></div>
                         </div>
                     </div>
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-card">
@@ -399,7 +399,7 @@ export default function HRPage() {
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-card">
                         <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-amber-100 p-2"><Calendar size={20} className="text-amber-600" /></div>
-                            <div><p className="text-2xl font-bold text-amber-700">{dashboard.pending_reviews}</p><p className="text-xs text-amber-600">AvaliaÃ§Ãµes Pendentes</p></div>
+                            <div><p className="text-2xl font-bold text-amber-700">{dashboard.pending_reviews}</p><p className="text-xs text-amber-600">Avaliações Pendentes</p></div>
                         </div>
                     </div>
                 </div>

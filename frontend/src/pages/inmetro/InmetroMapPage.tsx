@@ -77,7 +77,7 @@ export function InmetroMapPage() {
         return true
     })
 
-    const defaultCenter: [number, number] = [-15.78, -47.93] // BrasÃ­lia
+    const defaultCenter: [number, number] = [-15.78, -47.93] // Brasília
 
     return (
         <div className="space-y-4">
@@ -107,7 +107,7 @@ export function InmetroMapPage() {
                             className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors disabled:opacity-50"
                         >
                             {distanceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-                            Calcular DistÃ¢ncias
+                            Calcular Distâncias
                         </button>
                     )}
                     <button

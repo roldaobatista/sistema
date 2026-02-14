@@ -12,14 +12,14 @@ import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 
-// â”€â”€ ConfiguraÃ§Ãµes visuais â”€â”€
+// â”€â”€ Configurações visuais â”€â”€
 
 const tipoConfig: Record<string, { label: string; icon: any; color: string }> = {
     os: { label: 'OS', icon: Wrench, color: 'text-blue-600 bg-blue-50' },
     chamado: { label: 'Chamado', icon: Phone, color: 'text-cyan-600 bg-cyan-50' },
-    orcamento: { label: 'OrÃ§amento', icon: FileText, color: 'text-amber-600 bg-amber-50' },
+    orcamento: { label: 'Orçamento', icon: FileText, color: 'text-amber-600 bg-amber-50' },
     financeiro: { label: 'Financeiro', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50' },
-    calibracao: { label: 'CalibraÃ§Ã£o', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50' },
+    calibracao: { label: 'Calibração', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50' },
     contrato: { label: 'Contrato', icon: FileText, color: 'text-rose-600 bg-rose-50' },
     tarefa: { label: 'Tarefa', icon: CheckCircle, color: 'text-surface-600 bg-surface-50' },
     lembrete: { label: 'Lembrete', icon: Clock, color: 'text-surface-500 bg-surface-50' },
@@ -28,14 +28,14 @@ const tipoConfig: Record<string, { label: string; icon: any; color: string }> = 
 const statusConfig: Record<string, { label: string; variant: any }> = {
     aberto: { label: 'Aberto', variant: 'info' },
     em_andamento: { label: 'Em Andamento', variant: 'warning' },
-    concluido: { label: 'ConcluÃ­do', variant: 'success' },
+    concluido: { label: 'Concluído', variant: 'success' },
     cancelado: { label: 'Cancelado', variant: 'danger' },
     aguardando: { label: 'Aguardando', variant: 'default' },
 }
 
 const prioridadeConfig: Record<string, { label: string; color: string; bg: string }> = {
     baixa: { label: 'Baixa', color: 'text-surface-500', bg: '' },
-    media: { label: 'MÃ©dia', color: 'text-blue-600', bg: '' },
+    media: { label: 'Média', color: 'text-blue-600', bg: '' },
     alta: { label: 'Alta', color: 'text-amber-600', bg: 'bg-amber-50' },
     urgente: { label: 'Urgente', color: 'text-red-600', bg: 'bg-red-50' },
 }
@@ -97,7 +97,7 @@ export function CentralPage() {
     const createMut = useMutation({
         mutationFn: () => api.post('/central/items', form),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-items'] })
             qc.invalidateQueries({ queryKey: ['central-summary'] })
             setShowCreate(false)
@@ -109,7 +109,7 @@ export function CentralPage() {
     const updateMut = useMutation({
         mutationFn: ({ id, data }: { id: number; data: any }) => api.patch(`/central/items/${id}`, data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-items'] })
             qc.invalidateQueries({ queryKey: ['central-summary'] })
         },
@@ -120,7 +120,7 @@ export function CentralPage() {
         mutationFn: ({ id, userId }: { id: number; userId: number }) =>
             api.post(`/central/items/${id}/assign`, { responsavel_user_id: userId }),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-items'] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atribuir'),
@@ -130,7 +130,7 @@ export function CentralPage() {
         mutationFn: ({ id, body }: { id: number; body: string }) =>
             api.post(`/central/items/${id}/comments`, { body }),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             setComment('')
             if (showDetail) fetchDetail(showDetail.id)
         },
@@ -288,8 +288,8 @@ export function CentralPage() {
             {/* â”€â”€ Modal Criar Tarefa â”€â”€ */}
             <Modal open={showCreate} onOpenChange={(v) => { if (!v) setShowCreate(false) }} title="Nova Tarefa">
                 <div className="space-y-4">
-                    <Input label="TÃ­tulo" value={form.titulo} onChange={(e: any) => setForm(f => ({ ...f, titulo: e.target.value }))} />
-                    <Input label="DescriÃ§Ã£o" value={form.descricao_curta} onChange={(e: any) => setForm(f => ({ ...f, descricao_curta: e.target.value }))} />
+                    <Input label="Título" value={form.titulo} onChange={(e: any) => setForm(f => ({ ...f, titulo: e.target.value }))} />
+                    <Input label="Descrição" value={form.descricao_curta} onChange={(e: any) => setForm(f => ({ ...f, descricao_curta: e.target.value }))} />
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-[13px] font-medium text-surface-700">Tipo</label>
@@ -336,7 +336,7 @@ export function CentralPage() {
                             <div><span className="text-surface-500">Prioridade:</span> <span className={`font-medium ${prioridadeConfig[showDetail.prioridade]?.color ?? ''}`}>{prioridadeConfig[showDetail.prioridade]?.label ?? showDetail.prioridade}</span></div>
                             <div><span className="text-surface-500">Tipo:</span> {tipoConfig[showDetail.tipo]?.label ?? showDetail.tipo}</div>
                             <div><span className="text-surface-500">Prazo:</span> {formatDate(showDetail.due_at)}</div>
-                            <div><span className="text-surface-500">ResponsÃ¡vel:</span> {showDetail.responsavel?.name ?? 'â€”'}</div>
+                            <div><span className="text-surface-500">Responsável:</span> {showDetail.responsavel?.name ?? 'â€”'}</div>
                             <div><span className="text-surface-500">Criado em:</span> {formatDate(showDetail.created_at)}</div>
                         </div>
 
@@ -362,7 +362,7 @@ export function CentralPage() {
 
                         {/* Comments */}
                         <div className="border-t border-subtle pt-3">
-                            <h4 className="text-sm font-semibold text-surface-700 mb-2">ComentÃ¡rios</h4>
+                            <h4 className="text-sm font-semibold text-surface-700 mb-2">Comentários</h4>
                             <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {(showDetail.comments ?? []).map((c: any) => (
                                     <div key={c.id} className="rounded-lg bg-surface-50 p-2">
@@ -372,7 +372,7 @@ export function CentralPage() {
                                 ))}
                             </div>
                             <div className="mt-2 flex gap-2">
-                                <input value={comment} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComment(e.target.value)} placeholder="Adicionar comentÃ¡rio..."
+                                <input value={comment} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComment(e.target.value)} placeholder="Adicionar comentário..."
                                     className="flex-1 rounded-lg border border-surface-300 px-3 py-2 text-sm" />
                                 <Button size="sm" onClick={() => commentMut.mutate({ id: showDetail.id, body: comment })} loading={commentMut.isPending}
                                     disabled={!comment.trim()}>Enviar</Button>
@@ -382,7 +382,7 @@ export function CentralPage() {
                         {/* History */}
                         {(showDetail.history ?? []).length > 0 && (
                             <div className="border-t border-subtle pt-3">
-                                <h4 className="text-sm font-semibold text-surface-700 mb-2">HistÃ³rico</h4>
+                                <h4 className="text-sm font-semibold text-surface-700 mb-2">Histórico</h4>
                                 <div className="space-y-1 text-xs text-surface-500 max-h-32 overflow-y-auto">
                                     {(showDetail.history ?? []).map((h: any) => (
                                         <div key={h.id} className="flex gap-2">

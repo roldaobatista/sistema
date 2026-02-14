@@ -7,9 +7,9 @@ import api from '@/lib/api'
 const itemTypes = [
     { value: 'check', label: 'Checkbox' },
     { value: 'text', label: 'Texto' },
-    { value: 'number', label: 'NÃºmero' },
+    { value: 'number', label: 'Número' },
     { value: 'photo', label: 'Foto' },
-    { value: 'yes_no', label: 'Sim/NÃ£o' },
+    { value: 'yes_no', label: 'Sim/Não' },
 ]
 
 interface ChecklistItem {
@@ -48,7 +48,7 @@ export function ServiceChecklistsPage() {
                 ? api.put(`/service-checklists/${editing.id}`, payload)
                 : api.post('/service-checklists', payload),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['service-checklists'] })
             resetForm()
         },
@@ -57,7 +57,7 @@ export function ServiceChecklistsPage() {
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/service-checklists/${id}`),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['service-checklists'] })
         },
     })
@@ -106,7 +106,7 @@ export function ServiceChecklistsPage() {
     return (
         <div className="space-y-5">
             <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Checklists de ServiÃ§o</h1>
+                <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Checklists de Serviço</h1>
                 <button onClick={openNew} className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors">
                     <Plus className="h-4 w-4" /> Novo Checklist
                 </button>
@@ -122,7 +122,7 @@ export function ServiceChecklistsPage() {
                             <input value={formName} onChange={e => setFormName(e.target.value)} className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
                         </div>
                         <div>
-                            <label className="block text-[13px] font-medium text-surface-700 mb-1">DescriÃ§Ã£o</label>
+                            <label className="block text-[13px] font-medium text-surface-700 mb-1">Descrição</label>
                             <input value={formDesc} onChange={e => setFormDesc(e.target.value)} className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
                         </div>
                     </div>
@@ -138,7 +138,7 @@ export function ServiceChecklistsPage() {
                                 <input
                                     value={item.description}
                                     onChange={e => updateItem(idx, 'description', e.target.value)}
-                                    placeholder="DescriÃ§Ã£o do item..."
+                                    placeholder="Descrição do item..."
                                     className="flex-1 rounded border border-surface-300 px-2 py-1.5 text-sm"
                                 />
                                 <select

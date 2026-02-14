@@ -56,7 +56,7 @@ export function CentralRulesPage() {
                 : api.post('/central/rules', payload)
         },
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-rules'] })
             resetForm()
         },
@@ -65,7 +65,7 @@ export function CentralRulesPage() {
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/central/rules/${id}`),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-rules'] })
         },
     })
@@ -74,7 +74,7 @@ export function CentralRulesPage() {
         mutationFn: ({ id, ativo }: { id: number; ativo: boolean }) =>
             api.patch(`/central/rules/${id}`, { ativo }),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['central-rules'] })
         },
     })
@@ -110,8 +110,8 @@ export function CentralRulesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Regras de AutomaÃ§Ã£o</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Configure aÃ§Ãµes automÃ¡ticas para itens da Central</p>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Regras de Automação</h1>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Configure ações automáticas para itens da Central</p>
                 </div>
                 <Button icon={<Plus className="h-4 w-4" />} onClick={() => { resetForm(); setShowForm(true) }}>
                     Nova Regra
@@ -126,8 +126,8 @@ export function CentralRulesPage() {
             ) : rules.length === 0 ? (
                 <div className="rounded-xl border border-default bg-surface-0 py-16 text-center">
                     <Zap className="mx-auto h-12 w-12 text-surface-300" />
-                    <p className="mt-3 text-[13px] text-surface-500">Nenhuma regra de automaÃ§Ã£o criada</p>
-                    <p className="text-xs text-surface-400 mt-1">Clique em "Nova Regra" para comeÃ§ar</p>
+                    <p className="mt-3 text-[13px] text-surface-500">Nenhuma regra de automação criada</p>
+                    <p className="text-xs text-surface-400 mt-1">Clique em "Nova Regra" para começar</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -162,7 +162,7 @@ export function CentralRulesPage() {
                                         <p className="text-xs text-surface-500 mt-0.5">
                                             {acao.label}
                                             {rule.tipo_item && <> â€¢ Tipo: <span className="font-medium">{rule.tipo_item}</span></>}
-                                            {rule.prioridade_minima && <> â€¢ Prioridade mÃ­n: <span className="font-medium">{rule.prioridade_minima}</span></>}
+                                            {rule.prioridade_minima && <> â€¢ Prioridade mín: <span className="font-medium">{rule.prioridade_minima}</span></>}
                                             {rule.responsavel?.name && <> â†’ <span className="font-medium">{rule.responsavel.name}</span></>}
                                             {rule.role_alvo && <> â†’ Role: <span className="font-medium">{rule.role_alvo}</span></>}
                                         </p>
@@ -188,17 +188,17 @@ export function CentralRulesPage() {
 
             {/* â”€â”€ Modal Criar/Editar â”€â”€ */}
             <Modal open={showForm} onOpenChange={(v) => { if (!v) resetForm() }}
-                title={editingId ? 'Editar Regra' : 'Nova Regra de AutomaÃ§Ã£o'}>
+                title={editingId ? 'Editar Regra' : 'Nova Regra de Automação'}>
                 <div className="space-y-4">
                     <Input label="Nome da Regra" value={form.nome}
                         onChange={(e: any) => setF('nome', e.target.value)} placeholder="Ex: Auto-atribuir OS urgentes" />
 
-                    <Input label="DescriÃ§Ã£o" value={form.descricao}
+                    <Input label="Descrição" value={form.descricao}
                         onChange={(e: any) => setF('descricao', e.target.value)} placeholder="Opcional" />
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[13px] font-medium text-surface-700">Tipo de AÃ§Ã£o</label>
+                            <label className="text-[13px] font-medium text-surface-700">Tipo de Ação</label>
                             <select value={form.acao_tipo} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setF('acao_tipo', e.target.value)}
                                 className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
                                 <option value="auto_assign">Auto-atribuir</option>
@@ -214,9 +214,9 @@ export function CentralRulesPage() {
                                 <option value="">Qualquer</option>
                                 <option value="os">OS</option>
                                 <option value="chamado">Chamado</option>
-                                <option value="orcamento">OrÃ§amento</option>
+                                <option value="orcamento">Orçamento</option>
                                 <option value="financeiro">Financeiro</option>
-                                <option value="calibracao">CalibraÃ§Ã£o</option>
+                                <option value="calibracao">Calibração</option>
                                 <option value="tarefa">Tarefa</option>
                             </select>
                         </div>
@@ -224,12 +224,12 @@ export function CentralRulesPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[13px] font-medium text-surface-700">Prioridade MÃ­nima</label>
+                            <label className="text-[13px] font-medium text-surface-700">Prioridade Mínima</label>
                             <select value={form.prioridade_minima} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setF('prioridade_minima', e.target.value)}
                                 className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
                                 <option value="">Sem filtro</option>
                                 <option value="baixa">Baixa</option>
-                                <option value="media">MÃ©dia</option>
+                                <option value="media">Média</option>
                                 <option value="alta">Alta</option>
                                 <option value="urgente">Urgente</option>
                             </select>
@@ -238,7 +238,7 @@ export function CentralRulesPage() {
                             onChange={(e: any) => setF('evento_trigger', e.target.value)} placeholder="Ex: WorkOrderCreated" />
                     </div>
 
-                    {/* AÃ§Ã£o-specific config */}
+                    {/* Ação-specific config */}
                     {form.acao_tipo === 'auto_assign' && (
                         <div className="grid grid-cols-2 gap-4 rounded-lg bg-blue-50/50 p-3">
                             <div>
@@ -263,7 +263,7 @@ export function CentralRulesPage() {
                                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setF('acao_config', { prioridade: e.target.value })}
                                 className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
                                 <option value="baixa">Baixa</option>
-                                <option value="media">MÃ©dia</option>
+                                <option value="media">Média</option>
                                 <option value="alta">Alta</option>
                                 <option value="urgente">Urgente</option>
                             </select>

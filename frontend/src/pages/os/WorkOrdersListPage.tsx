@@ -19,9 +19,9 @@ import { toast } from 'sonner'
 const statusConfig: Record<string, { label: string; variant: any; dot?: boolean }> = {
     open: { label: 'Aberta', variant: 'info', dot: true },
     in_progress: { label: 'Em Andamento', variant: 'warning', dot: true },
-    waiting_parts: { label: 'Aguard. PeÃ§as', variant: 'warning' },
-    waiting_approval: { label: 'Aguard. AprovaÃ§Ã£o', variant: 'brand' },
-    completed: { label: 'ConcluÃ­da', variant: 'success', dot: true },
+    waiting_parts: { label: 'Aguard. Peças', variant: 'warning' },
+    waiting_approval: { label: 'Aguard. Aprovação', variant: 'brand' },
+    completed: { label: 'Concluída', variant: 'success', dot: true },
     delivered: { label: 'Entregue', variant: 'success' },
     invoiced: { label: 'Faturada', variant: 'brand' },
     cancelled: { label: 'Cancelada', variant: 'danger' },
@@ -92,7 +92,7 @@ export function WorkOrdersListPage() {
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/work-orders/${id}`),
         onSuccess: () => {
-            toast.success('OS excluÃ­da com sucesso')
+            toast.success('OS excluída com sucesso')
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             setDeleteId(null)
         },
@@ -120,7 +120,7 @@ export function WorkOrdersListPage() {
             link.click()
             link.remove()
             window.URL.revokeObjectURL(url)
-            toast.success('ExportaÃ§Ã£o concluÃ­da')
+            toast.success('Exportação concluída')
         } catch {
             toast.error('Erro ao exportar CSV')
         }
@@ -130,8 +130,8 @@ export function WorkOrdersListPage() {
         <div className="space-y-5">
             {/* Header */}
             <PageHeader
-                title="Ordens de ServiÃ§o"
-                subtitle="Gerencie suas ordens de serviÃ§o"
+                title="Ordens de Serviço"
+                subtitle="Gerencie suas ordens de serviço"
                 count={totalRecords}
                 actions={[
                     ...(hasPermission('os.work_order.export') ? [{ label: 'Exportar', onClick: handleExport, icon: <Download className="h-4 w-4" />, variant: 'outline' as const }] : []),
@@ -211,7 +211,7 @@ export function WorkOrdersListPage() {
                         ))}
                     </select>
                     <input type="date" value={dateFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDateFrom(e.target.value); setPage(1) }}
-                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" title="Data inÃ­cio" />
+                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" title="Data início" />
                     <input type="date" value={dateTo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDateTo(e.target.value); setPage(1) }}
                         className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" title="Data fim" />
                 </div>
@@ -246,7 +246,7 @@ export function WorkOrdersListPage() {
                 ) : isError ? (
                     <div className="py-16 text-center">
                         <RefreshCw className="mx-auto h-12 w-12 text-red-300" />
-                        <p className="mt-3 text-[13px] text-surface-500">Erro ao carregar ordens de serviÃ§o</p>
+                        <p className="mt-3 text-[13px] text-surface-500">Erro ao carregar ordens de serviço</p>
                         <Button className="mt-3" variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
                     </div>
                 ) : orders.length === 0 ? (
@@ -317,21 +317,21 @@ export function WorkOrdersListPage() {
             {!isLoading && !isError && totalPages > 1 && (
                 <div className="flex items-center justify-between rounded-xl border border-default bg-surface-0 px-4 py-3 shadow-card">
                     <p className="text-xs text-surface-500">
-                        PÃ¡gina {page} de {totalPages} â€” {res?.data?.total ?? 0} registros
+                        Página {page} de {totalPages} â€” {res?.data?.total ?? 0} registros
                     </p>
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}
                             icon={<ChevronLeft className="h-4 w-4" />}>Anterior</Button>
                         <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-                            icon={<ChevronRight className="h-4 w-4" />}>PrÃ³ximo</Button>
+                            icon={<ChevronRight className="h-4 w-4" />}>Próximo</Button>
                     </div>
                 </div>
             )}
 
             {/* Delete Confirmation Modal */}
-            <Modal open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null) }} title="Confirmar ExclusÃ£o">
+            <Modal open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null) }} title="Confirmar Exclusão">
                 <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta OS? Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta OS? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
                         <Button

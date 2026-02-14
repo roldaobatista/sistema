@@ -74,12 +74,12 @@ export default function SkillsMatrixPage() {
     return (
         <div className="space-y-6">
             <PageHeader
-                title="Matriz de CompetÃªncias"
-                subtitle="GestÃ£o de habilidades e avaliaÃ§Ã£o tÃ©cnica da equipe."
+                title="Matriz de Competências"
+                subtitle="Gestão de habilidades e avaliação técnica da equipe."
                 action={
                     activeTab === 'skills' ? (
                         <Button onClick={handleCreateSkill} icon={<Plus className="h-4 w-4" />}>
-                            Nova CompetÃªncia
+                            Nova Competência
                         </Button>
                     ) : null
                 }
@@ -108,7 +108,7 @@ export default function SkillsMatrixPage() {
                 >
                     <div className="flex items-center gap-2">
                         <BookOpen className="h-4 w-4" />
-                        Cadastro de CompetÃªncias
+                        Cadastro de Competências
                     </div>
                 </button>
             </div>
@@ -128,7 +128,7 @@ export default function SkillsMatrixPage() {
                                         </div>
                                     </TableHead>
                                 ))}
-                                <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -186,8 +186,8 @@ export default function SkillsMatrixPage() {
                             <TableRow>
                                 <TableHead>Nome</TableHead>
                                 <TableHead>Categoria</TableHead>
-                                <TableHead>DescriÃ§Ã£o</TableHead>
-                                <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                                <TableHead>Descrição</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -198,7 +198,7 @@ export default function SkillsMatrixPage() {
                             ) : skills?.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center py-8 text-surface-500">
-                                        Nenhuma competÃªncia cadastrada.
+                                        Nenhuma competência cadastrada.
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -233,7 +233,7 @@ export default function SkillsMatrixPage() {
             <Dialog open={skillModalOpen} onOpenChange={setSkillModalOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editingSkill ? 'Editar CompetÃªncia' : 'Nova CompetÃªncia'}</DialogTitle>
+                        <DialogTitle>{editingSkill ? 'Editar Competência' : 'Nova Competência'}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
@@ -247,23 +247,23 @@ export default function SkillsMatrixPage() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Categoria</label>
                             <select
-                                aria-label="Categoria da competÃªncia"
+                                aria-label="Categoria da competência"
                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                value={skillForm.category || 'TÃ©cnica'}
+                                value={skillForm.category || 'Técnica'}
                                 onChange={e => setSkillForm({ ...skillForm, category: e.target.value })}
                             >
-                                <option value="TÃ©cnica">TÃ©cnica</option>
+                                <option value="Técnica">Técnica</option>
                                 <option value="Comportamental">Comportamental</option>
                                 <option value="Idioma">Idioma</option>
-                                <option value="CertificaÃ§Ã£o">CertificaÃ§Ã£o</option>
+                                <option value="Certificação">Certificação</option>
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">DescriÃ§Ã£o</label>
+                            <label className="text-sm font-medium">Descrição</label>
                             <Input
                                 value={skillForm.description || ''}
                                 onChange={e => setSkillForm({ ...skillForm, description: e.target.value })}
-                                placeholder="Breve descriÃ§Ã£o..."
+                                placeholder="Breve descrição..."
                             />
                         </div>
                     </div>
@@ -278,7 +278,7 @@ export default function SkillsMatrixPage() {
             <Dialog open={assessModalOpen} onOpenChange={setAssessModalOpen}>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Avaliar CompetÃªncias: {selectedUser?.name}</DialogTitle>
+                        <DialogTitle>Avaliar Competências: {selectedUser?.name}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6 py-4">
                         {skills?.map(skill => (
@@ -308,7 +308,7 @@ export default function SkillsMatrixPage() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setAssessModalOpen(false)}>Cancelar</Button>
-                        <Button onClick={saveAssessment} loading={assessUser.isPending}>Salvar AvaliaÃ§Ã£o</Button>
+                        <Button onClick={saveAssessment} loading={assessUser.isPending}>Salvar Avaliação</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

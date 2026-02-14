@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/ui/pageheader'
 const tabs = ['rules', 'webhooks', 'reports'] as const
 type Tab = typeof tabs[number]
 const tabLabels: Record<Tab, string> = {
-    rules: 'Regras de AutomaÃ§Ã£o', webhooks: 'Webhooks', reports: 'RelatÃ³rios Agendados'
+    rules: 'Regras de Automação', webhooks: 'Webhooks', reports: 'Relatórios Agendados'
 }
 
 export default function AutomationPage() {
@@ -42,7 +42,7 @@ export default function AutomationPage() {
     const toggleRule = useMutation({
         mutationFn: (id: number) => api.patch(`/automation/rules/${id}/toggle`),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
         },
     })
@@ -53,7 +53,7 @@ export default function AutomationPage() {
 
     return (
         <div className="space-y-5">
-            <PageHeader title="AutomaÃ§Ã£o" subtitle="Regras no-code, webhooks e relatÃ³rios agendados" />
+            <PageHeader title="Automação" subtitle="Regras no-code, webhooks e relatórios agendados" />
 
             <div className="flex gap-1 rounded-xl border border-default bg-surface-50 p-1">
                 {tabs.map(t => (
@@ -78,10 +78,10 @@ export default function AutomationPage() {
                             <thead><tr className="border-b border-subtle bg-surface-50">
                                 <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Nome</th>
                                 <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Evento</th>
-                                <th className="px-4 py-2.5 text-left font-semibold text-surface-600">AÃ§Ã£o</th>
-                                <th className="px-4 py-2.5 text-left font-semibold text-surface-600">ExecuÃ§Ãµes</th>
+                                <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Ação</th>
+                                <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Execuções</th>
                                 <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
-                                <th className="px-4 py-2.5 text-left font-semibold text-surface-600">AÃ§Ãµes</th>
+                                <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Ações</th>
                             </tr></thead>
                             <tbody className="divide-y divide-subtle">
                                 {loadingRules && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
@@ -147,14 +147,14 @@ export default function AutomationPage() {
                         <thead><tr className="border-b border-subtle bg-surface-50">
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Nome</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Tipo</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">FrequÃªncia</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">DestinatÃ¡rios</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Frequência</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Destinatários</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Ãšltimo Envio</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
                         </tr></thead>
                         <tbody className="divide-y divide-subtle">
                             {loadingReports && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
-                            {!loadingReports && reports.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Nenhum relatÃ³rio agendado</td></tr>}
+                            {!loadingReports && reports.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Nenhum relatório agendado</td></tr>}
                             {reports.map((r: any) => (
                                 <tr key={r.id} className="transition-colors hover:bg-surface-50/50">
                                     <td className="px-4 py-3 font-medium text-surface-900">{r.name}</td>

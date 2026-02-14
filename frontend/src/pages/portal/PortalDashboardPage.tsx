@@ -14,7 +14,7 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
     open: { label: 'Aberta', color: 'text-sky-600', bg: 'bg-sky-100' },
     in_progress: { label: 'Em Andamento', color: 'text-amber-600', bg: 'bg-amber-100' },
     waiting_parts: { label: 'Aguardando', color: 'text-orange-600', bg: 'bg-orange-100' },
-    completed: { label: 'ConcluÃ­da', color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    completed: { label: 'Concluída', color: 'text-emerald-600', bg: 'bg-emerald-100' },
     cancelled: { label: 'Cancelada', color: 'text-red-600', bg: 'bg-red-100' },
 }
 
@@ -57,8 +57,8 @@ export function PortalDashboardPage() {
 
     const cards = [
         { label: 'OS Abertas', value: openOS, icon: FileText, color: 'text-brand-600 bg-brand-50', link: '/portal/os' },
-        { label: 'OS ConcluÃ­das', value: completedOS, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50', link: '/portal/os' },
-        { label: 'OrÃ§amentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orcamentos' },
+        { label: 'OS Concluídas', value: completedOS, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50', link: '/portal/os' },
+        { label: 'Orçamentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orcamentos' },
         { label: 'Faturas', value: fmtBRL(totalPending), icon: DollarSign, color: 'text-red-600 bg-red-50', link: '/portal/financeiro' },
     ]
 
@@ -72,7 +72,7 @@ export function PortalDashboardPage() {
         <div className="space-y-5">
             <div>
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Portal do Cliente</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Acompanhe suas ordens de serviÃ§o, orÃ§amentos e faturas.</p>
+                <p className="mt-0.5 text-[13px] text-surface-500">Acompanhe suas ordens de serviço, orçamentos e faturas.</p>
             </div>
             {isLoading && (
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-sm text-surface-500">
@@ -104,7 +104,7 @@ export function PortalDashboardPage() {
             {/* Recent OS with Status Tracking */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                 <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
-                    <h2 className="text-sm font-semibold text-surface-900">Ãšltimas Ordens de ServiÃ§o</h2>
+                    <h2 className="text-sm font-semibold text-surface-900">Ãšltimas Ordens de Serviço</h2>
                     <button onClick={() => navigate('/portal/os')} className="text-xs text-brand-600 font-medium hover:underline">
                         Ver todas â†’
                     </button>
@@ -154,7 +154,7 @@ export function PortalDashboardPage() {
                                     <div className="flex items-center justify-between mt-2 text-[10px] text-surface-400">
                                         <span>Aberta</span>
                                         <span>Em Andamento</span>
-                                        <span>ConcluÃ­da</span>
+                                        <span>Concluída</span>
                                     </div>
                                 </div>
                             )
@@ -168,11 +168,11 @@ export function PortalDashboardPage() {
                 <button onClick={() => navigate('/portal/chamados/novo')} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-left hover:shadow-elevated transition-all group">
                     <Clock className="h-6 w-6 text-sky-500 mb-2" />
                     <p className="font-semibold text-surface-900 text-sm">Abrir Chamado</p>
-                    <p className="text-xs text-surface-400 mt-0.5">Solicite assistÃªncia tÃ©cnica</p>
+                    <p className="text-xs text-surface-400 mt-0.5">Solicite assistência técnica</p>
                 </button>
                 <button onClick={() => navigate('/portal/orcamentos')} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-left hover:shadow-elevated transition-all group">
                     <TrendingUp className="h-6 w-6 text-amber-500 mb-2" />
-                    <p className="font-semibold text-surface-900 text-sm">OrÃ§amentos</p>
+                    <p className="font-semibold text-surface-900 text-sm">Orçamentos</p>
                     <p className="text-xs text-surface-400 mt-0.5">Veja propostas e aprove</p>
                 </button>
                 <button onClick={() => navigate('/portal/financeiro')} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-left hover:shadow-elevated transition-all group">

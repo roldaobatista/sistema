@@ -27,9 +27,9 @@ const MAX_ATTACHMENT_SIZE_MB = 10
 const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
     open: { label: 'Aberta', variant: 'info', icon: Clock },
     in_progress: { label: 'Em Andamento', variant: 'warning', icon: Play },
-    waiting_parts: { label: 'Aguard. PeÃ§as', variant: 'warning', icon: Pause },
-    waiting_approval: { label: 'Aguard. AprovaÃ§Ã£o', variant: 'brand', icon: Pause },
-    completed: { label: 'ConcluÃ­da', variant: 'success', icon: CheckCircle2 },
+    waiting_parts: { label: 'Aguard. Peças', variant: 'warning', icon: Pause },
+    waiting_approval: { label: 'Aguard. Aprovação', variant: 'brand', icon: Pause },
+    completed: { label: 'Concluída', variant: 'success', icon: CheckCircle2 },
     delivered: { label: 'Entregue', variant: 'success', icon: Truck },
     invoiced: { label: 'Faturada', variant: 'brand', icon: DollarSign },
     cancelled: { label: 'Cancelada', variant: 'danger', icon: XCircle },
@@ -170,9 +170,9 @@ export function WorkOrderDetailPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
             qc.invalidateQueries({ queryKey: ['work-orders'] })
-            toast.success('AlteraÃ§Ãµes salvas com sucesso!')
+            toast.success('Alterações salvas com sucesso!')
         },
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar alteraÃ§Ãµes'),
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar alterações'),
     })
 
     // Attachment mutations
@@ -296,7 +296,7 @@ export function WorkOrderDetailPage() {
         return (
             <div className="py-16 text-center">
                 <AlertTriangle className="mx-auto h-12 w-12 text-red-300" />
-                <p className="mt-3 text-sm text-surface-500">Erro ao carregar ordem de serviÃ§o</p>
+                <p className="mt-3 text-sm text-surface-500">Erro ao carregar ordem de serviço</p>
                 <Button className="mt-3" variant="outline" onClick={() => refetchOrder()}>Tentar novamente</Button>
             </div>
         )
@@ -382,7 +382,7 @@ export function WorkOrderDetailPage() {
                             {order.quote_id && (
                                 <button onClick={() => navigate(`/orcamentos/${order.quote_id}`)}
                                     className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors">
-                                    <LinkIcon className="h-3 w-3" /> OrÃ§amento #{order.quote?.number ?? order.quote_id}
+                                    <LinkIcon className="h-3 w-3" /> Orçamento #{order.quote?.number ?? order.quote_id}
                                 </button>
                             )}
                             {order.service_call_id && (
@@ -443,7 +443,7 @@ export function WorkOrderDetailPage() {
                         activeTab === 'details' ? "border-brand-500 text-brand-600" : "border-transparent text-surface-500 hover:text-surface-700"
                     )}
                 >
-                    InformaÃ§Ãµes Gerais
+                    Informações Gerais
                 </button>
                 <button
                     onClick={() => setActiveTab('checklist')}
@@ -488,7 +488,7 @@ export function WorkOrderDetailPage() {
 
                     {activeTab === 'details' && (
                         <>
-                            {/* DescriÃ§Ã£o */}
+                            {/* Descrição */}
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                                 <h3 className="text-sm font-semibold text-surface-900 mb-2">Defeito Relatado</h3>
                                 {isEditing ? (
@@ -520,13 +520,13 @@ export function WorkOrderDetailPage() {
                                 )}
 
                                 <div className="mt-4 border-t border-subtle pt-4">
-                                    <h3 className="text-sm font-semibold text-surface-900 mb-2">Laudo TÃ©cnico</h3>
+                                    <h3 className="text-sm font-semibold text-surface-900 mb-2">Laudo Técnico</h3>
                                     {isEditing ? (
                                         <textarea
                                             value={editForm.technical_report}
                                             onChange={e => setEditForm(p => ({ ...p, technical_report: e.target.value }))}
                                             rows={3}
-                                            placeholder="Escreva o laudo tÃ©cnico..."
+                                            placeholder="Escreva o laudo técnico..."
                                             className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                                         />
                                     ) : (
@@ -537,7 +537,7 @@ export function WorkOrderDetailPage() {
                                 </div>
 
                                 <div className="mt-4 border-t border-subtle pt-4">
-                                    <h3 className="text-sm font-semibold text-surface-500 mb-1">ObservaÃ§Ãµes Internas</h3>
+                                    <h3 className="text-sm font-semibold text-surface-500 mb-1">Observações Internas</h3>
                                     {isEditing ? (
                                         <textarea
                                             value={editForm.internal_notes}
@@ -549,7 +549,7 @@ export function WorkOrderDetailPage() {
                                     ) : (
                                         order.internal_notes
                                             ? <p className="text-xs text-surface-500 italic">{order.internal_notes}</p>
-                                            : <p className="text-xs text-surface-400 italic">Nenhuma observaÃ§Ã£o interna</p>
+                                            : <p className="text-xs text-surface-400 italic">Nenhuma observação interna</p>
                                     )}
                                 </div>
 
@@ -779,13 +779,13 @@ export function WorkOrderDetailPage() {
                         )
                     }
 
-                    {/* TÃ©cnicos */}
+                    {/* Técnicos */}
                     {
                         order.technicians?.length > 0 && (
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                                 <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
                                     <Users className="h-4 w-4 text-brand-500" />
-                                    TÃ©cnicos
+                                    Técnicos
                                 </h3>
                                 <div className="flex flex-wrap gap-1.5">
                                     {order.technicians.map((t: any) => (
@@ -798,7 +798,7 @@ export function WorkOrderDetailPage() {
                         )
                     }
 
-                    {/* AutorizaÃ§Ã£o de Deslocamento */}
+                    {/* Autorização de Deslocamento */}
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
                             <Navigation className="h-4 w-4 text-brand-500" />
@@ -826,7 +826,7 @@ export function WorkOrderDetailPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <Badge variant="warning" dot>Aguardando autorizaÃ§Ã£o</Badge>
+                                <Badge variant="warning" dot>Aguardando autorização</Badge>
                                 {order.driver && (
                                     <div>
                                         <p className="text-xs text-surface-500">Motorista designado</p>
@@ -884,7 +884,7 @@ export function WorkOrderDetailPage() {
                                 <div className="space-y-2">
                                     {order.warranty_until && (
                                         <div>
-                                            <p className="text-xs text-surface-500">VÃ¡lida atÃ©</p>
+                                            <p className="text-xs text-surface-500">Válida até</p>
                                             <p className="font-medium text-surface-900">{formatDate(order.warranty_until)}</p>
                                         </div>
                                     )}
@@ -929,13 +929,13 @@ export function WorkOrderDetailPage() {
                         )
                     }
 
-                    {/* Timeline / HistÃ³rico de Status */}
+                    {/* Timeline / Histórico de Status */}
                     {
                         order.status_history?.length > 0 && (
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                                 <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
                                     <Clock className="h-4 w-4 text-brand-500" />
-                                    HistÃ³rico
+                                    Histórico
                                 </h3>
                                 <div className="space-y-3">
                                     {order.status_history.map((h: any) => {
@@ -980,13 +980,13 @@ export function WorkOrderDetailPage() {
                             <button key={t} type="button" onClick={() => setItemForm(p => ({ ...p, type: t, reference_id: '' }))}
                                 className={cn('flex-1 py-2 text-sm font-medium transition-colors',
                                     itemForm.type === t ? (t === 'product' ? 'bg-brand-50 text-brand-700' : 'bg-emerald-50 text-emerald-700') : 'text-surface-500')}>
-                                {t === 'product' ? 'Produto' : 'ServiÃ§o'}
+                                {t === 'product' ? 'Produto' : 'Serviço'}
                             </button>
                         ))}
                     </div>
                     <div>
                         <label className="mb-1.5 block text-[13px] font-medium text-surface-700">
-                            {itemForm.type === 'product' ? 'Produto' : 'ServiÃ§o'}
+                            {itemForm.type === 'product' ? 'Produto' : 'Serviço'}
                         </label>
                         <select value={itemForm.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRefChange(e.target.value)}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
@@ -996,14 +996,14 @@ export function WorkOrderDetailPage() {
                             ))}
                         </select>
                     </div>
-                    <Input label="DescriÃ§Ã£o" value={itemForm.description}
+                    <Input label="Descrição" value={itemForm.description}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemForm(p => ({ ...p, description: e.target.value }))} required />
                     <div className={`grid gap-3 ${canViewPrices ? 'grid-cols-3' : 'grid-cols-1'}`}>
                         <Input label="Qtd" type="number" step="0.01" value={itemForm.quantity}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemForm(p => ({ ...p, quantity: e.target.value }))} />
                         {canViewPrices && (
                             <>
-                                <Input label="PreÃ§o Un." type="number" step="0.01" value={itemForm.unit_price}
+                                <Input label="Preço Un." type="number" step="0.01" value={itemForm.unit_price}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemForm(p => ({ ...p, unit_price: e.target.value }))} />
                                 <Input label="Desconto" type="number" step="0.01" value={itemForm.discount}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemForm(p => ({ ...p, discount: e.target.value }))} />
@@ -1034,10 +1034,10 @@ export function WorkOrderDetailPage() {
                                 </button>
                             ))}
                         {(order.allowed_transitions ?? []).length === 0 && (
-                            <p className="col-span-2 py-4 text-center text-sm text-surface-400">Este status Ã© final. NÃ£o hÃ¡ transiÃ§Ãµes disponÃ­veis.</p>
+                            <p className="col-span-2 py-4 text-center text-sm text-surface-400">Este status é final. Não há transições disponíveis.</p>
                         )}
                     </div>
-                    <Input label="ObservaÃ§Ãµes (Opcional)" value={statusNotes} onChange={(e: any) => setStatusNotes(e.target.value)} />
+                    <Input label="Observações (Opcional)" value={statusNotes} onChange={(e: any) => setStatusNotes(e.target.value)} />
                     <div className="flex justify-end gap-2 pt-2">
                         <Button variant="outline" onClick={() => setShowStatusModal(false)}>Cancelar</Button>
                         <Button onClick={() => statusMut.mutate({ status: newStatus, notes: statusNotes })} disabled={!newStatus} loading={statusMut.isPending}>Confirmar</Button>
@@ -1046,9 +1046,9 @@ export function WorkOrderDetailPage() {
             </Modal >
 
             {/* Delete Item Confirmation Modal */}
-            < Modal open={deleteItemId !== null} onOpenChange={(open) => { if (!open) setDeleteItemId(null) }} title="Confirmar RemoÃ§Ã£o" >
+            < Modal open={deleteItemId !== null} onOpenChange={(open) => { if (!open) setDeleteItemId(null) }} title="Confirmar Remoção" >
                 <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Tem certeza que deseja remover este item? Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja remover este item? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setDeleteItemId(null)}>Cancelar</Button>
                         <Button
@@ -1063,9 +1063,9 @@ export function WorkOrderDetailPage() {
             </Modal >
 
             {/* Delete Attachment Confirmation Modal */}
-            < Modal open={deleteAttachId !== null} onOpenChange={(open) => { if (!open) setDeleteAttachId(null) }} title="Confirmar RemoÃ§Ã£o" >
+            < Modal open={deleteAttachId !== null} onOpenChange={(open) => { if (!open) setDeleteAttachId(null) }} title="Confirmar Remoção" >
                 <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Tem certeza que deseja remover este anexo? Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setDeleteAttachId(null)}>Cancelar</Button>
                         <Button

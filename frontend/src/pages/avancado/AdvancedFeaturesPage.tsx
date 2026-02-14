@@ -12,8 +12,8 @@ import { PageHeader } from '@/components/ui/pageheader'
 const tabs = ['followups', 'price-tables', 'documents', 'cost-centers', 'routes', 'ratings'] as const
 type Tab = typeof tabs[number]
 const tabLabels: Record<Tab, string> = {
-    followups: 'Follow-ups', 'price-tables': 'Tabelas de PreÃ§o', documents: 'Documentos',
-    'cost-centers': 'Centros de Custo', routes: 'Rotas', ratings: 'AvaliaÃ§Ãµes OS'
+    followups: 'Follow-ups', 'price-tables': 'Tabelas de Preço', documents: 'Documentos',
+    'cost-centers': 'Centros de Custo', routes: 'Rotas', ratings: 'Avaliações OS'
 }
 
 export default function AdvancedFeaturesPage() {
@@ -66,7 +66,7 @@ export default function AdvancedFeaturesPage() {
 
     return (
         <div className="space-y-5">
-            <PageHeader title="Recursos AvanÃ§ados" subtitle="Follow-ups, tabelas de preÃ§o, documentos, centros de custo e rotas" />
+            <PageHeader title="Recursos Avançados" subtitle="Follow-ups, tabelas de preço, documentos, centros de custo e rotas" />
 
             <div className="flex gap-1 rounded-xl border border-default bg-surface-50 p-1 overflow-x-auto">
                 {tabs.map(t => (
@@ -94,7 +94,7 @@ export default function AdvancedFeaturesPage() {
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Cliente</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Tipo</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data Agendada</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">ResponsÃ¡vel</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Responsável</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
                         </tr></thead>
                         <tbody className="divide-y divide-subtle">
@@ -103,12 +103,12 @@ export default function AdvancedFeaturesPage() {
                             {followups.map((f: any) => (
                                 <tr key={f.id} className="transition-colors hover:bg-surface-50/50">
                                     <td className="px-4 py-3 font-medium text-surface-900">{f.customer?.name ?? 'â€”'}</td>
-                                    <td className="px-4 py-3 text-xs text-surface-600">{f.type === 'call' ? 'LigaÃ§Ã£o' : f.type === 'email' ? 'E-mail' : f.type === 'visit' ? 'Visita' : f.type}</td>
+                                    <td className="px-4 py-3 text-xs text-surface-600">{f.type === 'call' ? 'Ligação' : f.type === 'email' ? 'E-mail' : f.type === 'visit' ? 'Visita' : f.type}</td>
                                     <td className="px-4 py-3 text-surface-600">{f.scheduled_at ? new Date(f.scheduled_at).toLocaleString('pt-BR') : 'â€”'}</td>
                                     <td className="px-4 py-3 text-surface-600">{f.responsible?.name ?? 'â€”'}</td>
                                     <td className="px-4 py-3"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                                         f.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : f.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                                    )}>{f.status === 'completed' ? 'ConcluÃ­do' : f.status === 'overdue' ? 'Atrasado' : 'Pendente'}</span></td>
+                                    )}>{f.status === 'completed' ? 'Concluído' : f.status === 'overdue' ? 'Atrasado' : 'Pendente'}</span></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -129,7 +129,7 @@ export default function AdvancedFeaturesPage() {
                         </tr></thead>
                         <tbody className="divide-y divide-subtle">
                             {loadingPT && <tr><td colSpan={5} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
-                            {!loadingPT && priceTables.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-surface-400">Nenhuma tabela de preÃ§o</td></tr>}
+                            {!loadingPT && priceTables.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-surface-400">Nenhuma tabela de preço</td></tr>}
                             {priceTables.map((pt: any) => (
                                 <tr key={pt.id} className="transition-colors hover:bg-surface-50/50">
                                     <td className="px-4 py-3 font-medium text-surface-900">{pt.name}</td>
@@ -177,7 +177,7 @@ export default function AdvancedFeaturesPage() {
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">CÃ³digo</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Código</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Nome</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Pai</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
@@ -206,10 +206,10 @@ export default function AdvancedFeaturesPage() {
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Nome</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">TÃ©cnico</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Técnico</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Paradas</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">DistÃ¢ncia</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Distância</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
                         </tr></thead>
                         <tbody className="divide-y divide-subtle">
@@ -224,7 +224,7 @@ export default function AdvancedFeaturesPage() {
                                     <td className="px-4 py-3 font-mono text-surface-600">{r.total_distance_km ? `${r.total_distance_km} km` : 'â€”'}</td>
                                     <td className="px-4 py-3"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                                         r.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : r.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                                    )}>{r.status === 'completed' ? 'ConcluÃ­da' : r.status === 'in_progress' ? 'Em Andamento' : 'Planejada'}</span></td>
+                                    )}>{r.status === 'completed' ? 'Concluída' : r.status === 'in_progress' ? 'Em Andamento' : 'Planejada'}</span></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -239,12 +239,12 @@ export default function AdvancedFeaturesPage() {
                         <thead><tr className="border-b border-subtle bg-surface-50">
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">OS</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Nota</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">ComentÃ¡rio</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Comentário</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data</th>
                         </tr></thead>
                         <tbody className="divide-y divide-subtle">
                             {loadingRatings && <tr><td colSpan={4} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
-                            {!loadingRatings && ratings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-surface-400">Nenhuma avaliaÃ§Ã£o</td></tr>}
+                            {!loadingRatings && ratings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-surface-400">Nenhuma avaliação</td></tr>}
                             {ratings.map((r: any) => (
                                 <tr key={r.id} className="transition-colors hover:bg-surface-50/50">
                                     <td className="px-4 py-3 font-mono text-xs font-medium text-brand-600">OS #{r.work_order_id}</td>

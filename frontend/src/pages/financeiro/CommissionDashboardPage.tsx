@@ -33,12 +33,12 @@ export function CommissionDashboardPage() {
     const maxByRule = Math.max(...(byRule as any[]).map((r: any) => r.total), 1)
 
     const calcTypeLabels: Record<string, string> = {
-        percent_gross: '% Bruto', percent_net: '% LÃ­quido', fixed_per_os: 'Fixo/OS',
-        percent_services_only: '% ServiÃ§os', percent_products_only: '% Produtos',
+        percent_gross: '% Bruto', percent_net: '% Líquido', fixed_per_os: 'Fixo/OS',
+        percent_services_only: '% Serviços', percent_products_only: '% Produtos',
         percent_profit: '% Lucro', percent_gross_minus_displacement: '% (Bâˆ’D)',
-        percent_gross_minus_expenses: '% (Bâˆ’Desp)', tiered_gross: 'Escalonado', custom_formula: 'FÃ³rmula',
+        percent_gross_minus_expenses: '% (Bâˆ’Desp)', tiered_gross: 'Escalonado', custom_formula: 'Fórmula',
     }
-    const roleLabels: Record<string, string> = { technician: 'TÃ©cnico', seller: 'Vendedor', driver: 'Motorista' }
+    const roleLabels: Record<string, string> = { technician: 'Técnico', seller: 'Vendedor', driver: 'Motorista' }
     const roleColor: Record<string, string> = { technician: '#3B82F6', seller: '#10B981', driver: '#F59E0B' }
 
     if (isLoading) {
@@ -54,7 +54,7 @@ export function CommissionDashboardPage() {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <PageHeader title="Dashboard de ComissÃµes" subtitle="VisÃ£o analÃ­tica e KPIs de comissÃµes" />
+            <PageHeader title="Dashboard de Comissões" subtitle="Visão analítica e KPIs de comissões" />
 
             {/* KPI Cards */}
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -71,7 +71,7 @@ export function CommissionDashboardPage() {
                     <p className="mt-1 text-xs text-surface-500">{overview.total_rules ?? 0} regras ativas</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                    <div className="flex items-center gap-2 text-emerald-600"><TrendingUp className="h-5 w-5" /><span className="text-xs font-semibold uppercase tracking-wider">Pago (mÃªs)</span></div>
+                    <div className="flex items-center gap-2 text-emerald-600"><TrendingUp className="h-5 w-5" /><span className="text-xs font-semibold uppercase tracking-wider">Pago (mês)</span></div>
                     <p className="mt-3 text-2xl font-bold text-emerald-600">{fmtBRL(overview.paid_this_month ?? 0)}</p>
                     <div className="mt-1 flex items-center gap-1 text-xs">
                         {overview.variation_pct != null ? (
@@ -80,15 +80,15 @@ export function CommissionDashboardPage() {
                                     ? <><ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" /><span className="text-emerald-600">+{overview.variation_pct}%</span></>
                                     : <><ArrowDownRight className="h-3.5 w-3.5 text-red-500" /><span className="text-red-600">{overview.variation_pct}%</span></>
                                 }
-                                <span className="text-surface-400">vs. mÃªs anterior</span>
+                                <span className="text-surface-400">vs. mês anterior</span>
                             </>
                         ) : (
-                            <span className="text-surface-400">Sem dados do mÃªs anterior</span>
+                            <span className="text-surface-400">Sem dados do mês anterior</span>
                         )}
                     </div>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                    <div className="flex items-center gap-2 text-surface-500"><PieChart className="h-5 w-5" /><span className="text-xs font-semibold uppercase tracking-wider">MÃªs Anterior</span></div>
+                    <div className="flex items-center gap-2 text-surface-500"><PieChart className="h-5 w-5" /><span className="text-xs font-semibold uppercase tracking-wider">Mês Anterior</span></div>
                     <p className="mt-3 text-2xl font-bold text-surface-700">{fmtBRL(overview.paid_last_month ?? 0)}</p>
                 </div>
             </div>
@@ -98,7 +98,7 @@ export function CommissionDashboardPage() {
                 {/* Evolution Chart */}
                 <div className="lg:col-span-2 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-semibold text-surface-900">EvoluÃ§Ã£o Mensal</h2>
+                        <h2 className="text-sm font-semibold text-surface-900">Evolução Mensal</h2>
                         <select value={months} onChange={e => setMonths(+e.target.value)}
                             className="rounded-lg border border-surface-300 px-2 py-1 text-xs">
                             <option value={3}>3 meses</option><option value={6}>6 meses</option><option value={12}>12 meses</option>
@@ -122,7 +122,7 @@ export function CommissionDashboardPage() {
 
                 {/* Ranking */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                    <h2 className="mb-4 text-sm font-semibold text-surface-900 flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> Ranking do MÃªs</h2>
+                    <h2 className="mb-4 text-sm font-semibold text-surface-900 flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> Ranking do Mês</h2>
                     <div className="space-y-2.5">
                         {(ranking as any[]).map((r: any) => (
                             <div key={r.id} className="flex items-center gap-3">
@@ -143,7 +143,7 @@ export function CommissionDashboardPage() {
             <div className="grid gap-4 lg:grid-cols-2">
                 {/* By Rule */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                    <h2 className="mb-4 text-sm font-semibold text-surface-900">Por Tipo de CÃ¡lculo</h2>
+                    <h2 className="mb-4 text-sm font-semibold text-surface-900">Por Tipo de Cálculo</h2>
                     <div className="space-y-3">
                         {(byRule as any[]).map((r: any, i: number) => {
                             const pct = maxByRule > 0 ? (r.total / maxByRule) * 100 : 0

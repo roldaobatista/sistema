@@ -97,7 +97,7 @@ export function TenantManagementPage() {
             qc.invalidateQueries({ queryKey: ['tenants'] })
             qc.invalidateQueries({ queryKey: ['tenants-stats'] })
             setShowConfirmDelete(null)
-            toast.success('Empresa excluÃ­da com sucesso!')
+            toast.success('Empresa excluída com sucesso!')
         },
         onError: (err: any) => {
             setShowConfirmDelete(null)
@@ -114,7 +114,7 @@ export function TenantManagementPage() {
             toast.success('Convite enviado com sucesso!')
         },
         onError: (err: any) => {
-            toast.error(err.response?.data?.message ?? 'Erro ao convidar usuÃ¡rio.')
+            toast.error(err.response?.data?.message ?? 'Erro ao convidar usuário.')
         },
     })
 
@@ -125,11 +125,11 @@ export function TenantManagementPage() {
             qc.invalidateQueries({ queryKey: ['tenants'] })
             qc.invalidateQueries({ queryKey: ['tenants-stats'] })
             setShowConfirmRemoveUser(null)
-            toast.success('UsuÃ¡rio removido com sucesso!')
+            toast.success('Usuário removido com sucesso!')
         },
         onError: (err: any) => {
             setShowConfirmRemoveUser(null)
-            toast.error(err.response?.data?.message ?? 'Erro ao remover usuÃ¡rio.')
+            toast.error(err.response?.data?.message ?? 'Erro ao remover usuário.')
         },
     })
 
@@ -183,7 +183,7 @@ export function TenantManagementPage() {
             <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
                 <XCircle className="h-12 w-12 text-red-400 mb-3" />
                 <p className="text-sm font-medium text-surface-700">Erro ao carregar empresas</p>
-                <p className="text-xs text-surface-400 mt-1">NÃ£o foi possÃ­vel buscar os dados. Tente novamente.</p>
+                <p className="text-xs text-surface-400 mt-1">Não foi possível buscar os dados. Tente novamente.</p>
                 <Button variant="outline" className="mt-4" icon={<RefreshCw className="h-4 w-4" />} onClick={() => refetch()}>Tentar Novamente</Button>
             </div>
         )
@@ -195,7 +195,7 @@ export function TenantManagementPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Gerenciamento de Empresas</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Administre tenants, usuÃ¡rios e acessos</p>
+                    <p className="mt-0.5 text-[13px] text-surface-500">Administre tenants, usuários e acessos</p>
                 </div>
                 {canCreate && <Button icon={<Plus className="h-4 w-4" />} onClick={openCreate}>Nova Empresa</Button>}
             </div>
@@ -328,7 +328,7 @@ export function TenantManagementPage() {
                         <div className="p-5 space-y-5">
                             {/* Info */}
                             <div className="rounded-xl border border-surface-200 p-4 space-y-3">
-                                <h3 className="text-sm font-semibold text-surface-700">InformaÃ§Ãµes</h3>
+                                <h3 className="text-sm font-semibold text-surface-700">Informações</h3>
                                 {detail && (
                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div><span className="text-surface-500">CNPJ:</span> <span className="font-medium">{detail.document || 'â€”'}</span></div>
@@ -343,7 +343,7 @@ export function TenantManagementPage() {
                             <div className="rounded-xl border border-surface-200 p-4 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-semibold text-surface-700">
-                                        UsuÃ¡rios ({detail?.users?.length ?? 0})
+                                        Usuários ({detail?.users?.length ?? 0})
                                     </h3>
                                     <Button size="sm" variant="outline" icon={<UserPlus className="h-3.5 w-3.5" />}
                                         onClick={() => setShowInviteModal(true)}>
@@ -362,7 +362,7 @@ export function TenantManagementPage() {
                                                     <p className="text-xs text-surface-500">{u.email}</p>
                                                 </div>
                                             </div>
-                                            <button title="Remover usuÃ¡rio" onClick={() => setShowConfirmRemoveUser(u)}
+                                            <button title="Remover usuário" onClick={() => setShowConfirmRemoveUser(u)}
                                                 className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600 transition-colors">
                                                 <UserMinus className="h-4 w-4" />
                                             </button>
@@ -398,7 +398,7 @@ export function TenantManagementPage() {
             {showInviteModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowInviteModal(false)}>
                     <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-[15px] font-semibold tabular-nums text-surface-900 mb-4">Convidar UsuÃ¡rio</h2>
+                        <h2 className="text-[15px] font-semibold tabular-nums text-surface-900 mb-4">Convidar Usuário</h2>
                         <div className="space-y-4">
                             <Input label="Nome *" value={inviteForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, name: e.target.value }))} />
                             <Input label="E-mail *" type="email" value={inviteForm.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, email: e.target.value }))} />
@@ -423,7 +423,7 @@ export function TenantManagementPage() {
                             </div>
                             <div>
                                 <h2 className="text-[15px] font-semibold tabular-nums text-surface-900">Excluir Empresa</h2>
-                                <p className="text-[13px] text-surface-500">Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+                                <p className="text-[13px] text-surface-500">Esta ação não pode ser desfeita.</p>
                             </div>
                         </div>
                         <p className="text-sm text-surface-700 mb-5">
@@ -446,7 +446,7 @@ export function TenantManagementPage() {
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
                                 <UserMinus className="h-5 w-5 text-amber-600" />
                             </div>
-                            <h2 className="text-[15px] font-semibold tabular-nums text-surface-900">Remover UsuÃ¡rio</h2>
+                            <h2 className="text-[15px] font-semibold tabular-nums text-surface-900">Remover Usuário</h2>
                         </div>
                         <p className="text-sm text-surface-700 mb-5">
                             Remover <strong>{showConfirmRemoveUser.name}</strong> desta empresa?

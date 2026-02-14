@@ -27,7 +27,7 @@ export default function InmetroWebhooksPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Webhooks</h1>
-                    <p className="text-muted-foreground">IntegraÃ§Ãµes e notificaÃ§Ãµes externas</p>
+                    <p className="text-muted-foreground">Integrações e notificações externas</p>
                 </div>
                 <Dialog>
                     <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Novo Webhook</Button></DialogTrigger>
@@ -72,7 +72,7 @@ export default function InmetroWebhooksPage() {
                                     <TableHead>Status</TableHead>
                                     <TableHead>Falhas</TableHead>
                                     <TableHead>Ãšltimo Disparo</TableHead>
-                                    <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -94,7 +94,7 @@ export default function InmetroWebhooksPage() {
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild><Button size="icon" variant="ghost" className="text-red-500"><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>Remover webhook?</AlertDialogTitle><AlertDialogDescription>Esta aÃ§Ã£o nÃ£o pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogHeader><AlertDialogTitle>Remover webhook?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => deleteMut.mutate(wh.id)} className="bg-red-600 hover:bg-red-700">Remover</AlertDialogAction>

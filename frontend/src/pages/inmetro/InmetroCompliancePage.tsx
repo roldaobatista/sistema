@@ -27,7 +27,7 @@ export default function InmetroCompliancePage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Compliance & RegulatÃ³rio</h1>
+            <h1 className="text-2xl font-bold">Compliance & Regulatório</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card><CardContent className="pt-6 flex items-center gap-3">
@@ -53,7 +53,7 @@ export default function InmetroCompliancePage() {
                     <TabsTrigger value="checklists">Checklists</TabsTrigger>
                     <TabsTrigger value="anomalies">Anomalias</TabsTrigger>
                     <TabsTrigger value="groups">Grupos</TabsTrigger>
-                    <TabsTrigger value="renewal">RenovaÃ§Ã£o</TabsTrigger>
+                    <TabsTrigger value="renewal">Renovação</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="checklists">
@@ -66,8 +66,8 @@ export default function InmetroCompliancePage() {
                                     <DialogHeader><DialogTitle>Criar Checklist</DialogTitle></DialogHeader>
                                     <div className="space-y-3">
                                         <div><Label>Tipo</Label><Input value={form.instrument_type} onChange={e => setForm(f => ({ ...f, instrument_type: e.target.value }))} /></div>
-                                        <div><Label>TÃ­tulo</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
-                                        <div><Label>RegulaÃ§Ã£o</Label><Input value={form.regulation_reference} onChange={e => setForm(f => ({ ...f, regulation_reference: e.target.value }))} /></div>
+                                        <div><Label>Título</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
+                                        <div><Label>Regulação</Label><Input value={form.regulation_reference} onChange={e => setForm(f => ({ ...f, regulation_reference: e.target.value }))} /></div>
                                         <div>
                                             <Label>Itens</Label>
                                             {form.items.map((it, i) => <Input key={i} className="mt-1" value={it} onChange={e => setForm(f => ({ ...f, items: f.items.map((x, j) => j === i ? e.target.value : x) }))} />)}
@@ -85,7 +85,7 @@ export default function InmetroCompliancePage() {
                             {isLoading ? <Skeleton className="h-32 w-full" /> : !Array.isArray(checklists) || !checklists.length ? (
                                 <p className="text-center py-8 text-muted-foreground">Nenhum checklist</p>
                             ) : (
-                                <Table><TableHeader><TableRow><TableHead>TÃ­tulo</TableHead><TableHead>Tipo</TableHead><TableHead>RegulaÃ§Ã£o</TableHead><TableHead>Itens</TableHead></TableRow></TableHeader>
+                                <Table><TableHeader><TableRow><TableHead>Título</TableHead><TableHead>Tipo</TableHead><TableHead>Regulação</TableHead><TableHead>Itens</TableHead></TableRow></TableHeader>
                                     <TableBody>{checklists.map((cl: any) => (
                                         <TableRow key={cl.id}><TableCell className="font-medium">{cl.title}</TableCell><TableCell><Badge variant="outline">{cl.instrument_type}</Badge></TableCell><TableCell>{cl.regulation_reference || 'â€”'}</TableCell><TableCell>{Array.isArray(cl.items) ? cl.items.length : 0}</TableCell></TableRow>
                                     ))}</TableBody></Table>
@@ -112,18 +112,18 @@ export default function InmetroCompliancePage() {
                     )}
                 </CardContent></Card></TabsContent>
 
-                <TabsContent value="renewal"><Card><CardHeader><CardTitle><BarChart3 className="w-5 h-5 inline mr-2" />Probabilidade de RenovaÃ§Ã£o</CardTitle></CardHeader><CardContent>
+                <TabsContent value="renewal"><Card><CardHeader><CardTitle><BarChart3 className="w-5 h-5 inline mr-2" />Probabilidade de Renovação</CardTitle></CardHeader><CardContent>
                     {!renewal?.predictions?.length ? <p className="text-center py-8 text-muted-foreground">Sem dados</p> : (
                         <>
                             <div className="flex gap-3 mb-4">
                                 <Badge className="bg-red-100 text-red-800">Alto: {renewal.high_risk}</Badge>
-                                <Badge className="bg-amber-100 text-amber-800">MÃ©dio: {renewal.medium_risk}</Badge>
+                                <Badge className="bg-amber-100 text-amber-800">Médio: {renewal.medium_risk}</Badge>
                                 <Badge className="bg-green-100 text-green-800">Baixo: {renewal.low_risk}</Badge>
                             </div>
                             <Table><TableHeader><TableRow><TableHead>Cliente</TableHead><TableHead>Prob.</TableHead><TableHead>Risco</TableHead><TableHead>Fatores</TableHead></TableRow></TableHeader>
                                 <TableBody>{renewal.predictions.map((p: any) => (
                                     <TableRow key={p.owner_id}><TableCell className="font-medium">{p.customer_name}</TableCell><TableCell>{p.probability}%</TableCell>
-                                        <TableCell><Badge variant={p.risk_level === 'high_risk' ? 'destructive' : 'secondary'}>{p.risk_level === 'high_risk' ? 'Alto' : p.risk_level === 'medium_risk' ? 'MÃ©dio' : 'Baixo'}</Badge></TableCell>
+                                        <TableCell><Badge variant={p.risk_level === 'high_risk' ? 'destructive' : 'secondary'}>{p.risk_level === 'high_risk' ? 'Alto' : p.risk_level === 'medium_risk' ? 'Médio' : 'Baixo'}</Badge></TableCell>
                                         <TableCell className="text-xs max-w-xs">{p.factors?.join(', ')}</TableCell></TableRow>
                                 ))}</TableBody></Table>
                         </>

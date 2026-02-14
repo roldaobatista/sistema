@@ -223,11 +223,11 @@ export default function EmailInboxPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas</SelectItem>
-                            <SelectItem value="orcamento">OrÃ§amento</SelectItem>
+                            <SelectItem value="orcamento">Orçamento</SelectItem>
                             <SelectItem value="suporte">Suporte</SelectItem>
                             <SelectItem value="financeiro">Financeiro</SelectItem>
-                            <SelectItem value="reclamacao">ReclamaÃ§Ã£o</SelectItem>
-                            <SelectItem value="informacao">InformaÃ§Ã£o</SelectItem>
+                            <SelectItem value="reclamacao">Reclamação</SelectItem>
+                            <SelectItem value="informacao">Informação</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -237,7 +237,7 @@ export default function EmailInboxPage() {
                     <div className="mt-auto pt-4 border-t text-xs text-muted-foreground px-3 space-y-1">
                         <div className="flex justify-between"><span>Total</span><span>{stats.total}</span></div>
                         <div className="flex justify-between"><span>Hoje</span><span>{stats.today}</span></div>
-                        <div className="flex justify-between"><span>NÃ£o lidos</span>
+                        <div className="flex justify-between"><span>Não lidos</span>
                             <span className="text-primary font-medium">{stats.unread}</span>
                         </div>
                     </div>
@@ -403,7 +403,7 @@ export default function EmailInboxPage() {
                             </div>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Clock className="w-3 h-3" />
-                                {format(new Date(email.received_at), "dd/MM/yyyy 'Ã s' HH:mm", { locale: ptBR })}
+                                {format(new Date(email.received_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                                 {email.account && (
                                     <>
                                         <span>Â·</span>
@@ -418,7 +418,7 @@ export default function EmailInboxPage() {
                                     <CardContent className="p-3 space-y-2">
                                         <div className="flex items-center gap-2 text-xs">
                                             <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-                                            <span className="font-medium text-violet-700 dark:text-violet-400">AnÃ¡lise AI</span>
+                                            <span className="font-medium text-violet-700 dark:text-violet-400">Análise AI</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5">
                                             <AICategoryBadge category={email.ai_category} />
@@ -468,7 +468,7 @@ export default function EmailInboxPage() {
                                 />
                             ) : (
                                 <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
-                                    {email.body_text || '(sem conteÃºdo)'}
+                                    {email.body_text || '(sem conteúdo)'}
                                 </pre>
                             )}
 
@@ -563,7 +563,7 @@ export default function EmailInboxPage() {
                             <SelectContent>
                                 <SelectItem value="tarefa">Tarefa</SelectItem>
                                 <SelectItem value="chamado">Chamado</SelectItem>
-                                <SelectItem value="os">Ordem de ServiÃ§o</SelectItem>
+                                <SelectItem value="os">Ordem de Serviço</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

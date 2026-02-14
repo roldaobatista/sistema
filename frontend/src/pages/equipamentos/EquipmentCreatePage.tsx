@@ -24,7 +24,7 @@ export default function EquipmentCreatePage() {
 
     const [form, setForm] = useState({
         customer_id: '',
-        type: 'BalanÃ§a',
+        type: 'Balança',
         category: 'balanca_plataforma',
         brand: '',
         manufacturer: '',
@@ -87,16 +87,16 @@ export default function EquipmentCreatePage() {
         <div className="space-y-5">
             <PageHeader
                 title="Novo Equipamento"
-                subtitle="Cadastrar equipamento / instrumento de mediÃ§Ã£o"
+                subtitle="Cadastrar equipamento / instrumento de medição"
                 backTo="/equipamentos"
             />
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* IdentificaÃ§Ã£o */}
+                {/* Identificação */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
                     <h3 className="mb-4 flex items-center gap-2 font-semibold text-surface-900">
                         <Scale size={18} className="text-brand-500" />
-                        IdentificaÃ§Ã£o
+                        Identificação
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
@@ -108,7 +108,7 @@ export default function EquipmentCreatePage() {
                         </div>
                         <div>
                             <label className="mb-1 block text-xs font-medium text-surface-600">Tipo *</label>
-                            <input value={form.type} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('type', e.target.value)} required className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: BalanÃ§a, TermÃ´metro" />
+                            <input value={form.type} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('type', e.target.value)} required className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: Balança, Termômetro" />
                         </div>
                         <div>
                             <label className="mb-1 block text-xs font-medium text-surface-600">Categoria</label>
@@ -129,23 +129,23 @@ export default function EquipmentCreatePage() {
                             <input value={form.model} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('model', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: 2098" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">NÂº SÃ©rie</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">NÂº Série</label>
                             <input value={form.serial_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('serial_number', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Tag / PatrimÃ´nio</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Tag / Patrimônio</label>
                             <input value={form.tag} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('tag', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">LocalizaÃ§Ã£o</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Localização</label>
                             <input value={form.location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('location', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                     </div>
                 </div>
 
-                {/* EspecificaÃ§Ãµes TÃ©cnicas */}
+                {/* Especificações Técnicas */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
-                    <h3 className="mb-4 font-semibold text-surface-900">EspecificaÃ§Ãµes TÃ©cnicas</h3>
+                    <h3 className="mb-4 font-semibold text-surface-900">Especificações Técnicas</h3>
                     <div className="grid grid-cols-3 gap-4">
                         <div>
                             <label className="mb-1 block text-xs font-medium text-surface-600">Capacidade</label>
@@ -157,11 +157,11 @@ export default function EquipmentCreatePage() {
                             </div>
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">ResoluÃ§Ã£o</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Resolução</label>
                             <input type="number" step="any" value={form.resolution} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('resolution', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Classe de PrecisÃ£o</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Classe de Precisão</label>
                             <select value={form.precision_class} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('precision_class', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm">
                                 <option value="">â€”</option>
                                 {Object.entries(classes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
@@ -172,27 +172,27 @@ export default function EquipmentCreatePage() {
                             <input value={form.inmetro_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('inmetro_number', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Intervalo CalibraÃ§Ã£o (meses)</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Intervalo Calibração (meses)</label>
                             <input type="number" value={form.calibration_interval_months} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('calibration_interval_months', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div className="flex items-end">
                             <label className="flex cursor-pointer items-center gap-2">
                                 <input type="checkbox" checked={form.is_critical} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('is_critical', e.target.checked)} className="accent-red-600" />
-                                <span className="text-[13px] font-medium text-surface-700">Equipamento CrÃ­tico</span>
+                                <span className="text-[13px] font-medium text-surface-700">Equipamento Crítico</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                {/* ObservaÃ§Ãµes */}
+                {/* Observações */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
-                    <h3 className="mb-4 font-semibold text-surface-900">ObservaÃ§Ãµes</h3>
+                    <h3 className="mb-4 font-semibold text-surface-900">Observações</h3>
                     <textarea
                         value={form.notes}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update('notes', e.target.value)}
                         rows={3}
                         className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm"
-                        placeholder="ObservaÃ§Ãµes gerais sobre o equipamento..."
+                        placeholder="Observações gerais sobre o equipamento..."
                     />
                 </div>
 

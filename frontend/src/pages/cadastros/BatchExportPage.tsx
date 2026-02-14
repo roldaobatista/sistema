@@ -76,7 +76,7 @@ export function BatchExportPage() {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">ExportaÃ§Ã£o em Lote</h1>
+                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Exportação em Lote</h1>
                     <p className="text-[13px] text-surface-500 mt-1">Exporte dados do sistema em arquivo CSV</p>
                 </div>
                 <button

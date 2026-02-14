@@ -77,7 +77,7 @@ export default function OrgChartPage() {
         <div className="space-y-6">
             <PageHeader
                 title="Organograma & Cargos"
-                subtitle="GestÃ£o da estrutura organizacional, departamentos e cargos."
+                subtitle="Gestão da estrutura organizacional, departamentos e cargos."
                 action={
                     activeTab === 'departments' ? (
                         <Button onClick={handleCreateDept} icon={<Plus className="h-4 w-4" />}>
@@ -210,10 +210,10 @@ export default function OrgChartPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Nome</TableHead>
-                                <TableHead>ResponsÃ¡vel</TableHead>
+                                <TableHead>Responsável</TableHead>
                                 <TableHead>Departamento Pai</TableHead>
                                 <TableHead>Centro de Custo</TableHead>
-                                <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -258,9 +258,9 @@ export default function OrgChartPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Cargo</TableHead>
-                                <TableHead>NÃ­vel</TableHead>
+                                <TableHead>Nível</TableHead>
                                 <TableHead>Departamento</TableHead>
-                                <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -346,20 +346,20 @@ export default function OrgChartPage() {
                             <Input
                                 value={posForm.name || ''}
                                 onChange={e => setPosForm({ ...posForm, name: e.target.value })}
-                                placeholder="Ex: Analista SÃªnior"
+                                placeholder="Ex: Analista Sênior"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">NÃ­vel</label>
+                            <label className="text-sm font-medium">Nível</label>
                             <select
-                                aria-label="NÃ­vel do cargo"
+                                aria-label="Nível do cargo"
                                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 value={posForm.level || 'junior'}
                                 onChange={e => setPosForm({ ...posForm, level: e.target.value as any })}
                             >
-                                <option value="junior">JÃºnior</option>
+                                <option value="junior">Júnior</option>
                                 <option value="pleno">Pleno</option>
-                                <option value="senior">SÃªnior</option>
+                                <option value="senior">Sênior</option>
                                 <option value="lead">Lead</option>
                                 <option value="manager">Gerente</option>
                                 <option value="specialist">Especialista</option>

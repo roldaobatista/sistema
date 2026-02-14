@@ -81,7 +81,7 @@ export function RecurringContractsPage() {
                 ? api.put(`/recurring-contracts/${editing.id}`, data)
                 : api.post('/recurring-contracts', data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
             closeForm()
         },
@@ -91,7 +91,7 @@ export function RecurringContractsPage() {
     const remove = useMutation({
         mutationFn: (id: number) => api.delete(`/recurring-contracts/${id}`),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao excluir contrato'),
@@ -100,7 +100,7 @@ export function RecurringContractsPage() {
     const generate = useMutation({
         mutationFn: (id: number) => api.post(`/recurring-contracts/${id}/generate`),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            toast.success('Operação realizada com sucesso')
             qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao gerar OS'),
@@ -146,7 +146,7 @@ export function RecurringContractsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-zinc-100">Contratos Recorrentes</h1>
-                    <p className="text-sm text-zinc-400 mt-1">ManutenÃ§Ãµes preventivas e contratos periÃ³dicos</p>
+                    <p className="text-sm text-zinc-400 mt-1">Manutenções preventivas e contratos periódicos</p>
                 </div>
                 <Button onClick={() => { closeForm(); setShowForm(true) }}>
                     <Plus className="h-4 w-4 mr-2" /> Novo Contrato
@@ -184,7 +184,7 @@ export function RecurringContractsPage() {
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-zinc-300">FrequÃªncia</label>
+                            <label className="text-sm font-medium text-zinc-300">Frequência</label>
                             <select className="w-full rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-zinc-100"
                                 value={form.frequency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('frequency', e.target.value)}>
                                 {Object.entries(freqLabels).map(([k, v]) => (
@@ -192,7 +192,7 @@ export function RecurringContractsPage() {
                                 ))}
                             </select>
                         </div>
-                        <Input label="Data InÃ­cio" type="date" value={form.start_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('start_date', e.target.value)} required />
+                        <Input label="Data Início" type="date" value={form.start_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('start_date', e.target.value)} required />
                         <Input label="Data Fim (opcional)" type="date" value={form.end_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('end_date', e.target.value)} />
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-zinc-300">Prioridade</label>
@@ -207,7 +207,7 @@ export function RecurringContractsPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-zinc-300">DescriÃ§Ã£o</label>
+                        <label className="text-sm font-medium text-zinc-300">Descrição</label>
                         <textarea className="w-full rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 min-h-[80px]"
                             value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} />
                     </div>
@@ -225,10 +225,10 @@ export function RecurringContractsPage() {
                                 <select className="rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1.5 text-sm text-zinc-100 w-28"
                                     value={item.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateItem(idx, 'type', e.target.value)}>
                                     <option value="product">Produto</option>
-                                    <option value="service">ServiÃ§o</option>
+                                    <option value="service">Serviço</option>
                                 </select>
                                 <input className="flex-1 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1.5 text-sm text-zinc-100"
-                                    placeholder="DescriÃ§Ã£o" value={item.description}
+                                    placeholder="Descrição" value={item.description}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(idx, 'description', e.target.value)} />
                                 <input className="w-20 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1.5 text-sm text-zinc-100"
                                     type="number" placeholder="Qtd" value={item.quantity}
@@ -269,11 +269,11 @@ export function RecurringContractsPage() {
                             <tr>
                                 <th className="text-left px-4 py-3 text-zinc-400 font-medium">Contrato</th>
                                 <th className="text-left px-4 py-3 text-zinc-400 font-medium">Cliente</th>
-                                <th className="text-left px-4 py-3 text-zinc-400 font-medium">FrequÃªncia</th>
-                                <th className="text-left px-4 py-3 text-zinc-400 font-medium">PrÃ³xima OS</th>
+                                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Frequência</th>
+                                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Próxima OS</th>
                                 <th className="text-center px-4 py-3 text-zinc-400 font-medium">Geradas</th>
                                 <th className="text-center px-4 py-3 text-zinc-400 font-medium">Status</th>
-                                <th className="text-right px-4 py-3 text-zinc-400 font-medium">AÃ§Ãµes</th>
+                                <th className="text-right px-4 py-3 text-zinc-400 font-medium">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-700/50">

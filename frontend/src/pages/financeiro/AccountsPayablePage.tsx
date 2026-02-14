@@ -329,11 +329,11 @@ export function AccountsPayablePage() {
                     <p className="mt-1 text-xl font-bold text-red-600">{fmtBRL(summary.overdue ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                    <div className="flex items-center gap-2 text-blue-600"><Clock className="h-4 w-4" /><span className="text-xs font-medium">LanÃ§ado (mÃªs)</span></div>
+                    <div className="flex items-center gap-2 text-blue-600"><Clock className="h-4 w-4" /><span className="text-xs font-medium">Lançado (mês)</span></div>
                     <p className="mt-1 text-xl font-bold text-blue-600">{fmtBRL(summary.recorded_this_month ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                    <div className="flex items-center gap-2 text-emerald-600"><CheckCircle className="h-4 w-4" /><span className="text-xs font-medium">Pago (mÃªs)</span></div>
+                    <div className="flex items-center gap-2 text-emerald-600"><CheckCircle className="h-4 w-4" /><span className="text-xs font-medium">Pago (mês)</span></div>
                     <p className="mt-1 text-xl font-bold text-emerald-600">{fmtBRL(summary.paid_this_month ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -375,7 +375,7 @@ export function AccountsPayablePage() {
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-                    <input value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)} placeholder="Buscar descriÃ§Ã£o ou fornecedor"
+                    <input value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)} placeholder="Buscar descrição ou fornecedor"
                         className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none" />
                 </div>
                 <select value={statusFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
@@ -395,13 +395,13 @@ export function AccountsPayablePage() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">DescriÃ§Ã£o</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Descrição</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600 md:table-cell">Fornecedor</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600 sm:table-cell">Categoria</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600 md:table-cell">Vencimento</th>
                             <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Status</th>
                             <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Valor</th>
-                            <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">AÃ§Ãµes</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -461,8 +461,8 @@ export function AccountsPayablePage() {
                     <span className="text-[13px] text-surface-500">{pagination.total} registro(s)</span>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" disabled={pagination.currentPage <= 1} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                        <span className="text-sm text-surface-700">PÃ¡gina {pagination.currentPage} de {pagination.lastPage}</span>
-                        <Button variant="outline" size="sm" disabled={pagination.currentPage >= pagination.lastPage} onClick={() => setPage(p => p + 1)}>PrÃ³xima</Button>
+                        <span className="text-sm text-surface-700">Página {pagination.currentPage} de {pagination.lastPage}</span>
+                        <Button variant="outline" size="sm" disabled={pagination.currentPage >= pagination.lastPage} onClick={() => setPage(p => p + 1)}>Próxima</Button>
                     </div>
                 </div>
             )}

@@ -24,7 +24,7 @@ export default function InmetroCompetitorPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Acompanhamento de Concorrentes</h1>
-                    <p className="text-muted-foreground">Market share, movimentaÃ§Ãµes e anÃ¡lise Win/Loss</p>
+                    <p className="text-muted-foreground">Market share, movimentações e análise Win/Loss</p>
                 </div>
                 <Button onClick={() => snapshotMut.mutate()} disabled={snapshotMut.isPending}>
                     <Camera className={`w-4 h-4 mr-2 ${snapshotMut.isPending ? 'animate-pulse' : ''}`} />
@@ -39,11 +39,11 @@ export default function InmetroCompetitorPage() {
                 </CardContent></Card>
                 <Card><CardContent className="pt-6 flex items-center gap-3">
                     <Activity className="w-8 h-8 text-amber-500" />
-                    <div><p className="text-2xl font-bold">{movements?.total_new ?? 0}</p><p className="text-sm text-muted-foreground">MovimentaÃ§Ãµes</p></div>
+                    <div><p className="text-2xl font-bold">{movements?.total_new ?? 0}</p><p className="text-sm text-muted-foreground">Movimentações</p></div>
                 </CardContent></Card>
                 <Card><CardContent className="pt-6 flex items-center gap-3">
                     <Trophy className="w-8 h-8 text-green-500" />
-                    <div><p className="text-2xl font-bold">{winLoss?.wins ?? 0}</p><p className="text-sm text-muted-foreground">VitÃ³rias</p></div>
+                    <div><p className="text-2xl font-bold">{winLoss?.wins ?? 0}</p><p className="text-sm text-muted-foreground">Vitórias</p></div>
                 </CardContent></Card>
                 <Card><CardContent className="pt-6 flex items-center gap-3">
                     <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -54,16 +54,16 @@ export default function InmetroCompetitorPage() {
             <Tabs defaultValue="timeline">
                 <TabsList>
                     <TabsTrigger value="timeline">Market Share</TabsTrigger>
-                    <TabsTrigger value="movements">MovimentaÃ§Ãµes</TabsTrigger>
-                    <TabsTrigger value="pricing">PreÃ§os Estimados</TabsTrigger>
+                    <TabsTrigger value="movements">Movimentações</TabsTrigger>
+                    <TabsTrigger value="pricing">Preços Estimados</TabsTrigger>
                     <TabsTrigger value="winloss">Win/Loss</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="timeline"><Card><CardHeader><CardTitle><TrendingUp className="w-5 h-5 inline mr-2" />EvoluÃ§Ã£o Market Share</CardTitle></CardHeader><CardContent>
+                <TabsContent value="timeline"><Card><CardHeader><CardTitle><TrendingUp className="w-5 h-5 inline mr-2" />Evolução Market Share</CardTitle></CardHeader><CardContent>
                     {loadingTimeline ? <Skeleton className="h-32 w-full" /> : !timeline?.snapshots?.length ? (
                         <p className="text-center py-8 text-muted-foreground">Nenhum snapshot. Clique em "Capturar Snapshot".</p>
                     ) : (
-                        <Table><TableHeader><TableRow><TableHead>PerÃ­odo</TableHead><TableHead>Total Instrumentos</TableHead><TableHead>Nosso Share</TableHead><TableHead>VariaÃ§Ã£o</TableHead></TableRow></TableHeader>
+                        <Table><TableHeader><TableRow><TableHead>Período</TableHead><TableHead>Total Instrumentos</TableHead><TableHead>Nosso Share</TableHead><TableHead>Variação</TableHead></TableRow></TableHeader>
                             <TableBody>{timeline.snapshots.map((s: any, i: number) => (
                                 <TableRow key={i}><TableCell>{s.period}</TableCell><TableCell>{s.data?.total_instruments ?? 0}</TableCell>
                                     <TableCell><Badge>{s.data?.our_share ?? 0}%</Badge></TableCell>
@@ -72,8 +72,8 @@ export default function InmetroCompetitorPage() {
                     )}
                 </CardContent></Card></TabsContent>
 
-                <TabsContent value="movements"><Card><CardHeader><CardTitle><Activity className="w-5 h-5 inline mr-2" />MovimentaÃ§Ãµes de Concorrentes</CardTitle></CardHeader><CardContent>
-                    {!movements?.movements?.length ? <p className="text-center py-8 text-muted-foreground">Sem movimentaÃ§Ãµes recentes</p> : (
+                <TabsContent value="movements"><Card><CardHeader><CardTitle><Activity className="w-5 h-5 inline mr-2" />Movimentações de Concorrentes</CardTitle></CardHeader><CardContent>
+                    {!movements?.movements?.length ? <p className="text-center py-8 text-muted-foreground">Sem movimentações recentes</p> : (
                         <Table><TableHeader><TableRow><TableHead>Concorrente</TableHead><TableHead>Tipo</TableHead><TableHead>Detalhe</TableHead><TableHead>Data</TableHead></TableRow></TableHeader>
                             <TableBody>{movements.movements.map((m: any, i: number) => (
                                 <TableRow key={i}><TableCell className="font-medium">{m.competitor_name}</TableCell><TableCell><Badge variant="outline">{m.type}</Badge></TableCell><TableCell className="text-sm">{m.detail}</TableCell><TableCell>{m.date}</TableCell></TableRow>
@@ -81,9 +81,9 @@ export default function InmetroCompetitorPage() {
                     )}
                 </CardContent></Card></TabsContent>
 
-                <TabsContent value="pricing"><Card><CardHeader><CardTitle><DollarSign className="w-5 h-5 inline mr-2" />Estimativa de PreÃ§os</CardTitle></CardHeader><CardContent>
+                <TabsContent value="pricing"><Card><CardHeader><CardTitle><DollarSign className="w-5 h-5 inline mr-2" />Estimativa de Preços</CardTitle></CardHeader><CardContent>
                     {!pricing?.estimates?.length ? <p className="text-center py-8 text-muted-foreground">Sem estimativas</p> : (
-                        <Table><TableHeader><TableRow><TableHead>Concorrente</TableHead><TableHead>Tipo ServiÃ§o</TableHead><TableHead>PreÃ§o Est.</TableHead><TableHead>Nosso PreÃ§o</TableHead></TableRow></TableHeader>
+                        <Table><TableHeader><TableRow><TableHead>Concorrente</TableHead><TableHead>Tipo Serviço</TableHead><TableHead>Preço Est.</TableHead><TableHead>Nosso Preço</TableHead></TableRow></TableHeader>
                             <TableBody>{pricing.estimates.map((p: any, i: number) => (
                                 <TableRow key={i}><TableCell>{p.competitor_name}</TableCell><TableCell>{p.service_type}</TableCell>
                                     <TableCell>R$ {(p.estimated_price ?? 0).toLocaleString('pt-BR')}</TableCell>
@@ -96,13 +96,13 @@ export default function InmetroCompetitorPage() {
                     {!winLoss?.records?.length ? <p className="text-center py-8 text-muted-foreground">Nenhum registro</p> : (
                         <>
                             <div className="flex gap-3 mb-4">
-                                <Badge className="bg-green-100 text-green-800">VitÃ³rias: {winLoss.wins}</Badge>
+                                <Badge className="bg-green-100 text-green-800">Vitórias: {winLoss.wins}</Badge>
                                 <Badge className="bg-red-100 text-red-800">Derrotas: {winLoss.losses}</Badge>
                                 <Badge className="bg-blue-100 text-blue-800">Win Rate: {winLoss.win_rate}%</Badge>
                             </div>
                             <Table><TableHeader><TableRow><TableHead>Resultado</TableHead><TableHead>Motivo</TableHead><TableHead>Valor</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader>
                                 <TableBody>{winLoss.records.map((r: any) => (
-                                    <TableRow key={r.id}><TableCell><Badge variant={r.outcome === 'win' ? 'default' : 'destructive'}>{r.outcome === 'win' ? 'VitÃ³ria' : 'Derrota'}</Badge></TableCell>
+                                    <TableRow key={r.id}><TableCell><Badge variant={r.outcome === 'win' ? 'default' : 'destructive'}>{r.outcome === 'win' ? 'Vitória' : 'Derrota'}</Badge></TableCell>
                                         <TableCell>{r.reason}</TableCell><TableCell>R$ {(r.estimated_value ?? 0).toLocaleString('pt-BR')}</TableCell><TableCell className="text-sm">{r.notes || 'â€”'}</TableCell></TableRow>
                                 ))}</TableBody></Table>
                         </>

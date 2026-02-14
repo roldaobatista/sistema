@@ -222,7 +222,7 @@ export function CustomersPage() {
         latitude: lat,
         longitude: lng
       }))
-      toast.success('Coordenadas extraÃ­das do link!')
+      toast.success('Coordenadas extraídas do link!')
     } else {
       // Try raw coords "lat, lng"
       const rawRegex = /^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/
@@ -231,7 +231,7 @@ export function CustomersPage() {
         setForm(prev => ({ ...prev, latitude: rawMatch[1], longitude: rawMatch[2] }))
         toast.success('Coordenadas identificadas!')
       } else {
-        toast.info('NÃ£o foi possÃ­vel extrair coordenadas deste link automaticamente. Tente preencher manualmente.')
+        toast.info('Não foi possível extrair coordenadas deste link automaticamente. Tente preencher manualmente.')
       }
     }
   }
@@ -267,12 +267,12 @@ export function CustomersPage() {
       if (err.response?.status === 422) {
         const errs = err.response.data.errors
         if (errs?.document) {
-          toast.error(`Documento invÃ¡lido: ${errs.document[0]}`)
+          toast.error(`Documento inválido: ${errs.document[0]}`)
           setActiveTab('info')
         } else {
           const firstField = Object.keys(errs)[0]
           const firstMsg = Object.values(errs).flat()[0] as string
-          toast.error(firstMsg || 'Erro de validaÃ§Ã£o')
+          toast.error(firstMsg || 'Erro de validação')
 
           // Auto-switch tab based on which field failed
           if (['address_zip', 'address_street', 'address_number', 'address_complement', 'address_neighborhood', 'address_city', 'address_state', 'latitude', 'longitude', 'google_maps_link'].includes(firstField)) {
@@ -286,7 +286,7 @@ export function CustomersPage() {
           }
         }
       } else if (err.response?.status === 403) {
-        toast.error('VocÃª nÃ£o tem permissÃ£o')
+        toast.error('Você não tem permissão')
       } else {
         toast.error(err.response?.data?.message || 'Erro ao salvar cliente')
       }
@@ -297,7 +297,7 @@ export function CustomersPage() {
   const deleteMut = useMutation({
     mutationFn: (id: number) => api.delete(`/customers/${id}`),
     onSuccess: () => {
-      toast.success('Cliente excluÃ­do!')
+      toast.success('Cliente excluído!')
       qc.invalidateQueries({ queryKey: ['customers'] })
       setDelId(null)
       setDelDeps(null)
@@ -306,7 +306,7 @@ export function CustomersPage() {
       if (err.response?.status === 409) {
         setDelDeps((err.response.data.dependencies ?? null) as DeleteDependencies | null)
       } else if (err.response?.status === 403) {
-        toast.error('VocÃª nÃ£o tem permissÃ£o')
+        toast.error('Você não tem permissão')
         setDelId(null)
       } else {
         toast.error(err.response?.data?.message || 'Erro ao excluir')
@@ -368,7 +368,7 @@ export function CustomersPage() {
   }
 
   function handleSave() {
-    if (!form.name.trim()) { toast.error('Nome Ã© obrigatÃ³rio'); return }
+    if (!form.name.trim()) { toast.error('Nome é obrigatório'); return }
     saveMut.mutate(form)
   }
 
@@ -397,7 +397,7 @@ export function CustomersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Clientes"
-        subtitle="Gerencie seus clientes e informaÃ§Ãµes de contato"
+        subtitle="Gerencie seus clientes e informações de contato"
         count={totalCount}
         actions={[
           {
@@ -433,8 +433,8 @@ export function CustomersPage() {
           className="text-sm border border-surface-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">Todos os tipos</option>
-          <option value="PF">Pessoa FÃ­sica</option>
-          <option value="PJ">Pessoa JurÃ­dica</option>
+          <option value="PF">Pessoa Física</option>
+          <option value="PJ">Pessoa Jurídica</option>
         </select>
         <select
           value={statusFilter}
@@ -573,7 +573,7 @@ export function CustomersPage() {
                   onClick={() => setPage(p => p + 1)}
                   icon={<ChevronRight className="h-4 w-4" />}
                 >
-                  PrÃ³xima
+                  Próxima
                 </Button>
               </div>
             </div>
@@ -604,7 +604,7 @@ export function CustomersPage() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 text-sm font-medium whitespace-nowrap ${activeTab === tab ? 'border-b-2 border-brand-600 text-brand-600' : 'text-surface-500 hover:text-surface-700'}`}
             >
-              {{ info: 'InformaÃ§Ãµes', address: 'EndereÃ§o', crm: 'CRM', contacts: 'Contatos' }[tab]}
+              {{ info: 'Informações', address: 'Endereço', crm: 'CRM', contacts: 'Contatos' }[tab]}
             </button>
           ))}
         </div>
@@ -622,14 +622,14 @@ export function CustomersPage() {
                     onClick={() => setForm(prev => ({ ...prev, type: t }))}
                     className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${form.type === t ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 text-surface-600 hover:bg-surface-50'}`}
                   >
-                    {t === 'PJ' ? 'Pessoa JurÃ­dica' : 'Pessoa FÃ­sica'}
+                    {t === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
                   </button>
                 ))}
               </div>
             </div>
             <div className="sm:col-span-2">
               <Input
-                label={form.type === 'PJ' ? 'RazÃ£o Social *' : 'Nome Completo *'}
+                label={form.type === 'PJ' ? 'Razão Social *' : 'Nome Completo *'}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
@@ -672,7 +672,7 @@ export function CustomersPage() {
               placeholder="(00) 00000-0000"
             />
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-surface-700 mb-1">ObservaÃ§Ãµes</label>
+              <label className="block text-sm font-medium text-surface-700 mb-1">Observações</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -713,7 +713,7 @@ export function CustomersPage() {
               />
             </div>
             <Input
-              label="NÃºmero"
+              label="Número"
               value={form.address_number}
               onChange={(e) => setForm({ ...form, address_number: e.target.value })}
             />
@@ -742,7 +742,7 @@ export function CustomersPage() {
             <div className="sm:col-span-2 border-t border-surface-200 mt-2 pt-4">
               <h4 className="text-sm font-semibold text-surface-900 mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-brand-600" />
-                LocalizaÃ§Ã£o (Google Maps)
+                Localização (Google Maps)
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
@@ -791,7 +791,7 @@ export function CustomersPage() {
                       className="inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700 font-medium"
                     >
                       <MapPin className="w-4 h-4" />
-                      Visualizar localizaÃ§Ã£o no Google Maps
+                      Visualizar localização no Google Maps
                       <UploadCloud className="w-3 h-3 rotate-45" />
                     </a>
                   </div>
@@ -847,7 +847,7 @@ export function CustomersPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="crm-rating" className="block text-sm font-medium text-surface-700 mb-1">ClassificaÃ§Ã£o</label>
+              <label htmlFor="crm-rating" className="block text-sm font-medium text-surface-700 mb-1">Classificação</label>
               <select
                 id="crm-rating"
                 value={form.rating}
@@ -861,7 +861,7 @@ export function CustomersPage() {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label htmlFor="crm-seller" className="block text-sm font-medium text-surface-700 mb-1">Vendedor ResponsÃ¡vel</label>
+              <label htmlFor="crm-seller" className="block text-sm font-medium text-surface-700 mb-1">Vendedor Responsável</label>
               <select
                 id="crm-seller"
                 value={form.assigned_seller_id}
@@ -955,16 +955,16 @@ export function CustomersPage() {
       >
         {delDeps ? (
           <div className="space-y-2">
-            <p className="text-sm text-surface-700">NÃ£o Ã© possÃ­vel excluir este cliente. Existem dependÃªncias:</p>
+            <p className="text-sm text-surface-700">Não é possível excluir este cliente. Existem dependências:</p>
             <ul className="text-sm text-surface-600 list-disc pl-5 space-y-1">
-              {delDeps.active_work_orders && <li>Ordens de serviÃ§o ativas</li>}
-              {delDeps.receivables && <li>PendÃªncias financeiras</li>}
-              {(delDeps.quotes ?? 0) > 0 && <li>{delDeps.quotes} orÃ§amento(s)</li>}
-              {(delDeps.deals ?? 0) > 0 && <li>{delDeps.deals} negociaÃ§Ã£o(Ãµes)</li>}
+              {delDeps.active_work_orders && <li>Ordens de serviço ativas</li>}
+              {delDeps.receivables && <li>Pendências financeiras</li>}
+              {(delDeps.quotes ?? 0) > 0 && <li>{delDeps.quotes} orçamento(s)</li>}
+              {(delDeps.deals ?? 0) > 0 && <li>{delDeps.deals} negociação(ões)</li>}
             </ul>
           </div>
         ) : (
-          <p className="text-sm text-surface-700">Tem certeza que deseja excluir este cliente? Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
+          <p className="text-sm text-surface-700">Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.</p>
         )}
       </Modal>
     </div>

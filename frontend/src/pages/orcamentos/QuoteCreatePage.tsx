@@ -11,35 +11,35 @@ import { Input } from '@/components/ui/input'
 
 // Strings constant for easy localization in the future
 const STRINGS = {
-    newQuote: 'Novo OrÃ§amento',
-    fillInfo: 'Preencha as informaÃ§Ãµes do orÃ§amento',
+    newQuote: 'Novo Orçamento',
+    fillInfo: 'Preencha as informações do orçamento',
     stepCustomer: 'Cliente',
     stepEquipments: 'Equipamentos e Itens',
-    stepReview: 'RevisÃ£o',
+    stepReview: 'Revisão',
     selectCustomer: 'Selecionar Cliente',
     searchPlaceholder: 'Pesquisar cliente por nome, CPF/CNPJ...',
     validity: 'Validade',
-    observations: 'ObservaÃ§Ãµes',
-    next: 'PrÃ³ximo',
+    observations: 'Observações',
+    next: 'Próximo',
     back: 'Voltar',
     customerEquipments: 'Equipamentos do Cliente',
     noEquipments: 'Nenhum equipamento cadastrado para este cliente',
-    descriptionPlaceholder: 'DescriÃ§Ã£o do que serÃ¡ feito neste equipamento...',
+    descriptionPlaceholder: 'Descrição do que será feito neste equipamento...',
     addProduct: '+ Produto',
-    addService: '+ ServiÃ§o',
+    addService: '+ Serviço',
     type: 'Tipo',
     item: 'Item',
     quantity: 'Qtd',
-    unitPrice: 'PreÃ§o Unit.',
+    unitPrice: 'Preço Unit.',
     discount: 'Desc %',
     subtotal: 'Subtotal',
-    summary: 'Resumo do OrÃ§amento',
+    summary: 'Resumo do Orçamento',
     totalItems: 'Total de itens',
     globalDiscount: 'Desconto global (%)',
     total: 'Total',
-    saveQuote: 'Salvar OrÃ§amento',
+    saveQuote: 'Salvar Orçamento',
     saving: 'Salvando...',
-    errorSaving: 'Erro ao salvar orÃ§amento. Verifique os dados e tente novamente.',
+    errorSaving: 'Erro ao salvar orçamento. Verifique os dados e tente novamente.',
 }
 
 type Step = 'customer' | 'equipments' | 'review'
@@ -147,7 +147,7 @@ export function QuoteCreatePage() {
             })
         },
         onSuccess: () => {
-            toast.success('OrÃ§amento criado com sucesso!')
+            toast.success('Orçamento criado com sucesso!')
             qc.invalidateQueries({ queryKey: ['quotes'] })
             qc.invalidateQueries({ queryKey: ['quotes-summary'] })
             navigate('/orcamentos')
@@ -299,7 +299,7 @@ export function QuoteCreatePage() {
                                 {/* Items */}
                                 {block.items.map((it, iIdx) => (
                                     <div key={iIdx} className="flex items-center gap-2 rounded-lg bg-surface-50 p-2 text-sm">
-                                        <span className="w-16 text-xs text-surface-500">{it.type === 'product' ? 'Produto' : 'ServiÃ§o'}</span>
+                                        <span className="w-16 text-xs text-surface-500">{it.type === 'product' ? 'Produto' : 'Serviço'}</span>
                                         <span className="flex-1 font-medium text-surface-800">{it.name}</span>
                                         <input type="number" min={1} value={it.quantity}
                                             onChange={e => updateItem(bIdx, iIdx, 'quantity', Number(e.target.value))}

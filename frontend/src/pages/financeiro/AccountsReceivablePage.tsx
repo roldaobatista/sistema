@@ -351,11 +351,11 @@ export function AccountsReceivablePage() {
                     <p className="mt-1 text-xl font-bold text-red-600">{fmtBRL(summary.overdue ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                    <div className="flex items-center gap-2 text-blue-600"><FileText className="h-4 w-4" /><span className="text-xs font-medium">Faturado (mÃªs)</span></div>
+                    <div className="flex items-center gap-2 text-blue-600"><FileText className="h-4 w-4" /><span className="text-xs font-medium">Faturado (mês)</span></div>
                     <p className="mt-1 text-xl font-bold text-blue-600">{fmtBRL(summary.billed_this_month ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                    <div className="flex items-center gap-2 text-emerald-600"><CheckCircle className="h-4 w-4" /><span className="text-xs font-medium">Recebido (mÃªs)</span></div>
+                    <div className="flex items-center gap-2 text-emerald-600"><CheckCircle className="h-4 w-4" /><span className="text-xs font-medium">Recebido (mês)</span></div>
                     <p className="mt-1 text-xl font-bold text-emerald-600">{fmtBRL(summary.paid_this_month ?? 0)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -397,7 +397,7 @@ export function AccountsReceivablePage() {
             <div className="flex gap-3">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-                    <input value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)} placeholder="Buscar por descriÃ§Ã£o ou cliente"
+                    <input value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)} placeholder="Buscar por descrição ou cliente"
                         className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none" />
                 </div>
                 <select value={statusFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
@@ -412,13 +412,13 @@ export function AccountsReceivablePage() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">DescriÃ§Ã£o</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Descrição</th>
                             <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Cliente</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600 md:table-cell">Vencimento</th>
                             <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Status</th>
                             <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Valor</th>
                             <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Pago</th>
-                            <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">AÃ§Ãµes</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-semibold uppercase text-surface-600">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">

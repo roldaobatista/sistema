@@ -109,7 +109,7 @@ export function SuppliersPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['suppliers'] })
             setShowConfirmDelete(null)
-            toast.success('Fornecedor excluÃ­do com sucesso!')
+            toast.success('Fornecedor excluído com sucesso!')
         },
         onError: (err: any) => {
             if (err.response?.status === 409 || err.response?.status === 422) {
@@ -182,7 +182,7 @@ export function SuppliersPage() {
                             <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Contato</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Cidade/UF</th>
                             <th className="px-3.5 py-2.5 text-center text-[11px] font-medium uppercase tracking-wider text-surface-500">Status</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">AÃ§Ãµes</th>
+                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -248,8 +248,8 @@ export function SuppliersPage() {
                             <select value={form.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('type', e.target.value as 'PF' | 'PJ')}
                                 aria-label="Tipo de pessoa"
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                                <option value="PJ">Pessoa JurÃ­dica</option>
-                                <option value="PF">Pessoa FÃ­sica</option>
+                                <option value="PJ">Pessoa Jurídica</option>
+                                <option value="PF">Pessoa Física</option>
                             </select>
                         </div>
                         <div className="relative">
@@ -262,7 +262,7 @@ export function SuppliersPage() {
                                 </button>
                             )}
                         </div>
-                        <Input label={form.type === 'PJ' ? 'RazÃ£o Social' : 'Nome'} value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
+                        <Input label={form.type === 'PJ' ? 'Razão Social' : 'Nome'} value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <Input label="Nome Fantasia" value={form.trade_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('trade_name', e.target.value)} />
@@ -277,7 +277,7 @@ export function SuppliersPage() {
                         <div className="sm:col-span-2">
                             <Input label="Rua" value={form.address_street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_street', e.target.value)} />
                         </div>
-                        <Input label="NÃºmero" value={form.address_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_number', e.target.value)} />
+                        <Input label="Número" value={form.address_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_number', e.target.value)} />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-4">
                         <Input label="Complemento" value={form.address_complement} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_complement', e.target.value)} />
@@ -301,7 +301,7 @@ export function SuppliersPage() {
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">ObservaÃ§Ãµes</label>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
                         <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
@@ -322,16 +322,16 @@ export function SuppliersPage() {
                 {showDetail && (
                     <div className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <div><span className="text-xs text-surface-500">Tipo</span><p className="text-sm font-medium">{showDetail.type === 'PJ' ? 'Pessoa JurÃ­dica' : 'Pessoa FÃ­sica'}</p></div>
+                            <div><span className="text-xs text-surface-500">Tipo</span><p className="text-sm font-medium">{showDetail.type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}</p></div>
                             <div><span className="text-xs text-surface-500">Documento</span><p className="text-sm font-medium font-mono">{showDetail.document || 'â€”'}</p></div>
-                            <div><span className="text-xs text-surface-500">{showDetail.type === 'PJ' ? 'RazÃ£o Social' : 'Nome'}</span><p className="text-sm font-medium">{showDetail.name}</p></div>
+                            <div><span className="text-xs text-surface-500">{showDetail.type === 'PJ' ? 'Razão Social' : 'Nome'}</span><p className="text-sm font-medium">{showDetail.name}</p></div>
                             <div><span className="text-xs text-surface-500">Nome Fantasia</span><p className="text-sm font-medium">{showDetail.trade_name ?? 'â€”'}</p></div>
                             <div><span className="text-xs text-surface-500">E-mail</span><p className="text-sm font-medium">{showDetail.email ?? 'â€”'}</p></div>
                             <div><span className="text-xs text-surface-500">Telefone</span><p className="text-sm font-medium">{showDetail.phone ?? 'â€”'}</p></div>
                         </div>
                         {(showDetail.address_street || showDetail.address_city) && (
                             <div className="border-t border-subtle pt-3">
-                                <span className="text-xs text-surface-500">EndereÃ§o</span>
+                                <span className="text-xs text-surface-500">Endereço</span>
                                 <p className="text-sm font-medium">
                                     {[showDetail.address_street, showDetail.address_number, showDetail.address_complement].filter(Boolean).join(', ')}
                                 </p>
@@ -342,7 +342,7 @@ export function SuppliersPage() {
                         )}
                         {showDetail.notes && (
                             <div className="border-t border-subtle pt-3">
-                                <span className="text-xs text-surface-500">ObservaÃ§Ãµes</span>
+                                <span className="text-xs text-surface-500">Observações</span>
                                 <p className="text-sm whitespace-pre-wrap">{showDetail.notes}</p>
                             </div>
                         )}
@@ -367,14 +367,14 @@ export function SuppliersPage() {
 
                     {deleteMessage && (
                         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-100">
-                            <p className="font-medium mb-1">NÃ£o Ã© possÃ­vel excluir:</p>
+                            <p className="font-medium mb-1">Não é possível excluir:</p>
                             <p>{deleteMessage}</p>
                         </div>
                     )}
 
                     {deleteDependencies && (
                         <div className="space-y-2">
-                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">VÃ­nculos encontrados:</p>
+                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(deleteDependencies).map(([key, count]) => (
                                     <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
@@ -390,7 +390,7 @@ export function SuppliersPage() {
                         <Button variant="outline" onClick={() => setShowConfirmDelete(null)}>Cancelar</Button>
                         {deleteDependencies ? (
                             <Button variant="ghost" disabled className="text-surface-400 cursor-not-allowed">
-                                Resolva as pendÃªncias acima
+                                Resolva as pendências acima
                             </Button>
                         ) : (
                             <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}

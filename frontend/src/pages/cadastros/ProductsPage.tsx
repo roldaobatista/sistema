@@ -73,7 +73,7 @@ export function ProductsPage() {
             qc.invalidateQueries({ queryKey: ['products'] })
             qc.invalidateQueries({ queryKey: ['stock'] })
             setShowConfirmDelete(null)
-            toast.success('Produto excluÃ­do com sucesso!')
+            toast.success('Produto excluído com sucesso!')
         },
         onError: (err: any) => {
             if (err.response?.status === 409 || err.response?.status === 422) {
@@ -133,7 +133,7 @@ export function ProductsPage() {
         <div className="space-y-5 animate-fade-in">
             <PageHeader
                 title="Produtos"
-                subtitle="CatÃ¡logo de produtos e peÃ§as"
+                subtitle="Catálogo de produtos e peças"
                 count={products.length}
                 actions={[{ label: 'Novo Produto', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }]}
             />
@@ -142,7 +142,7 @@ export function ProductsPage() {
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
                     <input type="text" value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-                        placeholder="Buscar por nome ou cÃ³digo..."
+                        placeholder="Buscar por nome ou código..."
                         className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-4 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                 </div>
             </div>
@@ -153,9 +153,9 @@ export function ProductsPage() {
                         <tr className="border-b border-subtle bg-surface-50">
                             <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Produto</th>
                             <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Categoria</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">PreÃ§o</th>
+                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Preço</th>
                             <th className="hidden px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Estoque</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">AÃ§Ãµes</th>
+                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -222,7 +222,7 @@ export function ProductsPage() {
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Input label="Nome" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
-                        <Input label="CÃ³digo" value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('code', e.target.value)} placeholder="Opcional" />
+                        <Input label="Código" value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('code', e.target.value)} placeholder="Opcional" />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
@@ -243,13 +243,13 @@ export function ProductsPage() {
                         <div /> {/* spacer */}
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <Input label="PreÃ§o Custo (R$)" type="number" step="0.01" value={form.cost_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('cost_price', e.target.value)} />
-                        <Input label="PreÃ§o Venda (R$)" type="number" step="0.01" value={form.sell_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('sell_price', e.target.value)} />
+                        <Input label="Preço Custo (R$)" type="number" step="0.01" value={form.cost_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('cost_price', e.target.value)} />
+                        <Input label="Preço Venda (R$)" type="number" step="0.01" value={form.sell_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('sell_price', e.target.value)} />
                         <Input label="Estoque" type="number" step="0.01" value={form.stock_qty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('stock_qty', e.target.value)} />
-                        <Input label="Estoque MÃ­n." type="number" step="0.01" value={form.stock_min} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('stock_min', e.target.value)} />
+                        <Input label="Estoque Mín." type="number" step="0.01" value={form.stock_min} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('stock_min', e.target.value)} />
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">DescriÃ§Ã£o</label>
+                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Descrição</label>
                         <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
@@ -277,14 +277,14 @@ export function ProductsPage() {
 
                     {deleteMessage && (
                         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 border border-red-100">
-                            <p className="font-medium mb-1">NÃ£o Ã© possÃ­vel excluir:</p>
+                            <p className="font-medium mb-1">Não é possível excluir:</p>
                             <p>{deleteMessage}</p>
                         </div>
                     )}
 
                     {deleteDependencies && (
                         <div className="space-y-2">
-                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">VÃ­nculos encontrados:</p>
+                            <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(deleteDependencies).map(([key, count]) => (
                                     <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
@@ -300,7 +300,7 @@ export function ProductsPage() {
                         <Button variant="outline" onClick={() => setShowConfirmDelete(null)}>Cancelar</Button>
                         {deleteDependencies ? (
                             <Button variant="ghost" disabled className="text-surface-400 cursor-not-allowed">
-                                Resolva as pendÃªncias acima
+                                Resolva as pendências acima
                             </Button>
                         ) : (
                             <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
