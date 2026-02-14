@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
     Search, Plus, Scale, AlertTriangle, CheckCircle2, Clock,
-    Filter, Eye, ChevronLeft, ChevronRight, Shield, Download
+    Filter, Eye, ChevronLeft, ChevronRight, Shield, Download, Trash2
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -86,7 +86,7 @@ export default function EquipmentListPage() {
         queryFn: () => api.get('/equipments-constants').then(r => r.data),
     })
 
-    const { data: pageData, isLoading } = useQuery({
+    const { data: pageData, isLoading, isError } = useQuery({
         queryKey: ['equipments', search, filterCategory, filterStatus, filterOverdue, page],
         queryFn: () => api.get('/equipments', {
             params: {
@@ -99,6 +99,25 @@ export default function EquipmentListPage() {
             },
         }).then(r => r.data),
     })
+
+    if (isError) {
+        toast.error('Erro ao carregar equipamentos')
+    }
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/equipments/${id}`),
+        onSuccess: () => {
+            toast.success('Equipamento excluído com sucesso')
+            qc.invalidateQueries({ queryKey: ['equipments'] })
+        },
+        onError: () => toast.error('Erro ao excluir equipamento'),
+    })
+
+    const handleDelete = (id: number, code: string) => {
+        if (confirm(`Tem certeza que deseja excluir o equipamento ${code}?`)) {
+            deleteMutation.mutate(id)
+        }
+    }
 
     const equipments: Equipment[] = pageData?.data ?? []
     const lastPage = pageData?.last_page ?? 1
@@ -311,13 +330,22 @@ export default function EquipmentListPage() {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <Link
-                                            to={`/equipamentos/${eq.id}`}
-                                            className="inline-flex items-center gap-1 rounded-lg bg-surface-100 px-2.5 py-1.5 text-xs font-medium text-surface-700 hover:bg-surface-200"
-                                        >
-                                            <Eye size={12} />
-                                            Ver
-                                        </Link>
+                                        <div className="flex items-center gap-1">
+                                            <Link
+                                                to={`/equipamentos/${eq.id}`}
+                                                className="inline-flex items-center gap-1 rounded-lg bg-surface-100 px-2.5 py-1.5 text-xs font-medium text-surface-700 hover:bg-surface-200"
+                                            >
+                                                <Eye size={12} />
+                                                Ver
+                                            </Link>
+                                            <button
+                                                onClick={() => handleDelete(eq.id, eq.code)}
+                                                title="Excluir equipamento"
+                                                className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             )

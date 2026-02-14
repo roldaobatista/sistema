@@ -33,6 +33,7 @@ export interface InmetroOwner {
     lead_status: 'new' | 'contacted' | 'negotiating' | 'converted' | 'lost'
     priority: 'urgent' | 'high' | 'normal' | 'low'
     converted_to_customer_id: number | null
+    estimated_revenue?: number | null
     notes: string | null
     locations_count?: number
     instruments_count?: number

@@ -1,37 +1,39 @@
 import * as React from 'react'
-import { Button, type ButtonProps } from './Button'
+import { Button, type ButtonProps } from './button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 import { cn } from '@/lib/utils'
 
-interface IconButtonProps extends Omit<ButtonProps, 'size' | 'children'> {
-    /** Texto descritivo para acessibilidade e tooltip */
-    label: string
-    /** Ícone renderizado */
+interface IconButtonProps extends Omit<ButtonProps, 'children'> {
+    label?: string
     icon: React.ReactNode
-    /** Posição do tooltip */
+    tooltip?: string
     tooltipSide?: 'top' | 'bottom' | 'left' | 'right'
 }
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-    ({ label, icon, tooltipSide = 'top', className, variant = 'ghost', ...props }, ref) => (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    ref={ref}
-                    variant={variant}
-                    size="icon"
-                    aria-label={label}
-                    className={cn('text-surface-500', className)}
-                    {...props}
-                >
-                    {icon}
-                </Button>
-            </TooltipTrigger>
-            <TooltipContent side={tooltipSide}>
-                <p>{label}</p>
-            </TooltipContent>
-        </Tooltip>
-    )
+    ({ label, icon, tooltip, tooltipSide = 'top', className, variant = 'ghost', size = 'icon', ...props }, ref) => {
+        const tooltipText = label ?? tooltip ?? 'Ação'
+
+        return (
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        ref={ref}
+                        variant={variant}
+                        size={size}
+                        aria-label={tooltipText}
+                        className={cn('text-surface-500', className)}
+                        {...props}
+                    >
+                        {icon}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side={tooltipSide}>
+                    <p>{tooltipText}</p>
+                </TooltipContent>
+            </Tooltip>
+        )
+    }
 )
 IconButton.displayName = 'IconButton'
 

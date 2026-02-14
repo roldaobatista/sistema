@@ -82,6 +82,20 @@ export interface AuvoMapping {
 
 // ── Queries ──────────────────────────────────
 
+export interface AuvoConfig {
+    has_credentials: boolean
+    api_key: string
+    api_token: string
+}
+
+export function useAuvoGetConfig() {
+    return useQuery<AuvoConfig>({
+        queryKey: ['auvo', 'config'],
+        queryFn: () => api.get('/auvo/config').then(r => r.data),
+        staleTime: 60_000,
+    })
+}
+
 export function useAuvoConnectionStatus() {
     return useQuery<AuvoConnectionStatus>({
         queryKey: ['auvo', 'status'],
@@ -164,11 +178,15 @@ export function useAuvoRollback() {
 
 export function useAuvoConfig() {
     const qc = useQueryClient()
-    return useMutation({
+    return useMutation<{ message: string; saved: boolean; connected: boolean }, unknown, { api_key: string; api_token: string }>({
         mutationFn: (data: { api_key: string; api_token: string }) =>
             api.put('/auvo/config', data).then(r => r.data),
-        onSuccess: () => {
-            toast.success('Credenciais Auvo salvas')
+        onSuccess: (data) => {
+            if (data.connected) {
+                toast.success(data.message || 'Credenciais salvas e conexão verificada')
+            } else {
+                toast.warning(data.message || 'Credenciais salvas, mas a conexão não foi verificada')
+            }
             qc.invalidateQueries({ queryKey: ['auvo', 'status'] })
         },
         onError: handleMutationError,

@@ -63,7 +63,7 @@ export function RecurringContractsPage() {
     const [form, setForm] = useState(emptyForm)
     const [expanded, setExpanded] = useState<number | null>(null)
 
-    const { data: res, isLoading } = useQuery({
+    const { data: res, isLoading, isError } = useQuery({
         queryKey: ['recurring-contracts', search],
         queryFn: () => api.get('/recurring-contracts', { params: { search } }).then((r: any) => r.data),
     })
@@ -81,21 +81,33 @@ export function RecurringContractsPage() {
                 ? api.put(`/recurring-contracts/${editing.id}`, data)
                 : api.post('/recurring-contracts', data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['recurring-contracts'] }); closeForm() },
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
+            closeForm()
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar contrato'),
     })
 
     const remove = useMutation({
         mutationFn: (id: number) => api.delete(`/recurring-contracts/${id}`),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['recurring-contracts'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao excluir contrato'),
     })
 
     const generate = useMutation({
         mutationFn: (id: number) => api.post(`/recurring-contracts/${id}/generate`),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['recurring-contracts'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao gerar OS'),
     })
 
     const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
-        setForm(prev => ({ ...prev, [k]: v }))
+            setForm(prev => ({ ...prev, [k]: v }))
 
     function openEdit(c: Contract) {
         setEditing(c)
@@ -243,6 +255,8 @@ export function RecurringContractsPage() {
             {/* Table */}
             {isLoading ? (
                 <div className="text-center py-12 text-zinc-400">Carregando...</div>
+            ) : isError ? (
+                <div className="text-center py-12 text-red-400">Erro ao carregar contratos. Tente novamente.</div>
             ) : contracts.length === 0 ? (
                 <div className="text-center py-12">
                     <RefreshCw className="h-12 w-12 text-zinc-600 mx-auto mb-3" />

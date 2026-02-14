@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     Search, ClipboardCheck, AlertTriangle, MessageSquare, ThumbsUp,
@@ -20,13 +21,13 @@ export default function QualityPage() {
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
 
-    const { data: proceduresData, isLoading: loadingProc } = useQuery({
+    const { data: proceduresData, isLoading: loadingProc, isError: errorProc } = useQuery({
         queryKey: ['quality-procedures', search, page],
         queryFn: () => api.get('/quality/procedures', { params: { search: search || undefined, page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'procedures',
     })
 
-    const { data: actionsData, isLoading: loadingActions } = useQuery({
+    const { data: actionsData, isLoading: loadingActions, isError: errorActions } = useQuery({
         queryKey: ['quality-corrective-actions', page],
         queryFn: () => api.get('/quality/corrective-actions', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'actions',
@@ -60,6 +61,11 @@ export default function QualityPage() {
     const actions = actionsData?.data ?? []
     const complaints = complaintsData?.data ?? []
     const surveys = surveysData?.data ?? []
+
+    useEffect(() => {
+        if (errorProc) toast.error('Erro ao carregar procedimentos')
+        if (errorActions) toast.error('Erro ao carregar ações corretivas')
+    }, [errorProc, errorActions])
 
     return (
         <div className="space-y-5">

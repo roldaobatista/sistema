@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { BarChart3, Users, Scale, AlertTriangle, Clock, CheckCircle, XCircle, TrendingUp, MapPin, RefreshCw, Loader2 } from 'lucide-react'
+import api from '@/lib/api'
 import { useInmetroDashboard, useInmetroCities } from '@/hooks/useInmetro'
 import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
 import { InmetroHeatmapWidget } from '@/components/inmetro/InmetroHeatmapWidget'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 
 const statusLabels: Record<string, string> = {
     approved: 'Aprovado',
@@ -20,9 +23,13 @@ const statusColors: Record<string, string> = {
 }
 
 export function InmetroDashboardPage() {
-    const { data: dashboard, isLoading } = useInmetroDashboard()
+    const { data: dashboard, isLoading, isError } = useInmetroDashboard()
     const { data: cities } = useInmetroCities()
     const { isSyncing, triggerSync } = useInmetroAutoSync()
+
+    useEffect(() => {
+        if (isError) toast.error('Erro ao carregar dados do INMETRO')
+    }, [isError])
 
     if (isLoading) {
         return (

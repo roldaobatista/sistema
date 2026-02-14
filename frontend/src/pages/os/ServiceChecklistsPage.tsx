@@ -56,7 +56,10 @@ export function ServiceChecklistsPage() {
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/service-checklists/${id}`),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['service-checklists'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['service-checklists'] })
+        },
     })
 
     const resetForm = () => {

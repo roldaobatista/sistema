@@ -180,7 +180,7 @@ export default function TechWorkOrderDetailPage() {
                             {currentStatus.label}
                         </span>
                         <div className="mt-2">
-                            <SLACountdown dueAt={wo.sla_due_at} status={wo.status} />
+                            <SLACountdown dueAt={wo.sla_due_at ?? null} status={wo.status} />
                         </div>
                     </div>
                     {!navigator.onLine && (

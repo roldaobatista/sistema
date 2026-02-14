@@ -41,7 +41,10 @@ export default function AutomationPage() {
 
     const toggleRule = useMutation({
         mutationFn: (id: number) => api.patch(`/automation/rules/${id}/toggle`),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); queryClient.invalidateQueries({ queryKey: ['automation-rules'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
+        },
     })
 
     const rules = rulesData?.data ?? []

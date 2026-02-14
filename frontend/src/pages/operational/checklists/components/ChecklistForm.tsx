@@ -144,15 +144,11 @@ export function ChecklistForm({ checklist, workOrderId, onSuccess }: ChecklistFo
 
     // Dynamic schema generation based on items
     const generateSchema = () => {
-        const shape: any = {}
+        const shape: Record<string, z.ZodTypeAny> = {}
         checklist.items.forEach(item => {
-            let validator = z.string()
-            if (item.required) {
-                validator = validator.min(1, 'Este campo é obrigatório')
-            } else {
-                validator = validator.optional()
-            }
-            shape[item.id] = validator
+            shape[item.id] = item.required
+                ? z.string().min(1, 'Este campo é obrigatório')
+                : z.string().optional()
         })
         return z.object(shape)
     }
@@ -198,12 +194,12 @@ export function ChecklistForm({ checklist, workOrderId, onSuccess }: ChecklistFo
                             </Label>
 
                             {item.type === 'text' && (
-                                <Textarea {...form.register(item.id)} placeholder="Sua resposta..." />
+                                <Textarea {...form.register(item.id as keyof FormValues)} placeholder="Sua resposta..." />
                             )}
 
                             {item.type === 'boolean' && (
                                 <RadioGroup
-                                    onValueChange={(val) => form.setValue(item.id, val)}
+                                    onValueChange={(val) => form.setValue(item.id as keyof FormValues, val as FormValues[keyof FormValues])}
                                     className="flex space-x-4"
                                 >
                                     <div className="flex items-center space-x-2">
@@ -218,7 +214,7 @@ export function ChecklistForm({ checklist, workOrderId, onSuccess }: ChecklistFo
                             )}
 
                             {item.type === 'select' && item.options && (
-                                <RadioGroup onValueChange={(val) => form.setValue(item.id, val)}>
+                                <RadioGroup onValueChange={(val) => form.setValue(item.id as keyof FormValues, val as FormValues[keyof FormValues])}>
                                     {item.options.map((opt, idx) => (
                                         <div key={idx} className="flex items-center space-x-2">
                                             <RadioGroupItem value={opt} id={`${item.id}-${idx}`} />
@@ -232,8 +228,8 @@ export function ChecklistForm({ checklist, workOrderId, onSuccess }: ChecklistFo
                                 <PhotoUploadField
                                     itemId={item.id}
                                     workOrderId={workOrderId}
-                                    value={form.watch(item.id)}
-                                    onChange={(url) => form.setValue(item.id, url ?? '')}
+                                    value={form.watch(item.id as keyof FormValues) as string | undefined}
+                                    onChange={(url) => form.setValue(item.id as keyof FormValues, (url ?? '') as FormValues[keyof FormValues])}
                                 />
                             )}
 

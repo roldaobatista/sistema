@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Calendar, User, Clock, CheckCircle2, XCircle, Play, Info } from 'lucide-react'
+import { Calendar, User, Clock, CheckCircle2, XCircle, Play, Info, Plus } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

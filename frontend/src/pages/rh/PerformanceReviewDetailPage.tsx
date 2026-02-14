@@ -213,7 +213,9 @@ export default function PerformanceReviewDetailPage() {
                             </div>
                             <div className="flex justify-between py-2 border-b border-subtle">
                                 <span className="text-surface-500">Prazo</span>
-                                <span className="font-medium">{new Date(review.created_at).toLocaleDateString()}</span>
+                                <span className="font-medium">
+                                    {review.created_at ? new Date(review.created_at).toLocaleDateString() : '—'}
+                                </span>
                             </div>
                             <div className="flex justify-between py-2 border-b border-subtle">
                                 <span className="text-surface-500">Avaliador</span>

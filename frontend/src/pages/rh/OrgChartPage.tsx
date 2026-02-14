@@ -133,7 +133,7 @@ export default function OrgChartPage() {
 
             {/* Content */}
             {activeTab === 'chart' && (() => {
-                type DeptNode = Department & { children: DeptNode[] }
+                type DeptNode = Omit<Department, 'children'> & { children: DeptNode[] }
 
                 const buildTree = (depts: Department[]): DeptNode[] => {
                     const map: Record<number, DeptNode> = {}

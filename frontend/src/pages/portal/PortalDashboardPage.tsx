@@ -1,4 +1,6 @@
+﻿import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import {
     FileText, DollarSign, Clock, CheckCircle, AlertCircle,
@@ -12,7 +14,7 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
     open: { label: 'Aberta', color: 'text-sky-600', bg: 'bg-sky-100' },
     in_progress: { label: 'Em Andamento', color: 'text-amber-600', bg: 'bg-amber-100' },
     waiting_parts: { label: 'Aguardando', color: 'text-orange-600', bg: 'bg-orange-100' },
-    completed: { label: 'Concluída', color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    completed: { label: 'ConcluÃ­da', color: 'text-emerald-600', bg: 'bg-emerald-100' },
     cancelled: { label: 'Cancelada', color: 'text-red-600', bg: 'bg-red-100' },
 }
 
@@ -21,24 +23,31 @@ const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', cur
 export function PortalDashboardPage() {
     const navigate = useNavigate()
 
-    const { data: workOrders } = useQuery({
+    const { data: workOrders, isLoading: loadingWorkOrders, isError: errorWO } = useQuery({
         queryKey: ['portal-dashboard-os'],
         queryFn: () => api.get('/portal/work-orders').then(res => res.data),
     })
 
-    const { data: quotes } = useQuery({
+    const { data: quotes, isLoading: loadingQuotes, isError: errorQuotes } = useQuery({
         queryKey: ['portal-dashboard-quotes'],
         queryFn: () => api.get('/portal/quotes').then(res => res.data),
     })
 
-    const { data: financials } = useQuery({
+    const { data: financials, isLoading: loadingFinancials, isError: errorFin } = useQuery({
         queryKey: ['portal-dashboard-financials'],
         queryFn: () => api.get('/portal/financials').then(res => res.data),
     })
 
+    useEffect(() => {
+        if (errorWO) toast.error('Erro ao carregar ordens de serviço')
+        if (errorQuotes) toast.error('Erro ao carregar orçamentos')
+        if (errorFin) toast.error('Erro ao carregar financeiro')
+    }, [errorWO, errorQuotes, errorFin])
+
     const osList: any[] = workOrders?.data ?? []
     const quoteList: any[] = quotes?.data ?? []
     const finList: any[] = financials ?? []
+    const isLoading = loadingWorkOrders || loadingQuotes || loadingFinancials
 
     const openOS = osList.filter(os => os.status !== WORK_ORDER_STATUS.COMPLETED && os.status !== WORK_ORDER_STATUS.CANCELLED).length
     const completedOS = osList.filter(os => os.status === WORK_ORDER_STATUS.COMPLETED).length
@@ -48,8 +57,8 @@ export function PortalDashboardPage() {
 
     const cards = [
         { label: 'OS Abertas', value: openOS, icon: FileText, color: 'text-brand-600 bg-brand-50', link: '/portal/os' },
-        { label: 'OS Concluídas', value: completedOS, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50', link: '/portal/os' },
-        { label: 'Orçamentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orcamentos' },
+        { label: 'OS ConcluÃ­das', value: completedOS, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50', link: '/portal/os' },
+        { label: 'OrÃ§amentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orcamentos' },
         { label: 'Faturas', value: fmtBRL(totalPending), icon: DollarSign, color: 'text-red-600 bg-red-50', link: '/portal/financeiro' },
     ]
 
@@ -63,8 +72,13 @@ export function PortalDashboardPage() {
         <div className="space-y-5">
             <div>
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Portal do Cliente</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Acompanhe suas ordens de serviço, orçamentos e faturas.</p>
+                <p className="mt-0.5 text-[13px] text-surface-500">Acompanhe suas ordens de serviÃ§o, orÃ§amentos e faturas.</p>
             </div>
+            {isLoading && (
+                <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-sm text-surface-500">
+                    Carregando dados do portal...
+                </div>
+            )}
 
             {/* KPI Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -90,9 +104,9 @@ export function PortalDashboardPage() {
             {/* Recent OS with Status Tracking */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                 <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
-                    <h2 className="text-sm font-semibold text-surface-900">Últimas Ordens de Serviço</h2>
+                    <h2 className="text-sm font-semibold text-surface-900">Ãšltimas Ordens de ServiÃ§o</h2>
                     <button onClick={() => navigate('/portal/os')} className="text-xs text-brand-600 font-medium hover:underline">
-                        Ver todas →
+                        Ver todas â†’
                     </button>
                 </div>
                 {recentOS.length === 0 ? (
@@ -140,7 +154,7 @@ export function PortalDashboardPage() {
                                     <div className="flex items-center justify-between mt-2 text-[10px] text-surface-400">
                                         <span>Aberta</span>
                                         <span>Em Andamento</span>
-                                        <span>Concluída</span>
+                                        <span>ConcluÃ­da</span>
                                     </div>
                                 </div>
                             )
@@ -154,11 +168,11 @@ export function PortalDashboardPage() {
                 <button onClick={() => navigate('/portal/chamados/novo')} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-left hover:shadow-elevated transition-all group">
                     <Clock className="h-6 w-6 text-sky-500 mb-2" />
                     <p className="font-semibold text-surface-900 text-sm">Abrir Chamado</p>
-                    <p className="text-xs text-surface-400 mt-0.5">Solicite assistência técnica</p>
+                    <p className="text-xs text-surface-400 mt-0.5">Solicite assistÃªncia tÃ©cnica</p>
                 </button>
                 <button onClick={() => navigate('/portal/orcamentos')} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-left hover:shadow-elevated transition-all group">
                     <TrendingUp className="h-6 w-6 text-amber-500 mb-2" />
-                    <p className="font-semibold text-surface-900 text-sm">Orçamentos</p>
+                    <p className="font-semibold text-surface-900 text-sm">OrÃ§amentos</p>
                     <p className="text-xs text-surface-400 mt-0.5">Veja propostas e aprove</p>
                 </button>
                 <button onClick={() => navigate('/portal/financeiro')} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-left hover:shadow-elevated transition-all group">
@@ -170,3 +184,4 @@ export function PortalDashboardPage() {
         </div>
     )
 }
+

@@ -117,6 +117,7 @@ export function InmetroOwnerDetailPage() {
         allInstruments.flatMap(inst =>
             (inst.history ?? []).map(h => ({ ...h, instrumentNumber: inst.inmetro_number, instrumentBrand: inst.brand ?? '' }))
         ).sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime())
+    const estimatedRevenue = Number(owner.estimated_revenue ?? 0)
 
     return (
         <div className="space-y-6">
@@ -230,9 +231,9 @@ export function InmetroOwnerDetailPage() {
                                     value={allInstruments.filter(i => i.current_status === 'approved').length}
                                     color="text-green-600"
                                 />
-                                {owner.estimated_revenue > 0 && (
+                                {estimatedRevenue > 0 && (
                                     <div className="rounded-lg border border-default bg-green-50 p-3 text-center">
-                                        <p className="text-lg font-bold text-green-700">R$ {Number(owner.estimated_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                                        <p className="text-lg font-bold text-green-700">R$ {estimatedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                                         <p className="text-xs text-green-600 mt-0.5">Receita Estimada</p>
                                     </div>
                                 )}

@@ -295,6 +295,12 @@ export function QuoteDetailPage() {
                     </div>
                 </Card>
             )}
+            {(!quote.equipments || quote.equipments.length === 0) && (
+                <Card className="p-5">
+                    <h3 className="text-sm font-semibold text-content-secondary mb-2">Equipamentos e Itens</h3>
+                    <p className="text-sm text-content-secondary">Sem dados de itens neste orçamento.</p>
+                </Card>
+            )}
 
             {/* Observações */}
             {(quote.observations || quote.internal_notes) && (

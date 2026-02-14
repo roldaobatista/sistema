@@ -4,7 +4,85 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Select = SelectPrimitive.Root
+interface SelectSharedProps {
+  children?: React.ReactNode
+  label?: string
+  error?: string
+  className?: string
+  disabled?: boolean
+}
+
+type SelectProps = SelectSharedProps & {
+  value?: string
+  defaultValue?: string
+  onValueChange?: (value: string) => void
+  onChange?: ((value: string) => void) | React.ChangeEventHandler<HTMLSelectElement>
+}
+
+const Select = ({
+  children,
+  label,
+  error,
+  className,
+  disabled,
+  value,
+  defaultValue,
+  onValueChange,
+  onChange,
+}: SelectProps) => {
+  const hasNativeOptions = React.Children.toArray(children).some(
+    (child) =>
+      React.isValidElement(child) &&
+      typeof child.type === "string" &&
+      child.type.toLowerCase() === "option"
+  )
+
+  if (hasNativeOptions) {
+    return (
+      <div className="space-y-1.5">
+        {label && (
+          <label className="text-sm font-medium text-surface-700">{label}</label>
+        )}
+        <select
+          disabled={disabled}
+          value={value}
+          defaultValue={defaultValue}
+          onChange={(event) => {
+            onValueChange?.(event.target.value)
+            if (onChange) {
+              ;(onChange as React.ChangeEventHandler<HTMLSelectElement>)(event)
+            }
+          }}
+          className={cn(
+            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            error && "border-red-500",
+            className
+          )}
+        >
+          {children}
+        </select>
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <SelectPrimitive.Root
+      value={value}
+      defaultValue={defaultValue}
+      onValueChange={(nextValue) => {
+        onValueChange?.(nextValue)
+        if (onChange) {
+          ;(onChange as (value: string) => void)(nextValue)
+        }
+      }}
+      disabled={disabled}
+    >
+      {children}
+    </SelectPrimitive.Root>
+  )
+}
+Select.displayName = "Select"
 
 const SelectGroup = SelectPrimitive.Group
 

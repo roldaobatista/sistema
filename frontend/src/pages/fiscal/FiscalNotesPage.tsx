@@ -32,6 +32,7 @@ interface FiscalNote {
     cancelled_at: string | null
     error_message: string | null
     pdf_url: string | null
+    xml_url?: string | null
     customer?: { id: number; name: string }
     work_order?: { id: number; number: string } | null
     creator?: { id: number; name: string }

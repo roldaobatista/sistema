@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface TabsContextValue {
@@ -9,15 +9,38 @@ interface TabsContextValue {
 const TabsContext = createContext<TabsContextValue>({ value: '', onChange: () => { } })
 
 interface TabsProps {
-    value: string
-    onValueChange: (value: string) => void
+    value?: string
+    defaultValue?: string
+    onValueChange?: (value: string) => void
     children: ReactNode
     className?: string
 }
 
-export function Tabs({ value, onValueChange, children, className }: TabsProps) {
+export function Tabs({
+    value: controlledValue,
+    defaultValue = '',
+    onValueChange,
+    children,
+    className,
+}: TabsProps) {
+    const [internalValue, setInternalValue] = useState(defaultValue)
+    const isControlled = controlledValue !== undefined
+    const value = isControlled ? controlledValue : internalValue
+
+    const handleChange = (nextValue: string) => {
+        if (!isControlled) {
+            setInternalValue(nextValue)
+        }
+        onValueChange?.(nextValue)
+    }
+
+    const contextValue = useMemo(
+        () => ({ value, onChange: handleChange }),
+        [value]
+    )
+
     return (
-        <TabsContext.Provider value={{ value, onChange: onValueChange }}>
+        <TabsContext.Provider value={contextValue}>
             <div className={className}>{children}</div>
         </TabsContext.Provider>
     )

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis,
-    CartesianGrid, Tooltip, ResponsiveContainer, RadarChart,
+    CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, Legend,
     PolarGrid, PolarAngleAxis, Radar, Cell,
 } from 'recharts'
 import { cn } from '@/lib/utils'
@@ -31,6 +31,7 @@ import { CustomerDocumentsTab } from '@/components/customers/CustomerDocumentsTa
 import { useOfflineStore } from '@/hooks/useOfflineStore'
 import api from '@/lib/api'
 import { useEffect } from 'react'
+import { toast } from 'sonner'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -65,7 +66,7 @@ export function Customer360Page() {
 
     const { data: dashboardData, isLoading, refetch } = useQuery({
         queryKey: ['customer-360', id],
-        queryFn: () => crmApi.getCustomer360(id!).then(r => r.data),
+        queryFn: () => crmApi.getCustomer360(customerId).then(r => r.data),
         enabled: !!id && isOnline,
     })
 

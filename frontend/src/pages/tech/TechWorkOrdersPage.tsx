@@ -136,6 +136,7 @@ export default function TechWorkOrdersPage() {
                     filtered.map((wo) => {
                         const status = STATUS_MAP[wo.status] || STATUS_MAP.pending
                         const StatusIcon = status.icon
+                        const priorityKey = wo.priority ?? 'normal'
 
                         return (
                             <button
@@ -144,7 +145,7 @@ export default function TechWorkOrdersPage() {
                                 className={cn(
                                     'w-full text-left bg-white dark:bg-surface-800/80 rounded-xl p-4 border-l-4 shadow-sm',
                                     'active:scale-[0.98] transition-transform',
-                                    PRIORITY_COLORS[wo.priority] || PRIORITY_COLORS.normal,
+                                    PRIORITY_COLORS[priorityKey] || PRIORITY_COLORS.normal,
                                 )}
                             >
                                 <div className="flex items-start justify-between gap-2">

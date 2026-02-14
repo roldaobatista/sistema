@@ -8,6 +8,7 @@ import { useOfflineStore } from '@/hooks/useOfflineStore'
 import { offlinePost } from '@/lib/syncEngine'
 import { generateUlid } from '@/lib/offlineDb'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 const CATEGORIES = [
     'Transporte',
@@ -92,8 +93,9 @@ export default function TechExpensePage() {
             setPhoto(null)
             setPhotoPreview(null)
             setShowForm(false)
+            toast.success('Despesa salva para sincronização')
         } catch {
-            // Will retry
+            toast.error('Não foi possível salvar a despesa agora. Tente novamente.')
         } finally {
             setSaving(false)
         }

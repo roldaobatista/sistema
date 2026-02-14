@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, LogIn, Loader2, Shield } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function LoginPage() {
     const { login, isLoading } = useAuthStore()
@@ -19,9 +20,12 @@ export function LoginPage() {
         } catch (err: unknown) {
             if (err && typeof err === 'object' && 'response' in err) {
                 const axiosErr = err as { response?: { data?: { message?: string } } }
-                setError(axiosErr.response?.data?.message || 'Credenciais inválidas.')
+                const msg = axiosErr.response?.data?.message || 'Credenciais inválidas.'
+                setError(msg)
+                toast.error(msg)
             } else {
                 setError('Erro ao conectar com o servidor.')
+                toast.error('Erro ao conectar com o servidor.')
             }
         }
     }

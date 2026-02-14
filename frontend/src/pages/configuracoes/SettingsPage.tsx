@@ -153,7 +153,7 @@ export function SettingsPage() {
     const [seqEdits, setSeqEdits] = useState<Record<number, Partial<NumberingSeq>>>({})
 
     // Settings
-    const { data: settingsRes } = useQuery({
+    const { data: settingsRes, isError } = useQuery({
         queryKey: ['settings'],
         queryFn: () => api.get('/settings'),
         enabled: tab === 'settings',
@@ -185,6 +185,7 @@ export function SettingsPage() {
             setSuccessMessage('Configurações salvas com sucesso!')
             setTimeout(() => setSuccessMessage(null), 4000)
         },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar configurações'),
     })
 
     // Numbering Sequences

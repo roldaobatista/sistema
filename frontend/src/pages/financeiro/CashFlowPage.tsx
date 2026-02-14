@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowDownRight, ArrowRight, ArrowUpRight, DollarSign, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
@@ -59,6 +60,7 @@ export function CashFlowPage() {
             })
             return data
         },
+        meta: { errorMessage: 'Erro ao carregar fluxo de caixa' },
     })
 
     const dreQuery = useQuery({
@@ -74,6 +76,7 @@ export function CashFlowPage() {
             return data
         },
         enabled: canViewDre,
+        meta: { errorMessage: 'Erro ao carregar DRE' },
     })
 
     const dreComparativeQuery = useQuery({
@@ -89,18 +92,36 @@ export function CashFlowPage() {
             return data
         },
         enabled: canViewDre,
+        meta: { errorMessage: 'Erro ao carregar DRE comparativo' },
     })
 
     const cashFlow = cashFlowQuery.data ?? []
     const dre = dreQuery.data
     const dreComparative = dreComparativeQuery.data
     const isLoading = cashFlowQuery.isLoading || (canViewDre && dreQuery.isLoading)
+    const isError = cashFlowQuery.isError || dreQuery.isError || dreComparativeQuery.isError
 
     const resetFilters = () => {
         setOsNumber('')
         setMonths('12')
         setDateFrom('')
         setDateTo('')
+    }
+
+    if (isError) {
+        return (
+            <div className="space-y-5">
+                <PageHeader title="Fluxo de Caixa e DRE" subtitle="Visão consolidada de receitas, custos e resultado" />
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <DollarSign className="h-10 w-10 text-red-400 mb-3" />
+                    <p className="text-sm font-medium text-surface-700">Erro ao carregar dados financeiros</p>
+                    <p className="text-xs text-surface-400 mt-1">Verifique sua conexão e tente novamente</p>
+                    <Button variant="outline" onClick={() => { cashFlowQuery.refetch(); dreQuery.refetch(); dreComparativeQuery.refetch() }} className="mt-4">
+                        Tentar novamente
+                    </Button>
+                </div>
+            </div>
+        )
     }
 
     return (

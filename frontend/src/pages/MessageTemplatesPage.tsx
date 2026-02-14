@@ -32,7 +32,10 @@ export function MessageTemplatesPage() {
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => crmApi.deleteMessageTemplate(id),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+        },
     })
 
     const filtered = filterChannel
@@ -192,13 +195,19 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
     const createMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.createMessageTemplate(data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }); onClose() },
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+            onClose()
+        },
     })
 
     const updateMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.updateMessageTemplate(template!.id, data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] }); onClose() },
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+            onClose()
+        },
     })
 
     const isPending = createMut.isPending || updateMut.isPending

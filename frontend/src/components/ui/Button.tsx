@@ -11,6 +11,8 @@ const buttonVariants = cva(
       variant: {
         primary:
           'bg-brand-600 text-white shadow-sm hover:bg-brand-500 active:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+        brand:
+          'bg-brand-600 text-white shadow-sm hover:bg-brand-500 active:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
         secondary:
           'bg-surface-100 text-surface-800 hover:bg-surface-200 active:bg-surface-300',
         outline:
@@ -28,6 +30,7 @@ const buttonVariants = cva(
           'bg-red-600 text-white shadow-sm hover:bg-red-500 active:bg-red-700',
       },
       size: {
+        xs: 'h-6 gap-1 rounded-md px-2 text-[11px] font-medium',
         sm: 'h-7 gap-1.5 rounded-md px-2.5 text-xs font-medium',
         md: 'h-8 gap-2 rounded-md px-3.5 text-[13px] font-medium',
         lg: 'h-9.5 gap-2 rounded-lg px-4 text-sm font-semibold',

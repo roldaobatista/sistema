@@ -26,12 +26,13 @@ const checklistSchema = z.object({
     })).min(1, 'Adicione pelo menos um item ao checklist'),
 })
 
-type ChecklistFormValues = z.infer<typeof checklistSchema>
+type ChecklistFormInput = z.input<typeof checklistSchema>
+type ChecklistFormValues = z.output<typeof checklistSchema>
 
 export function ChecklistBuilder({ onSuccess }: { onSuccess?: () => void }) {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const form = useForm<ChecklistFormValues>({
+    const form = useForm<ChecklistFormInput, unknown, ChecklistFormValues>({
         resolver: zodResolver(checklistSchema),
         defaultValues: {
             name: '',
@@ -78,7 +79,7 @@ export function ChecklistBuilder({ onSuccess }: { onSuccess?: () => void }) {
                         <div className="flex items-center space-x-2 pt-8">
                             <Switch
                                 id="is_active"
-                                checked={form.watch('is_active')}
+                                checked={form.watch('is_active') ?? true}
                                 onCheckedChange={(checked) => form.setValue('is_active', checked)}
                             />
                             <Label htmlFor="is_active">Ativo</Label>
@@ -127,7 +128,7 @@ export function ChecklistBuilder({ onSuccess }: { onSuccess?: () => void }) {
                                     <div className="md:col-span-3 space-y-2">
                                         <Label>Tipo de Resposta</Label>
                                         <Select
-                                            onValueChange={(value: "text" | "boolean" | "photo" | "select") => form.setValue(`items.${index}.type`, value)}
+                                            onValueChange={(value) => form.setValue(`items.${index}.type`, value as ChecklistFormInput['items'][number]['type'])}
                                             defaultValue={field.type}
                                         >
                                             <SelectTrigger>
@@ -144,7 +145,7 @@ export function ChecklistBuilder({ onSuccess }: { onSuccess?: () => void }) {
 
                                     <div className="md:col-span-2 flex items-center space-x-2 pt-8">
                                         <Switch
-                                            checked={form.watch(`items.${index}.required`)}
+                                            checked={form.watch(`items.${index}.required`) ?? false}
                                             onCheckedChange={(checked) => form.setValue(`items.${index}.required`, checked)}
                                         />
                                         <Label className="text-xs">Obrigatório</Label>

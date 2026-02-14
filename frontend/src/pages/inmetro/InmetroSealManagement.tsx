@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, UserPlus, Package, ShieldCheck, Camera, Filter, MoreVertical } from 'lucide-react'
+import { Search, Plus, UserPlus, Package, ShieldCheck, Camera, Filter, MoreVertical, FileText } from 'lucide-react'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; badgeVariant
 
 export default function InmetroSealManagement() {
     const qc = useQueryClient()
+    const navigate = useNavigate()
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
     const [typeFilter, setTypeFilter] = useState('')

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -32,23 +32,29 @@ export default function HRPage() {
     const [page, setPage] = useState(1)
     const navigate = useNavigate()
 
-    const { data: schedulesData, isLoading: loadingSchedules } = useQuery({
+    const { data: schedulesData, isLoading: loadingSchedules, isError: isErrorSchedules } = useQuery({
         queryKey: ['hr-schedules', page],
         queryFn: () => api.get('/hr/schedules', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'schedules',
     })
 
-    const { data: clockData, isLoading: loadingClock } = useQuery({
+    const { data: clockData, isLoading: loadingClock, isError: isErrorClock } = useQuery({
         queryKey: ['hr-clock-all', page],
         queryFn: () => api.get('/hr/clock/all', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'clock',
     })
 
-    const { data: trainingsData, isLoading: loadingTrainings } = useQuery({
+    const { data: trainingsData, isLoading: loadingTrainings, isError: isErrorTrainings } = useQuery({
         queryKey: ['hr-trainings', page],
         queryFn: () => api.get('/hr/trainings', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'trainings',
     })
+
+    useEffect(() => {
+        if (isErrorSchedules || isErrorClock || isErrorTrainings) {
+            toast.error('Erro ao carregar dados de RH. Tente novamente.')
+        }
+    }, [isErrorSchedules, isErrorClock, isErrorTrainings])
 
     const {
         reviews, loadingReviews,
@@ -66,20 +72,24 @@ export default function HRPage() {
         to_user_id: '',
         type: 'praise',
         visibility: 'public',
-        content: ''
+        message: ''
     })
 
     const handleSendFeedback = () => {
-        if (!newFeedback.to_user_id || !newFeedback.content) return
+        if (!newFeedback.to_user_id || !newFeedback.message) return
         sendFeedback.mutate({
             to_user_id: Number(newFeedback.to_user_id),
             type: newFeedback.type as any,
             visibility: newFeedback.visibility as any,
-            content: newFeedback.content
+            message: newFeedback.message
         }, {
             onSuccess: () => {
                 setIsFeedbackOpen(false)
-                setNewFeedback({ to_user_id: '', type: 'praise', visibility: 'public', content: '' })
+                setNewFeedback({ to_user_id: '', type: 'praise', visibility: 'public', message: '' })
+                toast.success('Feedback enviado com sucesso')
+            },
+            onError: () => {
+                toast.error('Erro ao enviar feedback')
             }
         })
     }
@@ -315,8 +325,8 @@ export default function HRPage() {
                                         <Label>Mensagem</Label>
                                         <Textarea
                                             placeholder="Descreva o feedback..."
-                                            value={newFeedback.content}
-                                            onChange={e => setNewFeedback({ ...newFeedback, content: e.target.value })}
+                                            value={newFeedback.message}
+                                            onChange={e => setNewFeedback({ ...newFeedback, message: e.target.value })}
                                         />
                                     </div>
                                     <Button onClick={handleSendFeedback} disabled={sendFeedback.isPending} className="w-full bg-brand-600 hover:bg-brand-700 text-white">

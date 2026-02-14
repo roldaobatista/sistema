@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Button } from './ui/button';
+import { Button } from '../ui/button';
 import { Printer } from 'lucide-react';
 
 interface QRCodeLabelProps {

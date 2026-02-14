@@ -16,9 +16,10 @@ const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: s
 interface Props {
     activities: CrmActivity[]
     className?: string
+    compact?: boolean
 }
 
-export function CustomerTimeline({ activities, className }: Props) {
+export function CustomerTimeline({ activities, className, compact = false }: Props) {
     if (activities.length === 0) {
         return (
             <div className={cn('rounded-xl border border-default bg-white p-8 text-center', className)}>
@@ -38,14 +39,20 @@ export function CustomerTimeline({ activities, className }: Props) {
     })
 
     return (
-        <div className={cn('space-y-6', className)}>
+        <div className={cn(compact ? 'space-y-4' : 'space-y-6', className)}>
             {Array.from(grouped.entries()).map(([date, acts]) => (
                 <div key={date}>
-                    <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <p className={cn(
+                        'text-xs font-semibold text-surface-500 uppercase tracking-wider flex items-center gap-2',
+                        compact ? 'mb-2' : 'mb-3'
+                    )}>
                         <Calendar className="h-3.5 w-3.5" />
                         {date}
                     </p>
-                    <div className="relative ml-4 border-l-2 border-subtle pl-6 space-y-4">
+                    <div className={cn(
+                        'relative ml-4 border-l-2 border-subtle pl-6',
+                        compact ? 'space-y-3' : 'space-y-4'
+                    )}>
                         {acts.map(act => {
                             const cfg = typeConfig[act.type] ?? typeConfig.nota
                             const Icon = cfg.icon

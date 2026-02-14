@@ -304,7 +304,11 @@ export function ProductsPage() {
                             </Button>
                         ) : (
                             <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
-                                onClick={() => showConfirmDelete && { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(showConfirmDelete.id) }}>
+                                onClick={() => {
+                                    if (showConfirmDelete && window.confirm('Deseja realmente excluir este registro?')) {
+                                        deleteMut.mutate(showConfirmDelete.id)
+                                    }
+                                }}>
                                 Excluir Produto
                             </Button>
                         )}

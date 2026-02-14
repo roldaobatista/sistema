@@ -30,13 +30,19 @@ export function PortalQuotesPage() {
 
     const approveMut = useMutation({
         mutationFn: (id: number) => api.post(`/portal/quotes/${id}/status`, { action: 'approve' }),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['portal-quotes'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['portal-quotes'] })
+        },
     })
 
     const rejectMut = useMutation({
         mutationFn: ({ id, comments }: { id: number; comments?: string }) =>
             api.post(`/portal/quotes/${id}/status`, { action: 'reject', comments }),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['portal-quotes'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['portal-quotes'] })
+        },
     })
 
     const quotes: any[] = data?.data ?? []

@@ -39,7 +39,7 @@ export function NotificationsPage() {
     const canViewNotifications = hasRole('super_admin') || hasPermission('notifications.notification.view')
     const canUpdateNotifications = hasRole('super_admin') || hasPermission('notifications.notification.update')
 
-    const { data: res, isLoading } = useQuery({
+    const { data: res, isLoading, isError } = useQuery({
         queryKey: ['notifications-full'],
         queryFn: () => api.get('/notifications?limit=100'),
         enabled: canViewNotifications,
@@ -53,12 +53,18 @@ export function NotificationsPage() {
 
     const markReadMut = useMutation({
         mutationFn: (id: number) => api.put(`/notifications/${id}/read`),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['notifications-full'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['notifications-full'] })
+        },
     })
 
     const markAllMut = useMutation({
         mutationFn: () => api.put('/notifications/read-all'),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['notifications-full'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['notifications-full'] })
+        },
     })
 
     if (!canViewNotifications) {
@@ -136,6 +142,8 @@ export function NotificationsPage() {
             <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden divide-y divide-subtle">
                 {isLoading ? (
                     <div className="p-12 text-center text-surface-400">Carregando...</div>
+                ) : isError ? (
+                    <div className="p-12 text-center text-red-500">Erro ao carregar notificações. Tente novamente.</div>
                 ) : notifications.length === 0 ? (
                     <div className="p-12 text-center text-surface-400">
                         <Bell className="h-10 w-10 mx-auto mb-3 text-surface-300" />

@@ -1,28 +1,95 @@
 import * as React from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import type { ButtonProps } from '@/components/ui/button'
 
-interface PageHeaderAction {
+export interface PageHeaderAction {
     label: string
-    onClick: () => void
+    onClick?: () => void
+    href?: string
     icon?: React.ReactNode
-    variant?: 'primary' | 'secondary' | 'outline'
+    variant?: ButtonProps['variant']
     permission?: boolean
+    disabled?: boolean
 }
 
 interface PageHeaderProps {
     title: string
     subtitle?: string
+    description?: string
     count?: number
-    actions?: PageHeaderAction[]
+    icon?: React.ComponentType<{ className?: string }> | React.ReactNode
+    action?: React.ReactNode
+    actions?: PageHeaderAction[] | React.ReactNode
+    backTo?: string
+    backButton?: boolean
     children?: React.ReactNode
 }
 
-export function PageHeader({ title, subtitle, count, actions, children }: PageHeaderProps) {
+function isActionArray(actions: PageHeaderProps['actions']): actions is PageHeaderAction[] {
+    return Array.isArray(actions)
+}
+
+function renderAction(action: PageHeaderAction, key: number) {
+    if (action.permission === false) return null
+
+    if (action.href && !action.onClick) {
+        return (
+            <Button
+                key={key}
+                asChild
+                variant={action.variant ?? 'primary'}
+                size="sm"
+                icon={action.icon}
+                disabled={action.disabled}
+            >
+                <a href={action.href}>{action.label}</a>
+            </Button>
+        )
+    }
+
+    return (
+        <Button
+            key={key}
+            variant={action.variant ?? 'primary'}
+            size="sm"
+            icon={action.icon}
+            onClick={action.onClick}
+            disabled={action.disabled}
+        >
+            {action.label}
+        </Button>
+    )
+}
+
+export function PageHeader({
+    title,
+    subtitle,
+    description,
+    count,
+    icon,
+    action,
+    actions,
+    backTo,
+    backButton,
+    children,
+}: PageHeaderProps) {
+    const titleDescription = subtitle ?? description
+    let headerIcon: React.ReactNode = null
+    if (React.isValidElement(icon)) {
+        headerIcon = icon
+    } else if (typeof icon === 'function') {
+        const IconComponent = icon as React.ComponentType<{ className?: string }>
+        headerIcon = <IconComponent className="h-5 w-5 text-surface-500" />
+    }
+    const shouldShowBackButton = Boolean(backTo || backButton)
+
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <div className="flex items-center gap-2.5">
+                    {headerIcon}
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">
                         {title}
                     </h1>
@@ -32,25 +99,25 @@ export function PageHeader({ title, subtitle, count, actions, children }: PageHe
                         </span>
                     )}
                 </div>
-                {subtitle && (
-                    <p className="mt-0.5 text-[13px] text-surface-500">{subtitle}</p>
+                {titleDescription && (
+                    <p className="mt-0.5 text-[13px] text-surface-500">{titleDescription}</p>
                 )}
             </div>
             <div className="flex items-center gap-2">
+                {shouldShowBackButton && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        icon={<ArrowLeft className="h-4 w-4" />}
+                        onClick={backTo ? undefined : () => window.history.back()}
+                        asChild={Boolean(backTo)}
+                    >
+                        {backTo ? <a href={backTo}>Voltar</a> : 'Voltar'}
+                    </Button>
+                )}
                 {children}
-                {actions?.map((action, i) => (
-                    action.permission !== false && (
-                        <Button
-                            key={i}
-                            variant={action.variant ?? 'primary'}
-                            size="sm"
-                            icon={action.icon}
-                            onClick={action.onClick}
-                        >
-                            {action.label}
-                        </Button>
-                    )
-                ))}
+                {action}
+                {isActionArray(actions) ? actions.map(renderAction) : actions}
             </div>
         </div>
     )

@@ -10,14 +10,16 @@ import { PageHeader } from '@/components/ui/pageheader'
 export default function EquipmentCreatePage() {
     const navigate = useNavigate()
 
-    const { data: constants } = useQuery({
+    const { data: constants, isError: constantsError } = useQuery({
         queryKey: ['equipments-constants'],
         queryFn: () => api.get('/equipments-constants').then(r => r.data),
+        meta: { errorMessage: 'Erro ao carregar constantes de equipamentos' },
     })
 
-    const { data: customers } = useQuery({
+    const { data: customers, isError: customersError } = useQuery({
         queryKey: ['customers-list'],
         queryFn: () => api.get('/customers?per_page=100').then(r => r.data.data),
+        meta: { errorMessage: 'Erro ao carregar lista de clientes' },
     })
 
     const [form, setForm] = useState({
@@ -43,7 +45,25 @@ export default function EquipmentCreatePage() {
 
     const mutation = useMutation({
         mutationFn: (data: any) => api.post('/equipments', data),
-        onSuccess: (r) => navigate(`/equipamentos/${r.data.equipment.id}`),
+        onSuccess: (r) => {
+            toast.success('Equipamento criado com sucesso!')
+            navigate(`/equipamentos/${r.data.equipment.id}`)
+        },
+        onError: (err: any) => {
+            if (err.response?.status === 422) {
+                const errors = err.response.data?.errors
+                if (errors) {
+                    const firstError = Object.values(errors).flat()[0] as string
+                    toast.error(firstError || 'Verifique os campos obrigatórios')
+                } else {
+                    toast.error('Verifique os campos obrigatórios')
+                }
+            } else if (err.response?.status === 403) {
+                toast.error('Sem permissão para criar equipamentos')
+            } else {
+                toast.error(err.response?.data?.message || 'Erro ao criar equipamento')
+            }
+        },
     })
 
     const update = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }))

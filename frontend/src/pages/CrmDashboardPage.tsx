@@ -4,9 +4,11 @@ import {
     TrendingUp, DollarSign, Users, Target, AlertTriangle,
     Calendar, Phone, ArrowRight, Scale, Handshake, XCircle,
     ArrowUpRight, BarChart3, Clock, MessageCircle, Mail, Send,
+    RefreshCw,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
@@ -15,10 +17,11 @@ const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', cur
 
 export function CrmDashboardPage() {
     const [nowTs] = useState(() => Date.now())
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['crm', 'dashboard'],
         queryFn: () => crmApi.getDashboard().then(r => r.data),
         refetchInterval: 60_000,
+        meta: { errorMessage: 'Erro ao carregar dashboard CRM' },
     })
 
     const kpis = data?.kpis
@@ -42,6 +45,19 @@ export function CrmDashboardPage() {
         { label: 'Health Score Médio', value: kpis?.avg_health_score ?? 0, icon: BarChart3, color: 'text-amber-600 bg-amber-50' },
         { label: 'Sem Contato > 90d', value: kpis?.no_contact_90d ?? 0, icon: AlertTriangle, color: 'text-red-500 bg-red-50' },
     ]
+
+    if (isError) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+                <AlertTriangle className="h-10 w-10 text-red-400 mb-3" />
+                <p className="text-sm font-medium text-surface-700">Erro ao carregar o dashboard</p>
+                <p className="text-xs text-surface-400 mt-1">Verifique sua conexão e tente novamente</p>
+                <button onClick={() => refetch()} className="mt-4 flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50">
+                    <RefreshCw className="h-4 w-4" /> Tentar novamente
+                </button>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-5">

@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useEmails, useEmail, useEmailStats, useToggleEmailStar, useMarkEmailRead, useArchiveEmail, useEmailBatchAction, useReplyEmail, useForwardEmail, useCreateTaskFromEmail, type EmailItem, type EmailFilters } from '@/hooks/useEmails'
 import { useEmailAccounts } from '@/hooks/useEmailAccounts'
@@ -84,10 +84,16 @@ export default function EmailInboxPage() {
     const [forwardBody, setForwardBody] = useState('')
     const [taskType, setTaskType] = useState<string>('tarefa')
 
-    const { data: emailsData, isLoading, refetch } = useEmails(filters)
+    const { data: emailsData, isLoading, isError: isErrorEmails, refetch } = useEmails(filters)
     const { data: emailDetail, isLoading: isLoadingDetail } = useEmail(selectedEmailId)
-    const { data: statsData } = useEmailStats()
+    const { data: statsData, isError: isErrorStats } = useEmailStats()
     const { data: accountsData } = useEmailAccounts()
+
+    useEffect(() => {
+        if (isErrorEmails || isErrorStats) {
+            toast.error('Erro ao carregar emails. Tente novamente.')
+        }
+    }, [isErrorEmails, isErrorStats])
 
     const toggleStar = useToggleEmailStar()
     const markRead = useMarkEmailRead()
@@ -116,14 +122,20 @@ export default function EmailInboxPage() {
 
     const handleBatch = (action: string) => {
         if (selectedIds.length === 0) return
-        batchAction.mutate({ ids: selectedIds, action }, { onSuccess: () => setSelectedIds([]) })
+        batchAction.mutate({ ids: selectedIds, action }, {
+            onSuccess: () => setSelectedIds([]),
+            onError: () => toast.error('Erro na ação em lote')
+        })
     }
 
     const handleReply = () => {
         if (!selectedEmailId || !replyBody.trim()) return
         replyMutation.mutate(
             { emailId: selectedEmailId, data: { body: replyBody } },
-            { onSuccess: () => { setReplyOpen(false); setReplyBody('') } }
+            {
+                onSuccess: () => { setReplyOpen(false); setReplyBody('') },
+                onError: () => toast.error('Erro ao enviar resposta')
+            }
         )
     }
 
@@ -131,7 +143,10 @@ export default function EmailInboxPage() {
         if (!selectedEmailId || !forwardTo.trim()) return
         forwardMutation.mutate(
             { emailId: selectedEmailId, data: { to: forwardTo, body: forwardBody } },
-            { onSuccess: () => { setForwardOpen(false); setForwardTo(''); setForwardBody('') } }
+            {
+                onSuccess: () => { setForwardOpen(false); setForwardTo(''); setForwardBody('') },
+                onError: () => toast.error('Erro ao encaminhar email')
+            }
         )
     }
 
@@ -139,7 +154,10 @@ export default function EmailInboxPage() {
         if (!selectedEmailId) return
         createTaskMutation.mutate(
             { emailId: selectedEmailId, data: { type: taskType } },
-            { onSuccess: () => setCreateTaskOpen(false) }
+            {
+                onSuccess: () => { setCreateTaskOpen(false); toast.success('Item criado com sucesso') },
+                onError: () => toast.error('Erro ao criar item')
+            }
         )
     }
 

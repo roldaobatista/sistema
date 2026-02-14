@@ -214,7 +214,7 @@ export function ReconciliationDashboardPage() {
                                             <Cell key={i} fill={entry.color || COLORS[i % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(v: number) => [v, 'Qtd']} />
+                                    <Tooltip formatter={(v: number | undefined) => [v ?? 0, 'Qtd']} />
                                     <Legend />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -228,7 +228,7 @@ export function ReconciliationDashboardPage() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                     <XAxis dataKey="week" tick={{ fontSize: 12 }} />
                                     <YAxis tickFormatter={(v) => fmtBRL(v)} tick={{ fontSize: 10 }} />
-                                    <Tooltip formatter={(v: number) => fmtBRL(v)} />
+                                    <Tooltip formatter={(v: number | undefined) => fmtBRL(v ?? 0)} />
                                     <Legend />
                                     <Bar dataKey="credits" name="Créditos" fill="#10b981" radius={[4, 4, 0, 0]} />
                                     <Bar dataKey="debits" name="Débitos" fill="#ef4444" radius={[4, 4, 0, 0]} />

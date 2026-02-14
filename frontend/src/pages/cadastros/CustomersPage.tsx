@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud, FileText, MapPin } from 'lucide-react'
 import api from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useAuthStore } from '@/stores/auth-store'
@@ -46,6 +46,12 @@ function maskPhone(value: string): string {
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Contact { id?: number; name: string; role: string; phone: string; email: string; is_primary: boolean }
+interface DeleteDependencies {
+  active_work_orders?: boolean
+  receivables?: boolean
+  quotes?: number
+  deals?: number
+}
 interface CustomerForm {
   type: 'PF' | 'PJ'
   name: string
@@ -123,7 +129,7 @@ export function CustomersPage() {
 
   // Delete
   const [delId, setDelId] = useState<number | null>(null)
-  const [delDeps, setDelDeps] = useState<Record<string, unknown> | null>(null)
+  const [delDeps, setDelDeps] = useState<DeleteDependencies | null>(null)
 
   // Fetch CRM options
   const { data: crmOptions } = useQuery({
@@ -298,7 +304,7 @@ export function CustomersPage() {
     },
     onError: (err: any) => {
       if (err.response?.status === 409) {
-        setDelDeps(err.response.data.dependencies ?? null)
+        setDelDeps((err.response.data.dependencies ?? null) as DeleteDependencies | null)
       } else if (err.response?.status === 403) {
         toast.error('VocÃª nÃ£o tem permissÃ£o')
         setDelId(null)
@@ -934,7 +940,11 @@ export function CustomersPage() {
             {!delDeps && (
               <Button
                 variant="danger"
-                onClick={() => delId && { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(delId) }}
+                onClick={() => {
+                  if (delId && window.confirm('Deseja realmente excluir este registro?')) {
+                    deleteMut.mutate(delId)
+                  }
+                }}
                 disabled={deleteMut.isPending}
               >
                 {deleteMut.isPending ? 'Excluindo...' : 'Excluir'}
@@ -949,8 +959,8 @@ export function CustomersPage() {
             <ul className="text-sm text-surface-600 list-disc pl-5 space-y-1">
               {delDeps.active_work_orders && <li>Ordens de serviÃ§o ativas</li>}
               {delDeps.receivables && <li>PendÃªncias financeiras</li>}
-              {(delDeps.quotes as number) > 0 && <li>{delDeps.quotes} orÃ§amento(s)</li>}
-              {(delDeps.deals as number) > 0 && <li>{delDeps.deals} negociaÃ§Ã£o(Ãµes)</li>}
+              {(delDeps.quotes ?? 0) > 0 && <li>{delDeps.quotes} orÃ§amento(s)</li>}
+              {(delDeps.deals ?? 0) > 0 && <li>{delDeps.deals} negociaÃ§Ã£o(Ãµes)</li>}
             </ul>
           </div>
         ) : (
@@ -960,3 +970,4 @@ export function CustomersPage() {
     </div>
   )
 }
+

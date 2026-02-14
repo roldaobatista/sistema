@@ -292,7 +292,7 @@ export function BankReconciliationPage() {
         },
         onSuccess: (data) => {
             toast.success(data?.message || 'Regra sugerida criada com sucesso')
-            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+            qc.invalidateQueries({ queryKey: ['reconciliation-rules'] })
         },
         onError: (error: { response?: { data?: { message?: string } } }) => {
             toast.error(error?.response?.data?.message ?? 'Erro ao sugerir regra')

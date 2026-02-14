@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import api from '@/lib/api'
 
@@ -49,11 +50,15 @@ export function DashboardPage() {
     const { user } = useAuthStore()
     const navigate = useNavigate()
 
-    const { data: statsRes, isLoading } = useQuery({
+    const { data: statsRes, isLoading, isError } = useQuery({
         queryKey: ['dashboard-stats'],
         queryFn: () => api.get('/dashboard-stats'),
         refetchInterval: 60_000,
     })
+
+    if (isError) {
+        toast.error('Erro ao carregar dados do dashboard')
+    }
 
     const s = statsRes?.data ?? {}
 

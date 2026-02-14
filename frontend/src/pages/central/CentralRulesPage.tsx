@@ -64,13 +64,19 @@ export function CentralRulesPage() {
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/central/rules/${id}`),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['central-rules'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['central-rules'] })
+        },
     })
 
     const toggleMut = useMutation({
         mutationFn: ({ id, ativo }: { id: number; ativo: boolean }) =>
             api.patch(`/central/rules/${id}`, { ativo }),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['central-rules'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['central-rules'] })
+        },
     })
 
     const resetForm = () => {

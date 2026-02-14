@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
     ClipboardList, Users, DollarSign, Award, TrendingUp,
     Calendar, ArrowRight, FileText, Phone, Wallet, Target, Scale, Download,
@@ -95,6 +96,11 @@ export function ReportsPage() {
             },
         }),
     })
+
+    useEffect(() => {
+        if (isError) toast.error('Erro ao carregar relatório. Tente novamente.')
+    }, [isError])
+
     const data = res?.data ?? {}
 
     const handleExport = async () => {

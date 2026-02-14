@@ -103,6 +103,7 @@ export function CentralPage() {
             setShowCreate(false)
             setForm({ titulo: '', descricao_curta: '', tipo: 'tarefa', prioridade: 'media', due_at: '', visibilidade: 'equipe' })
         },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar item'),
     })
 
     const updateMut = useMutation({
@@ -112,19 +113,28 @@ export function CentralPage() {
             qc.invalidateQueries({ queryKey: ['central-items'] })
             qc.invalidateQueries({ queryKey: ['central-summary'] })
         },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar item'),
     })
 
     const assignMut = useMutation({
         mutationFn: ({ id, userId }: { id: number; userId: number }) =>
             api.post(`/central/items/${id}/assign`, { responsavel_user_id: userId }),
-        onSuccess: () => { toast.success('OperaÃ§Ã£o realizada com sucesso'); qc.invalidateQueries({ queryKey: ['central-items'] }),
+        onSuccess: () => {
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['central-items'] })
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atribuir'),
     })
 
     const commentMut = useMutation({
         mutationFn: ({ id, body }: { id: number; body: string }) =>
             api.post(`/central/items/${id}/comments`, { body }),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso') setComment(''); if (showDetail) fetchDetail(showDetail.id) },
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            setComment('')
+            if (showDetail) fetchDetail(showDetail.id)
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao comentar'),
     })
 
     // â”€â”€ Detail â”€â”€

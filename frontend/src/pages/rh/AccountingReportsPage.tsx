@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -36,7 +36,7 @@ export default function AccountingReportsPage() {
             })
             setData(response.data.data)
         } catch (error) {
-            toast.error('Erro ao gerar relatório')
+            toast.error('Erro ao gerar relatÃ³rio')
         } finally {
             setIsLoading(false)
         }
@@ -57,21 +57,21 @@ export default function AccountingReportsPage() {
             link.click()
             link.remove()
         } catch (error) {
-            toast.error('Erro ao exportar relatório')
+            toast.error('Erro ao exportar relatÃ³rio')
         }
     }
 
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Relatórios Contábeis</h1>
-                <p className="text-muted-foreground">Exportação de jornada para a contabilidade.</p>
+                <h1 className="text-3xl font-bold tracking-tight">RelatÃ³rios ContÃ¡beis</h1>
+                <p className="text-muted-foreground">ExportaÃ§Ã£o de jornada para a contabilidade.</p>
             </div>
 
             <Card>
                 <CardHeader>
                     <CardTitle>Filtros</CardTitle>
-                    <CardDescription>Selecione o período para gerar o relatório.</CardDescription>
+                    <CardDescription>Selecione o perÃ­odo para gerar o relatÃ³rio.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex flex-col md:flex-row gap-4 items-end">
@@ -84,7 +84,7 @@ export default function AccountingReportsPage() {
                             <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
                         </div>
                         <Button onClick={fetchReport} disabled={isLoading}>
-                            <Search className="mr-2 h-4 w-4" /> Gerar Visualização
+                            <Search className="mr-2 h-4 w-4" /> Gerar VisualizaÃ§Ã£o
                         </Button>
                         <Button variant="outline" onClick={() => handleExport('csv')} disabled={isLoading}>
                             <FileDown className="mr-2 h-4 w-4" /> Exportar CSV
@@ -96,7 +96,7 @@ export default function AccountingReportsPage() {
             {data.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Pré-visualização</CardTitle>
+                        <CardTitle>PrÃ©-visualizaÃ§Ã£o</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -132,6 +132,14 @@ export default function AccountingReportsPage() {
                     </CardContent>
                 </Card>
             )}
+            {!isLoading && data.length === 0 && (
+                <Card>
+                    <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                        Sem dados para o período selecionado.
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 }
+

@@ -166,7 +166,7 @@ describe('useInmetro — handleMutationError', () => {
 
     it('shows permission error for 403', () => {
         // Simulating the error handler logic
-        const err = { response: { status: 403, data: {} } }
+        const err: any = { response: { status: 403, data: {} } }
         if (err.response?.status === 403) {
             mockToast.error('Sem permissão para esta ação')
         }
@@ -174,7 +174,7 @@ describe('useInmetro — handleMutationError', () => {
     })
 
     it('shows field errors for 422 with errors object', () => {
-        const err = { response: { status: 422, data: { errors: { name: ['Nome obrigatório'], email: ['Email inválido'] } } } }
+        const err: any = { response: { status: 422, data: { errors: { name: ['Nome obrigatório'], email: ['Email inválido'] } } } }
         if (err.response?.status === 422 && err.response.data.errors) {
             Object.values(err.response.data.errors).flat().forEach(m => mockToast.error(m))
         }
@@ -183,7 +183,7 @@ describe('useInmetro — handleMutationError', () => {
     })
 
     it('shows message for 422 without errors object', () => {
-        const err = { response: { status: 422, data: { message: 'Dados inválidos' } } }
+        const err: any = { response: { status: 422, data: { message: 'Dados inválidos' } } }
         if (err.response?.status === 422 && !err.response.data.errors) {
             mockToast.error(err.response.data.message || 'Dados inválidos')
         }
@@ -191,7 +191,7 @@ describe('useInmetro — handleMutationError', () => {
     })
 
     it('shows generic error for other statuses', () => {
-        const err = { response: { status: 500, data: { message: 'Internal Server Error' } } }
+        const err: any = { response: { status: 500, data: { message: 'Internal Server Error' } } }
         if (err.response?.status !== 403 && err.response?.status !== 422) {
             mockToast.error(err.response?.data?.message || 'Ocorreu um erro')
         }
@@ -199,7 +199,7 @@ describe('useInmetro — handleMutationError', () => {
     })
 
     it('shows default message when no message in response', () => {
-        const err = { response: { status: 500, data: {} } }
+        const err: any = { response: { status: 500, data: {} } }
         if (err.response?.status !== 403 && err.response?.status !== 422) {
             mockToast.error(err.response?.data?.message || 'Ocorreu um erro')
         }

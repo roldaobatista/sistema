@@ -15,6 +15,9 @@ export interface OfflineWorkOrder {
     customer_address?: string | null
     city?: string | null
     description?: string | null
+    sla_due_at?: string | null
+    google_maps_link?: string | null
+    waze_link?: string | null
     equipment_ids?: number[]
     technician_ids?: number[]
     updated_at: string
@@ -142,7 +145,7 @@ interface KalibriumDB extends DBSchema {
     'checklist-responses': {
         key: string
         value: OfflineChecklistResponse
-        indexes: { 'by-work-order': number; 'by-synced': boolean }
+        indexes: { 'by-work-order': number; 'by-synced': number }
     }
     'standard-weights': {
         key: number
@@ -151,17 +154,17 @@ interface KalibriumDB extends DBSchema {
     'expenses': {
         key: string
         value: OfflineExpense
-        indexes: { 'by-work-order': number; 'by-synced': boolean }
+        indexes: { 'by-work-order': number; 'by-synced': number }
     }
     'photos': {
         key: string
         value: OfflinePhoto
-        indexes: { 'by-work-order': number; 'by-synced': boolean; 'by-entity': string }
+        indexes: { 'by-work-order': number; 'by-synced': number; 'by-entity': string }
     }
     'signatures': {
         key: string
         value: OfflineSignature
-        indexes: { 'by-work-order': number; 'by-synced': boolean }
+        indexes: { 'by-work-order': number; 'by-synced': number }
     }
     'mutation-queue': {
         key: string
@@ -269,7 +272,18 @@ export function generateUlid(): string {
 
 /* ─── Convenience helpers ────────────────────────────────── */
 
-type StoreNames = keyof KalibriumDB
+type StoreNames =
+    | 'work-orders'
+    | 'equipment'
+    | 'checklists'
+    | 'checklist-responses'
+    | 'standard-weights'
+    | 'expenses'
+    | 'photos'
+    | 'signatures'
+    | 'mutation-queue'
+    | 'sync-metadata'
+    | 'customer-capsules'
 
 export async function clearStore(storeName: StoreNames): Promise<void> {
     const db = await getDb()

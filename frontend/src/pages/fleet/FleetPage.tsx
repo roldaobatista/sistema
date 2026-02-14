@@ -2,10 +2,13 @@ import { useState } from 'react'
 import {
     Gauge, Truck, Disc, Calendar, ClipboardList, Fuel,
     Shield, FileWarning, AlertTriangle, Calculator,
-    Award, MapPin, Receipt, Settings
+    Award, MapPin, Receipt, Settings, Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useQuery } from '@tanstack/react-query'
+import api from '@/services/api'
+import { toast } from 'sonner'
 
 // Abas
 import { FleetDashboardTab } from './components/FleetDashboardTab'
@@ -60,11 +63,21 @@ export default function FleetPage() {
     const [activeTab, setActiveTab] = useState<TabId>('dashboard')
     const ActiveComponent = tabComponents[activeTab]
 
+    const { data: fleetSummary, isLoading, isError, error } = useQuery({
+        queryKey: ['fleet-summary'],
+        queryFn: () => api.get('/fleet/dashboard-summary').then(r => r.data),
+        retry: 1,
+    })
+
+    if (isError) {
+        toast.error('Erro ao carregar dados da frota')
+    }
+
     return (
         <div className="space-y-6">
             <PageHeader
                 title="Gestão de Frota"
-                subtitle="Controle inteligente de veículos, custos, motoristas e manutenção"
+                subtitle={`Controle inteligente de veículos, custos, motoristas e manutenção${fleetSummary?.total_vehicles ? ` • ${fleetSummary.total_vehicles} veículos` : ''}`}
             />
 
             {/* Menu de Navegação Horizontal — PWA-Friendly com scroll */}
@@ -90,7 +103,20 @@ export default function FleetPage() {
 
             {/* Conteúdo da Aba Ativa */}
             <div className="mt-4">
-                <ActiveComponent />
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                        <Loader2 className="animate-spin h-8 w-8 text-brand-500" />
+                        <span className="ml-3 text-surface-500">Carregando frota...</span>
+                    </div>
+                ) : isError ? (
+                    <div className="text-center py-16 text-red-500">
+                        <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
+                        <p className="text-lg font-medium">Erro ao carregar dados</p>
+                        <p className="text-sm text-surface-400">{(error as Error)?.message || 'Tente novamente mais tarde'}</p>
+                    </div>
+                ) : (
+                    <ActiveComponent />
+                )}
             </div>
         </div>
     )

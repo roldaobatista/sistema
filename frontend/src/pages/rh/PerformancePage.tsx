@@ -14,8 +14,10 @@ import {
 import { Plus, MessageSquare, BarChart2, CheckCircle, Clock } from 'lucide-react'
 import { PerformanceReview, ContinuousFeedback } from '@/types/hr'
 import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
 
 export default function PerformancePage() {
+    const navigate = useNavigate()
     const {
         reviews, loadingReviews, createReview, updateReview,
         feedbackList, loadingFeedback, sendFeedback

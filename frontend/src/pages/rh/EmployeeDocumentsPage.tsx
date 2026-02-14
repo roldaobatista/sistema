@@ -140,7 +140,7 @@ export default function EmployeeDocumentsPage() {
                         {documents.map(d => (
                             <tr key={d.id} className={cn('transition-colors hover:bg-surface-50/50', d.status === 'expired' && 'bg-red-50/30', d.status === 'expiring' && 'bg-amber-50/30')}>
                                 <td className="px-4 py-3 font-medium text-surface-900">{d.user?.name ?? '—'}</td>
-                                <td className="px-4 py-3"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-surface-400" /><span>{d.name}</span>{d.is_mandatory && <Shield className="h-3 w-3 text-red-500" title="Obrigatório" />}</div></td>
+                                <td className="px-4 py-3"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-surface-400" /><span>{d.name}</span>{d.is_mandatory && <span title="Obrigatório"><Shield className="h-3 w-3 text-red-500" /></span>}</div></td>
                                 <td className="px-4 py-3 text-center"><span className="rounded-full bg-surface-100 px-2.5 py-0.5 text-xs font-medium text-surface-600">{categoryLabels[d.category] ?? d.category}</span></td>
                                 <td className="px-4 py-3 text-sm text-surface-500">{d.issuer}</td>
                                 <td className="px-4 py-3 text-xs">{fmtDate(d.expiry_date)}</td>

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Plus, Search, Filter, Trash2, Edit, AlertCircle, RefreshCw } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useBenefits, EmployeeBenefit } from '@/hooks/useBenefits'
 import { toast } from 'sonner'
@@ -14,7 +14,8 @@ import { format } from 'date-fns'
 export default function BenefitsPage() {
     const { user } = useAuthStore()
     const [searchTerm, setSearchTerm] = useState('')
-    const { benefits, isLoading, createBenefit, updateBenefit, deleteBenefit } = useBenefits()
+    const { benefits: rawBenefits, isLoading, createBenefit, updateBenefit, deleteBenefit } = useBenefits()
+    const benefits = rawBenefits as EmployeeBenefit[]
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingBenefit, setEditingBenefit] = useState<EmployeeBenefit | null>(null)
     const [formData, setFormData] = useState<Partial<EmployeeBenefit>>({
@@ -24,14 +25,14 @@ export default function BenefitsPage() {
         is_active: true
     })
 
-    const filteredBenefits = benefits?.filter(b =>
+    const filteredBenefits = benefits?.filter((b: EmployeeBenefit) =>
         b.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.provider?.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const totalCost = filteredBenefits?.reduce((acc, b) => acc + Number(b.value), 0) || 0
-    const totalContribution = filteredBenefits?.reduce((acc, b) => acc + Number(b.employee_contribution), 0) || 0
+    const totalCost = filteredBenefits?.reduce((acc: number, b: EmployeeBenefit) => acc + Number(b.value), 0) || 0
+    const totalContribution = filteredBenefits?.reduce((acc: number, b: EmployeeBenefit) => acc + Number(b.employee_contribution), 0) || 0
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -40,7 +41,12 @@ export default function BenefitsPage() {
                 await updateBenefit.mutateAsync({ id: editingBenefit.id, data: formData })
                 toast.success('Benefício atualizado com sucesso!')
             } else {
-                await createBenefit.mutateAsync({ ...formData, user_id: formData.user_id || user?.id }) // Default to current user if not specified (should be a select for HR)
+                const resolvedUserId = formData.user_id ?? (user?.id != null ? String(user.id) : undefined)
+                if (!resolvedUserId) {
+                    toast.error('Usuário do benefício é obrigatório')
+                    return
+                }
+                await createBenefit.mutateAsync({ ...formData, user_id: resolvedUserId })
                 toast.success('Benefício criado com sucesso!')
             }
             setIsModalOpen(false)
@@ -124,7 +130,7 @@ export default function BenefitsPage() {
                         <Filter className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{new Set(filteredBenefits?.map(b => b.user_id)).size}</div>
+                        <div className="text-2xl font-bold">{new Set(filteredBenefits?.map((b: EmployeeBenefit) => b.user_id)).size}</div>
                         <p className="text-xs text-muted-foreground">Colaboradores ativos com benefícios</p>
                     </CardContent>
                 </Card>
@@ -168,7 +174,7 @@ export default function BenefitsPage() {
                                 ) : filteredBenefits?.length === 0 ? (
                                     <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Nenhum benefício encontrado.</td></tr>
                                 ) : (
-                                    filteredBenefits?.map((benefit) => (
+                                    filteredBenefits?.map((benefit: EmployeeBenefit) => (
                                         <tr key={benefit.id} className="hover:bg-muted/50">
                                             <td className="p-3">{benefit.user?.name || '---'}</td>
                                             <td className="p-3 font-medium">{getBenefitLabel(benefit.type)}</td>

@@ -1,5 +1,7 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import api from '@/lib/api'
 import {
     useAuvoConnectionStatus,
     useAuvoSyncStatus,
@@ -8,6 +10,7 @@ import {
     useAuvoImportAll,
     useAuvoRollback,
     useAuvoConfig,
+    useAuvoGetConfig,
 } from '@/hooks/useAuvoImport'
 import {
     CheckCircle2,
@@ -45,9 +48,10 @@ const ENTITY_LABELS: Record<string, string> = {
 }
 
 export function AuvoImportPage() {
-    const { data: connection, isLoading: loadingConn, refetch: retestConnection } = useAuvoConnectionStatus()
-    const { data: syncStatus, isLoading: loadingSync } = useAuvoSyncStatus()
+    const { data: connection, isLoading: loadingConn, isError: isErrorConn, refetch: retestConnection } = useAuvoConnectionStatus()
+    const { data: syncStatus, isLoading: loadingSync, isError: isErrorSync } = useAuvoSyncStatus()
     const { data: history } = useAuvoHistory()
+    const { data: savedConfig } = useAuvoGetConfig()
     const importEntity = useAuvoImportEntity()
     const importAll = useAuvoImportAll()
     const rollback = useAuvoRollback()
@@ -61,13 +65,24 @@ export function AuvoImportPage() {
     const [showKey, setShowKey] = useState(false)
     const [showToken, setShowToken] = useState(false)
 
+    useEffect(() => {
+        if (savedConfig?.has_credentials) {
+            setApiKey(savedConfig.api_key)
+            setApiToken(savedConfig.api_token)
+        }
+    }, [savedConfig])
+
+    useEffect(() => {
+        if (isErrorConn || isErrorSync) {
+            toast.error('Erro ao conectar com o Auvo. Verifique suas credenciais.')
+        }
+    }, [isErrorConn, isErrorSync])
+
     const handleSaveConfig = () => {
         if (!apiKey.trim() || !apiToken.trim()) return
         saveConfig.mutate({ api_key: apiKey, api_token: apiToken }, {
             onSuccess: () => {
                 setShowConfig(false)
-                setApiKey('')
-                setApiToken('')
             },
         })
     }
@@ -76,12 +91,15 @@ export function AuvoImportPage() {
         setImportingEntity(entity)
         importEntity.mutate({ entity, strategy }, {
             onSettled: () => setImportingEntity(null),
+            onError: () => toast.error(`Erro ao importar ${ENTITY_LABELS[entity] || entity}`),
         })
     }
 
     const handleImportAll = () => {
         setShowConfirmAll(false)
-        importAll.mutate(strategy)
+        importAll.mutate(strategy, {
+            onError: () => toast.error('Erro na importação completa'),
+        })
     }
 
     const handleRollback = (id: number) => {

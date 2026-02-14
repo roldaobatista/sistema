@@ -142,7 +142,7 @@ export default function InmetroExecutivePage() {
                                 {Object.entries(funnel.conversion_rates).map(([key, val]) => (
                                     <div key={key} className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">{key}</span>
-                                        <span className="font-medium">{val}%</span>
+                                        <span className="font-medium">{String(val)}%</span>
                                     </div>
                                 ))}
                             </div>

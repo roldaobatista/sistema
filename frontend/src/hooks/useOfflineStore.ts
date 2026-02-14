@@ -47,20 +47,20 @@ export function useOfflineStore<K extends OfflineStoreName>(storeName: K) {
         refresh()
     }, [refresh])
 
-    const getById = useCallback(async (id: T extends { id: infer I } ? I : never): Promise<T | undefined> => {
+    const getById = useCallback(async (id: IDBValidKey): Promise<T | undefined> => {
         const db = await getDb()
-        return db.get(storeName, id) as Promise<T | undefined>
+        return db.get(storeName as any, id as any) as Promise<T | undefined>
     }, [storeName])
 
     const put = useCallback(async (item: T): Promise<void> => {
         const db = await getDb()
-        await db.put(storeName, item as any)
+        await db.put(storeName as any, item as any)
         await refresh()
     }, [storeName, refresh])
 
     const putMany = useCallback(async (newItems: T[]): Promise<void> => {
         const db = await getDb()
-        const tx = db.transaction(storeName, 'readwrite')
+        const tx = db.transaction(storeName as any, 'readwrite')
         for (const item of newItems) {
             tx.store.put(item as any)
         }
@@ -68,21 +68,21 @@ export function useOfflineStore<K extends OfflineStoreName>(storeName: K) {
         await refresh()
     }, [storeName, refresh])
 
-    const remove = useCallback(async (id: T extends { id: infer I } ? I : never): Promise<void> => {
+    const remove = useCallback(async (id: IDBValidKey): Promise<void> => {
         const db = await getDb()
-        await db.delete(storeName, id)
+        await db.delete(storeName as any, id as any)
         await refresh()
     }, [storeName, refresh])
 
     const clear = useCallback(async (): Promise<void> => {
         const db = await getDb()
-        await db.clear(storeName)
+        await db.clear(storeName as any)
         if (mountedRef.current) setItems([])
     }, [storeName])
 
     const count = useCallback(async (): Promise<number> => {
         const db = await getDb()
-        return db.count(storeName)
+        return db.count(storeName as any)
     }, [storeName])
 
     const getByIndex = useCallback(async (
@@ -90,7 +90,7 @@ export function useOfflineStore<K extends OfflineStoreName>(storeName: K) {
         value: IDBValidKey,
     ): Promise<T[]> => {
         const db = await getDb()
-        return db.getAllFromIndex(storeName, indexName, value) as Promise<T[]>
+        return (db as any).getAllFromIndex(storeName, indexName, value) as Promise<T[]>
     }, [storeName])
 
     return {
@@ -117,7 +117,7 @@ export function useUnsyncedItems<K extends 'checklist-responses' | 'expenses' | 
     const refresh = useCallback(async () => {
         const db = await getDb()
         // synced index stores boolean as 0/1 in IndexedDB
-        const all = await db.getAllFromIndex(storeName, 'by-synced', 0) as T[]
+        const all = await (db as any).getAllFromIndex(storeName, 'by-synced', 0) as T[]
         setUnsyncedItems(all)
         setPendingCount(all.length)
     }, [storeName])

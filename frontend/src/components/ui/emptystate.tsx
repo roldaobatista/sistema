@@ -4,26 +4,45 @@ import { Inbox } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface EmptyStateProps {
-    icon?: React.ReactNode
+    icon?: React.ReactNode | React.ComponentType<{ className?: string }>
     title?: string
-    message: string
-    action?: {
+    message?: string
+    description?: string
+    action?: EmptyStateAction | React.ReactNode
+    className?: string
+    compact?: boolean
+}
+
+interface EmptyStateAction {
         label: string
         onClick: () => void
         icon?: React.ReactNode
-    }
-    className?: string
-    compact?: boolean
+}
+
+function isActionObject(action: EmptyStateProps['action']): action is EmptyStateAction {
+    return Boolean(
+        action &&
+        typeof action === 'object' &&
+        !React.isValidElement(action) &&
+        'label' in action &&
+        'onClick' in action
+    )
 }
 
 export function EmptyState({
     icon,
     title,
     message,
+    description,
     action,
     className,
     compact = false,
 }: EmptyStateProps) {
+    const bodyText = message ?? description ?? 'Nenhum registro encontrado'
+    const iconNode = typeof icon === 'function'
+        ? React.createElement(icon, { className: cn(compact ? 'h-4 w-4' : 'h-5 w-5', 'text-surface-300') })
+        : icon
+
     return (
         <div className={cn(
             'flex flex-col items-center justify-center text-center',
@@ -34,7 +53,7 @@ export function EmptyState({
                 'flex items-center justify-center rounded-lg bg-surface-100',
                 compact ? 'h-8 w-8' : 'h-10 w-10'
             )}>
-                {icon ?? <Inbox className={cn(compact ? 'h-4 w-4' : 'h-5 w-5', 'text-surface-300')} />}
+                {iconNode ?? <Inbox className={cn(compact ? 'h-4 w-4' : 'h-5 w-5', 'text-surface-300')} />}
             </div>
             {title && (
                 <p className={cn(
@@ -49,9 +68,11 @@ export function EmptyState({
                 compact ? 'mt-0.5 text-[11px]' : 'mt-1 text-[13px]',
                 !title && (compact ? 'mt-2' : 'mt-3')
             )}>
-                {message}
+                {bodyText}
             </p>
-            {action && (
+            {action && (React.isValidElement(action) ? (
+                <div className="mt-3">{action}</div>
+            ) : isActionObject(action) ? (
                 <Button
                     variant="outline"
                     size="sm"
@@ -61,7 +82,9 @@ export function EmptyState({
                 >
                     {action.label}
                 </Button>
-            )}
+            ) : (
+                <div className="mt-3">{action}</div>
+            ))}
         </div>
     )
 }

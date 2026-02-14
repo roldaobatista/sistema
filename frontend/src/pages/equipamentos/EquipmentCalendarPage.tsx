@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -30,7 +30,7 @@ const statusConfig: Record<string, { bg: string; text: string; icon: any; label:
 export default function EquipmentCalendarPage() {
     const [currentDate, setCurrentDate] = useState(new Date())
 
-    const { data } = useQuery({
+    const { data, isLoading } = useQuery({
         queryKey: ['equipments-alerts'],
         queryFn: () => api.get('/equipments-alerts').then(r => r.data),
     })
@@ -65,13 +65,13 @@ export default function EquipmentCalendarPage() {
     const overdueAlerts = alerts.filter(a => a.days_remaining < 0)
     const upcomingAlerts = alerts.filter(a => a.days_remaining >= 0 && a.days_remaining <= 30)
 
-    const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+    const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b']
 
     return (
         <div className="space-y-5">
             <PageHeader
-                title="Agenda de Calibrações"
-                subtitle="Visualize os vencimentos de calibração por mês"
+                title="Agenda de CalibraÃ§Ãµes"
+                subtitle="Visualize os vencimentos de calibraÃ§Ã£o por mÃªs"
                 actions={[
                     {
                         label: 'Ver Equipamentos',
@@ -81,6 +81,11 @@ export default function EquipmentCalendarPage() {
                     },
                 ]}
             />
+            {isLoading && (
+                <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-sm text-surface-500">
+                    Carregando agenda de calibrações...
+                </div>
+            )}
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                 {/* Calendar */}
@@ -178,7 +183,7 @@ export default function EquipmentCalendarPage() {
                             </h3>
                         </div>
                         {overdueAlerts.length === 0 ? (
-                            <p className="text-xs text-surface-400">Nenhum equipamento vencido 🎉</p>
+                            <p className="text-xs text-surface-400">Nenhum equipamento vencido ðŸŽ‰</p>
                         ) : (
                             <div className="space-y-2">
                                 {overdueAlerts.slice(0, 8).map(a => (
@@ -192,7 +197,7 @@ export default function EquipmentCalendarPage() {
                                             <span className="ml-1.5 text-red-600">{a.brand} {a.model}</span>
                                         </div>
                                         <span className="rounded-full bg-red-200 px-2 py-0.5 text-[10px] font-bold text-red-800">
-                                            {Math.abs(a.days_remaining)}d atrás
+                                            {Math.abs(a.days_remaining)}d atrÃ¡s
                                         </span>
                                     </Link>
                                 ))}
@@ -205,11 +210,11 @@ export default function EquipmentCalendarPage() {
                         <div className="mb-3 flex items-center gap-2">
                             <Clock size={16} className="text-amber-600" />
                             <h3 className="text-sm font-semibold text-amber-700">
-                                Próximas 30 dias ({upcomingAlerts.length})
+                                PrÃ³ximas 30 dias ({upcomingAlerts.length})
                             </h3>
                         </div>
                         {upcomingAlerts.length === 0 ? (
-                            <p className="text-xs text-surface-400">Nenhuma calibração nos próximos 30 dias</p>
+                            <p className="text-xs text-surface-400">Nenhuma calibraÃ§Ã£o nos prÃ³ximos 30 dias</p>
                         ) : (
                             <div className="space-y-2">
                                 {upcomingAlerts.slice(0, 8).map(a => (
@@ -254,3 +259,4 @@ export default function EquipmentCalendarPage() {
         </div>
     )
 }
+

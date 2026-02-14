@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Plus, Eye, User, Trash2 } from 'lucide-react'
+import { Search, Plus, Eye, User, Trash2, Truck } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'

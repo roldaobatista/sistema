@@ -36,13 +36,18 @@ export function SlaPoliciesPage() {
         mutationFn: (data: any) =>
             data.id ? api.put(`/sla-policies/${data.id}`, data) : api.post('/sla-policies', data),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['sla-policies'] }); setModal(null) },
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['sla-policies'] })
+            setModal(null)
+        },
     })
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/sla-policies/${id}`),
         onSuccess: () => {
-            toast.success('OperaÃ§Ã£o realizada com sucesso') qc.invalidateQueries({ queryKey: ['sla-policies'] }) },
+            toast.success('OperaÃ§Ã£o realizada com sucesso')
+            qc.invalidateQueries({ queryKey: ['sla-policies'] })
+        },
     })
 
     const fmtHours = (h: number) => h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h`
