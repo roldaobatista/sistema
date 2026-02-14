@@ -7,7 +7,7 @@ import {
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
 import { useQuery } from '@tanstack/react-query'
-import api from '@/services/api'
+import api from '@/lib/api'
 import { toast } from 'sonner'
 
 // Abas
