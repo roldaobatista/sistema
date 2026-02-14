@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+import { useAuthStore } from '@/stores/auth-store'
     Phone,
     MessageSquare,
     Mail,
@@ -50,6 +51,8 @@ const resultColors: Record<string, string> = {
 }
 
 export default function InmetroProspectionPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: queue, isLoading: loadingQueue } = useContactQueue()
     const { data: followUps, isLoading: loadingFollowUps } = useFollowUps()
     const { data: rejectAlerts } = useRejectAlerts()

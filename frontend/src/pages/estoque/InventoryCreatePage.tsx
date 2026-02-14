@@ -7,8 +7,11 @@ import {
 import { useQuery, useMutation } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function InventoryCreatePage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const [warehouseId, setWarehouseId] = useState('')
     const [reference, setReference] = useState('')

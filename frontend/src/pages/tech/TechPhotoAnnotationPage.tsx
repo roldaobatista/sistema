@@ -7,6 +7,7 @@ import {
 import { usePhotoAnnotation } from '@/hooks/usePhotoAnnotation'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 const COLORS = ['#ff0000', '#ffff00', '#00ff00', '#0088ff', '#ff00ff', '#ffffff', '#000000']
 
@@ -18,6 +19,8 @@ const TOOLS = [
 ]
 
 export default function TechPhotoAnnotationPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const canvasRef = useRef<HTMLCanvasElement>(null)

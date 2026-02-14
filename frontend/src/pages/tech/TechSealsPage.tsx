@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface TechSeal {
     id: number
@@ -13,6 +14,8 @@ interface TechSeal {
 }
 
 export default function TechSealsPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id: woId } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const qc = useQueryClient()

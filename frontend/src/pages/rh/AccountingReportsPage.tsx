@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { FileDown, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ReportEntry {
     id: number
@@ -23,6 +24,8 @@ interface ReportEntry {
 }
 
 export default function AccountingReportsPage() {
+  const { hasPermission } = useAuthStore()
+
     const [startDate, setStartDate] = useState(format(new Date().setDate(1), 'yyyy-MM-dd'))
     const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'))
     const [data, setData] = useState<ReportEntry[]>([])

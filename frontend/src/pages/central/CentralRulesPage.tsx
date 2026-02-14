@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/auth-store'
 
 const acaoLabels: Record<string, { label: string; icon: any; color: string }> = {
     auto_assign: { label: 'Auto-atribuir', icon: UserCheck, color: 'text-blue-600 bg-blue-50' },
@@ -27,6 +28,8 @@ const emptyForm = {
 }
 
 export function CentralRulesPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<number | null>(null)

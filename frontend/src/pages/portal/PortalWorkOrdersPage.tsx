@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { FileText, Search, Clock, CheckCircle, AlertCircle, Wrench, Package, RefreshCw } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { WORK_ORDER_STATUS } from '@/lib/constants'
+import { useAuthStore } from '@/stores/auth-store'
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
     open: { label: 'Aberta', color: 'text-sky-600', bg: 'bg-sky-100', icon: Clock },
@@ -21,6 +23,8 @@ const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR')
 const fmtBRL = (v: string | number) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function PortalWorkOrdersPage() {
+  const { hasPermission } = useAuthStore()
+
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
 

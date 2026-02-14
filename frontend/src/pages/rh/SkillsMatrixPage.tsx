@@ -13,8 +13,11 @@ import {
 import { Plus, Pencil, Trash2, BookOpen, Star } from 'lucide-react'
 import { Skill } from '@/types/hr'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function SkillsMatrixPage() {
+  const { hasPermission } = useAuthStore()
+
     const {
         skills, loadingSkills, matrix, loadingMatrix,
         createSkill, updateSkill, deleteSkill, assessUser

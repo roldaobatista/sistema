@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Plus, Eye, User, Trash2, Truck } from 'lucide-react'
 import api from '@/lib/api'
@@ -6,8 +7,11 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { IconButton } from '@/components/ui/iconbutton'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function VehiclesTab() {
+  const { hasPermission } = useAuthStore()
+
     const [search, setSearch] = useState('')
     const [page, setPage] = useState(1)
 

@@ -8,6 +8,7 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 const tabs = ['rules', 'webhooks', 'reports'] as const
 type Tab = typeof tabs[number]
@@ -16,6 +17,8 @@ const tabLabels: Record<Tab, string> = {
 }
 
 export default function AutomationPage() {
+  const { hasPermission } = useAuthStore()
+
     const [tab, setTab] = useState<Tab>('rules')
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')

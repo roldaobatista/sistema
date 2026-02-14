@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import api from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Users, UserMinus, Briefcase, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function PeopleAnalyticsPage() {
-    const { data, isLoading } = useQuery({
+  const { hasPermission } = useAuthStore()
+
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['hr-analytics'],
         queryFn: async () => {
             const response = await api.get('/hr/analytics/dashboard')

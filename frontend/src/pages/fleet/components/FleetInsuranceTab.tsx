@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FleetInsuranceTab() {
+  const { hasPermission } = useAuthStore()
+
     const queryClient = useQueryClient()
     const { data: insurances, isLoading } = useQuery({
         queryKey: ['fleet-insurances'],

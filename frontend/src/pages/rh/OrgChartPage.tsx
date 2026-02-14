@@ -12,8 +12,11 @@ import {
 } from '@/components/ui/dialog'
 import { Plus, Pencil, Trash2, Network, Building2, UserCircle } from 'lucide-react'
 import { Department, Position } from '@/types/hr'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function OrgChartPage() {
+  const { hasPermission } = useAuthStore()
+
     const {
         departments, loadingDepts, createDept, updateDept, deleteDept,
         positions, loadingPositions, createPosition, updatePosition, deletePosition

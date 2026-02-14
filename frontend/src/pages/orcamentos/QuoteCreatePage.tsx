@@ -8,6 +8,7 @@ import {
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/auth-store'
 
 // Strings constant for easy localization in the future
 const STRINGS = {
@@ -54,6 +55,8 @@ interface ItemRow {
 }
 
 export function QuoteCreatePage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const [step, setStep] = useState<Step>('customer')
     const [customerId, setCustomerId] = useState<number | null>(null)

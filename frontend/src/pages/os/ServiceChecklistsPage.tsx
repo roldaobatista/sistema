@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ClipboardList, Trash2, Edit, CheckSquare, ToggleLeft, ToggleRight, GripVertical } from 'lucide-react'
 import api from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 const itemTypes = [
     { value: 'check', label: 'Checkbox' },
@@ -29,6 +30,8 @@ interface Checklist {
 }
 
 export function ServiceChecklistsPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [editing, setEditing] = useState<Checklist | null>(null)
     const [showForm, setShowForm] = useState(false)

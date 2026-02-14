@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { MapPin, Navigation, Clock, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function GpsLiveTab() {
+  const { hasPermission } = useAuthStore()
+
     const { data: positions, isLoading, refetch, isFetching } = useQuery({
         queryKey: ['fleet-gps-live'],
         queryFn: () => api.get('/fleet/gps/live').then(r => r.data?.data),

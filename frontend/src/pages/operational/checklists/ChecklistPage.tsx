@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, ListChecks, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import api from '@/lib/api'
 import { ChecklistBuilder } from './components/ChecklistBuilder'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Checklist {
     id: number
@@ -18,6 +20,8 @@ interface Checklist {
 }
 
 export function ChecklistPage() {
+  const { hasPermission } = useAuthStore()
+
     const [isSheetOpen, setIsSheetOpen] = useState(false)
 
     const { data: checklists, isLoading, refetch } = useQuery<Checklist[]>({

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     ArrowLeft,
@@ -18,6 +19,7 @@ import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/stores/auth-store'
 
 const statusLabels: Record<string, { label: string; variant: any; color: string }> = {
     [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', color: '#3b82f6' },
@@ -48,6 +50,8 @@ function formatDate(date: Date) {
 }
 
 export function TechnicianAgendaPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const [selectedTech, setSelectedTech] = useState<string>('')
     const [weekOffset, setWeekOffset] = useState(0)

@@ -6,8 +6,11 @@ import { ArrowLeft, Save, Loader2, Scale } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function EquipmentCreatePage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
 
     const { data: constants, isError: constantsError } = useQuery({

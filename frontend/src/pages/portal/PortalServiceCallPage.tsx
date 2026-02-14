@@ -6,6 +6,7 @@ import { Loader2, Send, ArrowLeft, AlertTriangle, Clock, Zap, Shield } from 'luc
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 const serviceCallSchema = z.object({
     description: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres'),
@@ -23,6 +24,8 @@ const priorityOptions = [
 ]
 
 export function PortalServiceCallPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
 
     const {

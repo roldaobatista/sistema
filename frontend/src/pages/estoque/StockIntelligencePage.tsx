@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
+import { useAuthStore } from '@/stores/auth-store'
     BarChart3, TrendingUp, DollarSign, AlertTriangle, Loader2,
     Package, ArrowDown, ArrowUp, Search
 } from 'lucide-react';
@@ -38,6 +40,8 @@ const urgencyColors: Record<string, { label: string; color: string }> = {
 const formatBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function StockIntelligencePage() {
+  const { hasPermission } = useAuthStore()
+
     const [activeTab, setActiveTab] = useState<Tab>('abc');
     const [months, setMonths] = useState(12);
     const [search, setSearch] = useState('');

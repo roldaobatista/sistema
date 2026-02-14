@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Service {
     id: number; code: string | null; name: string; description: string | null
@@ -26,6 +27,8 @@ const emptyForm = {
 }
 
 export function ServicesPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const { exportService } = useAuvoExport()
     const [search, setSearch] = useState('')

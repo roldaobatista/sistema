@@ -47,6 +47,8 @@ const STATUS_CONFIG = {
 }
 
 export default function FiscalNotesPage() {
+  const { hasPermission } = useAuthStore()
+
     const { user } = useAuthStore()
     const queryClient = useQueryClient()
     const [search, setSearch] = useState('')

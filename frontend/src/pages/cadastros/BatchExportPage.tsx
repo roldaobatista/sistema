@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Download, Printer, FileSpreadsheet, Loader2, CheckSquare, Square, Package, Users, Wrench, HardDrive, ClipboardList, FileText } from 'lucide-react'
 import api from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ExportEntity {
     key: string
@@ -21,6 +22,8 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
 }
 
 export function BatchExportPage() {
+  const { hasPermission } = useAuthStore()
+
     const [selectedEntity, setSelectedEntity] = useState<string>('')
     const [selectedFields, setSelectedFields] = useState<string[]>([])
 

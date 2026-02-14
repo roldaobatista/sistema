@@ -9,6 +9,7 @@ import api from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ContractItem {
     id?: number
@@ -56,6 +57,8 @@ const emptyForm = {
 }
 
 export function RecurringContractsPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
     const [showForm, setShowForm] = useState(false)

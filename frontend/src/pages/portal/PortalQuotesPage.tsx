@@ -5,6 +5,7 @@ import { DollarSign, Check, X, FileText, Clock, CheckCircle, XCircle } from 'luc
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { QUOTE_STATUS } from '@/lib/constants'
+import { useAuthStore } from '@/stores/auth-store'
 
 const fmtBRL = (v: string | number) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR')
@@ -19,11 +20,13 @@ const statusCfg: Record<string, { label: string; color: string; bg: string; icon
 }
 
 export function PortalQuotesPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [rejectingId, setRejectingId] = useState<number | null>(null)
     const [rejectReason, setRejectReason] = useState('')
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-quotes'],
         queryFn: () => api.get('/portal/quotes').then(res => res.data),
     })

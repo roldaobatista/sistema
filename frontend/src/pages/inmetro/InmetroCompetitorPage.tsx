@@ -11,8 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TrendingUp, Camera, Activity, DollarSign, Trophy, AlertTriangle } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function InmetroCompetitorPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: timeline, isLoading: loadingTimeline } = useMarketShareTimeline()
     const { data: movements } = useCompetitorMovements()
     const { data: pricing } = usePricingEstimate()

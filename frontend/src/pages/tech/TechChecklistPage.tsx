@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, CheckCircle2, Loader2, AlertCircle,
@@ -9,6 +10,7 @@ import { offlinePost } from '@/lib/syncEngine'
 import { generateUlid } from '@/lib/offlineDb'
 import { cn } from '@/lib/utils'
 import type { OfflineChecklist } from '@/lib/offlineDb'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ChecklistItem {
     id: string | number
@@ -19,6 +21,8 @@ interface ChecklistItem {
 }
 
 export default function TechChecklistPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id: woId } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const { items: checklists } = useOfflineStore('checklists')

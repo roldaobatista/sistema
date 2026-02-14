@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -8,6 +9,7 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Alert {
     id: number
@@ -28,9 +30,11 @@ const statusConfig: Record<string, { bg: string; text: string; icon: any; label:
 }
 
 export default function EquipmentCalendarPage() {
+  const { hasPermission } = useAuthStore()
+
     const [currentDate, setCurrentDate] = useState(new Date())
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['equipments-alerts'],
         queryFn: () => api.get('/equipments-alerts').then(r => r.data),
     })

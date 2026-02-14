@@ -1,12 +1,16 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { ClipboardList, Search, CheckCircle2, AlertCircle, XCircle, Eye } from 'lucide-react'
 import api from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FleetInspectionsTab() {
+  const { hasPermission } = useAuthStore()
+
     const [statusFilter, setStatusFilter] = useState('')
     const { data: inspections, isLoading } = useQuery({
         queryKey: ['fleet-inspections', statusFilter],

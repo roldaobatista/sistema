@@ -5,8 +5,11 @@ import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function TollDashboardTab() {
+  const { hasPermission } = useAuthStore()
+
     const queryClient = useQueryClient()
     const [vehicleFilter, setVehicleFilter] = useState('')
 

@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     BarChart3, TrendingUp, Trophy, Award, Users, PieChart, ArrowUpRight, ArrowDownRight,
@@ -7,10 +8,13 @@ import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CommissionDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const [months, setMonths] = useState(6)
 
     const { data: overviewRes, isLoading: loadingOverview } = useQuery({ queryKey: ['commission-overview'], queryFn: () => api.get('/commission-dashboard/overview') })

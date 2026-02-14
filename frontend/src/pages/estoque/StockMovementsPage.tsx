@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface StockMovement {
     id: number
@@ -44,6 +45,8 @@ const emptyForm = {
 }
 
 export function StockMovementsPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
     const [typeFilter, setTypeFilter] = useState('')

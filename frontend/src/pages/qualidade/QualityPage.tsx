@@ -8,6 +8,7 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 const tabs = ['procedures', 'actions', 'complaints', 'surveys', 'dashboard'] as const
 type Tab = typeof tabs[number]
@@ -17,6 +18,8 @@ const tabLabels: Record<Tab, string> = {
 }
 
 export default function QualityPage() {
+  const { hasPermission } = useAuthStore()
+
     const [tab, setTab] = useState<Tab>('dashboard')
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')

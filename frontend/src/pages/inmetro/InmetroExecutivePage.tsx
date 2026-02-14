@@ -1,4 +1,5 @@
 import {
+import { toast } from 'sonner'
     useExecutiveDashboard,
     useRevenueForecast,
     useConversionFunnel,
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import {
+import { useAuthStore } from '@/stores/auth-store'
     TrendingUp,
     TrendingDown,
     BarChart3,
@@ -63,6 +65,8 @@ function FunnelBar({ label, value, max, color }: { label: string; value: number;
 }
 
 export default function InmetroExecutivePage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: dashboard, isLoading: loadingDash } = useExecutiveDashboard()
     const { data: forecast } = useRevenueForecast()
     const { data: funnel } = useConversionFunnel()

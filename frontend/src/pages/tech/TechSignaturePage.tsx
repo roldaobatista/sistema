@@ -1,12 +1,16 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { toast } from 'sonner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, CheckCircle2, RotateCcw } from 'lucide-react'
 import { offlinePost } from '@/lib/syncEngine'
 import { useOfflineStore } from '@/hooks/useOfflineStore'
 import { generateUlid } from '@/lib/offlineDb'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function TechSignaturePage() {
+  const { hasPermission } = useAuthStore()
+
     const { id: woId } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const canvasRef = useRef<HTMLCanvasElement>(null)

@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { format, isToday, isYesterday, isThisWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useAuthStore } from '@/stores/auth-store'
 
 // â”€â”€ AI Badge Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AICategoryBadge({ category }: { category: string | null }) {
@@ -71,6 +72,8 @@ const FOLDERS = [
 
 // â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function EmailInboxPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const [filters, setFilters] = useState<EmailFilters>({ folder: 'inbox', per_page: 25 })
     const [selectedEmailId, setSelectedEmailId] = useState<number | null>(null)

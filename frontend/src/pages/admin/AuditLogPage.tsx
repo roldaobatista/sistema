@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Download, Eye, X, Clock, User, FileText, ArrowUpDown, Loader2, Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import api from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface AuditEntry {
     id: number
@@ -42,6 +44,8 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 export function AuditLogPage() {
+  const { hasPermission } = useAuthStore()
+
     const [action, setAction] = useState('')
     const [entityType, setEntityType] = useState('')
     const [search, setSearch] = useState('')

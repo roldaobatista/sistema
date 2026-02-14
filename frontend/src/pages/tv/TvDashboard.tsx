@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ import WebRTCPlayer from '@/components/WebRTCPlayer';
 import getEcho from '@/lib/echo';
 
 import TvMapWidget from '@/components/TvMapWidget';
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Camera {
     id: number;

@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
+import { useAuthStore } from '@/stores/auth-store'
     ScrollText, Search, Loader2, ArrowUpCircle, ArrowDownCircle,
     RefreshCw, Calendar, Warehouse as WarehouseIcon
 } from 'lucide-react';
@@ -40,6 +42,8 @@ const typeIcons: Record<string, { icon: typeof ArrowUpCircle; color: string }> =
 };
 
 export default function KardexPage() {
+  const { hasPermission } = useAuthStore()
+
     const [productId, setProductId] = useState('');
     const [warehouseId, setWarehouseId] = useState('');
     const [dateFrom, setDateFrom] = useState('');

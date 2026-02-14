@@ -24,6 +24,7 @@ import { DriverScoreTab } from './components/DriverScoreTab'
 import { GpsLiveTab } from './components/GpsLiveTab'
 import { TollDashboardTab } from './components/TollDashboardTab'
 import { FleetFinesTab } from './components/FleetFinesTab'
+import { useAuthStore } from '@/stores/auth-store'
 
 const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: <Gauge size={14} /> },
@@ -60,6 +61,8 @@ const tabComponents: Record<TabId, React.FC> = {
 }
 
 export default function FleetPage() {
+  const { hasPermission } = useAuthStore()
+
     const [activeTab, setActiveTab] = useState<TabId>('dashboard')
     const ActiveComponent = tabComponents[activeTab]
 

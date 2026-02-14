@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Edit2, Trash2, Shield, Clock, X, AlertTriangle } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface SlaPolicy {
     id: number
@@ -23,6 +24,8 @@ const priorityConfig: Record<string, { label: string; color: string; icon: strin
 }
 
 export function SlaPoliciesPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [modal, setModal] = useState<{ mode: 'create' | 'edit'; policy?: SlaPolicy } | null>(null)
 

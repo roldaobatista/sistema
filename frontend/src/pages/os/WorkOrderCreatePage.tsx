@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ItemForm {
     type: 'product' | 'service'
@@ -24,6 +25,8 @@ const emptyItem: ItemForm = {
 }
 
 export function WorkOrderCreatePage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const qc = useQueryClient()
     const [searchParams] = useSearchParams()

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     Clipboard, ScanBarcode, Camera, DollarSign, Pen,
@@ -27,11 +28,13 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 }
 
 export default function TechWidgetPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const { user } = useAuthStore()
     const sync = useSyncStatus()
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['tech-widget-os'],
         queryFn: () => api.get('/technician/work-orders', {
             params: { per_page: 3, status: 'open,in_progress,scheduled' },

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
+import { useAuthStore } from '@/stores/auth-store'
     Plus, Edit, Trash2, MessageCircle, Mail, Smartphone,
     X, Save, Loader2, FileText
 } from 'lucide-react'
@@ -20,6 +21,8 @@ const CHANNEL_META: Record<Channel, { icon: React.ElementType; color: string; la
 }
 
 export function MessageTemplatesPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [editing, setEditing] = useState<CrmMessageTemplate | null>(null)
     const [creating, setCreating] = useState(false)

@@ -9,6 +9,7 @@ import { offlinePost } from '@/lib/syncEngine'
 import { generateUlid } from '@/lib/offlineDb'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 const CATEGORIES = [
     'Transporte',
@@ -21,6 +22,8 @@ const CATEGORIES = [
 ]
 
 export default function TechExpensePage() {
+  const { hasPermission } = useAuthStore()
+
     const { id: woId } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const { items: savedExpenses, put: putExpense, remove } = useOfflineStore('expenses')

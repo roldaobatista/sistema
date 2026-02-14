@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { ArrowLeft, Save, Plus, Trash2, Package, Wrench } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 const formatCurrency = (v: number | string) => {
     const n = typeof v === 'string' ? parseFloat(v) : v
@@ -27,6 +28,8 @@ interface ItemForm {
 }
 
 export function QuoteEditPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const qc = useQueryClient()

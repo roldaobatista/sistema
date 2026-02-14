@@ -12,6 +12,8 @@ import { useAuthStore } from '@/stores/auth-store'
 import { format } from 'date-fns'
 
 export default function BenefitsPage() {
+  const { hasPermission } = useAuthStore()
+
     const { user } = useAuthStore()
     const [searchTerm, setSearchTerm] = useState('')
     const { benefits: rawBenefits, isLoading, createBenefit, updateBenefit, deleteBenefit } = useBenefits()

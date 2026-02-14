@@ -4,8 +4,11 @@ import api from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FleetAccidentsTab() {
+  const { hasPermission } = useAuthStore()
+
     const queryClient = useQueryClient()
     const { data: accidents, isLoading } = useQuery({
         queryKey: ['fleet-accidents'],

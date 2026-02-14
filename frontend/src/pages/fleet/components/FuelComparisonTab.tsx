@@ -1,11 +1,15 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useMutation } from '@tanstack/react-query'
 import { Fuel, ArrowRight, Calculator, TrendingDown, CheckCircle2 } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FuelComparisonTab() {
+  const { hasPermission } = useAuthStore()
+
     const [gasolinePrice, setGasolinePrice] = useState('')
     const [ethanolPrice, setEthanolPrice] = useState('')
     const [dieselPrice, setDieselPrice] = useState('')

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { useAuthStore } from '@/stores/auth-store'
 
 /* ─── Config ─── */
 
@@ -115,6 +117,8 @@ function CallCard({ call, isSelected, onClick }: { call: any; isSelected: boolea
 /* ─── Main Page ─── */
 
 export function ServiceCallMapPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [priorityFilter, setPriorityFilter] = useState<string>('')

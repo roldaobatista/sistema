@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import {
     ClipboardList, MapPin, Clock, ChevronRight, Search,
@@ -8,6 +9,7 @@ import { useOfflineStore } from '@/hooks/useOfflineStore'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
 import type { OfflineWorkOrder } from '@/lib/offlineDb'
+import { useAuthStore } from '@/stores/auth-store'
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
     pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', icon: Clock },
@@ -24,6 +26,8 @@ const PRIORITY_COLORS: Record<string, string> = {
 }
 
 export default function TechWorkOrdersPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const { items: offlineOrders, putMany, isLoading: offlineLoading } = useOfflineStore('work-orders')
     const [search, setSearch] = useState('')

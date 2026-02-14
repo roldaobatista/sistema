@@ -10,8 +10,11 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function InmetroSealReportPage() {
+  const { hasPermission } = useAuthStore()
+
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
     const [typeFilter, setTypeFilter] = useState('')

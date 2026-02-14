@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
 import { usePerformance } from '@/hooks/usePerformance'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/stores/auth-store'
 
 const tabs = ['schedules', 'clock', 'trainings', 'reviews', 'feedback', 'dashboard'] as const
 type Tab = typeof tabs[number]
@@ -28,6 +29,8 @@ const tabLabels: Record<Tab, string> = {
 }
 
 export default function HRPage() {
+  const { hasPermission } = useAuthStore()
+
     const [tab, setTab] = useState<Tab>('schedules')
     const [page, setPage] = useState(1)
     const navigate = useNavigate()

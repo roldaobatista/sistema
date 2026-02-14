@@ -7,6 +7,7 @@ import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
 import { InmetroHeatmapWidget } from '@/components/inmetro/InmetroHeatmapWidget'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 const statusLabels: Record<string, string> = {
     approved: 'Aprovado',
@@ -23,6 +24,8 @@ const statusColors: Record<string, string> = {
 }
 
 export function InmetroDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: dashboard, isLoading, isError } = useInmetroDashboard()
     const { data: cities } = useInmetroCities()
     const { isSyncing, triggerSync } = useInmetroAutoSync()

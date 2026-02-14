@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { TrendingUp, TrendingDown, Minus, Search, Filter, ArrowUpDown } from 'lucide-react'
 import api from '@/lib/api'
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatCurrency } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface PriceHistoryEntry {
     id: number
@@ -24,11 +26,13 @@ interface PriceHistoryEntry {
 }
 
 export function PriceHistoryPage() {
+  const { hasPermission } = useAuthStore()
+
     const [dateFrom, setDateFrom] = useState('')
     const [dateTo, setDateTo] = useState('')
     const [entityType, setEntityType] = useState<string>('all')
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['price-history', entityType, dateFrom, dateTo],
         queryFn: () => {
             const params: Record<string, string> = {}

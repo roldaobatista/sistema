@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/auth-store'
 
 // â”€â”€ Configurações visuais â”€â”€
 
@@ -48,6 +49,8 @@ const tabs = [
 ]
 
 export function CentralPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
     const [tab, setTab] = useState('todas')

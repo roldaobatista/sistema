@@ -1,11 +1,15 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Fuel, TrendingUp, Calendar, Search } from 'lucide-react'
 import api from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FleetFuelTab() {
+  const { hasPermission } = useAuthStore()
+
     const [vehicleFilter, setVehicleFilter] = useState('')
     const { data: fuelLogs, isLoading } = useQuery({
         queryKey: ['fleet-fuel-logs', vehicleFilter],

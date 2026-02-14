@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
     Brain,
@@ -22,6 +23,7 @@ import {
     Inbox,
 } from 'lucide-react'
 import {
+import { useAuthStore } from '@/stores/auth-store'
     usePredictiveMaintenance,
     useExpenseOcrAnalysis,
     useTriageSuggestions,
@@ -649,6 +651,8 @@ function SummaryTab() {
 // ─── Main Page ────────────────────────────────────
 
 export default function AIAnalyticsPage() {
+  const { hasPermission } = useAuthStore()
+
     const [activeTab, setActiveTab] = useState<TabId>('predictive')
 
     const tabContent: Record<TabId, React.ReactNode> = {

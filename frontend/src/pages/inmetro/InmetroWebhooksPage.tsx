@@ -13,8 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Webhook, Plus, Trash2, Power, PowerOff, Edit } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function InmetroWebhooksPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: webhooks, isLoading } = useWebhooks()
     const { data: events } = useWebhookEvents()
     const createMut = useCreateWebhook()

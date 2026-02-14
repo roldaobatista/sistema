@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 export default function TechSettingsPage() {
+  const { hasPermission } = useAuthStore()
+
     const { theme, isDark, setTheme } = useDarkMode()
     const bio = useBiometricAuth()
     const lowData = useLowDataMode()

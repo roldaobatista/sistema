@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ReconciliationRule {
     id: number
@@ -86,6 +87,8 @@ const emptyForm = {
 }
 
 export default function ReconciliationRulesPage() {
+  const { hasPermission } = useAuthStore()
+
     const queryClient = useQueryClient()
     const [search, setSearch] = useState('')
     const [showForm, setShowForm] = useState(false)

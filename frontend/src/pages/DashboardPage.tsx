@@ -47,6 +47,8 @@ const statusConfig: Record<string, { label: string; variant: any; color: string 
 }
 
 export function DashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const { user } = useAuthStore()
     const navigate = useNavigate()
 

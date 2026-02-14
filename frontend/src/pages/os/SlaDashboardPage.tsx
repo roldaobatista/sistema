@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Shield, AlertTriangle, CheckCircle, Clock, TrendingUp } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 const priorityConfig: Record<string, { label: string; icon: string; color: string }> = {
     low: { label: 'Baixa', icon: '🟢', color: 'text-surface-600' },
@@ -13,6 +15,8 @@ const woIdentifier = (wo?: { number: string; os_number?: string | null; business
     wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
 export function SlaDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: overview, isLoading } = useQuery({
         queryKey: ['sla-dashboard-overview'],
         queryFn: () => api.get('/sla-dashboard/overview'),

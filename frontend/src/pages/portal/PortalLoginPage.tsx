@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -7,6 +8,7 @@ import { Loader2, LogIn } from 'lucide-react'
 import { usePortalAuthStore } from '@/stores/portal-auth-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/auth-store'
 
 const loginSchema = z.object({
     email: z.string().email('E-mail inválido'),
@@ -17,6 +19,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 
 export function PortalLoginPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const login = usePortalAuthStore((state) => state.login)
     const [error, setError] = useState('')

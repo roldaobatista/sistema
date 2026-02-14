@@ -11,8 +11,11 @@ import { useRecruitment, JobPosting } from '@/hooks/useRecruitment'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function RecruitmentPage() {
+  const { hasPermission } = useAuthStore()
+
     const { jobs, isLoading, createJob, updateJob, deleteJob } = useRecruitment()
     const [searchTerm, setSearchTerm] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)

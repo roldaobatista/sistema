@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { FileWarning, DollarSign, Calendar, User, MapPin, Search } from 'lucide-react'
 import { useState } from 'react'
 import api from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FleetFinesTab() {
+  const { hasPermission } = useAuthStore()
+
     const [statusFilter, setStatusFilter] = useState('')
     const { data: finesData, isLoading } = useQuery({
         queryKey: ['fleet-fines', statusFilter],

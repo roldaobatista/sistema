@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     History, Search, Filter, Eye, X, ArrowRight, User, Calendar
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
+import { useAuthStore } from '@/stores/auth-store'
 
 const actionConfig: Record<string, { label: string; variant: any }> = {
     created: { label: 'Criado', variant: 'success' },
@@ -22,6 +24,8 @@ const actionConfig: Record<string, { label: string; variant: any }> = {
 const fmtDate = (d: string) => new Date(d).toLocaleString('pt-BR')
 
 export function AuditLogsPage() {
+  const { hasPermission } = useAuthStore()
+
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
     const [selectedLog, setSelectedLog] = useState<any>(null)

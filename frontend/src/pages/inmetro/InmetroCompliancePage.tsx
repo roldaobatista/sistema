@@ -15,8 +15,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ShieldCheck, Plus, AlertTriangle, Building2, BarChart3, FileCheck } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function InmetroCompliancePage() {
+  const { hasPermission } = useAuthStore()
+
     const [typeFilter] = useState('')
     const { data: checklists, isLoading } = useComplianceChecklists(typeFilter || undefined)
     const { data: anomalies } = useDetectAnomalies()

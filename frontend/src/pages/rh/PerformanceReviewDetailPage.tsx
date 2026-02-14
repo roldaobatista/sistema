@@ -12,6 +12,7 @@ import { Save, ArrowLeft, Send } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 const COMPETENCIES = [
     { id: 'technical', label: 'Conhecimento Técnico' },
@@ -22,6 +23,8 @@ const COMPETENCIES = [
 ]
 
 export default function PerformanceReviewDetailPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams()
     const navigate = useNavigate()
     const { data: review, isLoading } = useReview(Number(id))

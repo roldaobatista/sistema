@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
 
 export function ProfilePage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const { setUser } = useAuthStore()
     const [showPassword, setShowPassword] = useState(false)

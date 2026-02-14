@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { toast } from 'sonner'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, Camera, Trash2, Plus, Image as ImageIcon,
@@ -7,8 +8,11 @@ import {
 import { useOfflineStore } from '@/hooks/useOfflineStore'
 import { generateUlid } from '@/lib/offlineDb'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function TechPhotosPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id: woId } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const { items: allPhotos, put: putPhoto, remove } = useOfflineStore('photos')

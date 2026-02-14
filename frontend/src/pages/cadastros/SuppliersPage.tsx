@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Supplier {
     id: number; type: 'PF' | 'PJ'; name: string; document: string | null
@@ -35,6 +36,8 @@ const emptyForm = {
 }
 
 export function SuppliersPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
     const debouncedSearch = useDebounce(search, 400)

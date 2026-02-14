@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 // ── Account Form ─────────────────────────────
 function AccountFormDialog({
@@ -151,6 +152,8 @@ function AccountFormDialog({
 
 // ── Main Settings Page ──────────────────────────
 export default function EmailSettingsPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const { data: accountsData, isLoading: loadingAccounts } = useEmailAccounts()
     const { data: rulesData, isLoading: loadingRules } = useEmailRules()

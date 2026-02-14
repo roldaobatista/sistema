@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/pageheader'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 type ClockStatus = {
     is_clocked_in: boolean
@@ -20,6 +21,8 @@ type ClockStatus = {
 }
 
 export default function ClockInPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const videoRef = useRef<HTMLVideoElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)

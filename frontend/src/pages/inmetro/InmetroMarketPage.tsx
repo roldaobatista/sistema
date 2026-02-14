@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import {
     BarChart3, TrendingUp, Users, Scale, AlertTriangle, Clock, MapPin,
     Warehouse, Shield, ChevronDown, ChevronUp, Loader2
@@ -8,6 +9,7 @@ import {
     useBrandAnalysis, useExpirationForecast
 } from '@/hooks/useInmetro'
 import { Link } from 'react-router-dom'
+import { useAuthStore } from '@/stores/auth-store'
 
 const statusLabels: Record<string, string> = {
     approved: 'Aprovado',
@@ -24,6 +26,8 @@ const statusColors: Record<string, string> = {
 }
 
 export function InmetroMarketPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: overview, isLoading: loadingOverview } = useMarketOverview()
     const { data: competitors, isLoading: loadingComp } = useCompetitorAnalysis()
     const { data: regional, isLoading: loadingRegional } = useRegionalAnalysis()

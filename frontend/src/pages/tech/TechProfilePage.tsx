@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import {
     User, LogOut, RefreshCw, Cloud, CloudOff,
     ChevronRight, Clock, Database, Trash2,
@@ -10,6 +11,8 @@ import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
 export default function TechProfilePage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const { user, logout } = useAuthStore()
     const { isOnline, pendingCount, lastSyncAt, isSyncing, syncNow } = useSyncStatus()

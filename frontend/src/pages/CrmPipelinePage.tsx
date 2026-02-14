@@ -15,10 +15,13 @@ import { DealDetailDrawer } from '@/components/crm/DealDetailDrawer'
 import { NewDealModal } from '@/components/crm/NewDealModal'
 import { crmApi, type CrmDeal, type CrmPipeline, type CrmPipelineStage } from '@/lib/crm-api'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CrmPipelinePage() {
+  const { hasPermission } = useAuthStore()
+
     const { id: routeId } = useParams()
     const queryClient = useQueryClient()
     const [selectedDealId, setSelectedDealId] = useState<number | null>(null)

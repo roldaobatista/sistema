@@ -5,6 +5,8 @@ import { Eye, EyeOff, LogIn, Loader2, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function LoginPage() {
+  const { hasPermission } = useAuthStore()
+
     const { login, isLoading } = useAuthStore()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')

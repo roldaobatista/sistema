@@ -9,6 +9,7 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { WORK_ORDER_STATUS, QUOTE_STATUS } from '@/lib/constants'
+import { useAuthStore } from '@/stores/auth-store'
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     open: { label: 'Aberta', color: 'text-sky-600', bg: 'bg-sky-100' },
@@ -21,6 +22,8 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function PortalDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
 
     const { data: workOrders, isLoading: loadingWorkOrders, isError: errorWO } = useQuery({

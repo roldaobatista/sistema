@@ -12,10 +12,13 @@ import { toast } from 'sonner'
 import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
+import { useAuthStore } from '@/stores/auth-store'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CrmDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const [nowTs] = useState(() => Date.now())
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['crm', 'dashboard'],

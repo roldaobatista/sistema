@@ -29,6 +29,7 @@ import {
     Save,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 const ENTITY_LABELS: Record<string, string> = {
     customers: 'Clientes',
@@ -48,6 +49,8 @@ const ENTITY_LABELS: Record<string, string> = {
 }
 
 export function AuvoImportPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: connection, isLoading: loadingConn, isError: isErrorConn, refetch: retestConnection } = useAuvoConnectionStatus()
     const { data: syncStatus, isLoading: loadingSync, isError: isErrorSync } = useAuvoSyncStatus()
     const { data: history } = useAuvoHistory()

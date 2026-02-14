@@ -9,6 +9,7 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Equipment {
     id: number
@@ -70,6 +71,8 @@ function calibrationBadge(nextDate: string | null) {
 }
 
 export default function EquipmentListPage() {
+  const { hasPermission } = useAuthStore()
+
     const [search, setSearch] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
     const [filterStatus, setFilterStatus] = useState('')

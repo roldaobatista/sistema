@@ -4,8 +4,11 @@ import { ArrowLeft, Mic, MicOff, Save, Trash2, FileText, Copy, Check } from 'luc
 import { useVoiceToText } from '@/hooks/useVoiceToText'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function TechVoiceReportPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const voice = useVoiceToText('pt-BR')

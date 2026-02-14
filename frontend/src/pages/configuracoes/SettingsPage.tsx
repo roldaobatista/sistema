@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 type Tab = 'settings' | 'numbering' | 'notifications' | 'audit'
 
@@ -143,6 +144,8 @@ const entityLabels: Record<string, string> = {
 }
 
 export function SettingsPage() {
+  const { hasPermission } = useAuthStore()
+
     const qc = useQueryClient()
     const [tab, setTab] = useState<Tab>('settings')
     const [actionFilter, setActionFilter] = useState('')

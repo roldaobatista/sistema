@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import {
+import { useAuthStore } from '@/stores/auth-store'
     ClipboardCheck, Plus, Eye, CheckCircle2, XCircle, Loader2,
     Warehouse as WarehouseIcon, Calendar, Search, ChevronRight
 } from 'lucide-react';
@@ -41,6 +42,8 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 };
 
 export default function InventoryPage() {
+  const { hasPermission } = useAuthStore()
+
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('');

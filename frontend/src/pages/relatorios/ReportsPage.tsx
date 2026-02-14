@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 const fmtBRL = (val: number) => (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtHours = (min: number) => { const m = Number(min) || 0; return `${Math.floor(m / 60)}h ${m % 60}m` }
@@ -45,6 +46,8 @@ const priorityLabels: Record<string, string> = {
 }
 
 export function ReportsPage() {
+  const { hasPermission } = useAuthStore()
+
     const [tab, setTab] = useState<Tab>('os')
     const today = new Date().toISOString().split('T')[0]
     const monthStart = today.slice(0, 7) + '-01'

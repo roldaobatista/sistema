@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast'
 import SLACountdown from '@/components/common/SLACountdown'
 import TechChatDrawer from '@/components/tech/TechChatDrawer'
 import type { OfflineWorkOrder } from '@/lib/offlineDb'
+import { useAuthStore } from '@/stores/auth-store'
 
 const STATUS_MAP: Record<string, { label: string; color: string; next?: string; nextLabel?: string }> = {
     pending: { label: 'Pendente', color: 'bg-amber-500', next: 'in_progress', nextLabel: 'Iniciar Atendimento' },
@@ -35,6 +36,8 @@ const ACTION_CARDS = [
 ];
 
 export default function TechWorkOrderDetailPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const { toast } = useToast()

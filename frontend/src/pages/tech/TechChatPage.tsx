@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { toast } from 'sonner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, Mic, MicOff, Image, Clock } from 'lucide-react'
 import { useChatStoreForward, type ChatMessage } from '@/hooks/useChatStoreForward'
@@ -7,6 +8,8 @@ import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 
 export default function TechChatPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const workOrderId = parseInt(id || '0')

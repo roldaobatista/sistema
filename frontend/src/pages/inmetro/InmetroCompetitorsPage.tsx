@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Warehouse, Search, Phone, Mail, MapPin, RefreshCw, Loader2, Wrench, Shield, ChevronDown, ChevronUp, Calendar, Award, Scale } from 'lucide-react'
 import { useInmetroCompetitors, type InmetroCompetitor } from '@/hooks/useInmetro'
 import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
 import { Badge } from '@/components/ui/badge'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function InmetroCompetitorsPage() {
+  const { hasPermission } = useAuthStore()
+
     const [searchInput, setSearchInput] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [filters, setFilters] = useState({ search: '', city: '', per_page: 25, page: 1 })

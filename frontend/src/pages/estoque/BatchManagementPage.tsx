@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Package, Search, Plus, Calendar, BarChart3, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Batch {
     id: number
@@ -30,6 +32,8 @@ const MOCK_BATCHES: Batch[] = [
 ]
 
 export default function BatchManagementPage() {
+  const { hasPermission } = useAuthStore()
+
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('all')
 

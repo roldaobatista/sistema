@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     Palmtree, AlertTriangle, Clock, CheckCircle2, Users, CalendarDays
@@ -6,6 +7,7 @@ import {
 import api from '@/lib/api'
 import { PageHeader } from '@/components/ui/pageheader'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface VacationBalance {
     id: number
@@ -36,6 +38,8 @@ const statusLabels: Record<string, string> = {
 }
 
 export default function VacationBalancePage() {
+  const { hasPermission } = useAuthStore()
+
     const [search, setSearch] = useState('')
 
     const { data: balancesRes, isLoading } = useQuery({

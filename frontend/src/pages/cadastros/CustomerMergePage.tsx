@@ -6,6 +6,7 @@ import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface DuplicateGroup {
     key: string
@@ -20,6 +21,8 @@ interface DuplicateGroup {
 }
 
 export function CustomerMergePage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const queryClient = useQueryClient()
     const [searchType, setSearchType] = useState<'name' | 'document' | 'email'>('name')

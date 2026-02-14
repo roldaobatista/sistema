@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import {
+import { useAuthStore } from '@/stores/auth-store'
     ShoppingCart, PackageSearch, QrCode, RotateCcw, Trash2,
     Loader2, Search, Plus, Eye, Check, X, AlertTriangle, Package
 } from 'lucide-react';
@@ -60,6 +61,8 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function StockIntegrationPage() {
+  const { hasPermission } = useAuthStore()
+
     const [activeTab, setActiveTab] = useState<Tab>('quotes');
     const [search, setSearch] = useState('');
     const queryClient = useQueryClient();

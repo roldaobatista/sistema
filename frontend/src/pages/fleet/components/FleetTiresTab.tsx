@@ -1,12 +1,16 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { Disc, Plus, Search, MapPin, Gauge, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FleetTiresTab() {
+  const { hasPermission } = useAuthStore()
+
     const [vehicleId, setVehicleId] = useState<number | null>(null)
 
     const { data: tires, isLoading } = useQuery({

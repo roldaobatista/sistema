@@ -1,4 +1,5 @@
 import React from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     BarChart3, Users, AlertTriangle, TrendingUp, Clock,
@@ -8,6 +9,7 @@ import {
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
+import { useAuthStore } from '@/stores/auth-store'
 
 // ── Configuração de tipos ──
 
@@ -29,6 +31,8 @@ const tipoColors: Record<string, string> = {
 }
 
 export function CentralDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: kpisRes, isLoading: loadingKpis } = useQuery({
         queryKey: ['central-kpis'],
         queryFn: () => api.get('/central/kpis'),

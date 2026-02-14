@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Truck, Fuel, Gauge, AlertCircle, TrendingUp, DollarSign } from 'lucide-react'
 import api from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 
 export function FleetDashboardTab() {
-    const { data: dashboard } = useQuery({
+  const { hasPermission } = useAuthStore()
+
+    const { data, isLoading, isError, refetch: dashboard } = useQuery({
         queryKey: ['fleet-dashboard-advanced'],
         queryFn: () => api.get('/fleet/dashboard').then(r => r.data?.data)
     })
@@ -125,3 +128,4 @@ function StatusProgress({ label, count, total, color }: any) {
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { useAuthStore } from '@/stores/auth-store'

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 // Simple Draggable/Droppable implementation for now, or just columns
 // Since dnd-kit requires a bit of setup, I'll start with a detailed view that LISTS candidates by stage
@@ -30,6 +31,8 @@ const STAGES = [
 ]
 
 export default function RecruitmentKanbanPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams()
     const navigate = useNavigate()
     const { jobs } = useRecruitment()

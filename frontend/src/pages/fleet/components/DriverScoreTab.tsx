@@ -1,9 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Award, TrendingUp, TrendingDown, Minus, Fuel, AlertTriangle, ClipboardCheck, Shield } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function DriverScoreTab() {
+  const { hasPermission } = useAuthStore()
+
     const { data: ranking, isLoading } = useQuery({
         queryKey: ['fleet-driver-ranking'],
         queryFn: () => api.get('/fleet/driver-ranking').then(r => r.data?.data)

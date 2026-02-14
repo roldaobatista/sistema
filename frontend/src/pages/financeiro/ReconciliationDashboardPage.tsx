@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
     PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/stores/auth-store'
 
 // ─── Types ──────────────────────────────────────────
 
@@ -63,6 +65,8 @@ const COLORS = ['#f59e0b', '#10b981', '#6b7280']
 // ─── Component ──────────────────────────────────────
 
 export function ReconciliationDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const [startDate, setStartDate] = useState(() => {
         const d = new Date()
         d.setDate(d.getDate() - 30)

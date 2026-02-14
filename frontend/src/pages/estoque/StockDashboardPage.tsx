@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Package, AlertTriangle, TrendingDown, DollarSign, ArrowRight, Warehouse, Tag, ClipboardCheck, ScrollText, ArrowLeftRight, BarChart3, QrCode } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/pageheader'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface StockSummary {
     total_products: number
@@ -24,6 +26,8 @@ interface LowStockProduct {
 }
 
 export function StockDashboardPage() {
+  const { hasPermission } = useAuthStore()
+
     const { data: summaryRes, isLoading: loadingSummary } = useQuery({
         queryKey: ['stock-summary'],
         queryFn: () => api.get('/stock/summary'),

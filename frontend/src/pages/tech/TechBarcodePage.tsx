@@ -4,8 +4,11 @@ import { ArrowLeft, Camera, ScanBarcode, Keyboard, Copy, Check, Search } from 'l
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function TechBarcodePage() {
+  const { hasPermission } = useAuthStore()
+
     const navigate = useNavigate()
     const scanner = useBarcodeScanner()
     const videoRef = useRef<HTMLVideoElement>(null)

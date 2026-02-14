@@ -3,8 +3,11 @@ import { ArrowLeft, Bluetooth, BluetoothOff, Printer, Loader2, Check, AlertCircl
 import { useBluetoothPrint } from '@/hooks/useBluetoothPrint'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default function TechBluetoothPrintPage() {
+  const { hasPermission } = useAuthStore()
+
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const bt = useBluetoothPrint()

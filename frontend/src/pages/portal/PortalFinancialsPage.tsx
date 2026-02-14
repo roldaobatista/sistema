@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
+import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { DollarSign, Clock, CheckCircle, AlertTriangle, Receipt } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { FINANCIAL_STATUS } from '@/lib/constants'
+import { useAuthStore } from '@/stores/auth-store'
 
 const fmtBRL = (v: string | number) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')
@@ -16,7 +18,9 @@ const statusCfg: Record<string, { label: string; color: string; bg: string; icon
 }
 
 export function PortalFinancialsPage() {
-    const { data, isLoading } = useQuery({
+  const { hasPermission } = useAuthStore()
+
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-financials'],
         queryFn: () => api.get('/portal/financials').then(res => res.data),
     })
