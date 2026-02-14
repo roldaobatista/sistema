@@ -52,6 +52,13 @@ export interface PerformanceReview {
     type: '180' | '360' | 'leader' | 'peer'
     nine_box_potential?: 'low' | 'medium' | 'high'
     nine_box_performance?: 'low' | 'medium' | 'high'
+    created_at?: string
+    ratings?: Record<string, number>
+    feedback_text?: string
+    action_plan?: string
+    overall_score?: number
+    potential_score?: number
+    score?: number
 }
 
 export interface ContinuousFeedback {
