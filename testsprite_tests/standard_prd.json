@@ -1,0 +1,502 @@
+{
+  "meta": {
+    "project": "Sistema OS",
+    "date": "2026-02-10",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "Sistema OS is a comprehensive full-stack business management system designed to streamline operations across multiple business functions including customer management, work orders, financials, and reporting. It offers robust authentication and multi-tenant capabilities, rich user interfaces powered by React and Laravel, and integrates advanced modules like INMETRO intelligence and CRM for enhanced decision-making.",
+  "core_goals": [
+    "Provide secure multi-tenant authentication with role-based access control",
+    "Deliver a centralized dashboard displaying key performance indicators and activity feeds",
+    "Streamline the complete lifecycle of work orders from creation to invoicing",
+    "Enable efficient management of customers, products, services, suppliers, and equipment",
+    "Support comprehensive financial operations including accounts receivable/payable, payments, commissions, expenses, and cash flow analysis",
+    "Facilitate customer self-service through a dedicated customer portal",
+    "Offer detailed reporting and audit logging for operational transparency",
+    "Integrate third-party data sources and APIs for enriched business intelligence",
+    "Support data import/export and batch processing for operational scalability"
+  ],
+  "key_features": [
+    "Authentication & Multi-Tenant system with Laravel Sanctum and permission guards",
+    "Dynamic Dashboard with KPI cards, charts, and activity feeds",
+    "Work Orders module featuring Kanban board, attachments, signature capture, and PDF generation",
+    "Customer management with CPF/CNPJ validation, merge, and duplicate detection",
+    "Products and Services CRUD with category and price history tracking",
+    "Comprehensive Financial modules including commissions, expenses, invoices, bank reconciliation, and cash flow visualization",
+    "Service Calls with technician assignment, interactive mapping, and agenda management",
+    "Technician management with scheduling, time entries, cash box, and route suggestions",
+    "CRM with deal pipeline, customer 360 view, and communication templates",
+    "INMETRO intelligence integration to import data, track instruments, and perform competitor analysis",
+    "Robust audit logs with filters and export capabilities",
+    "Real-time notifications with read tracking",
+    "Settings module managing branches, tenants, and user profiles",
+    "Customer Portal supporting login, dashboards, work orders, quotes, and financials",
+    "Extensive reports covering productivity, finances, commissions, and inventory"
+  ],
+  "user_flow_summary": [
+    "User logs in via secure authentication with tenant switching and role-based permissions",
+    "User lands on the dashboard showing KPIs and recent activity",
+    "User navigates to work orders to create, update, or manage tasks and statuses",
+    "User manages customers, products, services, and suppliers through dedicated CRUD interfaces",
+    "User accesses financial modules to handle accounts receivable/payable, payments, and commissions",
+    "Technicians coordinate schedules, track time, and handle cash operations",
+    "Customer users access the portal to view orders, quotes, and financial statements, and create service calls",
+    "Admins configure system settings including tenants, branches, and user roles",
+    "Users generate reports with various filters and export options for business analysis"
+  ],
+  "validation_criteria": [
+    "Successful login with email/password and correct tenant permissions enforced",
+    "Dashboard accurately reflects KPIs from backend data",
+    "Work orders reflect lifecycle changes, attachments, and status transitions correctly",
+    "Customer data enforces CPF/CNPJ validations and merge functions appropriately",
+    "Financial transactions record and update receivables, payables, payments, and commissions accurately",
+    "Technician scheduling prevents conflicts and records time entries properly",
+    "Invoices and quotes generate correct PDF documents and support full lifecycle management",
+    "INMETRO data imports correctly and updates analytics dashboards",
+    "Audit logs capture all critical user actions with appropriate filters",
+    "Real-time notifications update promptly with correct unread counts",
+    "Settings persist changes and tenant/user management functions as expected",
+    "Customer portal allows independent login and access to permitted features",
+    "Reports generate with accurate data and provide CSV exports without errors"
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "React 18",
+      "Vite",
+      "Tailwind CSS",
+      "Zustand",
+      "TanStack React Query",
+      "React Router v6",
+      "PHP 8.2",
+      "Laravel 11",
+      "Laravel Sanctum",
+      "Spatie Permission",
+      "SQLite (dev) / MySQL (prod)",
+      "Axios"
+    ],
+    "features": [
+      {
+        "name": "Authentication & Multi-Tenant",
+        "description": "Login with email/password via Sanctum tokens, multi-tenant switching, protected routes with permission guards, portal authentication for customers",
+        "files": [
+          "frontend/src/pages/LoginPage.tsx",
+          "frontend/src/stores/auth-store.ts",
+          "frontend/src/stores/portal-auth-store.ts",
+          "backend/app/Http/Controllers/Api/V1/Auth/AuthController.php",
+          "backend/app/Http/Controllers/Api/V1/Portal/PortalAuthController.php",
+          "backend/app/Http/Middleware/CheckTenant.php"
+        ]
+      },
+      {
+        "name": "Dashboard",
+        "description": "Main dashboard with KPI cards (revenue, pending work orders, overdue items), performance charts, and activity feed",
+        "files": [
+          "frontend/src/pages/DashboardPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/DashboardController.php"
+        ]
+      },
+      {
+        "name": "Central - Work Inbox",
+        "description": "Unified work inbox, task creation, assignment, comments, KPIs dashboard, automation rules management",
+        "files": [
+          "frontend/src/pages/central/CentralPage.tsx",
+          "frontend/src/pages/central/CentralDashboardPage.tsx",
+          "frontend/src/pages/central/CentralRulesPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/CentralController.php",
+          "backend/app/Models/CentralItem.php",
+          "backend/app/Models/CentralRule.php"
+        ]
+      },
+      {
+        "name": "IAM - Users",
+        "description": "User CRUD, toggle active/inactive, bulk actions, reset password, force logout, session management, audit trail, stats, CSV export",
+        "files": [
+          "frontend/src/pages/iam/UsersPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Iam/UserController.php",
+          "backend/app/Models/User.php"
+        ]
+      },
+      {
+        "name": "IAM - Roles & Permissions",
+        "description": "Role CRUD with cloning, permissions matrix with inline toggle, role-permission assignment",
+        "files": [
+          "frontend/src/pages/iam/RolesPage.tsx",
+          "frontend/src/pages/iam/PermissionsMatrixPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Iam/RoleController.php",
+          "backend/app/Http/Controllers/Api/V1/Iam/PermissionController.php"
+        ]
+      },
+      {
+        "name": "Audit Logs",
+        "description": "System audit trail with filters (user, action, entity type, date range), detail view, export",
+        "files": [
+          "frontend/src/pages/admin/AuditLogPage.tsx",
+          "frontend/src/pages/configuracoes/AuditLogsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/AuditLogController.php",
+          "backend/app/Models/AuditLog.php"
+        ]
+      },
+      {
+        "name": "Customers",
+        "description": "Customer CRUD (PF/PJ), CPF/CNPJ validation, address auto-fill via CEP, search duplicates, customer merge functionality",
+        "files": [
+          "frontend/src/pages/cadastros/CustomersPage.tsx",
+          "frontend/src/pages/cadastros/CustomerMergePage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Master/CustomerController.php",
+          "backend/app/Http/Controllers/Api/V1/Customer/CustomerMergeController.php",
+          "backend/app/Models/Customer.php"
+        ]
+      },
+      {
+        "name": "Products",
+        "description": "Product CRUD with categories, price history tracking, stock integration",
+        "files": [
+          "frontend/src/pages/cadastros/ProductsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Master/ProductController.php",
+          "backend/app/Models/Product.php",
+          "backend/app/Models/ProductCategory.php"
+        ]
+      },
+      {
+        "name": "Services",
+        "description": "Service CRUD with categories and price history",
+        "files": [
+          "frontend/src/pages/cadastros/ServicesPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Master/ServiceController.php",
+          "backend/app/Models/Service.php"
+        ]
+      },
+      {
+        "name": "Suppliers",
+        "description": "Supplier CRUD with contact info and document validation",
+        "files": [
+          "frontend/src/pages/cadastros/SuppliersPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Master/SupplierController.php",
+          "backend/app/Models/Supplier.php"
+        ]
+      },
+      {
+        "name": "Work Orders",
+        "description": "Full work order lifecycle: list with filters, Kanban board, create/edit, status transitions (Aberta→Em andamento→Concluída→Faturada), items management, attachments, signature capture, equipment linking, duplicate, reopen, CSV export, dashboard stats, PDF generation",
+        "files": [
+          "frontend/src/pages/os/WorkOrdersListPage.tsx",
+          "frontend/src/pages/os/WorkOrderKanbanPage.tsx",
+          "frontend/src/pages/os/WorkOrderCreatePage.tsx",
+          "frontend/src/pages/os/WorkOrderDetailPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Os/WorkOrderController.php",
+          "backend/app/Models/WorkOrder.php",
+          "backend/app/Http/Controllers/Api/V1/PdfController.php"
+        ]
+      },
+      {
+        "name": "Recurring Contracts",
+        "description": "Recurring service contracts for automatic work order generation",
+        "files": [
+          "frontend/src/pages/os/RecurringContractsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Os/RecurringContractController.php",
+          "backend/app/Models/RecurringContract.php"
+        ]
+      },
+      {
+        "name": "Service Checklists",
+        "description": "Service quality checklists for work orders, templates management",
+        "files": [
+          "frontend/src/pages/os/ServiceChecklistsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/ServiceChecklistController.php",
+          "backend/app/Models/ServiceChecklist.php"
+        ]
+      },
+      {
+        "name": "SLA Policies & Dashboard",
+        "description": "SLA policy management and compliance dashboard with breach monitoring",
+        "files": [
+          "frontend/src/pages/os/SlaPoliciesPage.tsx",
+          "frontend/src/pages/os/SlaDashboardPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/SlaDashboardController.php",
+          "backend/app/Models/SlaPolicy.php"
+        ]
+      },
+      {
+        "name": "Quotes",
+        "description": "Quote lifecycle: create, edit, approve, reject, send to client, convert to work order, duplicate, reopen, timeline, public view with approval link, PDF generation, equipments and items per equipment",
+        "files": [
+          "frontend/src/pages/orcamentos/QuotesListPage.tsx",
+          "frontend/src/pages/orcamentos/QuoteCreatePage.tsx",
+          "frontend/src/pages/orcamentos/QuoteDetailPage.tsx",
+          "frontend/src/pages/orcamentos/QuoteEditPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/QuoteController.php",
+          "backend/app/Models/Quote.php"
+        ]
+      },
+      {
+        "name": "Service Calls",
+        "description": "Service call CRUD, status management, technician assignment, convert to work order, interactive map, technician agenda/calendar, comments, summary, CSV export",
+        "files": [
+          "frontend/src/pages/chamados/ServiceCallsPage.tsx",
+          "frontend/src/pages/chamados/ServiceCallCreatePage.tsx",
+          "frontend/src/pages/chamados/ServiceCallDetailPage.tsx",
+          "frontend/src/pages/chamados/ServiceCallMapPage.tsx",
+          "frontend/src/pages/chamados/TechnicianAgendaPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/ServiceCallController.php",
+          "backend/app/Models/ServiceCall.php"
+        ]
+      },
+      {
+        "name": "Technician Management",
+        "description": "Schedules, time entries with start/stop timer, technician cash box with credit/debit, unified schedule view, conflict detection, workload analysis, route suggestions",
+        "files": [
+          "frontend/src/pages/tecnicos/SchedulesPage.tsx",
+          "frontend/src/pages/tecnicos/TimeEntriesPage.tsx",
+          "frontend/src/pages/tecnicos/TechnicianCashPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Technician/ScheduleController.php",
+          "backend/app/Http/Controllers/Api/V1/Technician/TimeEntryController.php",
+          "backend/app/Http/Controllers/Api/V1/Technician/TechnicianCashController.php",
+          "backend/app/Models/Schedule.php",
+          "backend/app/Models/TimeEntry.php",
+          "backend/app/Models/TechnicianCash.php"
+        ]
+      },
+      {
+        "name": "Accounts Receivable",
+        "description": "Receivable CRUD, payment settlement, generate from work order, installments, summary dashboard",
+        "files": [
+          "frontend/src/pages/financeiro/AccountsReceivablePage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Financial/AccountReceivableController.php",
+          "backend/app/Models/AccountReceivable.php"
+        ]
+      },
+      {
+        "name": "Accounts Payable",
+        "description": "Payable CRUD, payment settlement, categories, summary dashboard",
+        "files": [
+          "frontend/src/pages/financeiro/AccountsPayablePage.tsx",
+          "frontend/src/pages/financeiro/AccountPayableCategoriesPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Financial/AccountPayableController.php",
+          "backend/app/Http/Controllers/Api/V1/Financial/AccountPayableCategoryController.php",
+          "backend/app/Models/AccountPayable.php"
+        ]
+      },
+      {
+        "name": "Payments",
+        "description": "Payment listing, summary, reversal (delete/storno)",
+        "files": [
+          "frontend/src/pages/financeiro/PaymentsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Financial/PaymentController.php",
+          "backend/app/Models/Payment.php"
+        ]
+      },
+      {
+        "name": "Cash Flow & DRE",
+        "description": "Cash flow visualization and DRE (income statement) with comparative analysis",
+        "files": [
+          "frontend/src/pages/financeiro/CashFlowPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/CashFlowController.php"
+        ]
+      },
+      {
+        "name": "Commissions",
+        "description": "Commission rules CRUD, events tracking, settlements (close/pay/reopen), disputes, goals, campaigns, recurring commissions, dashboard with ranking/evolution, simulation, PDF statement, CSV export, splits, batch status update",
+        "files": [
+          "frontend/src/pages/financeiro/CommissionsPage.tsx",
+          "frontend/src/pages/financeiro/CommissionDashboardPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Financial/CommissionController.php",
+          "backend/app/Http/Controllers/Api/V1/Financial/CommissionDashboardController.php",
+          "backend/app/Http/Controllers/Api/V1/Financial/CommissionDisputeController.php",
+          "backend/app/Http/Controllers/Api/V1/Financial/CommissionGoalController.php",
+          "backend/app/Http/Controllers/Api/V1/Financial/CommissionCampaignController.php",
+          "backend/app/Http/Controllers/Api/V1/Financial/RecurringCommissionController.php",
+          "backend/app/Models/CommissionRule.php",
+          "backend/app/Models/CommissionEvent.php",
+          "backend/app/Models/CommissionSettlement.php"
+        ]
+      },
+      {
+        "name": "Expenses",
+        "description": "Expense CRUD, approval workflow (approve/reject), batch status change, duplicate, history, summary, analytics, CSV export, categories",
+        "files": [
+          "frontend/src/pages/financeiro/ExpensesPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Financial/ExpenseController.php",
+          "backend/app/Models/Expense.php",
+          "backend/app/Models/ExpenseCategory.php"
+        ]
+      },
+      {
+        "name": "Invoices",
+        "description": "Invoice CRUD with metadata",
+        "files": [
+          "frontend/src/pages/financeiro/InvoicesPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/InvoiceController.php",
+          "backend/app/Models/Invoice.php"
+        ]
+      },
+      {
+        "name": "Bank Reconciliation",
+        "description": "Import bank statements, match entries with receivables/payables, ignore entries",
+        "files": [
+          "frontend/src/pages/financeiro/BankReconciliationPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/BankReconciliationController.php",
+          "backend/app/Models/BankStatement.php",
+          "backend/app/Models/BankStatementEntry.php"
+        ]
+      },
+      {
+        "name": "Financial Export",
+        "description": "Export financial data in OFX and CSV formats",
+        "files": [
+          "backend/app/Http/Controllers/Api/V1/Financial/FinancialExportController.php"
+        ]
+      },
+      {
+        "name": "Equipment Management",
+        "description": "Equipment CRUD with calibrations, maintenances, documents, alerts dashboard, calibration calendar, certificate PDF generation, CSV export, constants (types, categories)",
+        "files": [
+          "frontend/src/pages/equipamentos/EquipmentListPage.tsx",
+          "frontend/src/pages/equipamentos/EquipmentCreatePage.tsx",
+          "frontend/src/pages/equipamentos/EquipmentDetailPage.tsx",
+          "frontend/src/pages/equipamentos/EquipmentCalendarPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/EquipmentController.php",
+          "backend/app/Models/Equipment.php",
+          "backend/app/Models/EquipmentCalibration.php",
+          "backend/app/Models/EquipmentMaintenance.php"
+        ]
+      },
+      {
+        "name": "Stock Management",
+        "description": "Stock movements, dashboard with levels, low stock alerts, summary",
+        "files": [
+          "frontend/src/pages/estoque/StockDashboardPage.tsx",
+          "frontend/src/pages/estoque/StockMovementsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/StockController.php",
+          "backend/app/Models/StockMovement.php"
+        ]
+      },
+      {
+        "name": "CRM",
+        "description": "CRM dashboard, deal pipeline (drag & drop), customer 360 view, activities, message templates, WhatsApp/email webhooks",
+        "files": [
+          "frontend/src/pages/CrmDashboardPage.tsx",
+          "frontend/src/pages/CrmPipelinePage.tsx",
+          "frontend/src/pages/CrmCustomer360Page.tsx",
+          "frontend/src/pages/MessageTemplatesPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/CrmController.php",
+          "backend/app/Http/Controllers/Api/V1/CrmMessageController.php",
+          "backend/app/Models/CrmDeal.php",
+          "backend/app/Models/CrmPipeline.php"
+        ]
+      },
+      {
+        "name": "INMETRO Intelligence",
+        "description": "INMETRO data import (XML/PSIE), leads enrichment, competitor analysis, instrument tracking, conversion to customer, dashboard with analytics, CSV export",
+        "files": [
+          "frontend/src/pages/inmetro/InmetroDashboardPage.tsx",
+          "frontend/src/pages/inmetro/InmetroLeadsPage.tsx",
+          "frontend/src/pages/inmetro/InmetroInstrumentsPage.tsx",
+          "frontend/src/pages/inmetro/InmetroImportPage.tsx",
+          "frontend/src/pages/inmetro/InmetroCompetitorsPage.tsx",
+          "frontend/src/pages/inmetro/InmetroOwnerDetailPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/InmetroController.php",
+          "backend/app/Models/InmetroOwner.php",
+          "backend/app/Models/InmetroInstrument.php"
+        ]
+      },
+      {
+        "name": "Reports",
+        "description": "13 report types: work orders, productivity, financial, commissions, profitability, quotes, service calls, technician cash, CRM, equipment, suppliers, stock, customers. All with filters and CSV export",
+        "files": [
+          "frontend/src/pages/relatorios/ReportsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/ReportController.php"
+        ]
+      },
+      {
+        "name": "Data Import",
+        "description": "Generic data import: upload file, field mapping, preview, execute, history, error detail, rollback, templates, sample download, entity export",
+        "files": [
+          "frontend/src/pages/importacao/ImportPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/ImportController.php",
+          "backend/app/Models/Import.php",
+          "backend/app/Models/ImportTemplate.php"
+        ]
+      },
+      {
+        "name": "Notifications",
+        "description": "Real-time notifications, unread count, mark as read, mark all as read",
+        "files": [
+          "frontend/src/pages/notificacoes/NotificationsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/NotificationController.php",
+          "backend/app/Models/Notification.php"
+        ]
+      },
+      {
+        "name": "Settings",
+        "description": "General settings, branch management, tenant management with invites, user profile with password change",
+        "files": [
+          "frontend/src/pages/configuracoes/SettingsPage.tsx",
+          "frontend/src/pages/configuracoes/BranchesPage.tsx",
+          "frontend/src/pages/configuracoes/TenantManagementPage.tsx",
+          "frontend/src/pages/configuracoes/ProfilePage.tsx",
+          "backend/app/Http/Controllers/Api/V1/SettingsController.php",
+          "backend/app/Http/Controllers/Api/V1/BranchController.php",
+          "backend/app/Http/Controllers/Api/V1/TenantController.php"
+        ]
+      },
+      {
+        "name": "Customer Portal",
+        "description": "Customer-facing portal with separate login, dashboard, work orders tracking, quotes with approve/reject, financials, service call creation",
+        "files": [
+          "frontend/src/pages/portal/PortalLoginPage.tsx",
+          "frontend/src/pages/portal/PortalDashboardPage.tsx",
+          "frontend/src/pages/portal/PortalWorkOrdersPage.tsx",
+          "frontend/src/pages/portal/PortalQuotesPage.tsx",
+          "frontend/src/pages/portal/PortalFinancialsPage.tsx",
+          "frontend/src/pages/portal/PortalServiceCallPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/Portal/PortalController.php",
+          "backend/app/Http/Controllers/Api/V1/Portal/PortalAuthController.php",
+          "backend/app/Models/ClientPortalUser.php"
+        ]
+      },
+      {
+        "name": "Price History",
+        "description": "Track price changes for products and services over time",
+        "files": [
+          "frontend/src/pages/cadastros/PriceHistoryPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/PriceHistoryController.php",
+          "backend/app/Models/PriceHistory.php"
+        ]
+      },
+      {
+        "name": "Batch Export",
+        "description": "Export multiple entity types in CSV or print format",
+        "files": [
+          "frontend/src/pages/cadastros/BatchExportPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/BatchExportController.php"
+        ]
+      },
+      {
+        "name": "Payment Methods",
+        "description": "Payment method CRUD for financial transactions",
+        "files": [
+          "frontend/src/pages/financeiro/PaymentMethodsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/PaymentMethodController.php",
+          "backend/app/Models/PaymentMethod.php"
+        ]
+      },
+      {
+        "name": "Chart of Accounts",
+        "description": "Financial chart of accounts management",
+        "files": [
+          "frontend/src/pages/financeiro/ChartOfAccountsPage.tsx",
+          "backend/app/Http/Controllers/Api/V1/ChartOfAccountController.php",
+          "backend/app/Models/ChartOfAccount.php"
+        ]
+      },
+      {
+        "name": "External APIs",
+        "description": "CEP lookup, CNPJ data, holidays, banks, DDD cities, states/cities",
+        "files": [
+          "backend/app/Http/Controllers/Api/V1/ExternalApiController.php"
+        ]
+      }
+    ]
+  }
+}

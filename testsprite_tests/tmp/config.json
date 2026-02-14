@@ -1,0 +1,19 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "admin@sistema.local",
+  "loginPassword": "password",
+  "executionArgs": {
+    "projectName": "sistema",
+    "projectPath": "c:\\projetos\\sistema",
+    "testIds": [],
+    "additionalInstruction": "Login credentials: admin@sistema.local / password. Frontend runs on port 3000. After login, the system may show a tenant selection screen - select \"Calibrações Brasil\". The system uses Portuguese (Brazilian) language for UI elements. Wait for page loads as it's a SPA with lazy loading. For delete operations, there will be a confirmation modal dialog. Use longer timeouts (30s) for page transitions.",
+    "envs": {
+      "API_KEY": "sk-user-_HkRGbTb0batVBBwmVuASPTQfEAPLHdGhwP0KDPiqhdB8JKYsa4QlR8BLg1VddyhJrx79stRsVpjBjkJFlRS3QPYOcQVNKiG7BzCmqMY8INm51cZWZR4hmUX4SWPiSgINXc"
+    }
+  },
+  "serverPort": 55524,
+  "proxy": "http://21ed7d20-3be1-4dad-9968-e3ed9fce940d:otjdewhfIraAeUYg7dK2rVfSiMGoKvDQ@tun.testsprite.com:8080"
+}

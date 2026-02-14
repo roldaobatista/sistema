@@ -635,7 +635,7 @@ class RoutePermissionHardeningTest extends TestCase
         $this->grant('reports.os_report.export');
 
         $response = $this->getJson($uri);
-        $this->assertContains($response->status(), [200, 404]);
+        $response->assertOk();
     }
 
     public function test_report_export_rejects_invalid_type_with_422(): void

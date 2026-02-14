@@ -1,0 +1,131 @@
+﻿
+   FAIL  Tests\Feature\Financial\BankAccountTest
+  Ô¿» can list bank accounts                   2.39s  
+  Ô£ô can create bank account                  0.15s  
+  Ô£ô cannot create bank account without permÔÇª 0.07s  
+  Ô£ô can update bank account                  0.13s  
+  Ô¿» can delete unused bank account           0.11s  
+  Ô¿» cannot delete bank account with transfeÔÇª 0.10s  
+  Ô¿» search bank accounts                     0.13s  
+
+   FAIL  Tests\Feature\Financial\FundTransferTest
+  Ô¿» can create fund transfer                 0.17s  
+  Ô¿» cannot transfer with insufficient funds  0.09s  
+  Ô¿» can cancel fund transfer                 0.13s  
+  Ô£ô can list transfers                       0.18s  
+  Ô£ô summary calculation                      0.20s  
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BaÔÇª  TypeError   
+  PHPUnit\Framework\Assert::assertCount(): Argument #2 ($haystack) must be of type Countable|Traversable|array, null given, called in C:\projetos\sistema\backend\vendor\laravel\framework\src\Illuminate\Testing\AssertableJsonString.php on line 74
+
+  at tests\Feature\Financial\BankAccountTest.php:40
+     36Ôûò 
+     37Ôûò         $this->actingAs($this->user)
+     38Ôûò             ->getJson('/api/v1/bank-accounts')
+     39Ôûò             ->assertOk()
+  Ô×£  40Ôûò             ->assertJsonCount(3, 'data');
+     41Ôûò     }
+     42Ôûò 
+     43Ôûò     public function test_can_create_bank_account(): void
+     44Ôûò     {
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Expected response status code [204] but received 200.
+Failed asserting that 200 is identical to 204.
+
+  at tests\Feature\Financial\BankAccountTest.php:106
+    102Ôûò         $account = BankAccount::factory()->create(['tenant_id' => $this->tenant->id]);
+    103Ôûò 
+    104Ôûò         $this->actingAs($this->user)
+    105Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+  Ô×£ 106Ôûò             ->assertNoContent();
+    107Ôûò 
+    108Ôûò         $this->assertDatabaseMissing('bank_accounts', ['id' => $account->id]);
+    109Ôûò     }
+    110Ôûò
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Expected response status code [409] but received 422.
+Failed asserting that 422 is identical to 409.
+
+  at tests\Feature\Financial\BankAccountTest.php:121
+    117Ôûò         ]);
+    118Ôûò 
+    119Ôûò         $this->actingAs($this->user)
+    120Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+  Ô×£ 121Ôûò             ->assertStatus(409) // Conflict
+    122Ôûò             ->assertJsonFragment(['message' => 'Esta conta possui transfer├¬ncias vinculadas e n├úo pode ser exclu├¡da.']);
+    123Ôûò 
+    124Ôûò         $this->assertDatabaseHas('bank_accounts', ['id' => $account->id]);
+    125Ôûò     }
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BaÔÇª  TypeError   
+  PHPUnit\Framework\Assert::assertCount(): Argument #2 ($haystack) must be of type Countable|Traversable|array, null given, called in C:\projetos\sistema\backend\vendor\laravel\framework\src\Illuminate\Testing\AssertableJsonString.php on line 74
+
+  at tests\Feature\Financial\BankAccountTest.php:135
+    131Ôûò 
+    132Ôûò         $this->actingAs($this->user)
+    133Ôûò             ->getJson('/api/v1/bank-accounts?search=Alpha')
+    134Ôûò             ->assertOk()
+  Ô×£ 135Ôûò             ->assertJsonCount(1, 'data')
+    136Ôûò             ->assertJsonFragment(['name' => 'Conta Alpha']);
+    137Ôûò     }
+    138Ôûò }
+    139Ôûò
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Expected response status code [201] but received 500.
+Failed asserting that 500 is identical to 201.
+
+  at tests\Feature\Financial\FundTransferTest.php:61
+     57Ôûò 
+     58Ôûò         $response = $this->actingAs($this->user)
+     59Ôûò             ->postJson('/api/v1/fund-transfers', $data);
+     60Ôûò 
+  Ô×£  61Ôûò         $response->assertCreated();
+     62Ôûò 
+     63Ôûò         // 1. Verify FundTransfer created
+     64Ôûò         $this->assertDatabaseHas('fund_transfers', [
+     65Ôûò             'bank_account_id' => $bankAccount->id,
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Expected response status code [422] but received 500.
+Failed asserting that 500 is identical to 422.
+
+  at tests\Feature\Financial\FundTransferTest.php:113
+    109Ôûò         ];
+    110Ôûò 
+    111Ôûò         $this->actingAs($this->user)
+    112Ôûò             ->postJson('/api/v1/fund-transfers', $data)
+  Ô×£ 113Ôûò             ->assertStatus(422)
+    114Ôûò             ->assertJsonValidationErrors(['amount']);
+    115Ôûò     }
+    116Ôûò 
+    117Ôûò     public function test_can_cancel_fund_transfer(): void
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Failed asserting that '4000.00' matches expected 5000.0.
+
+  at tests\Feature\Financial\FundTransferTest.php:174
+    170Ôûò         // 1. Transfer status cancelled
+    171Ôûò         $this->assertEquals('cancelled', $transfer->fresh()->status);
+    172Ôûò 
+    173Ôûò         // 2. Bank Account refunded
+  Ô×£ 174Ôûò         $this->assertEquals(5000.00, $bankAccount->fresh()->balance);
+    175Ôûò 
+    176Ôûò         // 3. AP cancelled
+    177Ôûò         $this->assertEquals('cancelled', $ap->fresh()->status);
+    178Ôûò
+
+  1   tests\Feature\Financial\FundTransferTest.php:174
+
+
+  Tests:    7 failed, 5 passed (20 assertions)
+  Duration: 4.48s
+

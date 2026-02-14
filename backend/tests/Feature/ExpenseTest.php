@@ -90,7 +90,7 @@ class ExpenseTest extends TestCase
         ]);
 
         $response = $this->getJson("/api/v1/expenses/{$foreignExpense->id}");
-        $this->assertContains($response->status(), [403, 404]);
+        $response->assertStatus(404);
     }
 
     public function test_update_blocks_approved_expense(): void
@@ -122,7 +122,7 @@ class ExpenseTest extends TestCase
         ]);
 
         $response = $this->deleteJson("/api/v1/expenses/{$foreignExpense->id}");
-        $this->assertContains($response->status(), [403, 404]);
+        $response->assertStatus(404);
     }
 
     public function test_expense_returns_os_identifier_when_linked_to_work_order(): void
@@ -240,7 +240,7 @@ class ExpenseTest extends TestCase
         $response = $this->putJson("/api/v1/expenses/{$foreignExpense->id}/status", [
             'status' => Expense::STATUS_APPROVED,
         ]);
-        $this->assertContains($response->status(), [403, 404]);
+        $response->assertStatus(404);
     }
 
     public function test_destroy_category_blocked_when_expenses_exist(): void
@@ -323,7 +323,7 @@ class ExpenseTest extends TestCase
         $response = $this->putJson("/api/v1/expense-categories/{$foreignCategory->id}", [
             'name' => 'Tentativa',
         ]);
-        $this->assertContains($response->status(), [403, 404]);
+        $response->assertStatus(404);
     }
 
     public function test_summary_returns_correct_totals(): void
@@ -437,5 +437,57 @@ class ExpenseTest extends TestCase
 
         $this->assertSame(Expense::STATUS_PENDING, $expense->fresh()->status);
         $this->assertNull($expense->fresh()->rejection_reason);
+    }
+
+    public function test_store_defaults_affects_net_value_to_true(): void
+    {
+        $response = $this->postJson('/api/v1/expenses', [
+            'description' => 'Despesa sem flag explicito',
+            'amount' => 75.00,
+            'expense_date' => now()->toDateString(),
+        ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('expenses', [
+            'id' => $response->json('id'),
+            'affects_net_value' => true,
+        ]);
+    }
+
+    public function test_store_persists_affects_net_value_false(): void
+    {
+        $response = $this->postJson('/api/v1/expenses', [
+            'description' => 'Despesa nao dedutivel',
+            'amount' => 120.00,
+            'expense_date' => now()->toDateString(),
+            'affects_net_value' => false,
+        ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('expenses', [
+            'id' => $response->json('id'),
+            'affects_net_value' => false,
+        ]);
+    }
+
+    public function test_update_toggles_affects_net_value(): void
+    {
+        $expense = Expense::create([
+            'tenant_id' => $this->tenant->id,
+            'created_by' => $this->user->id,
+            'description' => 'Despesa editavel',
+            'amount' => 80,
+            'expense_date' => now()->toDateString(),
+            'status' => Expense::STATUS_PENDING,
+            'affects_net_value' => true,
+        ]);
+
+        $this->putJson("/api/v1/expenses/{$expense->id}", [
+            'affects_net_value' => false,
+        ])->assertOk();
+
+        $this->assertFalse((bool) $expense->fresh()->affects_net_value);
     }
 }

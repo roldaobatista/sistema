@@ -1,0 +1,754 @@
+[
+  {
+    "id": "TC001",
+    "title": "Successful login with correct email, password, and tenant selection",
+    "description": "Verify that a user can login successfully using valid email and password credentials, and tenant access permissions are enforced.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Input valid email and password"
+      },
+      {
+        "type": "action",
+        "description": "Select tenant from tenant dropdown"
+      },
+      {
+        "type": "action",
+        "description": "Click login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user is redirected to the dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user has access only to resources within the selected tenant"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Login failure with incorrect password",
+    "description": "Verify that login fails and appropriate error message is shown when password is incorrect.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Input valid email and incorrect password"
+      },
+      {
+        "type": "action",
+        "description": "Select tenant"
+      },
+      {
+        "type": "action",
+        "description": "Click login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login fails with error message indicating invalid credentials"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user remains on login page"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Dashboard shows correct KPI values based on backend data",
+    "description": "Ensure that KPI cards, charts, and activity feeds on dashboard reflect accurate and up-to-date information from backend.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as authorized user with dashboard access"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify revenue KPI matches backend revenue data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify pending work orders KPI matches backend data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify overdue items KPI matches backend data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify performance charts render correct data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify activity feed shows recent activities correctly"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Create new work order and verify lifecycle transitions",
+    "description": "Test creating a new work order and progressing it through statuses: Aberta → Em andamento → Concluída → Faturada.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login to work orders module"
+      },
+      {
+        "type": "action",
+        "description": "Create new work order with mandatory details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify work order is created with status 'Aberta'"
+      },
+      {
+        "type": "action",
+        "description": "Change status to 'Em andamento'"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify status updated to 'Em andamento'"
+      },
+      {
+        "type": "action",
+        "description": "Add attachments and capture signature"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attachments and signature are saved correctly"
+      },
+      {
+        "type": "action",
+        "description": "Change status to 'Concluída'"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify status updated to 'Concluída'"
+      },
+      {
+        "type": "action",
+        "description": "Change status to 'Faturada'"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify status updated to 'Faturada' and invoice generation"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Validate CPF and CNPJ fields during customer creation",
+    "description": "Ensure that CPF and CNPJ validations are enforced correctly when adding or updating customers.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to customer creation page"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid CPF (wrong format or checksum)"
+      },
+      {
+        "type": "action",
+        "description": "Submit customer form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that validation error is shown for invalid CPF"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid CNPJ (wrong format or checksum)"
+      },
+      {
+        "type": "action",
+        "description": "Submit customer form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that validation error is shown for invalid CNPJ"
+      },
+      {
+        "type": "action",
+        "description": "Enter valid CPF or CNPJ"
+      },
+      {
+        "type": "action",
+        "description": "Submit form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify customer is created successfully"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Merge duplicate customers and validate data integrity",
+    "description": "Test merging duplicate customer entries and ensure data is consolidated correctly without loss.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to duplicate customer detection page"
+      },
+      {
+        "type": "action",
+        "description": "Select two or more duplicate customers to merge"
+      },
+      {
+        "type": "action",
+        "description": "Perform merge operation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only one customer record exists after merge"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify customer data from merged records is consolidated correctly"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no orphaned references from merged customers remain"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Create, update, and track product price history",
+    "description": "Verify product CRUD operations including category management and price history tracking on updates.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to product creation page"
+      },
+      {
+        "type": "action",
+        "description": "Create new product with category and initial price"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify product is created and appears in list"
+      },
+      {
+        "type": "action",
+        "description": "Update product price"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify new price is updated and previous price is archived in price history"
+      },
+      {
+        "type": "action",
+        "description": "View price history"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all price changes are listed with correct timestamps"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Manage financial accounts receivable with payment settlement",
+    "description": "Test creating accounts receivable entries and settling payments properly reflecting balances and statuses.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to accounts receivable module"
+      },
+      {
+        "type": "action",
+        "description": "Create new accounts receivable linked to work order"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify accounts receivable appears with correct amount and status"
+      },
+      {
+        "type": "action",
+        "description": "Record payment settlement against accounts receivable"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify accounts receivable status is updated to 'paid' or partially paid as applicable"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify updated balance is reflected correctly in summary dashboard"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Technician scheduling prevents overlapping assignments",
+    "description": "Verify technician schedules do not allow conflicting time slots or overbooking, ensuring conflict detection works.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to technician scheduling page"
+      },
+      {
+        "type": "action",
+        "description": "Assign technician to a time slot"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify assignment is saved correctly"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to assign same technician overlapping another time slot"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system prevents overlapping schedule or warns of conflict"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Generate and validate PDF for invoice and work order documents",
+    "description": "Verify PDF generation for invoices and work orders includes all required information and formatting is correct.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to invoice or work order detail page"
+      },
+      {
+        "type": "action",
+        "description": "Initiate PDF generation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify PDF file is generated and downloadable"
+      },
+      {
+        "type": "assertion",
+        "description": "Open PDF and verify presence of all key data fields (customer info, items, prices, dates)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify signature images or attachments are included in PDF if applicable"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Audit logs capture all critical user actions with filter and export",
+    "description": "Test that all critical user actions are logged, and audit logs support filtering by user, action, entity, date range and export functionality.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Perform various actions in system (create/update/delete entities)"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to audit logs page"
+      },
+      {
+        "type": "action",
+        "description": "Use filters to query logs by user, action type, entity type, and date ranges"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify audit log entries correspond to performed actions"
+      },
+      {
+        "type": "action",
+        "description": "Export audit log data to CSV"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify CSV export contains all filtered audit log entries with proper formatting"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Real-time notifications update and unread count correctness",
+    "description": "Verify notifications are delivered in real-time, unread counts are accurate, and marking as read functions properly.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger events generating notifications"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify notifications appear instantly in user interface"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify unread notifications count is updated correctly"
+      },
+      {
+        "type": "action",
+        "description": "Mark one or more notifications as read"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify unread count decrements accordingly and notifications reflect read status"
+      },
+      {
+        "type": "action",
+        "description": "Mark all notifications as read"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify unread count resets to zero"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Settings module persist tenant, branch, and user profile changes",
+    "description": "Test updating configurations in settings including tenant management, branches, and user profiles, ensuring all changes persist and reflect correctly.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to settings page"
+      },
+      {
+        "type": "action",
+        "description": "Modify tenant information and save"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tenant changes persist after page reload"
+      },
+      {
+        "type": "action",
+        "description": "Add or update branch details and save"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify branch data is saved and accurately listed"
+      },
+      {
+        "type": "action",
+        "description": "Update user profile details including password change"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify profile updates persist and password change is effective"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Customer portal independent login and access to permitted features",
+    "description": "Validate that customers can log in independently to the portal and access only their allowed resources like dashboard, work orders, quotes, and financials.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open customer portal login page"
+      },
+      {
+        "type": "action",
+        "description": "Login with portal user credentials"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login is successful"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard shows customer's KPIs and summaries"
+      },
+      {
+        "type": "action",
+        "description": "Access work orders, quotes, and financial statements pages"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only customer-specific data is accessible and visible"
+      },
+      {
+        "type": "action",
+        "description": "Attempt unauthorized access to admin or other tenant resources"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied or redirected"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Report generation with filters and CSV export",
+    "description": "Test generating various report types with multiple filters applied and exporting report data to CSV without errors.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to reports page"
+      },
+      {
+        "type": "action",
+        "description": "Select report type (e.g., productivity, financial, commissions)"
+      },
+      {
+        "type": "action",
+        "description": "Apply multiple filters such as date range, user, status"
+      },
+      {
+        "type": "action",
+        "description": "Generate report"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify report displays accurate and filtered data"
+      },
+      {
+        "type": "action",
+        "description": "Export report to CSV"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify CSV file downloads and contains correct report data"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Import data with field mapping, preview, execution, and rollback",
+    "description": "Verify the data import flow from file upload, mapping fields, previewing data, executing import, viewing history, and rolling back if needed.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to data import page"
+      },
+      {
+        "type": "action",
+        "description": "Upload a valid import file"
+      },
+      {
+        "type": "action",
+        "description": "Map import file fields to system fields"
+      },
+      {
+        "type": "action",
+        "description": "Preview import data and fix mapping errors"
+      },
+      {
+        "type": "action",
+        "description": "Execute data import"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify data is imported correctly into system"
+      },
+      {
+        "type": "action",
+        "description": "Check import history and audit details"
+      },
+      {
+        "type": "action",
+        "description": "Perform rollback of last import"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify data created by import is removed and rollback is successful"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Create service calls with technician assignment and calendar integration",
+    "description": "Test creation of service calls with proper status management, technician assignment, calendar integration, and conversion to work order.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to service calls module"
+      },
+      {
+        "type": "action",
+        "description": "Create new service call with all required details"
+      },
+      {
+        "type": "action",
+        "description": "Assign technician(s) to service call"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify service call status created and technician assignment saved"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify assigned technician's agenda or calendar reflects the new service call"
+      },
+      {
+        "type": "action",
+        "description": "Convert service call to work order"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify new work order is created and linked to service call"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Equipment management CRUD and calibration scheduling with alerts",
+    "description": "Test equipment creation, updates, maintenance records, calibration scheduling with alerts dashboard, and calibration certificate PDF generation.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create new equipment record with required details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify equipment is created and listed"
+      },
+      {
+        "type": "action",
+        "description": "Add calibration and maintenance entries for equipment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify calibration calendar shows upcoming due dates"
+      },
+      {
+        "type": "action",
+        "description": "Open alerts dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify alerts for equipment calibrations and maintenances are visible and accurate"
+      },
+      {
+        "type": "action",
+        "description": "Generate calibration certificate PDF"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify PDF contains correct calibration details and is downloadable"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Stock movements and low stock alert functioning",
+    "description": "Verify stock CRUD operations including movements, and confirm low stock alerts on dashboard appear as expected.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create new stock movement increasing stock for a product"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify stock level increases accordingly"
+      },
+      {
+        "type": "action",
+        "description": "Create stock movement decreasing stock below alert threshold"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify stock level decreases and low stock alert appears on dashboard"
+      },
+      {
+        "type": "action",
+        "description": "View stock movement details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify stock movement is accurate with correct timestamps and quantities"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Commissions lifecycle: create rules, track events, settlement, disputes, and export",
+    "description": "Test commission management including rule creation, event tracking, settlements (close/pay/reopen), dispute handling, reports, PDF statement and CSV export.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a new commission rule"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify commission rule is saved and listed"
+      },
+      {
+        "type": "action",
+        "description": "Trigger commission events associated with transactions"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify commission events are logged and visible"
+      },
+      {
+        "type": "action",
+        "description": "Perform settlement actions: close, pay, and reopen commissions"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify settlement statuses update correctly"
+      },
+      {
+        "type": "action",
+        "description": "Create commission dispute and resolve it"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify disputes are logged, status updated upon resolution"
+      },
+      {
+        "type": "action",
+        "description": "Generate commission PDF statement and export CSV"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify files are generated and contain correct commission data"
+      }
+    ]
+  }
+]

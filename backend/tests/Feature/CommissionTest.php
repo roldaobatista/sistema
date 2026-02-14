@@ -531,4 +531,62 @@ class CommissionTest extends TestCase
         $this->assertEquals(1.5, $sim['multiplier']);
         $this->assertEquals('Test Campaign 1.5x', $sim['campaign_name']);
     }
+
+    public function test_commission_percent_net_only_deducts_expenses_affecting_net_value(): void
+    {
+        $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $customer->id,
+            'created_by' => $this->user->id,
+            'assigned_to' => $this->user->id,
+            'status' => WorkOrder::STATUS_IN_PROGRESS,
+            'total' => 1000,
+        ]);
+
+        // Expense that DOES affect net value (should be deducted)
+        \App\Models\Expense::create([
+            'tenant_id' => $this->tenant->id,
+            'work_order_id' => $workOrder->id,
+            'created_by' => $this->user->id,
+            'description' => 'Deductible expense',
+            'amount' => 200,
+            'expense_date' => now()->toDateString(),
+            'status' => \App\Models\Expense::STATUS_APPROVED,
+            'affects_net_value' => true,
+        ]);
+
+        // Expense that does NOT affect net value (should NOT be deducted)
+        \App\Models\Expense::create([
+            'tenant_id' => $this->tenant->id,
+            'work_order_id' => $workOrder->id,
+            'created_by' => $this->user->id,
+            'description' => 'Non-deductible expense',
+            'amount' => 300,
+            'expense_date' => now()->toDateString(),
+            'status' => \App\Models\Expense::STATUS_APPROVED,
+            'affects_net_value' => false,
+        ]);
+
+        // Rule: 10% of NET (gross - deductible expenses only)
+        $rule = CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $this->user->id,
+            'name' => 'Percent net test',
+            'type' => 'percentage',
+            'value' => 10,
+            'applies_to' => 'all',
+            'active' => true,
+            'calculation_type' => CommissionRule::CALC_PERCENT_NET,
+            'applies_to_role' => CommissionRule::ROLE_TECHNICIAN,
+            'applies_when' => CommissionRule::WHEN_OS_COMPLETED,
+        ]);
+
+        // calculate() should use only the 200 expense (affects_net_value=true)
+        // net = 1000 - 200 = 800, commission = 800 * 10% = 80
+        $commission = $rule->calculate($workOrder);
+
+        $this->assertEquals(80.0, $commission);
+    }
 }

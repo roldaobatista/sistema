@@ -6,69 +6,26 @@ description: Setup local do sistema. Levanta backend + frontend com banco SQLite
 
 // turbo-all
 
-## Pré-requisitos
+## Modo Rápido (Padrão)
 
-- PHP 8.2+ com extensões: sqlite3, pdo_sqlite, mbstring, openssl
-- Composer
-- Node.js 18+ e npm
+O script `setup.ps1` faz TUDO automaticamente: verifica pré-requisitos, instala dependências (se necessário), configura o banco, e levanta os servidores.
 
----
-
-## Setup Inicial (primeira vez ou reset)
-
-1. Copiar o env local para .env:
+1. Executar o setup completo:
 
 ```powershell
-Copy-Item backend\.env.local backend\.env -Force
+powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-1. Criar o arquivo SQLite:
+## Opções
 
-```powershell
-if (-not (Test-Path backend\database\database.sqlite)) { New-Item backend\database\database.sqlite -ItemType File -Force }
-```
-
-1. Instalar dependências do backend:
-
-```powershell
-cd backend && composer install --no-interaction --prefer-dist
-```
-
-1. Gerar APP_KEY e limpar caches:
-
-```powershell
-cd backend && php artisan key:generate --force --no-interaction && php artisan config:clear && php artisan cache:clear
-```
-
-1. Rodar migrations com seed:
-
-```powershell
-cd backend && php artisan migrate:fresh --seed --force --no-interaction
-```
-
-1. Instalar dependências do frontend:
-
-```powershell
-cd frontend && npm install
-```
-
----
-
-## Iniciar o Sistema
-
-1. Iniciar o backend (Terminal 1):
-
-```powershell
-cd backend && php artisan serve
-```
-
-1. Iniciar o frontend (Terminal 2):
-
-```powershell
-cd frontend && npm run dev
-```
-
----
+| Comando | Descrição |
+|---------|-----------|
+| `powershell -ExecutionPolicy Bypass -File setup.ps1` | Setup completo + inicia servidores |
+| `powershell -ExecutionPolicy Bypass -File setup.ps1 -Fresh` | Reset do banco (migrate:fresh --seed) |
+| `powershell -ExecutionPolicy Bypass -File setup.ps1 -SkipDeps` | Pula composer/npm install |
+| `powershell -ExecutionPolicy Bypass -File setup.ps1 -Stop` | Para todos os servidores |
+| `powershell -ExecutionPolicy Bypass -File setup.ps1 -Status` | Mostra status dos servidores |
+| `powershell -ExecutionPolicy Bypass -File setup.ps1 -Setup` | Apenas setup, sem iniciar servidores |
 
 ## Credenciais
 
@@ -76,17 +33,60 @@ cd frontend && npm run dev
 - **Email:** <admin@sistema.local>
 - **Senha:** password
 
----
+## Setup Manual (caso o script falhe)
 
-## Modo Docker (opcional)
+1. Copiar env:
 
-Se precisar de MySQL real em vez de SQLite:
+```powershell
+Copy-Item backend\.env.local backend\.env -Force
+```
+
+1. Criar SQLite:
+
+```powershell
+if (-not (Test-Path backend\database\database.sqlite)) { New-Item backend\database\database.sqlite -ItemType File -Force }
+```
+
+1. Backend deps:
+
+```powershell
+Set-Location backend; composer install --no-interaction --prefer-dist
+```
+
+1. Key + caches:
+
+```powershell
+Set-Location backend; php artisan key:generate --force --no-interaction; php artisan config:clear; php artisan cache:clear
+```
+
+1. Migrations:
+
+```powershell
+Set-Location backend; php artisan migrate:fresh --seed --force --no-interaction
+```
+
+1. Frontend deps:
+
+```powershell
+Set-Location frontend; npm install
+```
+
+1. Backend (Terminal 1):
+
+```powershell
+Set-Location backend; php artisan serve
+```
+
+1. Frontend (Terminal 2):
+
+```powershell
+Set-Location frontend; npm run dev
+```
+
+## Docker (opcional)
 
 ```powershell
 Copy-Item backend\.env.docker backend\.env -Force
 docker compose up -d
-cd backend && php artisan migrate:fresh --seed --force --no-interaction
+Set-Location backend; php artisan migrate:fresh --seed --force --no-interaction
 ```
-
-- **PHPMyAdmin:** <http://localhost:8080>
-- **MySQL:** localhost:3307 (user=sistema, pass=sistema)

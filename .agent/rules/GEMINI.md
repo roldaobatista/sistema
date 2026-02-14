@@ -8,6 +8,29 @@ trigger: always_on
 
 ---
 
+## 🌐 PROJECT ENVIRONMENT (ALWAYS READ FIRST)
+
+> 🔴 **MANDATORY:** These are the ACTUAL ports used by this project. NEVER assume framework defaults.
+
+| Service | Port | URL | Notes |
+|---------|------|-----|-------|
+| **Frontend (Vite/React)** | `3000` | `http://localhost:3000` | ⚠️ NOT the Vite default 5173! Configured in `frontend/vite.config.ts` |
+| **Backend (Laravel)** | `8000` | `http://localhost:8000/api` | `php artisan serve` default |
+
+**FORBIDDEN:**
+
+- ❌ Assuming frontend runs on port `5173` (Vite default)
+- ❌ Configuring any tool (TestSprite, Playwright, etc.) with port `5173`
+- ❌ Referencing `localhost:5173` anywhere
+
+**ALWAYS:**
+
+- ✅ Use port `3000` for frontend
+- ✅ Use port `8000` for backend API
+- ✅ When configuring external tools, use `localPort: 3000`
+
+---
+
 ## CRITICAL: AGENT & SKILL PROTOCOL (START HERE)
 
 > **MANDATORY:** You MUST read the appropriate agent file and its skills BEFORE performing any implementation. This is the highest priority rule.
@@ -43,6 +66,7 @@ These 8 skills are mandatory in every conversation and every implementation, eve
 | `ux-consistency` | Active | HIGH |
 
 Enforcement:
+
 1. Load these 8 skills first for every request (question, code, design, review, or planning).
 2. Then load agent-specific skills from frontmatter.
 3. If any conflict exists, resolve with stricter safety/quality rule.
@@ -195,13 +219,14 @@ If ANY answer is "no" → GO BACK AND FIX IT before completing.
 
 ---
 
-### 🌐 Language Handling
+### 🌐 Language Handling (MANDATORY)
 
-When user's prompt is NOT in English:
+> 🔴 **MANDATORY:** The AI must **ALWAYS** think, analyze, and communicate in **PORTUGUESE (pt-BR)**.
 
-1. **Internally translate** for better comprehension
-2. **Respond in user's language** - match their communication
-3. **Code comments/variables** remain in English
+1. **Internal Thought Process**: The AI MUST write its internal `<thought>` blocks in Portuguese.
+2. **Output Language**: ALL explanations, questions, comments, task summaries, and artifacts MUST be in Portuguese.
+3. **Template Translation**: Function names, variable names, and database columns KEEP in English. EVERYTHING ELSE (including "Analysis", "Plan", "Step", "Pros/Cons" in templates) MUST be translated to Portuguese.
+4. **Applies to**: ALL responses, including "Applying knowledge of..." which should be "Aplicando conhecimento de...".
 
 ### 🧹 Clean Code (Global Mandatory)
 

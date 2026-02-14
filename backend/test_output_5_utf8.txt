@@ -1,0 +1,62 @@
+﻿
+   FAIL  Tests\Feature\Financial\BankAccountTest
+  Ô£ô can list bank accounts                   2.16s  
+  Ô£ô can create bank account                  0.13s  
+  Ô£ô cannot create bank account without permÔÇª 0.10s  
+  Ô£ô can update bank account                  0.14s  
+  Ô¿» can delete unused bank account           0.11s  
+  Ô£ô cannot delete bank account with transfeÔÇª 0.08s  
+  Ô£ô search bank accounts                     0.09s  
+array:1 [
+  "message" => "Erro ao criar transfer├¬ncia: SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: accounts_payable.amount (Connection: sqlite, Database: :memory:, SQL: insert into "accounts_payable" ("tenant_id", "created_by", "description", "due_date", "status", "amount_paid", "paid_at", "payment_method", "notes", "updated_at", "created_at") values (1, 1, Adiantamento T├®cnico: Srta. Cynthia Aranda Faria Filho ÔÇö Adiantamento de viagem, 2026-02-13 00:00:00, paid, 1000, 2026-02-13 00:00:00, pix, Transfer├¬ncia autom├ítica para caixa do t├®cnico, 2026-02-13 18:20:57, 2026-02-13 18:20:57))"
+] // tests\Feature\Financial\FundTransferTest.php:62
+
+   FAIL  Tests\Feature\Financial\FundTransferTest
+  Ô¿» can create fund transfer                 0.15s  
+  Ô£ô cannot transfer with insufficient funds  0.11s  
+  Ô£ô can cancel fund transfer                 0.14s  
+  Ô£ô can list transfers                       0.16s  
+  Ô£ô summary calculation                      0.12s  
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Failed asserting that a row in the table [bank_accounts] does not match the attributes {
+    "id": 1
+}.
+
+Found similar results: [
+    {
+        "id": 1
+    }
+].
+
+  at tests\Feature\Financial\BankAccountTest.php:108
+    104Ôûò         $this->actingAs($this->user)
+    105Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+    106Ôûò             ->assertOk();
+    107Ôûò 
+  Ô×£ 108Ôûò         $this->assertDatabaseMissing('bank_accounts', ['id' => $account->id]);
+    109Ôûò     }
+    110Ôûò 
+    111Ôûò     public function test_cannot_delete_bank_account_with_transfers(): void
+    112Ôûò     {
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Expected response status code [201] but received 500.
+Failed asserting that 500 is identical to 201.
+
+  at tests\Feature\Financial\FundTransferTest.php:64
+     60Ôûò 
+     61Ôûò         if ($response->status() !== 201) {
+     62Ôûò             dump($response->json());
+     63Ôûò         }
+  Ô×£  64Ôûò         $response->assertCreated();
+     65Ôûò 
+     66Ôûò         // 1. Verify FundTransfer created
+     67Ôûò         $this->assertDatabaseHas('fund_transfers', [
+     68Ôûò             'bank_account_id' => $bankAccount->id,
+
+
+  Tests:    2 failed, 10 passed (31 assertions)
+  Duration: 3.76s
+

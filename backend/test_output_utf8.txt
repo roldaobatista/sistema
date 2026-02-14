@@ -1,0 +1,201 @@
+﻿
+   FAIL  Tests\Feature\Financial\BankAccountTest
+  Ô¿» can list bank accounts                   2.18s  
+  Ô¿» can create bank account                  0.15s  
+  Ô¿» cannot create bank account without permÔÇª 0.04s  
+  Ô¿» can update bank account                  0.05s  
+  Ô¿» can delete unused bank account           0.05s  
+  Ô¿» cannot delete bank account with transfeÔÇª 0.04s  
+  Ô¿» search bank accounts                     0.09s  
+
+   FAIL  Tests\Feature\Financial\FundTransferTest
+  Ô¿» can create fund transfer                 0.08s  
+  Ô¿» cannot transfer with insufficient funds  0.08s  
+  Ô¿» can cancel fund transfer                 0.10s  
+  Ô¿» can list transfers                       0.11s  
+  Ô¿» summary calculation                      0.07s  
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\BankAccountTest.php:27
+     23Ôûò     }
+     24Ôûò 
+     25Ôûò     public function test_can_list_bank_accounts(): void
+     26Ôûò     {
+  Ô×£  27Ôûò         BankAccount::factory()->count(3)->create(['tenant_id' => $this->tenant->id]);
+     28Ôûò 
+     29Ôûò         $this->actingAs($this->user)
+     30Ôûò             ->getJson('/api/v1/bank-accounts')
+     31Ôûò             ->assertOk()
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Expected response status code [201] but received 403.
+Failed asserting that 403 is identical to 201.
+
+  at tests\Feature\Financial\BankAccountTest.php:49
+     45Ôûò         ];
+     46Ôûò 
+     47Ôûò         $this->actingAs($this->user)
+     48Ôûò             ->postJson('/api/v1/bank-accounts', $data)
+  Ô×£  49Ôûò             ->assertCreated()
+     50Ôûò             ->assertJsonFragment(['name' => 'Conta Principal']);
+     51Ôûò 
+     52Ôûò         $this->assertDatabaseHas('bank_accounts', [
+     53Ôûò             'name' => 'Conta Principal',
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\BankAccountTest.php:61
+     57Ôûò     }
+     58Ôûò 
+     59Ôûò     public function test_cannot_create_bank_account_without_permission(): void
+     60Ôûò     {
+  Ô×£  61Ôûò         $user = User::factory()->create(['tenant_id' => $this->tenant->id]);
+     62Ôûò         // User has no permissions
+     63Ôûò 
+     64Ôûò         $this->actingAs($user)
+     65Ôûò             ->postJson('/api/v1/bank-accounts', [
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\BankAccountTest.php:75
+     71Ôûò     }
+     72Ôûò 
+     73Ôûò     public function test_can_update_bank_account(): void
+     74Ôûò     {
+  Ô×£  75Ôûò         $account = BankAccount::factory()->create(['tenant_id' => $this->tenant->id]);
+     76Ôûò 
+     77Ôûò         $this->actingAs($this->user)
+     78Ôûò             ->putJson("/api/v1/bank-accounts/{$account->id}", [
+     79Ôûò                 'name' => 'Conta Atualizada',
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\BankAccountTest.php:94
+     90Ôûò     }
+     91Ôûò 
+     92Ôûò     public function test_can_delete_unused_bank_account(): void
+     93Ôûò     {
+  Ô×£  94Ôûò         $account = BankAccount::factory()->create(['tenant_id' => $this->tenant->id]);
+     95Ôûò 
+     96Ôûò         $this->actingAs($this->user)
+     97Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+     98Ôûò             ->assertNoContent();
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\BankAccountTest.php:105
+    101Ôûò     }
+    102Ôûò 
+    103Ôûò     public function test_cannot_delete_bank_account_with_transfers(): void
+    104Ôûò     {
+  Ô×£ 105Ôûò         $account = BankAccount::factory()->create(['tenant_id' => $this->tenant->id]);
+    106Ôûò         FundTransfer::factory()->create([
+    107Ôûò             'bank_account_id' => $account->id,
+    108Ôûò             'tenant_id' => $this->tenant->id,
+    109Ôûò         ]);
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\BankAccountTest.php:121
+    117Ôûò     }
+    118Ôûò 
+    119Ôûò     public function test_search_bank_accounts(): void
+    120Ôûò     {
+  Ô×£ 121Ôûò         BankAccount::factory()->create(['name' => 'Conta Alpha', 'tenant_id' => $this->tenant->id]);
+    122Ôûò         BankAccount::factory()->create(['name' => 'Conta Beta', 'tenant_id' => $this->tenant->id]);
+    123Ôûò 
+    124Ôûò         $this->actingAs($this->user)
+    125Ôûò             ->getJson('/api/v1/bank-accounts?search=Alpha')
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\FundTransferTest.php:35
+     31Ôûò     }
+     32Ôûò 
+     33Ôûò     public function test_can_create_fund_transfer(): void
+     34Ôûò     {
+  Ô×£  35Ôûò         $technician = User::factory()->create(['tenant_id' => $this->tenant->id]);
+     36Ôûò         $bankAccount = BankAccount::factory()->create([
+     37Ôûò             'tenant_id' => $this->tenant->id,
+     38Ôûò             'balance' => 5000.00,
+     39Ôûò         ]);
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\FundTransferTest.php:88
+     84Ôûò     }
+     85Ôûò 
+     86Ôûò     public function test_cannot_transfer_with_insufficient_funds(): void
+     87Ôûò     {
+  Ô×£  88Ôûò         $technician = User::factory()->create(['tenant_id' => $this->tenant->id]);
+     89Ôûò         $bankAccount = BankAccount::factory()->create([
+     90Ôûò             'tenant_id' => $this->tenant->id,
+     91Ôûò             'balance' => 100.00, // Insufficient
+     92Ôûò         ]);
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\FundTransferTest.php:112
+    108Ôûò 
+    109Ôûò     public function test_can_cancel_fund_transfer(): void
+    110Ôûò     {
+    111Ôûò         // Setup initial state (transfer already made)
+  Ô×£ 112Ôûò         $technician = User::factory()->create(['tenant_id' => $this->tenant->id]);
+    113Ôûò         $bankAccount = BankAccount::factory()->create([
+    114Ôûò             'tenant_id' => $this->tenant->id,
+    115Ôûò             'balance' => 4000.00, // Post-transfer balance
+    116Ôûò         ]);
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\FundTransferTest.php:185
+    181Ôûò     }
+    182Ôûò     
+    183Ôûò     public function test_can_list_transfers(): void
+    184Ôûò     {
+  Ô×£ 185Ôûò         FundTransfer::factory()->count(5)->create(['tenant_id' => $this->tenant->id]);
+    186Ôûò         
+    187Ôûò         $this->actingAs($this->user)
+    188Ôûò             ->getJson('/api/v1/fund-transfers')
+    189Ôûò             ->assertOk()
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\FinanciÔÇª  ErrorException   
+  Attempt to read property "id" on null
+
+  at tests\Feature\Financial\FundTransferTest.php:195
+    191Ôûò     }
+    192Ôûò 
+    193Ôûò     public function test_summary_calculation(): void
+    194Ôûò     {
+  Ô×£ 195Ôûò         $tech1 = User::factory()->create(['tenant_id' => $this->tenant->id]);
+    196Ôûò         $tech2 = User::factory()->create(['tenant_id' => $this->tenant->id]);
+    197Ôûò         
+    198Ôûò         FundTransfer::factory()->create([
+    199Ôûò             'tenant_id' => $this->tenant->id,
+
+
+  Tests:    12 failed (1 assertions)
+  Duration: 3.60s
+

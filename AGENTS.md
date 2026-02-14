@@ -1,6 +1,15 @@
 ﻿# AGENTS.md
 
+## 🌐 Language Handling (MANDATORY)
+
+> 🔴 **MANDATORY:** The AI must **ALWAYS** communicate in **PORTUGUESE (pt-BR)**, regardless of the user's input language.
+
+1. **Output Language**: ALL explanations, questions, comments, and task summaries MUST be in Portuguese.
+2. **Code**: Variable names, function names, and database columns MUST be in English (standard practice).
+3. **Applies to**: ALL responses, including "Applying knowledge of..." and other template messages.
+
 ## Mandatory Always-On Skills
+
 The following skills are mandatory in every turn and must be auto-applied without explicit user mention.
 
 1. clean-code (CRITICAL)
@@ -13,6 +22,7 @@ The following skills are mandatory in every turn and must be auto-applied withou
 8. ux-consistency (HIGH)
 
 ## Installed Skill Paths
+
 All mandatory skills are installed in Codex home and must be loaded from:
 
 - C:/Users/Roldão testes/.codex/skills/clean-code/SKILL.md
@@ -25,13 +35,16 @@ All mandatory skills are installed in Codex home and must be loaded from:
 - C:/Users/Roldão testes/.codex/skills/ux-consistency/SKILL.md
 
 ## Trigger Rules (Mandatory)
+
 - Apply all 8 skills on every task by default.
 - Skills persist across turns; do not require re-mention.
 - Do not ask whether to activate these skills; activation is implicit.
 - If any mandatory skill is missing or unreadable, stop and report exactly which skill failed.
 
 ## Execution Priority
+
 Use this fixed order:
+
 1. clean-code
 2. mvp-completeness
 3. error-resilience
@@ -42,7 +55,9 @@ Use this fixed order:
 8. ux-consistency
 
 ## Completion Gate (Required Before Final Answer)
+
 Before completing any task, verify and confirm:
+
 - Code quality and simplicity preserved (clean-code)
 - End-to-end flow is complete for touched module(s) (mvp-completeness)
 - Error handling and fallback paths exist (error-resilience)
@@ -53,7 +68,8 @@ Before completing any task, verify and confirm:
 - UX behavior stays consistent with existing patterns (ux-consistency)
 
 ## Safety Rule For Skill Origin
+
 Do not delete original skills from project-local path:
+
 - c:/Users/Roldão testes/projetos/sistema/.agent/skills
 Copy-only policy is mandatory.
-

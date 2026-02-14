@@ -1,0 +1,68 @@
+﻿
+   FAIL  Tests\Feature\Financial\BankAccountTest
+  Ô£ô can list bank accounts                   2.23s  
+  Ô£ô can create bank account                  0.10s  
+  Ô£ô cannot create bank account without permÔÇª 0.07s  
+  Ô£ô can update bank account                  0.10s  
+  Ô¿» can delete unused bank account           0.10s  
+  Ô¿» cannot delete bank account with transfeÔÇª 0.09s  
+  Ô£ô search bank accounts                     0.09s  
+
+   FAIL  Tests\Feature\Financial\FundTransferTest
+  Ô¿» can create fund transfer                 0.13s  
+  Ô£ô cannot transfer with insufficient funds  0.11s  
+  Ô£ô can cancel fund transfer                 0.12s  
+  Ô£ô can list transfers                       0.15s  
+  Ô£ô summary calculation                      0.09s  
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Expected response status code [204] but received 200.
+Failed asserting that 200 is identical to 204.
+
+  at tests\Feature\Financial\BankAccountTest.php:106
+    102Ôûò         $account = BankAccount::factory()->create(['tenant_id' => $this->tenant->id]);
+    103Ôûò 
+    104Ôûò         $this->actingAs($this->user)
+    105Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+  Ô×£ 106Ôûò             ->assertNoContent();
+    107Ôûò 
+    108Ôûò         $this->assertDatabaseMissing('bank_accounts', ['id' => $account->id]);
+    109Ôûò     }
+    110Ôûò
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Expected response status code [409] but received 422.
+Failed asserting that 422 is identical to 409.
+
+  at tests\Feature\Financial\BankAccountTest.php:121
+    117Ôûò         ]);
+    118Ôûò 
+    119Ôûò         $this->actingAs($this->user)
+    120Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+  Ô×£ 121Ôûò             ->assertStatus(409) // Conflict
+    122Ôûò             ->assertJsonFragment(['message' => 'Esta conta possui transfer├¬ncias vinculadas e n├úo pode ser exclu├¡da.']);
+    123Ôûò 
+    124Ôûò         $this->assertDatabaseHas('bank_accounts', ['id' => $account->id]);
+    125Ôûò     }
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Expected response status code [201] but received 500.
+Failed asserting that 500 is identical to 201.
+
+  at tests\Feature\Financial\FundTransferTest.php:61
+     57Ôûò 
+     58Ôûò         $response = $this->actingAs($this->user)
+     59Ôûò             ->postJson('/api/v1/fund-transfers', $data);
+     60Ôûò 
+  Ô×£  61Ôûò         $response->assertCreated();
+     62Ôûò         if ($response->status() !== 201) {
+     63Ôûò             dump($response->json());
+     64Ôûò         }
+     65Ôûò
+
+
+  Tests:    3 failed, 9 passed (28 assertions)
+  Duration: 3.72s
+

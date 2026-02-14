@@ -1,0 +1,22 @@
+﻿
+   TypeError 
+
+  Cannot assign null to property App\Services\Fiscal\NuvemFiscalProvider::$clientId of type string
+
+  at app\Services\Fiscal\NuvemFiscalProvider.php:26
+     22Ôûò 
+     23Ôûò     public function __construct()
+     24Ôûò     {
+     25Ôûò         $this->baseUrl = rtrim(config('services.nuvemfiscal.url', 'https://api.nuvemfiscal.com.br'), '/');
+  Ô×£  26Ôûò         $this->clientId = config('services.nuvemfiscal.client_id', '');
+     27Ôûò         $this->clientSecret = config('services.nuvemfiscal.client_secret', '');
+     28Ôûò     }
+     29Ôûò 
+     30Ôûò     public function emitirNFe(array $data): FiscalResult
+
+  1   app\Http\Controllers\Api\V1\FiscalController.php:24
+      App\Services\Fiscal\NuvemFiscalProvider::__construct()
+
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1168
+      App\Http\Controllers\Api\V1\FiscalController::__construct()
+

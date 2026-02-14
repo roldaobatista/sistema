@@ -1,0 +1,49 @@
+﻿
+   PASS  Tests\Feature\Financial\BankAccountTest
+  Ô£ô can list bank accounts                   2.27s  
+  Ô£ô can create bank account                  0.10s  
+  Ô£ô cannot create bank account without permÔÇª 0.11s  
+  Ô£ô can update bank account                  0.12s  
+  Ô£ô can delete unused bank account           0.12s  
+  Ô£ô cannot delete bank account with transfeÔÇª 0.11s  
+  Ô£ô search bank accounts                     0.12s  
+
+   FAIL  Tests\Feature\Financial\FundTransferTest
+  Ô¿» can create fund transfer                 0.18s  
+  Ô£ô cannot transfer with insufficient funds  0.14s  
+  Ô£ô can cancel fund transfer                 0.17s  
+  Ô£ô can list transfers                       0.19s  
+  Ô£ô summary calculation                      0.14s  
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Failed asserting that a row in the table [accounts_payable] matches the attributes {
+    "description": "Transfer├¬ncia para Elizabeth Lovato Gil",
+    "amount": 1000,
+    "amount_paid": 1000,
+    "status": "paid"
+}.
+
+Found: [
+    {
+        "description": "Adiantamento T├®cnico: Elizabeth Lovato Gil ÔÇö Adiantamento de viagem",
+        "amount": 1000,
+        "amount_paid": 1000,
+        "status": "paid"
+    }
+].
+
+  at tests\Feature\Financial\FundTransferTest.php:75
+     71Ôûò         // 2. Verify BankAccount balance updated
+     72Ôûò         $this->assertEquals(4000.00, $bankAccount->fresh()->balance);
+     73Ôûò 
+     74Ôûò         // 3. Verify AccountPayable created and paid
+  Ô×£  75Ôûò         $this->assertDatabaseHas('accounts_payable', [
+     76Ôûò             'description' => 'Transfer├¬ncia para ' . $technician->name,
+     77Ôûò             'amount' => 1000.00,
+     78Ôûò             'amount_paid' => 1000.00,
+     79Ôûò             'status' => 'paid',
+
+
+  Tests:    1 failed, 11 passed (34 assertions)
+  Duration: 4.01s
+

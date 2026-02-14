@@ -269,7 +269,7 @@ class InmetroTest extends TestCase
             ->assertJsonStructure([
                 'id', 'inmetro_number', 'brand', 'model',
                 'current_status', 'history',
-                'location' => ['address_city', 'owner' => ['id', 'name']],
+                'owner_name', 'owner_id', 'address_city',
             ]);
     }
 
@@ -302,7 +302,7 @@ class InmetroTest extends TestCase
         InmetroOwner::factory()->create([
             'tenant_id' => $this->tenant->id,
             'lead_status' => 'converted',
-            'converted_to_customer_id' => 999,
+            'converted_to_customer_id' => \App\Models\Customer::factory()->create(['tenant_id' => $this->tenant->id])->id,
         ]);
 
         $response = $this->getJson('/api/v1/inmetro/conversion-stats');

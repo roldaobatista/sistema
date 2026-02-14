@@ -1,0 +1,111 @@
+﻿
+   FAIL  Tests\Feature\Financial\BankAccountTest
+  Ô£ô can list bank accounts                   3.02s  
+  Ô£ô can create bank account                  0.14s  
+  Ô£ô cannot create bank account without permÔÇª 0.14s  
+  Ô£ô can update bank account                  0.13s  
+  Ô¿» can delete unused bank account           0.21s  
+  Ô¿» cannot delete bank account with transfeÔÇª 0.14s  
+  Ô£ô search bank accounts                     0.15s  
+
+   FAIL  Tests\Feature\Financial\FundTransferTest
+  Ô¿» can create fund transfer                 0.18s  
+  Ô¿» cannot transfer with insufficient funds  0.22s  
+  Ô¿» can cancel fund transfer                 0.24s  
+  Ô£ô can list transfers                       0.25s  
+  Ô£ô summary calculation                      0.14s  
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Expected response status code [204] but received 200.
+Failed asserting that 200 is identical to 204.
+
+  at tests\Feature\Financial\BankAccountTest.php:106
+    102Ôûò         $account = BankAccount::factory()->create(['tenant_id' => $this->tenant->id]);
+    103Ôûò 
+    104Ôûò         $this->actingAs($this->user)
+    105Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+  Ô×£ 106Ôûò             ->assertNoContent();
+    107Ôûò 
+    108Ôûò         $this->assertDatabaseMissing('bank_accounts', ['id' => $account->id]);
+    109Ôûò     }
+    110Ôûò
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\BankAccountTeÔÇª   
+  Expected response status code [409] but received 422.
+Failed asserting that 422 is identical to 409.
+
+  at tests\Feature\Financial\BankAccountTest.php:121
+    117Ôûò         ]);
+    118Ôûò 
+    119Ôûò         $this->actingAs($this->user)
+    120Ôûò             ->deleteJson("/api/v1/bank-accounts/{$account->id}")
+  Ô×£ 121Ôûò             ->assertStatus(409) // Conflict
+    122Ôûò             ->assertJsonFragment(['message' => 'Esta conta possui transfer├¬ncias vinculadas e n├úo pode ser exclu├¡da.']);
+    123Ôûò 
+    124Ôûò         $this->assertDatabaseHas('bank_accounts', ['id' => $account->id]);
+    125Ôûò     }
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Expected response status code [201] but received 500.
+Failed asserting that 500 is identical to 201.
+
+  at tests\Feature\Financial\FundTransferTest.php:61
+     57Ôûò 
+     58Ôûò         $response = $this->actingAs($this->user)
+     59Ôûò             ->postJson('/api/v1/fund-transfers', $data);
+     60Ôûò 
+  Ô×£  61Ôûò         $response->assertCreated();
+     62Ôûò 
+     63Ôûò         // 1. Verify FundTransfer created
+     64Ôûò         $this->assertDatabaseHas('fund_transfers', [
+     65Ôûò             'bank_account_id' => $bankAccount->id,
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Expected response status code [422] but received 500.
+Failed asserting that 500 is identical to 422.
+
+  at tests\Feature\Financial\FundTransferTest.php:113
+    109Ôûò         ];
+    110Ôûò 
+    111Ôûò         $this->actingAs($this->user)
+    112Ôûò             ->postJson('/api/v1/fund-transfers', $data)
+  Ô×£ 113Ôûò             ->assertStatus(422)
+    114Ôûò             ->assertJsonValidationErrors(['amount']);
+    115Ôûò     }
+    116Ôûò 
+    117Ôûò     public function test_can_cancel_fund_transfer(): void
+
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ  
+   FAILED  Tests\Feature\Financial\FundTransferTÔÇª   
+  Failed asserting that a row in the table [technician_cash_transactions] matches the attributes {
+    "type": "debit",
+    "amount": 1000,
+    "description": "Estorno: Cancelamento de transfer├¬ncia"
+}.
+
+Found similar results: [
+    {
+        "type": "debit",
+        "amount": 1000,
+        "description": "Cancelamento de transfer├¬ncia #1: Corrupti molestiae rerum culpa est et voluptas corrupti."
+    }
+].
+
+  at tests\Feature\Financial\FundTransferTest.php:183
+    179Ôûò         // 4. Technician Fund debited
+    180Ôûò         $this->assertEquals(0.00, $fund->fresh()->balance);
+    181Ôûò 
+    182Ôûò         // 5. Reversal transaction created
+  Ô×£ 183Ôûò         $this->assertDatabaseHas('technician_cash_transactions', [
+    184Ôûò             'type' => 'debit', // Reversal is a debit
+    185Ôûò             'amount' => 1000.00,
+    186Ôûò             'description' => 'Estorno: Cancelamento de transfer├¬ncia',
+    187Ôûò         ]);
+
+
+  Tests:    5 failed, 7 passed (26 assertions)
+  Duration: 5.45s
+
