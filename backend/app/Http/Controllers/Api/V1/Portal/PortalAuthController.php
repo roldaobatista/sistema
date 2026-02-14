@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\ClientPortalUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;

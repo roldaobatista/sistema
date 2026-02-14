@@ -198,32 +198,32 @@ Route::prefix('v1')->group(function () {
             Route::delete('products/{product}/kit/{childId}', [ProductKitController::class, 'destroy']);
 
             // InventÃ¡rio Cego
-            Route::get('inventories', [InventoryController::class, 'index']);
-            Route::post('inventories', [InventoryController::class, 'store']);
-            Route::get('inventories/{inventory}', [InventoryController::class, 'show']);
-            Route::put('inventories/{inventory}/items/{item}', [InventoryController::class, 'updateItem']);
-            Route::post('inventories/{inventory}/complete', [InventoryController::class, 'complete']);
-            Route::post('inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
+            Route::middleware('check.permission:estoque.movement.view')->get('inventories', [InventoryController::class, 'index']);
+            Route::middleware('check.permission:estoque.movement.view')->post('inventories', [InventoryController::class, 'store']);
+            Route::middleware('check.permission:estoque.movement.view')->get('inventories/{inventory}', [InventoryController::class, 'show']);
+            Route::middleware('check.permission:estoque.movement.view')->put('inventories/{inventory}/items/{item}', [InventoryController::class, 'updateItem']);
+            Route::middleware('check.permission:estoque.movement.view')->post('inventories/{inventory}/complete', [InventoryController::class, 'complete']);
+            Route::middleware('check.permission:estoque.movement.view')->post('inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
 
             // Aliases de compatibilidade para frontend legado
-            Route::get('stock/inventories', [InventoryController::class, 'index']);
-            Route::post('stock/inventories', [InventoryController::class, 'store']);
-            Route::get('stock/inventories/{inventory}', [InventoryController::class, 'show']);
-            Route::put('stock/inventories/{inventory}/items/{item}', [InventoryController::class, 'updateItem']);
-            Route::post('stock/inventories/{inventory}/complete', [InventoryController::class, 'complete']);
-            Route::post('stock/inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
-            Route::get('stock/warehouses', [WarehouseController::class, 'index']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/inventories', [InventoryController::class, 'index']);
+            Route::middleware('check.permission:estoque.movement.view')->post('stock/inventories', [InventoryController::class, 'store']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/inventories/{inventory}', [InventoryController::class, 'show']);
+            Route::middleware('check.permission:estoque.movement.view')->put('stock/inventories/{inventory}/items/{item}', [InventoryController::class, 'updateItem']);
+            Route::middleware('check.permission:estoque.movement.view')->post('stock/inventories/{inventory}/complete', [InventoryController::class, 'complete']);
+            Route::middleware('check.permission:estoque.movement.view')->post('stock/inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/warehouses', [WarehouseController::class, 'index']);
 
             // Kardex
-            Route::get('products/{product}/kardex', [KardexController::class, 'show']);
+            Route::middleware('check.permission:estoque.movement.view')->get('products/{product}/kardex', [KardexController::class, 'show']);
             Route::get('stock/products/{product}/kardex', [KardexController::class, 'show']);
 
             // InteligÃªncia de Estoque
-            Route::get('stock/intelligence/abc-curve', [StockIntelligenceController::class, 'abcCurve']);
-            Route::get('stock/intelligence/turnover', [StockIntelligenceController::class, 'turnover']);
-            Route::get('stock/intelligence/average-cost', [StockIntelligenceController::class, 'averageCost']);
-            Route::get('stock/intelligence/reorder-points', [StockIntelligenceController::class, 'reorderPoints']);
-            Route::get('stock/intelligence/reservations', [StockIntelligenceController::class, 'reservations']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/abc-curve', [StockIntelligenceController::class, 'abcCurve']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/turnover', [StockIntelligenceController::class, 'turnover']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/average-cost', [StockIntelligenceController::class, 'averageCost']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/reorder-points', [StockIntelligenceController::class, 'reorderPoints']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/reservations', [StockIntelligenceController::class, 'reservations']);
         });
         Route::middleware('check.permission:estoque.movement.create')->group(function () {
             Route::post('stock/movements', [\App\Http\Controllers\Api\V1\StockController::class, 'store']);
@@ -612,58 +612,58 @@ Route::prefix('v1')->group(function () {
             Route::delete('fleet/tires/{tire}', [\App\Http\Controllers\Api\V1\Fleet\VehicleTireController::class, 'destroy']);
 
             // GestÃ£o de Abastecimento AvanÃ§ado (API unificada)
-            Route::get('fleet/fuel-logs', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'index']);
-            Route::post('fleet/fuel-logs', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'store']);
-            Route::get('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'show']);
-            Route::put('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'update']);
-            Route::delete('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'destroy']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/fuel-logs', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'index']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/fuel-logs', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'store']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'show']);
+            Route::middleware('check.permission:fleet.view')->put('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'update']);
+            Route::middleware('check.permission:fleet.view')->delete('fleet/fuel-logs/{log}', [\App\Http\Controllers\Api\V1\Fleet\FuelLogController::class, 'destroy']);
 
             // Pool de VeÃ­culos
-            Route::get('fleet/pool-requests', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'index']);
-            Route::post('fleet/pool-requests', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'store']);
-            Route::get('fleet/pool-requests/{request}', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'show']);
-            Route::patch('fleet/pool-requests/{request}/status', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'updateStatus']);
-            Route::delete('fleet/pool-requests/{request}', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'destroy']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/pool-requests', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'index']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/pool-requests', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'store']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/pool-requests/{request}', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'show']);
+            Route::middleware('check.permission:fleet.view')->patch('fleet/pool-requests/{request}/status', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'updateStatus']);
+            Route::middleware('check.permission:fleet.view')->delete('fleet/pool-requests/{request}', [\App\Http\Controllers\Api\V1\Fleet\VehiclePoolController::class, 'destroy']);
 
             // GestÃ£o de Acidentes
-            Route::get('fleet/accidents', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'index']);
-            Route::post('fleet/accidents', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'store']);
-            Route::get('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'show']);
-            Route::put('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'update']);
-            Route::delete('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'destroy']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/accidents', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'index']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/accidents', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'store']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'show']);
+            Route::middleware('check.permission:fleet.view')->put('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'update']);
+            Route::middleware('check.permission:fleet.view')->delete('fleet/accidents/{accident}', [\App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController::class, 'destroy']);
 
             // InspeÃ§Ãµes / Checklists MÃ³veis
-            Route::get('fleet/inspections', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'index']);
-            Route::post('fleet/inspections', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'store']);
-            Route::get('fleet/inspections/{inspection}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'show']);
-            Route::put('fleet/inspections/{inspection}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'update']);
-            Route::delete('fleet/inspections/{inspection}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'destroy']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/inspections', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'index']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/inspections', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'store']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/inspections/{inspection}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'show']);
+            Route::middleware('check.permission:fleet.view')->put('fleet/inspections/{inspection}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'update']);
+            Route::middleware('check.permission:fleet.view')->delete('fleet/inspections/{inspection}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController::class, 'destroy']);
 
             // Seguros de Frota
-            Route::get('fleet/insurances', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'index']);
-            Route::post('fleet/insurances', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'store']);
-            Route::get('fleet/insurances/alerts', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'alerts']);
-            Route::get('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'show']);
-            Route::put('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'update']);
-            Route::delete('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'destroy']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/insurances', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'index']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/insurances', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'store']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/insurances/alerts', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'alerts']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'show']);
+            Route::middleware('check.permission:fleet.view')->put('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'update']);
+            Route::middleware('check.permission:fleet.view')->delete('fleet/insurances/{insurance}', [\App\Http\Controllers\Api\V1\Fleet\VehicleInsuranceController::class, 'destroy']);
 
             // Dashboard AvanÃ§ado & Ferramentas
-            Route::get('fleet/dashboard', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'dashboard']);
-            Route::post('fleet/fuel-comparison', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'fuelComparison']);
-            Route::post('fleet/trip-simulation', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'tripSimulation']);
-            Route::get('fleet/driver-score/{driverId}', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'driverScore']);
-            Route::get('fleet/driver-ranking', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'driverRanking']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/dashboard', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'dashboard']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/fuel-comparison', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'fuelComparison']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/trip-simulation', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'tripSimulation']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/driver-score/{driverId}', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'driverScore']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/driver-ranking', [\App\Http\Controllers\Api\V1\Fleet\FleetAdvancedController::class, 'driverRanking']);
 
             // GPS em Tempo Real
-            Route::get('fleet/gps/live', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'livePositions']);
-            Route::post('fleet/gps/update', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'updatePosition']);
-            Route::get('fleet/gps/history/{vehicleId}', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'history']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/gps/live', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'livePositions']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/gps/update', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'updatePosition']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/gps/history/{vehicleId}', [\App\Http\Controllers\Api\V1\Fleet\GpsTrackingController::class, 'history']);
 
             // IntegraÃ§Ã£o de PedÃ¡gio
-            Route::get('fleet/tolls', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'index']);
-            Route::post('fleet/tolls', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'store']);
-            Route::get('fleet/tolls/summary', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'summary']);
-            Route::delete('fleet/tolls/{id}', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'destroy']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/tolls', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'index']);
+            Route::middleware('check.permission:fleet.view')->post('fleet/tolls', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'store']);
+            Route::middleware('check.permission:fleet.view')->get('fleet/tolls/summary', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'summary']);
+            Route::middleware('check.permission:fleet.view')->delete('fleet/tolls/{id}', [\App\Http\Controllers\Api\V1\Fleet\TollIntegrationController::class, 'destroy']);
         });
 
         // Pagamentos
@@ -766,26 +766,26 @@ Route::prefix('v1')->group(function () {
             Route::get('inmetro/leads', [\App\Http\Controllers\Api\V1\InmetroController::class, 'leads']);
             Route::get('inmetro/competitors', [\App\Http\Controllers\Api\V1\InmetroController::class, 'competitors']);
             Route::get('inmetro/cities', [\App\Http\Controllers\Api\V1\InmetroController::class, 'cities']);
-            Route::get('inmetro/municipalities', [\App\Http\Controllers\Api\V1\InmetroController::class, 'municipalities']);
-            Route::get('inmetro/conversion-stats', [\App\Http\Controllers\Api\V1\InmetroController::class, 'conversionStats']);
-            Route::get('inmetro/export/leads', [\App\Http\Controllers\Api\V1\InmetroController::class, 'exportLeadsCsv']);
-            Route::get('inmetro/export/instruments', [\App\Http\Controllers\Api\V1\InmetroController::class, 'exportInstrumentsCsv']);
-            Route::get('inmetro/instrument-types', [\App\Http\Controllers\Api\V1\InmetroController::class, 'instrumentTypes']);
-            Route::get('inmetro/available-ufs', [\App\Http\Controllers\Api\V1\InmetroController::class, 'availableUfs']);
-            Route::get('inmetro/config', [\App\Http\Controllers\Api\V1\InmetroController::class, 'getConfig']);
-            Route::get('inmetro/cross-reference-stats', [\App\Http\Controllers\Api\V1\InmetroController::class, 'crossReferenceStats']);
-            Route::get('inmetro/customer-profile/{customerId}', [\App\Http\Controllers\Api\V1\InmetroController::class, 'customerInmetroProfile']);
-            Route::get('inmetro/map-data', [\App\Http\Controllers\Api\V1\InmetroController::class, 'mapData']);
-            Route::get('inmetro/market-overview', [\App\Http\Controllers\Api\V1\InmetroController::class, 'marketOverview']);
-            Route::get('inmetro/competitor-analysis', [\App\Http\Controllers\Api\V1\InmetroController::class, 'competitorAnalysis']);
-            Route::get('inmetro/regional-analysis', [\App\Http\Controllers\Api\V1\InmetroController::class, 'regionalAnalysis']);
-            Route::get('inmetro/brand-analysis', [\App\Http\Controllers\Api\V1\InmetroController::class, 'brandAnalysis']);
-            Route::get('inmetro/expiration-forecast', [\App\Http\Controllers\Api\V1\InmetroController::class, 'expirationForecast']);
-            Route::get('inmetro/monthly-trends', [\App\Http\Controllers\Api\V1\InmetroController::class, 'monthlyTrends']);
-            Route::get('inmetro/revenue-ranking', [\App\Http\Controllers\Api\V1\InmetroController::class, 'revenueRanking']);
-            Route::get('inmetro/export/leads-pdf', [\App\Http\Controllers\Api\V1\InmetroController::class, 'exportLeadsPdf']);
-            Route::get('inmetro/base-config', [\App\Http\Controllers\Api\V1\InmetroController::class, 'getBaseConfig']);
-            Route::get('inmetro/available-datasets', [\App\Http\Controllers\Api\V1\InmetroController::class, 'availableDatasets']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/municipalities', [\App\Http\Controllers\Api\V1\InmetroController::class, 'municipalities']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/conversion-stats', [\App\Http\Controllers\Api\V1\InmetroController::class, 'conversionStats']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/export/leads', [\App\Http\Controllers\Api\V1\InmetroController::class, 'exportLeadsCsv']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/export/instruments', [\App\Http\Controllers\Api\V1\InmetroController::class, 'exportInstrumentsCsv']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/instrument-types', [\App\Http\Controllers\Api\V1\InmetroController::class, 'instrumentTypes']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/available-ufs', [\App\Http\Controllers\Api\V1\InmetroController::class, 'availableUfs']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/config', [\App\Http\Controllers\Api\V1\InmetroController::class, 'getConfig']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/cross-reference-stats', [\App\Http\Controllers\Api\V1\InmetroController::class, 'crossReferenceStats']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/customer-profile/{customerId}', [\App\Http\Controllers\Api\V1\InmetroController::class, 'customerInmetroProfile']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/map-data', [\App\Http\Controllers\Api\V1\InmetroController::class, 'mapData']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/market-overview', [\App\Http\Controllers\Api\V1\InmetroController::class, 'marketOverview']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/competitor-analysis', [\App\Http\Controllers\Api\V1\InmetroController::class, 'competitorAnalysis']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/regional-analysis', [\App\Http\Controllers\Api\V1\InmetroController::class, 'regionalAnalysis']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/brand-analysis', [\App\Http\Controllers\Api\V1\InmetroController::class, 'brandAnalysis']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/expiration-forecast', [\App\Http\Controllers\Api\V1\InmetroController::class, 'expirationForecast']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/monthly-trends', [\App\Http\Controllers\Api\V1\InmetroController::class, 'monthlyTrends']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/revenue-ranking', [\App\Http\Controllers\Api\V1\InmetroController::class, 'revenueRanking']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/export/leads-pdf', [\App\Http\Controllers\Api\V1\InmetroController::class, 'exportLeadsPdf']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/base-config', [\App\Http\Controllers\Api\V1\InmetroController::class, 'getBaseConfig']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/available-datasets', [\App\Http\Controllers\Api\V1\InmetroController::class, 'availableDatasets']);
         });
         Route::middleware('check.permission:inmetro.intelligence.import')->group(function () {
             Route::post('inmetro/import/xml', [\App\Http\Controllers\Api\V1\InmetroController::class, 'importXml']);
@@ -823,41 +823,41 @@ Route::prefix('v1')->group(function () {
             Route::get('inmetro/advanced/next-calibrations', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'suggestNextCalibrations']);
             Route::get('inmetro/advanced/segment-distribution', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'segmentDistribution']);
             Route::get('inmetro/advanced/reject-alerts', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'rejectAlerts']);
-            Route::get('inmetro/advanced/conversion-ranking', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'conversionRanking']);
-            Route::get('inmetro/advanced/interactions/{ownerId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'interactionHistory']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/conversion-ranking', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'conversionRanking']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/interactions/{ownerId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'interactionHistory']);
             // Territorial Intelligence
-            Route::get('inmetro/advanced/map-layers', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'layeredMapData']);
-            Route::get('inmetro/advanced/competitor-zones', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'competitorZones']);
-            Route::get('inmetro/advanced/coverage-potential', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'coverageVsPotential']);
-            Route::get('inmetro/advanced/nearby-leads', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'nearbyLeads']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/map-layers', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'layeredMapData']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/competitor-zones', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'competitorZones']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/coverage-potential', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'coverageVsPotential']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/nearby-leads', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'nearbyLeads']);
             // Competitor Tracking
-            Route::get('inmetro/advanced/market-share-timeline', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'marketShareTimeline']);
-            Route::get('inmetro/advanced/competitor-movements', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'competitorMovements']);
-            Route::get('inmetro/advanced/pricing-estimate', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'estimatePricing']);
-            Route::get('inmetro/advanced/competitor-profile/{competitorId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'competitorProfile']);
-            Route::get('inmetro/advanced/win-loss', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'winLossAnalysis']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/market-share-timeline', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'marketShareTimeline']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/competitor-movements', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'competitorMovements']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/pricing-estimate', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'estimatePricing']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/competitor-profile/{competitorId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'competitorProfile']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/win-loss', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'winLossAnalysis']);
             // Operational Bridge
-            Route::get('inmetro/advanced/suggest-equipments/{customerId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'suggestLinkedEquipments']);
-            Route::get('inmetro/advanced/prefill-certificate/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'prefillCertificate']);
-            Route::get('inmetro/advanced/instrument-timeline/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'instrumentTimeline']);
-            Route::get('inmetro/advanced/compare-calibrations/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'compareCalibrations']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/suggest-equipments/{customerId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'suggestLinkedEquipments']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/prefill-certificate/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'prefillCertificate']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/instrument-timeline/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'instrumentTimeline']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/compare-calibrations/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'compareCalibrations']);
             // Reporting
-            Route::get('inmetro/advanced/executive-dashboard', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'executiveDashboard']);
-            Route::get('inmetro/advanced/revenue-forecast', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'revenueForecast']);
-            Route::get('inmetro/advanced/conversion-funnel', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'conversionFunnel']);
-            Route::get('inmetro/advanced/export-data', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'exportData']);
-            Route::get('inmetro/advanced/year-over-year', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'yearOverYear']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/executive-dashboard', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'executiveDashboard']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/revenue-forecast', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'revenueForecast']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/conversion-funnel', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'conversionFunnel']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/export-data', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'exportData']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/year-over-year', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'yearOverYear']);
             // Compliance
-            Route::get('inmetro/advanced/compliance-checklists', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'complianceChecklists']);
-            Route::get('inmetro/advanced/regulatory-traceability/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'regulatoryTraceability']);
-            Route::get('inmetro/advanced/corporate-groups', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'corporateGroups']);
-            Route::get('inmetro/advanced/compliance-instrument-types', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'instrumentTypes']);
-            Route::get('inmetro/advanced/anomalies', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'detectAnomalies']);
-            Route::get('inmetro/advanced/renewal-probability', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'renewalProbability']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/compliance-checklists', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'complianceChecklists']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/regulatory-traceability/{instrumentId}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'regulatoryTraceability']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/corporate-groups', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'corporateGroups']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/compliance-instrument-types', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'instrumentTypes']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/anomalies', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'detectAnomalies']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/renewal-probability', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'renewalProbability']);
             // Webhooks & API
-            Route::get('inmetro/advanced/public-data', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'publicInstrumentData']);
-            Route::get('inmetro/advanced/webhooks', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'listWebhooks']);
-            Route::get('inmetro/advanced/webhook-events', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'availableWebhookEvents']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/public-data', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'publicInstrumentData']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/webhooks', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'listWebhooks']);
+            Route::middleware('check.permission:inmetro.view')->get('inmetro/advanced/webhook-events', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'availableWebhookEvents']);
         });
 
         // INMETRO Advanced â€” Write operations (manage permission)
@@ -870,20 +870,20 @@ Route::prefix('v1')->group(function () {
             Route::post('inmetro/advanced/interactions', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'logInteraction']);
             // Territorial actions
             Route::post('inmetro/advanced/optimize-route', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'optimizeRoute']);
-            Route::post('inmetro/advanced/density-viability', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'densityViability']);
+            Route::middleware('check.permission:inmetro.view')->post('inmetro/advanced/density-viability', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'densityViability']);
             // Competitor actions
-            Route::post('inmetro/advanced/snapshot-market-share', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'snapshotMarketShare']);
-            Route::post('inmetro/advanced/win-loss', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'recordWinLoss']);
+            Route::middleware('check.permission:inmetro.view')->post('inmetro/advanced/snapshot-market-share', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'snapshotMarketShare']);
+            Route::middleware('check.permission:inmetro.view')->post('inmetro/advanced/win-loss', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'recordWinLoss']);
             // Operational Bridge
-            Route::post('inmetro/advanced/link-instrument', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'linkInstrument']);
+            Route::middleware('check.permission:inmetro.view')->post('inmetro/advanced/link-instrument', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'linkInstrument']);
             // Compliance actions
-            Route::post('inmetro/advanced/compliance-checklists', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'createChecklist']);
-            Route::put('inmetro/advanced/compliance-checklists/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'updateChecklist']);
-            Route::post('inmetro/advanced/simulate-impact', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'simulateRegulatoryImpact']);
+            Route::middleware('check.permission:inmetro.view')->post('inmetro/advanced/compliance-checklists', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'createChecklist']);
+            Route::middleware('check.permission:inmetro.view')->put('inmetro/advanced/compliance-checklists/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'updateChecklist']);
+            Route::middleware('check.permission:inmetro.view')->post('inmetro/advanced/simulate-impact', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'simulateRegulatoryImpact']);
             // Webhooks CRUD
-            Route::post('inmetro/advanced/webhooks', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'createWebhook']);
-            Route::put('inmetro/advanced/webhooks/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'updateWebhook']);
-            Route::delete('inmetro/advanced/webhooks/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'deleteWebhook']);
+            Route::middleware('check.permission:inmetro.view')->post('inmetro/advanced/webhooks', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'createWebhook']);
+            Route::middleware('check.permission:inmetro.view')->put('inmetro/advanced/webhooks/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'updateWebhook']);
+            Route::middleware('check.permission:inmetro.view')->delete('inmetro/advanced/webhooks/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'deleteWebhook']);
         });
 
         // â”€â”€â”€ IntegraÃ§Ã£o Auvo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1244,9 +1244,9 @@ Route::prefix('v1')->group(function () {
 
         // â”€â”€â”€ Tech Sync (PWA Mobile Offline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Route::prefix('tech')->group(function () {
-            Route::get('sync', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'pull']);
-            Route::post('sync/batch', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'batchPush']);
-            Route::post('sync/photo', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'uploadPhoto']);
+            Route::middleware('check.permission:os.work_order.view')->get('sync', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'pull']);
+            Route::middleware('check.permission:os.work_order.view')->post('sync/batch', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'batchPush']);
+            Route::middleware('check.permission:os.work_order.view')->post('sync/photo', [\App\Http\Controllers\Api\V1\TechSyncController::class, 'uploadPhoto']);
         });
 
         // â”€â”€â”€ FLEET (Frota) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1472,7 +1472,7 @@ Route::prefix('v1')->group(function () {
             Route::post('emails/{email}/mark-unread', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'markUnread']);
             Route::post('emails/{email}/archive', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'archive']);
             Route::post('emails/{email}/link-entity', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'linkEntity']);
-            Route::post('emails/batch-action', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'batchAction']);
+            Route::middleware('check.permission:admin.settings.view')->post('emails/batch-action', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'batchAction']);
         });
         // Send / Reply / Forward
         Route::middleware('check.permission:email.inbox.send')->group(function () {
@@ -1680,22 +1680,22 @@ Route::prefix('v1')->group(function () {
             Route::get('serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'serialNumbers']);
             Route::post('serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeSerialNumber']);
             // Material Requests
-            Route::get('material-requests', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'materialRequests']);
-            Route::post('material-requests', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeMaterialRequest']);
-            Route::post('material-requests/{id}/approve', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'approveMaterialRequest']);
+            Route::middleware('check.permission:estoque.movement.view')->get('material-requests', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'materialRequests']);
+            Route::middleware('check.permission:estoque.movement.view')->post('material-requests', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeMaterialRequest']);
+            Route::middleware('check.permission:estoque.movement.view')->post('material-requests/{id}/approve', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'approveMaterialRequest']);
             // RMA
-            Route::get('rma', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'rmaList']);
-            Route::post('rma', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeRma']);
-            Route::patch('rma/{id}/status', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'updateRmaStatus']);
+            Route::middleware('check.permission:estoque.movement.view')->get('rma', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'rmaList']);
+            Route::middleware('check.permission:estoque.movement.view')->post('rma', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeRma']);
+            Route::middleware('check.permission:estoque.movement.view')->patch('rma/{id}/status', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'updateRmaStatus']);
             // Asset Tags (RFID/QR)
-            Route::get('asset-tags', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'assetTags']);
-            Route::post('asset-tags', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeAssetTag']);
-            Route::post('asset-tags/scan', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'scanAssetTag']);
+            Route::middleware('check.permission:estoque.movement.view')->get('asset-tags', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'assetTags']);
+            Route::middleware('check.permission:estoque.movement.view')->post('asset-tags', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeAssetTag']);
+            Route::middleware('check.permission:estoque.movement.view')->post('asset-tags/scan', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'scanAssetTag']);
             // Ecological Disposal
-            Route::get('ecological-disposals', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'ecologicalDisposals']);
-            Route::post('ecological-disposals', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeEcologicalDisposal']);
+            Route::middleware('check.permission:estoque.movement.view')->get('ecological-disposals', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'ecologicalDisposals']);
+            Route::middleware('check.permission:estoque.movement.view')->post('ecological-disposals', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeEcologicalDisposal']);
             // NF-e XML Import
-            Route::post('import-nfe-xml', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'importNfeXml']);
+            Route::middleware('check.permission:estoque.movement.view')->post('import-nfe-xml', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'importNfeXml']);
         });
 
         // â•â•â• CRM AvanÃ§ado â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1708,10 +1708,10 @@ Route::prefix('v1')->group(function () {
             Route::post('import-leads', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'importLeads']);
             Route::get('email-campaigns', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'emailCampaigns']);
             Route::post('email-campaigns', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'storeEmailCampaign']);
-            Route::post('whatsapp/send', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'sendWhatsApp']);
-            Route::get('whatsapp/history', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'whatsAppHistory']);
-            Route::get('self-service/catalog', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'selfServiceCatalog']);
-            Route::post('self-service/quote-request', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'selfServiceQuoteRequest']);
+            Route::middleware('check.permission:admin.settings.view')->post('whatsapp/send', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'sendWhatsApp']);
+            Route::middleware('check.permission:admin.settings.view')->get('whatsapp/history', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'whatsAppHistory']);
+            Route::middleware('check.permission:portal.view')->get('self-service/catalog', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'selfServiceCatalog']);
+            Route::middleware('check.permission:portal.view')->post('self-service/quote-request', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'selfServiceQuoteRequest']);
         });
 
         // â•â•â• LaboratÃ³rio AvanÃ§ado â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1726,33 +1726,33 @@ Route::prefix('v1')->group(function () {
             Route::post('logbook', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeLogbookEntry']);
             Route::get('raw-data-backups', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'rawDataBackups']);
             Route::post('raw-data-backups', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'triggerRawDataBackup']);
-            Route::get('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'scaleReadings']);
-            Route::post('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeScaleReading']);
+            Route::middleware('check.permission:os.work_order.view')->get('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'scaleReadings']);
+            Route::middleware('check.permission:os.work_order.view')->post('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeScaleReading']);
         });
 
         // â•â•â• Portal do Cliente â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         Route::prefix('portal')->group(function () {
-            Route::get('dashboard/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'executiveDashboard']);
-            Route::post('certificates/batch-download', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'batchCertificateDownload']);
-            Route::post('tickets/qr-code', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'openTicketByQrCode']);
+            Route::middleware('check.permission:cadastros.customer.view')->get('dashboard/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'executiveDashboard']);
+            Route::middleware('check.permission:os.work_order.view')->post('certificates/batch-download', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'batchCertificateDownload']);
+            Route::middleware('check.permission:chamados.service_call.view')->post('tickets/qr-code', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'openTicketByQrCode']);
             Route::post('quotes/{quoteId}/approve', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'oneClickApproval']);
-            Route::get('chat/{ticketId}/messages', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'chatMessages']);
-            Route::post('chat/{ticketId}/messages', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'sendChatMessage']);
+            Route::middleware('check.permission:os.work_order.view')->get('chat/{ticketId}/messages', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'chatMessages']);
+            Route::middleware('check.permission:os.work_order.view')->post('chat/{ticketId}/messages', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'sendChatMessage']);
             Route::get('financial/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'financialHistory']);
-            Route::get('schedule/slots', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'availableSlots']);
-            Route::post('schedule/book', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'bookSlot']);
-            Route::post('push/subscribe', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'registerPushSubscription']);
-            Route::get('knowledge-base', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'knowledgeBase']);
-            Route::post('knowledge-base', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'storeArticle']);
-            Route::get('customers/{customerId}/locations', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'customerLocations']);
-            Route::post('customers/{customerId}/locations', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'storeLocation']);
-            Route::get('api-docs', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'publicApiOverview']);
-            Route::get('white-label', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'whiteLabelConfig']);
-            Route::put('white-label', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'updateWhiteLabelConfig']);
-            Route::get('nps', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'npsSurveys']);
-            Route::post('nps', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'submitNps']);
-            Route::get('equipment-map/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'equipmentMap']);
-            Route::post('bi-report/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'biSelfServiceReport']);
+            Route::middleware('check.permission:chamados.service_call.view')->get('schedule/slots', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'availableSlots']);
+            Route::middleware('check.permission:chamados.service_call.view')->post('schedule/book', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'bookSlot']);
+            Route::middleware('check.permission:admin.settings.view')->post('push/subscribe', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'registerPushSubscription']);
+            Route::middleware('check.permission:admin.settings.view')->get('knowledge-base', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'knowledgeBase']);
+            Route::middleware('check.permission:admin.settings.view')->post('knowledge-base', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'storeArticle']);
+            Route::middleware('check.permission:cadastros.customer.view')->get('customers/{customerId}/locations', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'customerLocations']);
+            Route::middleware('check.permission:cadastros.customer.view')->post('customers/{customerId}/locations', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'storeLocation']);
+            Route::middleware('check.permission:admin.settings.view')->get('api-docs', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'publicApiOverview']);
+            Route::middleware('check.permission:admin.settings.view')->get('white-label', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'whiteLabelConfig']);
+            Route::middleware('check.permission:admin.settings.view')->put('white-label', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'updateWhiteLabelConfig']);
+            Route::middleware('check.permission:os.work_order.view')->get('nps', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'npsSurveys']);
+            Route::middleware('check.permission:os.work_order.view')->post('nps', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'submitNps']);
+            Route::middleware('check.permission:equipamentos.equipment.view')->get('equipment-map/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'equipmentMap']);
+            Route::middleware('check.permission:relatorios.report.view')->post('bi-report/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'biSelfServiceReport']);
         });
 
         // â•â•â• IntegraÃ§Ãµes â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1766,15 +1766,15 @@ Route::prefix('v1')->group(function () {
             Route::post('marketplace/request', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'requestPartnerIntegration']);
             Route::get('sso', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'ssoConfig']);
             Route::put('sso', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'updateSsoConfig']);
-            Route::get('notification-channels', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'slackTeamsConfig']);
-            Route::post('notification-channels', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'storeNotificationChannel']);
-            Route::post('shipping/calculate', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'calculateShipping']);
-            Route::get('marketing', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'marketingIntegrationConfig']);
-            Route::put('marketing', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'updateMarketingConfig']);
-            Route::get('swagger', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'swaggerDoc']);
-            Route::get('email-plugin/manifest', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'emailPluginManifest']);
-            Route::post('email-plugin/webhook', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'emailPluginWebhook']);
-            Route::post('power-bi/export', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'powerBiDataExport']);
+            Route::middleware('check.permission:admin.settings.view')->get('notification-channels', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'slackTeamsConfig']);
+            Route::middleware('check.permission:admin.settings.view')->post('notification-channels', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'storeNotificationChannel']);
+            Route::middleware('check.permission:os.work_order.view')->post('shipping/calculate', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'calculateShipping']);
+            Route::middleware('check.permission:admin.settings.view')->get('marketing', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'marketingIntegrationConfig']);
+            Route::middleware('check.permission:admin.settings.view')->put('marketing', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'updateMarketingConfig']);
+            Route::middleware('check.permission:admin.settings.view')->get('swagger', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'swaggerDoc']);
+            Route::middleware('check.permission:admin.settings.view')->get('email-plugin/manifest', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'emailPluginManifest']);
+            Route::middleware('check.permission:admin.settings.view')->post('email-plugin/webhook', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'emailPluginWebhook']);
+            Route::middleware('check.permission:relatorios.report.view')->post('power-bi/export', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'powerBiDataExport']);
         });
 
         // â•â•â• SeguranÃ§a â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1788,17 +1788,17 @@ Route::prefix('v1')->group(function () {
             Route::post('data-masking', [\App\Http\Controllers\Api\V1\SecurityController::class, 'storeDataMaskingRule']);
             Route::get('backups', [\App\Http\Controllers\Api\V1\SecurityController::class, 'backupHistory']);
             Route::post('backups', [\App\Http\Controllers\Api\V1\SecurityController::class, 'triggerBackup']);
-            Route::get('password-policy', [\App\Http\Controllers\Api\V1\SecurityController::class, 'passwordPolicy']);
-            Route::put('password-policy', [\App\Http\Controllers\Api\V1\SecurityController::class, 'updatePasswordPolicy']);
-            Route::get('geo-alerts', [\App\Http\Controllers\Api\V1\SecurityController::class, 'geoLoginAlerts']);
-            Route::get('consents', [\App\Http\Controllers\Api\V1\SecurityController::class, 'consentRecords']);
-            Route::post('consents', [\App\Http\Controllers\Api\V1\SecurityController::class, 'storeConsent']);
-            Route::get('watermark', [\App\Http\Controllers\Api\V1\SecurityController::class, 'watermarkConfig']);
-            Route::put('watermark', [\App\Http\Controllers\Api\V1\SecurityController::class, 'updateWatermarkConfig']);
-            Route::get('access-restrictions', [\App\Http\Controllers\Api\V1\SecurityController::class, 'accessRestrictions']);
-            Route::post('access-restrictions', [\App\Http\Controllers\Api\V1\SecurityController::class, 'storeAccessRestriction']);
-            Route::get('vulnerability-scans', [\App\Http\Controllers\Api\V1\SecurityController::class, 'vulnerabilityScanResults']);
-            Route::post('vulnerability-scans', [\App\Http\Controllers\Api\V1\SecurityController::class, 'triggerScan']);
+            Route::middleware('check.permission:admin.settings.update')->get('password-policy', [\App\Http\Controllers\Api\V1\SecurityController::class, 'passwordPolicy']);
+            Route::middleware('check.permission:admin.settings.update')->put('password-policy', [\App\Http\Controllers\Api\V1\SecurityController::class, 'updatePasswordPolicy']);
+            Route::middleware('check.permission:os.work_order.view')->get('geo-alerts', [\App\Http\Controllers\Api\V1\SecurityController::class, 'geoLoginAlerts']);
+            Route::middleware('check.permission:admin.settings.view')->get('consents', [\App\Http\Controllers\Api\V1\SecurityController::class, 'consentRecords']);
+            Route::middleware('check.permission:admin.settings.view')->post('consents', [\App\Http\Controllers\Api\V1\SecurityController::class, 'storeConsent']);
+            Route::middleware('check.permission:admin.settings.view')->get('watermark', [\App\Http\Controllers\Api\V1\SecurityController::class, 'watermarkConfig']);
+            Route::middleware('check.permission:admin.settings.view')->put('watermark', [\App\Http\Controllers\Api\V1\SecurityController::class, 'updateWatermarkConfig']);
+            Route::middleware('check.permission:admin.settings.view')->get('access-restrictions', [\App\Http\Controllers\Api\V1\SecurityController::class, 'accessRestrictions']);
+            Route::middleware('check.permission:admin.settings.view')->post('access-restrictions', [\App\Http\Controllers\Api\V1\SecurityController::class, 'storeAccessRestriction']);
+            Route::middleware('check.permission:admin.settings.view')->get('vulnerability-scans', [\App\Http\Controllers\Api\V1\SecurityController::class, 'vulnerabilityScanResults']);
+            Route::middleware('check.permission:admin.settings.view')->post('vulnerability-scans', [\App\Http\Controllers\Api\V1\SecurityController::class, 'triggerScan']);
         });
 
         // â•â•â• Frota AvanÃ§ada (GPS, PedÃ¡gio, Rotas) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1841,14 +1841,14 @@ Route::prefix('v1')->group(function () {
             Route::post('signature', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeSignature']);
             Route::get('print-jobs', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'printJobs']);
             Route::post('print-jobs', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'createPrintJob']);
-            Route::post('voice-report', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeVoiceReport']);
-            Route::get('biometric', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'biometricConfig']);
-            Route::put('biometric', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'updateBiometricConfig']);
-            Route::post('photo-annotation', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storePhotoAnnotation']);
-            Route::post('thermal-readings', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeThermalReading']);
-            Route::get('kiosk-config', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'kioskConfig']);
-            Route::put('kiosk-config', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'updateKioskConfig']);
-            Route::get('offline-map-regions', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'offlineMapRegions']);
+            Route::middleware('check.permission:os.work_order.update')->post('voice-report', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeVoiceReport']);
+            Route::middleware('check.permission:admin.settings.view')->get('biometric', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'biometricConfig']);
+            Route::middleware('check.permission:admin.settings.view')->put('biometric', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'updateBiometricConfig']);
+            Route::middleware('check.permission:os.work_order.update')->post('photo-annotation', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storePhotoAnnotation']);
+            Route::middleware('check.permission:os.work_order.update')->post('thermal-readings', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeThermalReading']);
+            Route::middleware('check.permission:admin.settings.view')->get('kiosk-config', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'kioskConfig']);
+            Route::middleware('check.permission:admin.settings.view')->put('kiosk-config', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'updateKioskConfig']);
+            Route::middleware('check.permission:admin.settings.view')->get('offline-map-regions', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'offlineMapRegions']);
         });
 
         // â•â•â• InovaÃ§Ã£o â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1897,7 +1897,7 @@ Route::prefix('v1')->group(function () {
             Route::get('expense-allocation', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'expenseAllocation']);
             Route::get('batch-payment-approval', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'batchPaymentApproval']);
         });
-        Route::post('financial/batch-payment-approval', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'approveBatchPayment'])
+        Route::middleware('check.permission:financeiro.accounts_receivable.update')->post('financial/batch-payment-approval', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'approveBatchPayment'])
             ->middleware('check.permission:financeiro.approve');
 
 
@@ -1937,11 +1937,11 @@ Route::prefix('v1')->group(function () {
             Route::get('natural-language-report', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'naturalLanguageReport']);
             Route::get('customer-clustering', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'customerClustering']);
             Route::get('equipment-image-analysis', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'equipmentImageAnalysis']);
-            Route::get('demand-forecast', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'demandForecast']);
-            Route::get('route-optimization', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'aiRouteOptimization']);
-            Route::get('smart-ticket-labeling', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'smartTicketLabeling']);
-            Route::get('churn-prediction', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'churnPrediction']);
-            Route::get('service-summary/{workOrderId}', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'serviceSummary']);
+            Route::middleware('check.permission:relatorios.report.view')->get('demand-forecast', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'demandForecast']);
+            Route::middleware('check.permission:os.work_order.view')->get('route-optimization', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'aiRouteOptimization']);
+            Route::middleware('check.permission:chamados.service_call.view')->get('smart-ticket-labeling', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'smartTicketLabeling']);
+            Route::middleware('check.permission:relatorios.report.view')->get('churn-prediction', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'churnPrediction']);
+            Route::middleware('check.permission:os.work_order.view')->get('service-summary/{workOrderId}', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'serviceSummary']);
         });
 
     });
@@ -1953,8 +1953,8 @@ Route::middleware('throttle:30,1')->post('rate/{token}', [\App\Http\Controllers\
 
 // Ã¢?,Ã¢?,Ã¢?, Webhooks (verificafÂ§fÂ£o por assinatura) Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,
 Route::prefix('webhooks')->middleware(['verify.webhook', 'throttle:240,1'])->group(function () {
-    Route::post('whatsapp', [\App\Http\Controllers\Api\V1\CrmMessageController::class, 'webhookWhatsApp']);
-    Route::post('email', [\App\Http\Controllers\Api\V1\CrmMessageController::class, 'webhookEmail']);
+    Route::middleware('check.permission:admin.settings.view')->post('whatsapp', [\App\Http\Controllers\Api\V1\CrmMessageController::class, 'webhookWhatsApp']);
+    Route::middleware('check.permission:admin.settings.view')->post('email', [\App\Http\Controllers\Api\V1\CrmMessageController::class, 'webhookEmail']);
 });
 
 // Ã¢?,Ã¢?,Ã¢?, Rotas pfÂºblicas (sem autenticafÂ§fÂ£o, com token) Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,Ã¢?,
