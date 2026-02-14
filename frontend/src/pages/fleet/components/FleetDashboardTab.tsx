@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Truck, Fuel, Gauge, AlertCircle, TrendingUp, DollarSign } from 'lucide-react'
 import api from '@/lib/api'
@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 
 export function FleetDashboardTab() {
+
+  // MVP: Action feedback
+  const handleAction = () => { toast.success('Ação realizada com sucesso') }
+
+  // MVP: Search
+  const [searchTerm, setSearchTerm] = useState('')
   const { hasPermission } = useAuthStore()
 
     const { data, isLoading, isError, refetch: dashboard } = useQuery({

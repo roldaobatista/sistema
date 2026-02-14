@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useState , useMemo } from 'react'
 import { toast } from 'sonner'
 import { useComposeEmail } from '@/hooks/useEmails'
 import { useEmailAccounts } from '@/hooks/useEmailAccounts'
@@ -11,8 +11,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Send, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 
 export default function EmailComposePage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['email-compose'],
+    queryFn: () => api.get('/email-compose').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/email-compose/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['email-compose'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const navigate = useNavigate()

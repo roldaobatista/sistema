@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState , useMemo } from 'react'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Download, Eye, X, Clock, User, FileText, ArrowUpDown, Loader2, Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import api from '@/lib/api'
@@ -44,6 +44,15 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 export function AuditLogPage() {
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/audit-log/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['audit-log'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const [action, setAction] = useState('')

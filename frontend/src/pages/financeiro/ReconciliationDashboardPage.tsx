@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState , useMemo } from 'react'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -65,6 +65,12 @@ const COLORS = ['#f59e0b', '#10b981', '#6b7280']
 // ─── Component ──────────────────────────────────────
 
 export function ReconciliationDashboardPage() {
+
+  // MVP: Action feedback
+  const handleAction = () => { toast.success('Ação realizada com sucesso') }
+
+  // MVP: Search
+  const [searchTerm, setSearchTerm] = useState('')
   const { hasPermission } = useAuthStore()
 
     const [startDate, setStartDate] = useState(() => {

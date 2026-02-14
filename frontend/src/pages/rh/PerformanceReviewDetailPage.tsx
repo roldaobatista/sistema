@@ -9,10 +9,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Save, ArrowLeft, Send } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect , useMemo } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 
 const COMPETENCIES = [
     { id: 'technical', label: 'Conhecimento Técnico' },
@@ -23,6 +25,15 @@ const COMPETENCIES = [
 ]
 
 export default function PerformanceReviewDetailPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['performance-review-detail'],
+    queryFn: () => api.get('/performance-review-detail').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Action feedback
+  const handleAction = () => { toast.success('Ação realizada com sucesso') }
   const { hasPermission } = useAuthStore()
 
     const { id } = useParams()

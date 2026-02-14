@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback , useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, MapPin, Phone, Clock, User, AlertTriangle,
@@ -15,6 +15,8 @@ import SLACountdown from '@/components/common/SLACountdown'
 import TechChatDrawer from '@/components/tech/TechChatDrawer'
 import type { OfflineWorkOrder } from '@/lib/offlineDb'
 import { useAuthStore } from '@/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 const STATUS_MAP: Record<string, { label: string; color: string; next?: string; nextLabel?: string }> = {
     pending: { label: 'Pendente', color: 'bg-amber-500', next: 'in_progress', nextLabel: 'Iniciar Atendimento' },
@@ -36,6 +38,17 @@ const ACTION_CARDS = [
 ];
 
 export default function TechWorkOrderDetailPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['tech-work-order-detail'],
+    queryFn: () => api.get('/tech-work-order-detail').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Loading/Error/Empty states
+  if (isLoading) return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+  if (isError) return <div className="flex flex-col items-center justify-center p-8 text-red-500"><AlertCircle className="h-8 w-8 mb-2" /><p>Erro ao carregar dados</p><button onClick={() => refetch()} className="mt-2 text-blue-500 underline">Tentar novamente</button></div>
+  if (!items || (Array.isArray(items) && items.length === 0)) return <div className="flex flex-col items-center justify-center p-8 text-gray-400"><Inbox className="h-12 w-12 mb-2" /><p>Nenhum registro encontrado</p></div>
   const { hasPermission } = useAuthStore()
 
     const { id } = useParams<{ id: string }>()

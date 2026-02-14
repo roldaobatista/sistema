@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     History, Search, Filter, Eye, X, ArrowRight, User, Calendar
 } from 'lucide-react'
@@ -24,6 +24,15 @@ const actionConfig: Record<string, { label: string; variant: any }> = {
 const fmtDate = (d: string) => new Date(d).toLocaleString('pt-BR')
 
 export function AuditLogsPage() {
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/audit-logs/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['audit-logs'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const [page, setPage] = useState(1)

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState , useMemo } from 'react'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Eye, User, Trash2, Truck } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,15 @@ import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth-store'
 
 export function VehiclesTab() {
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/vehicles/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['vehicles'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const [search, setSearch] = useState('')

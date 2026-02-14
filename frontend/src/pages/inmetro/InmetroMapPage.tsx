@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef , useMemo } from 'react'
 import { toast } from 'sonner'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
@@ -6,6 +6,8 @@ import 'leaflet/dist/leaflet.css'
 import { MapPin, Loader2, Navigation, RefreshCw, AlertTriangle, CheckCircle, Scale, Crosshair } from 'lucide-react'
 import { useMapData, useGeocodeLocations, useCalculateDistances, type MapMarker } from '@/hooks/useInmetro'
 import { useAuthStore } from '@/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -61,6 +63,21 @@ function FitBounds({ markers }: { markers: MapMarker[] }) {
 }
 
 export function InmetroMapPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['inmetro-map'],
+    queryFn: () => api.get('/inmetro-map').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/inmetro-map/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-map'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
     const { hasPermission } = useAuthStore()
     const canImport = hasPermission('inmetro.intelligence.import')
 

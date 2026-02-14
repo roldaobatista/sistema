@@ -8,6 +8,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { Technician, ScheduleItem } from '@/types/operational'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
+import { Loader2, Search, Trash2, AlertCircle, Inbox } from 'lucide-react'
 
 interface TechnicianGanttProps {
     date: Date
@@ -22,6 +25,26 @@ const START_HOUR = 6 // 06:00
 const END_HOUR = 20 // 20:00
 
 export function TechnicianGantt({ date, technicians, items, onItemClick }: TechnicianGanttProps) {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['technician-gantt'],
+    queryFn: () => api.get('/technician-gantt').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/technician-gantt/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['technician-gantt'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+
+  // MVP: Loading/Error/Empty states
+  if (isLoading) return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+  if (isError) return <div className="flex flex-col items-center justify-center p-8 text-red-500"><AlertCircle className="h-8 w-8 mb-2" /><p>Erro ao carregar dados</p><button onClick={() => refetch()} className="mt-2 text-blue-500 underline">Tentar novamente</button></div>
+  if (!items || (Array.isArray(items) && items.length === 0)) return <div className="flex flex-col items-center justify-center p-8 text-gray-400"><Inbox className="h-12 w-12 mb-2" /><p>Nenhum registro encontrado</p></div>
   const { user } = useAuthStore()
   const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     // Filter items for the selected date

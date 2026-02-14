@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState , useMemo } from 'react'
 import { useEmailAccounts, useCreateEmailAccount, useUpdateEmailAccount, useDeleteEmailAccount, useSyncEmailAccount, useTestEmailConnection, type EmailAccount, type EmailAccountFormData } from '@/hooks/useEmailAccounts'
 import { useEmailRules, useCreateEmailRule, useUpdateEmailRule, useDeleteEmailRule, useToggleEmailRuleActive, type EmailRule, type EmailRuleFormData, type RuleCondition, type RuleAction } from '@/hooks/useEmailRules'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,8 @@ import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 
 // ── Account Form ─────────────────────────────
 function AccountFormDialog({
@@ -152,6 +154,21 @@ function AccountFormDialog({
 
 // ── Main Settings Page ──────────────────────────
 export default function EmailSettingsPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['email-settings'],
+    queryFn: () => api.get('/email-settings').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/email-settings/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['email-settings'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const navigate = useNavigate()

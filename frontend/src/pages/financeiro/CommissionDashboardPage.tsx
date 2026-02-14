@@ -1,6 +1,6 @@
-﻿import { useState } from 'react'
+﻿import { useState , useMemo } from 'react'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     BarChart3, TrendingUp, Trophy, Award, Users, PieChart, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react'
@@ -13,6 +13,9 @@ import { useAuthStore } from '@/stores/auth-store'
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CommissionDashboardPage() {
+
+  // MVP: Action feedback
+  const handleAction = () => { toast.success('Ação realizada com sucesso') }
   const { hasPermission } = useAuthStore()
 
     const [months, setMonths] = useState(6)

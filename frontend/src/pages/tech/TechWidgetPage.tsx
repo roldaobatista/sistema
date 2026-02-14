@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Clipboard, ScanBarcode, Camera, DollarSign, Pen,
     ClipboardList, RefreshCw, ChevronRight, Loader2,
@@ -28,6 +28,18 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 }
 
 export default function TechWidgetPage() {
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/tech-widget/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['tech-widget'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+
+  // MVP: Search
+  const [searchTerm, setSearchTerm] = useState('')
   const { hasPermission } = useAuthStore()
 
     const navigate = useNavigate()

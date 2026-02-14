@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState , useMemo } from 'react'
 import { Fuel, Plus, Search, CheckCircle, XCircle, Clock, Trash2, Loader2, Car, MapPin } from 'lucide-react'
 import { useFuelingLogs, useCreateFuelingLog, useApproveFuelingLog, useDeleteFuelingLog, FUEL_TYPES, type FuelingLogFormData } from '@/hooks/useFuelingLogs'
 import { useAuthStore } from '@/stores/auth-store'
@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
     pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
@@ -21,6 +23,21 @@ const emptyForm: FuelingLogFormData = {
 }
 
 export function FuelingLogsPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['fueling-logs'],
+    queryFn: () => api.get('/fueling-logs').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/fueling-logs/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['fueling-logs'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
     const { hasPermission } = useAuthStore()
     const canCreate = hasPermission('expenses.fueling_log.create')
     const canApprove = hasPermission('expenses.fueling_log.approve')

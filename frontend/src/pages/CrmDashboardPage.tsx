@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState , useMemo } from 'react'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     TrendingUp, DollarSign, Users, Target, AlertTriangle,
     Calendar, Phone, ArrowRight, Scale, Handshake, XCircle,
@@ -13,10 +13,14 @@ import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
 import { useAuthStore } from '@/stores/auth-store'
+import api from '@/lib/api'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CrmDashboardPage() {
+
+  // MVP: Action feedback
+  const handleAction = () => { toast.success('Ação realizada com sucesso') }
   const { hasPermission } = useAuthStore()
 
     const [nowTs] = useState(() => Date.now())

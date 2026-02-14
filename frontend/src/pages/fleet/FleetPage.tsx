@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState , useMemo } from 'react'
 import {
     Gauge, Truck, Disc, Calendar, ClipboardList, Fuel,
     Shield, FileWarning, AlertTriangle, Calculator,
@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -61,6 +61,15 @@ const tabComponents: Record<TabId, React.FC> = {
 }
 
 export default function FleetPage() {
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/fleet/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['fleet'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const [activeTab, setActiveTab] = useState<TabId>('dashboard')

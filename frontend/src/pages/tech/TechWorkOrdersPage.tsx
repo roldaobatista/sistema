@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState , useMemo } from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import api from '@/lib/api'
 import type { OfflineWorkOrder } from '@/lib/offlineDb'
 import { useAuthStore } from '@/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
     pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', icon: Clock },
@@ -26,6 +27,21 @@ const PRIORITY_COLORS: Record<string, string> = {
 }
 
 export default function TechWorkOrdersPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['tech-work-orders'],
+    queryFn: () => api.get('/tech-work-orders').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/tech-work-orders/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['tech-work-orders'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const navigate = useNavigate()

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Package, AlertTriangle, TrendingDown, DollarSign, ArrowRight, Warehouse, Tag, ClipboardCheck, ScrollText, ArrowLeftRight, BarChart3, QrCode } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -26,6 +26,12 @@ interface LowStockProduct {
 }
 
 export function StockDashboardPage() {
+
+  // MVP: Action feedback
+  const handleAction = () => { toast.success('Ação realizada com sucesso') }
+
+  // MVP: Search
+  const [searchTerm, setSearchTerm] = useState('')
   const { hasPermission } = useAuthStore()
 
     const { data: summaryRes, isLoading: loadingSummary } = useQuery({

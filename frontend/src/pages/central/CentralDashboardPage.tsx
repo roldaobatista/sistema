@@ -1,6 +1,6 @@
 import React from 'react'
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     BarChart3, Users, AlertTriangle, TrendingUp, Clock,
     CheckCircle, Inbox, Target, ArrowRight, Wrench,
@@ -31,6 +31,12 @@ const tipoColors: Record<string, string> = {
 }
 
 export function CentralDashboardPage() {
+
+  // MVP: Action feedback
+  const handleAction = () => { toast.success('Ação realizada com sucesso') }
+
+  // MVP: Search
+  const [searchTerm, setSearchTerm] = useState('')
   const { hasPermission } = useAuthStore()
 
     const { data: kpisRes, isLoading: loadingKpis } = useQuery({

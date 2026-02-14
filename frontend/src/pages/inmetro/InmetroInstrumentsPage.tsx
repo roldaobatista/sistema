@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect , useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Scale, Search, CheckCircle, XCircle, Wrench, Clock, AlertTriangle, Download, RefreshCw, Loader2, Filter } from 'lucide-react'
 import { useInmetroInstruments, useInmetroCities, useInstrumentTypes, type InmetroInstrument } from '@/hooks/useInmetro'
@@ -6,6 +6,7 @@ import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
 import { useAuthStore } from '@/stores/auth-store'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 const statusConfig: Record<string, { icon: React.ElementType; color: string; label: string; badgeClass: string }> = {
     approved: { icon: CheckCircle, color: 'text-green-600', label: 'Aprovado', badgeClass: 'bg-green-100 text-green-700 border-green-200' },
@@ -15,6 +16,21 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; lab
 }
 
 export function InmetroInstrumentsPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['inmetro-instruments'],
+    queryFn: () => api.get('/inmetro-instruments').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/inmetro-instruments/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-instruments'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
     const { hasPermission } = useAuthStore()
     const [searchParams] = useSearchParams()
 

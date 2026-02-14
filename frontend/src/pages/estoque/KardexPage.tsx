@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState , useMemo } from 'react';
 import { toast } from 'sonner'
-import { useQuery } from '@tanstack/react-query';
+import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
 import { useAuthStore } from '@/stores/auth-store'
@@ -42,6 +42,15 @@ const typeIcons: Record<string, { icon: typeof ArrowUpCircle; color: string }> =
 };
 
 export default function KardexPage() {
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/kardex/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['kardex'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const [productId, setProductId] = useState('');

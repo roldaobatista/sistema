@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect , useMemo } from 'react'
 import { Upload, CheckCircle, AlertCircle, Loader2, FileText, Globe, Settings2, Save, MapPin } from 'lucide-react'
 import { InmetroBaseConfigSection } from '@/components/inmetro/InmetroBaseConfigSection'
 import {
@@ -7,6 +7,8 @@ import {
 } from '@/hooks/useInmetro'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 
 const UF_REGIONS: Record<string, string[]> = {
     'Norte': ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'],
@@ -17,6 +19,21 @@ const UF_REGIONS: Record<string, string[]> = {
 }
 
 export function InmetroImportPage() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['inmetro-import'],
+    queryFn: () => api.get('/inmetro-import').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Delete mutation
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/inmetro-import/${id}`),
+    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-import'] }) },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  })
+  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
     const { hasPermission } = useAuthStore()
     const canImport = hasPermission('inmetro.intelligence.import')
     const [importType, setImportType] = useState('all')

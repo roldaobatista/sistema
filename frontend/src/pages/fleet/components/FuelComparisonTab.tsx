@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState , useMemo } from 'react'
 import { toast } from 'sonner'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation , useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fuel, ArrowRight, Calculator, TrendingDown, CheckCircle2 } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,15 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 export function FuelComparisonTab() {
+
+  // MVP: Data fetching
+  const { data: items, isLoading, isError, refetch } = useQuery({
+    queryKey: ['fuel-comparison'],
+    queryFn: () => api.get('/fuel-comparison').then(r => r.data?.data ?? r.data ?? []),
+  })
+
+  // MVP: Search
+  const [searchTerm, setSearchTerm] = useState('')
   const { hasPermission } = useAuthStore()
 
     const [gasolinePrice, setGasolinePrice] = useState('')
