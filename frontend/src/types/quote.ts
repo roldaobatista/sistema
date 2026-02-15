@@ -53,7 +53,8 @@ export interface Quote {
     revision: number;
     customer_id: number;
     seller_id: number;
-    status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'invoiced';
+    status: 'draft' | 'pending_internal_approval' | 'internally_approved' | 'sent' | 'approved' | 'rejected' | 'expired' | 'invoiced';
+    source: 'prospeccao' | 'retorno' | 'contato_direto' | 'indicacao' | null;
     valid_until: string | null;
     discount_percentage: number;
     discount_amount: number;
@@ -77,9 +78,12 @@ export interface Quote {
 
 export interface QuoteSummary {
     draft: number;
+    pending_internal_approval: number;
+    internally_approved: number;
     sent: number;
     approved: number;
     rejected: number;
+    expired: number;
     invoiced: number;
     total_month: number;
     conversion_rate: number;

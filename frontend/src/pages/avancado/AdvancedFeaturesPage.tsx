@@ -28,43 +28,50 @@ export default function AdvancedFeaturesPage() {
     // MVP: Delete mutation
     const deleteMutation = useMutation({
         mutationFn: ({ entity, id }: { entity: string; id: number }) => api.delete(`/advanced/${entity}/${id}`),
-        onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: [tab] }) },
+        onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: [tab] }) },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
     })
     const handleDelete = (entity: string, id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate({ entity, id }) }
 
     const { data: followupsData, isLoading: loadingFollowups } = useQuery({
         queryKey: ['followups', search, page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/advanced/follow-ups', { params: { search: search || undefined, page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'followups',
     })
 
     const { data: priceTablesData, isLoading: loadingPT } = useQuery({
         queryKey: ['price-tables', page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/advanced/price-tables', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'price-tables',
     })
 
     const { data: documentsData, isLoading: loadingDocs } = useQuery({
         queryKey: ['customer-documents', search, page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/advanced/customer-documents', { params: { search: search || undefined, page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'documents',
     })
 
     const { data: costCentersData, isLoading: loadingCC } = useQuery({
         queryKey: ['cost-centers', page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/advanced/cost-centers', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'cost-centers',
     })
 
     const { data: routesData, isLoading: loadingRoutes } = useQuery({
         queryKey: ['route-plans', page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/advanced/route-plans', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'routes',
     })
 
     const { data: ratingsData, isLoading: loadingRatings } = useQuery({
         queryKey: ['ratings', page],
+        const { data } = useQuery({
         queryFn: () => api.get('/advanced/ratings', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'ratings',
     })

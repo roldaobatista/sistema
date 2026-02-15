@@ -152,7 +152,7 @@ class RecurringCommissionController extends Controller
                         'cost' => 0,
                     ]);
 
-                    if ($commissionAmount <= 0) continue;
+                    if (bccomp((string) $commissionAmount, '0', 2) <= 0) continue;
 
                     CommissionEvent::create([
                         'tenant_id' => $tid,

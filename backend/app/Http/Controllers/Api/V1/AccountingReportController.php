@@ -12,6 +12,12 @@ use Illuminate\Support\Facades\Log;
 
 class AccountingReportController extends Controller
 {
+    private function tenantId(): int
+    {
+        $user = auth()->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(Request $request): JsonResponse
     {
         try {
@@ -21,6 +27,7 @@ class AccountingReportController extends Controller
             ]);
 
             $query = JourneyEntry::with('user')
+                ->where('tenant_id', $this->tenantId())
                 ->whereBetween('date', [$request->start_date, $request->end_date]);
 
             if ($request->has('user_id')) {
@@ -46,6 +53,7 @@ class AccountingReportController extends Controller
             ]);
 
             $entries = JourneyEntry::with('user')
+                ->where('tenant_id', $this->tenantId())
                 ->whereBetween('date', [$request->start_date, $request->end_date])
                 ->get();
 

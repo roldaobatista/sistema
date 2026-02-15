@@ -23,8 +23,10 @@ class PermissionsSeeder extends Seeder
             'automation.webhook',
 
             // Auvo
-            'auvo.export',
-            'auvo.import',
+            'auvo.import.view',
+            'auvo.import.execute',
+            'auvo.import.delete',
+            'auvo.export.execute',
 
             // Cadastros
             'cadastros.customer',
@@ -128,11 +130,17 @@ class PermissionsSeeder extends Seeder
             'hr.skills',
             'hr.training',
 
-            // IAM
-            'iam.audit_log',
-            'iam.permission',
-            'iam.role',
-            'iam.user',
+            // IAM (granular — matches route middleware)
+            'iam.audit_log.view',
+            'iam.permission.manage',
+            'iam.role.view',
+            'iam.role.create',
+            'iam.role.update',
+            'iam.role.delete',
+            'iam.user.view',
+            'iam.user.create',
+            'iam.user.update',
+            'iam.user.delete',
 
             // Importação
             'import.data',
@@ -211,7 +219,7 @@ class PermissionsSeeder extends Seeder
         if ($admin) {
             $adminPerms = array_filter($permissions, fn($p) =>
                 !str_starts_with($p, 'platform.') &&
-                $p !== 'iam.permission'
+                $p !== 'iam.permission.manage'
             );
             $admin->syncPermissions($adminPerms);
         }

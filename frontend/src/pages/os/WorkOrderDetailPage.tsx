@@ -26,6 +26,7 @@ const MAX_ATTACHMENT_SIZE_MB = 10
 
 const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
     open: { label: 'Aberta', variant: 'info', icon: Clock },
+    awaiting_dispatch: { label: 'Aguard. Despacho', variant: 'warning', icon: Clock },
     in_progress: { label: 'Em Andamento', variant: 'warning', icon: Play },
     waiting_parts: { label: 'Aguard. Peças', variant: 'warning', icon: Pause },
     waiting_approval: { label: 'Aguard. Aprovação', variant: 'brand', icon: Pause },
@@ -80,21 +81,25 @@ export function WorkOrderDetailPage() {
     // Queries
     const { data: res, isLoading, isError, refetch: refetchOrder } = useQuery({
         queryKey: ['work-order', id],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/work-orders/${id}`),
     })
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-select'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: servicesRes } = useQuery({
         queryKey: ['services-select'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/services', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: checklistRes } = useQuery({
         queryKey: ['wo-checklist', id],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/work-orders/${id}/checklist-responses`),
     })
     const checklistItems: any[] = checklistRes?.data?.data ?? []
@@ -119,6 +124,7 @@ export function WorkOrderDetailPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
             qc.invalidateQueries({ queryKey: ['work-orders'] })
+            qc.invalidateQueries({ queryKey: ['dashboard'] })
             setShowStatusModal(false)
             toast.success('Status atualizado com sucesso!')
         },
@@ -214,7 +220,7 @@ export function WorkOrderDetailPage() {
         onSuccess: (res: any) => {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             toast.success('OS duplicada com sucesso!')
-            navigate(`/os/${res.data?.data?.id ?? res.data?.id}`)
+                navigate(`/os/${res.data?.data?.id ?? res.data?.id}`)
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao duplicar OS'),
     })
@@ -959,7 +965,6 @@ export function WorkOrderDetailPage() {
                             </div>
                         )
                     }
-
 
                 </div >
             </div >

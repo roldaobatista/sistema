@@ -3,26 +3,8 @@ import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, LogIn, Loader2, Shield } from 'lucide-react'
 import { toast } from 'sonner'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export function LoginPage() {
-
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['login'],
-    queryFn: () => api.get('/login').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/login/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['login'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
 
     const { login, isLoading } = useAuthStore()
     const [email, setEmail] = useState('')
@@ -31,7 +13,6 @@ export function LoginPage() {
     const [error, setError] = useState('')
 
     const handleSubmit = async (e: React.FormEvent) => {
-  const [searchTerm, setSearchTerm] = useState('')
         e.preventDefault()
         setError('')
 

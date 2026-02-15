@@ -158,6 +158,7 @@ export function SettingsPage() {
     // Settings
     const { data: settingsRes, isError } = useQuery({
         queryKey: ['settings'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/settings'),
         enabled: tab === 'settings',
     })
@@ -194,6 +195,7 @@ export function SettingsPage() {
     // Numbering Sequences
     const { data: seqRes } = useQuery({
         queryKey: ['numbering-sequences'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/numbering-sequences'),
         enabled: tab === 'numbering',
     })
@@ -517,7 +519,6 @@ export function SettingsPage() {
         </div>
     )
 }
-
 
 function NotificationsTab() {
     const { permission, isSubscribed, isLoading, subscribe, unsubscribe, sendTest } = usePushNotifications()

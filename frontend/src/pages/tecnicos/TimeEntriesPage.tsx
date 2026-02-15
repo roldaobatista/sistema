@@ -102,18 +102,21 @@ export function TimeEntriesPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['time-entries-summary', dateFrom, dateTo],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/time-entries-summary', { params: { from: dateFrom, to: dateTo } }),
     })
     const summary: SummaryItem[] = summaryRes?.data?.data ?? []
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-time-entries'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const technicians: Technician[] = techsRes?.data ?? []
 
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-select-te'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
         enabled: showForm,
     })
@@ -122,21 +125,31 @@ export function TimeEntriesPage() {
     const saveMut = useMutation({
         mutationFn: (data: typeof form) => api.post('/time-entries', data),
         onSuccess: () => {
-        toast.success('Operação realizada com sucesso') qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }); setShowForm(false) },
+            toast.success('Operação realizada com sucesso')
+                qc.invalidateQueries({ queryKey: ['time-entries'] })
+            qc.invalidateQueries({ queryKey: ['time-entries-summary'] })
+            setShowForm(false)
+        },
         onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao salvar apontamento'),
     })
 
     const stopMut = useMutation({
         mutationFn: (id: number) => api.post(`/time-entries/${id}/stop`),
         onSuccess: () => {
-        toast.success('Operação realizada com sucesso') qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }) },
+            toast.success('Operação realizada com sucesso')
+                qc.invalidateQueries({ queryKey: ['time-entries'] })
+            qc.invalidateQueries({ queryKey: ['time-entries-summary'] })
+        },
         onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao parar timer'),
     })
 
     const delMut = useMutation({
         mutationFn: (id: number) => api.delete(`/time-entries/${id}`),
         onSuccess: () => {
-        toast.success('Operação realizada com sucesso') qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-entries-summary'] }) },
+            toast.success('Operação realizada com sucesso')
+                qc.invalidateQueries({ queryKey: ['time-entries'] })
+            qc.invalidateQueries({ queryKey: ['time-entries-summary'] })
+        },
         onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao excluir apontamento'),
     })
 

@@ -7,39 +7,17 @@ use Spatie\Permission\Models\Role;
 return new class extends Migration {
     public function up(): void
     {
-        $permissions = [
-            'auvo.import.view',
-            'auvo.import.manage',
-        ];
+        // Permissions are now managed by PermissionsSeeder with correct granular names.
+        // This migration is kept as a no-op for migration history consistency.
 
-        foreach ($permissions as $perm) {
-            Permission::firstOrCreate(
-                ['name' => $perm, 'guard_name' => 'web']
-            );
-        }
-
-        // Assign to super_admin and admin roles
-        foreach (['super_admin', 'admin'] as $roleName) {
-            $role = Role::where('name', $roleName)->first();
-            if ($role) {
-                foreach ($permissions as $perm) {
-                    if (!$role->hasPermissionTo($perm)) {
-                        $role->givePermissionTo($perm);
-                    }
-                }
-            }
-        }
+        // Clean up old incorrect permission names if they exist
+        Permission::where('name', 'auvo.import.manage')->delete();
+        Permission::where('name', 'auvo.export')->delete();
+        Permission::where('name', 'auvo.import')->delete();
     }
 
     public function down(): void
     {
-        $permissions = [
-            'auvo.import.view',
-            'auvo.import.manage',
-        ];
-
-        foreach ($permissions as $perm) {
-            Permission::where('name', $perm)->delete();
-        }
+        // No-op — permissions managed by seeder
     }
 };

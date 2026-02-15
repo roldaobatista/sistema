@@ -28,43 +28,50 @@ export default function QualityPage() {
     // MVP: Delete mutation
     const deleteMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/quality/procedures/${id}`),
-        onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }) },
+        onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }) },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
     })
     const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
 
     const { data: proceduresData, isLoading: loadingProc, isError: errorProc } = useQuery({
         queryKey: ['quality-procedures', search, page],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/quality/procedures', { params: { search: search || undefined, page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'procedures',
     })
 
     const { data: actionsData, isLoading: loadingActions, isError: errorActions } = useQuery({
         queryKey: ['quality-corrective-actions', page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/quality/corrective-actions', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'actions',
     })
 
     const { data: complaintsData, isLoading: loadingComplaints } = useQuery({
         queryKey: ['quality-complaints', page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/quality/complaints', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'complaints',
     })
 
     const { data: surveysData, isLoading: loadingSurveys } = useQuery({
         queryKey: ['quality-surveys', page],
+        const { data } = useQuery({
         queryFn: () => api.get('/quality/surveys', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'surveys',
     })
 
     const { data: nps } = useQuery({
         queryKey: ['quality-nps'],
+        const { data } = useQuery({
         queryFn: () => api.get('/quality/nps').then(r => r.data?.data),
         enabled: tab === 'dashboard',
     })
 
     const { data: dashboard } = useQuery({
         queryKey: ['quality-dashboard'],
+        const { data } = useQuery({
         queryFn: () => api.get('/quality/dashboard').then(r => r.data?.data),
         enabled: tab === 'dashboard',
     })

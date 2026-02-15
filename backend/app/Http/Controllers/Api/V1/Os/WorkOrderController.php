@@ -447,10 +447,10 @@ class WorkOrderController extends Controller
             // Dispatch domain events AFTER commit to prevent race conditions
             $user = $request->user();
             match ($to) {
-                WorkOrder::STATUS_IN_PROGRESS => WorkOrderStarted::dispatch($workOrder, $user),
-                WorkOrder::STATUS_COMPLETED => WorkOrderCompleted::dispatch($workOrder, $user),
-                WorkOrder::STATUS_INVOICED => WorkOrderInvoiced::dispatch($workOrder, $user),
-                WorkOrder::STATUS_CANCELLED => WorkOrderCancelled::dispatch($workOrder, $user, $validated['notes'] ?? ''),
+                WorkOrder::STATUS_IN_PROGRESS => WorkOrderStarted::dispatch($workOrder, $user, $from),
+                WorkOrder::STATUS_COMPLETED => WorkOrderCompleted::dispatch($workOrder, $user, $from),
+                WorkOrder::STATUS_INVOICED => WorkOrderInvoiced::dispatch($workOrder, $user, $from),
+                WorkOrder::STATUS_CANCELLED => WorkOrderCancelled::dispatch($workOrder, $user, $validated['notes'] ?? '', $from),
                 default => null,
             };
 

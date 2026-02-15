@@ -1,5 +1,4 @@
 ﻿import { useState , useMemo } from 'react'
-import { toast } from 'sonner'
 import {
     useComplianceChecklists, useCreateChecklist,
     useComplianceInstrumentTypes, useDetectAnomalies,
@@ -15,27 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ShieldCheck, Plus, AlertTriangle, Building2, BarChart3, FileCheck } from 'lucide-react'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export default function InmetroCompliancePage() {
-
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['inmetro-compliance'],
-    queryFn: () => api.get('/inmetro-compliance').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/inmetro-compliance/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-compliance'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
 
     const [typeFilter] = useState('')
     const { data: checklists, isLoading } = useComplianceChecklists(typeFilter || undefined)

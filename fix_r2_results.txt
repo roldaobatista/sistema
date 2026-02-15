@@ -1,0 +1,33 @@
+﻿=== ROUND 2 FIXED ===
+  LoginPage.tsx
+  emails/EmailComposePage.tsx
+  emails/EmailInboxPage.tsx
+  emails/EmailSettingsPage.tsx
+  financeiro/FuelingLogsPage.tsx
+  fleet/components/FuelComparisonTab.tsx
+  ia/AIAnalyticsPage.tsx
+  inmetro/InmetroCompetitorPage.tsx
+  inmetro/InmetroCompetitorsPage.tsx
+  inmetro/InmetroCompliancePage.tsx
+  inmetro/InmetroExecutivePage.tsx
+  inmetro/InmetroImportPage.tsx
+  inmetro/InmetroInstrumentsPage.tsx
+  inmetro/InmetroMapPage.tsx
+  inmetro/InmetroMarketPage.tsx
+  inmetro/InmetroOwnerEditModal.tsx
+  inmetro/InmetroProspectionPage.tsx
+  inmetro/InmetroStatusUpdateModal.tsx
+  inmetro/InmetroWebhooksPage.tsx
+  rh/AccountingReportsPage.tsx
+  rh/OrgChartPage.tsx
+  rh/PerformanceReviewDetailPage.tsx
+  rh/RecruitmentKanbanPage.tsx
+  rh/RecruitmentPage.tsx
+  rh/SkillsMatrixPage.tsx
+  tech/TechChatPage.tsx
+  tech/TechWorkOrdersPage.tsx
+
+Total fixed: 27
+
+=== REMAINING ===
+Remaining issues: 0

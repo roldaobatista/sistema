@@ -36,6 +36,9 @@ class UpdateExpenseRequest extends FormRequest
             'notes' => 'nullable|string',
             'affects_technician_cash' => 'boolean',
             'affects_net_value' => 'boolean',
+            'km_quantity' => 'nullable|numeric|min:0',
+            'km_rate' => 'nullable|numeric|min:0',
+            'km_billed_to_client' => 'boolean',
             'receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // Max 5MB
         ];
     }

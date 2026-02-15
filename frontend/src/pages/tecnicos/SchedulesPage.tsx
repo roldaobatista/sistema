@@ -99,12 +99,14 @@ export function SchedulesPage() {
 
     const { data: techniciansResponse } = useQuery({
         queryKey: ['technicians-schedules'],
+        const { data } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const technicians: Technician[] = techniciansResponse?.data ?? []
 
     const { data: workOrdersResponse } = useQuery({
         queryKey: ['work-orders-select'],
+        const { data } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50, status: 'open' } }),
         enabled: showForm,
     })
@@ -112,6 +114,7 @@ export function SchedulesPage() {
 
     const { data: customersResponse } = useQuery({
         queryKey: ['customers-select'],
+        const { data } = useQuery({
         queryFn: () => api.get('/customers', { params: { per_page: 50 } }),
         enabled: showForm,
     })

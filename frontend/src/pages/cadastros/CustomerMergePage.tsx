@@ -35,6 +35,7 @@ export function CustomerMergePage() {
 
     const { data: duplicates, isLoading, refetch } = useQuery({
         queryKey: ['customer-duplicates', searchType],
+        const { data, isLoading, refetch } = useQuery({
         queryFn: () => api.get('/customers/search-duplicates', { params: { type: searchType } }).then(res => res.data),
     })
 
@@ -43,7 +44,7 @@ export function CustomerMergePage() {
             api.post('/customers/merge', data),
         onSuccess: (res) => {
             toast.success(res.data.message)
-            setSelectedGroup(null)
+                setSelectedGroup(null)
             setPrimaryId(null)
             setSelectedDuplicates([])
             setShowConfirmMerge(false)
@@ -52,7 +53,7 @@ export function CustomerMergePage() {
         },
         onError: (err: any) => {
             toast.error(err.response?.data?.message ?? 'Erro ao realizar a fusão de clientes.')
-            setShowConfirmMerge(false)
+                setShowConfirmMerge(false)
         }
     })
 

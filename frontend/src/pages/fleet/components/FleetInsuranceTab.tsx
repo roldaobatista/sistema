@@ -13,13 +13,14 @@ export function FleetInsuranceTab() {
 
     const queryClient = useQueryClient()
     const { data: insurances, isLoading } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['fleet-insurances'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/insurances').then(r => r.data)
     })
 
     const { data: alerts } = useQuery({
         queryKey: ['fleet-insurance-alerts'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/insurances/alerts').then(r => r.data)
     })
 

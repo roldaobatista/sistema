@@ -38,8 +38,6 @@ const statusConfig: Record<string, { label: string; variant: 'warning' | 'info' 
     [FINANCIAL_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'default' },
 }
 
-
-
 interface AR {
     id: number; description: string; amount: string; amount_paid: string
     due_date: string; paid_at: string | null; status: string
@@ -122,6 +120,7 @@ export function AccountsReceivablePage() {
 
     const { data: res, isLoading, isError, refetch } = useQuery({
         queryKey: ['accounts-receivable', search, statusFilter, page],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/accounts-receivable', { params: { search: search || undefined, status: statusFilter || undefined, per_page: 50, page } }),
     })
     const records: AR[] = res?.data?.data ?? []
@@ -129,12 +128,14 @@ export function AccountsReceivablePage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['ar-summary'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/accounts-receivable-summary'),
     })
     const summary = summaryRes?.data ?? {}
 
     const { data: custsRes } = useQuery({
         queryKey: ['customers-select'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/customers', { params: { per_page: 100 } }),
         enabled: showForm,
     })
@@ -142,6 +143,7 @@ export function AccountsReceivablePage() {
 
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-financial'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
         enabled: showGenOS || showForm,
     })
@@ -149,12 +151,14 @@ export function AccountsReceivablePage() {
 
     const { data: pmRes } = useQuery({
         queryKey: ['payment-methods'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/payment-methods'),
     })
     const paymentMethods: { id: number; name: string; code: string }[] = pmRes?.data ?? []
 
     const { data: chartRes } = useQuery({
         queryKey: ['chart-of-accounts-receivable'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/chart-of-accounts', { params: { is_active: 1, type: 'revenue' } }),
         enabled: canViewChart && showForm,
     })
@@ -652,5 +656,4 @@ export function AccountsReceivablePage() {
         </div>
     )
 }
-
 

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import {
 import { useAuthStore } from '@/stores/auth-store'
+import {
     ShoppingCart, PackageSearch, QrCode, RotateCcw, Trash2,
     Loader2, Search, Plus, Eye, Check, X, AlertTriangle, Package
 } from 'lucide-react';
@@ -61,7 +61,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function StockIntegrationPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const [activeTab, setActiveTab] = useState<Tab>('quotes');
     const [search, setSearch] = useState('');
@@ -70,30 +70,35 @@ export default function StockIntegrationPage() {
     // ═══ Queries ═══
     const { data: quotesData, isLoading: quotesLoading } = useQuery({
         queryKey: ['purchase-quotes', search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/purchase-quotes', { params: { search, per_page: 50 } }).then(r => r.data),
         enabled: activeTab === 'quotes',
     });
 
     const { data: requestsData, isLoading: requestsLoading } = useQuery({
         queryKey: ['material-requests', search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/material-requests', { params: { search, per_page: 50 } }).then(r => r.data),
         enabled: activeTab === 'requests',
     });
 
     const { data: tagsData, isLoading: tagsLoading } = useQuery({
         queryKey: ['asset-tags', search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/asset-tags', { params: { search, per_page: 50 } }).then(r => r.data),
         enabled: activeTab === 'tags',
     });
 
     const { data: rmaData, isLoading: rmaLoading } = useQuery({
         queryKey: ['rma-requests', search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/rma', { params: { search, per_page: 50 } }).then(r => r.data),
         enabled: activeTab === 'rma',
     });
 
     const { data: disposalData, isLoading: disposalLoading } = useQuery({
         queryKey: ['stock-disposals', search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock-disposals', { params: { search, per_page: 50 } }).then(r => r.data),
         enabled: activeTab === 'disposal',
     });
@@ -101,25 +106,29 @@ export default function StockIntegrationPage() {
     // ═══ Status update mutations ═══
     const updateQuoteStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/purchase-quotes/${id}`, { status }),
-        onSuccess: () => { toast.success('Cotação atualizada'); queryClient.invalidateQueries({ queryKey: ['purchase-quotes'] }); },
+        onSuccess: () => { toast.success('Cotação atualizada');
+                queryClient.invalidateQueries({ queryKey: ['purchase-quotes'] }); },
         onError: () => toast.error('Erro ao atualizar cotação'),
     });
 
     const updateRequestStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/material-requests/${id}`, { status }),
-        onSuccess: () => { toast.success('Solicitação atualizada'); queryClient.invalidateQueries({ queryKey: ['material-requests'] }); },
+        onSuccess: () => { toast.success('Solicitação atualizada');
+                queryClient.invalidateQueries({ queryKey: ['material-requests'] }); },
         onError: () => toast.error('Erro ao atualizar'),
     });
 
     const updateRmaStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/rma/${id}`, { status }),
-        onSuccess: () => { toast.success('RMA atualizado'); queryClient.invalidateQueries({ queryKey: ['rma-requests'] }); },
+        onSuccess: () => { toast.success('RMA atualizado');
+                queryClient.invalidateQueries({ queryKey: ['rma-requests'] }); },
         onError: () => toast.error('Erro ao atualizar RMA'),
     });
 
     const updateDisposalStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/stock-disposals/${id}`, { status }),
-        onSuccess: () => { toast.success('Descarte atualizado'); queryClient.invalidateQueries({ queryKey: ['stock-disposals'] }); },
+        onSuccess: () => { toast.success('Descarte atualizado');
+                queryClient.invalidateQueries({ queryKey: ['stock-disposals'] }); },
         onError: () => toast.error('Erro ao atualizar descarte'),
     });
 
@@ -244,8 +253,8 @@ export default function StockIntegrationPage() {
                                     <td className="px-4 py-3 text-sm text-center">{r.items?.length ?? 0}</td>
                                     <td className="px-4 py-3 text-center">
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                                                r.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                                                    r.priority === 'normal' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                                            r.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                                                r.priority === 'normal' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
                                             }`}>{r.priority === 'urgent' ? 'Urgente' : r.priority === 'high' ? 'Alta' : r.priority === 'normal' ? 'Normal' : 'Baixa'}</span>
                                     </td>
                                     <td className="px-4 py-3 text-center"><StatusBadge status={r.status} /></td>
@@ -292,7 +301,7 @@ export default function StockIntegrationPage() {
                                     <td className="px-4 py-3 text-sm font-mono font-medium">{t.tag_code}</td>
                                     <td className="px-4 py-3 text-center">
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.tag_type === 'rfid' ? 'bg-purple-100 text-purple-700' :
-                                                t.tag_type === 'qrcode' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-700'
+                                            t.tag_type === 'qrcode' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-700'
                                             }`}>{t.tag_type?.toUpperCase()}</span>
                                     </td>
                                     <td className="px-4 py-3 text-sm">{t.location ?? '—'}</td>

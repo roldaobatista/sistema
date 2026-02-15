@@ -49,7 +49,8 @@ export function AuditLogPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/audit-log/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['audit-log'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['audit-log'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -65,6 +66,7 @@ export function AuditLogPage() {
 
     const { data: actions } = useQuery<string[]>({
         queryKey: ['audit-actions'],
+        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const res = await api.get('/audit-logs/actions')
             return res.data.data
@@ -73,6 +75,7 @@ export function AuditLogPage() {
 
     const { data: entityTypes } = useQuery<{ value: string; label: string }[]>({
         queryKey: ['audit-entity-types'],
+        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const res = await api.get('/audit-logs/entity-types')
             return res.data.data

@@ -20,6 +20,8 @@ import {
 const STATUS_FILTERS = [
     { value: '', label: 'Todos' },
     { value: QUOTE_STATUS.DRAFT, label: 'Rascunho' },
+    { value: QUOTE_STATUS.PENDING_INTERNAL, label: 'Aguard. Aprov. Interna' },
+    { value: QUOTE_STATUS.INTERNALLY_APPROVED, label: 'Aprovado Internamente' },
     { value: QUOTE_STATUS.SENT, label: 'Enviado' },
     { value: QUOTE_STATUS.APPROVED, label: 'Aprovado' },
     { value: QUOTE_STATUS.REJECTED, label: 'Rejeitado' },
@@ -68,11 +70,13 @@ export function QuotesListPage() {
 
     const { data: summary } = useQuery<QuoteSummary>({
         queryKey: ['quotes-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/quotes-summary').then(r => r.data),
     })
 
     const { data: listData, isLoading } = useQuery({
         queryKey: ['quotes', debouncedSearch, status, page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/quotes', { params: { search: debouncedSearch || undefined, status: status || undefined, page } }).then(r => r.data),
     })
     const quotes: Quote[] = listData?.data ?? []
@@ -233,6 +237,7 @@ export function QuotesListPage() {
                                 quotes.map((q) => {
                                     const cfg = QUOTE_STATUS_CONFIG[q.status] ?? { label: q.status, variant: 'default', icon: FileText }
                                     const isDraft = q.status === QUOTE_STATUS.DRAFT
+                                    const isInternallyApproved = q.status === QUOTE_STATUS.INTERNALLY_APPROVED
                                     const isSent = q.status === QUOTE_STATUS.SENT
                                     const isApproved = q.status === QUOTE_STATUS.APPROVED
                                     const isRejected = q.status === QUOTE_STATUS.REJECTED
@@ -254,7 +259,12 @@ export function QuotesListPage() {
                                             <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex gap-1 justify-end">
                                                     {canSend && isDraft && (
-                                                        <button title="Enviar" onClick={() => sendMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-blue-600">
+                                                        <button title="Solicitar Aprovação Interna" onClick={() => sendMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-amber-600">
+                                                            <Send className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                    {canSend && isInternallyApproved && (
+                                                        <button title="Enviar ao Cliente" onClick={() => sendMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-blue-600">
                                                             <Send className="h-4 w-4" />
                                                         </button>
                                                     )}

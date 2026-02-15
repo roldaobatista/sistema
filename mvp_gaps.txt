@@ -1,0 +1,196 @@
+﻿=== P├üGINAS ABAIXO DE 100% ===
+
+--- admin ---
+  95% AuditLogPage | falta: form
+--- automacao ---
+  95% AutomationPage | falta: form
+--- avancado ---
+  95% AdvancedFeaturesPage | falta: form
+--- cadastros ---
+  77% BatchExportPage | falta: empty,pagination,form,deleteConfirm
+  85% CustomerMergePage | falta: pagination,form,deleteConfirm
+  90% Customer360Page | falta: pagination,form
+  90% PriceHistoryPage | falta: pagination,form
+  95% CustomersPage | falta: form
+--- central ---
+  70% CentralDashboardPage | falta: error,pagination,form,validation,deleteConfirm
+  80% CentralRulesPage | falta: error,form,validation
+  90% CentralPage | falta: form,deleteConfirm
+--- chamados ---
+  85% ServiceCallDetailPage | falta: pagination,form,deleteConfirm
+  90% ServiceCallCreatePage | falta: form,deleteConfirm
+  90% ServiceCallEditPage | falta: form,deleteConfirm
+  90% ServiceCallMapPage | falta: pagination,form
+  90% TechnicianAgendaPage | falta: pagination,form
+  95% ServiceCallsPage | falta: form
+--- configuracoes ---
+  82% ProfilePage | falta: empty,pagination,deleteConfirm
+  90% SettingsPage | falta: form,deleteConfirm
+  90% TenantManagementPage | falta: pagination,form
+  95% AuditLogsPage | falta: form
+  95% BranchesPage | falta: pagination
+--- emails ---
+  87% EmailComposePage | falta: empty,pagination
+  95% EmailInboxPage | falta: form
+  95% EmailSettingsPage | falta: pagination
+--- equipamentos ---
+  87% EquipmentCreatePage | falta: empty,deleteConfirm
+  90% EquipmentCalendarPage | falta: pagination,form
+  95% EquipmentDetailPage | falta: deleteConfirm
+  95% EquipmentListPage | falta: form
+--- estoque ---
+  70% StockDashboardPage | falta: error,pagination,form,validation,deleteConfirm
+  82% InventoryCreatePage | falta: empty,pagination,deleteConfirm
+  85% InventoryExecutionPage | falta: pagination,form,deleteConfirm
+  85% InventoryPage | falta: pagination,form,deleteConfirm
+  90% BatchManagementPage | falta: pagination,form
+  90% InventoryListPage | falta: pagination,form
+  90% StockIntegrationPage | falta: form,deleteConfirm
+  90% StockIntelligencePage | falta: pagination,form
+  95% KardexPage | falta: form
+  95% StockMovementsPage | falta: deleteConfirm
+  95% WarehousesPage | falta: pagination
+--- financeiro ---
+  80% ReconciliationDashboardPage | falta: pagination,form,validation,deleteConfirm
+  82% CommissionDashboardPage | falta: empty,pagination,form
+  90% CashFlowPage | falta: pagination,form
+  90% PaymentsPage | falta: search,form
+  95% AccountPayableCategoriesPage | falta: pagination
+  95% BankAccountsPage | falta: pagination
+  95% ChartOfAccountsPage | falta: pagination
+  95% CommissionsPage | falta: pagination
+  95% FuelingLogsPage | falta: form
+  95% FundTransfersPage | falta: deleteConfirm
+  95% PaymentMethodsPage | falta: pagination
+  95% ReconciliationRulesPage | falta: pagination
+--- fiscal ---
+  82% FiscalEmitirDialog | falta: empty,form,deleteConfirm
+  90% FiscalNotesPage | falta: form,deleteConfirm
+--- fleet ---
+  82% FleetPage | falta: empty,pagination,form
+--- fleet\components ---
+  70% FleetPoolTab | falta: error,pagination,form,validation,deleteConfirm
+  80% FleetDashboardTab | falta: pagination,form,validation,deleteConfirm
+  82% FuelComparisonTab | falta: empty,pagination,form
+  85% FleetAccidentsTab | falta: search,pagination,form
+  85% TollDashboardTab | falta: search,pagination,form
+  90% DriverScoreTab | falta: pagination,form
+  90% FleetFinesTab | falta: pagination,form
+  90% FleetFuelTab | falta: pagination,form
+  90% FleetInspectionsTab | falta: pagination,form
+  90% FleetInsuranceTab | falta: pagination,form
+  90% FleetTiresTab | falta: pagination,form
+  90% GpsLiveTab | falta: pagination,form
+  95% VehiclesTab | falta: form
+--- ia ---
+  90% AIAnalyticsPage | falta: pagination,form
+--- iam ---
+  85% PermissionsMatrixPage | falta: pagination,form,deleteConfirm
+  95% RolesPage | falta: pagination
+--- importacao ---
+  90% ImportPage | falta: pagination,form
+--- inmetro ---
+  70% InmetroDashboardPage | falta: mutation,pagination,form,deleteConfirm
+  75% InmetroSealReportPage | falta: mutation,form,deleteConfirm
+  82% InmetroExecutivePage | falta: empty,pagination,form
+  82% InmetroImportPage | falta: empty,pagination,form
+  82% InmetroMarketPage | falta: empty,pagination,form
+  87% InmetroOwnerEditModal | falta: empty,pagination
+  87% InmetroStatusUpdateModal | falta: empty,pagination
+  90% InmetroCompetitorPage | falta: pagination,form
+  90% InmetroCompliancePage | falta: pagination,form
+  90% InmetroMapPage | falta: pagination,form
+  90% InmetroOwnerDetailPage | falta: pagination,form
+  90% InmetroProspectionPage | falta: pagination,form
+  90% InmetroWebhooksPage | falta: pagination,form
+  95% InmetroCompetitorsPage | falta: form
+  95% InmetroInstrumentsPage | falta: form
+  95% InmetroLeadsPage | falta: form
+  95% InmetroSealManagement | falta: deleteConfirm
+--- integracao ---
+  82% AuvoImportPage | falta: empty,pagination,form
+--- notificacoes ---
+  80% NotificationsPage | falta: pagination,form,validation,deleteConfirm
+--- operational\checklists ---
+  90% ChecklistPage | falta: pagination,form
+--- operational\checklists\components ---
+  95% ChecklistBuilder | falta: pagination
+  95% ChecklistForm | falta: pagination
+--- orcamentos ---
+  82% QuoteDetailPage | falta: empty,pagination,form
+  87% QuoteEditPage | falta: empty,form
+  90% QuoteCreatePage | falta: form,deleteConfirm
+  95% QuotesListPage | falta: form
+--- os ---
+  70% SlaDashboardPage | falta: error,pagination,form,validation,deleteConfirm
+  80% ServiceChecklistsPage | falta: error,pagination,form
+  82% WorkOrderKanbanPage | falta: empty,form,deleteConfirm
+  85% SlaPoliciesPage | falta: error,pagination
+  95% RecurringContractsPage | falta: form
+  95% WorkOrderCreatePage | falta: deleteConfirm
+  95% WorkOrdersListPage | falta: form
+--- portal ---
+  70% PortalDashboardPage | falta: mutation,pagination,form,deleteConfirm
+  80% PortalQuotesPage | falta: pagination,form,validation,deleteConfirm
+  90% PortalFinancialsPage | falta: pagination,form
+  90% PortalWorkOrdersPage | falta: pagination,form
+  95% PortalLoginPage | falta: pagination
+  95% PortalServiceCallPage | falta: pagination
+--- qualidade ---
+  95% QualityPage | falta: form
+--- relatorios ---
+  90% ReportsPage | falta: pagination,form
+--- rh ---
+  72% PerformanceReviewDetailPage | falta: empty,pagination,form,validation,deleteConfirm
+  75% HRPage | falta: mutation,form,deleteConfirm
+  77% ClockInPage | falta: empty,pagination,form,deleteConfirm
+  82% AccountingReportsPage | falta: empty,pagination,form
+  82% PeopleAnalyticsPage | falta: empty,pagination,form
+  85% JourneyPage | falta: pagination,form,deleteConfirm
+  87% RecruitmentKanbanPage | falta: empty,pagination
+  90% ClockAdjustmentsPage | falta: form,deleteConfirm
+  90% OnboardingPage | falta: pagination,deleteConfirm
+  90% OrgChartPage | falta: pagination,form
+  90% SkillsMatrixPage | falta: pagination,form
+  90% VacationBalancePage | falta: pagination,form
+  95% BenefitsPage | falta: pagination
+  95% EmployeeDocumentsPage | falta: pagination
+  95% GeofenceLocationsPage | falta: pagination
+  95% HolidaysPage | falta: pagination
+  95% JourneyRulesPage | falta: pagination
+  95% LeavesPage | falta: deleteConfirm
+  95% PerformancePage | falta: form
+  95% RecruitmentPage | falta: pagination
+--- root ---
+  70% DashboardPage | falta: mutation,pagination,form,deleteConfirm
+  75% MessageTemplatesPage | falta: error,pagination,form,validation
+  82% CrmPipelinePage | falta: empty,form,deleteConfirm
+  85% CrmDashboardPage | falta: pagination,form,deleteConfirm
+  87% LoginPage | falta: empty,pagination
+--- tech ---
+  85% TechSealsPage | falta: pagination,form,deleteConfirm
+  85% TechWorkOrderDetailPage | falta: pagination,form,deleteConfirm
+  90% TechBarcodePage | falta: pagination,form
+  90% TechBluetoothPrintPage | falta: pagination,form
+  90% TechChatPage | falta: pagination,form
+  90% TechChecklistPage | falta: pagination,form
+  90% TechExpensePage | falta: pagination,form
+  90% TechPhotoAnnotationPage | falta: pagination,form
+  90% TechPhotosPage | falta: pagination,form
+  90% TechProfilePage | falta: pagination,form
+  90% TechSettingsPage | falta: pagination,form
+  90% TechSignaturePage | falta: pagination,form
+  90% TechThermalCameraPage | falta: pagination,form
+  90% TechVoiceReportPage | falta: pagination,form
+  90% TechWorkOrdersPage | falta: pagination,form
+  95% TechWidgetPage | falta: form
+--- tecnicos ---
+  90% TechnicianCashPage | falta: pagination,deleteConfirm
+--- tecnicos\components ---
+  90% TechnicianGantt | falta: pagination,form
+  90% TechnicianMap | falta: pagination,form
+  90% TechnicianRecommendationSelector | falta: pagination,form
+--- tv ---
+  85% TvDashboard | falta: pagination,form,deleteConfirm
+
+Total p├íginas < 100%: 159/172

@@ -11,20 +11,6 @@ export function FuelComparisonTab() {
     const queryClient = useQueryClient()
     const { hasPermission } = useAuthStore()
 
-    // MVP: Data fetching
-    const { data: items, isLoading, isError, refetch } = useQuery({
-        queryKey: ['fuel-comparison'],
-        queryFn: () => api.get('/fuel-comparison').then(r => r.data?.data ?? r.data ?? []),
-    })
-
-    // MVP: Delete mutation
-    const deleteMutation = useMutation({
-        mutationFn: (id: number) => api.delete(`/fleet/fuel-comparison/${id}`),
-        onSuccess: () => { toast.success('Registro removido'); queryClient.invalidateQueries({ queryKey: ['fuel-comparison'] }) },
-        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-    })
-    const handleDelete = (id: number) => { if (window.confirm('Tem certeza?')) deleteMutation.mutate(id) }
-
     // MVP: Search
     const [searchTerm, setSearchTerm] = useState('')
 

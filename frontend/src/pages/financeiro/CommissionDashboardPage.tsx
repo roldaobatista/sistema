@@ -19,7 +19,8 @@ export function CommissionDashboardPage() {
     // MVP: Delete mutation
     const deleteMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/commissions/${id}`),
-        onSuccess: () => { toast.success('Comissão removida com sucesso'); queryClient.invalidateQueries({ queryKey: ['commission-overview'] }) },
+        onSuccess: () => { toast.success('Comissão removida com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['commission-overview'] }) },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover comissão') },
     })
     const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover esta comissão?')) deleteMutation.mutate(id) }

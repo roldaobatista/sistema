@@ -4,37 +4,14 @@
     useWinLossAnalysis, useRecordWinLoss,
 } from '@/hooks/useInmetroAdvanced'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TrendingUp, Camera, Activity, DollarSign, Trophy, AlertTriangle } from 'lucide-react'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export default function InmetroCompetitorPage() {
-
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['inmetro-competitor'],
-    queryFn: () => api.get('/inmetro-competitor').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/inmetro-competitor/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-competitor'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-
-  // MVP: Search
-  const [searchTerm, setSearchTerm] = useState('')
-  const { hasPermission } = useAuthStore()
 
     const { data: timeline, isLoading: loadingTimeline } = useMarketShareTimeline()
     const { data: movements } = useCompetitorMovements()

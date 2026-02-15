@@ -10,6 +10,8 @@ export const DEAL_STATUS = {
 
 export const QUOTE_STATUS = {
     DRAFT: 'draft',
+    PENDING_INTERNAL: 'pending_internal_approval',
+    INTERNALLY_APPROVED: 'internally_approved',
     SENT: 'sent',
     APPROVED: 'approved',
     REJECTED: 'rejected',
@@ -58,6 +60,7 @@ export const COMMISSION_STATUS = {
 
 export const EXPENSE_STATUS = {
     PENDING: 'pending',
+    REVIEWED: 'reviewed',
     APPROVED: 'approved',
     REJECTED: 'rejected',
     REIMBURSED: 'reimbursed',

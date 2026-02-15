@@ -52,8 +52,8 @@ export default function JourneyRulesPage() {
     const [deleteTarget, setDeleteTarget] = useState<JourneyRule | null>(null)
 
     const { data: rulesRes, isLoading } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['journey-rules'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/journey-rules').then(r => r.data?.data ?? []),
     })
 

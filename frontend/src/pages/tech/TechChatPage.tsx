@@ -1,31 +1,12 @@
 import { useState, useRef, useEffect , useMemo } from 'react'
-import { toast } from 'sonner'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, Mic, MicOff, Image, Clock } from 'lucide-react'
 import { useChatStoreForward, type ChatMessage } from '@/hooks/useChatStoreForward'
 import { useVoiceToText } from '@/hooks/useVoiceToText'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export default function TechChatPage() {
-
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['tech-chat'],
-    queryFn: () => api.get('/tech-chat').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/tech-chat/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['tech-chat'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
 
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
@@ -38,7 +19,6 @@ export default function TechChatPage() {
     const inputRef = useRef<HTMLInputElement>(null)
 
     const scrollToBottom = () => {
-  const [searchTerm, setSearchTerm] = useState('')
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 

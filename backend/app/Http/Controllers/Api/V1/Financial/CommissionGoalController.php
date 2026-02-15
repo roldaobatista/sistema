@@ -42,9 +42,8 @@ class CommissionGoalController extends Controller
         }
 
         $goals = $query->orderByDesc('commission_goals.period')->get()->map(function ($goal) {
-            $goal->bonus_rules = json_decode($goal->bonus_rules, true);
-            $goal->achievement_pct = $goal->target_amount > 0
-                ? round(($goal->achieved_amount / $goal->target_amount) * 100, 1)
+            $goal->achievement_pct = bccomp((string) $goal->target_amount, '0', 2) > 0
+                ? (float) bcmul(bcdiv((string) $goal->achieved_amount, (string) $goal->target_amount, 4), '100', 1)
                 : 0;
             return $goal;
         });
@@ -60,9 +59,10 @@ class CommissionGoalController extends Controller
             'user_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'period' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
             'target_amount' => 'required|numeric|min:1',
-            'bonus_rules' => 'nullable|array',
-            'bonus_rules.*.threshold_pct' => 'required|numeric|min:1',
-            'bonus_rules.*.bonus_pct' => 'required|numeric|min:0.01',
+            'type' => 'sometimes|in:revenue,os_count,new_clients',
+            'bonus_percentage' => 'nullable|numeric|min:0|max:100',
+            'bonus_amount' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         // Check uniqueness
@@ -83,9 +83,11 @@ class CommissionGoalController extends Controller
                     'user_id' => $validated['user_id'],
                     'period' => $validated['period'],
                     'target_amount' => $validated['target_amount'],
-                    'bonus_rules' => json_encode($validated['bonus_rules'] ?? []),
+                    'type' => $validated['type'] ?? 'revenue',
+                    'bonus_percentage' => $validated['bonus_percentage'] ?? null,
+                    'bonus_amount' => $validated['bonus_amount'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
                     'achieved_amount' => 0,
-                    'status' => self::STATUS_ACTIVE,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -102,8 +104,10 @@ class CommissionGoalController extends Controller
     {
         $validated = $request->validate([
             'target_amount' => 'sometimes|numeric|min:1',
-            'bonus_rules' => 'sometimes|array',
-            'status' => 'sometimes|in:' . self::STATUS_ACTIVE . ',' . self::STATUS_CLOSED,
+            'type' => 'sometimes|in:revenue,os_count,new_clients',
+            'bonus_percentage' => 'nullable|numeric|min:0|max:100',
+            'bonus_amount' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         $exists = DB::table('commission_goals')
@@ -117,8 +121,10 @@ class CommissionGoalController extends Controller
 
         $updates = ['updated_at' => now()];
         if (isset($validated['target_amount'])) $updates['target_amount'] = $validated['target_amount'];
-        if (isset($validated['bonus_rules'])) $updates['bonus_rules'] = json_encode($validated['bonus_rules']);
-        if (isset($validated['status'])) $updates['status'] = $validated['status'];
+        if (isset($validated['type'])) $updates['type'] = $validated['type'];
+        if (array_key_exists('bonus_percentage', $validated)) $updates['bonus_percentage'] = $validated['bonus_percentage'];
+        if (array_key_exists('bonus_amount', $validated)) $updates['bonus_amount'] = $validated['bonus_amount'];
+        if (array_key_exists('notes', $validated)) $updates['notes'] = $validated['notes'];
 
         DB::transaction(function () use ($id, $updates) {
             DB::table('commission_goals')

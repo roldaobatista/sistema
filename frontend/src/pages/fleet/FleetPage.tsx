@@ -66,7 +66,8 @@ export default function FleetPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/fleet/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['fleet'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['fleet'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -76,8 +77,8 @@ export default function FleetPage() {
     const ActiveComponent = tabComponents[activeTab]
 
     const { data: fleetSummary, isLoading, isError, error } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['fleet-summary'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/fleet/dashboard-summary').then(r => r.data),
         retry: 1,
     })

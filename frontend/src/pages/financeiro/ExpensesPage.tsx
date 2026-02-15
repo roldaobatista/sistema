@@ -19,7 +19,8 @@ import { useAuthStore } from '@/stores/auth-store'
 
 const statusConfig: Record<string, { label: string; variant: any }> = {
     pending: { label: 'Pendente', variant: 'warning' },
-    approved: { label: 'Aprovado', variant: 'info' },
+    reviewed: { label: 'Conferido', variant: 'info' },
+    approved: { label: 'Aprovado', variant: 'success' },
     rejected: { label: 'Rejeitado', variant: 'danger' },
     reimbursed: { label: 'Reembolsado', variant: 'success' },
 }
@@ -45,6 +46,7 @@ interface Exp {
     creator: { id: number; name: string }
     work_order: { id: number; number: string; os_number?: string | null; business_number?: string | null } | null
     approver?: { id: number; name: string } | null
+    reviewer?: { id: number; name: string } | null
     _warning?: string
     _budget_warning?: string
 }
@@ -135,18 +137,21 @@ export function ExpensesPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['expense-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/expense-summary'),
     })
     const summary = summaryRes?.data ?? {}
 
     const { data: catsRes } = useQuery({
         queryKey: ['expense-categories'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/expense-categories'),
     })
     const categories = catsRes?.data ?? []
 
     const { data: chartRes } = useQuery({
         queryKey: ['chart-of-accounts-expenses'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/chart-of-accounts', { params: { is_active: 1, type: 'expense' } }),
         enabled: canViewChart && showForm,
     })
@@ -154,6 +159,7 @@ export function ExpensesPage() {
 
     const { data: analyticsRes } = useQuery({
         queryKey: ['expense-analytics'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/expense-analytics'),
         enabled: showAnalytics,
     })
@@ -161,6 +167,7 @@ export function ExpensesPage() {
 
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-expense'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
         enabled: showForm,
     })
@@ -216,8 +223,6 @@ export function ExpensesPage() {
             }
         },
     })
-
-
 
     const statusMut = useMutation({
         mutationFn: ({ id, status, rejection_reason }: { id: number; status: string; rejection_reason?: string }) =>
@@ -315,6 +320,7 @@ export function ExpensesPage() {
 
     const { data: historyRes } = useQuery({
         queryKey: ['expense-history', showHistory],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/expenses/${showHistory}/history`),
         enabled: showHistory !== null,
     })
@@ -441,8 +447,6 @@ export function ExpensesPage() {
                     ...(canCreate ? [{ label: 'Nova Despesa', onClick: () => { setEditingId(null); setForm(emptyForm); setFieldErrors({}); setShowForm(true) }, icon: <Plus className="h-4 w-4" /> }] : []),
                 ]}
             />
-
-
 
             {/* Summary Cards */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -950,6 +954,7 @@ export function ExpensesPage() {
                             {showDetail.payment_method && <div><span className="text-xs text-surface-500">Forma de Pagamento</span><p className="text-sm">{paymentMethods[showDetail.payment_method] ?? showDetail.payment_method}</p></div>}
                             {showDetail.approver && <div><span className="text-xs text-surface-500">Aprovado por</span><p className="text-sm">{showDetail.approver.name}</p></div>}
                             {showDetail.work_order && <div><span className="text-xs text-surface-500">OS</span><p className="text-sm text-brand-600 font-medium">{woIdentifier(showDetail.work_order)}</p></div>}
+                            {showDetail.reviewer && <div><span className="text-xs text-surface-500">Conferido por</span><p className="text-sm">{showDetail.reviewer.name}</p></div>}
                             {showDetail.affects_technician_cash && <div><span className="text-xs text-surface-500">Caixa do Técnico</span><Badge variant="info">Impacta caixa</Badge></div>}
                             {showDetail.affects_net_value && <div><span className="text-xs text-surface-500">Valor Líquido</span><Badge variant="warning">Deduz do líquido</Badge></div>}
                             {showDetail.receipt_path && <div><span className="text-xs text-surface-500">Comprovante</span><p className="text-sm text-brand-600 underline"><a href={`${api.defaults.baseURL?.replace('/api', '')}${showDetail.receipt_path}`} target="_blank" rel="noreferrer">Ver comprovante</a></p></div>}

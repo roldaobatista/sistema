@@ -14,14 +14,15 @@ export default function EquipmentCreatePage() {
     const navigate = useNavigate()
 
     const { data: constants, isError: constantsError } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['equipments-constants'],
+        const { data, isError } = useQuery({
         queryFn: () => api.get('/equipments-constants').then(r => r.data),
         meta: { errorMessage: 'Erro ao carregar constantes de equipamentos' },
     })
 
     const { data: customers, isError: customersError } = useQuery({
         queryKey: ['customers-list'],
+        const { data } = useQuery({
         queryFn: () => api.get('/customers?per_page=100').then(r => r.data.data),
         meta: { errorMessage: 'Erro ao carregar lista de clientes' },
     })
@@ -51,7 +52,7 @@ export default function EquipmentCreatePage() {
         mutationFn: (data: any) => api.post('/equipments', data),
         onSuccess: (r) => {
             toast.success('Equipamento criado com sucesso!')
-            navigate(`/equipamentos/${r.data.equipment.id}`)
+                navigate(`/equipamentos/${r.data.equipment.id}`)
         },
         onError: (err: any) => {
             if (err.response?.status === 422) {

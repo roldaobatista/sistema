@@ -186,6 +186,8 @@ class Quote extends Model
     {
         $statusMap = [
             self::STATUS_DRAFT => CentralItemStatus::ABERTO,
+            self::STATUS_PENDING_INTERNAL => CentralItemStatus::EM_ANDAMENTO,
+            self::STATUS_INTERNALLY_APPROVED => CentralItemStatus::EM_ANDAMENTO,
             self::STATUS_SENT => CentralItemStatus::EM_ANDAMENTO,
             self::STATUS_APPROVED => CentralItemStatus::CONCLUIDO,
             self::STATUS_REJECTED => CentralItemStatus::CANCELADO,

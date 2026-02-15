@@ -43,7 +43,8 @@ export default function VacationBalancePage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/vacation-balance/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['vacation-balance'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['vacation-balance'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -53,6 +54,7 @@ export default function VacationBalancePage() {
 
     const { data: balancesRes, isLoading } = useQuery({
         queryKey: ['vacation-balances'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/vacation-balances').then(r => r.data?.data ?? []),
     })
 

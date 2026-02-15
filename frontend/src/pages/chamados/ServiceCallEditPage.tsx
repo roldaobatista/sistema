@@ -66,6 +66,7 @@ export function ServiceCallEditPage() {
 
     const { data: serviceCall, isLoading: loadingCall, isError: callError } = useQuery({
         queryKey: ['service-call', id],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/service-calls/${id}`).then((r) => r.data),
         enabled: !!id,
     })
@@ -98,6 +99,7 @@ export function ServiceCallEditPage() {
         isError: customersError,
     } = useQuery({
         queryKey: ['service-call-edit-customers', customerSearch],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () =>
             api.get('/customers', { params: { search: customerSearch || undefined, per_page: 50 } }).then((r) => r.data),
     })
@@ -105,6 +107,7 @@ export function ServiceCallEditPage() {
 
     const { data: assigneesRes, isError: assigneesError } = useQuery({
         queryKey: ['service-call-assignees'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
         enabled: canAssign,
     })
@@ -117,6 +120,7 @@ export function ServiceCallEditPage() {
         isError: equipmentsError,
     } = useQuery({
         queryKey: ['service-call-edit-equipments', form.customer_id],
+        const { data } = useQuery({
         queryFn: () =>
             api.get('/equipments', { params: { customer_id: form.customer_id, per_page: 100 } }).then((r) => r.data),
         enabled: canViewEquipment && !!form.customer_id,
@@ -155,7 +159,7 @@ export function ServiceCallEditPage() {
         },
         onSuccess: () => {
             toast.success('Chamado atualizado com sucesso')
-            queryClient.invalidateQueries({ queryKey: ['service-call', id] })
+                queryClient.invalidateQueries({ queryKey: ['service-call', id] })
             queryClient.invalidateQueries({ queryKey: ['service-calls'] })
             queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
             navigate(`/chamados/${id}`)

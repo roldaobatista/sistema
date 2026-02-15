@@ -9,6 +9,7 @@ use App\Services\Auvo\AuvoApiClient;
 use App\Services\Auvo\AuvoImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AuvoImportController extends Controller
@@ -56,13 +57,14 @@ class AuvoImportController extends Controller
             $service = new AuvoImportService($client);
             $limit = min((int) $request->get('limit', 10), 50);
 
-            $records = $service->preview($entity, $limit);
+            $result = $service->preview($entity, $limit);
 
             return response()->json([
                 'entity' => $entity,
                 'entity_label' => AuvoImport::ENTITY_TYPES[$entity],
-                'count' => count($records),
-                'records' => $records,
+                'total' => $result['total'],
+                'sample' => $result['sample'],
+                'mapped_fields' => $result['mapped_fields'],
             ]);
         } catch (\Exception $e) {
             Log::error('Auvo preview failed', ['entity' => $entity, 'error' => $e->getMessage()]);
@@ -93,12 +95,10 @@ class AuvoImportController extends Controller
 
             $result = $service->importEntity($entity, $tenantId, $userId, $strategy);
 
-            return response()->json([
+            return response()->json(array_merge([
                 'message' => 'Importação concluída',
-                'entity' => $entity,
                 'entity_label' => AuvoImport::ENTITY_TYPES[$entity],
-                'result' => $result,
-            ]);
+            ], $result));
         } catch (\Exception $e) {
             Log::error('Auvo import failed', ['entity' => $entity, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro na importação: ' . $e->getMessage()], 500);
@@ -124,8 +124,8 @@ class AuvoImportController extends Controller
             $totalInserted = 0;
             $totalErrors = 0;
             foreach ($results as $r) {
-                $totalInserted += $r['inserted'] ?? 0;
-                $totalErrors += $r['errors'] ?? 0;
+                $totalInserted += $r['total_imported'] ?? 0;
+                $totalErrors += $r['total_errors'] ?? 0;
             }
 
             return response()->json([
@@ -313,9 +313,9 @@ class AuvoImportController extends Controller
             $statuses[$entity] = [
                 'label' => $label,
                 'last_synced_at' => $lastImport?->last_synced_at,
-                'last_inserted' => $lastImport?->inserted ?? 0,
-                'last_updated' => $lastImport?->updated ?? 0,
-                'last_errors' => $lastImport?->errors ?? 0,
+                'last_inserted' => $lastImport?->total_imported ?? 0,
+                'last_updated' => $lastImport?->total_updated ?? 0,
+                'last_errors' => $lastImport?->total_errors ?? 0,
                 'total_mapped' => $mappingCount,
             ];
         }
@@ -326,5 +326,38 @@ class AuvoImportController extends Controller
             'entities' => $statuses,
             'total_mappings' => $totalMappings,
         ]);
+    }
+
+    /**
+     * Delete a specific import history record.
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $tenantId = request()->user()->current_tenant_id;
+
+        $import = AuvoImport::where('id', $id)
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        if (!$import) {
+            return response()->json(['message' => 'Registro de importação não encontrado'], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Remove associated mappings
+            AuvoIdMapping::where('import_id', $import->id)->delete();
+
+            $import->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Registro de importação removido com sucesso']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to delete auvo import', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover registro'], 500);
+        }
     }
 }

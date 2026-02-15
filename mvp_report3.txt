@@ -1,0 +1,153 @@
+﻿=== KALIBRIUM MVP AUDIT ===
+
+Backend: 751 routes, 139 controllers
+
+Frontend: 172 pages, 152 routes in App.tsx
+
+--- MODULE SCORES ---
+
+ÔØî admin ÔÇö 55% (1 pages, 319 lines)
+    ÔÜá´©Å AuditLogPage (55%) ÔÇö missing: mutation, toast, error
+ÔÜá´©Å automacao ÔÇö 75% (1 pages, 180 lines)
+ÔÜá´©Å avancado ÔÇö 65% (1 pages, 265 lines)
+    ÔÜá´©Å AdvancedFeaturesPage (65%) ÔÇö missing: toast, error, delete-confirm
+Ô£à cadastros ÔÇö 84% (8 pages, 3451 lines)
+    ÔÜá´©Å Customer360Page (60%) ÔÇö missing: mutation, error, delete-confirm
+    ÔÜá´©Å PriceHistoryPage (55%) ÔÇö missing: mutation, toast, delete-confirm
+ÔÜá´©Å central ÔÇö 70% (3 pages, 895 lines)
+    ÔÜá´©Å CentralDashboardPage (40%) ÔÇö missing: mutation, toast, error, search, delete-confirm
+ÔÜá´©Å chamados ÔÇö 77% (6 pages, 2772 lines)
+    ÔÜá´©Å ServiceCallMapPage (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+    ÔÜá´©Å TechnicianAgendaPage (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+Ô£à configuracoes ÔÇö 82% (5 pages, 1889 lines)
+    ÔÜá´©Å AuditLogsPage (55%) ÔÇö missing: mutation, toast, error
+ÔØî emails ÔÇö 44% (3 pages, 1119 lines)
+    ÔØî EmailComposePage (32%) ÔÇö missing: query, mutation, toast, empty, error, delete-confirm
+    ÔÜá´©Å EmailInboxPage (60%) ÔÇö missing: query, mutation, delete-confirm
+    ÔÜá´©Å EmailSettingsPage (40%) ÔÇö missing: query, mutation, toast, error, delete-confirm
+Ô£à equipamentos ÔÇö 87% (5 pages, 2153 lines)
+    ÔÜá´©Å EquipmentCalendarPage (60%) ÔÇö missing: mutation, toast, delete-confirm
+ÔÜá´©Å estoque ÔÇö 67% (11 pages, 2827 lines)
+    ÔØî BatchManagementPage (20%) ÔÇö missing: query, mutation, toast, loading, error, delete-confirm
+    ÔÜá´©Å InventoryListPage (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+    ÔÜá´©Å KardexPage (50%) ÔÇö missing: mutation, toast, error, delete-confirm
+    ÔÜá´©Å StockDashboardPage (45%) ÔÇö missing: mutation, toast, error, search, delete-confirm
+    ÔÜá´©Å StockIntelligencePage (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+Ô£à financeiro ÔÇö 88% (17 pages, 8941 lines)
+    ÔÜá´©Å CashFlowPage (65%) ÔÇö missing: mutation, toast, delete-confirm
+    ÔÜá´©Å CommissionDashboardPage (42%) ÔÇö missing: mutation, toast, empty, error, delete-confirm
+    ÔÜá´©Å FuelingLogsPage (50%) ÔÇö missing: query, mutation, error
+    ÔÜá´©Å ReconciliationDashboardPage (55%) ÔÇö missing: mutation, toast, delete-confirm
+Ô£à fiscal ÔÇö 86% (2 pages, 645 lines)
+ÔÜá´©Å fleet ÔÇö 67% (1 pages, 128 lines)
+    ÔÜá´©Å FleetPage (67%) ÔÇö missing: mutation, empty, delete-confirm
+ÔØî fleet/components ÔÇö 56% (13 pages, 1408 lines)
+    ÔÜá´©Å DriverScoreTab (40%) ÔÇö missing: mutation, toast, error, search, delete-confirm
+    ÔÜá´©Å FleetDashboardTab (50%) ÔÇö missing: mutation, toast, search, delete-confirm
+    ÔÜá´©Å FleetFinesTab (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+    ÔÜá´©Å FleetFuelTab (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+    ÔÜá´©Å FleetInspectionsTab (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+    ÔÜá´©Å FleetTiresTab (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+    ÔØî FuelComparisonTab (32%) ÔÇö missing: query, toast, empty, error, search, delete-confirm
+    ÔÜá´©Å GpsLiveTab (40%) ÔÇö missing: mutation, toast, error, search, delete-confirm
+    ÔÜá´©Å VehiclesTab (50%) ÔÇö missing: mutation, toast, error, delete-confirm
+ÔØî ia ÔÇö 40% (1 pages, 718 lines)
+    ÔÜá´©Å AIAnalyticsPage (40%) ÔÇö missing: query, mutation, toast, delete-confirm
+Ô£à iam ÔÇö 97% (3 pages, 1589 lines)
+Ô£à importacao ÔÇö 95% (1 pages, 1336 lines)
+ÔØî inmetro ÔÇö 46% (17 pages, 4738 lines)
+    ÔØî InmetroCompetitorPage (25%) ÔÇö missing: query, mutation, toast, error, search, delete-confirm
+    ÔØî InmetroCompetitorsPage (35%) ÔÇö missing: query, mutation, toast, error, delete-confirm
+    ÔØî InmetroCompliancePage (30%) ÔÇö missing: query, mutation, toast, error, delete-confirm
+    ÔØî InmetroExecutivePage (17%) ÔÇö missing: query, mutation, toast, empty, error, search, delete-confirm
+    ÔÜá´©Å InmetroImportPage (47%) ÔÇö missing: query, mutation, empty, delete-confirm
+    ÔÜá´©Å InmetroInstrumentsPage (60%) ÔÇö missing: query, mutation, delete-confirm
+    ÔÜá´©Å InmetroLeadsPage (65%) ÔÇö missing: query, mutation
+    ÔØî InmetroMapPage (30%) ÔÇö missing: query, mutation, toast, error, delete-confirm
+    ÔØî InmetroMarketPage (22%) ÔÇö missing: query, mutation, toast, empty, error, delete-confirm
+    ÔÜá´©Å InmetroOwnerDetailPage (60%) ÔÇö missing: query, mutation
+    ÔÜá´©Å InmetroOwnerEditModal (47%) ÔÇö missing: query, mutation, empty, search, delete-confirm
+    ÔØî InmetroProspectionPage (30%) ÔÇö missing: query, mutation, toast, error, delete-confirm
+    ÔÜá´©Å InmetroStatusUpdateModal (47%) ÔÇö missing: query, mutation, empty, search, delete-confirm
+    ÔØî InmetroWebhooksPage (30%) ÔÇö missing: query, mutation, toast, error, delete-confirm
+ÔÜá´©Å integracao ÔÇö 62% (1 pages, 448 lines)
+    ÔÜá´©Å AuvoImportPage (62%) ÔÇö missing: mutation, empty, delete-confirm
+Ô£à notificacoes ÔÇö 80% (1 pages, 198 lines)
+ÔØî operational/checklists ÔÇö 45% (1 pages, 110 lines)
+    ÔÜá´©Å ChecklistPage (45%) ÔÇö missing: mutation, toast, error, delete-confirm
+ÔØî operational/checklists/components ÔÇö 42% (2 pages, 428 lines)
+    ÔÜá´©Å ChecklistBuilder (42%) ÔÇö missing: query, mutation, loading, empty, delete-confirm
+    ÔÜá´©Å ChecklistForm (42%) ÔÇö missing: query, mutation, loading, empty, delete-confirm
+Ô£à orcamentos ÔÇö 89% (4 pages, 1461 lines)
+Ô£à os ÔÇö 84% (8 pages, 3155 lines)
+    ÔÜá´©Å SlaDashboardPage (40%) ÔÇö missing: mutation, toast, error, search, delete-confirm
+ÔØî portal ÔÇö 54% (6 pages, 958 lines)
+    ÔÜá´©Å PortalFinancialsPage (55%) ÔÇö missing: mutation, toast, delete-confirm
+    ÔØî PortalLoginPage (27%) ÔÇö missing: query, mutation, toast, loading, empty, search, delete-confirm
+    ÔØî PortalServiceCallPage (37%) ÔÇö missing: query, mutation, loading, empty, search, delete-confirm
+    ÔÜá´©Å PortalWorkOrdersPage (55%) ÔÇö missing: mutation, toast, delete-confirm
+ÔÜá´©Å qualidade ÔÇö 75% (1 pages, 280 lines)
+ÔÜá´©Å relatorios ÔÇö 70% (1 pages, 955 lines)
+ÔÜá´©Å rh ÔÇö 72% (20 pages, 5597 lines)
+    ÔÜá´©Å AccountingReportsPage (47%) ÔÇö missing: query, mutation, empty, delete-confirm
+    ÔÜá´©Å BenefitsPage (65%) ÔÇö missing: query, mutation
+    ÔÜá´©Å OrgChartPage (40%) ÔÇö missing: query, mutation, toast, error
+    ÔÜá´©Å PeopleAnalyticsPage (42%) ÔÇö missing: mutation, toast, empty, search, delete-confirm
+    ÔÜá´©Å PerformancePage (65%) ÔÇö missing: mutation, error, delete-confirm
+    ÔØî PerformanceReviewDetailPage (37%) ÔÇö missing: query, mutation, empty, error, delete-confirm
+    ÔÜá´©Å RecruitmentKanbanPage (52%) ÔÇö missing: query, mutation, empty, delete-confirm
+    ÔÜá´©Å RecruitmentPage (65%) ÔÇö missing: query, mutation
+    ÔÜá´©Å SkillsMatrixPage (40%) ÔÇö missing: query, mutation, toast, error
+    ÔÜá´©Å VacationBalancePage (50%) ÔÇö missing: mutation, toast, error, delete-confirm
+ÔÜá´©Å root ÔÇö 69% (5 pages, 1698 lines)
+    ÔÜá´©Å CrmDashboardPage (60%) ÔÇö missing: mutation, toast, delete-confirm
+    ÔÜá´©Å LoginPage (52%) ÔÇö missing: query, mutation, empty, delete-confirm
+ÔØî tech ÔÇö 38% (16 pages, 3491 lines)
+    ÔØî TechBarcodePage (37%) ÔÇö missing: query, mutation, empty, error, delete-confirm
+    ÔØî TechBluetoothPrintPage (30%) ÔÇö missing: query, mutation, loading, error, search, delete-confirm
+    ÔØî TechChatPage (35%) ÔÇö missing: query, mutation, toast, error, delete-confirm
+    ÔØî TechChecklistPage (35%) ÔÇö missing: query, mutation, toast, loading, delete-confirm
+    ÔÜá´©Å TechExpensePage (45%) ÔÇö missing: query, mutation, loading, delete-confirm
+    ÔÜá´©Å TechPhotoAnnotationPage (45%) ÔÇö missing: query, mutation, loading, delete-confirm
+    ÔØî TechPhotosPage (30%) ÔÇö missing: query, mutation, toast, loading, delete-confirm
+    ÔØî TechProfilePage (22%) ÔÇö missing: query, mutation, toast, loading, empty, delete-confirm
+    ÔØî TechSettingsPage (27%) ÔÇö missing: query, mutation, loading, empty, error, delete-confirm
+    ÔØî TechSignaturePage (17%) ÔÇö missing: query, mutation, toast, loading, empty, search, delete-confirm
+    ÔØî TechThermalCameraPage (35%) ÔÇö missing: query, mutation, loading, error, delete-confirm
+    ÔØî TechVoiceReportPage (32%) ÔÇö missing: query, mutation, empty, error, search, delete-confirm
+    ÔÜá´©Å TechWidgetPage (55%) ÔÇö missing: mutation, toast, search, delete-confirm
+    ÔØî TechWorkOrderDetailPage (37%) ÔÇö missing: query, mutation, loading, empty, delete-confirm
+    ÔÜá´©Å TechWorkOrdersPage (40%) ÔÇö missing: query, mutation, toast, delete-confirm
+Ô£à tecnicos ÔÇö 98% (3 pages, 1322 lines)
+ÔØî tecnicos/components ÔÇö 31% (3 pages, 536 lines)
+    ÔØî TechnicianGantt (12%) ÔÇö missing: query, mutation, toast, loading, empty, error, delete-confirm
+    ÔØî TechnicianMap (37%) ÔÇö missing: query, mutation, loading, empty, delete-confirm
+    ÔÜá´©Å TechnicianRecommendationSelector (45%) ÔÇö missing: query, mutation, loading, delete-confirm
+ÔØî tv ÔÇö 43% (1 pages, 366 lines)
+    ÔÜá´©Å TvDashboard (43%) ÔÇö missing: mutation, toast, search, permission, delete-confirm
+
+--- SUMMARY ---
+
+Overall MVP Score: 68%
+Modules >= 80%: 11/33
+Modules < 60%: 11/33
+Total pages: 172
+Total lines: 56376
+
+--- BACKEND QUALITY ---
+
+Controllers with DB::transaction: 78/139
+Controllers with try/catch: 98/139
+Controllers with authorize: 13/139
+
+Controllers sem try/catch (>2 methods):
+  ÔÜá´©Å Api\Stock\WarehouseController.php (5 methods)
+  ÔÜá´©Å Api\V1\AIAnalyticsController.php (15 methods)
+  ÔÜá´©Å Api\V1\AuditLogController.php (5 methods)
+  ÔÜá´©Å Api\V1\BatchExportController.php (3 methods)
+  ÔÜá´©Å Api\V1\CrmMessageController.php (8 methods)
+  ÔÜá´©Å Api\V1\Email\EmailNoteController.php (3 methods)
+  ÔÜá´©Å Api\V1\Email\EmailSignatureController.php (4 methods)
+  ÔÜá´©Å Api\V1\Email\EmailTagController.php (5 methods)
+  ÔÜá´©Å Api\V1\Email\EmailTemplateController.php (5 methods)
+  ÔÜá´©Å Api\V1\EmployeeBenefitController.php (5 methods)

@@ -374,7 +374,7 @@ class CommissionController extends Controller
 
             $splits = [];
             foreach ($validated['splits'] as $s) {
-                $amount = round($baseAmount * ($s['percentage'] / 100), 2);
+                $amount = bcmul((string) $baseAmount, bcdiv((string) $s['percentage'], '100', 6), 2);
                 $splitId = DB::table('commission_splits')->insertGetId([
                     'tenant_id' => $tenantId,
                     'commission_event_id' => $commissionEvent->id,
@@ -450,11 +450,15 @@ class CommissionController extends Controller
                     'total_amount' => $events->sum('commission_amount'),
                     'events_count' => $events->count(),
                     'status' => CommissionSettlement::STATUS_CLOSED,
+                    'closed_by' => auth()->id(),
+                    'closed_at' => now(),
                     'paid_at' => null,
                 ]
             );
 
-            // Events stay APPROVED — they will be marked PAID only when paySettlement is called
+            // Vincular eventos ao settlement
+            CommissionEvent::whereIn('id', $events->pluck('id'))
+                ->update(['settlement_id' => $settlement->id]);
 
             return $settlement;
         });
@@ -473,8 +477,8 @@ class CommissionController extends Controller
             return $this->error('Fechamento já está pago', 422);
         }
 
-        if ($commissionSettlement->status !== CommissionSettlement::STATUS_CLOSED) {
-            return $this->error('Somente fechamentos com status fechado podem ser pagos', 422);
+        if (!in_array($commissionSettlement->status, [CommissionSettlement::STATUS_CLOSED, CommissionSettlement::STATUS_APPROVED], true)) {
+            return $this->error('Somente fechamentos com status FECHADO ou APROVADO podem ser pagos', 422);
         }
 
         DB::beginTransaction();
@@ -484,12 +488,10 @@ class CommissionController extends Controller
                 'paid_at' => now(),
             ]);
 
-            // Marcar eventos do período que ainda estejam aprovados como pagos
-            $eventsQuery = CommissionEvent::where('tenant_id', $commissionSettlement->tenant_id)
-                ->where('user_id', $commissionSettlement->user_id)
-                ->where('status', CommissionEvent::STATUS_APPROVED);
-            $this->wherePeriod($eventsQuery, 'created_at', $commissionSettlement->period);
-            $eventsQuery->update(['status' => CommissionEvent::STATUS_PAID]);
+            // Marcar eventos vinculados a este settlement como pagos
+            CommissionEvent::where('settlement_id', $commissionSettlement->id)
+                ->where('status', CommissionEvent::STATUS_APPROVED)
+                ->update(['status' => CommissionEvent::STATUS_PAID]);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -512,23 +514,30 @@ class CommissionController extends Controller
             return $this->error('Fechamento já foi pago e não pode ser reaberto', 422);
         }
 
-        if ($commissionSettlement->status !== CommissionSettlement::STATUS_CLOSED) {
-            return $this->error('Somente fechamentos com status fechado podem ser reabertos', 422);
+        if (!in_array($commissionSettlement->status, [
+            CommissionSettlement::STATUS_CLOSED,
+            CommissionSettlement::STATUS_APPROVED,
+            CommissionSettlement::STATUS_REJECTED,
+        ], true)) {
+            return $this->error('Somente fechamentos fechados, aprovados ou rejeitados podem ser reabertos', 422);
         }
 
         try {
             DB::transaction(function () use ($commissionSettlement) {
-                $commissionSettlement->update(['status' => CommissionSettlement::STATUS_OPEN, 'paid_at' => null]);
+                $commissionSettlement->update([
+                    'status' => CommissionSettlement::STATUS_OPEN,
+                    'paid_at' => null,
+                    'closed_by' => null,
+                    'closed_at' => null,
+                    'approved_by' => null,
+                    'approved_at' => null,
+                    'rejection_reason' => null,
+                ]);
 
-                $periodStart = \Illuminate\Support\Carbon::parse($commissionSettlement->period . '-01');
-                $periodEnd = $periodStart->copy()->addMonth();
-
-                CommissionEvent::where('tenant_id', $commissionSettlement->tenant_id)
-                    ->where('user_id', $commissionSettlement->user_id)
-                    ->where('status', CommissionEvent::STATUS_APPROVED)
-                    ->where('created_at', '>=', $periodStart)
-                    ->where('created_at', '<', $periodEnd)
-                    ->update(['status' => CommissionEvent::STATUS_PENDING]);
+                // Reverter eventos vinculados a este settlement para pendente
+                CommissionEvent::where('settlement_id', $commissionSettlement->id)
+                    ->whereIn('status', [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])
+                    ->update(['status' => CommissionEvent::STATUS_PENDING, 'settlement_id' => null]);
             });
         } catch (\Exception $e) {
             Log::error('Falha ao reabrir fechamento', ['error' => $e->getMessage(), 'settlement_id' => $commissionSettlement->id]);

@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; variant: any; dot?: boolean }> = {
     open: { label: 'Aberta', variant: 'info', dot: true },
+    awaiting_dispatch: { label: 'Aguard. Despacho', variant: 'warning', dot: true },
     in_progress: { label: 'Em Andamento', variant: 'warning', dot: true },
     waiting_parts: { label: 'Aguard. Peças', variant: 'warning' },
     waiting_approval: { label: 'Aguard. Aprovação', variant: 'brand' },
@@ -93,12 +94,12 @@ export function WorkOrdersListPage() {
         mutationFn: (id: number) => api.delete(`/work-orders/${id}`),
         onSuccess: () => {
             toast.success('OS excluída com sucesso')
-            qc.invalidateQueries({ queryKey: ['work-orders'] })
+                qc.invalidateQueries({ queryKey: ['work-orders'] })
             setDeleteId(null)
         },
         onError: (err: any) => {
             toast.error(err?.response?.data?.message || 'Erro ao excluir OS')
-            setDeleteId(null)
+                setDeleteId(null)
         },
     })
 
@@ -161,7 +162,7 @@ export function WorkOrdersListPage() {
                 })).filter(g => g.count > 0)
                 const gtotal = groups.reduce((s, g) => s + g.count, 0)
                 const colors: Record<string, string> = {
-                    open: 'bg-sky-500', in_progress: 'bg-amber-500', waiting_parts: 'bg-amber-300',
+                    open: 'bg-sky-500', awaiting_dispatch: 'bg-amber-400', in_progress: 'bg-amber-500', waiting_parts: 'bg-amber-300',
                     waiting_approval: 'bg-brand-400', completed: 'bg-emerald-500', delivered: 'bg-emerald-300',
                     invoiced: 'bg-brand-500', cancelled: 'bg-red-400',
                 }
@@ -336,7 +337,7 @@ export function WorkOrdersListPage() {
                         <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
                         <Button
                             variant="danger"
-                            onClick={() => { if (deleteId) { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(deleteId) } }}
+                            onClick={() => { if (deleteId) deleteMut.mutate(deleteId) }}
                             loading={deleteMut.isPending}
                         >
                             Excluir

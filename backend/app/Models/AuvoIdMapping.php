@@ -12,7 +12,7 @@ class AuvoIdMapping extends Model
     protected $table = 'auvo_id_mappings';
 
     protected $fillable = [
-        'tenant_id', 'entity_type', 'auvo_id', 'local_id',
+        'tenant_id', 'entity_type', 'auvo_id', 'local_id', 'import_id',
     ];
 
     protected function casts(): array
@@ -52,13 +52,13 @@ class AuvoIdMapping extends Model
     /**
      * Create or update a mapping entry.
      */
-    public static function mapOrCreate(string $entity, int $auvoId, ?int $localId, int $tenantId): self
+    public static function mapOrCreate(string $entity, int|string $auvoId, ?int $localId, int $tenantId): self
     {
         return static::updateOrCreate(
             [
                 'tenant_id' => $tenantId,
                 'entity_type' => $entity,
-                'auvo_id' => $auvoId,
+                'auvo_id' => (int) $auvoId,
             ],
             [
                 'local_id' => $localId,

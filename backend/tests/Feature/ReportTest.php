@@ -72,6 +72,7 @@ class ReportTest extends TestCase
             'reports.equipments_report.export',
             'reports.suppliers_report.export',
             'reports.stock_report.export',
+            'reports.customers_report.export',
         ];
 
         foreach ($exportPermissions as $permission) {
@@ -623,6 +624,7 @@ class ReportTest extends TestCase
             'equipments',
             'suppliers',
             'stock',
+            'customers',
         ];
 
         foreach ($types as $type) {

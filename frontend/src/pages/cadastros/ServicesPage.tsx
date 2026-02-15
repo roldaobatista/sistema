@@ -45,12 +45,14 @@ export function ServicesPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['services', debouncedSearch],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/services', { params: { search: debouncedSearch, per_page: 50 } }),
     })
     const services: Service[] = res?.data?.data ?? []
 
     const { data: catsRes } = useQuery({
         queryKey: ['service-categories'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-categories'),
     })
     const categories = catsRes?.data ?? []

@@ -111,7 +111,7 @@ class AuvoImportServiceTest extends TestCase
         $service = $this->makeService();
         $result = $service->importEntity('customers', $this->tenant->id, $this->user->id, 'skip');
 
-        $this->assertGreaterThanOrEqual(1, $result['inserted']);
+        $this->assertGreaterThanOrEqual(1, $result['total_imported']);
         $this->assertEquals('completed', $result['status']);
 
         $this->assertDatabaseHas('customers', [
@@ -157,8 +157,8 @@ class AuvoImportServiceTest extends TestCase
         $service = $this->makeService();
         $result = $service->importEntity('customers', $this->tenant->id, $this->user->id, 'skip');
 
-        $this->assertEquals(0, $result['inserted']);
-        $this->assertEquals(1, $result['skipped']);
+        $this->assertEquals(0, $result['total_imported']);
+        $this->assertEquals(1, $result['total_skipped']);
 
         // Original name should be preserved
         $this->assertDatabaseHas('customers', [
@@ -197,8 +197,8 @@ class AuvoImportServiceTest extends TestCase
         $service = $this->makeService();
         $result = $service->importEntity('customers', $this->tenant->id, $this->user->id, 'update');
 
-        $this->assertEquals(1, $result['updated']);
-        $this->assertEquals(0, $result['inserted']);
+        $this->assertEquals(1, $result['total_updated']);
+        $this->assertEquals(0, $result['total_imported']);
 
         $existing->refresh();
         $this->assertEquals('Updated Name', $existing->name);
@@ -249,7 +249,7 @@ class AuvoImportServiceTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'entity_type' => 'customers',
             'auvo_id' => '999',
-            'kalibrium_id' => $customer->id,
+            'local_id' => $customer->id,
             'import_id' => $import->id,
         ]);
 
@@ -259,12 +259,12 @@ class AuvoImportServiceTest extends TestCase
         $this->assertEquals(1, $result['deleted']);
         $this->assertEquals('rolled_back', $result['status']);
 
-        // Customer soft-deleted
-        $this->assertSoftDeleted('customers', ['id' => $customer->id]);
+        // Customer deleted (hard delete — Customer model does not use SoftDeletes)
+        $this->assertDatabaseMissing('customers', ['id' => $customer->id]);
 
         // Mappings removed
         $this->assertDatabaseMissing('auvo_id_mappings', [
-            'import_id' => $import->id,
+            'local_id' => $customer->id,
         ]);
 
         // Import record updated

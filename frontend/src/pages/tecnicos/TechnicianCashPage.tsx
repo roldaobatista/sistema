@@ -84,16 +84,19 @@ export function TechnicianCashPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['tech-cash-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technician-cash-summary'),
     })
 
     const { data: fundsRes } = useQuery({
         queryKey: ['tech-cash-funds'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technician-cash'),
     })
 
     const { data: detailRes, isLoading: detailLoading } = useQuery({
         queryKey: ['tech-cash-detail', selectedTech, page, filters],
+        const { data } = useQuery({
         queryFn: () => api.get(`/technician-cash/${selectedTech}`, {
             params: { page, ...filters }
         }),
@@ -126,6 +129,7 @@ export function TechnicianCashPage() {
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-cash'],
+        const { data } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const allTechnicians: Technician[] = techsRes?.data ?? []

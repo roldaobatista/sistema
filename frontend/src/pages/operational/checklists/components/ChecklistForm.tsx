@@ -12,7 +12,6 @@ import { Check, Loader2, Upload, X, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 function PhotoUploadField({
     itemId,
@@ -67,7 +66,7 @@ function PhotoUploadField({
             toast.success('Foto enviada com sucesso')
         } catch (error: any) {
             toast.error(error?.response?.data?.message ?? 'Erro ao enviar foto')
-            setPreview(null)
+                setPreview(null)
             onChange(null)
         } finally {
             setUploading(false)
@@ -143,33 +142,9 @@ interface ChecklistFormProps {
 
 export function ChecklistForm({ checklist, workOrderId, onSuccess }: ChecklistFormProps) {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['checklist-form'],
-    queryFn: () => api.get('/checklist-form').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/checklist-form/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['checklist-form'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-
-  // MVP: Loading/Error/Empty states
-  if (isLoading) return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
-  if (isError) return <div className="flex flex-col items-center justify-center p-8 text-red-500"><AlertCircle className="h-8 w-8 mb-2" /><p>Erro ao carregar dados</p><button onClick={() => refetch()} className="mt-2 text-blue-500 underline">Tentar novamente</button></div>
-  if (!items || (Array.isArray(items) && items.length === 0)) return <div className="flex flex-col items-center justify-center p-8 text-gray-400"><Inbox className="h-12 w-12 mb-2" /><p>Nenhum registro encontrado</p></div>
-  const { user } = useAuthStore()
-  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
-    const [isSubmitting, setIsSubmitting] = useState(false)
-
     // Dynamic schema generation based on items
     const generateSchema = () => {
         const shape: Record<string, z.ZodTypeAny> = {}
-  const [searchTerm, setSearchTerm] = useState('')
         checklist.items.forEach(item => {
             shape[item.id] = item.required
                 ? z.string().min(1, 'Este campo é obrigatório')

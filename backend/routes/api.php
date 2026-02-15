@@ -84,8 +84,8 @@ Route::prefix('v1')->group(function () {
             Route::post('users/{user}/force-logout', [UserController::class, 'forceLogout']);
             Route::get('users/{user}/sessions', [UserController::class, 'sessions']);
             Route::delete('users/{user}/sessions/{token}', [UserController::class, 'revokeSession']);
-            Route::get('users/{user}/audit-trail', [UserController::class, 'auditTrail']);
         });
+        Route::middleware('check.permission:iam.audit_log.view')->get('users/{user}/audit-trail', [UserController::class, 'auditTrail']);
         Route::middleware('check.permission:iam.user.delete')->delete('users/{user}', [UserController::class, 'destroy']);
         Route::middleware('check.permission:iam.role.view')->group(function () {
             Route::apiResource('roles', RoleController::class)->only(['index', 'show']);
@@ -754,6 +754,13 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:auvo.import.delete')->group(function () {
             Route::post('auvo/rollback/{id}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'rollback']);
+            Route::delete('auvo/history/{id}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'destroy']);
+        });
+        Route::middleware('check.permission:auvo.export.execute')->group(function () {
+            Route::post('auvo/export/customer/{customer}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportCustomer']);
+            Route::post('auvo/export/product/{product}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportProduct']);
+            Route::post('auvo/export/service/{service}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportService']);
+            Route::post('auvo/export/quote/{quote}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportQuote']);
         });
 
         // InteligÃªncia INMETRO
@@ -887,27 +894,8 @@ Route::prefix('v1')->group(function () {
         });
 
         // â”€â”€â”€ IntegraÃ§Ã£o Auvo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        Route::middleware('check.permission:auvo.import.view')->group(function () {
-            Route::get('auvo/status', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'testConnection']);
-            Route::get('auvo/sync-status', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'syncStatus']);
-            Route::get('auvo/preview/{entity}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'preview']);
-            Route::get('auvo/history', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'history']);
-            Route::get('auvo/mappings', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'mappings']);
-        });
-        Route::middleware('check.permission:auvo.import.execute')->group(function () {
-            Route::post('auvo/import/{entity}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'import']);
-            Route::post('auvo/import-all', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'importAll']);
-            Route::post('auvo/rollback/{id}', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'rollback']);
-            Route::put('auvo/config', [\App\Http\Controllers\Api\V1\AuvoImportController::class, 'config']);
-        });
 
-        // Auvo Export (Sistema -> Auvo)
-        Route::middleware('check.permission:auvo.export.execute')->group(function () {
-            Route::post('auvo/export/customer/{customer}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportCustomer']);
-            Route::post('auvo/export/product/{product}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportProduct']);
-            Route::post('auvo/export/service/{service}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportService']);
-            Route::post('auvo/export/quote/{quote}', [\App\Http\Controllers\Api\V1\AuvoExportController::class, 'exportQuote']);
-        });
+
 
         // ConfiguraÃ§Ãµes + Auditoria
         Route::middleware('check.permission:platform.settings.view')->get('settings', [\App\Http\Controllers\Api\V1\SettingsController::class, 'index']);

@@ -5,6 +5,8 @@ namespace App\Enums;
 enum QuoteStatus: string
 {
     case DRAFT = 'draft';
+    case PENDING_INTERNAL_APPROVAL = 'pending_internal_approval';
+    case INTERNALLY_APPROVED = 'internally_approved';
     case SENT = 'sent';
     case APPROVED = 'approved';
     case REJECTED = 'rejected';
@@ -15,6 +17,8 @@ enum QuoteStatus: string
     {
         return match ($this) {
             self::DRAFT => 'Rascunho',
+            self::PENDING_INTERNAL_APPROVAL => 'Aguard. Aprovação Interna',
+            self::INTERNALLY_APPROVED => 'Aprovado Internamente',
             self::SENT => 'Enviado',
             self::APPROVED => 'Aprovado',
             self::REJECTED => 'Rejeitado',
@@ -27,6 +31,8 @@ enum QuoteStatus: string
     {
         return match ($this) {
             self::DRAFT => 'bg-surface-100 text-surface-700',
+            self::PENDING_INTERNAL_APPROVAL => 'bg-amber-100 text-amber-700',
+            self::INTERNALLY_APPROVED => 'bg-teal-100 text-teal-700',
             self::SENT => 'bg-blue-100 text-blue-700',
             self::APPROVED => 'bg-emerald-100 text-emerald-700',
             self::REJECTED => 'bg-red-100 text-red-700',

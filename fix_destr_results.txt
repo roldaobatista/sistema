@@ -1,0 +1,46 @@
+﻿=== DESTRUCTURING + COLLAPSED FIX ===
+  DESTRUCTURING_MVP CrmPipelinePage.tsx:257: const { setNodeRef, isOver } = useDroppable({ id: `stage-${s
+  DESTRUCTURING_MVP MessageTemplatesPage.tsx:192: const [name, setName] = useState(template?.name ?? '')
+  DESTRUCTURING_MVP MessageTemplatesPage.tsx:192: const [slug, setSlug] = useState(template?.slug ?? '')
+  DESTRUCTURING_MVP MessageTemplatesPage.tsx:192: const [channel, setChannel] = useState<Channel>(template?.ch
+  DESTRUCTURING_MVP MessageTemplatesPage.tsx:192: const [subject, setSubject] = useState(template?.subject ?? 
+  DESTRUCTURING_MVP MessageTemplatesPage.tsx:192: const [body, setBody] = useState(template?.body ?? '')
+  DESTRUCTURING_MVP EquipmentDetailPage.tsx:467: const [form, setForm] = useState<CalibrationForm>({ ...empty
+  DESTRUCTURING_MVP EquipmentDetailPage.tsx:467: const [fieldErrors, setFieldErrors] = useState<Record<string
+  DESTRUCTURING_MVP EquipmentDetailPage.tsx:467: const [swSearch, setSwSearch] = useState('')
+  DESTRUCTURING_MVP FiscalEmitirDialog.tsx:23: const { user } = useAuthStore()
+  DESTRUCTURING_MVP FiscalEmitirDialog.tsx:23: const hasPermission = (p: string) => user?.all_permissions?.
+  DESTRUCTURING_MVP FiscalEmitirDialog.tsx:26: const [customerId, setCustomerId] = useState<number | ''>(''
+  DESTRUCTURING_MVP FiscalEmitirDialog.tsx:26: const [workOrderId, setWorkOrderId] = useState<number | ''>(
+  DESTRUCTURING_MVP FiscalEmitirDialog.tsx:26: const [items, setItems] = useState<ItemRow[]>([
+  DESTRUCTURING_MVP UsersPage.tsx:842: const { data, isLoading, isError } = useQuery({
+  DESTRUCTURING_MVP InmetroMarketPage.tsx:272: const [showAll, setShowAll] = useState(false)
+  DESTRUCTURING_MVP InmetroOwnerEditModal.tsx:33: // MVP: Search
+  DESTRUCTURING_MVP InmetroOwnerEditModal.tsx:33: const [searchTerm, setSearchTerm] = useState('')
+  DESTRUCTURING_MVP InmetroOwnerEditModal.tsx:33: const { user } = useAuthStore()
+  DESTRUCTURING_MVP InmetroOwnerEditModal.tsx:33: const hasPermission = (p: string) => user?.all_permissions?.
+  DESTRUCTURING_MVP InmetroOwnerEditModal.tsx:34: const {
+  DESTRUCTURING_MVP ChecklistBuilder.tsx:35: const { user } = useAuthStore()
+  DESTRUCTURING_MVP ChecklistBuilder.tsx:35: const hasPermission = (p: string) => user?.all_permissions?.
+  DESTRUCTURING_MVP ChecklistBuilder.tsx:35: const [isSubmitting, setIsSubmitting] = useState(false)
+  DESTRUCTURING_MVP ChecklistForm.tsx:145: const { user } = useAuthStore()
+  DESTRUCTURING_MVP ChecklistForm.tsx:145: const hasPermission = (p: string) => user?.all_permissions?.
+  DESTRUCTURING_MVP ChecklistForm.tsx:145: const [isSubmitting, setIsSubmitting] = useState(false)
+  DESTRUCTURING_MVP WorkOrderKanbanPage.tsx:90: const {
+  DESTRUCTURING_MVP TechnicianGantt.tsx:27: const { user } = useAuthStore()
+  DESTRUCTURING_MVP TechnicianGantt.tsx:27: const hasPermission = (p: string) => user?.all_permissions?.
+  DESTRUCTURING_MVP TechnicianMap.tsx:50: const { user } = useAuthStore()
+  DESTRUCTURING_MVP TechnicianMap.tsx:50: const hasPermission = (p: string) => user?.all_permissions?.
+  DESTRUCTURING_MVP TechnicianMap.tsx:50: const [optimizing, setOptimizing] = useState(false)
+  DESTRUCTURING_MVP TechnicianMap.tsx:50: const [optimizedRoute, setOptimizedRoute] = useState<Schedul
+
+Total files fixed: 51
+
+=== RUNNING VITE BUILD ===
+ÔØî BUILD FAILED
+  Error: Expected ";" but found ":"[31m
+  File: [36mC:/projetos/sistema/frontend/src/pages/iam/UsersPage.tsx:843:15[31m
+  [31merror during build:
+  [31m[vite:esbuild] Transform failed with 1 error:
+  C:/projetos/sistema/frontend/src/pages/iam/UsersPage.tsx:843:15: ERROR: Expected ";" but found ":"[31m
+  file: [36mC:/projetos/sistema/frontend/src/pages/iam/UsersPage.tsx:843:15[31m

@@ -1,0 +1,74 @@
+﻿Pages at 100%: 112/172
+Pages below 100%: 60/172
+
+--- GAP FREQUENCY ---
+  pagination: 28 pages
+  deleteconfirm: 19 pages
+  form: 11 pages
+  emptystate: 8 pages
+  errorstate: 3 pages
+  validation: 1 pages
+  mutation: 1 pages
+  search: 1 pages
+
+--- ALL REMAINING GAPS ---
+77% [tab-component] fleet/components/FleetPoolTab.tsx | -19pts ÔåÆ ErrorState(10pt), Validation(4pt), DeleteConfirm(5pt)
+79% [list] rh/HRPage.tsx | -20pts ÔåÆ Mutation(15pt), DeleteConfirm(5pt)
+85% [list] inmetro/InmetroMarketPage.tsx | -14pts ÔåÆ EmptyState(8pt), Pagination(3pt), Form(3pt)
+85% [detail] rh/PerformanceReviewDetailPage.tsx | -13pts ÔåÆ EmptyState(8pt), DeleteConfirm(5pt)
+87% [dashboard] rh/PeopleAnalyticsPage.tsx | -8pts ÔåÆ EmptyState(8pt)
+89% [component] inmetro/InmetroStatusUpdateModal.tsx | -8pts ÔåÆ EmptyState(8pt)
+89% [messaging] MessageTemplatesPage.tsx | -10pts ÔåÆ ErrorState(10pt)
+89% [config] os/ServiceChecklistsPage.tsx | -10pts ÔåÆ ErrorState(10pt)
+90% [tab-component] fleet/components/FuelComparisonTab.tsx | -8pts ÔåÆ EmptyState(8pt)
+90% [visualization] os/WorkOrderKanbanPage.tsx | -8pts ÔåÆ EmptyState(8pt)
+90% [visualization] rh/RecruitmentKanbanPage.tsx | -8pts ÔåÆ EmptyState(8pt)
+91% [config] configuracoes/ProfilePage.tsx | -8pts ÔåÆ EmptyState(8pt)
+92% [list] estoque/InventoryPage.tsx | -8pts ÔåÆ Pagination(3pt), DeleteConfirm(5pt)
+92% [list] portal/PortalQuotesPage.tsx | -8pts ÔåÆ Pagination(3pt), DeleteConfirm(5pt)
+92% [list] rh/ClockInPage.tsx | -8pts ÔåÆ Form(3pt), DeleteConfirm(5pt)
+94% [detail] chamados/ServiceCallDetailPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+94% [detail] equipamentos/EquipmentDetailPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+94% [tab-component] fleet/components/FleetAccidentsTab.tsx | -5pts ÔåÆ Search(5pt)
+94% [list] inmetro/InmetroExecutivePage.tsx | -6pts ÔåÆ Pagination(3pt), Form(3pt)
+94% [list] portal/PortalFinancialsPage.tsx | -6pts ÔåÆ Pagination(3pt), Form(3pt)
+94% [list] tech/TechBluetoothPrintPage.tsx | -6pts ÔåÆ Pagination(3pt), Form(3pt)
+94% [detail] tech/TechWorkOrderDetailPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] central/CentralPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] CrmPipelinePage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] estoque/StockMovementsPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] financeiro/FundTransfersPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] fiscal/FiscalNotesPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] rh/ClockAdjustmentsPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] rh/JourneyPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] rh/LeavesPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] rh/OnboardingPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+95% [list] tecnicos/TechnicianCashPage.tsx | -5pts ÔåÆ DeleteConfirm(5pt)
+96% [utility] cadastros/BatchExportPage.tsx | -3pts ÔåÆ Form(3pt)
+96% [readonly-list] cadastros/PriceHistoryPage.tsx | -3pts ÔåÆ Pagination(3pt)
+96% [report] relatorios/ReportsPage.tsx | -3pts ÔåÆ Pagination(3pt)
+96% [report] rh/AccountingReportsPage.tsx | -3pts ÔåÆ Pagination(3pt)
+96% [readonly-list] tech/TechSealsPage.tsx | -3pts ÔåÆ Pagination(3pt)
+96% [report] tech/TechVoiceReportPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] configuracoes/BranchesPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] configuracoes/TenantManagementPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] estoque/InventoryListPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] financeiro/BankAccountsPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] inmetro/InmetroWebhooksPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [messaging] notificacoes/NotificationsPage.tsx | -3pts ÔåÆ Form(3pt)
+97% [config] operational/checklists/ChecklistPage.tsx | -3pts ÔåÆ Form(3pt)
+97% [list] os/SlaPoliciesPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] portal/PortalServiceCallPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] portal/PortalWorkOrdersPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] rh/BenefitsPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] rh/RecruitmentPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] tech/TechBarcodePage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] tech/TechExpensePage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] tech/TechPhotoAnnotationPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] tech/TechPhotosPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [config] tech/TechProfilePage.tsx | -3pts ÔåÆ Form(3pt)
+97% [config] tech/TechSettingsPage.tsx | -3pts ÔåÆ Form(3pt)
+97% [list] tech/TechSignaturePage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [list] tech/TechThermalCameraPage.tsx | -3pts ÔåÆ Pagination(3pt)
+97% [config] tech/TechWidgetPage.tsx | -3pts ÔåÆ Form(3pt)
+97% [list] tech/TechWorkOrdersPage.tsx | -3pts ÔåÆ Pagination(3pt)

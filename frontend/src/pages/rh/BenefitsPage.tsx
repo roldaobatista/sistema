@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, Filter, Trash2, Edit, AlertCircle, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,7 +15,6 @@ export default function BenefitsPage() {
     const { hasPermission } = useAuthStore()
 
     const { user } = useAuthStore()
-    const [searchTerm, setSearchTerm] = useState('')
     const { benefits: rawBenefits, isLoading, createBenefit, updateBenefit, deleteBenefit } = useBenefits()
     const benefits = rawBenefits as EmployeeBenefit[]
     const [isModalOpen, setIsModalOpen] = useState(false)

@@ -10,8 +10,6 @@ import { toast } from 'sonner'
 import { useUpdateOwner } from '@/hooks/useInmetro'
 import { Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 const schema = z.object({
     name: z.string().min(1, 'Nome é obrigatório'),
@@ -32,27 +30,7 @@ interface InmetroOwnerEditModalProps {
 
 export function InmetroOwnerEditModal({ open, onOpenChange, owner }: InmetroOwnerEditModalProps) {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['inmetro-owner-edit-modal'],
-    queryFn: () => api.get('/inmetro-owner-edit-modal').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/inmetro-owner-edit-modal/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-owner-edit-modal'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-
-  // MVP: Search
-  const [searchTerm, setSearchTerm] = useState('')
-  const { user } = useAuthStore()
-  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const updateOwnerMutation = useUpdateOwner()
-    const {
         register,
         handleSubmit,
         reset,

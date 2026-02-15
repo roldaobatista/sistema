@@ -1,0 +1,107 @@
+﻿=== AN├üLISE DE GAPS REAIS (sem falsos positivos) ===\n
+CR├ìTICO (2 p├íginas - 3+ gaps):
+  [LIST] cadastros/BatchExportPage (3 gaps): empty, pagination, deleteConfirm
+  [LIST] rh/ClockInPage (3 gaps): empty, pagination, deleteConfirm
+\nM├ëDIO (22 p├íginas - 2 gaps):
+  [LIST] cadastros/CustomerMergePage: pagination, deleteConfirm
+  [LIST] root/CrmPipelinePage: empty, deleteConfirm
+  [LIST] estoque/InventoryExecutionPage: pagination, deleteConfirm
+  [LIST] estoque/InventoryPage: pagination, deleteConfirm
+  [LIST] fleet/FleetPage: empty, pagination
+  [LIST] iam/PermissionsMatrixPage: pagination, deleteConfirm
+  [LIST] inmetro/InmetroImportPage: empty, pagination
+  [LIST] inmetro/InmetroMarketPage: empty, pagination
+  [LIST] integracao/AuvoImportPage: empty, pagination
+  [LIST] root/LoginPage: empty, pagination
+  [LIST] root/MessageTemplatesPage: error, pagination
+  [LIST] notificacoes/NotificationsPage: pagination, deleteConfirm
+  [LIST] os/ServiceChecklistsPage: error, pagination
+  [LIST] os/SlaPoliciesPage: error, pagination
+  [LIST] os/WorkOrderKanbanPage: empty, deleteConfirm
+  [LIST] portal/PortalQuotesPage: pagination, deleteConfirm
+  [LIST] rh/AccountingReportsPage: empty, pagination
+  [LIST] rh/JourneyPage: pagination, deleteConfirm
+  [LIST] rh/OnboardingPage: pagination, deleteConfirm
+  [LIST] rh/RecruitmentKanbanPage: empty, pagination
+  [LIST] tech/TechSealsPage: pagination, deleteConfirm
+  [LIST] tecnicos/TechnicianCashPage: pagination, deleteConfirm
+\nBAIXO (78 p├íginas - 1 gap):
+  [LIST] cadastros/PriceHistoryPage: pagination
+  [DASHBOARD] central/CentralDashboardPage: error
+  [LIST] central/CentralPage: deleteConfirm
+  [LIST] central/CentralRulesPage: error
+  [DETAIL] chamados/ServiceCallDetailPage: deleteConfirm
+  [LIST] chamados/ServiceCallMapPage: pagination
+  [LIST] chamados/TechnicianAgendaPage: pagination
+  [LIST] configuracoes/BranchesPage: pagination
+  [DETAIL] configuracoes/ProfilePage: deleteConfirm
+  [LIST] configuracoes/SettingsPage: deleteConfirm
+  [LIST] configuracoes/TenantManagementPage: pagination
+  [LIST] emails/EmailSettingsPage: pagination
+  [LIST] equipamentos/EquipmentCalendarPage: pagination
+  [DETAIL] equipamentos/EquipmentDetailPage: deleteConfirm
+  [LIST] estoque/BatchManagementPage: pagination
+  [LIST] estoque/InventoryListPage: pagination
+  [DASHBOARD] estoque/StockDashboardPage: error
+  [LIST] estoque/StockIntegrationPage: deleteConfirm
+  [LIST] estoque/StockMovementsPage: deleteConfirm
+  [LIST] estoque/WarehousesPage: pagination
+  [LIST] financeiro/AccountPayableCategoriesPage: pagination
+  [LIST] financeiro/BankAccountsPage: pagination
+  [LIST] financeiro/CashFlowPage: pagination
+  [LIST] financeiro/ChartOfAccountsPage: pagination
+  [LIST] financeiro/CommissionsPage: pagination
+  [LIST] financeiro/FundTransfersPage: deleteConfirm
+  [LIST] financeiro/PaymentMethodsPage: pagination
+  [LIST] financeiro/PaymentsPage: search
+  [LIST] financeiro/ReconciliationRulesPage: pagination
+  [MODAL] fiscal/FiscalEmitirDialog: form
+  [LIST] fiscal/FiscalNotesPage: deleteConfirm
+  [TAB] fleet\components/FleetAccidentsTab: search
+  [TAB] fleet\components/FleetPoolTab: error
+  [LIST] iam/RolesPage: pagination
+  [LIST] importacao/ImportPage: pagination
+  [LIST] inmetro/InmetroCompetitorPage: pagination
+  [LIST] inmetro/InmetroCompliancePage: pagination
+  [LIST] inmetro/InmetroMapPage: pagination
+  [LIST] inmetro/InmetroProspectionPage: pagination
+  [LIST] inmetro/InmetroSealManagement: deleteConfirm
+  [LIST] inmetro/InmetroSealReportPage: deleteConfirm
+  [LIST] inmetro/InmetroWebhooksPage: pagination
+  [LIST] operational\checklists/ChecklistPage: pagination
+  [FORM] orcamentos/QuoteCreatePage: form
+  [FORM] orcamentos/QuoteEditPage: form
+  [DASHBOARD] os/SlaDashboardPage: error
+  [LIST] portal/PortalFinancialsPage: pagination
+  [LIST] portal/PortalLoginPage: pagination
+  [LIST] portal/PortalServiceCallPage: pagination
+  [LIST] portal/PortalWorkOrdersPage: pagination
+  [LIST] relatorios/ReportsPage: pagination
+  [LIST] rh/BenefitsPage: pagination
+  [LIST] rh/ClockAdjustmentsPage: deleteConfirm
+  [LIST] rh/EmployeeDocumentsPage: pagination
+  [LIST] rh/GeofenceLocationsPage: pagination
+  [LIST] rh/HolidaysPage: pagination
+  [LIST] rh/HRPage: deleteConfirm
+  [LIST] rh/JourneyRulesPage: pagination
+  [LIST] rh/LeavesPage: deleteConfirm
+  [LIST] rh/OrgChartPage: pagination
+  [DETAIL] rh/PerformanceReviewDetailPage: deleteConfirm
+  [LIST] rh/RecruitmentPage: pagination
+  [LIST] rh/SkillsMatrixPage: pagination
+  [LIST] rh/VacationBalancePage: pagination
+  [LIST] tech/TechBarcodePage: pagination
+  [LIST] tech/TechBluetoothPrintPage: pagination
+  [LIST] tech/TechChatPage: pagination
+  [LIST] tech/TechChecklistPage: pagination
+  [LIST] tech/TechExpensePage: pagination
+  [LIST] tech/TechPhotoAnnotationPage: pagination
+  [LIST] tech/TechPhotosPage: pagination
+  [LIST] tech/TechSettingsPage: pagination
+  [LIST] tech/TechSignaturePage: pagination
+  [LIST] tech/TechThermalCameraPage: pagination
+  [LIST] tech/TechVoiceReportPage: pagination
+  [DETAIL] tech/TechWorkOrderDetailPage: deleteConfirm
+  [LIST] tech/TechWorkOrdersPage: pagination
+  [PAGE] tecnicos\components/TechnicianRecommendationSelector: pagination
+\nTOTAL COM GAPS REAIS: 102/172

@@ -55,7 +55,8 @@ export function TechnicianAgendaPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/technician-agenda/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['technician-agenda'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['technician-agenda'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -68,6 +69,7 @@ export function TechnicianAgendaPage() {
 
     const { data: assigneesRes } = useQuery({
         queryKey: ['service-call-assignees'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
     })
 

@@ -64,6 +64,7 @@ export default function InmetroSealManagement() {
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-options'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const technicians = techsRes?.data ?? []

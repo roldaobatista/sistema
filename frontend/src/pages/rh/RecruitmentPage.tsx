@@ -11,30 +11,10 @@ import { useRecruitment, JobPosting } from '@/hooks/useRecruitment'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export default function RecruitmentPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['recruitment'],
-    queryFn: () => api.get('/recruitment').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/recruitment/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['recruitment'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const { jobs, isLoading, createJob, updateJob, deleteJob } = useRecruitment()
-    const [searchTerm, setSearchTerm] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingJob, setEditingJob] = useState<JobPosting | null>(null)
     const [formData, setFormData] = useState<Partial<JobPosting>>({

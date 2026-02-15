@@ -49,12 +49,14 @@ export function RolesPage() {
 
     const { data: rolesData, isLoading, isError, refetch } = useQuery({
         queryKey: ['roles'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/roles').then(r => r.data),
     })
     const roles: Role[] = rolesData?.data ?? rolesData ?? []
 
     const { data: permGroupsData } = useQuery({
         queryKey: ['permissions'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/permissions').then(r => r.data),
     })
     const permissionGroups: PermissionGroup[] = Array.isArray(permGroupsData) ? permGroupsData : permGroupsData?.data ?? []

@@ -45,6 +45,7 @@ class QuoteController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Quote::with(['customer:id,name', 'seller:id,name'])
+            ->where('tenant_id', $this->currentTenantId())
             ->withCount('equipments');
 
         if ($s = $request->get('search')) {

@@ -59,6 +59,7 @@ export default function JourneyPage() {
     // Users list
     const { data: usersRes } = useQuery({
         queryKey: ['technicians-options'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options').then(r => r.data),
     })
     const users: { id: number; name: string }[] = usersRes ?? []
@@ -66,6 +67,7 @@ export default function JourneyPage() {
     // Journey entries for selected user & month
     const { data: journeyRes, isLoading } = useQuery({
         queryKey: ['journey-entries', selectedUser, yearMonth],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/hr/journey/entries`, {
             params: { user_id: selectedUser, year_month: yearMonth },
         }).then(r => r.data?.data),
@@ -88,6 +90,7 @@ export default function JourneyPage() {
     // Hour bank
     const { data: hourBankRes } = useQuery({
         queryKey: ['hour-bank', selectedUser],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/hour-bank/balance', { params: { user_id: selectedUser } }).then(r => r.data?.data),
         enabled: !!selectedUser,
     })

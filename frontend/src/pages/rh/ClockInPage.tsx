@@ -37,8 +37,8 @@ export default function ClockInPage() {
 
     // Clock status
     const { data: statusData, isLoading: statusLoading } = useQuery<ClockStatus>({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['clock-status'],
+        const { data } = useQuery({
         queryFn: () => api.get('/hr/advanced/clock/status').then(r => r.data?.data),
         refetchInterval: 60_000,
     })
@@ -143,7 +143,7 @@ export default function ClockInPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['clock-status'] })
             toast.success('Ponto de entrada registrado com sucesso!')
-            setStep('done')
+                setStep('done')
         },
         onError: (err: any) => {
             toast.error(err?.response?.data?.message ?? 'Erro ao registrar entrada')
@@ -156,7 +156,7 @@ export default function ClockInPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['clock-status'] })
             toast.success('Ponto de saída registrado com sucesso!')
-            setStep('camera')
+                setStep('camera')
             setSelfieBlob(null)
             setSelfieUrl(null)
             setGpsCoords(null)

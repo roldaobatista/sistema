@@ -1,5 +1,4 @@
 import { useState , useMemo } from 'react'
-import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
     Brain,
@@ -23,9 +22,6 @@ import {
     Inbox,
 } from 'lucide-react'
 import {
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
     usePredictiveMaintenance,
     useExpenseOcrAnalysis,
     useTriageSuggestions,
@@ -654,26 +650,9 @@ function SummaryTab() {
 
 export default function AIAnalyticsPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['a-i-analytics'],
-    queryFn: () => api.get('/a-i-analytics').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/a-i-analytics/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['a-i-analytics'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const [activeTab, setActiveTab] = useState<TabId>('predictive')
 
     const tabContent: Record<TabId, React.ReactNode> = {
-  const [searchTerm, setSearchTerm] = useState('')
         predictive: <PredictiveTab />,
         expenses: <ExpensesTab />,
         triage: <TriageTab />,

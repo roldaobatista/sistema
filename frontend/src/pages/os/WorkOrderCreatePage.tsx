@@ -59,22 +59,26 @@ export function WorkOrderCreatePage() {
     // Queries
     const { data: customersRes } = useQuery({
         queryKey: ['customers-select', customerSearch],
+        const { data } = useQuery({
         queryFn: () => api.get('/customers', { params: { search: customerSearch, per_page: 20, is_active: true } }),
         enabled: customerSearch.length >= 2,
     })
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-select'],
+        const { data } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: servicesRes } = useQuery({
         queryKey: ['services-select'],
+        const { data } = useQuery({
         queryFn: () => api.get('/services', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians'],
+        const { data } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 50 } }),
     })
 

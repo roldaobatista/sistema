@@ -3,10 +3,10 @@ import { toast } from 'sonner'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
-import { useAuthStore } from '@/stores/auth-store'
     BarChart3, TrendingUp, DollarSign, AlertTriangle, Loader2,
     Package, ArrowDown, ArrowUp, Search
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth-store'
 
 type Tab = 'abc' | 'turnover' | 'cost' | 'reorder';
 
@@ -45,7 +45,8 @@ export default function StockIntelligencePage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/stock-intelligence/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['stock-intelligence'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['stock-intelligence'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -57,24 +58,28 @@ export default function StockIntelligencePage() {
 
     const { data: abcData, isLoading: abcLoading } = useQuery({
         queryKey: ['stock-intelligence-abc', months],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/abc-curve', { params: { months } }).then(r => r.data),
         enabled: activeTab === 'abc',
     });
 
     const { data: turnoverData, isLoading: turnoverLoading } = useQuery({
         queryKey: ['stock-intelligence-turnover', months],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/turnover', { params: { months } }).then(r => r.data),
         enabled: activeTab === 'turnover',
     });
 
     const { data: costData, isLoading: costLoading } = useQuery({
         queryKey: ['stock-intelligence-cost'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/average-cost').then(r => r.data),
         enabled: activeTab === 'cost',
     });
 
     const { data: reorderData, isLoading: reorderLoading } = useQuery({
         queryKey: ['stock-intelligence-reorder'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/reorder-points').then(r => r.data),
         enabled: activeTab === 'reorder',
     });

@@ -41,18 +41,21 @@ export default function OnboardingPage() {
 
     const { data: templatesRes } = useQuery({
         queryKey: ['onboarding-templates'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/onboarding/templates').then(r => r.data?.data ?? []),
     })
     const templates: Template[] = templatesRes ?? []
 
     const { data: checklistsRes, isLoading } = useQuery({
         queryKey: ['onboarding-checklists'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/onboarding/checklists').then(r => r.data?.data ?? []),
     })
     const checklists: Checklist[] = checklistsRes ?? []
 
     const { data: usersRes } = useQuery({
         queryKey: ['technicians-options'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options').then(r => r.data),
     })
     const users: { id: number; name: string }[] = usersRes ?? []

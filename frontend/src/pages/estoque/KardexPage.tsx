@@ -3,10 +3,10 @@ import { toast } from 'sonner'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
-import { useAuthStore } from '@/stores/auth-store'
     ScrollText, Search, Loader2, ArrowUpCircle, ArrowDownCircle,
     RefreshCw, Calendar, Warehouse as WarehouseIcon
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth-store'
 
 interface KardexEntry {
     id: number;
@@ -47,7 +47,8 @@ export default function KardexPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/kardex/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['kardex'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['kardex'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -71,6 +72,7 @@ export default function KardexPage() {
 
     const { data: kardex, isLoading, refetch, isRefetching } = useQuery({
         queryKey: ['kardex', productId, warehouseId, dateFrom, dateTo],
+        const { data, isLoading, refetch } = useQuery({
         queryFn: () =>
             api.get(`/api/v1/stock/products/${productId}/kardex`, {
                 params: { warehouse_id: warehouseId, date_from: dateFrom || undefined, date_to: dateTo || undefined },

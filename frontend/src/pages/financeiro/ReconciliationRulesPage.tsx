@@ -113,7 +113,7 @@ export default function ReconciliationRulesPage() {
         mutationFn: (data: Record<string, unknown>) => api.post('/reconciliation-rules', data),
         onSuccess: () => {
             toast.success(editingId ? 'Regra atualizada' : 'Regra criada')
-            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
             resetForm()
         },
         onError: (err: any) => {
@@ -130,7 +130,7 @@ export default function ReconciliationRulesPage() {
             api.put(`/reconciliation-rules/${id}`, data),
         onSuccess: () => {
             toast.success('Regra atualizada')
-            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
             resetForm()
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao atualizar'),
@@ -140,7 +140,7 @@ export default function ReconciliationRulesPage() {
         mutationFn: (id: number) => api.delete(`/reconciliation-rules/${id}`),
         onSuccess: () => {
             toast.success('Regra excluída')
-            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao excluir'),
     })
@@ -149,7 +149,7 @@ export default function ReconciliationRulesPage() {
         mutationFn: (id: number) => api.post(`/reconciliation-rules/${id}/toggle`),
         onSuccess: (res) => {
             toast.success(res.data?.message || 'Status alterado')
-            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao alternar'),
     })

@@ -39,6 +39,7 @@ export function WarehousesPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['warehouses', search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/warehouses', { params: { search } }),
     })
     const warehouses: Warehouse[] = res?.data?.data ?? []

@@ -69,6 +69,7 @@ export function BranchesPage() {
 
     const { data: res, isLoading, isError, refetch } = useQuery({
         queryKey: ['branches'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/branches'),
     })
     const allBranches: Branch[] = res?.data ?? []

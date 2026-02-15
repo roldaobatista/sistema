@@ -30,8 +30,8 @@ export function SlaPoliciesPage() {
     const [modal, setModal] = useState<{ mode: 'create' | 'edit'; policy?: SlaPolicy } | null>(null)
 
     const { data: res, isLoading } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['sla-policies'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-policies'),
     })
     const policies: SlaPolicy[] = res?.data?.data ?? []
@@ -41,7 +41,7 @@ export function SlaPoliciesPage() {
             data.id ? api.put(`/sla-policies/${data.id}`, data) : api.post('/sla-policies', data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['sla-policies'] })
+                qc.invalidateQueries({ queryKey: ['sla-policies'] })
             setModal(null)
         },
     })
@@ -50,7 +50,7 @@ export function SlaPoliciesPage() {
         mutationFn: (id: number) => api.delete(`/sla-policies/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['sla-policies'] })
+                qc.invalidateQueries({ queryKey: ['sla-policies'] })
         },
     })
 

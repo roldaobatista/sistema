@@ -433,6 +433,7 @@ function CommissionEvents() {
 
     const { data: eventsRes, isLoading } = useQuery({
         queryKey: ['commission-events', params],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/commission-events', { params }),
     })
     const events = eventsRes?.data?.data ?? []
@@ -442,13 +443,15 @@ function CommissionEvents() {
 
     const approveMut = useMutation({
         mutationFn: (id: number) => api.put(`/commission-events/${id}/status`, { status: 'approved' }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] }); qc.invalidateQueries({ queryKey: ['commission-overview'] }); setEventError(null); toast.success('Evento aprovado') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] });
+                qc.invalidateQueries({ queryKey: ['commission-overview'] }); setEventError(null); toast.success('Evento aprovado') },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao aprovar evento'; setEventError(msg); toast.error(msg) }
     })
 
     const reverseMut = useMutation({
         mutationFn: (id: number) => api.put(`/commission-events/${id}/status`, { status: 'reversed' }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] }); qc.invalidateQueries({ queryKey: ['commission-overview'] }); setEventError(null); toast.success('Evento estornado') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] });
+                qc.invalidateQueries({ queryKey: ['commission-overview'] }); setEventError(null); toast.success('Evento estornado') },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao estornar evento'; setEventError(msg); toast.error(msg) }
     })
 
@@ -493,6 +496,7 @@ function CommissionEvents() {
 
     const { data: splitDataRes } = useQuery({
         queryKey: ['commission-splits', splitEvent?.id],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/commission-events/${splitEvent.id}/splits`),
         enabled: !!splitEvent,
     })
@@ -731,19 +735,24 @@ function CommissionSettlements() {
 
     const closeMut = useMutation({
         mutationFn: (data: any) => api.post('/commission-settlements/close', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] }); qc.invalidateQueries({ queryKey: ['commission-events'] }); qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Período fechado com sucesso') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] });
+                qc.invalidateQueries({ queryKey: ['commission-events'] });
+                qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Período fechado com sucesso') },
         onError: (err: any) => { toast.error(err?.response?.data?.message ?? 'Erro ao fechar período') }
     })
 
     const payMut = useMutation({
         mutationFn: (id: number) => api.post(`/commission-settlements/${id}/pay`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] }); qc.invalidateQueries({ queryKey: ['commission-events'] }); qc.invalidateQueries({ queryKey: ['commission-overview'] }); setPayError(null); toast.success('Pagamento registrado') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] });
+                qc.invalidateQueries({ queryKey: ['commission-events'] });
+                qc.invalidateQueries({ queryKey: ['commission-overview'] }); setPayError(null); toast.success('Pagamento registrado') },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao pagar fechamento'; setPayError(msg); toast.error(msg) }
     })
 
     const reopenMut = useMutation({
         mutationFn: (id: number) => api.post(`/commission-settlements/${id}/reopen`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] }); qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success('Fechamento reaberto') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] });
+                qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success('Fechamento reaberto') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao reabrir fechamento')
     })
 
@@ -896,7 +905,8 @@ function CommissionDisputes() {
     })
     const resolveMut = useMutation({
         mutationFn: ({ id, data }: any) => api.put(`/commission-disputes/${id}/resolve`, data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-disputes'] }); qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success('Contestação resolvida') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-disputes'] });
+                qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success('Contestação resolvida') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao resolver')
     })
 
@@ -1115,7 +1125,8 @@ function CommissionRecurring() {
     })
     const processMut = useMutation({
         mutationFn: () => api.post('/recurring-commissions/process'),
-        onSuccess: (res: any) => { qc.invalidateQueries({ queryKey: ['recurring-commissions'] }); qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success(res?.data?.message ?? 'Processamento concluído') },
+        onSuccess: (res: any) => { qc.invalidateQueries({ queryKey: ['recurring-commissions'] });
+                qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success(res?.data?.message ?? 'Processamento concluído') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao processar')
     })
 
@@ -1174,14 +1185,13 @@ function CommissionSimulator() {
     const [showGenConfirm, setShowGenConfirm] = useState(false)
     const simMut = useMutation({
         mutationFn: (workOrderId: string) => api.post('/commission-simulate', { work_order_id: Number(workOrderId) }),
-        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao simular comissão')
-    ,
-    onSuccess: () => { toast.success('Operação realizada com sucesso') },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro na operação') }
-  })
+        onSuccess: () => { toast.success('Simulação concluída') },
+        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao simular comissão'),
+    })
     const genMut = useMutation({
         mutationFn: (workOrderId: string) => api.post('/commission-events/generate', { work_order_id: Number(workOrderId) }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] }); qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Comissões geradas com sucesso!') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] });
+                qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Comissões geradas com sucesso!') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao gerar comissões')
     })
     const results = simMut.data?.data ?? []

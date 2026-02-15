@@ -14,7 +14,8 @@ export function FleetTiresTab() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/fleet-tires/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['fleet-tires'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['fleet-tires'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -24,6 +25,7 @@ export function FleetTiresTab() {
 
     const { data: tires, isLoading } = useQuery({
         queryKey: ['fleet-tires', vehicleId],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/tires', { params: { fleet_vehicle_id: vehicleId || undefined } }).then(r => r.data)
     })
 

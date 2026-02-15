@@ -804,8 +804,8 @@ class ReportController extends Controller
                 return $product->stock_qty > 0 && $product->stock_min && $product->stock_qty <= $product->stock_min;
             })->count();
 
-            $totalValue = $products->sum(fn ($product) => $product->stock_qty * $product->cost_price);
-            $totalSaleValue = $products->sum(fn ($product) => $product->stock_qty * $product->sell_price);
+            $totalValue = $products->reduce(fn ($carry, $p) => bcadd($carry ?? '0', bcmul((string) $p->stock_qty, (string) $p->cost_price, 2), 2), '0');
+            $totalSaleValue = $products->reduce(fn ($carry, $p) => bcadd($carry ?? '0', bcmul((string) $p->stock_qty, (string) $p->sell_price, 2), 2), '0');
 
             $recentMovements = DB::table('work_order_items')
                 ->join('work_orders', 'work_order_items.work_order_id', '=', 'work_orders.id')
@@ -815,9 +815,12 @@ class ReportController extends Controller
                 ->orderByDesc('work_orders.created_at')
                 ->limit(50)
                 ->select(
+                    'work_order_items.id',
                     'products.name as product_name',
                     'work_order_items.quantity',
+                    DB::raw("'out' as type"),
                     DB::raw('COALESCE(work_orders.os_number, work_orders.number) as os_number'),
+                    DB::raw('COALESCE(work_orders.os_number, work_orders.number) as reference'),
                     'work_orders.created_at'
                 )
                 ->get();
@@ -827,8 +830,8 @@ class ReportController extends Controller
                     'total_products' => $products->count(),
                     'out_of_stock' => $outOfStock,
                     'low_stock' => $lowStock,
-                    'total_cost_value' => (float) $totalValue,
-                    'total_sale_value' => (float) $totalSaleValue,
+                    'total_cost_value' => round((float) $totalValue, 2),
+                    'total_sale_value' => round((float) $totalSaleValue, 2),
                 ],
                 'products' => $products,
                 'recent_movements' => $recentMovements,

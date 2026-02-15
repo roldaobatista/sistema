@@ -1,0 +1,150 @@
+﻿Pages below 100%: 148/172
+
+70% | central/CentralDashboardPage.tsx | missing: errorstate, pagination, form, validation, deleteconfirm
+70% | root/DashboardPage.tsx | missing: mutation, pagination, form, deleteconfirm
+70% | fleet/components/FleetPoolTab.tsx | missing: errorstate, pagination, form, validation, deleteconfirm
+70% | inmetro/InmetroDashboardPage.tsx | missing: mutation, pagination, form, deleteconfirm
+70% | os/SlaDashboardPage.tsx | missing: errorstate, pagination, form, validation, deleteconfirm
+70% | portal/PortalDashboardPage.tsx | missing: mutation, pagination, form, deleteconfirm
+75% | estoque/StockDashboardPage.tsx | missing: errorstate, form, validation, deleteconfirm
+75% | inmetro/InmetroSealReportPage.tsx | missing: mutation, form, deleteconfirm
+75% | rh/HRPage.tsx | missing: mutation, form, deleteconfirm
+77% | cadastros/BatchExportPage.tsx | missing: emptystate, pagination, form, deleteconfirm
+77% | rh/PerformanceReviewDetailPage.tsx | missing: emptystate, form, validation, deleteconfirm
+80% | central/CentralRulesPage.tsx | missing: errorstate, form, validation
+80% | financeiro/ReconciliationDashboardPage.tsx | missing: pagination, form, validation, deleteconfirm
+80% | fleet/components/FleetDashboardTab.tsx | missing: pagination, form, validation, deleteconfirm
+80% | root/MessageTemplatesPage.tsx | missing: errorstate, pagination, validation
+80% | notificacoes/NotificationsPage.tsx | missing: pagination, form, validation, deleteconfirm
+80% | os/ServiceChecklistsPage.tsx | missing: errorstate, pagination, form
+80% | portal/PortalQuotesPage.tsx | missing: pagination, form, validation, deleteconfirm
+82% | configuracoes/ProfilePage.tsx | missing: emptystate, pagination, deleteconfirm
+82% | root/CrmPipelinePage.tsx | missing: emptystate, form, deleteconfirm
+82% | estoque/InventoryCreatePage.tsx | missing: emptystate, pagination, deleteconfirm
+82% | fiscal/FiscalEmitirDialog.tsx | missing: emptystate, form, deleteconfirm
+82% | fleet/components/FuelComparisonTab.tsx | missing: emptystate, pagination, form
+82% | inmetro/InmetroExecutivePage.tsx | missing: emptystate, pagination, form
+82% | inmetro/InmetroImportPage.tsx | missing: emptystate, pagination, form
+82% | inmetro/InmetroMarketPage.tsx | missing: emptystate, pagination, form
+82% | integracao/AuvoImportPage.tsx | missing: emptystate, pagination, form
+82% | orcamentos/QuoteDetailPage.tsx | missing: emptystate, pagination, form
+82% | os/WorkOrderKanbanPage.tsx | missing: emptystate, form, deleteconfirm
+82% | rh/AccountingReportsPage.tsx | missing: emptystate, pagination, form
+82% | rh/ClockInPage.tsx | missing: emptystate, form, deleteconfirm
+82% | rh/PeopleAnalyticsPage.tsx | missing: emptystate, pagination, form
+85% | cadastros/CustomerMergePage.tsx | missing: pagination, form, deleteconfirm
+85% | chamados/ServiceCallDetailPage.tsx | missing: pagination, form, deleteconfirm
+85% | root/CrmDashboardPage.tsx | missing: pagination, form, deleteconfirm
+85% | estoque/InventoryExecutionPage.tsx | missing: pagination, form, deleteconfirm
+85% | estoque/InventoryPage.tsx | missing: pagination, form, deleteconfirm
+85% | fleet/components/FleetAccidentsTab.tsx | missing: search, pagination, form
+85% | os/SlaPoliciesPage.tsx | missing: errorstate, pagination
+85% | tech/TechWorkOrderDetailPage.tsx | missing: pagination, form, deleteconfirm
+85% | tv/TvDashboard.tsx | missing: pagination, form, deleteconfirm
+87% | emails/EmailComposePage.tsx | missing: emptystate, pagination
+87% | equipamentos/EquipmentCreatePage.tsx | missing: emptystate, deleteconfirm
+87% | financeiro/CommissionDashboardPage.tsx | missing: emptystate, form
+87% | fleet/FleetPage.tsx | missing: emptystate, form
+87% | inmetro/InmetroOwnerEditModal.tsx | missing: emptystate, pagination
+87% | inmetro/InmetroStatusUpdateModal.tsx | missing: emptystate, pagination
+87% | root/LoginPage.tsx | missing: emptystate, pagination
+87% | orcamentos/QuoteEditPage.tsx | missing: emptystate, form
+87% | rh/RecruitmentKanbanPage.tsx | missing: emptystate, pagination
+90% | cadastros/Customer360Page.tsx | missing: pagination, form
+90% | cadastros/PriceHistoryPage.tsx | missing: pagination, form
+90% | central/CentralPage.tsx | missing: form, deleteconfirm
+90% | chamados/ServiceCallMapPage.tsx | missing: pagination, form
+90% | chamados/TechnicianAgendaPage.tsx | missing: pagination, form
+90% | configuracoes/SettingsPage.tsx | missing: form, deleteconfirm
+90% | configuracoes/TenantManagementPage.tsx | missing: pagination, form
+90% | estoque/BatchManagementPage.tsx | missing: pagination, form
+90% | estoque/InventoryListPage.tsx | missing: pagination, form
+90% | estoque/StockIntegrationPage.tsx | missing: form, deleteconfirm
+90% | estoque/StockIntelligencePage.tsx | missing: pagination, form
+90% | fiscal/FiscalNotesPage.tsx | missing: form, deleteconfirm
+90% | fleet/components/DriverScoreTab.tsx | missing: pagination, form
+90% | fleet/components/FleetFinesTab.tsx | missing: pagination, form
+90% | fleet/components/FleetFuelTab.tsx | missing: pagination, form
+90% | fleet/components/FleetInspectionsTab.tsx | missing: pagination, form
+90% | fleet/components/FleetInsuranceTab.tsx | missing: pagination, form
+90% | fleet/components/FleetTiresTab.tsx | missing: pagination, form
+90% | fleet/components/GpsLiveTab.tsx | missing: pagination, form
+90% | fleet/components/TollDashboardTab.tsx | missing: pagination, form
+90% | ia/AIAnalyticsPage.tsx | missing: pagination, form
+90% | iam/PermissionsMatrixPage.tsx | missing: form, deleteconfirm
+90% | inmetro/InmetroCompetitorPage.tsx | missing: pagination, form
+90% | inmetro/InmetroCompliancePage.tsx | missing: pagination, form
+90% | inmetro/InmetroMapPage.tsx | missing: pagination, form
+90% | inmetro/InmetroOwnerDetailPage.tsx | missing: pagination, form
+90% | inmetro/InmetroProspectionPage.tsx | missing: pagination, form
+90% | inmetro/InmetroWebhooksPage.tsx | missing: pagination, form
+90% | operational/checklists/ChecklistPage.tsx | missing: pagination, form
+90% | orcamentos/QuoteCreatePage.tsx | missing: form, deleteconfirm
+90% | portal/PortalFinancialsPage.tsx | missing: pagination, form
+90% | portal/PortalWorkOrdersPage.tsx | missing: pagination, form
+90% | relatorios/ReportsPage.tsx | missing: pagination, form
+90% | rh/ClockAdjustmentsPage.tsx | missing: form, deleteconfirm
+90% | rh/JourneyPage.tsx | missing: form, deleteconfirm
+90% | tech/TechBarcodePage.tsx | missing: pagination, form
+90% | tech/TechBluetoothPrintPage.tsx | missing: pagination, form
+90% | tech/TechChatPage.tsx | missing: pagination, form
+90% | tech/TechChecklistPage.tsx | missing: pagination, form
+90% | tech/TechExpensePage.tsx | missing: pagination, form
+90% | tech/TechPhotoAnnotationPage.tsx | missing: pagination, form
+90% | tech/TechPhotosPage.tsx | missing: pagination, form
+90% | tech/TechProfilePage.tsx | missing: pagination, form
+90% | tech/TechSealsPage.tsx | missing: pagination, deleteconfirm
+90% | tech/TechSettingsPage.tsx | missing: pagination, form
+90% | tech/TechSignaturePage.tsx | missing: pagination, form
+90% | tech/TechThermalCameraPage.tsx | missing: pagination, form
+90% | tech/TechVoiceReportPage.tsx | missing: pagination, form
+90% | tech/TechWorkOrdersPage.tsx | missing: pagination, form
+90% | tecnicos/components/TechnicianGantt.tsx | missing: pagination, form
+90% | tecnicos/components/TechnicianMap.tsx | missing: pagination, form
+90% | tecnicos/components/TechnicianRecommendationSelector.tsx | missing: pagination, form
+95% | admin/AuditLogPage.tsx | missing: form
+95% | automacao/AutomationPage.tsx | missing: form
+95% | avancado/AdvancedFeaturesPage.tsx | missing: form
+95% | cadastros/CustomersPage.tsx | missing: form
+95% | chamados/ServiceCallCreatePage.tsx | missing: deleteconfirm
+95% | chamados/ServiceCallEditPage.tsx | missing: deleteconfirm
+95% | chamados/ServiceCallsPage.tsx | missing: form
+95% | configuracoes/AuditLogsPage.tsx | missing: form
+95% | configuracoes/BranchesPage.tsx | missing: pagination
+95% | emails/EmailInboxPage.tsx | missing: form
+95% | emails/EmailSettingsPage.tsx | missing: pagination
+95% | equipamentos/EquipmentCalendarPage.tsx | missing: form
+95% | equipamentos/EquipmentDetailPage.tsx | missing: deleteconfirm
+95% | equipamentos/EquipmentListPage.tsx | missing: form
+95% | estoque/KardexPage.tsx | missing: form
+95% | estoque/StockMovementsPage.tsx | missing: deleteconfirm
+95% | financeiro/BankAccountsPage.tsx | missing: pagination
+95% | financeiro/CashFlowPage.tsx | missing: form
+95% | financeiro/FuelingLogsPage.tsx | missing: form
+95% | financeiro/FundTransfersPage.tsx | missing: deleteconfirm
+95% | financeiro/PaymentsPage.tsx | missing: form
+95% | fleet/components/VehiclesTab.tsx | missing: form
+95% | importacao/ImportPage.tsx | missing: form
+95% | inmetro/InmetroCompetitorsPage.tsx | missing: form
+95% | inmetro/InmetroInstrumentsPage.tsx | missing: form
+95% | inmetro/InmetroLeadsPage.tsx | missing: form
+95% | inmetro/InmetroSealManagement.tsx | missing: deleteconfirm
+95% | operational/checklists/components/ChecklistBuilder.tsx | missing: pagination
+95% | operational/checklists/components/ChecklistForm.tsx | missing: pagination
+95% | orcamentos/QuotesListPage.tsx | missing: form
+95% | os/RecurringContractsPage.tsx | missing: form
+95% | os/WorkOrderCreatePage.tsx | missing: deleteconfirm
+95% | os/WorkOrdersListPage.tsx | missing: form
+95% | portal/PortalLoginPage.tsx | missing: pagination
+95% | portal/PortalServiceCallPage.tsx | missing: pagination
+95% | qualidade/QualityPage.tsx | missing: form
+95% | rh/BenefitsPage.tsx | missing: pagination
+95% | rh/LeavesPage.tsx | missing: deleteconfirm
+95% | rh/OnboardingPage.tsx | missing: deleteconfirm
+95% | rh/OrgChartPage.tsx | missing: form
+95% | rh/PerformancePage.tsx | missing: form
+95% | rh/RecruitmentPage.tsx | missing: pagination
+95% | rh/SkillsMatrixPage.tsx | missing: form
+95% | rh/VacationBalancePage.tsx | missing: form
+95% | tech/TechWidgetPage.tsx | missing: form
+95% | tecnicos/TechnicianCashPage.tsx | missing: deleteconfirm

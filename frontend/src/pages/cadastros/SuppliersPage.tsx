@@ -90,6 +90,7 @@ export function SuppliersPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['suppliers', debouncedSearch],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/suppliers', { params: { search: debouncedSearch, per_page: 50 } }),
     })
     const suppliers: Supplier[] = res?.data?.data ?? []

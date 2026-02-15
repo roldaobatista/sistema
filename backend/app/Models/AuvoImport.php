@@ -95,9 +95,9 @@ class AuvoImport extends Model
 
     protected $fillable = [
         'tenant_id', 'user_id', 'entity_type', 'status',
-        'total_fetched', 'inserted', 'updated', 'skipped', 'errors',
+        'total_fetched', 'total_imported', 'total_updated', 'total_skipped', 'total_errors',
         'error_log', 'imported_ids', 'duplicate_strategy', 'filters',
-        'last_synced_at',
+        'started_at', 'completed_at', 'last_synced_at',
     ];
 
     protected function casts(): array
@@ -107,10 +107,12 @@ class AuvoImport extends Model
             'imported_ids' => 'array',
             'filters' => 'array',
             'total_fetched' => 'integer',
-            'inserted' => 'integer',
-            'updated' => 'integer',
-            'skipped' => 'integer',
-            'errors' => 'integer',
+            'total_imported' => 'integer',
+            'total_updated' => 'integer',
+            'total_skipped' => 'integer',
+            'total_errors' => 'integer',
+            'started_at' => 'datetime',
+            'completed_at' => 'datetime',
             'last_synced_at' => 'datetime',
         ];
     }

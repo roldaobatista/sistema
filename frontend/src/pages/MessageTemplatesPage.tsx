@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-import { useAuthStore } from '@/stores/auth-store'
     Plus, Edit, Trash2, MessageCircle, Mail, Smartphone,
     X, Save, Loader2, FileText
 } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 type Channel = 'whatsapp' | 'email' | 'sms'
 
@@ -30,6 +30,7 @@ export function MessageTemplatesPage() {
 
     const { data: templates = [], isLoading } = useQuery({
         queryKey: ['crm', 'message-templates'],
+        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getMessageTemplates().then(r => r.data),
     })
 
@@ -37,7 +38,7 @@ export function MessageTemplatesPage() {
         mutationFn: (id: number) => crmApi.deleteMessageTemplate(id),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+                qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
         },
     })
 
@@ -189,17 +190,11 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
     const qc = useQueryClient()
     const isEdit = !!template
 
-    const [name, setName] = useState(template?.name ?? '')
-    const [slug, setSlug] = useState(template?.slug ?? '')
-    const [channel, setChannel] = useState<Channel>(template?.channel ?? 'whatsapp')
-    const [subject, setSubject] = useState(template?.subject ?? '')
-    const [body, setBody] = useState(template?.body ?? '')
-
     const createMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.createMessageTemplate(data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+                qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
             onClose()
         },
     })
@@ -208,7 +203,7 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.updateMessageTemplate(template!.id, data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+                qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
             onClose()
         },
     })

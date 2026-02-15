@@ -1,5 +1,4 @@
 ﻿import { useState , useMemo } from 'react'
-import { toast } from 'sonner'
 import {
     useContactQueue,
     useGenerateDailyQueue,
@@ -20,9 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
     Phone,
     MessageSquare,
     Mail,
@@ -54,22 +50,6 @@ const resultColors: Record<string, string> = {
 
 export default function InmetroProspectionPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['inmetro-prospection'],
-    queryFn: () => api.get('/inmetro-prospection').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/inmetro-prospection/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-prospection'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const { data: queue, isLoading: loadingQueue } = useContactQueue()
     const { data: followUps, isLoading: loadingFollowUps } = useFollowUps()
     const { data: rejectAlerts } = useRejectAlerts()
@@ -82,7 +62,6 @@ export default function InmetroProspectionPage() {
     const logInteraction = useLogInteraction()
     const { data: history } = useInteractionHistory(interactionOwnerId)
 
-  const [searchTerm, setSearchTerm] = useState('')
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">

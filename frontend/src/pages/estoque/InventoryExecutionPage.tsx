@@ -22,6 +22,7 @@ export default function InventoryExecutionPage() {
 
     const { data: invRes, isLoading } = useQuery({
         queryKey: ['inventory-detail', id],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/inventory/inventories/${id}`)
     })
     const inventory = invRes?.data
@@ -31,7 +32,7 @@ export default function InventoryExecutionPage() {
             api.put(`/inventory/inventories/${id}/items/${itemId}`, { counted_quantity: quantity }),
         onSuccess: () => {
             toast.success('Contagem salva!')
-            qc.invalidateQueries({ queryKey: ['inventory-detail', id] })
+                qc.invalidateQueries({ queryKey: ['inventory-detail', id] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar')
     })
@@ -40,7 +41,7 @@ export default function InventoryExecutionPage() {
         mutationFn: () => api.post(`/inventory/inventories/${id}/complete`),
         onSuccess: () => {
             toast.success('Inventário finalizado com sucesso!')
-            navigate('/estoque/inventarios')
+                navigate('/estoque/inventarios')
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao finalizar')
     })

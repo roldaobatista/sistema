@@ -13,8 +13,6 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 // Simple Draggable/Droppable implementation for now, or just columns
 // Since dnd-kit requires a bit of setup, I'll start with a detailed view that LISTS candidates by stage
@@ -32,22 +30,6 @@ const STAGES = [
 ]
 
 export default function RecruitmentKanbanPage() {
-
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['recruitment-kanban'],
-    queryFn: () => api.get('/recruitment-kanban').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/recruitment-kanban/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['recruitment-kanban'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
 
     const { id } = useParams()
     const navigate = useNavigate()
@@ -108,7 +90,7 @@ export default function RecruitmentKanbanPage() {
             // I'll assume I need to create the backend logic for this.
             await api.put(`/hr/candidates/${candidateId}`, { stage: newStage })
             toast.success('Fase atualizada')
-            setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, stage: newStage as any } : c))
+                setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, stage: newStage as any } : c))
         } catch (error) {
             toast.error('Erro ao atualizar fase')
         }

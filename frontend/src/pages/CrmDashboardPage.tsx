@@ -13,7 +13,6 @@ import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
 import { useAuthStore } from '@/stores/auth-store'
-import api from '@/lib/api'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -26,6 +25,7 @@ export function CrmDashboardPage() {
     const [nowTs] = useState(() => Date.now())
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['crm', 'dashboard'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => crmApi.getDashboard().then(r => r.data),
         refetchInterval: 60_000,
         meta: { errorMessage: 'Erro ao carregar dashboard CRM' },

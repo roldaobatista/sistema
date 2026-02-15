@@ -82,6 +82,7 @@ export function UsersPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['users', page, search, statusFilter, roleFilter],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/users', { params: { page, search, per_page: 20, ...(statusFilter !== 'all' && { is_active: statusFilter === 'active' ? 1 : 0 }), ...(roleFilter && { role: roleFilter }) } }).then(r => r.data),
     })
 
@@ -91,18 +92,21 @@ export function UsersPage() {
 
     const { data: rolesData } = useQuery({
         queryKey: ['roles'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/roles').then(r => r.data),
     })
     const roles: Role[] = rolesData?.data ?? rolesData ?? []
 
     const { data: branchesData } = useQuery({
         queryKey: ['branches'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/branches').then(r => r.data),
     })
     const branches: Branch[] = branchesData?.data ?? branchesData ?? []
 
     const { data: statsData } = useQuery({
         queryKey: ['users-stats'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/users/stats').then(r => r.data),
         enabled: canView,
     })
@@ -181,6 +185,7 @@ export function UsersPage() {
 
     const sessionsQuery = useQuery({
         queryKey: ['user-sessions', sessionsUser?.id],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get(`/users/${sessionsUser!.id}/sessions`).then(r => r.data),
         enabled: !!sessionsUser,
     })
@@ -841,6 +846,7 @@ export function UsersPage() {
 function AuditTrailModal({ user, onClose }: { user: User | null; onClose: () => void }) {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['user-audit-trail', user?.id],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/users/${user!.id}/audit-trail`).then(r => r.data),
         enabled: !!user,
     })

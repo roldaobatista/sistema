@@ -28,7 +28,8 @@ export function PortalWorkOrdersPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/portal-work-orders/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['portal-work-orders'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['portal-work-orders'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -39,6 +40,7 @@ export function PortalWorkOrdersPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-work-orders'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/portal/work-orders').then(res => res.data),
     })
 

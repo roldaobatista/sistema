@@ -12,8 +12,6 @@ import { IMPORT_ROW_STATUS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
-
-
 type Entity = 'customers' | 'products' | 'services' | 'equipments' | 'suppliers'
 type Step = 0 | 1 | 2 | 3
 type DuplicateStrategy = 'skip' | 'update' | 'create'
@@ -111,12 +109,14 @@ export default function ImportPage() {
     // Templates
     const { data: templates } = useQuery({
         queryKey: ['import-templates', entity],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/import/templates?entity_type=${entity}`).then(r => r.data.templates),
     })
 
     // Estatísticas
     const { data: statsData } = useQuery({
         queryKey: ['import-stats'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/import-stats').then(r => r.data.stats),
         enabled: showStats,
     })
@@ -124,6 +124,7 @@ export default function ImportPage() {
     // F6: Contagem de registros por entidade
     const { data: entityCounts } = useQuery({
         queryKey: ['import-entity-counts'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/import-entity-counts').then(r => r.data.counts),
         staleTime: 60_000,
     })
@@ -264,7 +265,7 @@ export default function ImportPage() {
         }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            setSuccessMessage('Template salvo com sucesso!')
+                setSuccessMessage('Template salvo com sucesso!')
             queryClient.invalidateQueries({ queryKey: ['import-templates'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
@@ -283,7 +284,7 @@ export default function ImportPage() {
         mutationFn: (id: number) => api.delete(`/import/templates/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            setSuccessMessage('Template removido!')
+                setSuccessMessage('Template removido!')
             queryClient.invalidateQueries({ queryKey: ['import-templates'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
@@ -320,7 +321,7 @@ export default function ImportPage() {
         mutationFn: (id: number) => api.delete(`/import/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            setSuccessMessage('Registro de importação removido.')
+                setSuccessMessage('Registro de importação removido.')
             queryClient.invalidateQueries({ queryKey: ['import-history'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
@@ -387,8 +388,6 @@ export default function ImportPage() {
             setErrorMessage('Erro ao exportar erros.')
         }
     }
-
-
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault()

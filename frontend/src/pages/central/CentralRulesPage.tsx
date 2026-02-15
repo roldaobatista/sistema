@@ -36,14 +36,15 @@ export function CentralRulesPage() {
     const [form, setForm] = useState({ ...emptyForm })
 
     const { data: rulesRes, isLoading } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['central-rules'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/rules'),
     })
     const rules: any[] = rulesRes?.data?.data ?? []
 
     const { data: usersRes } = useQuery({
         queryKey: ['users-central-rules'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 100 } }),
     })
     const users: any[] = usersRes?.data?.data ?? []
@@ -61,7 +62,7 @@ export function CentralRulesPage() {
         },
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['central-rules'] })
+                qc.invalidateQueries({ queryKey: ['central-rules'] })
             resetForm()
         },
     })
@@ -70,7 +71,7 @@ export function CentralRulesPage() {
         mutationFn: (id: number) => api.delete(`/central/rules/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['central-rules'] })
+                qc.invalidateQueries({ queryKey: ['central-rules'] })
         },
     })
 
@@ -79,7 +80,7 @@ export function CentralRulesPage() {
             api.patch(`/central/rules/${id}`, { ativo }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['central-rules'] })
+                qc.invalidateQueries({ queryKey: ['central-rules'] })
         },
     })
 

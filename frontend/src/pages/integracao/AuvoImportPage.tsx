@@ -33,7 +33,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 const ENTITY_LABELS: Record<string, string> = {
     customers: 'Clientes',
-    customer_segments: 'Segmentos',
+    segments: 'Segmentos',
     customer_groups: 'Grupos',
     equipments: 'Equipamentos',
     products: 'Produtos',
@@ -55,7 +55,8 @@ export function AuvoImportPage() {
     // MVP: Delete mutation
     const deleteMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/auvo/history/${id}`),
-        onSuccess: () => { toast.success('Registro removido'); queryClient.invalidateQueries({ queryKey: ['auvo'] }) },
+        onSuccess: () => { toast.success('Registro removido');
+                queryClient.invalidateQueries({ queryKey: ['auvo'] }) },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
     })
     const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover este registro?')) deleteMutation.mutate(id) }

@@ -23,7 +23,7 @@ class HandleWorkOrderCancellation implements ShouldQueue
         $wo->statusHistory()->create([
             'tenant_id' => $wo->tenant_id,
             'user_id' => $user->id,
-            'from_status' => $wo->getOriginal('status'),
+            'from_status' => $event->fromStatus,
             'to_status' => WorkOrder::STATUS_CANCELLED,
             'notes' => "OS cancelada por {$user->name}. Motivo: {$event->reason}",
         ]);

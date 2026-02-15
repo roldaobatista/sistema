@@ -41,25 +41,29 @@ export default function EmployeeDocumentsPage() {
 
     const { data: docsRes, isLoading } = useQuery({
         queryKey: ['employee-documents', categoryFilter, search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/documents', { params: { category: categoryFilter || undefined, search: search || undefined } }).then(r => r.data?.data ?? []),
     })
     const documents: EmployeeDocument[] = docsRes ?? []
 
     const { data: expiringRes } = useQuery({
         queryKey: ['employee-documents-expiring'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/documents/expiring').then(r => r.data?.data ?? []),
     })
     const expiringDocs: EmployeeDocument[] = expiringRes ?? []
 
     const { data: usersRes } = useQuery({
         queryKey: ['technicians-options'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options').then(r => r.data),
     })
     const users: { id: number; name: string }[] = usersRes ?? []
 
     const uploadMut = useMutation({
         mutationFn: (fd: FormData) => api.post('/hr/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['employee-documents'] }); qc.invalidateQueries({ queryKey: ['employee-documents-expiring'] }); setShowModal(false); setForm(emptyForm); setFile(null); toast.success('Documento adicionado') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['employee-documents'] });
+                qc.invalidateQueries({ queryKey: ['employee-documents-expiring'] }); setShowModal(false); setForm(emptyForm); setFile(null); toast.success('Documento adicionado') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao enviar documento'),
     })
 

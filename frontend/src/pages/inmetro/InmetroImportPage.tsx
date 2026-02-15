@@ -5,11 +5,9 @@ import {
     useImportXml, useSubmitPsieResults, useInmetroConfig,
     useUpdateInmetroConfig, useAvailableUfs, useInstrumentTypes
 } from '@/hooks/useInmetro'
-import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
+import { useAuthStore } from '@/stores/auth-store'
 const UF_REGIONS: Record<string, string[]> = {
     'Norte': ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'],
     'Nordeste': ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
@@ -20,21 +18,6 @@ const UF_REGIONS: Record<string, string[]> = {
 
 export function InmetroImportPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['inmetro-import'],
-    queryFn: () => api.get('/inmetro-import').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/inmetro-import/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-import'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-    const { hasPermission } = useAuthStore()
     const canImport = hasPermission('inmetro.intelligence.import')
     const [importType, setImportType] = useState('all')
     const [psieResults, setPsieResults] = useState('')
@@ -129,7 +112,7 @@ export function InmetroImportPage() {
                 onSuccess: (res) => {
                     const stats = res.data?.stats
                     toast.success(`PSIE: ${stats?.instruments_created ?? 0} instrumentos, ${stats?.owners_created ?? 0} proprietários, ${stats?.history_added ?? 0} históricos`)
-                    setPsieResults('')
+                setPsieResults('')
                 },
                 onError: () => toast.error('Erro ao salvar dados do PSIE'),
             })

@@ -47,12 +47,14 @@ export function ProductsPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['products', debouncedSearch],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/products', { params: { search: debouncedSearch, per_page: 50 } }),
     })
     const products: Product[] = res?.data?.data ?? []
 
     const { data: catsRes } = useQuery({
         queryKey: ['product-categories'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/product-categories'),
     })
     const categories = catsRes?.data ?? []

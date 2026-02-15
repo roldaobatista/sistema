@@ -28,6 +28,7 @@ export function PortalQuotesPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-quotes'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/portal/quotes').then(res => res.data),
     })
 
@@ -35,7 +36,7 @@ export function PortalQuotesPage() {
         mutationFn: (id: number) => api.post(`/portal/quotes/${id}/status`, { action: 'approve' }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['portal-quotes'] })
+                qc.invalidateQueries({ queryKey: ['portal-quotes'] })
         },
     })
 
@@ -44,7 +45,7 @@ export function PortalQuotesPage() {
             api.post(`/portal/quotes/${id}/status`, { action: 'reject', comments }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['portal-quotes'] })
+                qc.invalidateQueries({ queryKey: ['portal-quotes'] })
         },
     })
 

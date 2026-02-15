@@ -1,0 +1,58 @@
+﻿
+77% [tab-component] fleet/components/FleetPoolTab.tsx (112 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, Search
+  ÔØî Missing: ErrorState(10pt), Validation(4pt), DeleteConfirm(5pt)
+
+90% [tab-component] fleet/components/FuelComparisonTab.tsx (137 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, ErrorState, Search, Validation, DeleteConfirm
+  ÔØî Missing: EmptyState(8pt)
+
+90% [form] fiscal/FiscalEmitirDialog.tsx (278 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, ErrorState, PermissionCheck, Form, Validation
+  ÔØî Missing: EmptyState(8pt)
+
+91% [tabbed] fleet/FleetPage.tsx (137 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, ErrorState, Search, PermissionCheck, Validation, DeleteConfirm
+  ÔØî Missing: EmptyState(8pt)
+
+91% [utility] integracao/AuvoImportPage.tsx (457 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, ErrorState, Search, PermissionCheck, Form, Validation
+  ÔØî Missing: EmptyState(8pt)
+
+94% [tab-component] fleet/components/FleetAccidentsTab.tsx (103 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Validation, DeleteConfirm
+  ÔØî Missing: Search(5pt)
+
+95% [list] fiscal/FiscalNotesPage.tsx (367 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Pagination, PermissionCheck, Form, Validation
+  ÔØî Missing: DeleteConfirm(5pt)
+
+100% [tab-component] fleet/components/DriverScoreTab.tsx (108 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm
+
+100% [dashboard] fleet/components/FleetDashboardTab.tsx (138 lines)
+  Ô£à Has: Query, Toast, LoadingState, EmptyState, ErrorState, PermissionCheck
+
+100% [tab-component] fleet/components/FleetFinesTab.tsx (116 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm
+
+100% [tab-component] fleet/components/FleetFuelTab.tsx (98 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm
+
+100% [tab-component] fleet/components/FleetInspectionsTab.tsx (108 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm
+
+100% [tab-component] fleet/components/FleetInsuranceTab.tsx (129 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm
+
+100% [tab-component] fleet/components/FleetTiresTab.tsx (124 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm
+
+100% [tab-component] fleet/components/GpsLiveTab.tsx (103 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm
+
+100% [dashboard] fleet/components/TollDashboardTab.tsx (121 lines)
+  Ô£à Has: Query, Toast, LoadingState, EmptyState, ErrorState, PermissionCheck
+
+100% [tab-component] fleet/components/VehiclesTab.tsx (105 lines)
+  Ô£à Has: Query, Mutation, Toast, LoadingState, EmptyState, ErrorState, Search, Validation, DeleteConfirm

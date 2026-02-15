@@ -38,8 +38,8 @@ export function QuoteDetailPage() {
     const canConvert = hasPermission('quotes.quote.convert')
 
     const { data: quote, isLoading } = useQuery<Quote>({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['quote', id],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,
     })
@@ -136,6 +136,8 @@ export function QuoteDetailPage() {
 
     const cfg = QUOTE_STATUS_CONFIG[quote.status] ?? { label: quote.status, variant: 'default' }
     const isDraft = quote.status === QUOTE_STATUS.DRAFT
+    const isPendingInternal = quote.status === QUOTE_STATUS.PENDING_INTERNAL
+    const isInternallyApproved = quote.status === QUOTE_STATUS.INTERNALLY_APPROVED
     const isSent = quote.status === QUOTE_STATUS.SENT
     const isApproved = quote.status === QUOTE_STATUS.APPROVED
     const isRejected = quote.status === QUOTE_STATUS.REJECTED
@@ -163,8 +165,13 @@ export function QuoteDetailPage() {
                         <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orcamentos/${id}/editar`)}>Editar</Button>
                     )}
                     {canSend && isDraft && (
+                        <Button size="sm" variant="outline" icon={<Send className="h-4 w-4" />} onClick={() => sendMut.mutate()} disabled={sendMut.isPending}>
+                            {sendMut.isPending ? 'Solicitando...' : 'Solicitar Aprovação Interna'}
+                        </Button>
+                    )}
+                    {canSend && isInternallyApproved && (
                         <Button size="sm" icon={<Send className="h-4 w-4" />} onClick={() => sendMut.mutate()} disabled={sendMut.isPending}>
-                            {sendMut.isPending ? 'Enviando...' : 'Enviar'}
+                            {sendMut.isPending ? 'Enviando...' : 'Enviar ao Cliente'}
                         </Button>
                     )}
                     {canApprove && isSent && (
@@ -248,6 +255,7 @@ export function QuoteDetailPage() {
                     <h3 className="text-sm font-semibold text-content-secondary mb-3">Informações</h3>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span className="text-content-secondary">Vendedor</span><span>{quote.seller?.name ?? '—'}</span></div>
+                        {quote.source && <div className="flex justify-between"><span className="text-content-secondary">Origem</span><span className="capitalize">{quote.source.replace('_', ' ')}</span></div>}
                         <div className="flex justify-between"><span className="text-content-secondary">Validade</span><span>{quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('pt-BR') : '—'}</span></div>
                         <div className="flex justify-between"><span className="text-content-secondary">Criado em</span><span>{quote.created_at ? new Date(quote.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
                         {quote.sent_at && <div className="flex justify-between"><span className="text-content-secondary">Enviado em</span><span>{new Date(quote.sent_at).toLocaleDateString('pt-BR')}</span></div>}

@@ -28,16 +28,19 @@ export function PortalDashboardPage() {
 
     const { data: workOrders, isLoading: loadingWorkOrders, isError: errorWO } = useQuery({
         queryKey: ['portal-dashboard-os'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/portal/work-orders').then(res => res.data),
     })
 
     const { data: quotes, isLoading: loadingQuotes, isError: errorQuotes } = useQuery({
         queryKey: ['portal-dashboard-quotes'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/portal/quotes').then(res => res.data),
     })
 
     const { data: financials, isLoading: loadingFinancials, isError: errorFin } = useQuery({
         queryKey: ['portal-dashboard-financials'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/portal/financials').then(res => res.data),
     })
 

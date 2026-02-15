@@ -41,6 +41,7 @@ export function NotificationsPage() {
 
     const { data: res, isLoading, isError } = useQuery({
         queryKey: ['notifications-full'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/notifications?limit=100'),
         enabled: canViewNotifications,
     })
@@ -55,7 +56,7 @@ export function NotificationsPage() {
         mutationFn: (id: number) => api.put(`/notifications/${id}/read`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['notifications-full'] })
+                qc.invalidateQueries({ queryKey: ['notifications-full'] })
         },
     })
 
@@ -63,7 +64,7 @@ export function NotificationsPage() {
         mutationFn: () => api.put('/notifications/read-all'),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['notifications-full'] })
+                qc.invalidateQueries({ queryKey: ['notifications-full'] })
         },
     })
 

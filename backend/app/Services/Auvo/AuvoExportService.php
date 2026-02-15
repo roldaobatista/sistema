@@ -52,7 +52,7 @@ class AuvoExportService
         $auvoId = $auvoData['id'] ?? null;
 
         if ($auvoId) {
-            AuvoIdMapping::mapOrCreate('customers', (string)$auvoId, $customer->id, $customer->tenant_id);
+            AuvoIdMapping::mapOrCreate('customers', (int)$auvoId, $customer->id, $customer->tenant_id);
         }
 
         return $auvoData;
@@ -94,7 +94,7 @@ class AuvoExportService
             $auvoId = $auvoData['id'] ?? null;
 
             if ($auvoId) {
-                AuvoIdMapping::mapOrCreate('products', (string)$auvoId, $product->id, $product->tenant_id);
+                AuvoIdMapping::mapOrCreate('products', (int)$auvoId, $product->id, $product->tenant_id);
             }
             return $auvoData;
         }
@@ -133,7 +133,7 @@ class AuvoExportService
             $auvoId = $auvoData['id'] ?? null;
 
             if ($auvoId) {
-                AuvoIdMapping::mapOrCreate('services', (string)$auvoId, $service->id, $service->tenant_id);
+                AuvoIdMapping::mapOrCreate('services', (int)$auvoId, $service->id, $service->tenant_id);
             }
             return $auvoData;
         }
@@ -184,7 +184,7 @@ class AuvoExportService
         $auvoId = $auvoData['id'] ?? null;
 
         if ($auvoId) {
-            AuvoIdMapping::mapOrCreate('quotations', (string)$auvoId, $quote->id, $quote->tenant_id);
+            AuvoIdMapping::mapOrCreate('quotations', (int)$auvoId, $quote->id, $quote->tenant_id);
         }
 
         return $auvoData;

@@ -1,0 +1,13 @@
+﻿
+=== ITERATION 1 ===
+ÔØî Could not parse error from build output
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32mÔ£ô[39m 3414 modules transformed.
+[31mÔ£ù[39m Build failed in 53.15s
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 1 error:
+C:/projetos/sistema/frontend/src/pages/tecnicos/components/TechnicianRecommendationSelector.tsx:32:8: ERROR: Expected "}" but found "{"[31m
+file: [36mC:/projetos/sistema/frontend/src/pages/tecnicos/components/TechnicianRecommendationSelector.tsx:32:8[31m
+
+=== TOTAL ITERATIONS: 1 ===

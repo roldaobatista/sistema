@@ -81,6 +81,7 @@ export function ServiceCallCreatePage() {
 
     const { data: assigneesRes, isError: assigneesError } = useQuery({
         queryKey: ['service-call-assignees'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
         enabled: canAssign,
     })
@@ -139,7 +140,7 @@ export function ServiceCallCreatePage() {
         },
         onSuccess: (response) => {
             toast.success('Chamado criado com sucesso')
-            navigate(`/chamados/${response.data.id}`)
+                navigate(`/chamados/${response.data.id}`)
         },
         onError: (error: AxiosError<{ message?: string; errors?: FieldErrors }>) => {
             const status = error.response?.status

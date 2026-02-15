@@ -12,7 +12,8 @@ export default function PeopleAnalyticsPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/people-analytics/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['people-analytics'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['people-analytics'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -23,6 +24,7 @@ export default function PeopleAnalyticsPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['hr-analytics'],
+        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const response = await api.get('/hr/analytics/dashboard')
             return response.data

@@ -17,6 +17,7 @@ class StoreQuoteRequest extends FormRequest
         $tenantId = $this->user()->current_tenant_id ?? $this->user()->tenant_id;
 
         return [
+            'source' => 'nullable|in:prospeccao,retorno,contato_direto,indicacao',
             'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'seller_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'valid_until' => 'nullable|date|after:today',

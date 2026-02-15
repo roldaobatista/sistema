@@ -82,11 +82,13 @@ export default function StandardWeightsPage() {
 
     const { data: constants } = useQuery<Constants>({
         queryKey: ['standard-weights-constants'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/standard-weights/constants').then(r => r.data),
     })
 
     const { data, isLoading } = useQuery({
         queryKey: ['standard-weights', search, statusFilter, page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/standard-weights', {
             params: { search, status: statusFilter || undefined, page, per_page: 20 }
         }).then(r => r.data),
@@ -94,6 +96,7 @@ export default function StandardWeightsPage() {
 
     const { data: expiringData } = useQuery({
         queryKey: ['standard-weights-expiring'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/standard-weights/expiring', { params: { days: 30 } }).then(r => r.data),
     })
 
@@ -106,7 +109,7 @@ export default function StandardWeightsPage() {
         },
         onSuccess: () => {
             toast.success(editingWeight ? 'Peso padrão atualizado!' : 'Peso padrão criado!')
-            queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
+                queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
             setShowModal(false)
             setEditingWeight(null)
             setForm(emptyForm)
@@ -125,7 +128,7 @@ export default function StandardWeightsPage() {
         mutationFn: (id: number) => api.delete(`/standard-weights/${id}`),
         onSuccess: () => {
             toast.success('Peso padrão removido!')
-            queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
+                queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
         },
         onError: (err: any) => {
             if (err.response?.status === 409) {

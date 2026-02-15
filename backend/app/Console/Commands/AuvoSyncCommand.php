@@ -60,11 +60,11 @@ class AuvoSyncCommand extends Command
                 $this->table(
                     ['Metric', 'Count'],
                     [
-                        ['Total fetched', $result['totalFetched'] ?? $result['total_fetched'] ?? 0],
-                        ['Inserted', $result['inserted'] ?? 0],
-                        ['Updated', $result['updated'] ?? 0],
-                        ['Skipped', $result['skipped'] ?? 0],
-                        ['Errors', $result['errors'] ?? 0],
+                        ['Total fetched', $result['total_fetched'] ?? 0],
+                        ['Inserted', $result['total_imported'] ?? 0],
+                        ['Updated', $result['total_updated'] ?? 0],
+                        ['Skipped', $result['total_skipped'] ?? 0],
+                        ['Errors', $result['total_errors'] ?? 0],
                     ]
                 );
             } catch (\Throwable $e) {
@@ -80,8 +80,8 @@ class AuvoSyncCommand extends Command
 
                 foreach ($results as $ent => $result) {
                     $status = $result['status'] ?? 'done';
-                    $inserted = $result['inserted'] ?? 0;
-                    $errors = $result['errors'] ?? 0;
+                    $inserted = $result['total_imported'] ?? 0;
+                    $errors = $result['total_errors'] ?? 0;
 
                     $icon = $status === 'failed' ? '✗' : '✓';
                     $this->line("{$icon} {$ent}: {$inserted} imported, {$errors} errors");

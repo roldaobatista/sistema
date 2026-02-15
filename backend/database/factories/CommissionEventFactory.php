@@ -21,6 +21,7 @@ class CommissionEventFactory extends Factory
             'user_id' => User::factory(),
             'base_amount' => fake()->randomFloat(2, 500, 10000),
             'commission_amount' => fake()->randomFloat(2, 50, 1000),
+            'proportion' => 1.0000,
             'status' => CommissionEvent::STATUS_PENDING,
         ];
     }

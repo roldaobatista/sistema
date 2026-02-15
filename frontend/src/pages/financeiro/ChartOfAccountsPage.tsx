@@ -144,6 +144,7 @@ export function ChartOfAccountsPage() {
 
     const parentOptionsQuery = useQuery({
         queryKey: ['chart-of-accounts-parent-options'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: async () => {
             const response = await api.get<ApiResponse<Account[]>>('/chart-of-accounts', {
                 params: { is_active: 1 },
@@ -175,7 +176,7 @@ export function ChartOfAccountsPage() {
         },
         onSuccess: () => {
             toast.success('Plano de contas atualizado com sucesso')
-            qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
+                qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
             qc.invalidateQueries({ queryKey: ['chart-of-accounts-parent-options'] })
             setModal(null)
             setForm(emptyForm)
@@ -191,7 +192,7 @@ export function ChartOfAccountsPage() {
         },
         onSuccess: () => {
             toast.success('Conta removida com sucesso')
-            qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
+                qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
             qc.invalidateQueries({ queryKey: ['chart-of-accounts-parent-options'] })
             setDeleteTarget(null)
         },

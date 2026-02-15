@@ -26,18 +26,21 @@ export default function AutomationPage() {
 
     const { data: rulesData, isLoading: loadingRules } = useQuery({
         queryKey: ['automation-rules', search, page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/automation/rules', { params: { search: search || undefined, page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'rules',
     })
 
     const { data: webhooksData, isLoading: loadingWebhooks } = useQuery({
         queryKey: ['automation-webhooks', page],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/automation/webhooks', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'webhooks',
     })
 
     const { data: reportsData, isLoading: loadingReports } = useQuery({
         queryKey: ['automation-reports', page],
+        const { data } = useQuery({
         queryFn: () => api.get('/automation/reports', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'reports',
     })
@@ -46,14 +49,15 @@ export default function AutomationPage() {
         mutationFn: (id: number) => api.patch(`/automation/rules/${id}/toggle`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
+                queryClient.invalidateQueries({ queryKey: ['automation-rules'] })
         },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao alterar regra') },
     })
 
     const deleteRule = useMutation({
         mutationFn: (id: number) => api.delete(`/automation/rules/${id}`),
-        onSuccess: () => { toast.success('Regra removida com sucesso'); queryClient.invalidateQueries({ queryKey: ['automation-rules'] }) },
+        onSuccess: () => { toast.success('Regra removida com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['automation-rules'] }) },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover regra') },
     })
     const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover esta regra?')) deleteRule.mutate(id) }

@@ -16,6 +16,7 @@ export function FleetDashboardTab() {
 
     const { data, isLoading, isError, refetch: dashboard } = useQuery({
         queryKey: ['fleet-dashboard-advanced'],
+        const { data } = useQuery({
         queryFn: () => api.get('/fleet/dashboard').then(r => r.data?.data)
     })
 

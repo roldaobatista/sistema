@@ -37,6 +37,7 @@ export default function GeofenceLocationsPage() {
 
     const { data: geofencesRes, isLoading } = useQuery({
         queryKey: ['geofences'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/geofences').then(r => r.data?.data ?? []),
     })
 

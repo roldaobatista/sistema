@@ -14,7 +14,7 @@ class CommissionEvent extends Model
 
     protected $fillable = [
         'tenant_id', 'commission_rule_id', 'work_order_id', 'account_receivable_id', 'user_id',
-        'base_amount', 'commission_amount', 'proportion', 'status', 'notes',
+        'settlement_id', 'base_amount', 'commission_amount', 'proportion', 'status', 'notes',
     ];
 
     protected function casts(): array
@@ -52,5 +52,10 @@ class CommissionEvent extends Model
     public function accountReceivable(): BelongsTo
     {
         return $this->belongsTo(AccountReceivable::class);
+    }
+
+    public function settlement(): BelongsTo
+    {
+        return $this->belongsTo(CommissionSettlement::class);
     }
 }

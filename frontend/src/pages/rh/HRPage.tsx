@@ -37,18 +37,21 @@ export default function HRPage() {
 
     const { data: schedulesData, isLoading: loadingSchedules, isError: isErrorSchedules } = useQuery({
         queryKey: ['hr-schedules', page],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/hr/schedules', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'schedules',
     })
 
     const { data: clockData, isLoading: loadingClock, isError: isErrorClock } = useQuery({
         queryKey: ['hr-clock-all', page],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/hr/clock/all', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'clock',
     })
 
     const { data: trainingsData, isLoading: loadingTrainings, isError: isErrorTrainings } = useQuery({
         queryKey: ['hr-trainings', page],
+        const { data } = useQuery({
         queryFn: () => api.get('/hr/trainings', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'trainings',
     })
@@ -66,6 +69,7 @@ export default function HRPage() {
 
     const { data: users } = useQuery({
         queryKey: ['users-list'],
+        const { data } = useQuery({
         queryFn: () => api.get('/users').then(r => r.data?.data),
         enabled: tab === 'feedback'
     })
@@ -97,10 +101,9 @@ export default function HRPage() {
         })
     }
 
-
-
     const { data: dashboard } = useQuery({
         queryKey: ['hr-dashboard'],
+        const { data } = useQuery({
         queryFn: () => api.get('/hr/dashboard').then(r => r.data?.data),
         enabled: tab === 'dashboard',
     })

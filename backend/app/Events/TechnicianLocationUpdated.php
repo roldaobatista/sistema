@@ -46,7 +46,7 @@ class TechnicianLocationUpdated implements ShouldBroadcastNow
         
         $tenantId = $this->technician['tenant_id'];
         return [
-            new Channel('dashboard.' . $tenantId),
+            new PrivateChannel('dashboard.' . $tenantId),
         ];
     }
 

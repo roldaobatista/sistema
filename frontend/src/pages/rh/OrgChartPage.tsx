@@ -1,5 +1,4 @@
 ﻿import { useState , useMemo } from 'react'
-import { toast } from 'sonner'
 import { useOrganization } from '@/hooks/useOrganization'
 import { PageHeader } from '@/components/ui/pageheader'
 import { Button } from '@/components/ui/button'
@@ -12,30 +11,10 @@ import {
 } from '@/components/ui/dialog'
 import { Plus, Pencil, Trash2, Network, Building2, UserCircle } from 'lucide-react'
 import { Department, Position } from '@/types/hr'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export default function OrgChartPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['org-chart'],
-    queryFn: () => api.get('/org-chart').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/org-chart/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['org-chart'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const {
-  const [searchTerm, setSearchTerm] = useState('')
         departments, loadingDepts, createDept, updateDept, deleteDept,
         positions, loadingPositions, createPosition, updatePosition, deletePosition
     } = useOrganization()

@@ -1,0 +1,55 @@
+﻿=== COMPREHENSIVE FIX RESULTS ===
+  COLLAPSED_TOAST CrmPipelinePage.tsx
+  COLLAPSED_TOAST MessageTemplatesPage.tsx
+  COLLAPSED_TOAST AutomationPage.tsx
+  COLLAPSED_TOAST CustomerMergePage.tsx
+  COLLAPSED_TOAST CustomersPage.tsx
+  COLLAPSED_TOAST ProductsPage.tsx
+  COLLAPSED_TOAST ServicesPage.tsx
+  COLLAPSED_TOAST SuppliersPage.tsx
+  COLLAPSED_TOAST CentralPage.tsx
+  COLLAPSED_TOAST CentralRulesPage.tsx
+  COLLAPSED_TOAST ServiceCallCreatePage.tsx
+  COLLAPSED_TOAST ServiceCallDetailPage.tsx
+  COLLAPSED_TOAST ServiceCallEditPage.tsx
+  COLLAPSED_TOAST ServiceCallsPage.tsx
+  COLLAPSED_TOAST BranchesPage.tsx
+  COLLAPSED_TOAST ProfilePage.tsx
+  COLLAPSED_TOAST EquipmentCreatePage.tsx
+  COLLAPSED_TOAST EquipmentListPage.tsx
+  COLLAPSED_TOAST StandardWeightsPage.tsx
+  COLLAPSED_TOAST InventoryCreatePage.tsx
+  COLLAPSED_TOAST InventoryExecutionPage.tsx
+  COLLAPSED_TOAST StockMovementsPage.tsx
+  COLLAPSED_TOAST BankReconciliationPage.tsx
+  COLLAPSED_TOAST ChartOfAccountsPage.tsx
+  COLLAPSED_TOAST FuelingLogsPage.tsx
+  COLLAPSED_TOAST InvoicesPage.tsx
+  COLLAPSED_TOAST PaymentsPage.tsx
+  COLLAPSED_TOAST ReconciliationRulesPage.tsx
+  COLLAPSED_TOAST FiscalNotesPage.tsx
+  COLLAPSED_TOAST ImportPage.tsx
+  COLLAPSED_TOAST InmetroImportPage.tsx
+  COLLAPSED_TOAST InmetroLeadsPage.tsx
+  COLLAPSED_TOAST InmetroOwnerDetailPage.tsx
+  COLLAPSED_TOAST AuvoImportPage.tsx
+  COLLAPSED_TOAST NotificationsPage.tsx
+  COLLAPSED_TOAST ChecklistForm.tsx
+  COLLAPSED_TOAST QuoteCreatePage.tsx
+  COLLAPSED_TOAST QuoteEditPage.tsx
+  COLLAPSED_TOAST RecurringContractsPage.tsx
+  COLLAPSED_TOAST ServiceChecklistsPage.tsx
+  COLLAPSED_TOAST SlaPoliciesPage.tsx
+  COLLAPSED_TOAST WorkOrderDetailPage.tsx
+  COLLAPSED_TOAST WorkOrdersListPage.tsx
+  COLLAPSED_TOAST PortalQuotesPage.tsx
+  COLLAPSED_TOAST PortalServiceCallPage.tsx
+  COLLAPSED_TOAST ClockInPage.tsx
+  COLLAPSED_TOAST RecruitmentKanbanPage.tsx
+  COLLAPSED_TOAST TechBarcodePage.tsx
+  COLLAPSED_TOAST TechSealsPage.tsx
+  COLLAPSED_TOAST TechVoiceReportPage.tsx
+  COLLAPSED_TOAST TimeEntriesPage.tsx
+
+Total files fixed: 51
+Files: CrmPipelinePage.tsx, MessageTemplatesPage.tsx, automacao/AutomationPage.tsx, cadastros/CustomerMergePage.tsx, cadastros/CustomersPage.tsx, cadastros/ProductsPage.tsx, cadastros/ServicesPage.tsx, cadastros/SuppliersPage.tsx, central/CentralPage.tsx, central/CentralRulesPage.tsx, chamados/ServiceCallCreatePage.tsx, chamados/ServiceCallDetailPage.tsx, chamados/ServiceCallEditPage.tsx, chamados/ServiceCallsPage.tsx, configuracoes/BranchesPage.tsx, configuracoes/ProfilePage.tsx, equipamentos/EquipmentCreatePage.tsx, equipamentos/EquipmentListPage.tsx, equipamentos/StandardWeightsPage.tsx, estoque/InventoryCreatePage.tsx, estoque/InventoryExecutionPage.tsx, estoque/StockMovementsPage.tsx, financeiro/BankReconciliationPage.tsx, financeiro/ChartOfAccountsPage.tsx, financeiro/FuelingLogsPage.tsx, financeiro/InvoicesPage.tsx, financeiro/PaymentsPage.tsx, financeiro/ReconciliationRulesPage.tsx, fiscal/FiscalNotesPage.tsx, importacao/ImportPage.tsx, inmetro/InmetroImportPage.tsx, inmetro/InmetroLeadsPage.tsx, inmetro/InmetroOwnerDetailPage.tsx, integracao/AuvoImportPage.tsx, notificacoes/NotificationsPage.tsx, operational/checklists/components/ChecklistForm.tsx, orcamentos/QuoteCreatePage.tsx, orcamentos/QuoteEditPage.tsx, os/RecurringContractsPage.tsx, os/ServiceChecklistsPage.tsx, os/SlaPoliciesPage.tsx, os/WorkOrderDetailPage.tsx, os/WorkOrdersListPage.tsx, portal/PortalQuotesPage.tsx, portal/PortalServiceCallPage.tsx, rh/ClockInPage.tsx, rh/RecruitmentKanbanPage.tsx, tech/TechBarcodePage.tsx, tech/TechSealsPage.tsx, tech/TechVoiceReportPage.tsx, tecnicos/TimeEntriesPage.tsx

@@ -41,6 +41,7 @@ export function CentralDashboardPage() {
 
     const { data: kpisRes, isLoading: loadingKpis } = useQuery({
         queryKey: ['central-kpis'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/kpis'),
         refetchInterval: 60000,
     })
@@ -48,6 +49,7 @@ export function CentralDashboardPage() {
 
     const { data: workloadRes, isLoading: loadingWorkload } = useQuery({
         queryKey: ['central-workload'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/workload'),
         refetchInterval: 60000,
     })
@@ -55,6 +57,7 @@ export function CentralDashboardPage() {
 
     const { data: overdueRes, isLoading: loadingOverdue } = useQuery({
         queryKey: ['central-overdue-by-team'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/overdue-by-team'),
         refetchInterval: 60000,
     })

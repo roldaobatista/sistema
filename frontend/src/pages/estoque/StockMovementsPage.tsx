@@ -60,6 +60,7 @@ export function StockMovementsPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['stock-movements', search, typeFilter, page],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/stock/movements', { params: { search, type: typeFilter || undefined, page, per_page: 25 } }),
     })
     const movements: StockMovement[] = res?.data?.data ?? []
@@ -67,12 +68,14 @@ export function StockMovementsPage() {
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-select'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 200 } }),
     })
     const products = productsRes?.data?.data ?? []
 
     const { data: warehousesRes } = useQuery({
         queryKey: ['warehouses-select'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/warehouses'),
     })
     const warehouses = warehousesRes?.data?.data ?? []
@@ -101,7 +104,7 @@ export function StockMovementsPage() {
         onSuccess: (res) => {
             qc.invalidateQueries({ queryKey: ['stock-movements'] })
             toast.success('XML processado com sucesso!')
-            setShowXmlModal(false)
+                setShowXmlModal(false)
             setXmlFile(null)
             const errors = res.data.data.errors
             if (errors && errors.length > 0) {

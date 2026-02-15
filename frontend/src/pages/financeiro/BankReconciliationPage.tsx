@@ -157,6 +157,7 @@ export function BankReconciliationPage() {
 
     const summaryQuery = useQuery({
         queryKey: ['bank-reconciliation-summary'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: async () => {
             const { data } = await api.get<{ success: boolean; data: SummaryData }>('/bank-reconciliation/summary')
             return data.data
@@ -292,7 +293,7 @@ export function BankReconciliationPage() {
         },
         onSuccess: (data) => {
             toast.success(data?.message || 'Regra sugerida criada com sucesso')
-            qc.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+                qc.invalidateQueries({ queryKey: ['reconciliation-rules'] })
         },
         onError: (error: { response?: { data?: { message?: string } } }) => {
             toast.error(error?.response?.data?.message ?? 'Erro ao sugerir regra')
@@ -305,7 +306,7 @@ export function BankReconciliationPage() {
         },
         onSuccess: () => {
             toast.success('Extrato excluído')
-            setDeleteConfirm(null)
+                setDeleteConfirm(null)
             if (expandedId === deleteConfirm) setExpandedId(null)
             invalidateAll()
         },
@@ -324,7 +325,7 @@ export function BankReconciliationPage() {
         },
         onSuccess: (result) => {
             toast.success(`${result?.processed ?? 0} de ${result?.total ?? 0} lançamentos processados`)
-            setSelectedEntries(new Set())
+                setSelectedEntries(new Set())
             invalidateAll()
         },
         onError: (error: { response?: { data?: { message?: string } } }) => {

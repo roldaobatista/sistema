@@ -28,7 +28,7 @@ interface ItemForm {
 }
 
 export function QuoteEditPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
@@ -37,14 +37,15 @@ export function QuoteEditPage() {
     const [validUntil, setValidUntil] = useState('')
     const [observations, setObservations] = useState('')
     const [internalNotes, setInternalNotes] = useState('')
+    const [source, setSource] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
     const [discountAmount, setDiscountAmount] = useState(0)
     const [addItemEquipmentId, setAddItemEquipmentId] = useState<number | null>(null)
     const [newItem, setNewItem] = useState<ItemForm>({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
 
     const { data: quote, isLoading } = useQuery<Quote>({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['quote', id],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,
     })
@@ -57,6 +58,7 @@ export function QuoteEditPage() {
             setValidUntil(quote.valid_until ? new Date(quote.valid_until).toISOString().slice(0, 10) : '')
             setObservations(quote.observations ?? '')
             setInternalNotes(quote.internal_notes ?? '')
+            setSource(quote.source ?? '')
             setDiscountPercentage(parseFloat(String(quote.discount_percentage)) || 0)
             setDiscountAmount(parseFloat(String(quote.discount_amount)) || 0)
         }
@@ -90,7 +92,7 @@ export function QuoteEditPage() {
         mutationFn: ({ equipId, data }: { equipId: number; data: ItemForm }) => api.post(`/quote-equipments/${equipId}/items`, data),
         onSuccess: () => {
             toast.success('Item adicionado!')
-            setAddItemEquipmentId(null)
+                setAddItemEquipmentId(null)
             setNewItem({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
             invalidateAll()
         },
@@ -100,6 +102,7 @@ export function QuoteEditPage() {
     const handleSaveGeneral = () => {
         updateMut.mutate({
             valid_until: validUntil || null,
+            source: source || null,
             observations: observations || null,
             internal_notes: internalNotes || null,
             discount_percentage: discountPercentage,
@@ -168,6 +171,17 @@ export function QuoteEditPage() {
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-content-secondary mb-1">Notas Internas</label>
                         <textarea className="w-full rounded-lg border border-default p-3 text-sm min-h-[60px]" value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-content-secondary mb-1">Origem Comercial</label>
+                        <select value={source} onChange={e => setSource(e.target.value)}
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                            <option value="">Selecione (opcional)</option>
+                            <option value="prospeccao">Prospecção</option>
+                            <option value="retorno">Retorno</option>
+                            <option value="contato_direto">Contato Direto</option>
+                            <option value="indicacao">Indicação</option>
+                        </select>
                     </div>
                 </div>
                 <div className="flex justify-end mt-4">

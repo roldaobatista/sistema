@@ -18,6 +18,7 @@ export default function InventoryCreatePage() {
 
     const { data: warehousesRes, isLoading: loadingWarehouses } = useQuery({
         queryKey: ['warehouses'],
+        const { data } = useQuery({
         queryFn: () => api.get('/inventory/warehouses')
     })
     const warehouses = warehousesRes?.data || []
@@ -26,7 +27,7 @@ export default function InventoryCreatePage() {
         mutationFn: (data: any) => api.post('/inventory/inventories', data),
         onSuccess: (res) => {
             toast.success('Sessão de inventário iniciada!')
-            navigate(`/estoque/inventarios/${res.data.data.id}`)
+                navigate(`/estoque/inventarios/${res.data.data.id}`)
         },
         onError: (err: any) => {
             toast.error(err?.response?.data?.message || 'Erro ao iniciar inventário')

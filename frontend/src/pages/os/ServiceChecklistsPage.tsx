@@ -41,6 +41,7 @@ export function ServiceChecklistsPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['service-checklists'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-checklists'),
     })
     const checklists: Checklist[] = res?.data?.data ?? []
@@ -52,7 +53,7 @@ export function ServiceChecklistsPage() {
                 : api.post('/service-checklists', payload),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['service-checklists'] })
+                qc.invalidateQueries({ queryKey: ['service-checklists'] })
             resetForm()
         },
     })
@@ -61,7 +62,7 @@ export function ServiceChecklistsPage() {
         mutationFn: (id: number) => api.delete(`/service-checklists/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['service-checklists'] })
+                qc.invalidateQueries({ queryKey: ['service-checklists'] })
         },
     })
 

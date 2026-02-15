@@ -103,6 +103,7 @@ export function PaymentsPage() {
 
     const { data: methods = [] } = useQuery({
         queryKey: ['payment-methods'],
+        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const { data } = await api.get<Array<{ id: number; name: string; code: string }>>('/payment-methods')
             return data
@@ -116,7 +117,7 @@ export function PaymentsPage() {
         },
         onSuccess: () => {
             toast.success('Pagamento estornado com sucesso')
-            qc.invalidateQueries({ queryKey: ['payments'] })
+                qc.invalidateQueries({ queryKey: ['payments'] })
             qc.invalidateQueries({ queryKey: ['payments-summary'] })
         },
         onError: (error: ApiErrorLike) => {

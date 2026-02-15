@@ -13,8 +13,8 @@ export function FleetPoolTab() {
 
     const queryClient = useQueryClient()
     const { data: requests, isLoading } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['fleet-pool-requests'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/pool-requests').then(r => r.data)
     })
 

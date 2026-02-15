@@ -15,11 +15,13 @@ export function TollDashboardTab() {
 
     const { data: tolls, isLoading } = useQuery({
         queryKey: ['fleet-tolls', vehicleFilter],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/tolls', { params: { fleet_vehicle_id: vehicleFilter || undefined } }).then(r => r.data)
     })
 
     const { data: summary } = useQuery({
         queryKey: ['fleet-tolls-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/tolls/summary').then(r => r.data)
     })
 

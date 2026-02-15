@@ -38,9 +38,6 @@ const statusConfig: Record<string, { label: string; variant: 'warning' | 'info' 
     [FINANCIAL_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'default' },
 }
 
-
-
-
 interface AP {
     id: number; supplier_id: number | null; category_id: number | null
     chart_of_account_id?: number | null
@@ -118,6 +115,7 @@ export function AccountsPayablePage() {
 
     const { data: res, isLoading, isError, refetch } = useQuery({
         queryKey: ['accounts-payable', search, statusFilter, catFilter, page],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/accounts-payable', {
             params: { search: search || undefined, status: statusFilter || undefined, category: catFilter || undefined, per_page: 50, page },
         }),
@@ -127,30 +125,35 @@ export function AccountsPayablePage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['ap-summary'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/accounts-payable-summary'),
     })
     const summary: AppSummary = summaryRes?.data ?? {}
 
     const { data: catRes } = useQuery({
         queryKey: ['ap-categories'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/account-payable-categories'),
     })
     const categories: { id: number; name: string }[] = catRes?.data ?? []
 
     const { data: suppRes } = useQuery({
         queryKey: ['suppliers-select'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/suppliers', { params: { per_page: 200 } }),
     })
     const suppliers: { id: number; name: string }[] = suppRes?.data?.data ?? suppRes?.data ?? []
 
     const { data: pmRes } = useQuery({
         queryKey: ['payment-methods'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/payment-methods'),
     })
     const paymentMethods: { id: number; name: string; code: string }[] = pmRes?.data ?? []
 
     const { data: chartRes } = useQuery({
         queryKey: ['chart-of-accounts-payable'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/chart-of-accounts', { params: { is_active: 1, type: 'expense' } }),
         enabled: canViewChart && showForm,
     })

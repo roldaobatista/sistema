@@ -11,7 +11,8 @@ export function DriverScoreTab() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/driver-score/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['driver-score'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['driver-score'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -22,6 +23,7 @@ export function DriverScoreTab() {
 
     const { data: ranking, isLoading } = useQuery({
         queryKey: ['fleet-driver-ranking'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/driver-ranking').then(r => r.data?.data)
     })
 

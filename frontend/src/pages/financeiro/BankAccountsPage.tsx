@@ -50,6 +50,7 @@ export function BankAccountsPage() {
 
     const { data: accountsRes, isLoading } = useQuery({
         queryKey: ['bank-accounts', search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/bank-accounts', { params: { search: search || undefined } }),
     })
 

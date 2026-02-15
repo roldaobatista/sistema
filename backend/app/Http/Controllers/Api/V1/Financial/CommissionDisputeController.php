@@ -215,7 +215,7 @@ class CommissionDisputeController extends Controller
                 'commission_events.commission_amount',
                 'commission_events.base_amount',
                 'commission_events.work_order_id',
-                'commission_events.type as event_type',
+                'commission_events.status as event_status',
                 'work_orders.os_number',
                 'work_orders.number as work_order_number',
                 'resolver.name as resolved_by_name'

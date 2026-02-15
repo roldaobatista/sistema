@@ -1,30 +1,10 @@
 import { useState, useEffect , useMemo } from 'react'
-import { toast } from 'sonner'
 import { Warehouse, Search, Phone, Mail, MapPin, RefreshCw, Loader2, Wrench, Shield, ChevronDown, ChevronUp, Calendar, Award, Scale } from 'lucide-react'
 import { useInmetroCompetitors, type InmetroCompetitor } from '@/hooks/useInmetro'
 import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
 import { Badge } from '@/components/ui/badge'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export function InmetroCompetitorsPage() {
-
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['inmetro-competitors'],
-    queryFn: () => api.get('/inmetro-competitors').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/inmetro-competitors/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['inmetro-competitors'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
 
     const [searchInput, setSearchInput] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')

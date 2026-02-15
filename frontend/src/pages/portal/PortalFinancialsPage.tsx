@@ -23,15 +23,16 @@ export function PortalFinancialsPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/portal-financials/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['portal-financials'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['portal-financials'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const { data, isLoading, isError, refetch } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['portal-financials'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/portal/financials').then(res => res.data),
     })
 

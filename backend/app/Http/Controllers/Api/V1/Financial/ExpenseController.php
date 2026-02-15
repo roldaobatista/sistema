@@ -28,7 +28,7 @@ class ExpenseController extends Controller
     {
         try {
             $tenantId = $this->tenantId($request);
-            $query = Expense::with(['category:id,name,color', 'creator:id,name', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type'])
+            $query = Expense::with(['category:id,name,color', 'creator:id,name', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type', 'reviewer:id,name'])
                 ->where('tenant_id', $tenantId);
 
             if ($search = $request->get('search')) {
@@ -143,6 +143,7 @@ class ExpenseController extends Controller
                 'category:id,name,color',
                 'creator:id,name',
                 'approver:id,name',
+                'reviewer:id,name',
                 'workOrder:id,number,os_number',
                 'chartOfAccount:id,code,name,type',
             ]));
@@ -236,7 +237,7 @@ class ExpenseController extends Controller
             }
 
             $validated = $request->validate([
-                'status' => ['required', Rule::in([Expense::STATUS_PENDING, Expense::STATUS_APPROVED, Expense::STATUS_REJECTED, Expense::STATUS_REIMBURSED])],
+                'status' => ['required', Rule::in([Expense::STATUS_PENDING, Expense::STATUS_REVIEWED, Expense::STATUS_APPROVED, Expense::STATUS_REJECTED, Expense::STATUS_REIMBURSED])],
                 'rejection_reason' => 'nullable|string|max:500',
             ]);
 
@@ -244,7 +245,8 @@ class ExpenseController extends Controller
             $rejectionReason = trim((string) ($validated['rejection_reason'] ?? ''));
 
             $allowed = [
-                Expense::STATUS_PENDING => [Expense::STATUS_APPROVED, Expense::STATUS_REJECTED],
+                Expense::STATUS_PENDING  => [Expense::STATUS_REVIEWED, Expense::STATUS_APPROVED, Expense::STATUS_REJECTED],
+                Expense::STATUS_REVIEWED => [Expense::STATUS_APPROVED, Expense::STATUS_REJECTED],
                 Expense::STATUS_APPROVED => [Expense::STATUS_REIMBURSED],
                 Expense::STATUS_REJECTED => [Expense::STATUS_PENDING],
             ];
@@ -277,7 +279,10 @@ class ExpenseController extends Controller
                     ? $rejectionReason
                     : null,
             ];
-            if ($newStatus === Expense::STATUS_APPROVED) {
+            if ($newStatus === Expense::STATUS_REVIEWED) {
+                $data['reviewed_by'] = $request->user()->id;
+                $data['reviewed_at'] = now();
+            } elseif ($newStatus === Expense::STATUS_APPROVED) {
                 $data['approved_by'] = $request->user()->id;
             } elseif ($newStatus === Expense::STATUS_REJECTED) {
                 $data['approved_by'] = null;
@@ -442,21 +447,25 @@ class ExpenseController extends Controller
             $stats = Expense::where('tenant_id', $tenantId)
                 ->selectRaw("
                     SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) as pending_total,
+                    SUM(CASE WHEN status = 'reviewed' THEN amount ELSE 0 END) as reviewed_total,
                     SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END) as approved_total,
                     SUM(CASE WHEN status = 'reimbursed' THEN amount ELSE 0 END) as reimbursed_total,
                     SUM(CASE WHEN status != 'rejected' AND {$monthCondition} THEN amount ELSE 0 END) as month_total,
                     COUNT(*) as total_count,
-                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                    SUM(CASE WHEN status = 'reviewed' THEN 1 ELSE 0 END) as reviewed_count
                 ", [$currentMonth, $currentYear])
                 ->first();
 
             return response()->json([
                 'pending' => round((float) ($stats->pending_total ?? 0), 2),
+                'reviewed' => round((float) ($stats->reviewed_total ?? 0), 2),
                 'approved' => round((float) ($stats->approved_total ?? 0), 2),
                 'month_total' => round((float) ($stats->month_total ?? 0), 2),
                 'reimbursed' => round((float) ($stats->reimbursed_total ?? 0), 2),
                 'total_count' => (int) ($stats->total_count ?? 0),
                 'pending_count' => (int) ($stats->pending_count ?? 0),
+                'reviewed_count' => (int) ($stats->reviewed_count ?? 0),
             ]);
         } catch (\Exception $e) {
             Log::error('Expense summary failed', ['error' => $e->getMessage()]);
@@ -657,7 +666,7 @@ class ExpenseController extends Controller
 
             $expenses = Expense::where('tenant_id', $tenantId)
                 ->whereIn('id', $validated['expense_ids'])
-                ->where('status', Expense::STATUS_PENDING)
+                ->whereIn('status', [Expense::STATUS_PENDING, Expense::STATUS_REVIEWED])
                 ->get();
 
             if ($expenses->isEmpty()) {
@@ -857,12 +866,20 @@ class ExpenseController extends Controller
         $currentMonth = $expense->expense_date?->month ?? now()->month;
         $currentYear = $expense->expense_date?->year ?? now()->year;
 
-        $monthTotal = Expense::where('tenant_id', $tenantId)
+        $query = Expense::where('tenant_id', $tenantId)
             ->where('expense_category_id', $expense->expense_category_id)
-            ->whereMonth('expense_date', $currentMonth)
-            ->whereYear('expense_date', $currentYear)
-            ->whereNotIn('status', [Expense::STATUS_REJECTED])
-            ->sum('amount');
+            ->whereNotIn('status', [Expense::STATUS_REJECTED]);
+
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            $query->whereRaw("CAST(strftime('%m', expense_date) AS INTEGER) = ?", [$currentMonth])
+                  ->whereRaw("CAST(strftime('%Y', expense_date) AS INTEGER) = ?", [$currentYear]);
+        } else {
+            $query->whereMonth('expense_date', $currentMonth)
+                  ->whereYear('expense_date', $currentYear);
+        }
+
+        $monthTotal = $query->sum('amount');
 
         if (bccomp((string) $monthTotal, (string) $category->budget_limit, 2) > 0) {
             $used = bcadd((string) $monthTotal, '0', 2);

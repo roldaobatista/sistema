@@ -49,8 +49,15 @@ class QuoteServiceTest extends TestCase
     {
         $quote = $this->service->createQuote([
             'customer_id' => $this->customer->id,
-            'title' => 'Orçamento de calibração',
             'valid_until' => now()->addDays(30)->format('Y-m-d'),
+            'equipments' => [
+                [
+                    'equipment_id' => \App\Models\Equipment::factory()->create(['tenant_id' => $this->tenant->id])->id,
+                    'items' => [
+                        ['type' => 'service', 'service_id' => \App\Models\Service::factory()->create(['tenant_id' => $this->tenant->id])->id, 'quantity' => 1, 'original_price' => 100, 'unit_price' => 100, 'discount_percentage' => 0],
+                    ],
+                ],
+            ],
         ], $this->tenant->id, $this->user->id);
 
         $this->assertInstanceOf(Quote::class, $quote);
@@ -66,8 +73,25 @@ class QuoteServiceTest extends TestCase
         $quote = Quote::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
-            'status' => Quote::STATUS_DRAFT,
+            'status' => Quote::STATUS_INTERNALLY_APPROVED,
             'valid_until' => now()->addDays(30),
+        ]);
+
+        // Precisa ter ao menos 1 equipamento com item
+        $eq = $quote->equipments()->create([
+            'tenant_id' => $this->tenant->id,
+            'equipment_id' => \App\Models\Equipment::factory()->create(['tenant_id' => $this->tenant->id])->id,
+            'sort_order' => 0,
+        ]);
+        $eq->items()->create([
+            'tenant_id' => $this->tenant->id,
+            'type' => 'service',
+            'service_id' => \App\Models\Service::factory()->create(['tenant_id' => $this->tenant->id])->id,
+            'quantity' => 1,
+            'original_price' => 100,
+            'unit_price' => 100,
+            'discount_percentage' => 0,
+            'sort_order' => 0,
         ]);
 
         $result = $this->service->sendQuote($quote);
@@ -134,7 +158,6 @@ class QuoteServiceTest extends TestCase
         $original = Quote::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
-            'title' => 'Original',
             'status' => Quote::STATUS_APPROVED,
             'valid_until' => now()->addDays(30),
         ]);
@@ -164,8 +187,8 @@ class QuoteServiceTest extends TestCase
         $this->assertEquals($this->customer->id, $wo->customer_id);
         $this->assertEquals($this->tenant->id, $wo->tenant_id);
 
-        // Quote should be marked as converted
+        // Quote should be marked as invoiced after conversion
         $quote->refresh();
-        $this->assertEquals(Quote::STATUS_CONVERTED, $quote->status);
+        $this->assertEquals(Quote::STATUS_INVOICED, $quote->status);
     }
 }

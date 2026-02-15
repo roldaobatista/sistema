@@ -115,12 +115,13 @@ class CommissionServiceTest extends TestCase
         CommissionRule::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Rule Zero',
-            'role' => 'technician',
-            'calculation_type' => 'percentage',
-            'rate' => 10,
-            'base_field' => 'total',
-            'trigger_event' => 'os_completed',
-            'is_active' => true,
+            'type' => CommissionRule::TYPE_PERCENTAGE,
+            'applies_to_role' => CommissionRule::ROLE_TECHNICIAN,
+            'calculation_type' => CommissionRule::CALC_PERCENT_GROSS,
+            'value' => 10,
+            'applies_to' => CommissionRule::APPLIES_ALL,
+            'applies_when' => CommissionRule::WHEN_OS_COMPLETED,
+            'active' => true,
         ]);
 
         $events = $this->service->calculateAndGenerate($wo);
@@ -138,12 +139,13 @@ class CommissionServiceTest extends TestCase
         CommissionRule::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Rule Sim',
-            'role' => 'technician',
-            'calculation_type' => 'percentage',
-            'rate' => 10,
-            'base_field' => 'total',
-            'trigger_event' => 'os_completed',
-            'is_active' => true,
+            'type' => CommissionRule::TYPE_PERCENTAGE,
+            'applies_to_role' => CommissionRule::ROLE_TECHNICIAN,
+            'calculation_type' => CommissionRule::CALC_PERCENT_GROSS,
+            'value' => 10,
+            'applies_to' => CommissionRule::APPLIES_ALL,
+            'applies_when' => CommissionRule::WHEN_OS_COMPLETED,
+            'active' => true,
         ]);
 
         $beforeCount = CommissionEvent::count();

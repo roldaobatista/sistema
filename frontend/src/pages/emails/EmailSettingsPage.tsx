@@ -19,9 +19,6 @@ import {
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 // ── Account Form ─────────────────────────────
 function AccountFormDialog({
@@ -155,22 +152,6 @@ function AccountFormDialog({
 // ── Main Settings Page ──────────────────────────
 export default function EmailSettingsPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['email-settings'],
-    queryFn: () => api.get('/email-settings').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/email-settings/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['email-settings'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const navigate = useNavigate()
     const { data: accountsData, isLoading: loadingAccounts } = useEmailAccounts()
     const { data: rulesData, isLoading: loadingRules } = useEmailRules()
@@ -189,7 +170,6 @@ export default function EmailSettingsPage() {
     const openCreate = () => { setEditingAccount(undefined); setAccountFormOpen(true) }
     const openEdit = (a: EmailAccount) => { setEditingAccount(a); setAccountFormOpen(true) }
 
-  const [searchTerm, setSearchTerm] = useState('')
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-6">
             <div className="flex items-center gap-3">

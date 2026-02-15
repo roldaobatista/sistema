@@ -20,19 +20,15 @@ interface ItemRow {
 }
 
 export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) {
-  const { user } = useAuthStore()
-  const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
     const isNFe = type === 'nfe'
     const title = isNFe ? 'Emitir NF-e' : 'Emitir NFS-e'
 
-    const [customerId, setCustomerId] = useState<number | ''>('')
-    const [workOrderId, setWorkOrderId] = useState<number | ''>('')
-    const [items, setItems] = useState<ItemRow[]>([
         { description: '', quantity: 1, unit_price: 0, ncm: '', service_code: '' },
     ])
 
     const { data: customers } = useQuery({
         queryKey: ['customers-select'],
+        const { data } = useQuery({
         queryFn: async () => {
             const { data } = await api.get('/customers?per_page=500&fields=id,name')
             return data.data ?? data ?? []

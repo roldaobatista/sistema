@@ -12,9 +12,6 @@ import { Save, ArrowLeft, Send } from 'lucide-react'
 import { useState, useEffect , useMemo } from 'react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 const COMPETENCIES = [
     { id: 'technical', label: 'Conhecimento Técnico' },
@@ -26,16 +23,6 @@ const COMPETENCIES = [
 
 export default function PerformanceReviewDetailPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['performance-review-detail'],
-    queryFn: () => api.get('/performance-review-detail').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Action feedback
-  const handleAction = () => { toast.success('Ação realizada com sucesso') }
-  const { hasPermission } = useAuthStore()
-
     const { id } = useParams()
     const navigate = useNavigate()
     const { data: review, isLoading } = useReview(Number(id))
@@ -46,7 +33,6 @@ export default function PerformanceReviewDetailPage() {
     const [nineBox, setNineBox] = useState({ potential: 'medium', performance: 'medium' })
     const [actionPlan, setActionPlan] = useState('')
 
-  const [searchTerm, setSearchTerm] = useState('')
     useEffect(() => {
         if (review) {
             setRatings(review.ratings as Record<string, number> || {})

@@ -15,5 +15,6 @@ class WorkOrderCancelled
         public WorkOrder $workOrder,
         public User $user,
         public string $reason = '',
+        public string $fromStatus = '',
     ) {}
 }

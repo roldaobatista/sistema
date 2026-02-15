@@ -68,6 +68,7 @@ export function RecurringContractsPage() {
 
     const { data: res, isLoading, isError } = useQuery({
         queryKey: ['recurring-contracts', search],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/recurring-contracts', { params: { search } }).then((r: any) => r.data),
     })
 
@@ -75,6 +76,7 @@ export function RecurringContractsPage() {
 
     const { data: customers } = useQuery({
         queryKey: ['customers-list'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/customers', { params: { per_page: 200 } }).then((r: any) => r.data.data ?? r.data),
     })
 
@@ -85,7 +87,7 @@ export function RecurringContractsPage() {
                 : api.post('/recurring-contracts', data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
+                qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
             closeForm()
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar contrato'),
@@ -95,7 +97,7 @@ export function RecurringContractsPage() {
         mutationFn: (id: number) => api.delete(`/recurring-contracts/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
+                qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao excluir contrato'),
     })
@@ -104,7 +106,7 @@ export function RecurringContractsPage() {
         mutationFn: (id: number) => api.post(`/recurring-contracts/${id}/generate`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
+                qc.invalidateQueries({ queryKey: ['recurring-contracts'] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao gerar OS'),
     })

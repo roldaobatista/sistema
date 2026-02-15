@@ -12,6 +12,7 @@ export function FleetAccidentsTab() {
     const queryClient = useQueryClient()
     const { data: accidents, isLoading } = useQuery({
         queryKey: ['fleet-accidents'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/accidents').then(r => r.data)
     })
 

@@ -71,6 +71,7 @@ export default function LeavesPage() {
 
     const { data: leavesRes, isLoading } = useQuery({
         queryKey: ['leaves', page, statusFilter, search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/leaves', {
             params: { page, per_page: 20, status: statusFilter || undefined, search: search || undefined },
         }).then(r => r.data),

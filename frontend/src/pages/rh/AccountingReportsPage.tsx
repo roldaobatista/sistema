@@ -8,8 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { FileDown, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface ReportEntry {
     id: number
@@ -25,22 +23,6 @@ interface ReportEntry {
 }
 
 export default function AccountingReportsPage() {
-
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['accounting-reports'],
-    queryFn: () => api.get('/accounting-reports').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/accounting-reports/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['accounting-reports'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
 
     const [startDate, setStartDate] = useState(format(new Date().setDate(1), 'yyyy-MM-dd'))
     const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'))

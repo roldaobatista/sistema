@@ -136,18 +136,21 @@ export function TenantManagementPage() {
     // â”€â”€ Queries â”€â”€
     const { data: tenantsRes, isLoading, isError, refetch } = useQuery({
         queryKey: ['tenants'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/tenants'),
     })
     const tenants: Tenant[] = tenantsRes?.data ?? []
 
     const { data: statsRes } = useQuery({
         queryKey: ['tenants-stats'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/tenants-stats'),
     })
     const stats: TenantStats = statsRes?.data ?? { total: 0, active: 0, trial: 0, inactive: 0 }
 
     const { data: detailRes } = useQuery({
         queryKey: ['tenants', detailTenant?.id],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get(`/tenants/${detailTenant!.id}`),
         enabled: !!detailTenant,
     })

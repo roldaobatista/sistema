@@ -64,7 +64,6 @@ export function ServiceCallDetailPage() {
     const [commentText, setCommentText] = useState('')
     const [activeTab, setActiveTab] = useState<'info' | 'comments'>('info')
     const [assignment, setAssignment] = useState({
-  const [searchTerm, setSearchTerm] = useState('')
         technician_id: '',
         driver_id: '',
         scheduled_date: '',
@@ -76,18 +75,21 @@ export function ServiceCallDetailPage() {
 
     const { data: call, isLoading, isError } = useQuery({
         queryKey: ['service-call', id],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get(`/service-calls/${id}`).then((r) => r.data),
         enabled: !!id,
     })
 
     const { data: comments = [], refetch: refetchComments } = useQuery({
         queryKey: ['service-call-comments', id],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/service-calls/${id}/comments`).then((r) => r.data),
         enabled: !!id,
     })
 
     const { data: assigneesRes } = useQuery({
         queryKey: ['service-call-assignees'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
         enabled: canAssign || canCreate,
     })
@@ -127,7 +129,7 @@ export function ServiceCallDetailPage() {
         mutationFn: (content: string) => api.post(`/service-calls/${id}/comments`, { content }),
         onSuccess: () => {
             toast.success('Comentário adicionado')
-            setCommentText('')
+                setCommentText('')
             refetchComments()
         },
         onError: (err: AxiosError<any>) => {

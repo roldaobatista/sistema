@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
     ClipboardList, Users, DollarSign, Award, TrendingUp,
@@ -49,7 +49,6 @@ export function ReportsPage() {
     const { hasPermission } = useAuthStore()
 
     const [tab, setTab] = useState<Tab>('os')
-    const [searchTerm, setSearchTerm] = useState('')
     const today = new Date().toISOString().split('T')[0]
     const monthStart = today.slice(0, 7) + '-01'
     const [from, setFrom] = useState(monthStart)
@@ -58,18 +57,9 @@ export function ReportsPage() {
     const [isExporting, setIsExporting] = useState(false)
     const [exportError, setExportError] = useState('')
     const queryClient = useQueryClient()
-
-    // MVP: Delete mutation
-    const deleteMutation = useMutation({
-        mutationFn: (id: number) => api.delete(`/reports/${id}`),
-        onSuccess: () => { toast.success('Relatório removido'); queryClient.invalidateQueries({ queryKey: ['reports'] }) },
-        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-    })
-    const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
     const isFinancialTab = ['financial', 'commissions', 'profitability', 'technician_cash'].includes(tab)
 
     const endpoint: Record<Tab, string> = {
-        const [searchTerm, setSearchTerm] = useState('')
         os: '/reports/work-orders',
         productivity: '/reports/productivity',
         financial: '/reports/financial',

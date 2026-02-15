@@ -1,0 +1,55 @@
+﻿=== KALIBRIUM MVP AUDIT ===
+
+Backend: 751 routes, 139 controllers
+
+Frontend: 172 pages, 152 routes in App.tsx
+
+--- MODULE SCORES ---
+
+Ô£à admin ÔÇö 100% (1 pages, 328 lines)
+Ô£à automacao ÔÇö 95% (1 pages, 188 lines)
+Ô£à avancado ÔÇö 95% (1 pages, 274 lines)
+Ô£à cadastros ÔÇö 97% (8 pages, 3471 lines)
+Ô£à central ÔÇö 98% (3 pages, 901 lines)
+Ô£à chamados ÔÇö 97% (6 pages, 2790 lines)
+Ô£à configuracoes ÔÇö 95% (5 pages, 1898 lines)
+Ô£à emails ÔÇö 97% (3 pages, 1170 lines)
+Ô£à equipamentos ÔÇö 98% (5 pages, 2162 lines)
+Ô£à estoque ÔÇö 94% (11 pages, 2882 lines)
+Ô£à financeiro ÔÇö 99% (17 pages, 8987 lines)
+Ô£à fiscal ÔÇö 90% (2 pages, 645 lines)
+Ô£à fleet ÔÇö 87% (1 pages, 137 lines)
+Ô£à fleet/components ÔÇö 97% (13 pages, 1502 lines)
+Ô£à ia ÔÇö 100% (1 pages, 735 lines)
+Ô£à iam ÔÇö 100% (3 pages, 1589 lines)
+Ô£à importacao ÔÇö 100% (1 pages, 1336 lines)
+Ô£à inmetro ÔÇö 96% (17 pages, 4955 lines)
+Ô£à integracao ÔÇö 91% (1 pages, 457 lines)
+Ô£à notificacoes ÔÇö 89% (1 pages, 198 lines)
+Ô£à operational/checklists ÔÇö 90% (1 pages, 119 lines)
+Ô£à operational/checklists/components ÔÇö 100% (2 pages, 470 lines)
+Ô£à orcamentos ÔÇö 94% (4 pages, 1461 lines)
+Ô£à os ÔÇö 96% (8 pages, 3161 lines)
+Ô£à portal ÔÇö 94% (6 pages, 1025 lines)
+Ô£à qualidade ÔÇö 100% (1 pages, 289 lines)
+Ô£à relatorios ÔÇö 93% (1 pages, 965 lines)
+Ô£à rh ÔÇö 94% (20 pages, 5723 lines)
+Ô£à root ÔÇö 96% (5 pages, 1719 lines)
+Ô£à tech ÔÇö 91% (16 pages, 3800 lines)
+Ô£à tecnicos ÔÇö 98% (3 pages, 1322 lines)
+Ô£à tecnicos/components ÔÇö 98% (3 pages, 601 lines)
+Ô£à tv ÔÇö 100% (1 pages, 377 lines)
+
+--- SUMMARY ---
+
+Overall MVP Score: 96%
+Modules >= 80%: 33/33
+Modules < 60%: 0/33
+Total pages: 172
+Total lines: 57637
+
+--- BACKEND QUALITY ---
+
+Controllers with DB::transaction: 102/139
+Controllers with try/catch: 137/139
+Controllers with authorize: 13/139

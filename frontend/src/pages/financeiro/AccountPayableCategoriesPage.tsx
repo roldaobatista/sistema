@@ -56,8 +56,8 @@ export function AccountPayableCategoriesPage() {
     const [form, setForm] = useState(emptyForm)
 
     const categoriesQuery = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['ap-categories'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: async () => {
             const { data } = await api.get<Category[]>('/account-payable-categories')
             return data

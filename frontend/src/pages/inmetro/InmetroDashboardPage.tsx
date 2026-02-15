@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { BarChart3, Users, Scale, AlertTriangle, Clock, CheckCircle, XCircle, TrendingUp, MapPin, RefreshCw, Loader2 } from 'lucide-react'
-import api from '@/lib/api'
 import { useInmetroDashboard, useInmetroCities } from '@/hooks/useInmetro'
 import { useInmetroAutoSync } from '@/hooks/useInmetroAutoSync'
 import { InmetroHeatmapWidget } from '@/components/inmetro/InmetroHeatmapWidget'

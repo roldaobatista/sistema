@@ -12,6 +12,15 @@ use Illuminate\Support\Facades\DB;
 
 class InmetroReportingService
 {
+    private function yearMonthExpression(string $column): string
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            return "strftime('%Y-%m', {$column})";
+        }
+
+        return "DATE_FORMAT({$column}, '%Y-%m')";
+    }
+
     // ── Feature #23: Executive Dashboard with ROI ──
 
     public function getExecutiveDashboard(int $tenantId): array
@@ -27,7 +36,7 @@ class InmetroReportingService
         $revenueFromInmetro = DB::table('work_orders')
             ->whereIn('customer_id', $customerIds)
             ->where('tenant_id', $tenantId)
-            ->sum('total_amount');
+            ->sum('total');
 
         $conversionRate = $totalLeads > 0 ? round(($converted / $totalLeads) * 100, 1) : 0;
 
@@ -37,8 +46,8 @@ class InmetroReportingService
         $monthlyConversions = InmetroOwner::where('tenant_id', $tenantId)
             ->whereNotNull('converted_to_customer_id')
             ->where('updated_at', '>=', now()->subMonths(12))
-            ->selectRaw("strftime('%Y-%m', updated_at) as month, COUNT(*) as cnt")
-            ->groupByRaw("strftime('%Y-%m', updated_at)")
+            ->selectRaw("{$this->yearMonthExpression('updated_at')} as month, COUNT(*) as cnt")
+            ->groupByRaw($this->yearMonthExpression('updated_at'))
             ->orderBy('month')
             ->pluck('cnt', 'month');
 
@@ -246,7 +255,7 @@ class InmetroReportingService
         $avg = DB::table('work_orders')
             ->whereIn('customer_id', $customerIds)
             ->where('tenant_id', $tenantId)
-            ->avg('total_amount');
+            ->avg('total');
 
         return $avg ?: 2500; // Default fallback
     }

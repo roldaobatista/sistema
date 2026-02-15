@@ -24,6 +24,7 @@ class QuoteService
                 'customer_id' => $data['customer_id'],
                 'seller_id' => $data['seller_id'] ?? $userId,
                 'status' => Quote::STATUS_DRAFT,
+                'source' => $data['source'] ?? null,
                 'valid_until' => $data['valid_until'] ?? null,
                 'discount_percentage' => $data['discount_percentage'] ?? 0,
                 'discount_amount' => $data['discount_amount'] ?? 0,
@@ -67,8 +68,8 @@ class QuoteService
 
     public function sendQuote(Quote $quote): Quote
     {
-        if (!in_array($quote->status, [Quote::STATUS_DRAFT, Quote::STATUS_INTERNALLY_APPROVED])) {
-            throw new \DomainException('Orçamento precisa estar em rascunho ou aprovado internamente para enviar');
+        if ($quote->status !== Quote::STATUS_INTERNALLY_APPROVED) {
+            throw new \DomainException('Orçamento precisa estar aprovado internamente antes de enviar ao cliente');
         }
 
         $hasItems = $quote->equipments()->whereHas('items')->exists();

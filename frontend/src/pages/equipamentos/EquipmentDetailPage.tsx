@@ -168,6 +168,7 @@ export default function EquipmentDetailPage() {
 
     const { data, isLoading, error } = useQuery<{ equipment: Equipment }>({
         queryKey: ['equipment', id],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/equipments/${id}`).then(r => r.data),
         enabled: !!id,
     })
@@ -464,9 +465,6 @@ function CalibrationTab({ calibrations, onDownloadCertificate }: { calibrations:
 /* ═══════════ Calibration Modal ═══════════ */
 
 function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: number; onClose: () => void; onSuccess: () => void }) {
-    const [form, setForm] = useState<CalibrationForm>({ ...emptyCalForm })
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
-    const [swSearch, setSwSearch] = useState('')
 
     const set = <K extends keyof CalibrationForm>(key: K, value: CalibrationForm[K]) =>
         setForm(prev => ({ ...prev, [key]: value }))
@@ -474,6 +472,7 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
     // Fetch standard weights
     const { data: swData } = useQuery<{ data: StandardWeight[] }>({
         queryKey: ['standard-weights-list'],
+        const { data } = useQuery({
         queryFn: () => api.get('/standard-weights?per_page=200').then(r => r.data),
     })
     const allWeights = swData?.data ?? []

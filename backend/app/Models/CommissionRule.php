@@ -16,6 +16,7 @@ class CommissionRule extends Model
     protected $fillable = [
         'tenant_id', 'user_id', 'name', 'type', 'value', 'applies_to',
         'calculation_type', 'applies_to_role', 'applies_when', 'tiers', 'priority', 'active',
+        'source_filter',
     ];
 
     protected function casts(): array
@@ -88,79 +89,88 @@ class CommissionRule extends Model
      */
     public function calculateCommission(float $baseAmount, array $context = []): float
     {
-        $pct = (float) $this->value;
+        $pct = (string) $this->value;
+        $base = (string) $baseAmount;
+        $pctDecimal = bcdiv($pct, '100', 6);
 
-        return match ($this->calculation_type) {
-            self::CALC_PERCENT_GROSS => round($baseAmount * ($pct / 100), 2),
+        return (float) match ($this->calculation_type) {
+            self::CALC_PERCENT_GROSS => bcmul($base, $pctDecimal, 2),
 
-            self::CALC_PERCENT_NET => round(
-                ($baseAmount - ($context['expenses'] ?? 0) - ($context['cost'] ?? 0)) * ($pct / 100), 2
+            self::CALC_PERCENT_NET => bcmul(
+                bcsub(bcsub($base, (string) ($context['expenses'] ?? 0), 2), (string) ($context['cost'] ?? 0), 2),
+                $pctDecimal, 2
             ),
 
-            self::CALC_PERCENT_GROSS_MINUS_DISPLACEMENT => round(
-                ($baseAmount - ($context['displacement'] ?? 0)) * ($pct / 100), 2
+            self::CALC_PERCENT_GROSS_MINUS_DISPLACEMENT => bcmul(
+                bcsub($base, (string) ($context['displacement'] ?? 0), 2),
+                $pctDecimal, 2
             ),
 
-            self::CALC_PERCENT_SERVICES_ONLY => round(
-                ($context['services_total'] ?? 0) * ($pct / 100), 2
+            self::CALC_PERCENT_SERVICES_ONLY => bcmul(
+                (string) ($context['services_total'] ?? 0), $pctDecimal, 2
             ),
 
-            self::CALC_PERCENT_PRODUCTS_ONLY => round(
-                ($context['products_total'] ?? 0) * ($pct / 100), 2
+            self::CALC_PERCENT_PRODUCTS_ONLY => bcmul(
+                (string) ($context['products_total'] ?? 0), $pctDecimal, 2
             ),
 
-            self::CALC_FIXED_PER_OS => (float) $this->value,
+            self::CALC_FIXED_PER_OS => (string) $this->value,
 
-            self::CALC_PERCENT_PROFIT => round(
-                ($baseAmount - ($context['cost'] ?? 0)) * ($pct / 100), 2
+            self::CALC_PERCENT_PROFIT => bcmul(
+                bcsub($base, (string) ($context['cost'] ?? 0), 2),
+                $pctDecimal, 2
             ),
 
-            self::CALC_PERCENT_GROSS_MINUS_EXPENSES => round(
-                ($baseAmount - ($context['expenses'] ?? 0)) * ($pct / 100), 2
+            self::CALC_PERCENT_GROSS_MINUS_EXPENSES => bcmul(
+                bcsub($base, (string) ($context['expenses'] ?? 0), 2),
+                $pctDecimal, 2
             ),
 
-            self::CALC_TIERED_GROSS => $this->calculateTiered($baseAmount),
+            self::CALC_TIERED_GROSS => (string) $this->calculateTiered($baseAmount),
 
-            self::CALC_CUSTOM_FORMULA => $this->calculateCustom($baseAmount, $context),
+            self::CALC_CUSTOM_FORMULA => (string) $this->calculateCustom($baseAmount, $context),
 
             // Fallback to legacy
             default => $this->type === self::TYPE_PERCENTAGE
-                ? round($baseAmount * ($pct / 100), 2)
-                : (float) $this->value,
+                ? bcmul($base, $pctDecimal, 2)
+                : (string) $this->value,
         };
     }
 
     private function calculateTiered(float $amount): float
     {
         $tiers = $this->tiers ?? [];
-        $commission = 0;
-        $remaining = $amount;
+        $commission = '0';
+        $remaining = (string) $amount;
 
         // tiers format: [{ "up_to": 5000, "percent": 5 }, { "up_to": 10000, "percent": 8 }, { "up_to": null, "percent": 10 }]
-        $prev = 0;
+        $prev = '0';
         foreach ($tiers as $tier) {
-            $upTo = $tier['up_to'] ?? PHP_FLOAT_MAX;
-            $rangeAmount = min($remaining, $upTo - $prev);
-            if ($rangeAmount <= 0) break;
-            $commission += round($rangeAmount * (($tier['percent'] ?? 0) / 100), 2);
-            $remaining -= $rangeAmount;
+            $upTo = isset($tier['up_to']) ? (string) $tier['up_to'] : '99999999999';
+            $rangeSize = bcsub($upTo, $prev, 2);
+            $rangeAmount = bccomp($remaining, $rangeSize, 2) <= 0 ? $remaining : $rangeSize;
+            if (bccomp($rangeAmount, '0', 2) <= 0) break;
+            $pctDecimal = bcdiv((string) ($tier['percent'] ?? 0), '100', 6);
+            $commission = bcadd($commission, bcmul($rangeAmount, $pctDecimal, 2), 2);
+            $remaining = bcsub($remaining, $rangeAmount, 2);
             $prev = $upTo;
         }
 
-        return $commission;
+        return (float) $commission;
     }
 
     private function calculateCustom(float $amount, array $context): float
     {
         $formula = $this->tiers['formula'] ?? null;
         if (!$formula) {
-            return round($amount * ((float) $this->value / 100), 2);
+            $pctDecimal = bcdiv((string) $this->value, '100', 6);
+            return (float) bcmul((string) $amount, $pctDecimal, 2);
         }
 
         // Replace variables in formula
         $vars = [
             'gross' => $context['gross'] ?? $amount,
-            'net' => ($context['gross'] ?? $amount) - ($context['expenses'] ?? 0),
+            'net' => (float) bcsub((string) ($context['gross'] ?? $amount), (string) ($context['expenses'] ?? 0), 2),
             'products' => $context['products_total'] ?? 0,
             'services' => $context['services_total'] ?? 0,
             'expenses' => $context['expenses'] ?? 0,
@@ -182,9 +192,11 @@ class CommissionRule extends Model
 
         try {
             $result = self::safeEvaluate($expr);
-            return round(max(0, (float) $result), 2);
+            $clamped = bccomp((string) $result, '0', 2) < 0 ? '0' : (string) $result;
+            return (float) bcadd('0', $clamped, 2);
         } catch (\Throwable) {
-            return round($amount * ((float) $this->value / 100), 2);
+            $pctDecimal = bcdiv((string) $this->value, '100', 6);
+            return (float) bcmul((string) $amount, $pctDecimal, 2);
         }
     }
 

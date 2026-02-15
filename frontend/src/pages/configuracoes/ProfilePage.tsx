@@ -21,8 +21,8 @@ export function ProfilePage() {
     const [pwSaved, setPwSaved] = useState(false)
 
     const { data: res, isLoading } = useQuery({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['profile'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/profile'),
     })
     const profile = res?.data
@@ -59,7 +59,7 @@ export function ProfilePage() {
         mutationFn: (data: typeof passwordForm) => api.post('/profile/change-password', data),
         onSuccess: () => {
             toast.success('Senha alterada com sucesso!')
-            setPwSaved(true)
+                setPwSaved(true)
             setPasswordForm({ current_password: '', new_password: '', new_password_confirmation: '' })
             setTimeout(() => setPwSaved(false), 3000)
         },

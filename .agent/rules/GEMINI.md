@@ -2,6 +2,138 @@
 trigger: always_on
 ---
 
+# 🚫🚫🚫 RULE #0: NUNCA REMOVER FUNCIONALIDADES (PRIORIDADE ABSOLUTA MÁXIMA — P0+) 🚫🚫🚫
+
+> 🔴🔴🔴 **ESTA É A REGRA NÚMERO ZERO. PRIORIDADE ACIMA DE TODAS AS OUTRAS. DEVE SER A PRIMEIRA COISA QUE A IA SEGUE, SEM EXCEÇÃO.**
+>
+> **NUNCA remover funções, funcionalidades, componentes, rotas, endpoints, páginas, botões, imports ou qualquer código existente.**
+> **SEMPRE incrementar — adicionar o que falta, nunca apagar o que já existe.**
+>
+> Se uma funcionalidade causar erro porque depende de outra que ainda não existe:
+> → **CRIAR a dependência que falta e implementá-la.**
+> → **NUNCA resolver o erro removendo a funcionalidade que depende dela.**
+
+### Regras Inegociáveis
+
+```text
+1. ❌ PROIBIDO remover qualquer função, método, componente, rota ou página existente
+2. ❌ PROIBIDO comentar código existente para "resolver" erros
+3. ❌ PROIBIDO substituir uma implementação completa por uma versão simplificada/vazia
+4. ❌ PROIBIDO remover imports, dependências ou features para "limpar" erros
+5. ❌ PROIBIDO deletar arquivos que contenham funcionalidades em uso
+
+6. ✅ OBRIGATÓRIO: Se algo depende de X e X não existe → CRIAR X
+7. ✅ OBRIGATÓRIO: Se há erro de import → criar o arquivo/função que falta
+8. ✅ OBRIGATÓRIO: Se há erro de tipo → criar o tipo/interface que falta
+9. ✅ OBRIGATÓRIO: Se há rota sem controller → criar o controller
+10. ✅ OBRIGATÓRIO: Se há componente sem dependência → criar a dependência
+```
+
+### Protocolo de Resolução de Erros
+
+```text
+ERRO ENCONTRADO → Analisar causa raiz:
+
+  Causa: "Funcionalidade A depende de B que não existe"
+    ❌ ERRADO: Remover A
+    ✅ CORRETO: Criar B e implementar
+
+  Causa: "Import de módulo que não existe"
+    ❌ ERRADO: Remover o import e a funcionalidade
+    ✅ CORRETO: Criar o módulo que falta
+
+  Causa: "Função chama método que não existe no service"
+    ❌ ERRADO: Remover a chamada da função
+    ✅ CORRETO: Criar o método no service
+
+  Causa: "Componente usa hook/contexto que não existe"
+    ❌ ERRADO: Remover o componente ou simplificá-lo
+    ✅ CORRETO: Criar o hook/contexto que falta
+```
+
+> ⚠️ **ÚNICA EXCEÇÃO:** Código morto que comprovadamente NÃO é usado por NENHUM outro arquivo e NÃO faz parte de nenhuma funcionalidade pode ser removido — mas SOMENTE após verificação com `grep` em todo o projeto.
+
+---
+
+# 🗄️🚫 RULE #0.1: MIGRAÇÕES SEMPRE ADITIVAS — NUNCA DESTRUTIVAS (PRIORIDADE P0) 🗄️🚫
+
+> 🔴🔴🔴 **REGRA DE PRIORIDADE P0. DEVE SER SEGUIDA SEM EXCEÇÃO EM TODA INTERAÇÃO COM BANCO DE DADOS.**
+>
+> **NUNCA apagar tabelas ou colunas existentes.**
+> **SEMPRE verificar o schema atual ANTES de criar qualquer migração.**
+> **NUNCA duplicar tabelas, colunas ou índices que já existem.**
+
+### Regras Inegociáveis de Migração
+
+```text
+1. ❌ PROIBIDO usar dropTable(), dropColumn(), dropIfExists() em tabelas/colunas com dados
+2. ❌ PROIBIDO criar migração sem antes verificar se a tabela/coluna já existe
+3. ❌ PROIBIDO criar tabela que já existe (causa erro de duplicação)
+4. ❌ PROIBIDO criar coluna que já existe na tabela
+5. ❌ PROIBIDO renomear tabelas/colunas sem verificar TODOS os pontos de uso
+
+6. ✅ OBRIGATÓRIO: Antes de criar migração → verificar migrações existentes (ls database/migrations/)
+7. ✅ OBRIGATÓRIO: Usar Schema::hasTable() antes de Schema::create()
+8. ✅ OBRIGATÓRIO: Usar Schema::hasColumn() antes de $table->addColumn()
+9. ✅ OBRIGATÓRIO: Toda migração DEVE ter down() funcional
+10. ✅ OBRIGATÓRIO: Novas colunas DEVEM ser nullable() ou ter default()
+```
+
+### Protocolo Obrigatório Antes de Criar Migração
+
+```text
+PASSO 1: Listar migrações existentes
+  → Verificar se já existe migração para a mesma tabela/coluna
+  → Se existe → NÃO criar nova, usar a existente ou criar apenas alter
+
+PASSO 2: Verificar schema atual
+  → Usar hasTable() e hasColumn() no código da migração
+  → Padrão obrigatório:
+
+    if (!Schema::hasTable('nome_tabela')) {
+        Schema::create('nome_tabela', function (Blueprint $table) { ... });
+    }
+
+    if (!Schema::hasColumn('nome_tabela', 'nova_coluna')) {
+        Schema::table('nome_tabela', function (Blueprint $table) {
+            $table->string('nova_coluna')->nullable();
+        });
+    }
+
+PASSO 3: Nunca destruir dados
+  ❌ ERRADO: Schema::dropIfExists('tabela_com_dados');
+  ❌ ERRADO: $table->dropColumn('coluna_em_uso');
+  ✅ CORRETO: Adicionar novas colunas/tabelas sem tocar nas existentes
+  ✅ CORRETO: Se precisar "remover" → usar soft delete ou flag de status
+```
+
+### Padrão de Migração Segura (SEMPRE seguir)
+
+```php
+// ✅ CORRETO — Migração segura e idempotente
+public function up(): void
+{
+    if (!Schema::hasTable('exemplo')) {
+        Schema::create('exemplo', function (Blueprint $table) {
+            $table->id();
+            $table->string('nome');
+            $table->timestamps();
+        });
+    }
+
+    // Adicionar coluna nova com segurança
+    if (!Schema::hasColumn('exemplo', 'nova_coluna')) {
+        Schema::table('exemplo', function (Blueprint $table) {
+            $table->string('nova_coluna')->nullable()->after('nome');
+        });
+    }
+}
+```
+
+> ⚠️ **ÚNICA EXCEÇÃO:** Tabelas temporárias de teste ou tabelas comprovadamente sem dados e sem referências podem ser removidas — mas SOMENTE após verificação com `grep` e confirmação explícita do usuário.
+
+---
+
 # GEMINI.md - Antigravity Kit
 
 > This file defines how the AI behaves in this workspace.

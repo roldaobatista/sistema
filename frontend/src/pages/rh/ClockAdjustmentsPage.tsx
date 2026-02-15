@@ -52,6 +52,7 @@ export default function ClockAdjustmentsPage() {
 
     const { data: adjustmentsRes, isLoading } = useQuery({
         queryKey: ['clock-adjustments', page, statusFilter, search],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/adjustments', {
             params: { page, per_page: 20, status: statusFilter || undefined, search: search || undefined },
         }).then(r => r.data),

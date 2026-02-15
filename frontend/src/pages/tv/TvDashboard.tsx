@@ -64,7 +64,8 @@ const TvDashboard = () => {
     // MVP: Mutation para ações administrativas do dashboard
     const actionMutation = useMutation({
         mutationFn: (data: { action: string }) => api.post('/tv/actions', data),
-        onSuccess: () => { toast.success('Ação realizada com sucesso'); queryClient.invalidateQueries({ queryKey: ['tv-dashboard'] }) },
+        onSuccess: () => { toast.success('Ação realizada com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['tv-dashboard'] }) },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro na operação') },
     })
     const handleAction = (action: string) => { if (window.confirm('Confirmar ação?')) actionMutation.mutate({ action }) }
@@ -255,8 +256,6 @@ const TvDashboard = () => {
                         </CardContent>
                     </Card>
                 </div>
-
-
 
                 {/* Middle Column: Map & Active Work Orders (5 Cols) */}
                 <div className="col-span-5 flex flex-col gap-4 h-full">

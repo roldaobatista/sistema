@@ -35,6 +35,7 @@ export default function HolidaysPage() {
 
     const { data: holidaysRes, isLoading } = useQuery({
         queryKey: ['holidays', yearFilter],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/holidays', { params: { year: yearFilter } }).then(r => r.data?.data ?? []),
     })
 

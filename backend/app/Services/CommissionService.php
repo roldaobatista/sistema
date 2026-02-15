@@ -112,7 +112,7 @@ class CommissionService
      */
     public function simulate(\App\Models\WorkOrder $wo): array
     {
-        $wo->loadMissing(['items', 'technicians']);
+        $wo->loadMissing(['items', 'technicians', 'customer']);
 
         $context = $this->buildCalculationContext($wo);
         $beneficiaries = $this->identifyBeneficiaries($wo);
@@ -126,14 +126,41 @@ class CommissionService
                 ->where('active', true)
                 ->get();
 
+            // GAP-22: Determine commercial source for seller filter
+            $quoteSource = null;
+            if ($b['role'] === CommissionRule::ROLE_SELLER && $wo->quote_id) {
+                $quoteSource = $wo->quote?->source;
+            }
+
             foreach ($rules as $rule) {
+                // GAP-22: If rule has a source filter, check match
+                if ($b['role'] === CommissionRule::ROLE_SELLER && $rule->source_filter && $quoteSource) {
+                    if ($rule->source_filter !== $quoteSource) {
+                        continue;
+                    }
+                }
+
                 $amount = $rule->calculateCommission((float) $wo->total, $context);
 
                 if (bccomp((string) $amount, '0', 2) <= 0) {
                     continue;
                 }
 
+                // GAP-05: Apply tech split divisor
+                $splitDivisor = $b['split_divisor'] ?? 1;
+                if ($splitDivisor > 1) {
+                    $amount = bcdiv((string) $amount, (string) $splitDivisor, 2);
+                }
+
                 $campaignResult = $this->applyCampaignMultiplier($campaigns, $b['role'], $rule->calculation_type, (string) $amount);
+
+                $notes = "Regra: {$rule->name} ({$rule->calculation_type})";
+                if ($splitDivisor > 1) {
+                    $notes .= " | Divisão 1/{$splitDivisor}";
+                }
+                if ($campaignResult['campaign_name']) {
+                    $notes .= " | Campanha: {$campaignResult['campaign_name']} (x{$campaignResult['multiplier']})";
+                }
 
                 $simulations[] = [
                     'user_id' => $b['id'],
@@ -145,6 +172,8 @@ class CommissionService
                     'commission_amount' => (float) $campaignResult['final_amount'],
                     'multiplier' => (float) $campaignResult['multiplier'],
                     'campaign_name' => $campaignResult['campaign_name'],
+                    'split_divisor' => $splitDivisor,
+                    'notes' => $notes,
                 ];
             }
         }
@@ -286,6 +315,7 @@ class CommissionService
         $expensesTotal = \App\Models\Expense::where('tenant_id', $wo->tenant_id)
             ->where('work_order_id', $wo->id)
             ->where('status', \App\Models\Expense::STATUS_APPROVED)
+            ->where('affects_net_value', true)
             ->sum('amount');
 
         $itemsCost = '0';

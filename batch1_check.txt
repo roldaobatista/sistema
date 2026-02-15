@@ -1,0 +1,12 @@
+﻿financeiro/AccountPayableCategoriesPage.tsx             per_page=false  page_state=false 
+financeiro/BankAccountsPage.tsx                         per_page=false  page_state=false 
+financeiro/ChartOfAccountsPage.tsx                      per_page=false  page_state=false 
+financeiro/CommissionsPage.tsx                          per_page=false  page_state=false 
+financeiro/PaymentMethodsPage.tsx                       per_page=false  page_state=false 
+financeiro/ReconciliationRulesPage.tsx                  per_page=false  page_state=false 
+financeiro/CashFlowPage.tsx                             per_page=false  page_state=false 
+configuracoes/BranchesPage.tsx                          per_page=false  page_state=false 
+configuracoes/TenantManagementPage.tsx                  per_page=false  page_state=false 
+emails/EmailSettingsPage.tsx                            per_page=false  page_state=false 
+iam/RolesPage.tsx                                       per_page=false  page_state=false 
+importacao/ImportPage.tsx                               per_page=false  page_state=false 

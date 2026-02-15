@@ -54,6 +54,7 @@ export function DashboardPage() {
 
     const { data: statsRes, isLoading, isError } = useQuery({
         queryKey: ['dashboard-stats'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/dashboard-stats'),
         refetchInterval: 60_000,
     })

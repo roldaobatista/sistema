@@ -25,7 +25,8 @@ export function ChecklistPage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/checklist/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['checklist'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['checklist'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -34,8 +35,8 @@ export function ChecklistPage() {
     const [isSheetOpen, setIsSheetOpen] = useState(false)
 
     const { data: checklists, isLoading, refetch } = useQuery<Checklist[]>({
-  const [searchTerm, setSearchTerm] = useState('')
         queryKey: ['checklists'],
+        const { data, isLoading, refetch } = useQuery({
         queryFn: async () => {
             const response = await api.get('/checklists')
             return response.data

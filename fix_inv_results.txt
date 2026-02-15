@@ -1,0 +1,135 @@
+﻿
+=== LoginPage.tsx (start at line 11) ===
+  11:   // MVP: Data fetching
+  12:   const { data: items, isLoading, isError, refetch } = useQuery({
+  13:     queryKey: ['login'],
+  14:     queryFn: () => api.get('/login').then(r => r.data?.data ?? r.data ?? []),
+  15:   })
+  16: 
+  17:   // MVP: Delete mutation
+  18:   const queryClient = useQueryClient()
+  19:   const deleteMutation = useMutation({
+  20:     mutationFn: (id: number) => api.delete(`/login/${id}`),
+  21:     onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['login'] }) },
+  22:     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  23:   })
+  24:   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  25:   const { hasPermission } = useAuthStore()
+  26: 
+  27:     const { login, isLoading } = useAuthStore()
+  28:     const [email, setEmail] = useState('')
+  29:     const [password, setPassword] = useState('')
+  30:     const [showPassword, setShowPassword] = useState(false)
+  31:     const [error, setError] = useState('')
+  32: 
+  33:     const handleSubmit = async (e: React.FormEvent) => {
+  34:   const [searchTerm, setSearchTerm] = useState('')
+  35:         e.preventDefault()
+
+=== emails/EmailComposePage.tsx (start at line 19) ===
+  19:   // MVP: Data fetching
+  20:   const { data: items, isLoading, isError, refetch } = useQuery({
+  21:     queryKey: ['email-compose'],
+  22:     queryFn: () => api.get('/email-compose').then(r => r.data?.data ?? r.data ?? []),
+  23:   })
+  24: 
+  25:   // MVP: Delete mutation
+  26:   const queryClient = useQueryClient()
+  27:   const deleteMutation = useMutation({
+  28:     mutationFn: (id: number) => api.delete(`/email-compose/${id}`),
+  29:     onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['email-compose'] }) },
+  30:     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  31:   })
+  32:   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  33:   const { hasPermission } = useAuthStore()
+  34: 
+  35:     const navigate = useNavigate()
+  36:     const { data: accountsData } = useEmailAccounts()
+  37:     const composeMutation = useComposeEmail()
+  38:     const accounts = accountsData?.data || []
+  39: 
+  40:     const [form, setForm] = useState({
+  41:   const [searchTerm, setSearchTerm] = useState('')
+  42:         account_id: '',
+  43:         to: '',
+
+=== emails/EmailInboxPage.tsx (start at line 78) ===
+  78:   // MVP: Data fetching
+  79:   const { data: items, isLoading, isError, refetch } = useQuery({
+  80:     queryKey: ['email-inbox'],
+  81:     queryFn: () => api.get('/email-inbox').then(r => r.data?.data ?? r.data ?? []),
+  82:   })
+  83: 
+  84:   // MVP: Delete mutation
+  85:   const queryClient = useQueryClient()
+  86:   const deleteMutation = useMutation({
+  87:     mutationFn: (id: number) => api.delete(`/email-inbox/${id}`),
+  88:     onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['email-inbox'] }) },
+  89:     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  90:   })
+  91:   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  92:   const { hasPermission } = useAuthStore()
+  93: 
+  94:     const navigate = useNavigate()
+  95:     const [filters, setFilters] = useState<EmailFilters>({ folder: 'inbox', per_page: 25 })
+  96:     const [selectedEmailId, setSelectedEmailId] = useState<number | null>(null)
+  97:     const [searchTerm, setSearchTerm] = useState('')
+  98:     const [selectedIds, setSelectedIds] = useState<number[]>([])
+  99:     const [replyOpen, setReplyOpen] = useState(false)
+  100:     const [forwardOpen, setForwardOpen] = useState(false)
+  101:     const [createTaskOpen, setCreateTaskOpen] = useState(false)
+  102:     const [replyBody, setReplyBody] = useState('')
+
+=== emails/EmailSettingsPage.tsx (start at line 158) ===
+  158:   // MVP: Data fetching
+  159:   const { data: items, isLoading, isError, refetch } = useQuery({
+  160:     queryKey: ['email-settings'],
+  161:     queryFn: () => api.get('/email-settings').then(r => r.data?.data ?? r.data ?? []),
+  162:   })
+  163: 
+  164:   // MVP: Delete mutation
+  165:   const queryClient = useQueryClient()
+  166:   const deleteMutation = useMutation({
+  167:     mutationFn: (id: number) => api.delete(`/email-settings/${id}`),
+  168:     onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['email-settings'] }) },
+  169:     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  170:   })
+  171:   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  172:   const { hasPermission } = useAuthStore()
+  173: 
+  174:     const navigate = useNavigate()
+  175:     const { data: accountsData, isLoading: loadingAccounts } = useEmailAccounts()
+  176:     const { data: rulesData, isLoading: loadingRules } = useEmailRules()
+  177:     const deleteMut = useDeleteEmailAccount()
+  178:     const syncMut = useSyncEmailAccount()
+  179:     const testMut = useTestEmailConnection()
+  180:     const deleteRuleMut = useDeleteEmailRule()
+  181:     const toggleRuleMut = useToggleEmailRuleActive()
+  182: 
+
+=== financeiro/FuelingLogsPage.tsx (start at line 27) ===
+  27:   // MVP: Data fetching
+  28:   const { data: items, isLoading, isError, refetch } = useQuery({
+  29:     queryKey: ['fueling-logs'],
+  30:     queryFn: () => api.get('/fueling-logs').then(r => r.data?.data ?? r.data ?? []),
+  31:   })
+  32: 
+  33:   // MVP: Delete mutation
+  34:   const queryClient = useQueryClient()
+  35:   const deleteMutation = useMutation({
+  36:     mutationFn: (id: number) => api.delete(`/fueling-logs/${id}`),
+  37:     onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['fueling-logs'] }) },
+  38:     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+  39:   })
+  40:   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  41:     const { hasPermission } = useAuthStore()
+  42:     const canCreate = hasPermission('expenses.fueling_log.create')
+  43:     const canApprove = hasPermission('expenses.fueling_log.approve')
+  44:     const canDelete = hasPermission('expenses.fueling_log.delete')
+  45: 
+  46:     const [search, setSearch] = useState('')
+  47:     const [statusFilter, setStatusFilter] = useState('')
+  48:     const [page, setPage] = useState(1)
+  49:     const [createOpen, setCreateOpen] = useState(false)
+  50:     const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+  51:     const [form, setForm] = useState<FuelingLogFormData>({ ...emptyForm })

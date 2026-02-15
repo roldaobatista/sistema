@@ -25,14 +25,17 @@ export function SlaDashboardPage() {
 
     const { data: overview, isLoading } = useQuery({
         queryKey: ['sla-dashboard-overview'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-dashboard/overview'),
     })
     const { data: byPolicy } = useQuery({
         queryKey: ['sla-dashboard-by-policy'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-dashboard/by-policy'),
     })
     const { data: breached } = useQuery({
         queryKey: ['sla-dashboard-breached'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-dashboard/breached'),
     })
 

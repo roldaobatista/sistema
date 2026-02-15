@@ -1,0 +1,16 @@
+﻿MODIFIED: financeiro/AccountPayableCategoriesPage.tsx
+MODIFIED: financeiro/BankAccountsPage.tsx
+MODIFIED: financeiro/ChartOfAccountsPage.tsx
+MODIFIED: financeiro/CommissionsPage.tsx
+MODIFIED: financeiro/PaymentMethodsPage.tsx
+MODIFIED: financeiro/ReconciliationRulesPage.tsx
+MODIFIED: financeiro/CashFlowPage.tsx
+MODIFIED: configuracoes/BranchesPage.tsx
+MODIFIED: configuracoes/TenantManagementPage.tsx
+MODIFIED: emails/EmailSettingsPage.tsx
+MODIFIED: iam/RolesPage.tsx
+MODIFIED: importacao/ImportPage.tsx
+
+---
+Modified: 12
+Skipped: 0

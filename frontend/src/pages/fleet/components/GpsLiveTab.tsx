@@ -13,7 +13,8 @@ export function GpsLiveTab() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/gps-live/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['gps-live'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['gps-live'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -24,6 +25,7 @@ export function GpsLiveTab() {
 
     const { data: positions, isLoading, refetch, isFetching } = useQuery({
         queryKey: ['fleet-gps-live'],
+        const { data, isLoading, refetch } = useQuery({
         queryFn: () => api.get('/fleet/gps/live').then(r => r.data?.data),
         refetchInterval: 30000, // Auto-refresh a cada 30s
     })

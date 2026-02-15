@@ -14,7 +14,8 @@ export function FleetInspectionsTab() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/fleet-inspections/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['fleet-inspections'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['fleet-inspections'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -23,6 +24,7 @@ export function FleetInspectionsTab() {
     const [statusFilter, setStatusFilter] = useState('')
     const { data: inspections, isLoading } = useQuery({
         queryKey: ['fleet-inspections', statusFilter],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/inspections', { params: { status: statusFilter || undefined } }).then(r => r.data)
     })
 

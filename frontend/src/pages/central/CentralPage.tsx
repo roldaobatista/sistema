@@ -70,6 +70,7 @@ export function CentralPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['central-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/summary'),
         refetchInterval: 30000,
     })
@@ -91,6 +92,7 @@ export function CentralPage() {
 
     const { data: usersRes } = useQuery({
         queryKey: ['users-central'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 100 } }),
     })
     const users = usersRes?.data?.data ?? []
@@ -101,7 +103,7 @@ export function CentralPage() {
         mutationFn: () => api.post('/central/items', form),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['central-items'] })
+                qc.invalidateQueries({ queryKey: ['central-items'] })
             qc.invalidateQueries({ queryKey: ['central-summary'] })
             setShowCreate(false)
             setForm({ titulo: '', descricao_curta: '', tipo: 'tarefa', prioridade: 'media', due_at: '', visibilidade: 'equipe' })
@@ -113,7 +115,7 @@ export function CentralPage() {
         mutationFn: ({ id, data }: { id: number; data: any }) => api.patch(`/central/items/${id}`, data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['central-items'] })
+                qc.invalidateQueries({ queryKey: ['central-items'] })
             qc.invalidateQueries({ queryKey: ['central-summary'] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar item'),
@@ -124,7 +126,7 @@ export function CentralPage() {
             api.post(`/central/items/${id}/assign`, { responsavel_user_id: userId }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            qc.invalidateQueries({ queryKey: ['central-items'] })
+                qc.invalidateQueries({ queryKey: ['central-items'] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atribuir'),
     })
@@ -134,7 +136,7 @@ export function CentralPage() {
             api.post(`/central/items/${id}/comments`, { body }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-            setComment('')
+                setComment('')
             if (showDetail) fetchDetail(showDetail.id)
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao comentar'),

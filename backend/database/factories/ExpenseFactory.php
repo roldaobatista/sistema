@@ -19,12 +19,19 @@ class ExpenseFactory extends Factory
             'amount' => fake()->randomFloat(2, 10, 5000),
             'expense_date' => fake()->dateTimeBetween('-30 days', 'now')->format('Y-m-d'),
             'status' => Expense::STATUS_PENDING,
+            'affects_net_value' => true,
+            'affects_technician_cash' => false,
         ];
     }
 
     public function approved(): static
     {
         return $this->state(fn () => ['status' => Expense::STATUS_APPROVED]);
+    }
+
+    public function reviewed(): static
+    {
+        return $this->state(fn () => ['status' => Expense::STATUS_REVIEWED]);
     }
 
     public function rejected(): static

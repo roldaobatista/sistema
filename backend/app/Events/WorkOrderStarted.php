@@ -14,5 +14,6 @@ class WorkOrderStarted
     public function __construct(
         public WorkOrder $workOrder,
         public User $user,
+        public string $fromStatus = '',
     ) {}
 }

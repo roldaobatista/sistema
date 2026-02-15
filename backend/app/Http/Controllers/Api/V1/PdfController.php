@@ -86,20 +86,8 @@ class PdfController extends Controller
 
     public function reportExport(Request $request, string $type): Response
     {
+        // Permissão já validada pelo middleware CheckReportExportPermission
         $type = ReportExportAuthorization::normalizeType($type);
-
-        // Permissão granular por tipo de relatório
-        $permission = ReportExportAuthorization::permissionForType($type);
-        $user = $request->user();
-        if ($permission && $user && method_exists($user, 'hasPermissionTo')) {
-            try {
-                if (!$user->hasPermissionTo($permission)) {
-                    abort(403, 'Sem permissão para exportar este relatório.');
-                }
-            } catch (PermissionDoesNotExist) {
-                abort(403, 'Acesso negado. Permissao nao configurada para este relatorio.');
-            }
-        }
 
         $controller = app(ReportController::class);
         $method = match ($type) {

@@ -120,7 +120,7 @@ class AuvoImportControllerTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonStructure(['import_id', 'entity_type', 'inserted', 'status']);
+            ->assertJsonStructure(['import_id', 'entity_type', 'total_imported', 'status']);
     }
 
     public function test_import_rejects_invalid_entity(): void
@@ -146,7 +146,7 @@ class AuvoImportControllerTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonStructure(['results', 'total_entities']);
+            ->assertJsonStructure(['message', 'summary', 'details']);
     }
 
     // ── History ──
@@ -157,7 +157,7 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'user_id' => $this->user->id,
             'entity_type' => 'customers',
-            'status' => 'completed',
+            'status' => 'done',
             'total_fetched' => 10,
             'total_imported' => 8,
             'total_updated' => 1,
@@ -180,7 +180,7 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'user_id' => $this->user->id,
             'entity_type' => 'customers',
-            'status' => 'completed',
+            'status' => 'done',
             'total_fetched' => 5,
             'total_imported' => 5,
             'started_at' => now(),
@@ -196,7 +196,7 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $otherTenant->id,
             'user_id' => $otherUser->id,
             'entity_type' => 'customers',
-            'status' => 'completed',
+            'status' => 'done',
             'total_fetched' => 5,
             'total_imported' => 5,
             'started_at' => now(),
@@ -216,9 +216,10 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'user_id' => $this->user->id,
             'entity_type' => 'customers',
-            'status' => 'completed',
+            'status' => 'done',
             'total_fetched' => 1,
             'total_imported' => 1,
+            'imported_ids' => [999],
             'started_at' => now(),
             'completed_at' => now(),
         ]);
@@ -230,7 +231,7 @@ class AuvoImportControllerTest extends TestCase
         $response = $this->postJson("/api/v1/auvo/rollback/{$import->id}");
 
         $response->assertOk()
-            ->assertJsonStructure(['deleted', 'status']);
+            ->assertJsonStructure(['message', 'result']);
 
         $import->refresh();
         $this->assertEquals('rolled_back', $import->status);
@@ -265,7 +266,7 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $otherTenant->id,
             'user_id' => $otherUser->id,
             'entity_type' => 'customers',
-            'status' => 'completed',
+            'status' => 'done',
             'total_fetched' => 1,
             'total_imported' => 1,
             'started_at' => now(),
@@ -285,7 +286,7 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'entity_type' => 'customers',
             'auvo_id' => '100',
-            'kalibrium_id' => 1,
+            'local_id' => 1,
         ]);
 
         $response = $this->getJson('/api/v1/auvo/mappings');
@@ -301,14 +302,14 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'entity_type' => 'customers',
             'auvo_id' => '100',
-            'kalibrium_id' => 1,
+            'local_id' => 1,
         ]);
 
         AuvoIdMapping::create([
             'tenant_id' => $this->tenant->id,
             'entity_type' => 'products',
             'auvo_id' => '200',
-            'kalibrium_id' => 2,
+            'local_id' => 2,
         ]);
 
         $response = $this->getJson('/api/v1/auvo/mappings?entity=customers');
@@ -325,7 +326,7 @@ class AuvoImportControllerTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'user_id' => $this->user->id,
             'entity_type' => 'customers',
-            'status' => 'completed',
+            'status' => 'done',
             'total_fetched' => 10,
             'total_imported' => 8,
             'total_errors' => 2,

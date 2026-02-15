@@ -24,6 +24,7 @@ export function PermissionsMatrixPage() {
 
     const { data: matrixData, isLoading, isError, refetch } = useQuery({
         queryKey: ['permissions-matrix'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/permissions/matrix'),
     })
 
@@ -33,6 +34,7 @@ export function PermissionsMatrixPage() {
     // Build a map of role name -> role id for toggle
     const { data: rolesData } = useQuery({
         queryKey: ['roles'],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/roles').then(r => r.data),
     })
     const rolesArray: RoleInfo[] = rolesData?.data ?? rolesData ?? []

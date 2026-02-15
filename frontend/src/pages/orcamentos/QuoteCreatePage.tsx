@@ -55,7 +55,7 @@ interface ItemRow {
 }
 
 export function QuoteCreatePage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const navigate = useNavigate()
     const [step, setStep] = useState<Step>('customer')
@@ -64,12 +64,14 @@ export function QuoteCreatePage() {
     const [validUntil, setValidUntil] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
     const [observations, setObservations] = useState('')
+    const [source, setSource] = useState<string>('')
     const [blocks, setBlocks] = useState<EquipmentBlock[]>([])
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
     // Lookups
     const { data: customersRes } = useQuery({
         queryKey: ['customers-search', customerSearch],
+        const { data } = useQuery({
         queryFn: () => api.get('/customers', { params: { search: customerSearch, per_page: 10 } }),
         enabled: customerSearch.length > 1,
     })
@@ -77,6 +79,7 @@ export function QuoteCreatePage() {
 
     const { data: equipmentsRes } = useQuery({
         queryKey: ['equipments-for-customer', customerId],
+        const { data } = useQuery({
         queryFn: () => api.get(`/customers/${customerId}`),
         enabled: !!customerId,
     })
@@ -84,12 +87,14 @@ export function QuoteCreatePage() {
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-all'],
+        const { data } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 200 } }),
     })
     const products = productsRes?.data?.data ?? []
 
     const { data: servicesRes } = useQuery({
         queryKey: ['services-all'],
+        const { data } = useQuery({
         queryFn: () => api.get('/services', { params: { per_page: 200 } }),
     })
     const services = servicesRes?.data?.data ?? []
@@ -135,6 +140,7 @@ export function QuoteCreatePage() {
             setErrorMsg(null)
             return api.post('/quotes', {
                 customer_id: customerId,
+                source: source || null,
                 valid_until: validUntil || null,
                 discount_percentage: discountPercentage,
                 observations,
@@ -151,7 +157,7 @@ export function QuoteCreatePage() {
         },
         onSuccess: () => {
             toast.success('Orçamento criado com sucesso!')
-            qc.invalidateQueries({ queryKey: ['quotes'] })
+                qc.invalidateQueries({ queryKey: ['quotes'] })
             qc.invalidateQueries({ queryKey: ['quotes-summary'] })
             navigate('/orcamentos')
         },
@@ -256,6 +262,17 @@ export function QuoteCreatePage() {
                             <label className="block text-sm font-medium text-surface-700 mb-1">{STRINGS.observations}</label>
                             <textarea value={observations} onChange={e => setObservations(e.target.value)} rows={3}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-surface-700 mb-1">Origem Comercial</label>
+                            <select value={source} onChange={e => setSource(e.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                                <option value="">Selecione (opcional)</option>
+                                <option value="prospeccao">Prospecção</option>
+                                <option value="retorno">Retorno</option>
+                                <option value="contato_direto">Contato Direto</option>
+                                <option value="indicacao">Indicação</option>
+                            </select>
                         </div>
                         <div className="flex justify-end pt-4">
                             <Button onClick={handleNext} disabled={!customerId} icon={<ArrowRight className="h-4 w-4" />}>

@@ -61,12 +61,17 @@ class CommissionSettlement extends Model
 
     public function events(): HasMany
     {
+        return $this->hasMany(CommissionEvent::class, 'settlement_id');
+    }
+
+    /**
+     * Eventos do período (fallback para quando settlement_id ainda não está preenchido).
+     */
+    public function eventsByPeriod(): HasMany
+    {
         return $this->hasMany(CommissionEvent::class, 'user_id', 'user_id')
             ->where('tenant_id', $this->tenant_id)
             ->when($this->period, function ($q) {
-                // Ensure we only pick events that belong to this settlement's period
-                // This assumes commission events created_at matches the settlement period
-                // Ideally we should have a settlement_id on commission_events, but for now we filter by date
                 $driver = \Illuminate\Support\Facades\DB::getDriverName();
                 if ($driver === 'sqlite') {
                     $q->whereRaw("strftime('%Y-%m', created_at) = ?", [$this->period]);

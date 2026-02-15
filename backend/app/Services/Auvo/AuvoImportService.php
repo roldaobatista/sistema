@@ -64,6 +64,7 @@ class AuvoImportService
             'status' => AuvoImport::STATUS_PROCESSING,
             'duplicate_strategy' => $strategy,
             'filters' => $filters,
+            'started_at' => now(),
         ]);
 
         try {
@@ -77,18 +78,24 @@ class AuvoImportService
                 default => $this->importGeneric($import, $entity),
             };
 
+            $finalStatus = ($result['total_errors'] ?? 0) > 0 && ($result['total_imported'] ?? 0) === 0
+                ? AuvoImport::STATUS_FAILED
+                : AuvoImport::STATUS_DONE;
+
             $import->update([
-                'status' => ($result['errors'] ?? 0) > 0 && ($result['inserted'] ?? 0) === 0
-                    ? AuvoImport::STATUS_FAILED
-                    : AuvoImport::STATUS_DONE,
+                'status' => $finalStatus,
+                'completed_at' => now(),
                 'last_synced_at' => now(),
             ]);
 
-            $result['status'] = $import->status === AuvoImport::STATUS_DONE ? 'completed' : 'failed';
+            $result['import_id'] = $import->id;
+            $result['entity_type'] = $entity;
+            $result['status'] = $finalStatus === AuvoImport::STATUS_DONE ? 'done' : 'failed';
             return $result;
         } catch (\Throwable $e) {
             $import->update([
                 'status' => AuvoImport::STATUS_FAILED,
+                'completed_at' => now(),
                 'error_log' => [['message' => $e->getMessage()]],
             ]);
             throw $e;
@@ -114,7 +121,12 @@ class AuvoImportService
             if (count($records) >= $limit) break;
         }
 
-        return $records;
+        return [
+            'entity' => $entity,
+            'total' => count($records),
+            'sample' => $records,
+            'mapped_fields' => array_values($fieldMap),
+        ];
     }
 
     /**
@@ -122,6 +134,10 @@ class AuvoImportService
      */
     public function rollback(AuvoImport $import): array
     {
+        if (!in_array($import->status, [AuvoImport::STATUS_DONE, 'completed'])) {
+            throw new \RuntimeException('Só é possível desfazer importações concluídas.');
+        }
+
         $importedIds = $import->imported_ids ?? [];
         if (empty($importedIds)) {
             throw new \RuntimeException('Nenhum registro para desfazer.');
@@ -423,18 +439,18 @@ class AuvoImportService
 
         $import->update([
             'total_fetched' => $totalFetched,
-            'inserted' => $imported,
-            'skipped' => $skipped,
-            'errors' => $errors,
+            'total_imported' => $imported,
+            'total_skipped' => $skipped,
+            'total_errors' => $errors,
             'error_log' => $errorLog ?: null,
         ]);
 
         return [
             'total_fetched' => $totalFetched,
-            'inserted' => $imported,
-            'updated' => 0,
-            'skipped' => $skipped,
-            'errors' => $errors,
+            'total_imported' => $imported,
+            'total_updated' => 0,
+            'total_skipped' => $skipped,
+            'total_errors' => $errors,
         ];
     }
 
@@ -498,7 +514,8 @@ class AuvoImportService
                     if ($strategy === 'skip') {
                         // Still create the ID mapping even if skipping
                         if ($auvoId) {
-                            AuvoIdMapping::mapOrCreate($entity, $auvoId, $existing->id, $import->tenant_id);
+                            $mapping = AuvoIdMapping::mapOrCreate($entity, $auvoId, $existing->id, $import->tenant_id);
+                            $mapping->update(['import_id' => $import->id]);
                         }
                         $skipped++;
                     } else {
@@ -507,7 +524,8 @@ class AuvoImportService
                         $fillable = array_intersect_key($data, array_flip((new $modelClass)->getFillable()));
                         $existing->update(array_filter($fillable, fn($v) => $v !== '' && $v !== null));
                         if ($auvoId) {
-                            AuvoIdMapping::mapOrCreate($entity, $auvoId, $existing->id, $import->tenant_id);
+                            $mapping = AuvoIdMapping::mapOrCreate($entity, $auvoId, $existing->id, $import->tenant_id);
+                            $mapping->update(['import_id' => $import->id]);
                         }
                         $updated++;
                     }
@@ -524,7 +542,8 @@ class AuvoImportService
                     $importedIds[] = $created->id;
 
                     if ($auvoId) {
-                        AuvoIdMapping::mapOrCreate($entity, $auvoId, $created->id, $import->tenant_id);
+                        $mapping = AuvoIdMapping::mapOrCreate($entity, $auvoId, $created->id, $import->tenant_id);
+                        $mapping->update(['import_id' => $import->id]);
                     }
 
                     $inserted++;
@@ -550,15 +569,21 @@ class AuvoImportService
 
         $import->update([
             'total_fetched' => $totalFetched,
-            'inserted' => $inserted,
-            'updated' => $updated,
-            'skipped' => $skipped,
-            'errors' => $errors,
+            'total_imported' => $inserted,
+            'total_updated' => $updated,
+            'total_skipped' => $skipped,
+            'total_errors' => $errors,
             'error_log' => $errorLog ?: null,
             'imported_ids' => $importedIds ?: null,
         ]);
 
-        return compact('totalFetched', 'inserted', 'updated', 'skipped', 'errors');
+        return [
+            'total_fetched' => $totalFetched,
+            'total_imported' => $inserted,
+            'total_updated' => $updated,
+            'total_skipped' => $skipped,
+            'total_errors' => $errors,
+        ];
     }
 
     /**

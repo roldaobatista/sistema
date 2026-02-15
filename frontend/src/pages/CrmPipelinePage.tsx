@@ -34,6 +34,7 @@ export function CrmPipelinePage() {
     // Fetch pipelines to find current pipeline
     const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery({
         queryKey: ['crm', 'pipelines'],
+        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getPipelines().then(r => r.data),
     })
 
@@ -43,6 +44,7 @@ export function CrmPipelinePage() {
     // Fetch deals for pipeline
     const { data: dealsResponse, isLoading: dealsLoading } = useQuery({
         queryKey: ['crm', 'deals', pipelineId, statusFilter],
+        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getDeals({ pipeline_id: pipelineId, status: statusFilter, per_page: 200 }).then(r => r.data),
         enabled: !!pipelineId,
     })
@@ -72,7 +74,7 @@ export function CrmPipelinePage() {
             crmApi.updateDealStage(dealId, stageId),
         onSuccess: () => {
         toast.success('Operação realizada com sucesso')
-            queryClient.invalidateQueries({ queryKey: ['crm'] })
+                queryClient.invalidateQueries({ queryKey: ['crm'] })
         },
         onError: (error: any) => {
             queryClient.invalidateQueries({ queryKey: ['crm', 'deals'] })
@@ -254,7 +256,6 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ stage, deals, isLoading, onDealClick, onAddDeal, condensed }: KanbanColumnProps) {
-    const { setNodeRef, isOver } = useDroppable({ id: `stage-${stage.id}` })
     const totalValue = deals.reduce((sum, d) => sum + Number(d.value), 0)
 
     return (

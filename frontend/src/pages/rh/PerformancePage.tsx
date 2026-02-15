@@ -24,7 +24,8 @@ export default function PerformancePage() {
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/performance/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['performance'] }) },
+    onSuccess: () => { toast.success('Removido com sucesso');
+                queryClient.invalidateQueries({ queryKey: ['performance'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
@@ -32,13 +33,13 @@ export default function PerformancePage() {
 
     const navigate = useNavigate()
     const {
-  const [searchTerm, setSearchTerm] = useState('')
         reviews, loadingReviews, createReview, updateReview,
         feedbackList, loadingFeedback, sendFeedback
     } = usePerformance()
 
     const { data: usersResponse } = useQuery({
         queryKey: ['users-options'],
+        const { data } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 200, status: 'active' } }),
     })
     const users = usersResponse?.data?.data ?? usersResponse?.data ?? []

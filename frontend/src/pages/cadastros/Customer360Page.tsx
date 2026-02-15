@@ -47,7 +47,8 @@ export function Customer360Page() {
     // MVP: Delete mutation
     const deleteMutation = useMutation({
         mutationFn: (noteId: number) => api.delete(`/crm/activities/${noteId}`),
-        onSuccess: () => { toast.success('Atividade removida'); queryClient.invalidateQueries({ queryKey: ['customer-360', id] }) },
+        onSuccess: () => { toast.success('Atividade removida');
+                queryClient.invalidateQueries({ queryKey: ['customer-360', id] }) },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
     })
     const handleDeleteActivity = (noteId: number) => {
@@ -77,6 +78,7 @@ export function Customer360Page() {
 
     const { data: dashboardData, isLoading, refetch } = useQuery({
         queryKey: ['customer-360', id],
+        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getCustomer360(customerId).then(r => r.data),
         enabled: !!id && isOnline,
     })

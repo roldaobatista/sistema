@@ -1,5 +1,4 @@
 ﻿import { useState , useMemo } from 'react'
-import { toast } from 'sonner'
 import { useSkills } from '@/hooks/useSkills'
 import { PageHeader } from '@/components/ui/pageheader'
 import { Button } from '@/components/ui/button'
@@ -13,30 +12,10 @@ import {
 import { Plus, Pencil, Trash2, BookOpen, Star } from 'lucide-react'
 import { Skill } from '@/types/hr'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@/stores/auth-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
 
 export default function SkillsMatrixPage() {
 
-  // MVP: Data fetching
-  const { data: items, isLoading, isError, refetch } = useQuery({
-    queryKey: ['skills-matrix'],
-    queryFn: () => api.get('/skills-matrix').then(r => r.data?.data ?? r.data ?? []),
-  })
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/skills-matrix/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['skills-matrix'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const {
-  const [searchTerm, setSearchTerm] = useState('')
         skills, loadingSkills, matrix, loadingMatrix,
         createSkill, updateSkill, deleteSkill, assessUser
     } = useSkills()

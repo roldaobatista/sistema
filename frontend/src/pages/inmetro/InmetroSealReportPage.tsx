@@ -24,6 +24,7 @@ export default function InmetroSealReportPage() {
     // Detalhes da Auditoria (Selos parados)
     const { data: auditRes, isLoading: loadingAudit } = useQuery({
         queryKey: ['inmetro-seals-audit'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/inventory/seals/audit')
     })
     const auditData = auditRes?.data

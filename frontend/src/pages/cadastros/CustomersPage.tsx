@@ -134,6 +134,7 @@ export function CustomersPage() {
   // Fetch CRM options
   const { data: crmOptions } = useQuery({
     queryKey: ['customer-options'],
+    const { data, isLoading } = useQuery({
     queryFn: () => api.get('/customers/options').then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
@@ -141,6 +142,7 @@ export function CustomersPage() {
   // Sellers
   const { data: sellersRes } = useQuery({
     queryKey: ['sellers-options'],
+    const { data, isLoading } = useQuery({
     queryFn: () => api.get('/users', { params: { role: 'vendedor', per_page: 100 } }).then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
@@ -260,7 +262,7 @@ export function CustomersPage() {
     },
     onSuccess: () => {
       toast.success(editingId ? 'Cliente atualizado!' : 'Cliente criado!')
-      qc.invalidateQueries({ queryKey: ['customers'] })
+                qc.invalidateQueries({ queryKey: ['customers'] })
       closeModal()
     },
     onError: (err: any) => {
@@ -268,7 +270,7 @@ export function CustomersPage() {
         const errs = err.response.data.errors
         if (errs?.document) {
           toast.error(`Documento inválido: ${errs.document[0]}`)
-          setActiveTab('info')
+                setActiveTab('info')
         } else {
           const firstField = Object.keys(errs)[0]
           const firstMsg = Object.values(errs).flat()[0] as string
@@ -298,7 +300,7 @@ export function CustomersPage() {
     mutationFn: (id: number) => api.delete(`/customers/${id}`),
     onSuccess: () => {
       toast.success('Cliente excluído!')
-      qc.invalidateQueries({ queryKey: ['customers'] })
+                qc.invalidateQueries({ queryKey: ['customers'] })
       setDelId(null)
       setDelDeps(null)
     },
@@ -307,7 +309,7 @@ export function CustomersPage() {
         setDelDeps((err.response.data.dependencies ?? null) as DeleteDependencies | null)
       } else if (err.response?.status === 403) {
         toast.error('Você não tem permissão')
-        setDelId(null)
+                setDelId(null)
       } else {
         toast.error(err.response?.data?.message || 'Erro ao excluir')
       }

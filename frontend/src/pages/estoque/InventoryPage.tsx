@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import {
-import { useAuthStore } from '@/stores/auth-store'
     ClipboardCheck, Plus, Eye, CheckCircle2, XCircle, Loader2,
     Warehouse as WarehouseIcon, Calendar, Search, ChevronRight
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Inventory {
     id: number;
@@ -68,6 +68,7 @@ export default function InventoryPage() {
 
     const { data: inventoryDetail, isLoading: isLoadingDetail } = useQuery({
         queryKey: ['inventory-detail', selectedInventory?.id],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/api/v1/stock/inventories/${selectedInventory!.id}`).then(r => r.data),
         enabled: !!selectedInventory,
     });
@@ -77,7 +78,7 @@ export default function InventoryPage() {
             api.post('/api/v1/stock/inventories', data),
         onSuccess: () => {
             toast.success('Inventário iniciado com sucesso');
-            queryClient.invalidateQueries({ queryKey: ['inventories'] });
+                queryClient.invalidateQueries({ queryKey: ['inventories'] });
             setShowNewModal(false);
             setNewWarehouseId('');
             setNewReference('');
@@ -90,7 +91,7 @@ export default function InventoryPage() {
             api.put(`/api/v1/stock/inventories/${inventoryId}/items/${itemId}`, data),
         onSuccess: () => {
             toast.success('Contagem registrada');
-            queryClient.invalidateQueries({ queryKey: ['inventory-detail'] });
+                queryClient.invalidateQueries({ queryKey: ['inventory-detail'] });
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao registrar contagem'),
     });
@@ -99,9 +100,9 @@ export default function InventoryPage() {
         mutationFn: (id: number) => api.post(`/api/v1/stock/inventories/${id}/complete`),
         onSuccess: () => {
             toast.success('Inventário finalizado e ajustes aplicados!');
-            queryClient.invalidateQueries({ queryKey: ['inventories'] });
-            queryClient.invalidateQueries({ queryKey: ['inventory-detail'] });
-            queryClient.invalidateQueries({ queryKey: ['stock'] });
+                queryClient.invalidateQueries({ queryKey: ['inventories'] });
+                queryClient.invalidateQueries({ queryKey: ['inventory-detail'] });
+                queryClient.invalidateQueries({ queryKey: ['stock'] });
             setSelectedInventory(null);
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao finalizar inventário'),
@@ -111,7 +112,7 @@ export default function InventoryPage() {
         mutationFn: (id: number) => api.post(`/api/v1/stock/inventories/${id}/cancel`),
         onSuccess: () => {
             toast.success('Inventário cancelado');
-            queryClient.invalidateQueries({ queryKey: ['inventories'] });
+                queryClient.invalidateQueries({ queryKey: ['inventories'] });
             setSelectedInventory(null);
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao cancelar'),

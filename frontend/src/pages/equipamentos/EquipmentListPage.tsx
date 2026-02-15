@@ -81,11 +81,13 @@ export default function EquipmentListPage() {
 
     const { data: dashboard } = useQuery<DashboardData>({
         queryKey: ['equipments-dashboard'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/equipments-dashboard').then(r => r.data),
     })
 
     const { data: constants } = useQuery({
         queryKey: ['equipments-constants'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/equipments-constants').then(r => r.data),
     })
 
@@ -111,7 +113,7 @@ export default function EquipmentListPage() {
         mutationFn: (id: number) => api.delete(`/equipments/${id}`),
         onSuccess: () => {
             toast.success('Equipamento excluído com sucesso')
-            qc.invalidateQueries({ queryKey: ['equipments'] })
+                qc.invalidateQueries({ queryKey: ['equipments'] })
         },
         onError: () => toast.error('Erro ao excluir equipamento'),
     })

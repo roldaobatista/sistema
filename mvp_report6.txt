@@ -1,0 +1,68 @@
+﻿=== KALIBRIUM MVP AUDIT ===
+
+Backend: 751 routes, 139 controllers
+
+Frontend: 172 pages, 152 routes in App.tsx
+
+--- MODULE SCORES ---
+
+Ô£à admin ÔÇö 95% (1 pages, 328 lines)
+Ô£à automacao ÔÇö 95% (1 pages, 188 lines)
+Ô£à avancado ÔÇö 95% (1 pages, 274 lines)
+Ô£à cadastros ÔÇö 92% (8 pages, 3471 lines)
+Ô£à central ÔÇö 80% (3 pages, 901 lines)
+Ô£à chamados ÔÇö 92% (6 pages, 2790 lines)
+Ô£à configuracoes ÔÇö 90% (5 pages, 1898 lines)
+Ô£à emails ÔÇö 92% (3 pages, 1170 lines)
+Ô£à equipamentos ÔÇö 94% (5 pages, 2162 lines)
+Ô£à estoque ÔÇö 89% (11 pages, 2882 lines)
+Ô£à financeiro ÔÇö 97% (17 pages, 8985 lines)
+Ô£à fiscal ÔÇö 86% (2 pages, 645 lines)
+Ô£à fleet ÔÇö 87% (1 pages, 137 lines)
+Ô£à fleet/components ÔÇö 87% (13 pages, 1502 lines)
+Ô£à ia ÔÇö 90% (1 pages, 735 lines)
+Ô£à iam ÔÇö 97% (3 pages, 1589 lines)
+Ô£à importacao ÔÇö 95% (1 pages, 1336 lines)
+Ô£à inmetro ÔÇö 86% (17 pages, 4954 lines)
+    ÔÜá´©Å InmetroOwnerDetailPage (60%) ÔÇö missing: query, mutation
+Ô£à integracao ÔÇö 82% (1 pages, 457 lines)
+Ô£à notificacoes ÔÇö 80% (1 pages, 198 lines)
+Ô£à operational/checklists ÔÇö 90% (1 pages, 119 lines)
+Ô£à operational/checklists/components ÔÇö 95% (2 pages, 470 lines)
+Ô£à orcamentos ÔÇö 89% (4 pages, 1461 lines)
+Ô£à os ÔÇö 88% (8 pages, 3161 lines)
+Ô£à portal ÔÇö 87% (6 pages, 1025 lines)
+Ô£à qualidade ÔÇö 95% (1 pages, 289 lines)
+Ô£à relatorios ÔÇö 90% (1 pages, 965 lines)
+Ô£à rh ÔÇö 91% (20 pages, 5723 lines)
+Ô£à root ÔÇö 81% (5 pages, 1719 lines)
+Ô£à tech ÔÇö 90% (16 pages, 3800 lines)
+Ô£à tecnicos ÔÇö 98% (3 pages, 1322 lines)
+Ô£à tecnicos/components ÔÇö 90% (3 pages, 601 lines)
+Ô£à tv ÔÇö 85% (1 pages, 377 lines)
+
+--- SUMMARY ---
+
+Overall MVP Score: 90%
+Modules >= 80%: 33/33
+Modules < 60%: 0/33
+Total pages: 172
+Total lines: 57634
+
+--- BACKEND QUALITY ---
+
+Controllers with DB::transaction: 78/139
+Controllers with try/catch: 98/139
+Controllers with authorize: 13/139
+
+Controllers sem try/catch (>2 methods):
+  ÔÜá´©Å Api\Stock\WarehouseController.php (5 methods)
+  ÔÜá´©Å Api\V1\AIAnalyticsController.php (15 methods)
+  ÔÜá´©Å Api\V1\AuditLogController.php (5 methods)
+  ÔÜá´©Å Api\V1\BatchExportController.php (3 methods)
+  ÔÜá´©Å Api\V1\CrmMessageController.php (8 methods)
+  ÔÜá´©Å Api\V1\Email\EmailNoteController.php (3 methods)
+  ÔÜá´©Å Api\V1\Email\EmailSignatureController.php (4 methods)
+  ÔÜá´©Å Api\V1\Email\EmailTagController.php (5 methods)
+  ÔÜá´©Å Api\V1\Email\EmailTemplateController.php (5 methods)
+  ÔÜá´©Å Api\V1\EmployeeBenefitController.php (5 methods)

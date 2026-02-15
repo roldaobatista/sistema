@@ -17,7 +17,7 @@ class LogWorkOrderStartActivity implements ShouldQueue
         $wo->statusHistory()->create([
             'tenant_id' => $wo->tenant_id,
             'user_id' => $user->id,
-            'from_status' => $wo->getOriginal('status'),
+            'from_status' => $event->fromStatus,
             'to_status' => WorkOrder::STATUS_IN_PROGRESS,
             'notes' => "OS iniciada por {$user->name}",
         ]);

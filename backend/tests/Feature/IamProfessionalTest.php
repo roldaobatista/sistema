@@ -143,13 +143,13 @@ class IamProfessionalTest extends TestCase
 
     public function test_create_role_with_permissions(): void
     {
-        Permission::findOrCreate('workorder.view', 'web');
-        Permission::findOrCreate('workorder.create', 'web');
+        $p1 = Permission::findOrCreate('workorder.view', 'web');
+        $p2 = Permission::findOrCreate('workorder.create', 'web');
 
         $response = $this->postJson('/api/v1/roles', [
             'name' => 'Técnico',
             'description' => 'Papel de técnico de campo',
-            'permissions' => ['workorder.view', 'workorder.create'],
+            'permissions' => [$p1->id, $p2->id],
         ]);
 
         $response->assertStatus(201)

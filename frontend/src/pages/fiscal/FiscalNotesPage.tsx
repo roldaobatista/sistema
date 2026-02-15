@@ -77,7 +77,7 @@ export default function FiscalNotesPage() {
         },
         onSuccess: () => {
             toast.success('Nota cancelada com sucesso')
-            queryClient.invalidateQueries({ queryKey: ['fiscal-notes'] })
+                queryClient.invalidateQueries({ queryKey: ['fiscal-notes'] })
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Erro ao cancelar nota')

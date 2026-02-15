@@ -89,16 +89,19 @@ export function FundTransfersPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['fund-transfers-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fund-transfers/summary'),
     })
 
     const { data: accountsRes } = useQuery({
         queryKey: ['bank-accounts-active'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/bank-accounts', { params: { is_active: true } }),
     })
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-options'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
 

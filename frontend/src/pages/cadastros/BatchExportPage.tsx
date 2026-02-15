@@ -29,6 +29,7 @@ export function BatchExportPage() {
 
     const { data: entities, isLoading } = useQuery<ExportEntity[]>({
         queryKey: ['batch-export-entities'],
+        const { data, isLoading, isError } = useQuery({
         queryFn: async () => {
             const res = await api.get('/batch-export/entities')
             return res.data.data
@@ -50,7 +51,6 @@ export function BatchExportPage() {
             link.remove()
             window.URL.revokeObjectURL(url)
         },
-    ,
     onSuccess: () => { toast.success('Operação realizada com sucesso') },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro na operação') }
   })

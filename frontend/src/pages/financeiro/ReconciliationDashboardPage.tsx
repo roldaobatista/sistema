@@ -82,6 +82,7 @@ export function ReconciliationDashboardPage() {
 
     const dashboardQuery = useQuery<DashboardData>({
         queryKey: ['reconciliation-dashboard', startDate, endDate],
+        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: async () => {
             const { data } = await api.get('/bank-reconciliation/dashboard', {
                 params: { start_date: startDate, end_date: endDate },

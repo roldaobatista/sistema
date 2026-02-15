@@ -36,12 +36,14 @@ export function StockDashboardPage() {
 
     const { data: summaryRes, isLoading: loadingSummary } = useQuery({
         queryKey: ['stock-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/stock/summary'),
     })
     const summary: StockSummary = summaryRes?.data?.stats ?? { total_products: 0, total_value: 0, low_stock_count: 0, out_of_stock_count: 0 }
 
     const { data: alertsRes, isLoading: loadingAlerts } = useQuery({
         queryKey: ['stock-low-alerts'],
+        const { data } = useQuery({
         queryFn: () => api.get('/stock/low-alerts'),
     })
     const alerts: LowStockProduct[] = alertsRes?.data?.data ?? []

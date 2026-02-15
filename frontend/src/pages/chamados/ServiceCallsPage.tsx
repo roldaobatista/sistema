@@ -58,6 +58,7 @@ export function ServiceCallsPage() {
 
     const { data: summary } = useQuery({
         queryKey: ['service-calls-summary'],
+        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-calls-summary').then((r) => r.data),
     })
 
@@ -65,7 +66,7 @@ export function ServiceCallsPage() {
         mutationFn: (id: number) => api.delete(`/service-calls/${id}`),
         onSuccess: () => {
             toast.success('Chamado excluído com sucesso')
-            queryClient.invalidateQueries({ queryKey: ['service-calls'] })
+                queryClient.invalidateQueries({ queryKey: ['service-calls'] })
             queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
             setDeleteTarget(null)
         },
