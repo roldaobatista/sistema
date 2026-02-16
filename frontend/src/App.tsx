@@ -94,6 +94,22 @@ const StandardWeightsPage = lazy(() => import('@/pages/equipamentos/StandardWeig
 const CrmDashboardPage = lazy(() => import('@/pages/CrmDashboardPage').then(m => ({ default: m.CrmDashboardPage })))
 const CrmPipelinePage = lazy(() => import('@/pages/CrmPipelinePage').then(m => ({ default: m.CrmPipelinePage })))
 const MessageTemplatesPage = lazy(() => import('@/pages/MessageTemplatesPage').then(m => ({ default: m.MessageTemplatesPage })))
+const CrmForecastPage = lazy(() => import('@/pages/crm/CrmForecastPage').then(m => ({ default: m.CrmForecastPage })))
+const CrmGoalsPage = lazy(() => import('@/pages/crm/CrmGoalsPage').then(m => ({ default: m.CrmGoalsPage })))
+const CrmAlertsPage = lazy(() => import('@/pages/crm/CrmAlertsPage').then(m => ({ default: m.CrmAlertsPage })))
+const CrmCalendarPage = lazy(() => import('@/pages/crm/CrmCalendarPage').then(m => ({ default: m.CrmCalendarPage })))
+const CrmScoringPage = lazy(() => import('@/pages/crm/CrmScoringPage').then(m => ({ default: m.CrmScoringPage })))
+const CrmSequencesPage = lazy(() => import('@/pages/crm/CrmSequencesPage').then(m => ({ default: m.CrmSequencesPage })))
+const CrmLossAnalyticsPage = lazy(() => import('@/pages/crm/CrmLossAnalyticsPage').then(m => ({ default: m.CrmLossAnalyticsPage })))
+const CrmTerritoriesPage = lazy(() => import('@/pages/crm/CrmTerritoriesPage').then(m => ({ default: m.CrmTerritoriesPage })))
+const CrmRenewalsPage = lazy(() => import('@/pages/crm/CrmRenewalsPage').then(m => ({ default: m.CrmRenewalsPage })))
+const CrmReferralsPage = lazy(() => import('@/pages/crm/CrmReferralsPage').then(m => ({ default: m.CrmReferralsPage })))
+const CrmWebFormsPage = lazy(() => import('@/pages/crm/CrmWebFormsPage').then(m => ({ default: m.CrmWebFormsPage })))
+const CrmRevenueIntelligencePage = lazy(() => import('@/pages/crm/CrmRevenueIntelligencePage').then(m => ({ default: m.CrmRevenueIntelligencePage })))
+const CrmCompetitorsPage = lazy(() => import('@/pages/crm/CrmCompetitorsPage').then(m => ({ default: m.CrmCompetitorsPage })))
+const CrmVelocityPage = lazy(() => import('@/pages/crm/CrmVelocityPage').then(m => ({ default: m.CrmVelocityPage })))
+const CrmCohortPage = lazy(() => import('@/pages/crm/CrmCohortPage').then(m => ({ default: m.CrmCohortPage })))
+const CrmProposalsPage = lazy(() => import('@/pages/crm/CrmProposalsPage').then(m => ({ default: m.CrmProposalsPage })))
 const StockDashboardPage = lazy(() => import('@/pages/estoque/StockDashboardPage').then(m => ({ default: m.StockDashboardPage })))
 const StockMovementsPage = lazy(() => import('@/pages/estoque/StockMovementsPage').then(m => ({ default: m.StockMovementsPage })))
 const WarehousesPage = lazy(() => import('@/pages/estoque/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
@@ -187,6 +203,26 @@ const TechSchedulePage = lazy(() => import('@/pages/tech/TechSchedulePage'))
 const TechTimeEntriesPage = lazy(() => import('@/pages/tech/TechTimeEntriesPage'))
 const TechNotificationsPage = lazy(() => import('@/pages/tech/TechNotificationsPage'))
 const TechEquipmentSearchPage = lazy(() => import('@/pages/tech/TechEquipmentSearchPage'))
+const TechAssetScanPage = lazy(() => import('@/pages/tech/TechAssetScanPage'))
+const TechRoutePage = lazy(() => import('@/pages/tech/TechRoutePage'))
+const TechNpsPage = lazy(() => import('@/pages/tech/TechNpsPage'))
+const TechQuickQuotePage = lazy(() => import('@/pages/tech/TechQuickQuotePage'))
+const TechCalibrationReadingsPage = lazy(() => import('@/pages/tech/TechCalibrationReadingsPage'))
+const TechCertificatePage = lazy(() => import('@/pages/tech/TechCertificatePage'))
+const TechCommissionsPage = lazy(() => import('@/pages/tech/TechCommissionsPage'))
+const TechDaySummaryPage = lazy(() => import('@/pages/tech/TechDaySummaryPage'))
+const TechFeedbackPage = lazy(() => import('@/pages/tech/TechFeedbackPage'))
+const TechPriceTablePage = lazy(() => import('@/pages/tech/TechPriceTablePage'))
+const TechEquipmentHistoryPage = lazy(() => import('@/pages/tech/TechEquipmentHistoryPage'))
+const TechVehicleCheckinPage = lazy(() => import('@/pages/tech/TechVehicleCheckinPage'))
+const TechComplaintPage = lazy(() => import('@/pages/tech/TechComplaintPage').then(m => ({ default: m.default })))
+const TechContractInfoPage = lazy(() => import('@/pages/tech/TechContractInfoPage').then(m => ({ default: m.default })))
+const TechToolInventoryPage = lazy(() => import('@/pages/tech/TechToolInventoryPage'))
+const TechTimeClockPage = lazy(() => import('@/pages/tech/TechTimeClockPage'))
+const TechDashboardPage = lazy(() => import('@/pages/tech/TechDashboardPage'))
+const TechGoalsPage = lazy(() => import('@/pages/tech/TechGoalsPage'))
+const TechServiceCallsPage = lazy(() => import('@/pages/tech/TechServiceCallsPage'))
+const TechMaterialRequestPage = lazy(() => import('@/pages/tech/TechMaterialRequestPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -279,6 +315,22 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/crm/pipeline', permission: 'crm.pipeline.view' },
   { match: '/crm/clientes', permission: 'crm.deal.view' },
   { match: '/crm/templates', permission: 'crm.message.view' },
+  { match: '/crm/forecast', permission: 'crm.forecast.view' },
+  { match: '/crm/goals', permission: 'crm.goal.view' },
+  { match: '/crm/alerts', permission: 'crm.deal.view' },
+  { match: '/crm/calendar', permission: 'crm.deal.view' },
+  { match: '/crm/scoring', permission: 'crm.scoring.view' },
+  { match: '/crm/sequences', permission: 'crm.sequence.view' },
+  { match: '/crm/loss-analytics', permission: 'crm.deal.view' },
+  { match: '/crm/territories', permission: 'crm.territory.view' },
+  { match: '/crm/renewals', permission: 'crm.renewal.view' },
+  { match: '/crm/referrals', permission: 'crm.referral.view' },
+  { match: '/crm/web-forms', permission: 'crm.form.view' },
+  { match: '/crm/revenue', permission: 'crm.forecast.view' },
+  { match: '/crm/competitors', permission: 'crm.deal.view' },
+  { match: '/crm/velocity', permission: 'crm.deal.view' },
+  { match: '/crm/cohort', permission: 'crm.forecast.view' },
+  { match: '/crm/proposals', permission: 'crm.proposal.view' },
   { match: '/crm', permission: 'crm.deal.view' },
   { match: '/perfil', permission: null },
   // Novos módulos (200 Features)
@@ -580,6 +632,22 @@ export default function App() {
             <Route path="/cadastros/clientes/:id" element={<ProtectedRoute><Customer360Page /></ProtectedRoute>} />
             <Route path="/crm/clientes/:id" element={<ProtectedRoute><Customer360Page /></ProtectedRoute>} />
             <Route path="/crm/templates" element={<ProtectedRoute><MessageTemplatesPage /></ProtectedRoute>} />
+            <Route path="/crm/forecast" element={<ProtectedRoute><CrmForecastPage /></ProtectedRoute>} />
+            <Route path="/crm/goals" element={<ProtectedRoute><CrmGoalsPage /></ProtectedRoute>} />
+            <Route path="/crm/alerts" element={<ProtectedRoute><CrmAlertsPage /></ProtectedRoute>} />
+            <Route path="/crm/calendar" element={<ProtectedRoute><CrmCalendarPage /></ProtectedRoute>} />
+            <Route path="/crm/scoring" element={<ProtectedRoute><CrmScoringPage /></ProtectedRoute>} />
+            <Route path="/crm/sequences" element={<ProtectedRoute><CrmSequencesPage /></ProtectedRoute>} />
+            <Route path="/crm/loss-analytics" element={<ProtectedRoute><CrmLossAnalyticsPage /></ProtectedRoute>} />
+            <Route path="/crm/territories" element={<ProtectedRoute><CrmTerritoriesPage /></ProtectedRoute>} />
+            <Route path="/crm/renewals" element={<ProtectedRoute><CrmRenewalsPage /></ProtectedRoute>} />
+            <Route path="/crm/referrals" element={<ProtectedRoute><CrmReferralsPage /></ProtectedRoute>} />
+            <Route path="/crm/web-forms" element={<ProtectedRoute><CrmWebFormsPage /></ProtectedRoute>} />
+            <Route path="/crm/revenue" element={<ProtectedRoute><CrmRevenueIntelligencePage /></ProtectedRoute>} />
+            <Route path="/crm/competitors" element={<ProtectedRoute><CrmCompetitorsPage /></ProtectedRoute>} />
+            <Route path="/crm/velocity" element={<ProtectedRoute><CrmVelocityPage /></ProtectedRoute>} />
+            <Route path="/crm/cohort" element={<ProtectedRoute><CrmCohortPage /></ProtectedRoute>} />
+            <Route path="/crm/proposals" element={<ProtectedRoute><CrmProposalsPage /></ProtectedRoute>} />
 
             {/* Frota */}
             <Route path="/frota" element={<ProtectedRoute><FleetPage /></ProtectedRoute>} />
@@ -649,7 +717,12 @@ export default function App() {
               <Route path="os/:id/expenses" element={<TechExpensePage />} />
               <Route path="os/:id/photos" element={<TechPhotosPage />} />
               <Route path="os/:id/seals" element={<TechSealsPage />} />
+              <Route path="os/:id/calibration" element={<TechCalibrationReadingsPage />} />
+              <Route path="os/:id/certificado" element={<TechCertificatePage />} />
               <Route path="os/:id/signature" element={<TechSignaturePage />} />
+              <Route path="os/:id/nps" element={<TechNpsPage />} />
+              <Route path="os/:id/ocorrencia" element={<TechComplaintPage />} />
+              <Route path="os/:id/contrato" element={<TechContractInfoPage />} />
               <Route path="perfil" element={<TechProfilePage />} />
               <Route path="configurações" element={<TechSettingsPage />} />
               <Route path="barcode" element={<TechBarcodePage />} />
@@ -664,9 +737,24 @@ export default function App() {
               <Route path="caixa" element={<TechCashManagementPage />} />
               <Route path="nova-os" element={<TechCreateWorkOrderPage />} />
               <Route path="agenda" element={<TechSchedulePage />} />
+              <Route path="rota" element={<TechRoutePage />} />
+              <Route path="comissoes" element={<TechCommissionsPage />} />
+              <Route path="resumo-diario" element={<TechDaySummaryPage />} />
               <Route path="apontamentos" element={<TechTimeEntriesPage />} />
               <Route path="notificações" element={<TechNotificationsPage />} />
               <Route path="equipamentos" element={<TechEquipmentSearchPage />} />
+              <Route path="equipamento/:id" element={<TechEquipmentHistoryPage />} />
+              <Route path="feedback" element={<TechFeedbackPage />} />
+              <Route path="precos" element={<TechPriceTablePage />} />
+              <Route path="orcamento-rapido" element={<TechQuickQuotePage />} />
+              <Route path="scan-ativos" element={<TechAssetScanPage />} />
+              <Route path="veiculo" element={<TechVehicleCheckinPage />} />
+              <Route path="ferramentas" element={<TechToolInventoryPage />} />
+              <Route path="ponto" element={<TechTimeClockPage />} />
+              <Route path="dashboard" element={<TechDashboardPage />} />
+              <Route path="metas" element={<TechGoalsPage />} />
+              <Route path="chamados" element={<TechServiceCallsPage />} />
+              <Route path="solicitar-material" element={<TechMaterialRequestPage />} />
             </Route>
 
             {/* Rotas do Portal do Cliente */}

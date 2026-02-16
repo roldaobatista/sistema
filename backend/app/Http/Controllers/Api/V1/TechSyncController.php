@@ -37,9 +37,9 @@ class TechSyncController extends Controller
             })
             ->select([
                 'id', 'number', 'os_number', 'status', 'priority',
-                'scheduled_date', 'customer_id', 'description', 'updated_at',
+                'scheduled_date', 'customer_id', 'description', 'sla_due_at', 'updated_at',
             ])
-            ->with(['customer:id,name,phone,address,city'])
+            ->with(['customer:id,name,phone,address,city,latitude,longitude'])
             ->get()
             ->map(function ($wo) {
                 return [
@@ -55,6 +55,9 @@ class TechSyncController extends Controller
                     'customer_address' => $wo->customer?->address,
                     'city' => $wo->customer?->city,
                     'description' => $wo->description,
+                    'sla_due_at' => $wo->sla_due_at?->toISOString(),
+                    'latitude' => $wo->customer?->latitude,
+                    'longitude' => $wo->customer?->longitude,
                     'updated_at' => $wo->updated_at->toISOString(),
                 ];
             });

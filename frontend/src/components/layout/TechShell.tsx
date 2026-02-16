@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import {
-    ClipboardList,
-    Camera,
     Receipt,
     User,
     Wifi,
@@ -12,6 +10,7 @@ import {
     ShieldAlert,
     Settings,
     ScanBarcode,
+    QrCode,
     Calendar,
     Wallet,
     Bell,
@@ -20,27 +19,55 @@ import {
     Gauge,
     Menu,
     X,
+    Wrench,
+    Car,
+    MessageSquare,
+    DollarSign,
+    BarChart3,
+    Target,
+    Navigation,
+    PhoneCall,
+    Package,
+    Scale,
+    FileText,
+    Timer,
 } from 'lucide-react'
 import { useSyncStatus } from '@/hooks/useSyncStatus'
 import { useAuthStore } from '@/stores/auth-store'
 import { ModeSwitcher } from '@/components/pwa/ModeSwitcher'
 import { InstallBanner } from '@/components/pwa/InstallBanner'
+import { TechAlertBanner } from '@/components/tech/TechAlertBanner'
+import { TechErrorBoundary } from '@/components/tech/TechErrorBoundary'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
+    { path: '/tech/dashboard', icon: BarChart3, label: 'Painel' },
     { path: '/tech', icon: Briefcase, label: 'OS', end: true },
     { path: '/tech/agenda', icon: Calendar, label: 'Agenda' },
     { path: '/tech/caixa', icon: Wallet, label: 'Caixa' },
-    { path: '/tech/perfil', icon: User, label: 'Perfil' },
 ]
 
 const MORE_ITEMS = [
     { path: '/tech/nova-os', icon: Plus, label: 'Nova OS' },
+    { path: '/tech/chamados', icon: PhoneCall, label: 'Chamados' },
+    { path: '/tech/rota', icon: Navigation, label: 'Rota do Dia' },
+    { path: '/tech/orcamento-rapido', icon: FileText, label: 'Orçamento' },
+    { path: '/tech/comissoes', icon: DollarSign, label: 'Comissões' },
+    { path: '/tech/metas', icon: Target, label: 'Metas' },
+    { path: '/tech/resumo-diario', icon: Calendar, label: 'Resumo Dia' },
+    { path: '/tech/solicitar-material', icon: Package, label: 'Material' },
     { path: '/tech/despesas', icon: Receipt, label: 'Despesas' },
     { path: '/tech/apontamentos', icon: Clock, label: 'Horas' },
+    { path: '/tech/ponto', icon: Timer, label: 'Ponto' },
     { path: '/tech/equipamentos', icon: Gauge, label: 'Equipamentos' },
+    { path: '/tech/scan-ativos', icon: QrCode, label: 'Scan Ativos' },
+    { path: '/tech/ferramentas', icon: Wrench, label: 'Ferramentas' },
+    { path: '/tech/veiculo', icon: Car, label: 'Veículo' },
+    { path: '/tech/precos', icon: DollarSign, label: 'Preços' },
+    { path: '/tech/feedback', icon: MessageSquare, label: 'Feedback' },
     { path: '/tech/notificacoes', icon: Bell, label: 'Notificações' },
+    { path: '/tech/perfil', icon: User, label: 'Perfil' },
     { path: '/tech/barcode', icon: ScanBarcode, label: 'Scanner' },
     { path: '/tech/configuracoes', icon: Settings, label: 'Configurações' },
 ]
@@ -135,9 +162,13 @@ export default function TechShell() {
                 </div>
             )}
 
+            <TechAlertBanner />
+
             {/* ─── Content Area ──────────────────────────── */}
             <main className="flex-1 overflow-y-auto overscroll-contain">
-                <Outlet />
+                <TechErrorBoundary>
+                    <Outlet />
+                </TechErrorBoundary>
             </main>
 
             {/* ─── More menu overlay ─────────────────────── */}

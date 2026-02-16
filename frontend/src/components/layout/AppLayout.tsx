@@ -10,7 +10,8 @@ import {
     Weight, RotateCcw, TrendingUp, History, Warehouse, ArrowLeftRight, Bell,
     CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
     MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
-    Monitor, Target,
+    Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy,
+    GitBranch, PieChart, Swords, Globe, Eye,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -68,6 +69,22 @@ const navigationSections: NavSection[] = [
                 children: [
                     { label: 'Dashboard', icon: BarChart3, path: '/crm' },
                     { label: 'Pipeline', icon: Grid3x3, path: '/crm/pipeline' },
+                    { label: 'Calendário', icon: Calendar, path: '/crm/calendar' },
+                    { label: 'Alertas', icon: AlertTriangle, path: '/crm/alerts' },
+                    { label: 'Previsão', icon: TrendingUp, path: '/crm/forecast', permission: 'crm.forecast.view' },
+                    { label: 'Metas', icon: Trophy, path: '/crm/goals', permission: 'crm.goal.view' },
+                    { label: 'Lead Scoring', icon: Crosshair, path: '/crm/scoring', permission: 'crm.scoring.view' },
+                    { label: 'Cadências', icon: GitBranch, path: '/crm/sequences', permission: 'crm.sequence.view' },
+                    { label: 'Territórios', icon: MapPinned, path: '/crm/territories', permission: 'crm.territory.view' },
+                    { label: 'Renovações', icon: Repeat, path: '/crm/renewals', permission: 'crm.renewal.view' },
+                    { label: 'Indicações', icon: Share2, path: '/crm/referrals', permission: 'crm.referral.view' },
+                    { label: 'Formulários', icon: Globe, path: '/crm/web-forms', permission: 'crm.form.view' },
+                    { label: 'Propostas', icon: Eye, path: '/crm/proposals', permission: 'crm.proposal.view' },
+                    { label: 'Análise Perdas', icon: PieChart, path: '/crm/loss-analytics' },
+                    { label: 'Concorrentes', icon: Swords, path: '/crm/competitors' },
+                    { label: 'Velocidade', icon: Gauge, path: '/crm/velocity' },
+                    { label: 'Coorte', icon: BarChart, path: '/crm/cohort', permission: 'crm.forecast.view' },
+                    { label: 'Receita', icon: DollarSign, path: '/crm/revenue', permission: 'crm.forecast.view' },
                     { label: 'Templates', icon: FileText, path: '/crm/templates' },
                 ],
             },
@@ -243,6 +260,10 @@ const salesOnlySections: NavSection[] = [
         items: [
             { label: 'Dashboard CRM', icon: BarChart3, path: '/crm', permission: 'crm.deal.view' },
             { label: 'Pipeline', icon: Grid3x3, path: '/crm/pipeline', permission: 'crm.pipeline.view' },
+            { label: 'Calendário', icon: Calendar, path: '/crm/calendar', permission: 'crm.deal.view' },
+            { label: 'Alertas', icon: AlertTriangle, path: '/crm/alerts', permission: 'crm.deal.view' },
+            { label: 'Metas', icon: Trophy, path: '/crm/goals', permission: 'crm.goal.view' },
+            { label: 'Cadências', icon: GitBranch, path: '/crm/sequences', permission: 'crm.sequence.view' },
             { label: 'Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
             { label: 'Clientes', icon: Users, path: '/cadastros/clientes', permission: 'cadastros.customer.view' },
             { label: 'Templates', icon: FileText, path: '/crm/templates', permission: 'crm.message.view' },

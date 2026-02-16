@@ -8,8 +8,8 @@
  * - Fotos/Uploads: IndexedDB queue, upload em background
  */
 
-const CACHE_NAME = 'kalibrium-v1';
-const API_CACHE = 'kalibrium-api-v1';
+const CACHE_NAME = 'kalibrium-v2';
+const API_CACHE = 'kalibrium-api-v2';
 
 const SHELL_URLS = [
   '/',
@@ -28,6 +28,35 @@ const CACHEABLE_API_PATTERNS = [
   /\/api\/v1\/checklists/,
   /\/api\/v1\/services/,
   /\/api\/v1\/products/,
+  // Commission endpoints
+  /\/api\/v1\/commission-events/,
+  /\/api\/v1\/commission-settlements/,
+  /\/api\/v1\/commission-disputes/,
+  /\/api\/v1\/commission-goals/,
+  /\/api\/v1\/commission-campaigns/,
+  /\/api\/v1\/commission-dashboard\/ranking/,
+  // Reports and service calls
+  /\/api\/v1\/reports\/productivity/,
+  /\/api\/v1\/service-calls/,
+  /\/api\/v1\/material-requests/,
+  /\/api\/v1\/recurring-contracts/,
+  // Certificates and assets
+  /\/api\/v1\/certificate-templates/,
+  /\/api\/v1\/asset-tags/,
+  // Fleet management
+  /\/api\/v1\/fleet\/vehicles/,
+  /\/api\/v1\/fleet\/fuel-logs/,
+  /\/api\/v1\/fleet\/accidents/,
+  /\/api\/v1\/fleet\/inspections/,
+  // HR and time clock
+  /\/api\/v1\/hr\/clock\/my/,
+  /\/api\/v1\/hr\/advanced\/clock\/status/,
+  /\/api\/v1\/hr\/continuous-feedback/,
+  // Advanced features
+  /\/api\/v1\/advanced\/price-tables/,
+  /\/api\/v1\/tool-calibrations/,
+  /\/api\/v1\/operational\/nps\/stats/,
+  /\/api\/v1\/quotes/,
 ];
 
 // ─── INSTALL ──────────────────────────────────────────────────────

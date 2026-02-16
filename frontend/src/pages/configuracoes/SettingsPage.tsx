@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Settings, History, Save, Search, Hash, Bell,
     User, Calendar, ArrowRight, Shield,
     MessageSquare, Mail, Building2, GitBranch,
     ChevronDown, ChevronUp, Download, CheckCircle2, Eye, Loader2,
+    Upload, ImageIcon, Trash2,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -51,6 +52,7 @@ const defaultSettings: SettingItem[] = [
     { key: 'company_email', value: '', type: 'string', group: 'general' },
     { key: 'company_document', value: '', type: 'string', group: 'general' },
     { key: 'company_logo_url', value: '', type: 'string', group: 'general' },
+    { key: 'company_tagline', value: '', type: 'string', group: 'general' },
     { key: 'company_address', value: '', type: 'string', group: 'general' },
     // OS
     { key: 'default_warranty_days', value: '90', type: 'integer', group: 'os' },
@@ -98,7 +100,8 @@ const settingLabels: Record<string, string> = {
     company_phone: 'Telefone',
     company_email: 'E-mail',
     company_document: 'CNPJ/CPF',
-    company_logo_url: 'URL do Logo',
+    company_logo_url: 'Logo da Empresa',
+    company_tagline: 'Slogan / Atividade (ex: Assistência Técnica)',
     company_address: 'Endereço Completo',
     default_warranty_days: 'Dias de Garantia Padrão',
     auto_generate_os_number: 'Gerar Número OS Automaticamente',
@@ -282,7 +285,11 @@ export function SettingsPage() {
                                 {settingGroups[g.group]?.label ?? g.group}
                             </h3>
                             <div className="space-y-4">
-                                {g.items.map(s => (
+                                {g.items.map(s => {
+                                    if (s.key === 'company_logo_url') {
+                                        return <CompanyLogoUpload key={s.key} currentUrl={getVal(s.key)} onUploaded={(url) => setVal(s.key, url)} />
+                                    }
+                                    return (
                                     <div key={s.key} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
                                         <label className="text-sm font-medium text-surface-600">{settingLabels[s.key] ?? s.key}</label>
                                         {s.type === 'boolean' ? (
@@ -300,7 +307,8 @@ export function SettingsPage() {
                                                 className="w-full max-w-xs rounded-lg border border-default bg-surface-50 px-3.5 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                                         )}
                                     </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         </div>
                     ))}
@@ -644,6 +652,82 @@ function NotificationsTab() {
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+    )
+}
+
+function CompanyLogoUpload({ currentUrl, onUploaded }: { currentUrl: string; onUploaded: (url: string) => void }) {
+    const fileRef = useRef<HTMLInputElement>(null)
+    const [uploading, setUploading] = useState(false)
+    const [preview, setPreview] = useState<string | null>(null)
+
+    const displayUrl = preview || currentUrl || null
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setPreview(URL.createObjectURL(file))
+        setUploading(true)
+
+        try {
+            const form = new FormData()
+            form.append('logo', file)
+            const res = await api.post('/settings/logo', form, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            })
+            onUploaded(res.data.url)
+            toast.success('Logo atualizado com sucesso!')
+        } catch {
+            toast.error('Erro ao enviar logo')
+            setPreview(null)
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    return (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="text-sm font-medium text-surface-600">Logo da Empresa</label>
+            <div className="flex items-center gap-3">
+                {displayUrl ? (
+                    <div className="relative group">
+                        <img
+                            src={displayUrl}
+                            alt="Logo da empresa"
+                            className="h-16 w-16 rounded-lg border border-default object-contain bg-white p-1"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => { onUploaded(''); setPreview(null) }}
+                            className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow"
+                            title="Remover logo"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-surface-300 bg-surface-50">
+                        <ImageIcon className="h-6 w-6 text-surface-400" />
+                    </div>
+                )}
+                <div>
+                    <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={uploading}
+                        className={cn(
+                            'inline-flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-1.5 text-sm font-medium text-surface-700',
+                            'hover:bg-surface-50 transition-colors disabled:opacity-50'
+                        )}
+                    >
+                        {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        {uploading ? 'Enviando...' : 'Enviar Logo'}
+                    </button>
+                    <p className="mt-1 text-[11px] text-surface-400">PNG, JPG ou SVG. Max 2MB.</p>
+                </div>
+                <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleUpload} />
             </div>
         </div>
     )

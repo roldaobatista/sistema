@@ -48,7 +48,7 @@ export default function TechBluetoothPrintPage() {
                 { label: '________________', value: '' },
                 { label: 'Cliente', value: '' },
             ],
-            footer: 'Kalibrium · Sistema OS',
+            footer: 'Kalibrium Gestão',
         })
         if (ok) toast.success('Comprovante da OS impresso!')
     }

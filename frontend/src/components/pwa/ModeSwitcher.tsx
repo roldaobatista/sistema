@@ -9,10 +9,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
-const MODE_CONFIG: Record<AppMode, { label: string; icon: typeof LayoutDashboard }> = {
-    gestao: { label: 'Modo Gestão', icon: LayoutDashboard },
-    tecnico: { label: 'Modo Técnico', icon: Wrench },
-    vendedor: { label: 'Modo Vendedor', icon: Briefcase },
+const MODE_CONFIG: Record<AppMode, { label: string; shortLabel: string; icon: typeof LayoutDashboard }> = {
+    gestao: { label: 'Modo Gestão', shortLabel: 'Gestão', icon: LayoutDashboard },
+    tecnico: { label: 'Modo Técnico', shortLabel: 'Técnico', icon: Wrench },
+    vendedor: { label: 'Modo Vendedor', shortLabel: 'Vendedor', icon: Briefcase },
 }
 
 export function ModeSwitcher() {
@@ -29,14 +29,20 @@ export function ModeSwitcher() {
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="gap-2 text-surface-600 hover:text-surface-900"
+                    className="gap-2 min-w-0 text-surface-700 dark:text-surface-200 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800"
                 >
-                    <CurrentIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline">{current.label}</span>
-                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                    <CurrentIcon className="h-4 w-4 shrink-0" />
+                    <span className="truncate max-w-[100px] sm:max-w-[140px] font-medium">
+                        <span className="hidden sm:inline">{current.label}</span>
+                        <span className="sm:hidden">{current.shortLabel}</span>
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[180px]">
+            <DropdownMenuContent align="end" sideOffset={6} className="min-w-[240px] p-2 shadow-lg">
+                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 border-b border-border dark:border-surface-700 mb-1.5">
+                    Trocar modo
+                </div>
                 {availableModes.map((mode) => {
                     const config = MODE_CONFIG[mode]
                     const Icon = config.icon
@@ -45,10 +51,14 @@ export function ModeSwitcher() {
                         <DropdownMenuItem
                             key={mode}
                             onClick={() => switchMode(mode)}
-                            className={cn(isActive && 'bg-accent font-medium')}
+                            className={cn(
+                                'gap-3 py-3 px-3 text-base font-medium cursor-pointer rounded-md',
+                                'focus:bg-accent focus:text-accent-foreground',
+                                isActive && 'bg-accent font-semibold text-accent-foreground'
+                            )}
                         >
-                            <Icon className="h-4 w-4" />
-                            {config.label}
+                            <Icon className="h-5 w-5 shrink-0" />
+                            <span className="flex-1 whitespace-nowrap">{config.label}</span>
                         </DropdownMenuItem>
                     )
                 })}

@@ -152,4 +152,14 @@ Schedule::job(new \App\Jobs\SendScheduledEmails)
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/email-scheduled-send.log'));
 
+// ─── CRM: Processar Cadências de Prospecção (a cada hora) ───
+Schedule::job(new \App\Jobs\ProcessCrmSequences)
+    ->hourly()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/crm-sequences.log'));
 
+// ─── CRM: Gerar Alertas Inteligentes (diário às 07:20) ───
+Schedule::job(new \App\Jobs\GenerateCrmSmartAlerts)
+    ->dailyAt('07:20')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/crm-smart-alerts.log'));

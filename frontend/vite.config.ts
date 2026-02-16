@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import fs from 'fs'
 
 // Plugin que intercepta /sw.js em dev e retorna um SW que se auto-desregistra
 function devSwKill(): Plugin {
@@ -29,11 +30,36 @@ function devSwKill(): Plugin {
   }
 }
 
+// No build de produção, injeta start_url absoluto no manifest para o ícone abrir em modo app (não no navegador)
+function manifestAbsoluteStartUrl(): Plugin {
+  return {
+    name: 'manifest-absolute-start-url',
+    closeBundle() {
+      const outDir = path.resolve(process.cwd(), 'dist')
+      const manifestPath = path.join(outDir, 'manifest.json')
+      const baseUrl = process.env.VITE_APP_URL
+      if (!baseUrl || !fs.existsSync(manifestPath)) return
+      try {
+        const origin = baseUrl.replace(/\/$/, '')
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+        manifest.start_url = `${origin}/`
+        if (!manifest.scope || manifest.scope === '/') {
+          manifest.scope = `${origin}/`
+        }
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+      } catch {
+        // ignore
+      }
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => ({
   plugins: [
     ...(mode === 'development' ? [devSwKill()] : []),
     react(),
     tailwindcss(),
+    ...(mode === 'production' ? [manifestAbsoluteStartUrl()] : []),
   ],
   resolve: {
     alias: {

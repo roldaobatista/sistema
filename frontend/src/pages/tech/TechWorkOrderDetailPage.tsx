@@ -5,6 +5,7 @@ import {
     ClipboardList, Camera, Receipt, PenTool, PlayCircle,
     CheckCircle2, Loader2, ChevronRight, WifiOff, ShieldCheck,
     Navigation, FileText, Send, Mic, Printer, ImagePlus,
+    FlaskConical, Award, Flag, FileCheck, X, Star, MessageCircle,
 } from 'lucide-react'
 import { useOfflineStore } from '@/hooks/useOfflineStore'
 import { cn } from '@/lib/utils'
@@ -27,12 +28,17 @@ const ACTION_CARDS = [
     { key: 'checklist', label: 'Checklists', icon: ClipboardList, color: 'text-violet-600 bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400' },
     { key: 'photos', label: 'Fotos', icon: Camera, color: 'text-sky-600 bg-sky-100 dark:bg-sky-900/30 dark:text-sky-400' },
     { key: 'seals', label: 'Selos', icon: ShieldCheck, color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    { key: 'calibration', label: 'Leituras Calibração', icon: FlaskConical, color: 'text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400' },
+    { key: 'certificado', label: 'Certificado', icon: Award, color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400' },
     { key: 'expenses', label: 'Despesas', icon: Receipt, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
     { key: 'signature', label: 'Assinatura', icon: PenTool, color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' },
     { key: 'chat', label: 'Chat Interno', icon: Send, color: 'text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400' },
     { key: 'voice-report', label: 'Relatório Voz', icon: Mic, color: 'text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400' },
     { key: 'annotate', label: 'Anotar Foto', icon: ImagePlus, color: 'text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400' },
     { key: 'print', label: 'Impressão BT', icon: Printer, color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+    { key: 'ocorrencia', label: 'Ocorrência', icon: Flag, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
+    { key: 'contrato', label: 'Contrato', icon: FileCheck, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
+    { key: 'nps', label: 'Avaliação NPS', icon: Star, color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400' },
 ];
 
 export default function TechWorkOrderDetailPage() {
@@ -46,6 +52,13 @@ export default function TechWorkOrderDetailPage() {
     const [transitioning, setTransitioning] = useState(false)
     const [updatingLocation, setUpdatingLocation] = useState(false)
     const [isChatOpen, setIsChatOpen] = useState(false)
+    const [showCompletionWizard, setShowCompletionWizard] = useState(false)
+    const [completionSteps, setCompletionSteps] = useState({
+        photos: false,
+        checklist: false,
+        signature: false,
+        nps: false,
+    })
 
   const [searchTerm, setSearchTerm] = useState('')
     useEffect(() => {
@@ -112,10 +125,44 @@ export default function TechWorkOrderDetailPage() {
         )
     }
 
+    const handleCompleteOS = useCallback(async () => {
+        if (!wo) return
+        const status = STATUS_MAP[wo.status]
+        if (status?.next !== 'completed') return
+
+        setTransitioning(true)
+        try {
+            const updated = { ...wo, status: 'completed' as const, updated_at: new Date().toISOString() }
+            await put(updated as OfflineWorkOrder)
+            setWo(updated as OfflineWorkOrder)
+            setShowCompletionWizard(false)
+
+            await offlinePut(`/tech/sync/batch`, {
+                mutations: [{
+                    type: 'status_change',
+                    data: {
+                        work_order_id: wo.id,
+                        status: 'completed',
+                        updated_at: updated.updated_at,
+                    },
+                }],
+            })
+        } catch {
+            // Will retry via sync
+        } finally {
+            setTransitioning(false)
+        }
+    }, [wo, put])
+
     const handleStatusTransition = useCallback(async () => {
         if (!wo) return
         const status = STATUS_MAP[wo.status]
         if (!status?.next) return
+
+        if (status.next === 'completed') {
+            setShowCompletionWizard(true)
+            return
+        }
 
         setTransitioning(true)
         try {
@@ -123,7 +170,6 @@ export default function TechWorkOrderDetailPage() {
             await put(updated as OfflineWorkOrder)
             setWo(updated as OfflineWorkOrder)
 
-            // Sync to backend (queues if offline)
             await offlinePut(`/tech/sync/batch`, {
                 mutations: [{
                     type: 'status_change',
@@ -164,7 +210,7 @@ export default function TechWorkOrderDetailPage() {
     const currentStatus = STATUS_MAP[wo.status] || STATUS_MAP.pending
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="relative flex flex-col h-full">
             {/* Header */}
             <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
                 <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-3">
@@ -199,15 +245,28 @@ export default function TechWorkOrderDetailPage() {
                     <div className="p-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-[10px] font-bold text-surface-400 uppercase tracking-[0.1em]">Informações do Cliente</h3>
-                            {wo.customer_phone && (
-                                <a
-                                    href={`tel:${wo.customer_phone}`}
-                                    title="Ligar para o cliente"
-                                    className="p-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 active:scale-95 transition-all"
-                                >
-                                    <Phone className="w-4 h-4" />
-                                </a>
-                            )}
+                            <div className="flex items-center gap-1">
+                                {wo.customer_phone && (
+                                    <>
+                                        <a
+                                            href={`tel:${wo.customer_phone}`}
+                                            title="Ligar para o cliente"
+                                            className="p-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 active:scale-95 transition-all"
+                                        >
+                                            <Phone className="w-4 h-4" />
+                                        </a>
+                                        <a
+                                            href={`https://wa.me/${wo.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Informo que a OS ${wo.os_number || wo.number} está com status: ${currentStatus.label}. Equipe Kalibrium.`)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-2 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 active:scale-95 transition-all"
+                                            title="Enviar WhatsApp"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                        </a>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex items-start gap-4">
@@ -336,6 +395,75 @@ export default function TechWorkOrderDetailPage() {
                         )}
                         {currentStatus.nextLabel}
                     </button>
+                </div>
+            )}
+
+            {showCompletionWizard && (
+                <div className="absolute inset-0 z-50 flex flex-col bg-surface-50 dark:bg-surface-950">
+                    <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-surface-900 dark:text-surface-50">Finalizar OS</h2>
+                            <button onClick={() => setShowCompletionWizard(false)} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                                <X className="w-5 h-5 text-surface-500" />
+                            </button>
+                        </div>
+                        <p className="text-xs text-surface-500 mt-1">Verifique os itens antes de concluir</p>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                        {[
+                            { key: 'photos', label: 'Fotos do Serviço', desc: 'Registre fotos do antes/depois', icon: Camera, path: `/tech/os/${wo.id}/photos`, required: false },
+                            { key: 'checklist', label: 'Checklists', desc: 'Preencha os checklists obrigatórios', icon: ClipboardList, path: `/tech/os/${wo.id}/checklist`, required: true },
+                            { key: 'signature', label: 'Assinatura do Cliente', desc: 'Colete a assinatura', icon: PenTool, path: `/tech/os/${wo.id}/signature`, required: true },
+                            { key: 'nps', label: 'Avaliação NPS', desc: 'Colete a avaliação do cliente', icon: Star, path: `/tech/os/${wo.id}/nps`, required: false },
+                        ].map((step) => {
+                            const StepIcon = step.icon
+                            return (
+                                <button
+                                    key={step.key}
+                                    onClick={() => navigate(step.path)}
+                                    className="w-full flex items-center gap-3 bg-white dark:bg-surface-800/80 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                                >
+                                    <div className={cn(
+                                        'w-10 h-10 rounded-xl flex items-center justify-center',
+                                        completionSteps[step.key as keyof typeof completionSteps]
+                                            ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                            : 'bg-surface-100 dark:bg-surface-800'
+                                    )}>
+                                        {completionSteps[step.key as keyof typeof completionSteps] ? (
+                                            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                        ) : (
+                                            <StepIcon className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{step.label}</p>
+                                            {step.required && (
+                                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">Recomendado</span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-surface-500">{step.desc}</p>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-surface-300" />
+                                </button>
+                            )
+                        })}
+                    </div>
+
+                    <div className="p-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 safe-area-bottom">
+                        <button
+                            onClick={handleCompleteOS}
+                            disabled={transitioning}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold active:bg-emerald-700 transition-colors disabled:opacity-70"
+                        >
+                            {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                            Concluir OS Agora
+                        </button>
+                        <p className="text-[10px] text-surface-400 text-center mt-2">
+                            Você pode concluir mesmo sem completar todos os itens
+                        </p>
+                    </div>
                 </div>
             )}
 

@@ -910,6 +910,7 @@ Route::prefix('v1')->group(function () {
         // Configurações + Auditoria
         Route::middleware('check.permission:platform.settings.view')->get('settings', [\App\Http\Controllers\Api\V1\SettingsController::class, 'index']);
         Route::middleware('check.permission:platform.settings.manage')->put('settings', [\App\Http\Controllers\Api\V1\SettingsController::class, 'update']);
+        Route::middleware('check.permission:platform.settings.manage')->post('settings/logo', [\App\Http\Controllers\Api\V1\SettingsController::class, 'uploadLogo']);
 
         // Orçamentos
         Route::middleware('check.permission:quotes.quote.view')->group(function () {
@@ -1139,7 +1140,210 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // â?,â?,â?, Perfil do Usuário â?,â?,â?,
+        // ─── CRM Features (20 novas funcionalidades) ─────
+        $cf = \App\Http\Controllers\Api\V1\CrmFeaturesController::class;
+        Route::prefix('crm-features')->group(function () use ($cf) {
+            Route::get('constants', [$cf, 'featuresConstants']);
+
+            // Lead Scoring
+            Route::middleware('check.permission:crm.scoring.view')->group(function () use ($cf) {
+                Route::get('scoring/rules', [$cf, 'scoringRules']);
+                Route::get('scoring/leaderboard', [$cf, 'leaderboard']);
+            });
+            Route::middleware('check.permission:crm.scoring.manage')->group(function () use ($cf) {
+                Route::post('scoring/rules', [$cf, 'storeScoringRule']);
+                Route::put('scoring/rules/{rule}', [$cf, 'updateScoringRule']);
+                Route::delete('scoring/rules/{rule}', [$cf, 'destroyScoringRule']);
+                Route::post('scoring/calculate', [$cf, 'calculateScores']);
+            });
+
+            // Sequences (Cadences)
+            Route::middleware('check.permission:crm.sequence.view')->group(function () use ($cf) {
+                Route::get('sequences', [$cf, 'sequences']);
+                Route::get('sequences/{sequence}', [$cf, 'showSequence']);
+            });
+            Route::middleware('check.permission:crm.sequence.manage')->group(function () use ($cf) {
+                Route::post('sequences', [$cf, 'storeSequence']);
+                Route::put('sequences/{sequence}', [$cf, 'updateSequence']);
+                Route::delete('sequences/{sequence}', [$cf, 'destroySequence']);
+                Route::post('sequences/enroll', [$cf, 'enrollInSequence']);
+                Route::put('enrollments/{enrollment}/cancel', [$cf, 'unenrollFromSequence']);
+            });
+
+            // Forecasting
+            Route::middleware('check.permission:crm.forecast.view')->group(function () use ($cf) {
+                Route::get('forecast', [$cf, 'forecast']);
+                Route::post('forecast/snapshot', [$cf, 'snapshotForecast']);
+            });
+
+            // Smart Alerts
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($cf) {
+                Route::get('alerts', [$cf, 'smartAlerts']);
+                Route::put('alerts/{alert}/acknowledge', [$cf, 'acknowledgeAlert']);
+                Route::put('alerts/{alert}/resolve', [$cf, 'resolveAlert']);
+                Route::put('alerts/{alert}/dismiss', [$cf, 'dismissAlert']);
+                Route::post('alerts/generate', [$cf, 'generateSmartAlerts']);
+            });
+
+            // Cross-sell / Up-sell
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($cf) {
+                Route::get('customers/{customer}/recommendations', [$cf, 'crossSellRecommendations']);
+            });
+
+            // Loss Reasons
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($cf) {
+                Route::get('loss-reasons', [$cf, 'lossReasons']);
+                Route::get('loss-analytics', [$cf, 'lossAnalytics']);
+            });
+            Route::middleware('check.permission:crm.deal.update')->group(function () use ($cf) {
+                Route::post('loss-reasons', [$cf, 'storeLossReason']);
+                Route::put('loss-reasons/{reason}', [$cf, 'updateLossReason']);
+            });
+
+            // Territories
+            Route::middleware('check.permission:crm.territory.view')->group(function () use ($cf) {
+                Route::get('territories', [$cf, 'territories']);
+            });
+            Route::middleware('check.permission:crm.territory.manage')->group(function () use ($cf) {
+                Route::post('territories', [$cf, 'storeTerritory']);
+                Route::put('territories/{territory}', [$cf, 'updateTerritory']);
+                Route::delete('territories/{territory}', [$cf, 'destroyTerritory']);
+            });
+
+            // Sales Goals
+            Route::middleware('check.permission:crm.goal.view')->group(function () use ($cf) {
+                Route::get('goals', [$cf, 'salesGoals']);
+                Route::get('goals/dashboard', [$cf, 'goalsDashboard']);
+            });
+            Route::middleware('check.permission:crm.goal.manage')->group(function () use ($cf) {
+                Route::post('goals', [$cf, 'storeSalesGoal']);
+                Route::put('goals/{goal}', [$cf, 'updateSalesGoal']);
+                Route::post('goals/recalculate', [$cf, 'recalculateGoals']);
+            });
+
+            // Pipeline Velocity
+            Route::middleware('check.permission:crm.deal.view')->get('velocity', [$cf, 'pipelineVelocity']);
+
+            // Contract Renewals
+            Route::middleware('check.permission:crm.renewal.view')->group(function () use ($cf) {
+                Route::get('renewals', [$cf, 'contractRenewals']);
+                Route::post('renewals/generate', [$cf, 'generateRenewals']);
+            });
+            Route::middleware('check.permission:crm.renewal.manage')->group(function () use ($cf) {
+                Route::put('renewals/{renewal}', [$cf, 'updateRenewal']);
+            });
+
+            // Web Forms
+            Route::middleware('check.permission:crm.form.view')->group(function () use ($cf) {
+                Route::get('web-forms', [$cf, 'webForms']);
+            });
+            Route::middleware('check.permission:crm.form.manage')->group(function () use ($cf) {
+                Route::post('web-forms', [$cf, 'storeWebForm']);
+                Route::put('web-forms/{form}', [$cf, 'updateWebForm']);
+                Route::delete('web-forms/{form}', [$cf, 'destroyWebForm']);
+            });
+
+            // Interactive Proposals
+            Route::middleware('check.permission:crm.proposal.view')->group(function () use ($cf) {
+                Route::get('proposals', [$cf, 'interactiveProposals']);
+            });
+            Route::middleware('check.permission:crm.proposal.manage')->group(function () use ($cf) {
+                Route::post('proposals', [$cf, 'createInteractiveProposal']);
+            });
+
+            // Tracking Events
+            Route::middleware('check.permission:crm.deal.view')->get('tracking', [$cf, 'trackingEvents']);
+
+            // NPS Automation
+            Route::middleware('check.permission:crm.deal.view')->get('nps/stats', [$cf, 'npsAutomationConfig']);
+
+            // Referrals
+            Route::middleware('check.permission:crm.referral.view')->group(function () use ($cf) {
+                Route::get('referrals', [$cf, 'referrals']);
+                Route::get('referrals/stats', [$cf, 'referralStats']);
+            });
+            Route::middleware('check.permission:crm.referral.manage')->group(function () use ($cf) {
+                Route::post('referrals', [$cf, 'storeReferral']);
+                Route::put('referrals/{referral}', [$cf, 'updateReferral']);
+            });
+
+            // Calendar
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($cf) {
+                Route::get('calendar', [$cf, 'calendarEvents']);
+                Route::post('calendar', [$cf, 'storeCalendarEvent']);
+                Route::put('calendar/{event}', [$cf, 'updateCalendarEvent']);
+                Route::delete('calendar/{event}', [$cf, 'destroyCalendarEvent']);
+            });
+
+            // Cohort Analysis
+            Route::middleware('check.permission:crm.forecast.view')->get('cohort', [$cf, 'cohortAnalysis']);
+
+            // Revenue Intelligence
+            Route::middleware('check.permission:crm.forecast.view')->get('revenue-intelligence', [$cf, 'revenueIntelligence']);
+
+            // Competitive Matrix
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($cf) {
+                Route::get('competitors', [$cf, 'competitiveMatrix']);
+                Route::post('competitors', [$cf, 'storeDealCompetitor']);
+                Route::put('competitors/{competitor}', [$cf, 'updateDealCompetitor']);
+            });
+        });
+
+        // Public: Interactive Proposal (no auth for client view)
+        Route::prefix('proposals')->middleware('throttle:60,1')->group(function () use ($cf) {
+            Route::get('{token}/view', [$cf, 'viewInteractiveProposal']);
+            Route::post('{token}/respond', [$cf, 'respondToProposal']);
+        });
+
+        // Public: Web Form submission (no auth)
+        Route::middleware('throttle:30,1')->post('web-forms/{slug}/submit', [$cf, 'submitWebForm']);
+
+        // Tracking Pixel (no auth)
+        Route::middleware('throttle:600,1')->get('crm-pixel/{trackingId}', [$cf, 'trackingPixel']);
+
+        // ─── Melhorias Sistêmicas ────────────────────────
+        $si = \App\Http\Controllers\Api\V1\SystemImprovementsController::class;
+        Route::prefix('system')->group(function () use ($si) {
+            // Global Search
+            Route::get('search', [$si, 'globalSearch']);
+
+            // Skill Matrix
+            Route::middleware('check.permission:rh.manage')->group(function () use ($si) {
+                Route::get('technician-skills', [$si, 'technicianSkills']);
+                Route::get('skill-matrix', [$si, 'skillMatrix']);
+                Route::post('technician-skills', [$si, 'storeTechnicianSkill']);
+                Route::put('technician-skills/{skill}', [$si, 'updateTechnicianSkill']);
+                Route::delete('technician-skills/{skill}', [$si, 'destroyTechnicianSkill']);
+                Route::post('recommend-technician', [$si, 'recommendTechnician']);
+            });
+
+            // Collection Rules
+            Route::middleware('check.permission:financeiro.accounts_receivable.view')->group(function () use ($si) {
+                Route::get('collection-rules', [$si, 'collectionRules']);
+                Route::get('aging-report', [$si, 'agingReport']);
+            });
+            Route::middleware('check.permission:admin.settings.manage')->group(function () use ($si) {
+                Route::post('collection-rules', [$si, 'storeCollectionRule']);
+                Route::put('collection-rules/{rule}', [$si, 'updateCollectionRule']);
+                Route::delete('collection-rules/{rule}', [$si, 'destroyCollectionRule']);
+            });
+
+            // Stock Demand
+            Route::middleware('check.permission:estoque.view')->get('stock-demand', [$si, 'stockDemandForecast']);
+
+            // Quality / CAPA
+            Route::middleware('check.permission:qualidade.procedure.view')->group(function () use ($si) {
+                Route::get('capa', [$si, 'capaRecords']);
+                Route::get('quality-dashboard', [$si, 'qualityDashboard']);
+            });
+            Route::middleware('check.permission:qualidade.procedure.create')->post('capa', [$si, 'storeCapaRecord']);
+            Route::middleware('check.permission:qualidade.procedure.update')->put('capa/{record}', [$si, 'updateCapaRecord']);
+
+            // WO Cost Estimate
+            Route::middleware('check.permission:os.work_order.view')->get('work-orders/{workOrder}/cost-estimate', [$si, 'workOrderCostEstimate']);
+        });
+
+        // ─── Perfil do Usuário ───
         // FIX-B5: Usar o controller de perfil (Api\V1\UserController), não o IAM
         Route::post('profile/change-password', [\App\Http\Controllers\Api\V1\UserController::class, 'changePassword']);
 

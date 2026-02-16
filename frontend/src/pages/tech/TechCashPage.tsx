@@ -206,6 +206,14 @@ export default function TechCashPage() {
                     </div>
                 )}
 
+                {/* Commissions link */}
+                <button
+                    onClick={() => navigate('/tech/comissoes')}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 text-xs font-medium active:scale-[0.98] transition-all"
+                >
+                    <DollarSign className="w-4 h-4" /> Ver Minhas Comissões
+                </button>
+
                 {/* Tabs */}
                 <div className="flex gap-2">
                     <button

@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
@@ -65,6 +66,37 @@ class SettingsController extends Controller
         } catch (\Throwable $e) {
             Log::error('Settings update failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao atualizar configurações'], 500);
+        }
+    }
+
+    // ── Upload Logo ──
+
+    public function uploadLogo(Request $request): JsonResponse
+    {
+        $request->validate([
+            'logo' => 'required|image|mimes:png,jpg,jpeg,svg,webp|max:2048',
+        ]);
+
+        try {
+            $tenantId = auth()->user()->current_tenant_id ?? auth()->user()->tenant_id;
+
+            $oldLogo = SystemSetting::getValue('company_logo_url');
+            if ($oldLogo) {
+                $oldPath = str_replace('/storage/', '', $oldLogo);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('logo')->store("tenants/{$tenantId}/logo", 'public');
+            $url = '/storage/' . $path;
+
+            SystemSetting::setValue('company_logo_url', $url, 'string', 'general');
+
+            AuditLog::log('updated', 'Logo da empresa atualizado');
+
+            return response()->json(['url' => $url]);
+        } catch (\Throwable $e) {
+            Log::error('Logo upload failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao enviar logo'], 500);
         }
     }
 

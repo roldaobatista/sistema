@@ -103,6 +103,17 @@ class WorkOrderController extends Controller
             $query->where('customer_id', $customerId);
         }
 
+        if ($contractId = $request->get('recurring_contract_id')) {
+            $query->where('recurring_contract_id', $contractId);
+        }
+
+        if ($equipmentId = $request->get('equipment_id')) {
+            $query->where(function ($q) use ($equipmentId) {
+                $q->where('equipment_id', $equipmentId)
+                    ->orWhereHas('equipmentsList', fn($e) => $e->where('equipment_id', $equipmentId));
+            });
+        }
+
         if ($dateFrom = $request->get('date_from')) {
             $query->whereDate('created_at', '>=', $dateFrom);
         }

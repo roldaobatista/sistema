@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, Search, Loader2, Gauge, Calendar, MapPin,
-    AlertCircle, CheckCircle2, Clock, ChevronRight, QrCode,
+    AlertCircle, CheckCircle2, Clock, ChevronRight, QrCode, History,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
@@ -149,6 +149,14 @@ export default function TechEquipmentSearchPage() {
                                 ))}
                             </div>
 
+                            <button
+                                onClick={() => navigate(`/tech/equipamento/${selectedEquipment.id}`)}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-brand-500 text-brand-600 dark:text-brand-400 text-sm font-medium"
+                            >
+                                <History className="w-4 h-4" />
+                                Ver histórico completo
+                            </button>
+
                             {/* Recent calibrations */}
                             {detail?.calibrations?.length > 0 && (
                                 <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
@@ -281,6 +289,15 @@ export default function TechEquipmentSearchPage() {
                                             {eq.customer_name && (
                                                 <p className="text-xs text-surface-400 truncate mt-0.5">{eq.customer_name}</p>
                                             )}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    navigate(`/tech/equipamento/${eq.id}`)
+                                                }}
+                                                className="flex items-center gap-1 text-[11px] text-brand-600 dark:text-brand-400 font-medium mt-2"
+                                            >
+                                                <History className="w-3 h-3" /> Ver histórico
+                                            </button>
                                         </div>
                                         <ChevronRight className="w-5 h-5 text-surface-300 flex-shrink-0" />
                                     </div>

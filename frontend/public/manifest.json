@@ -1,7 +1,7 @@
 {
-  "name": "Kalibrium",
+  "name": "Kalibrium Gestão",
   "short_name": "Kalibrium",
-  "description": "Sistema de Gestão - OS, CRM, Financeiro e mais",
+  "description": "Kalibrium Gestão — OS, CRM, Financeiro e mais",
   "start_url": "/",
   "scope": "/",
   "id": "kalibrium",

@@ -54,9 +54,14 @@ export function InstallBanner() {
                 'border-t border-surface-700'
             )}
         >
-            <p className="text-sm font-medium flex-1 min-w-0">
-                Instale o Kalibrium para acesso rápido, mesmo offline.
-            </p>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                    Abra como app (não no navegador)
+                </p>
+                <p className="text-xs text-surface-400 mt-0.5">
+                    Toque em Instalar para o ícone abrir em tela cheia. Se já adicionou à tela inicial e abre na aba, remova o ícone e use Instalar de novo.
+                </p>
+            </div>
             <div className="flex items-center gap-2 shrink-0">
                 <Button
                     size="sm"

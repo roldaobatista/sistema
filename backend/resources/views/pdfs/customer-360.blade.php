@@ -98,7 +98,7 @@
     </div>
 
     <div style="margin-top: 50px; font-size: 10px; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 10px;">
-        Este relatório é de uso confidencial. Gerado automaticamente pelo Kalibrium ERP.
+        Este relatório é de uso confidencial. Gerado automaticamente pelo Kalibrium Gestão.
     </div>
 </body>
 </html>

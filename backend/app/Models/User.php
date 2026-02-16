@@ -108,6 +108,11 @@ class User extends Authenticatable
         return $this->hasMany(UserSkill::class);
     }
 
+    public function technicianSkills()
+    {
+        return $this->hasMany(TechnicianSkill::class);
+    }
+
     public function performanceReviews()
     {
         return $this->hasMany(PerformanceReview::class, 'user_id'); // as reviewee

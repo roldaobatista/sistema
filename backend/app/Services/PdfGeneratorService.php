@@ -5,18 +5,47 @@ namespace App\Services;
 use App\Models\EquipmentCalibration;
 use App\Models\PaymentReceipt;
 use App\Models\Quote;
+use App\Models\SystemSetting;
 use App\Models\Tenant;
 use App\Models\WorkOrder;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class PdfGeneratorService
 {
+    private function getCompanySettings(int $tenantId): array
+    {
+        $logoUrl = SystemSetting::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('key', 'company_logo_url')
+            ->value('value');
+
+        $tagline = SystemSetting::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('key', 'company_tagline')
+            ->value('value');
+
+        $logoPath = null;
+        if ($logoUrl) {
+            $relative = str_replace('/storage/', '', $logoUrl);
+            $full = storage_path('app/public/' . $relative);
+            if (file_exists($full)) {
+                $logoPath = $full;
+            }
+        }
+
+        return [
+            'company_logo_path' => $logoPath,
+            'company_tagline' => $tagline ?: '',
+        ];
+    }
+
     public function generateWorkOrderPdf(WorkOrder $wo): string
     {
         $wo->load(['customer', 'items', 'assignee', 'branch', 'equipment', 'seller', 'creator']);
 
         $tenant = Tenant::find($wo->tenant_id);
-        $pdf = Pdf::loadView('pdf.work-order', ['workOrder' => $wo, 'tenant' => $tenant]);
+        $companySettings = $this->getCompanySettings($wo->tenant_id);
+        $pdf = Pdf::loadView('pdf.work-order', ['workOrder' => $wo, 'tenant' => $tenant, ...$companySettings]);
         $filename = "OS-{$wo->business_number}.pdf";
         $path = storage_path("app/temp/{$filename}");
 
@@ -40,7 +69,8 @@ class PdfGeneratorService
         ]);
 
         $tenant = Tenant::find($quote->tenant_id);
-        $pdf = Pdf::loadView('pdf.quote', compact('quote', 'tenant'));
+        $companySettings = $this->getCompanySettings($quote->tenant_id);
+        $pdf = Pdf::loadView('pdf.quote', compact('quote', 'tenant') + $companySettings);
         $filename = "ORC-{$quote->quote_number}.pdf";
         $path = storage_path("app/temp/{$filename}");
 
@@ -61,7 +91,8 @@ class PdfGeneratorService
         $tenant = Tenant::find($receipt->tenant_id);
         $items = $receipt->items ?? [];
 
-        $pdf = Pdf::loadView('pdf.payment-receipt', compact('receipt', 'customer', 'tenant', 'items'));
+        $companySettings = $this->getCompanySettings($receipt->tenant_id);
+        $pdf = Pdf::loadView('pdf.payment-receipt', compact('receipt', 'customer', 'tenant', 'items') + $companySettings);
         $filename = "RECIBO-{$receipt->receipt_number}.pdf";
         $path = storage_path("app/temp/{$filename}");
 
@@ -95,9 +126,10 @@ class PdfGeneratorService
             $standardWeights = \App\Models\StandardWeight::whereIn('id', $weightIds)->get();
         }
 
+        $companySettings = $this->getCompanySettings($equipment?->tenant_id ?? $calibration->tenant_id);
         $pdf = Pdf::loadView('pdf.calibration-certificate', compact(
             'calibration', 'equipment', 'tenant', 'standardWeights', 'workOrder'
-        ));
+        ) + $companySettings);
         $filename = "CERT-{$calibration->certificate_number}.pdf";
         $path = storage_path("app/temp/{$filename}");
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, Calendar, ChevronLeft, ChevronRight, Clock, MapPin,
-    Loader2, Wrench, CheckCircle2, AlertCircle,
+    Loader2, Wrench, CheckCircle2, AlertCircle, Navigation,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
@@ -114,6 +114,14 @@ export default function TechSchedulePage() {
                         <ChevronRight className="w-5 h-5 text-surface-600 dark:text-surface-400" />
                     </button>
                 </div>
+
+                {/* Route button */}
+                <button
+                    onClick={() => navigate('/tech/rota')}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-xs font-medium active:scale-[0.98] transition-all"
+                >
+                    <Navigation className="w-4 h-4" /> Ver Rota Otimizada do Dia
+                </button>
 
                 {/* Calendar grid */}
                 <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">

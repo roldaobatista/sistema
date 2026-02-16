@@ -31,6 +31,10 @@ class RecurringContractController extends Controller
             $query->where('is_active', true);
         }
 
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+
         if ($search = $request->get('search')) {
             $query->where('name', 'like', "%{$search}%");
         }

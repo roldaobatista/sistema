@@ -32,6 +32,11 @@
             width: 50%;
             vertical-align: middle;
         }
+        .header-logo .company-logo-img {
+            max-height: 50px;
+            max-width: 180px;
+            margin-bottom: 4px;
+        }
         .header-logo .company-name {
             font-size: 22px;
             font-weight: 700;
@@ -317,8 +322,13 @@
         {{-- Header --}}
         <div class="header">
             <div class="header-logo">
+                @if(!empty($company_logo_path) && file_exists($company_logo_path))
+                    <img class="company-logo-img" src="{{ $company_logo_path }}" alt="Logo">
+                @endif
                 <div class="company-name">{{ $tenant->name ?? 'Empresa' }}</div>
-                <div class="company-tagline">Assistência Técnica de Balanças</div>
+                @if(!empty($company_tagline))
+                    <div class="company-tagline">{{ $company_tagline }}</div>
+                @endif
             </div>
             <div class="header-info">
                 <p>

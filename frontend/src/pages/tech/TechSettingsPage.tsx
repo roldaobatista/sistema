@@ -2,12 +2,13 @@ import { useState , useMemo } from 'react'
 import {
     Settings, Moon, Sun, Monitor, Fingerprint, Wifi, WifiOff,
     Smartphone, Gauge, ChevronRight, Download, Bell, BellOff,
-    Shield, ShieldCheck, Maximize2, Minimize2, Loader2 } from 'lucide-react'
+    Shield, ShieldCheck, Maximize2, Minimize2, Loader2, MapPin } from 'lucide-react'
 import { useDarkMode } from '@/hooks/useDarkMode'
 import { useBiometricAuth } from '@/hooks/useBiometricAuth'
 import { useLowDataMode } from '@/hooks/useLowDataMode'
 import { usePWA } from '@/hooks/usePWA'
 import { useKioskMode } from '@/hooks/useKioskMode'
+import { useLocationSharing } from '@/hooks/useLocationSharing'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -19,6 +20,7 @@ export default function TechSettingsPage() {
     const lowData = useLowDataMode()
     const { isInstallable, isInstalled, install, isOnline } = usePWA()
     const kiosk = useKioskMode()
+    const locationSharing = useLocationSharing()
     const { user } = useAuthStore()
     const [notificationsEnabled, setNotificationsEnabled] = useState(() =>
         Notification.permission === 'granted'
@@ -214,6 +216,37 @@ export default function TechSettingsPage() {
                             </p>
                         </div>
                     </div>
+                </section>
+
+                {/* Location Sharing */}
+                <section className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                    <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide px-4 pt-4 pb-2">Localização</h3>
+
+                    <button
+                        onClick={locationSharing.toggle}
+                        className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-surface-50 dark:active:bg-surface-700"
+                    >
+                        <MapPin className={cn('w-5 h-5', locationSharing.isSharing ? 'text-emerald-500' : 'text-surface-400')} />
+                        <div className="flex-1 text-left">
+                            <p className="text-sm text-surface-900 dark:text-surface-50">
+                                Compartilhar localização
+                            </p>
+                            <p className="text-xs text-surface-500">
+                                {locationSharing.isSharing
+                                    ? `Ativo · Última: ${locationSharing.lastUpdate ? new Date(locationSharing.lastUpdate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Aguardando...'}`
+                                    : 'Gestor poderá ver sua localização'}
+                            </p>
+                        </div>
+                        <div className={cn(
+                            'w-10 h-6 rounded-full relative transition-colors',
+                            locationSharing.isSharing ? 'bg-emerald-500' : 'bg-surface-300 dark:bg-surface-600'
+                        )}>
+                            <div className={cn(
+                                'w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all',
+                                locationSharing.isSharing ? 'left-[18px]' : 'left-0.5'
+                            )} />
+                        </div>
+                    </button>
                 </section>
 
                 {/* Install PWA */}
