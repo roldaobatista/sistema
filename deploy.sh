@@ -328,6 +328,12 @@ swap_containers() {
     docker compose -f "$COMPOSE_FILE" up -d
 
     wait_for_mysql
+
+    # Nginx precisa ser reiniciado após recriar containers para reconhecer os novos IPs
+    # Sem isso, o nginx aponta para o IP antigo do backend e retorna 502 Bad Gateway
+    log "Reiniciando nginx para reconhecer novos containers..."
+    docker compose -f "$COMPOSE_FILE" restart nginx 2>/dev/null || true
+    sleep 2
 }
 
 # =============================================================================
@@ -353,13 +359,19 @@ run_migrations() {
 # POST-DEPLOY: Cache e otimizações
 # =============================================================================
 post_deploy() {
-    # APP_KEY
+    # Permissões de storage (containers novos podem perder ownership)
+    log "Corrigindo permissões de storage..."
+    docker compose -f "$COMPOSE_FILE" exec -T backend chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+    docker compose -f "$COMPOSE_FILE" exec -T backend chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
+    # APP_KEY: verificar se existe, gerar se não
     if ! docker compose -f "$COMPOSE_FILE" exec -T backend grep -q "APP_KEY=base64:" .env 2>/dev/null; then
-        log "Gerando APP_KEY..."
+        warn "APP_KEY ausente! Gerando nova chave..."
         docker compose -f "$COMPOSE_FILE" exec -T backend php artisan key:generate --force
     fi
 
     log "Otimizando caches..."
+    docker compose -f "$COMPOSE_FILE" exec -T backend php artisan config:clear 2>/dev/null || true
     docker compose -f "$COMPOSE_FILE" exec -T backend php artisan config:cache 2>/dev/null || true
     docker compose -f "$COMPOSE_FILE" exec -T backend php artisan route:cache 2>/dev/null || true
     docker compose -f "$COMPOSE_FILE" exec -T backend php artisan view:cache 2>/dev/null || true

@@ -118,6 +118,14 @@ NÃO use migrations quando:
 **Causa:** Build Docker demora e SSH timeout.
 **Solução:** Usar `-o ServerAliveInterval=15 -o ServerAliveCountMax=20` nos comandos SSH.
 
+### Erro: 502 Bad Gateway após recriar containers
+**Causa:** Nginx mantém cache do IP antigo do container backend. Quando containers são recriados, recebem novo IP na rede Docker.
+**Solução:** Sempre reiniciar nginx após recriar containers backend: `docker compose restart nginx`. Já implementado no `deploy.sh`.
+
+### Erro: Storage/logs sem permissão de escrita
+**Causa:** Containers novos podem perder ownership do diretório storage.
+**Solução:** Rodar `chown -R www-data:www-data storage bootstrap/cache` após recriar containers. Já implementado no `deploy.sh`.
+
 ### Erro: `.env` perdido após git reset
 **Causa:** `git reset --hard` pode sobrescrever arquivos se o gitignore não estiver correto.
 **Solução:** SEMPRE fazer backup dos .env antes e restaurar depois (Passos 3 e 4 acima).
