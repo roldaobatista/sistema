@@ -288,7 +288,10 @@ class InmetroProspectionService
     public function detectChurnedCustomers(int $tenantId, int $inactiveMonths = 6): array
     {
         // Find CRM customers linked to INMETRO owners that have active instruments
-        // but no recent work orders
+        // but no recent work orders (julianday=SQLite, DATEDIFF=MySQL)
+        $daysExpr = DB::getDriverName() === 'mysql'
+            ? "COALESCE(DATEDIFF(NOW(), MAX(wo.created_at)), 999) as days_since_last_os"
+            : "COALESCE(julianday('now') - julianday(MAX(wo.created_at)), 999) as days_since_last_os";
         $churned = DB::select("
             SELECT
                 io.id as owner_id,
@@ -298,10 +301,7 @@ class InmetroProspectionService
                 c.trade_name as customer_name,
                 COUNT(DISTINCT ii.id) as active_instruments,
                 MAX(wo.created_at) as last_work_order,
-                COALESCE(
-                    julianday('now') - julianday(MAX(wo.created_at)),
-                    999
-                ) as days_since_last_os
+                {$daysExpr}
             FROM inmetro_owners io
             INNER JOIN customers c ON c.id = io.converted_to_customer_id
             LEFT JOIN work_orders wo ON wo.customer_id = c.id

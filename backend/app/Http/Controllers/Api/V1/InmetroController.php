@@ -574,9 +574,13 @@ class InmetroController extends Controller
         $converted = InmetroOwner::where('tenant_id', $tenantId)->whereNotNull('converted_to_customer_id')->count();
         $conversionRate = $totalLeads > 0 ? round(($converted / $totalLeads) * 100, 1) : 0;
 
+        $driver = DB::getDriverName();
+        $avgExpr = $driver === 'mysql'
+            ? 'AVG(DATEDIFF(updated_at, created_at)) as avg_days'
+            : 'AVG(JULIANDAY(updated_at) - JULIANDAY(created_at)) as avg_days';
         $avgDaysToConvert = InmetroOwner::where('tenant_id', $tenantId)
             ->whereNotNull('converted_to_customer_id')
-            ->selectRaw('AVG(JULIANDAY(updated_at) - JULIANDAY(created_at)) as avg_days')
+            ->selectRaw($avgExpr)
             ->value('avg_days');
 
         $byStatus = InmetroOwner::where('tenant_id', $tenantId)
