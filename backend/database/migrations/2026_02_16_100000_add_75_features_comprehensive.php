@@ -41,7 +41,7 @@ return new class extends Migration
                 $table->integer('repetition')->default(1);
                 $table->string('unit', 10)->default('kg');
                 $table->timestamps();
-                $table->index(['equipment_calibration_id', 'reading_order']);
+                $table->index(['equipment_calibration_id', 'reading_order'], 'cal_readings_cal_id_order_idx');
             });
         }
 
