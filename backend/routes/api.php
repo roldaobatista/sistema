@@ -2002,10 +2002,13 @@ Route::prefix('v1')->group(function () {
             // Purchase Quotations
             Route::get('purchase-quotations', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'purchaseQuotations']);
             Route::post('purchase-quotations', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storePurchaseQuotation']);
-            // Stock Transfers
-            Route::get('transfers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'stockTransfers']);
+            // Stock Transfers (gestão completa: empresa ↔ caminhão, empresa ↔ técnico, caminhão ↔ técnico)
+            Route::get('transfers', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'index']);
             Route::get('transfers/suggest', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'suggestTransfers']);
-            Route::post('transfers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeTransfer']);
+            Route::get('transfers/{transfer}', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'show']);
+            Route::post('transfers', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'store']);
+            Route::post('transfers/{transfer}/accept', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'accept']);
+            Route::post('transfers/{transfer}/reject', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'reject']);
             // Serial Numbers
             Route::get('serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'serialNumbers']);
             Route::post('serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeSerialNumber']);

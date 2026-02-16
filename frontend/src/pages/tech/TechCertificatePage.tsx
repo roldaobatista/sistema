@@ -5,7 +5,7 @@ import {
     Award, Send, Eye,
 } from 'lucide-react'
 import { cn, getApiErrorMessage } from '@/lib/utils'
-import api from '@/lib/api'
+import api, { getApiOrigin } from '@/lib/api'
 import { toast } from 'sonner'
 
 interface Equipment {
@@ -141,7 +141,7 @@ export default function TechCertificatePage() {
         if (certificate?.url) {
             window.open(certificate.url, '_blank')
         } else if (certificate?.path) {
-            const base = import.meta.env.VITE_API_URL || ''
+            const base = getApiOrigin()
             window.open(`${base}/storage/${certificate.path}`, '_blank')
         } else {
             toast.error('URL do PDF não disponível')

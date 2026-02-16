@@ -4,7 +4,7 @@ import {
     FileText, Upload, Trash2, Download, Plus,
     Calendar, AlertCircle, FileCheck, Loader2
 } from 'lucide-react'
-import api from '@/lib/api'
+import api, { getApiOrigin } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/iconbutton'
 import { Input } from '@/components/ui/input'
@@ -163,7 +163,7 @@ export function CustomerDocumentsTab({ customerId }: Props) {
                                 </div>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <a
-                                        href={`${import.meta.env.VITE_API_URL}/storage/${doc.file_path}`}
+                                        href={`${getApiOrigin()}/storage/${doc.file_path}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >

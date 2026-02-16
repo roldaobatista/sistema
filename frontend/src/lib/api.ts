@@ -1,7 +1,10 @@
 import axios from 'axios'
 
+const _viteApi = (import.meta.env.VITE_API_URL || '').trim()
+
+// URL relativa quando VITE_API_URL vazio — funciona com IP ou domínio (mesma origem)
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+    baseURL: _viteApi || '/api/v1',
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -39,5 +42,14 @@ api.interceptors.response.use(
         return Promise.reject(error)
     }
 )
+
+/** Origem da API (para URLs absolutas: storage, PDF, etc). Usa mesma origem quando VITE_API_URL vazio. */
+export function getApiOrigin(): string {
+    if (_viteApi) {
+        const m = _viteApi.match(/^(https?:\/\/[^/]+)/)
+        return m ? m[1] : (typeof window !== 'undefined' ? window.location.origin : '')
+    }
+    return typeof window !== 'undefined' ? window.location.origin : ''
+}
 
 export default api

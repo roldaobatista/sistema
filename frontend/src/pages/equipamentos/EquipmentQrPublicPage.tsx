@@ -33,8 +33,8 @@ export default function EquipmentQrPublicPage() {
 
     useEffect(() => {
         if (!token) return
-        const baseUrl = import.meta.env.VITE_API_URL || ''
-        fetch(`${baseUrl}/api/v1/equipment-qr/${token}`)
+        const base = (import.meta.env.VITE_API_URL || '').trim() || '/api/v1'
+        fetch(`${base.replace(/\/$/, '')}/equipment-qr/${token}`)
             .then(r => { if (!r.ok) throw new Error('Not found'); return r.json() })
             .then(setData)
             .catch(() => setError('Equipamento não encontrado ou token inválido.'))

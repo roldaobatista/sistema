@@ -15,13 +15,24 @@ function getEcho(): Echo<'reverb'> | null {
         return null;
     }
 
+    // Quando host vazio, usa mesma origem da página (IP ou domínio)
+    const wsHost = (import.meta.env.VITE_REVERB_HOST || '').trim()
+        || (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
+    const wsPort = (import.meta.env.VITE_REVERB_PORT || '').trim()
+        || (typeof window !== 'undefined'
+            ? (window.location.port || (window.location.protocol === 'https:' ? '443' : '80'))
+            : '80');
+    const useTls = (import.meta.env.VITE_REVERB_SCHEME || '').trim()
+        ? (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https'
+        : (typeof window !== 'undefined' ? window.location.protocol === 'https:' : false);
+
     echoInstance = new Echo({
         broadcaster: 'reverb',
         key,
-        wsHost: import.meta.env.VITE_REVERB_HOST,
-        wsPort: import.meta.env.VITE_REVERB_PORT,
-        wssPort: import.meta.env.VITE_REVERB_PORT,
-        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        wsHost,
+        wsPort: parseInt(wsPort, 10) || 80,
+        wssPort: parseInt(wsPort, 10) || 443,
+        forceTLS: useTls,
         enabledTransports: ['ws', 'wss'],
     });
 

@@ -29,7 +29,7 @@ import { crmApi } from '@/lib/crm-api'
 import { CustomerInmetroTab } from '@/components/inmetro/CustomerInmetroTab'
 import { CustomerDocumentsTab } from '@/components/customers/CustomerDocumentsTab'
 import { useOfflineStore } from '@/hooks/useOfflineStore'
-import api from '@/lib/api'
+import api, { getApiOrigin } from '@/lib/api'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 
@@ -83,7 +83,7 @@ export function Customer360Page() {
     })
 
     const handleExportPdf = () => {
-        const url = `${import.meta.env.VITE_API_URL}/crm/customer-360/${id}/pdf`;
+        const url = `${getApiOrigin()}/api/v1/crm/customer-360/${id}/pdf`;
         window.open(url, '_blank');
         toast.success('Relatório PDF está sendo gerado...');
     }
