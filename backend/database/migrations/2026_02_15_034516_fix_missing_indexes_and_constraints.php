@@ -80,21 +80,20 @@ return new class extends Migration
                 continue;
             }
 
-            Schema::table($table, function (Blueprint $t) use ($tableIndexes, $table) {
-                foreach ($tableIndexes as $columns) {
-                    $indexName = $table . '_' . implode('_', $columns) . '_index';
-
-                    if (strlen($indexName) > 64) {
-                        $indexName = substr($indexName, 0, 64);
-                    }
-
-                    try {
-                        $t->index($columns, $indexName);
-                    } catch (\Throwable) {
-                        // Index already exists
-                    }
+            foreach ($tableIndexes as $columns) {
+                $indexName = $table . '_' . implode('_', $columns) . '_index';
+                if (strlen($indexName) > 64) {
+                    $indexName = substr($indexName, 0, 64);
                 }
-            });
+
+                try {
+                    Schema::table($table, function (Blueprint $t) use ($columns, $indexName) {
+                        $t->index($columns, $indexName);
+                    });
+                } catch (\Throwable) {
+                    // Index already exists — skip
+                }
+            }
         }
     }
 

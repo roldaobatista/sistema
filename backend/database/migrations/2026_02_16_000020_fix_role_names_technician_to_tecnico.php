@@ -39,7 +39,11 @@ return new class extends Migration
             }
         }
 
-        // 2. Alterar defaults das colunas
+        // 2. Alterar defaults das colunas (skip em SQLite — não suporta ALTER COLUMN)
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         if (Schema::hasTable('commission_event_splits') && Schema::hasColumn('commission_event_splits', 'role')) {
             DB::statement("ALTER TABLE commission_event_splits ALTER COLUMN role SET DEFAULT 'tecnico'");
         }
@@ -69,6 +73,10 @@ return new class extends Migration
             foreach (array_flip($this->replacements) as $old => $new) {
                 DB::table($table)->where($column, $old)->update([$column => $new]);
             }
+        }
+
+        if (DB::getDriverName() === 'sqlite') {
+            return;
         }
 
         if (Schema::hasTable('commission_event_splits') && Schema::hasColumn('commission_event_splits', 'role')) {

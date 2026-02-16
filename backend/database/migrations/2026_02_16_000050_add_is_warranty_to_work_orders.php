@@ -8,9 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('work_orders', function (Blueprint $table) {
-            $table->boolean('is_warranty')->default(false)->after('is_master');
-        });
+        if (!Schema::hasColumn('work_orders', 'is_warranty')) {
+            Schema::table('work_orders', function (Blueprint $table) {
+                $table->boolean('is_warranty')->default(false)->after('is_master');
+            });
+        }
     }
 
     public function down(): void

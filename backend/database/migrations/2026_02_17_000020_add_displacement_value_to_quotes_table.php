@@ -8,9 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('quotes', function (Blueprint $table) {
-            $table->decimal('displacement_value', 10, 2)->default(0)->after('discount_amount');
-        });
+        if (!Schema::hasColumn('quotes', 'displacement_value')) {
+            Schema::table('quotes', function (Blueprint $table) {
+                $table->decimal('displacement_value', 10, 2)->default(0)->after('discount_amount');
+            });
+        }
     }
 
     public function down(): void

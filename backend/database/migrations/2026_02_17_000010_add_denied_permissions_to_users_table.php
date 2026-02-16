@@ -8,9 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->json('denied_permissions')->nullable()->after('status');
-        });
+        if (!Schema::hasColumn('users', 'denied_permissions')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->json('denied_permissions')->nullable()->after('status');
+            });
+        }
     }
 
     public function down(): void

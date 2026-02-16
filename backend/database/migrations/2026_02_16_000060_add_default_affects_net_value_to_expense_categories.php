@@ -9,8 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('expense_categories', function (Blueprint $table) {
-            $table->boolean('default_affects_net_value')->default(false)->after('budget_limit');
-            $table->boolean('default_affects_technician_cash')->default(true)->after('default_affects_net_value');
+            if (!Schema::hasColumn('expense_categories', 'default_affects_net_value')) {
+                $table->boolean('default_affects_net_value')->default(false)->after('budget_limit');
+            }
+            if (!Schema::hasColumn('expense_categories', 'default_affects_technician_cash')) {
+                $table->boolean('default_affects_technician_cash')->default(true)->after('default_affects_net_value');
+            }
         });
     }
 
