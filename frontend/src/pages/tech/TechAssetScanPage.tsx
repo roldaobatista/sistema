@@ -4,7 +4,7 @@ import {
     QrCode, Search, Tag, History, Calendar, Shield, CheckCircle2, XCircle,
     Loader2, ArrowLeft, Wrench, Scale,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -185,8 +185,8 @@ export default function TechAssetScanPage() {
 
             setEquipment(eq)
             await fetchDetails(eq.id, code)
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao buscar equipamento')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao buscar equipamento'))
         } finally {
             setLoading(false)
         }
@@ -203,8 +203,8 @@ export default function TechAssetScanPage() {
             await api.post(`/asset-tags/${selectedTagId}/scan`, { action: 'scan' })
             toast.success('Scan registrado com sucesso')
             handleSearch()
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao registrar scan')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar scan'))
         } finally {
             setRegisteringScan(false)
         }

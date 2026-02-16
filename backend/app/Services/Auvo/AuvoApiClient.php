@@ -163,6 +163,15 @@ class AuvoApiClient
             $records = $this->extractRecords($response);
 
             if (empty($records)) {
+                if ($page === 1) {
+                    Log::info('Auvo: first page empty', [
+                        'endpoint' => $endpoint,
+                        'response_keys' => array_keys($response),
+                        'result_keys' => isset($response['result']) && is_array($response['result'])
+                            ? array_keys($response['result'])
+                            : null,
+                    ]);
+                }
                 break;
             }
 
@@ -239,6 +248,8 @@ class AuvoApiClient
     {
         $entities = [
             'customers' => 'customers',
+            'segments' => 'segments',
+            'customer_groups' => 'customerGroups',
             'equipments' => 'equipments',
             'tasks' => 'tasks',
             'products' => 'products',
@@ -293,7 +304,7 @@ class AuvoApiClient
         $result = $response['result'] ?? null;
 
         if (is_array($result)) {
-            foreach (['entityList', 'list', 'customerList', 'customers', 'data'] as $key) {
+            foreach (['entityList', 'list', 'customerList', 'customers', 'data', 'items', 'results'] as $key) {
                 if (isset($result[$key]) && is_array($result[$key]) && array_is_list($result[$key])) {
                     return $result[$key];
                 }

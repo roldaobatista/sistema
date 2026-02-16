@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { PageHeader } from '@/components/ui/pageheader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Bell, Check, Eye, X, RefreshCw, AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { Bell, Check, Eye, X, RefreshCw, AlertTriangle, AlertCircle, Info, Download, LayoutGrid } from 'lucide-react';
 
 const severityConfig: Record<string, { label: string; color: string; icon: any }> = {
   critical: { label: 'Crítico', color: 'destructive', icon: AlertCircle },
@@ -18,17 +20,35 @@ const typeLabels: Record<string, string> = {
   unbilled_wo: 'OS sem faturamento',
   expiring_contract: 'Contrato vencendo',
   expiring_calibration: 'Calibração vencendo',
+  calibration_overdue: 'Calibração vencida',
+  tool_cal_overdue: 'Ferramenta calibração vencida',
   weight_cert_expiring: 'Peso padrão vencendo',
   quote_expiring: 'Orçamento vencendo',
-  overdue_receivable: 'Conta em atraso',
-  tool_cal_expiring: 'Ferramenta sem calibração',
+  quote_expired: 'Orçamento expirado',
+  overdue_receivable: 'Conta a receber em atraso',
+  tool_cal_expiring: 'Ferramenta calibração vencendo',
   expense_pending: 'Despesa pendente',
   sla_breach: 'SLA estourado',
   low_stock: 'Estoque baixo',
+  overdue_payable: 'Conta a pagar em atraso',
+  expiring_payable: 'Conta a pagar vencendo',
+  expiring_fleet_insurance: 'Seguro de frota vencendo',
+  expiring_supplier_contract: 'Contrato fornecedor vencendo',
+  commitment_overdue: 'Compromisso atrasado',
+  important_date_upcoming: 'Data importante próxima',
+  customer_no_contact: 'Cliente sem contato',
+  overdue_follow_up: 'Follow-up em atraso',
+  unattended_service_call: 'Chamado sem atendimento',
+  renegotiation_pending: 'Renegociação pendente',
+  receivables_concentration: 'Concentração inadimplência',
+  scheduled_wo_not_started: 'OS recebida sem início',
 };
+
+type GroupBy = 'none' | 'alert_type' | 'entity';
 
 export default function AlertsPage() {
   const qc = useQueryClient();
+  const [groupBy, setGroupBy] = useState<GroupBy>('none');
 
   const { data: summary } = useQuery({
     queryKey: ['alert-summary'],
@@ -36,8 +56,12 @@ export default function AlertsPage() {
   });
 
   const { data: alerts, isLoading, isError } = useQuery({
-    queryKey: ['alerts'],
-    queryFn: () => api.get('/alerts', { params: { status: 'active', per_page: 50 } }).then(r => r.data),
+    queryKey: ['alerts', groupBy],
+    queryFn: () => {
+      const params: Record<string, string | number> = { status: 'active', per_page: 50 };
+      if (groupBy !== 'none') params.group_by = groupBy;
+      return api.get('/alerts', { params }).then(r => r.data);
+    },
   });
 
   const acknowledgeMut = useMutation({
@@ -64,6 +88,27 @@ export default function AlertsPage() {
       qc.invalidateQueries({ queryKey: ['alert-summary'] });
     },
   });
+
+  const exportMut = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.get('/alerts/export', {
+        params: { status: 'active' },
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(new Blob([data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `alertas-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    onSuccess: () => toast.success('Exportação iniciada'),
+    onError: () => toast.error('Falha ao exportar'),
+  });
+
+  const grouped = alerts?.grouped === true && Array.isArray(alerts?.data);
+  const list = grouped ? [] : (alerts?.data ?? []);
+  const groupItems = grouped ? (alerts?.data ?? []) : [];
 
   return (
     <div className="space-y-6">
@@ -116,8 +161,25 @@ export default function AlertsPage() {
 
       {/* Alert List */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Alertas Ativos</CardTitle>
+          <div className="flex items-center gap-2">
+            <Select value={groupBy} onValueChange={(v: GroupBy) => setGroupBy(v)}>
+              <SelectTrigger className="w-[180px]">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Agrupar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Lista normal</SelectItem>
+                <SelectItem value="alert_type">Por tipo</SelectItem>
+                <SelectItem value="entity">Por entidade</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => exportMut.mutate()} disabled={exportMut.isPending}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -128,14 +190,31 @@ export default function AlertsPage() {
               <p className="text-sm font-medium text-red-600">Erro ao carregar alertas</p>
               <p className="text-xs text-muted-foreground mt-1">Tente novamente mais tarde</p>
             </div>
-          ) : !alerts?.data?.length ? (
+          ) : grouped && groupItems.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Bell className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>Nenhum alerta ativo.</p>
+            </div>
+          ) : !grouped && list.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Bell className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p>Nenhum alerta ativo. Sistema operando normalmente.</p>
             </div>
+          ) : grouped ? (
+            <div className="space-y-3">
+              {groupItems.map((row: any, idx: number) => (
+                <div key={row.alert_type ?? `${row.alertable_type}-${row.alertable_id}-${idx}`} className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                  <Badge variant="outline">{row.alert_type ? (typeLabels[row.alert_type] || row.alert_type) : `${row.alertable_type ?? ''} #${row.alertable_id}`}</Badge>
+                  <span className="font-medium">{row.count} alerta(s)</span>
+                  <span className="text-sm text-muted-foreground">
+                    Último: {row.latest_at ? new Date(row.latest_at).toLocaleString('pt-BR') : '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="space-y-3">
-              {alerts.data.map((alert: any) => {
+              {list.map((alert: any) => {
                 const sev = severityConfig[alert.severity] || severityConfig.medium;
                 const Icon = sev.icon;
                 return (

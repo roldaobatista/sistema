@@ -14,14 +14,15 @@ const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) =>
     const [status, setStatus] = useState<'loading' | 'connected' | 'error' | 'idle'>('idle');
     const videoRef = useRef<HTMLVideoElement>(null);
     const retryCount = useRef(0);
-    const retryTimer = useRef<ReturnType<typeof setTimeout>>();
+    const retryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const mounted = useRef(true);
+    const scheduleRetryRef = useRef<() => void>(() => {});
 
     const connect = useCallback(() => {
         if (!url || !mounted.current) return;
 
         setStatus('loading');
-        const go2rtcBase = (window as any).__GO2RTC_URL || '';
+        const go2rtcBase = (window as Window & { __GO2RTC_URL?: string }).__GO2RTC_URL || '';
 
         if (!go2rtcBase || !url.startsWith('rtsp://')) {
             const timeout = setTimeout(() => {
@@ -43,7 +44,7 @@ const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) =>
                 }
             })
             .catch(() => {
-                if (mounted.current) scheduleRetry();
+                if (mounted.current) scheduleRetryRef.current();
             });
     }, [url]);
 
@@ -61,6 +62,10 @@ const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) =>
             if (mounted.current) connect();
         }, delay);
     }, [connect]);
+
+    useEffect(() => {
+        scheduleRetryRef.current = scheduleRetry;
+    }, [scheduleRetry]);
 
     useEffect(() => {
         mounted.current = true;

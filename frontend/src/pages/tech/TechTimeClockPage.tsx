@@ -171,8 +171,8 @@ export default function TechTimeClockPage() {
             await fetchStatus()
             await fetchTodayEntries()
             await fetchMonthSummary()
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? 'Erro ao registrar saída')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar saída'))
         } finally {
             setActionLoading(null)
         }
@@ -186,8 +186,8 @@ export default function TechTimeClockPage() {
             toast.success('Saída para almoço registrada')
             await fetchStatus()
             await fetchTodayEntries()
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? 'Erro ao registrar saída almoço')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar saída almoço'))
         } finally {
             setActionLoading(null)
         }
@@ -201,8 +201,8 @@ export default function TechTimeClockPage() {
             toast.success('Volta do almoço registrada')
             await fetchStatus()
             await fetchTodayEntries()
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? 'Erro ao registrar volta almoço')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar volta almoço'))
         } finally {
             setActionLoading(null)
         }

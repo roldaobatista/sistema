@@ -2,8 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AlertConfiguration;
 use App\Models\Notification;
+use App\Models\SystemAlert;
 use App\Models\WorkOrder;
+use App\Services\AlertEngineService;
 use App\Services\HolidayService;
 use Illuminate\Console\Command;
 
@@ -12,7 +15,7 @@ class CheckSlaBreaches extends Command
     protected $signature = 'sla:check-breaches';
     protected $description = 'Verifica e marca OS com SLA estourado, envia alertas';
 
-    public function handle(HolidayService $holidayService): int
+    public function handle(HolidayService $holidayService, AlertEngineService $alertEngine): int
     {
         $breached = 0;
 
@@ -33,12 +36,11 @@ class CheckSlaBreaches extends Command
             );
             if (now()->greaterThan($responseDeadline)) {
                 $wo->update(['sla_response_breached' => true]);
-                $this->notifyBreach($wo, 'response', $policy->response_time_minutes);
+                $this->notifyBreach($wo, 'response', $policy->response_time_minutes, $alertEngine);
                 $breached++;
             }
         }
 
-        // OS com SLA de resolução estourado
         $pendingResolution = WorkOrder::whereNotNull('sla_due_at')
             ->where('sla_due_at', '<', now())
             ->where('sla_resolution_breached', false)
@@ -47,7 +49,7 @@ class CheckSlaBreaches extends Command
 
         foreach ($pendingResolution as $wo) {
             $wo->update(['sla_resolution_breached' => true]);
-            $this->notifyBreach($wo, 'resolution', 0);
+            $this->notifyBreach($wo, 'resolution', 0, $alertEngine);
             $breached++;
         }
 
@@ -55,9 +57,10 @@ class CheckSlaBreaches extends Command
         return self::SUCCESS;
     }
 
-    private function notifyBreach(WorkOrder $wo, string $type, int $hours): void
+    private function notifyBreach(WorkOrder $wo, string $type, int $hours, AlertEngineService $alertEngine): void
     {
         $label = $type === 'response' ? 'Resposta' : 'Resolução';
+        $message = "A OS {$wo->business_number} estourou o SLA de {$label}.";
 
         Notification::notify(
             $wo->tenant_id,
@@ -65,7 +68,7 @@ class CheckSlaBreaches extends Command
             'sla_breach',
             "SLA Estourado ({$label})",
             [
-                'message' => "A OS {$wo->business_number} estourou o SLA de {$label}.",
+                'message' => $message,
                 'icon' => 'alert-triangle',
                 'color' => 'danger',
                 'data' => [
@@ -74,6 +77,26 @@ class CheckSlaBreaches extends Command
                 ],
             ]
         );
+
+        $config = AlertConfiguration::withoutGlobalScope('tenant')
+            ->where('tenant_id', $wo->tenant_id)
+            ->where('alert_type', 'sla_breach')
+            ->where('is_enabled', true)
+            ->first();
+
+        if ($config) {
+            $exists = SystemAlert::withoutGlobalScope('tenant')
+                ->where('tenant_id', $wo->tenant_id)
+                ->where('alert_type', 'sla_breach')
+                ->where('alertable_type', WorkOrder::class)
+                ->where('alertable_id', $wo->id)
+                ->where('status', 'active')
+                ->exists();
+
+            if (!$exists) {
+                $alertEngine->createAlertForSla($wo->tenant_id, $wo, $label, $message, $config->channels ?? ['system']);
+            }
+        }
     }
 }
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
     Target, Trophy, Gift, Calendar, TrendingUp, Loader2, ArrowLeft, Flag,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -48,8 +48,8 @@ export default function TechGoalsPage() {
 
                 setGoals(goalsRes.data?.data || [])
                 setCampaigns(campaignsRes.data?.data || [])
-            } catch (error: any) {
-                toast.error(error?.response?.data?.message || 'Erro ao carregar dados')
+            } catch (err: unknown) {
+                toast.error(getApiErrorMessage(err, 'Erro ao carregar dados'))
             } finally {
                 setLoading(false)
             }

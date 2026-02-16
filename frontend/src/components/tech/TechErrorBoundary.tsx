@@ -44,6 +44,8 @@ export class TechErrorBoundary extends Component<Props, State> {
                     )}
                     <div className="flex gap-3">
                         <button
+                            type="button"
+                            aria-label="Recarregar a página"
                             onClick={() => {
                                 this.setState({ hasError: false, error: null })
                                 window.location.reload()
@@ -54,6 +56,8 @@ export class TechErrorBoundary extends Component<Props, State> {
                             Recarregar
                         </button>
                         <button
+                            type="button"
+                            aria-label="Voltar ao início do PWA"
                             onClick={() => {
                                 this.setState({ hasError: false, error: null })
                                 window.location.href = '/tech'

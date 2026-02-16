@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, Plus, Loader2, CheckCircle2, Search, MapPin, User, Camera, Trash2,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
@@ -100,8 +100,8 @@ export default function TechCreateWorkOrderPage() {
             const { data } = await api.post('/work-orders', payload)
             toast.success('OS criada com sucesso!')
             navigate(`/tech/os/${data.data?.id ?? data.id}`)
-        } catch (err: any) {
-            toast.error(err.response?.data?.message ?? 'Erro ao criar OS')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao criar OS'))
         } finally {
             setSubmitting(false)
         }

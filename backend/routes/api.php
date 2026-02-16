@@ -2310,6 +2310,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('alerts')->group(function () use ($fc) {
             Route::middleware('check.permission:platform.dashboard.view')->group(function () use ($fc) {
                 Route::get('/', [$fc, 'indexAlerts']);
+                Route::get('export', [$fc, 'exportAlerts']);
                 Route::get('summary', [$fc, 'alertSummary']);
                 Route::post('{alert}/acknowledge', [$fc, 'acknowledgeAlert']);
                 Route::post('{alert}/resolve', [$fc, 'resolveAlert']);

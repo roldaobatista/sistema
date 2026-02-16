@@ -22,6 +22,7 @@ export function TechAlertBanner() {
         return (
             <button
                 type="button"
+                aria-label={`${alerts.length} alerta${alerts.length > 1 ? 's' : ''}. Toque para expandir`}
                 onClick={() => setExpanded(true)}
                 className={cn(
                     'w-full px-4 py-2 flex items-center gap-2 text-xs font-medium',
@@ -51,12 +52,13 @@ export function TechAlertBanner() {
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
+                        aria-label="Limpar todos os alertas"
                         onClick={dismissAll}
                         className="text-[10px] text-surface-500 hover:text-surface-700"
                     >
                         Limpar todos
                     </button>
-                    <button type="button" onClick={() => setExpanded(false)} className="p-1">
+                    <button type="button" aria-label="Fechar painel de alertas" onClick={() => setExpanded(false)} className="p-1">
                         <X className="w-4 h-4 text-surface-400" />
                     </button>
                 </div>
@@ -78,7 +80,7 @@ export function TechAlertBanner() {
                             <p className="text-xs font-medium text-surface-900 dark:text-surface-50 truncate">{alert.title}</p>
                             <p className="text-[10px] text-surface-500 truncate">{alert.message}</p>
                         </div>
-                        <button type="button" onClick={() => dismiss(alert.id)} className="p-1 flex-shrink-0">
+                        <button type="button" aria-label={`Dispensar alerta: ${alert.title}`} onClick={() => dismiss(alert.id)} className="p-1 flex-shrink-0">
                             <X className="w-3.5 h-3.5 text-surface-400" />
                         </button>
                     </div>

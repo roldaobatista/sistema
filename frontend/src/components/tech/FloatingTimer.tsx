@@ -58,6 +58,8 @@ export function FloatingTimer() {
     if (minimized) {
         return (
             <button
+                type="button"
+                aria-label="Expandir timer da OS"
                 onClick={() => setMinimized(false)}
                 className={cn(
                     'fixed bottom-20 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-full shadow-lg',
@@ -82,13 +84,15 @@ export function FloatingTimer() {
                         isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
                     )} />
                     <button
+                        type="button"
+                        aria-label={`Ir para OS ${workOrderNumber}`}
                         onClick={() => workOrderId && navigate(`/tech/os/${workOrderId}`)}
                         className="text-xs font-medium text-brand-600 dark:text-brand-400 truncate"
                     >
                         OS {workOrderNumber}
                     </button>
                 </div>
-                <button onClick={() => setMinimized(true)} className="p-1">
+                <button type="button" aria-label="Minimizar timer" onClick={() => setMinimized(true)} className="p-1">
                     <ChevronDown className="w-4 h-4 text-surface-400" />
                 </button>
             </div>
@@ -108,6 +112,8 @@ export function FloatingTimer() {
             <div className="flex gap-2">
                 {isRunning ? (
                     <button
+                        type="button"
+                        aria-label="Pausar timer"
                         onClick={pause}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm font-medium active:scale-95 transition-all"
                     >
@@ -115,6 +121,8 @@ export function FloatingTimer() {
                     </button>
                 ) : (
                     <button
+                        type="button"
+                        aria-label="Continuar timer"
                         onClick={resume}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 text-sm font-medium active:scale-95 transition-all"
                     >
@@ -122,6 +130,8 @@ export function FloatingTimer() {
                     </button>
                 )}
                 <button
+                    type="button"
+                    aria-label="Parar e registrar tempo na OS"
                     onClick={handleStop}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium active:scale-95 transition-all"
                 >

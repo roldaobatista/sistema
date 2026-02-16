@@ -179,13 +179,14 @@ class ScheduleController extends Controller
      */
     public function unified(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
-        $from = $request->get('from', now()->startOfWeek()->toDateString());
-        $to = $request->get('to', now()->endOfWeek()->toDateString());
-        $techId = $request->get('technician_id');
+        try {
+            $tenantId = $this->tenantId($request);
+            $from = $request->get('from', now()->startOfWeek()->toDateString());
+            $to = $request->get('to', now()->endOfWeek()->toDateString());
+            $techId = $request->get('technician_id');
 
-        // Schedules normais
-        $schedulesQuery = Schedule::with(['technician:id,name', 'customer:id,name,latitude,longitude', 'workOrder:id,number,os_number,status'])
+            // Schedules normais
+            $schedulesQuery = Schedule::with(['technician:id,name', 'customer:id,name,latitude,longitude', 'workOrder:id,number,os_number,status'])
             ->where('tenant_id', $tenantId)
             ->where('scheduled_start', '>=', $from)
             ->where('scheduled_end', '<=', "$to 23:59:59");
@@ -240,17 +241,21 @@ class ScheduleController extends Controller
 
         $serviceCalls = $this->getServiceCalls($tenantId, $from, $to, $techId);
 
-        $all = $schedules->concat($crmActivities)->concat($serviceCalls)->sortBy('start')->values();
+            $all = $schedules->concat($crmActivities)->concat($serviceCalls)->sortBy('start')->values();
 
-        return response()->json([
-            'data' => $all,
-            'meta' => [
-                'schedules_count' => $schedules->count(),
-                'crm_activities_count' => $crmActivities->count(),
-                'from' => $from,
-                'to' => $to,
-            ],
-        ]);
+            return response()->json([
+                'data' => $all,
+                'meta' => [
+                    'schedules_count' => $schedules->count(),
+                    'crm_activities_count' => $crmActivities->count(),
+                    'from' => $from,
+                    'to' => $to,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('ScheduleController unified failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Erro ao carregar agenda unificada.', 'data' => [], 'meta' => []], 500);
+        }
     }
 
     private function getServiceCalls(int $tenantId, string $from, string $to, ?int $techId)

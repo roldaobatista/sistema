@@ -4,7 +4,7 @@ import { ArrowLeft, ShieldCheck, Camera, Loader2, Package, CheckCircle2, AlertTr
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 interface TechSeal {
@@ -51,7 +51,7 @@ export default function TechSealsPage() {
                 qc.invalidateQueries({ queryKey: ['my-seals'] })
             navigate(`/tech/os/${woId}`)
         },
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao aplicar selo')
+        onError: (err: unknown) => toast.error(getApiErrorMessage(err, 'Erro ao aplicar selo'))
     })
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

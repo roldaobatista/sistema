@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
     Star, MessageSquare, CheckCircle2, Loader2, ArrowLeft, Send,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -67,8 +67,8 @@ export default function TechNpsPage() {
                 tags: tags.length ? tags : undefined,
             })
             setSuccess(true)
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao enviar avaliação')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao enviar avaliação'))
         } finally {
             setSubmitting(false)
         }

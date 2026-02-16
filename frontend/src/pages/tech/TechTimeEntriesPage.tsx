@@ -4,7 +4,7 @@ import {
     ArrowLeft, Clock, Play, Square, Loader2, Calendar,
     MapPin, Timer, CheckCircle2,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -101,8 +101,8 @@ export default function TechTimeEntriesPage() {
             })
             setActiveClock(data.data ?? data)
             toast.success('Ponto registrado - início')
-        } catch (err: any) {
-            toast.error(err.response?.data?.message ?? 'Erro ao registrar ponto')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar ponto'))
         } finally {
             setClocking(false)
         }
@@ -131,8 +131,8 @@ export default function TechTimeEntriesPage() {
             setActiveClock(null)
             toast.success('Ponto registrado - saída')
             fetchData()
-        } catch (err: any) {
-            toast.error(err.response?.data?.message ?? 'Erro ao registrar saída')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar saída'))
         } finally {
             setClocking(false)
         }

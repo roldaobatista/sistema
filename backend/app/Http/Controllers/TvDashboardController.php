@@ -9,6 +9,7 @@ use App\Models\ServiceCall;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -25,9 +26,12 @@ class TvDashboardController extends Controller
         try {
             $tenantId = $this->tenantId();
 
-            $cameras = Camera::where('is_active', true)
-                ->orderBy('position')
-                ->get(['id', 'name', 'stream_url', 'location', 'type']);
+            $cameras = collect([]);
+            if (Schema::hasTable('cameras')) {
+                $cameras = Camera::where('is_active', true)
+                    ->orderBy('position')
+                    ->get(['id', 'name', 'stream_url', 'location', 'type']);
+            }
 
             $technicians = $this->getTechnicians($tenantId);
             $openServiceCalls = $this->getOpenServiceCalls();
@@ -203,7 +207,7 @@ class TvDashboardController extends Controller
             $osFinalizadasOntem = WorkOrder::whereDate('completed_at', $yesterday)->where('status', 'completed')->count();
 
             $avgResponseMin = null;
-            if (Schema::hasColumn('service_calls', 'first_response_at')) {
+            if (DB::connection()->getDriverName() === 'mysql' && Schema::hasColumn('service_calls', 'first_response_at')) {
                 $avgResponseMin = ServiceCall::whereDate('created_at', today())
                     ->whereNotNull('first_response_at')
                     ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, created_at, first_response_at)) as avg_min')
@@ -211,7 +215,7 @@ class TvDashboardController extends Controller
             }
 
             $avgExecutionMin = null;
-            if (Schema::hasColumn('work_orders', 'started_at') && Schema::hasColumn('work_orders', 'completed_at')) {
+            if (DB::connection()->getDriverName() === 'mysql' && Schema::hasColumn('work_orders', 'started_at') && Schema::hasColumn('work_orders', 'completed_at')) {
                 $avgExecutionMin = WorkOrder::whereDate('completed_at', today())
                     ->where('status', 'completed')
                     ->whereNotNull('started_at')

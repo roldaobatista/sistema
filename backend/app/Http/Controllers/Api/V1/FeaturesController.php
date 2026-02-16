@@ -232,13 +232,71 @@ class FeaturesController extends Controller
 
     public function indexAlerts(Request $request): JsonResponse
     {
-        $q = SystemAlert::where('tenant_id', $this->tenantId($request));
+        $tid = $this->tenantId($request);
+        $q = SystemAlert::where('tenant_id', $tid);
 
         if ($status = $request->input('status')) $q->where('status', $status);
         if ($type = $request->input('type')) $q->where('alert_type', $type);
         if ($severity = $request->input('severity')) $q->where('severity', $severity);
 
+        $groupBy = $request->input('group_by');
+        if ($groupBy === 'alert_type') {
+            $items = (clone $q)->select('alert_type', DB::raw('count(*) as count'), DB::raw('max(created_at) as latest_at'))
+                ->groupBy('alert_type')
+                ->orderByDesc('count')
+                ->get();
+            return response()->json(['data' => $items, 'grouped' => true]);
+        }
+        if ($groupBy === 'entity') {
+            $items = (clone $q)->select('alertable_type', 'alertable_id', 'alert_type', DB::raw('count(*) as count'), DB::raw('max(created_at) as latest_at'))
+                ->whereNotNull('alertable_type')
+                ->groupBy('alertable_type', 'alertable_id', 'alert_type')
+                ->orderByDesc('count')
+                ->get();
+            return response()->json(['data' => $items, 'grouped' => true]);
+        }
+
         return response()->json($q->orderByDesc('created_at')->paginate($request->input('per_page', 25)));
+    }
+
+    public function exportAlerts(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $tid = $this->tenantId($request);
+        $q = SystemAlert::where('tenant_id', $tid);
+
+        if ($status = $request->input('status')) $q->where('status', $status);
+        if ($type = $request->input('type')) $q->where('alert_type', $type);
+        if ($severity = $request->input('severity')) $q->where('severity', $severity);
+        $from = $request->input('from');
+        $to = $request->input('to');
+        if ($from) $q->whereDate('created_at', '>=', $from);
+        if ($to) $q->whereDate('created_at', '<=', $to);
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="alertas-' . date('Y-m-d-His') . '.csv"',
+        ];
+
+        return response()->stream(function () use ($q) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['ID', 'Tipo', 'Severidade', 'Título', 'Mensagem', 'Status', 'Criado em', 'Reconhecido em', 'Resolvido em'], ';');
+            $q->orderByDesc('created_at')->chunk(100, function ($alerts) use ($out) {
+                foreach ($alerts as $a) {
+                    fputcsv($out, [
+                        $a->id,
+                        $a->alert_type,
+                        $a->severity,
+                        $a->title,
+                        $a->message,
+                        $a->status,
+                        $a->created_at?->format('d/m/Y H:i'),
+                        $a->acknowledged_at?->format('d/m/Y H:i'),
+                        $a->resolved_at?->format('d/m/Y H:i'),
+                    ], ';');
+                }
+            });
+            fclose($out);
+        }, 200, $headers);
     }
 
     public function acknowledgeAlert(Request $request, SystemAlert $alert): JsonResponse
@@ -290,6 +348,12 @@ class FeaturesController extends Controller
             'channels' => 'nullable|array',
             'days_before' => 'nullable|integer',
             'recipients' => 'nullable|array',
+            'escalation_hours' => 'nullable|integer|min:0',
+            'escalation_recipients' => 'nullable|array',
+            'escalation_recipients.*' => 'integer',
+            'blackout_start' => 'nullable|string|max:5',
+            'blackout_end' => 'nullable|string|max:5',
+            'threshold_amount' => 'nullable|numeric|min:0',
         ]);
 
         $config = AlertConfiguration::updateOrCreate(

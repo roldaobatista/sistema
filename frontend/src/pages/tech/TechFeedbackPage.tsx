@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
     MessageSquare, Send, Camera, Loader2, ArrowLeft, MessageCircle, Reply,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
@@ -124,8 +124,8 @@ export default function TechFeedbackPage() {
             setAttachment(null)
             setTab('historico')
             fetchHistory()
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao enviar feedback')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao enviar feedback'))
         } finally {
             setSubmitting(false)
         }

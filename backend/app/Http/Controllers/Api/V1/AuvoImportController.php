@@ -106,12 +106,21 @@ class AuvoImportController extends Controller
 
             $result = $service->importEntity($entity, $tenantId, $userId, $strategy);
 
-            $message = 'Importação concluída';
-            if (($result['total_errors'] ?? 0) > 0) {
-                $firstError = $result['first_error'] ?? null;
-                $message .= sprintf('. %d erro(s).', $result['total_errors']);
-                if ($firstError) {
-                    $message .= ' Ex.: ' . (is_string($firstError) ? $firstError : ($firstError['message'] ?? json_encode($firstError)));
+            $totalFetched = $result['total_fetched'] ?? 0;
+            $totalImported = $result['total_imported'] ?? 0;
+            $totalUpdated = $result['total_updated'] ?? 0;
+            $totalErrors = $result['total_errors'] ?? 0;
+
+            if ($totalFetched === 0) {
+                $message = 'Nenhum registro encontrado no Auvo para esta entidade. Verifique se há dados no painel Auvo ou se a API retornou outro formato.';
+            } else {
+                $message = 'Importação concluída';
+                if ($totalErrors > 0) {
+                    $firstError = $result['first_error'] ?? null;
+                    $message .= sprintf('. %d erro(s).', $totalErrors);
+                    if ($firstError) {
+                        $message .= ' Ex.: ' . (is_string($firstError) ? $firstError : (is_array($firstError) ? ($firstError['message'] ?? json_encode($firstError)) : ''));
+                    }
                 }
             }
 

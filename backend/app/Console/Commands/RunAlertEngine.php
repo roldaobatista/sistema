@@ -29,6 +29,11 @@ class RunAlertEngine extends Command
                 foreach ($results as $type => $count) {
                     if ($count > 0) $this->line("    - {$type}: {$count}");
                 }
+
+                $escalated = $engine->runEscalationChecks($tenant->id);
+                if ($escalated > 0) {
+                    $this->info("  → {$escalated} alerta(s) escalado(s).");
+                }
             } catch (\Throwable $e) {
                 $this->error("  → Erro: {$e->getMessage()}");
             }

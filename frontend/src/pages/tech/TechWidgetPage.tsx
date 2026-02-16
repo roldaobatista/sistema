@@ -9,7 +9,7 @@ import {
 import api from '@/lib/api'
 import { useSyncStatus } from '@/hooks/useSyncStatus'
 import { useAuthStore } from '@/stores/auth-store'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 
 interface WidgetOS {
     id: number
@@ -36,7 +36,7 @@ export default function TechWidgetPage() {
     mutationFn: (id: number) => api.delete(`/tech-widget/${id}`),
     onSuccess: () => { toast.success('Removido com sucesso');
                 queryClient.invalidateQueries({ queryKey: ['tech-widget'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    onError: (err: unknown) => { toast.error(getApiErrorMessage(err, 'Erro ao remover')) },
   })
   const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
 

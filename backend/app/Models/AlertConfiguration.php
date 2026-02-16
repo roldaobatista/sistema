@@ -12,6 +12,7 @@ class AlertConfiguration extends Model
     protected $fillable = [
         'tenant_id', 'alert_type', 'is_enabled', 'channels',
         'days_before', 'cron_expression', 'recipients',
+        'escalation_hours', 'escalation_recipients', 'blackout_start', 'blackout_end', 'threshold_amount',
     ];
 
     protected function casts(): array
@@ -20,6 +21,8 @@ class AlertConfiguration extends Model
             'is_enabled' => 'boolean',
             'channels' => 'array',
             'recipients' => 'array',
+            'escalation_recipients' => 'array',
+            'threshold_amount' => 'decimal:2',
         ];
     }
 }

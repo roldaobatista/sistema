@@ -42,7 +42,7 @@ class SystemAlert extends Model
     protected $fillable = [
         'tenant_id', 'alert_type', 'severity', 'title', 'message',
         'alertable_type', 'alertable_id', 'channels_sent', 'status',
-        'acknowledged_by', 'acknowledged_at', 'resolved_at',
+        'acknowledged_by', 'acknowledged_at', 'resolved_at', 'escalated_at',
     ];
 
     protected function casts(): array
@@ -51,6 +51,7 @@ class SystemAlert extends Model
             'channels_sent' => 'array',
             'acknowledged_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'escalated_at' => 'datetime',
         ];
     }
 

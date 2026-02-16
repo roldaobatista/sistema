@@ -313,7 +313,7 @@ const TvDashboard = () => {
             {/* Header */}
             <div className="flex justify-between items-center px-5 py-3 border-b border-neutral-800 shrink-0 relative">
                 <div className="flex items-center gap-4">
-                    <img src="/logo-white.png" alt="Logo" className="h-9 opacity-80" onError={e => (e.currentTarget.style.display = 'none')} />
+                    <img src="/icons/icon-192.svg" alt="Logo" className="h-9 opacity-80" onError={e => (e.currentTarget.style.display = 'none')} />
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-blue-500 uppercase leading-none">War Room</h1>
                         <span className="text-[10px] text-neutral-500 tracking-widest uppercase">Central de Monitoramento</span>

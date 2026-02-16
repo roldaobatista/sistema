@@ -15,6 +15,9 @@ export function PullToRefreshIndicator({ pullDistance, isRefreshing, threshold =
 
     return (
         <div
+            role="status"
+            aria-live="polite"
+            aria-label={isRefreshing ? 'Atualizando...' : 'Puxe para atualizar'}
             className="flex items-center justify-center overflow-hidden transition-all"
             style={{ height: isRefreshing ? 40 : pullDistance > 0 ? pullDistance * 0.5 : 0 }}
         >

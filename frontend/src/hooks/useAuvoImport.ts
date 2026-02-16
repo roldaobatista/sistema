@@ -152,8 +152,18 @@ export function useAuvoImportEntity() {
         onSuccess: (data) => {
             const imported = data.total_imported ?? data.inserted ?? 0
             const updated = data.total_updated ?? data.updated ?? 0
+            const fetched = data.total_fetched ?? 0
             const errCount = data.total_errors ?? data.errors ?? 0
-            toast.success(`${data.entity_type}: ${imported} importados, ${updated} atualizados${errCount > 0 ? `, ${errCount} erro(s)` : ''}`)
+            const msg = (data as { message?: string; entity_label?: string }).message
+            const label = (data as { entity_label?: string }).entity_label || data.entity_type
+            if (fetched === 0 && msg) {
+                toast.warning(msg)
+            } else {
+                const parts = [`${label}: ${imported} importados`]
+                if (updated > 0) parts.push(`${updated} atualizados`)
+                if (errCount > 0) parts.push(`${errCount} erro(s)`)
+                toast.success(parts.join(', '))
+            }
             qc.invalidateQueries({ queryKey: ['auvo'] })
         },
         onError: handleMutationError,
@@ -165,8 +175,16 @@ export function useAuvoImportAll() {
     return useMutation({
         mutationFn: (strategy?: string) =>
             api.post('/auvo/import-all', { strategy: strategy || 'skip' }).then(r => r.data),
-        onSuccess: () => {
-            toast.success('Importação completa finalizada')
+        onSuccess: (data: { summary?: { total_inserted?: number; total_errors?: number }; message?: string }) => {
+            const summary = data?.summary
+            if (summary && (summary.total_inserted != null || summary.total_errors != null)) {
+                const parts: string[] = []
+                if (summary.total_inserted != null) parts.push(`${summary.total_inserted} importados`)
+                if (summary.total_errors != null && summary.total_errors > 0) parts.push(`${summary.total_errors} erro(s)`)
+                toast.success(parts.length ? parts.join(', ') : 'Importação em lote finalizada.')
+            } else {
+                toast.success(data?.message || 'Importação em lote finalizada.')
+            }
             qc.invalidateQueries({ queryKey: ['auvo'] })
         },
         onError: handleMutationError,
@@ -179,7 +197,7 @@ export function useAuvoRollback() {
         mutationFn: (importId: number) =>
             api.post(`/auvo/rollback/${importId}`).then(r => r.data),
         onSuccess: () => {
-            toast.success('Rollback executado com sucesso')
+            toast.success('Importação desfeita com sucesso.')
             qc.invalidateQueries({ queryKey: ['auvo'] })
         },
         onError: handleMutationError,
@@ -193,9 +211,9 @@ export function useAuvoConfig() {
             api.put('/auvo/config', data).then(r => r.data),
         onSuccess: (data) => {
             if (data.connected) {
-                toast.success(data.message || 'Credenciais salvas e conexão verificada')
+                toast.success(data.message || 'Credenciais salvas e conexão verificada com sucesso.')
             } else {
-                toast.warning(data.message || 'Credenciais salvas, mas a conexão não foi verificada')
+                toast.warning(data.message || 'Credenciais salvas; verifique a conexão nas configurações.')
             }
             qc.invalidateQueries({ queryKey: ['auvo', 'status'] })
         },

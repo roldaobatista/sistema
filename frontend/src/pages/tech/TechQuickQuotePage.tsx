@@ -4,7 +4,7 @@ import {
     Search, Plus, Trash2, Send, Save, User, Loader2, ArrowLeft,
     ShoppingCart, Calculator, CheckCircle2,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -197,8 +197,8 @@ export default function TechQuickQuotePage() {
             setSavedQuoteId(quote.id)
             setSavedQuoteNumber(quote.quote_number ?? `#${quote.id}`)
             toast.success('Orçamento salvo!')
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao salvar orçamento')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao salvar orçamento'))
         } finally {
             setSaving(false)
         }
@@ -222,8 +222,8 @@ export default function TechQuickQuotePage() {
             await api.post(`/quotes/${quoteId}/internal-approve`)
             await api.post(`/quotes/${quoteId}/send`)
             toast.success('Orçamento enviado ao cliente!')
-        } catch (err: any) {
-            const msg = err?.response?.data?.message || 'Erro ao enviar orçamento'
+        } catch (err: unknown) {
+            const msg = getApiErrorMessage(err, 'Erro ao enviar orçamento')
             if (msg.includes('aprovado') || msg.includes('internamente')) {
                 toast.error('Orçamento precisa ser aprovado internamente antes de enviar')
             } else {

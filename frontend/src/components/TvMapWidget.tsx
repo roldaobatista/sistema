@@ -155,10 +155,14 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
         if (t.location_lat && t.location_lng) allMarkers.push([t.location_lat, t.location_lng]);
     });
     workOrders?.forEach(o => {
-        if (o.customer?.latitude) allMarkers.push([o.customer.latitude, o.customer.longitude]);
+        const lat = o.customer?.latitude;
+        const lng = o.customer?.longitude;
+        if (lat != null && lng != null) allMarkers.push([lat, lng]);
     });
     serviceCalls?.forEach(s => {
-        if (s.customer?.latitude) allMarkers.push([s.customer.latitude, s.customer.longitude]);
+        const lat = s.customer?.latitude;
+        const lng = s.customer?.longitude;
+        if (lat != null && lng != null) allMarkers.push([lat, lng]);
     });
 
     const defaultCenter: L.LatLngExpression = [-16.4673, -54.6353]; // Rondonópolis, MT
@@ -182,11 +186,14 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
                 <FitBounds markers={allMarkers} />
 
                 {/* Technicians */}
-                {technicians?.map(tech => (
-                    tech.location_lat && (
+                {technicians?.map(tech => {
+                    const lat = tech.location_lat;
+                    const lng = tech.location_lng;
+                    if (lat == null || lng == null) return null;
+                    return (
                         <Marker
                             key={`tech-${tech.id}`}
-                            position={[tech.location_lat, tech.location_lng]}
+                            position={[lat, lng]}
                             icon={createTechIcon(tech.status, tech.avatar_url)}
                         >
                             <Popup>
@@ -198,21 +205,26 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
                                         {tech.status === 'working' ? 'EM ATENDIMENTO' :
                                             tech.status === 'in_transit' ? 'EM DESLOCAMENTO' : tech.status}
                                     </div>
-                                    <div className="text-[9px] text-neutral-500">
-                                        {new Date(tech.location_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
+                                    {tech.location_updated_at && (
+                                        <div className="text-[9px] text-neutral-500">
+                                            {new Date(tech.location_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    )}
                                 </div>
                             </Popup>
                         </Marker>
-                    )
-                ))}
+                    );
+                })}
 
                 {/* Service Calls (Open) */}
-                {serviceCalls?.map(call => (
-                    call.customer?.latitude && (
+                {serviceCalls?.map(call => {
+                    const lat = call.customer?.latitude;
+                    const lng = call.customer?.longitude;
+                    if (lat == null || lng == null) return null;
+                    return (
                         <Marker
                             key={`call-${call.id}`}
-                            position={[call.customer.latitude, call.customer.longitude]}
+                            position={[lat, lng]}
                             icon={callIcon}
                         >
                             <Popup>
@@ -220,7 +232,7 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
                                     <div className="text-xs font-bold text-red-500 flex items-center gap-1">
                                         <AlertCircle size={12} /> CHAMADO #{call.id}
                                     </div>
-                                    <div className="font-bold text-[11px]">{call.customer.name}</div>
+                                    <div className="font-bold text-[11px]">{call.customer?.name ?? '—'}</div>
                                     <div className="text-[10px] text-neutral-400">{call.subject}</div>
                                     <div className="text-[9px] bg-red-900/30 text-red-200 px-1 rounded w-fit mt-1">
                                         {call.priority ? `PRIORIDADE ${call.priority.toUpperCase()}` : `STATUS: ${(call.status || '').toUpperCase()}`}
@@ -228,15 +240,18 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
                                 </div>
                             </Popup>
                         </Marker>
-                    )
-                ))}
+                    );
+                })}
 
                 {/* Active Work Orders */}
-                {workOrders?.map(os => (
-                    os.customer?.latitude && (
+                {workOrders?.map(os => {
+                    const lat = os.customer?.latitude;
+                    const lng = os.customer?.longitude;
+                    if (lat == null || lng == null) return null;
+                    return (
                         <Marker
                             key={`os-${os.id}`}
-                            position={[os.customer.latitude, os.customer.longitude]}
+                            position={[lat, lng]}
                             icon={osIcon}
                         >
                             <Popup>
@@ -244,15 +259,15 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
                                     <div className="text-xs font-bold text-green-400 flex items-center gap-1">
                                         <Wrench size={12} /> OS #{os.os_number || os.id}
                                     </div>
-                                    <div className="font-bold text-[11px]">{os.customer.name}</div>
+                                    <div className="font-bold text-[11px]">{os.customer?.name ?? '—'}</div>
                                     <div className="text-[10px] text-neutral-400 border-t border-neutral-700 pt-1 mt-1">
                                         Técnico: {(os.technician ?? os.assignee)?.name || '...'}
                                     </div>
                                 </div>
                             </Popup>
                         </Marker>
-                    )
-                ))}
+                    );
+                })}
             </MapContainer>
 
             {/* Legend Overlay */}

@@ -4,7 +4,7 @@ import {
     Scale, Plus, Trash2, CheckCircle2, XCircle, Save, ChevronDown, ChevronUp,
     Loader2, ArrowLeft, Gauge, FlaskConical,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -76,8 +76,8 @@ export default function TechCalibrationReadingsPage() {
                 }
                 if (list.length > 0) setEquipments(list)
                 else setError('Nenhum equipamento vinculado a esta OS')
-            } catch (err: any) {
-                setError(err?.response?.data?.message || 'Erro ao carregar OS')
+            } catch (err: unknown) {
+                setError(getApiErrorMessage(err, 'Erro ao carregar OS'))
                 toast.error('Erro ao carregar dados da OS')
             } finally {
                 setLoading(false)
@@ -209,8 +209,8 @@ export default function TechCalibrationReadingsPage() {
             }
 
             toast.success('Leituras salvas com sucesso')
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao salvar leituras')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao salvar leituras'))
         } finally {
             setSaving(false)
         }
