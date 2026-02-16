@@ -1,0 +1,124 @@
+# Migrations Seguras para Produção (REGRA OBRIGATÓRIA)
+
+## Contexto
+
+Este sistema roda em produção com MySQL 8.0 em modo strict. O banco de dados contém dados reais de clientes. Migrations que falham interrompem o deploy.
+
+## Regras OBRIGATÓRIAS ao criar migrations
+
+### 1. NUNCA usar `->after('coluna')`
+
+```php
+// ❌ ERRADO: vai falhar se 'status' não existir na tabela de produção
+$table->string('priority')->nullable()->after('status');
+
+// ✅ CORRETO: coluna será adicionada ao final da tabela (funciona sempre)
+$table->string('priority')->nullable();
+```
+
+**Por quê:** O schema em produção pode não ter a coluna de referência. O `after()` é apenas cosmético (posição da coluna), mas causa erro fatal se a coluna referenciada não existir.
+
+### 2. NUNCA usar `->default()` em colunas JSON
+
+```php
+// ❌ ERRADO: MySQL strict mode não permite default em JSON
+$table->json('channels')->default('["system"]');
+
+// ✅ CORRETO: usar nullable e definir default no Model
+$table->json('channels')->nullable();
+
+// No Model:
+protected $casts = ['channels' => 'array'];
+protected $attributes = ['channels' => '["system"]'];
+```
+
+### 3. Sempre dar nome curto a índices compostos
+
+O MySQL tem limite de 64 caracteres para nomes de índice. Laravel gera `{tabela}_{col1}_{col2}_index` automaticamente.
+
+```php
+// ❌ ERRADO: nome gerado será "calibration_readings_equipment_calibration_id_reading_order_index" (66 chars - FALHA)
+$table->index(['equipment_calibration_id', 'reading_order']);
+
+// ✅ CORRETO: nome explícito curto
+$table->index(['equipment_calibration_id', 'reading_order'], 'cal_readings_cal_order_idx');
+```
+
+**Regra:** Se a tabela tem nome > 15 chars OU as colunas do índice somam > 30 chars, SEMPRE dar nome explícito.
+
+### 4. Sempre usar `hasColumn` / `hasTable` guards
+
+```php
+// ✅ CORRETO: idempotente - pode rodar múltiplas vezes sem erro
+if (!Schema::hasColumn('work_orders', 'priority')) {
+    $table->string('priority')->nullable();
+}
+
+// ✅ CORRETO: para novas tabelas
+if (!Schema::hasTable('alerts')) {
+    Schema::create('alerts', function (Blueprint $table) {
+        // ...
+    });
+}
+```
+
+### 5. Novas colunas devem ser nullable OU ter default
+
+```php
+// ❌ ERRADO: vai falhar com dados existentes
+$table->string('priority');
+
+// ✅ CORRETO
+$table->string('priority')->nullable();
+// ou
+$table->string('priority')->default('normal');
+```
+
+### 6. Foreign keys: verificar se tabela referenciada existe
+
+```php
+// ✅ CORRETO: verifica antes de adicionar FK
+if (Schema::hasTable('cost_centers') && !Schema::hasColumn('work_orders', 'cost_center_id')) {
+    $table->foreignId('cost_center_id')->nullable()
+        ->constrained('cost_centers')->onUpdate('cascade')->onDelete('set null');
+}
+```
+
+### 7. composer.lock DEVE estar atualizado
+
+Se adicionar um pacote ao `composer.json`, rodar localmente:
+
+```bash
+cd backend
+composer update <pacote>
+```
+
+E commitar TANTO `composer.json` quanto `composer.lock`. Se o lock estiver desatualizado, o build Docker FALHA.
+
+## Checklist pré-commit de migrations
+
+Antes de commitar qualquer migration, verificar:
+
+- [ ] Nenhum `->after()` usado
+- [ ] Nenhum `->default()` em coluna JSON
+- [ ] Índices compostos com nome < 64 chars (dar nome explícito se necessário)
+- [ ] Guards `hasColumn` / `hasTable` em todas as operações
+- [ ] Novas colunas são nullable ou têm default
+- [ ] Foreign keys verificam tabela de referência
+- [ ] `composer.lock` atualizado se pacote novo
+- [ ] `down()` implementado corretamente
+- [ ] Sem `migrate:fresh` ou `migrate:reset`
+
+## Ordem de execução das migrations
+
+O Laravel executa migrations em ordem alfabética do nome do arquivo. NUNCA criar uma migration que depende de uma tabela criada por outra migration com timestamp posterior.
+
+```
+// ✅ CORRETO: tabela criada antes de ser referenciada
+2026_02_14_100000_create_alerts_table.php      ← cria tabela
+2026_02_14_100001_add_alert_id_to_users.php    ← referencia tabela
+
+// ❌ ERRADO: FK referencia tabela que ainda não foi criada
+2026_02_14_100000_add_alert_id_to_users.php    ← FK para alerts
+2026_02_14_100001_create_alerts_table.php      ← tabela criada depois
+```

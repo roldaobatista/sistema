@@ -2,117 +2,131 @@
 
 ## Quando o usuário pedir deploy
 
-Sempre que o usuário pedir para "fazer deploy", "atualizar produção", "subir para produção", "publicar", ou qualquer variação, siga EXATAMENTE este fluxo:
-
-### Passo 1: Verificar se há mudanças não commitadas
-
-```powershell
-git status
-```
-
-Se houver mudanças pendentes, pergunte ao usuário se deve commitar antes de fazer deploy.
-
-### Passo 2: Commitar se necessário
-
-Se houver mudanças, faça commit com mensagem descritiva:
-
-```powershell
-git add -A && git commit -m "descrição das mudanças"
-```
-
-### Passo 3: Executar o deploy
-
-Use o script `deploy-prod.ps1` na raiz do projeto com `working_directory: "C:\projetos\sistema"`:
-
-**Deploy SEM migrations (apenas código/frontend):**
-```powershell
-.\deploy-prod.ps1
-```
-
-**Deploy COM migrations (novas tabelas, colunas, etc.):**
-```powershell
-.\deploy-prod.ps1 -Migrate
-```
-
-**Apenas seeders (permissões novas):**
-```powershell
-.\deploy-prod.ps1 -Seed
-```
-
-**Rollback (reverter tudo):**
-```powershell
-.\deploy-prod.ps1 -Rollback
-```
-
-**Ver status do servidor:**
-```powershell
-.\deploy-prod.ps1 -Status
-```
-
-### Quando usar -Migrate
-
-Use `-Migrate` quando QUALQUER uma dessas condições for verdadeira:
-- Novas migrations foram criadas
-- Tabelas foram adicionadas ou alteradas
-- Colunas foram adicionadas, removidas ou renomeadas
-- Novas permissões foram criadas no PermissionsSeeder
-
-### Quando NÃO usar -Migrate
-
-Não use `-Migrate` quando:
-- Apenas código PHP/TypeScript/CSS foi alterado
-- Apenas textos ou layouts foram mudados
-- Apenas bugs foram corrigidos (sem mudança no banco)
+Sempre que o usuário pedir para "fazer deploy", "atualizar produção", "subir para produção", "publicar", ou qualquer variação, siga EXATAMENTE este fluxo.
 
 ## Informações do Servidor
 
 - **IP:** 178.156.176.145
 - **Usuário SSH:** root
-- **Chave SSH:** %USERPROFILE%\.ssh\id_ed25519
+- **Chave SSH:** `$env:USERPROFILE\.ssh\id_ed25519`
 - **Diretório remoto:** /root/sistema
 - **Compose file:** docker-compose.prod-http.yml (HTTP) ou docker-compose.prod.yml (HTTPS)
 - **URL de acesso:** http://178.156.176.145
 - **Backups:** /root/backups (rotação 7 dias)
+- **Backups .env no servidor:** /root/backend-env-backup, /root/root-env-backup, /root/frontend-env-backup
 
-## O que o deploy faz automaticamente
+## Fluxo de Deploy Completo (seguir na ordem)
 
-1. Verifica se há código não commitado (bloqueia se houver)
-2. Faz `git push` para o GitHub
-3. Conecta via SSH no servidor
-4. Faz `git pull` no servidor
-5. Se `-Migrate`: faz backup do banco MySQL antes
-6. Builda novas imagens Docker (sem parar o sistema)
-7. Troca para os novos containers
-8. Se `-Migrate`: roda migrations e seeders
-9. Otimiza caches (config, routes, views)
-10. Faz health check (verifica se API responde)
-11. Se health check falhar: rollback automático
+### Passo 1: Verificar mudanças pendentes
 
-## Troubleshooting
+```powershell
+git status
+```
 
-### "Falha no git push"
-- Verificar se o repositório GitHub está configurado
-- Verificar autenticação: `git remote -v`
+Se houver mudanças, commitar antes. NUNCA deploy com código sujo.
 
-### "Não foi possível conectar ao servidor"
-- Verificar se a chave SSH existe: `Test-Path $env:USERPROFILE\.ssh\id_ed25519`
-- Testar manualmente: `ssh -i $env:USERPROFILE\.ssh\id_ed25519 root@178.156.176.145 "echo ok"`
+### Passo 2: Push para GitHub
 
-### "Build falhou"
-- O sistema continua rodando a versão anterior (nada quebra)
-- Verificar erro no output e corrigir o código
+```powershell
+$ErrorActionPreference = "SilentlyContinue"; git push origin main 2>&1 | Out-Null; $ErrorActionPreference = "Stop"; Write-Host "Push: $LASTEXITCODE"
+```
 
-### "Migration falhou"
-- O banco é automaticamente restaurado do backup
-- Corrigir a migration e tentar novamente
+**IMPORTANTE:** Sempre usar esse padrão para `git push` no PowerShell. O git escreve mensagens normais no stderr, que o PowerShell interpreta como erro fatal.
 
-### "Health check falhou"
-- Rollback automático é executado
-- Verificar logs: `.\deploy-prod.ps1 -Logs`
+### Passo 3: Backup dos .env no servidor (OBRIGATÓRIO antes de qualquer git reset)
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o StrictHostKeyChecking=no root@178.156.176.145 'cd /root/sistema && cp backend/.env /root/backend-env-backup && cp .env /root/root-env-backup && cp frontend/.env /root/frontend-env-backup && echo ENV_BACKUP_OK'
+```
+
+### Passo 4: Sincronizar servidor com GitHub
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -o StrictHostKeyChecking=no root@178.156.176.145 'cd /root/sistema && git fetch origin main && git reset --hard origin/main && cp /root/backend-env-backup backend/.env && cp /root/root-env-backup .env && cp /root/frontend-env-backup frontend/.env && echo SYNC_OK'
+```
+
+**IMPORTANTE:** Sempre restaurar os .env após `git reset --hard`. Os .env do servidor têm configurações de produção que NÃO estão no git.
+
+### Passo 5: Rebuild e restart dos containers
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -o StrictHostKeyChecking=no root@178.156.176.145 'cd /root/sistema && docker compose -f docker-compose.prod-http.yml build backend queue scheduler reverb frontend && docker compose -f docker-compose.prod-http.yml up -d && echo ALL_UP'
+```
+
+Para rebuild apenas do backend (sem frontend): remover `frontend` do build.
+
+### Passo 6: Migrations (se necessário)
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o ServerAliveInterval=15 -o StrictHostKeyChecking=no root@178.156.176.145 'cd /root/sistema && docker compose -f docker-compose.prod-http.yml exec -T backend php artisan migrate --force 2>&1'
+```
+
+### Passo 7: Seeders e Cache
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o ServerAliveInterval=15 -o StrictHostKeyChecking=no root@178.156.176.145 'cd /root/sistema && docker compose -f docker-compose.prod-http.yml exec -T backend php artisan db:seed --class=PermissionsSeeder --force 2>&1 && docker compose -f docker-compose.prod-http.yml exec -T backend php artisan config:cache && docker compose -f docker-compose.prod-http.yml exec -T backend php artisan route:cache && docker compose -f docker-compose.prod-http.yml exec -T backend php artisan view:cache && echo CACHE_OK'
+```
+
+### Passo 8: Health check
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o StrictHostKeyChecking=no root@178.156.176.145 "docker ps --format 'table {{.Names}}\t{{.Status}}'"
+```
+
+## Regras SSH (CRÍTICO)
+
+1. **Sempre usar** `-o ServerAliveInterval=15 -o ServerAliveCountMax=20` em comandos longos (build, migrations)
+2. **Sempre usar aspas simples** `'...'` para comandos bash via SSH. Aspas duplas fazem o PowerShell interpretar `$()` e variáveis bash.
+3. **NUNCA usar** `&&` do bash como separador no PowerShell. Usar `;` ou separar em comandos distintos.
+4. O **PowerShell trata stderr como erro**. Sempre usar `$ErrorActionPreference = "SilentlyContinue"` ao redor de comandos git.
+5. **Encoding:** O nome de usuário Windows contém caracteres especiais. Usar `working_directory` ao invés de `cd`.
+
+## Quando usar Migrations no deploy
+
+Use migrations quando:
+- Novas migrations foram criadas
+- Tabelas ou colunas foram adicionadas/alteradas
+- Novas permissões no PermissionsSeeder
+
+NÃO use migrations quando:
+- Apenas código PHP/TypeScript/CSS alterado
+- Apenas bugs corrigidos sem mudança no banco
+
+## Erros Comuns e Soluções (LIÇÕES APRENDIDAS)
+
+### Erro: "composer.lock out of date"
+**Causa:** Pacote adicionado ao composer.json mas composer.lock não atualizado.
+**Solução:** Rodar `composer update <pacote>` localmente no backend ANTES de commitar.
+
+### Erro: Migration com `after('coluna')` que não existe
+**Causa:** Usar `->after('coluna_X')` mas `coluna_X` não existe na tabela em produção.
+**Solução:** NUNCA usar `->after()` em migrations. Colunas serão adicionadas ao final da tabela, o que funciona perfeitamente.
+
+### Erro: "Identifier name too long" em index
+**Causa:** Laravel gera nomes de índice automaticamente como `tabela_coluna1_coluna2_index`. Pode exceder 64 chars do MySQL.
+**Solução:** Sempre dar nome explícito curto ao índice: `$table->index(['col1', 'col2'], 'nome_curto_idx')`
+
+### Erro: "JSON column can't have a default value"
+**Causa:** MySQL strict mode não permite `->default()` em colunas JSON.
+**Solução:** Usar `->nullable()` ao invés de `->default('...')` para colunas JSON. Definir o default no Model via `$casts` ou `$attributes`.
+
+### Erro: "Your local changes would be overwritten by merge"
+**Causa:** Servidor tem alterações locais no código.
+**Solução:** Usar `git reset --hard origin/main` (já implementado no deploy.sh).
+
+### Erro: SSH connection drops durante build
+**Causa:** Build Docker demora e SSH timeout.
+**Solução:** Usar `-o ServerAliveInterval=15 -o ServerAliveCountMax=20` nos comandos SSH.
+
+### Erro: `.env` perdido após git reset
+**Causa:** `git reset --hard` pode sobrescrever arquivos se o gitignore não estiver correto.
+**Solução:** SEMPRE fazer backup dos .env antes e restaurar depois (Passos 3 e 4 acima).
+
+### Erro: grep captura linhas comentadas do .env
+**Causa:** `grep -oP 'DB_DATABASE=\K.*'` pega tanto `# DB_DATABASE=laravel` quanto `DB_DATABASE=kalibrium`.
+**Solução:** Usar `^DB_DATABASE` (com `^` para início de linha) e `tail -1` para pegar apenas a última ocorrência.
 
 ## Checklist de segurança (produção)
-
-Antes do primeiro deploy ou se o servidor ainda não foi ajustado:
 
 1. **backend/.env no servidor** deve ter:
    - `APP_ENV=production`
@@ -120,7 +134,7 @@ Antes do primeiro deploy ou se o servidor ainda não foi ajustado:
    - `CORS_ALLOWED_ORIGINS` = URL real (ex: `http://178.156.176.145`), nunca placeholder
    - Senhas fortes para `DB_PASSWORD` e `DB_ROOT_PASSWORD`
 
-2. O script `deploy.sh` **bloqueia** o deploy se:
+2. O script `deploy.sh` bloqueia o deploy se:
    - `APP_ENV` não for `production`
    - `APP_DEBUG` for `true`
    - `CORS_ALLOWED_ORIGINS` estiver com valor de exemplo
@@ -129,9 +143,11 @@ Antes do primeiro deploy ou se o servidor ainda não foi ajustado:
 
 ## NUNCA faça em produção
 
-- NUNCA execute `php artisan migrate:fresh` em produção (apaga TODOS os dados)
-- NUNCA execute `php artisan migrate:reset` em produção
+- NUNCA execute `php artisan migrate:fresh` (apaga TODOS os dados)
+- NUNCA execute `php artisan migrate:reset`
 - NUNCA altere backend/.env do servidor sem backup
-- NUNCA delete volumes Docker em produção (`docker volume rm`)
-- NUNCA execute deploy sem commit (código sujo)
-- NUNCA use `APP_DEBUG=true` ou `APP_ENV=local` no servidor
+- NUNCA delete volumes Docker (`docker volume rm`)
+- NUNCA execute deploy sem commit
+- NUNCA use `APP_DEBUG=true` ou `APP_ENV=local`
+- NUNCA use `nohup` para rodar deploy.sh (output se perde e script para)
+- NUNCA confie que `git pull` vai funcionar no servidor (usar `git reset --hard`)

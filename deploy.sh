@@ -104,6 +104,12 @@ git_pull() {
     current_commit=$(git rev-parse --short HEAD)
     log "Commit atual: $current_commit"
 
+    # Backup dos .env antes do reset (eles têm config de produção)
+    log "Salvando .env de produção..."
+    [ -f "backend/.env" ] && cp backend/.env /root/backend-env-backup 2>/dev/null || true
+    [ -f ".env" ] && cp .env /root/root-env-backup 2>/dev/null || true
+    [ -f "frontend/.env" ] && cp frontend/.env /root/frontend-env-backup 2>/dev/null || true
+
     git fetch origin main 2>/dev/null || warn "Não foi possível fazer fetch (sem internet?)"
 
     local local_hash remote_hash
@@ -118,6 +124,12 @@ git_pull() {
     # Servidor de deploy: código deve ser idêntico ao origin/main
     # Alterações locais no servidor são descartadas (config fica em .env, que é gitignored)
     git reset --hard origin/main || error "Falha no git reset. Verifique o repositório."
+
+    # Restaura .env de produção (podem ter sido sobrescritos pelo reset)
+    log "Restaurando .env de produção..."
+    [ -f "/root/backend-env-backup" ] && cp /root/backend-env-backup backend/.env 2>/dev/null || true
+    [ -f "/root/root-env-backup" ] && cp /root/root-env-backup .env 2>/dev/null || true
+    [ -f "/root/frontend-env-backup" ] && cp /root/frontend-env-backup frontend/.env 2>/dev/null || true
 
     local new_commit
     new_commit=$(git rev-parse --short HEAD)
