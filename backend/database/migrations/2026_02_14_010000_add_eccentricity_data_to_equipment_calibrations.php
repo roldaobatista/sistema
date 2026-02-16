@@ -9,8 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('equipment_calibrations', function (Blueprint $table) {
-            $table->json('eccentricity_data')->nullable()->after('results')
-                ->comment('Eccentricity test data: positions, readings, errors per ISO 17025');
+            if (!Schema::hasColumn('equipment_calibrations', 'eccentricity_data')) {
+                $table->json('eccentricity_data')->nullable()
+                    ->comment('Eccentricity test data: positions, readings, errors per ISO 17025');
+            }
         });
     }
 
