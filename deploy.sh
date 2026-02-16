@@ -115,7 +115,9 @@ git_pull() {
         return 0
     fi
 
-    git pull origin main --ff-only || error "Falha no git pull. Resolva conflitos manualmente."
+    # Servidor de deploy: código deve ser idêntico ao origin/main
+    # Alterações locais no servidor são descartadas (config fica em .env, que é gitignored)
+    git reset --hard origin/main || error "Falha no git reset. Verifique o repositório."
 
     local new_commit
     new_commit=$(git rev-parse --short HEAD)
