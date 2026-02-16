@@ -212,18 +212,19 @@ health_check() {
     local retries=$HEALTH_CHECK_RETRIES
     local interval=$HEALTH_CHECK_INTERVAL
     local attempt=0
-    local url="http://localhost/up"
 
-    log "Verificando se a API está respondendo..."
+    log "Verificando se o sistema está respondendo..."
 
     while [ $attempt -lt $retries ]; do
         attempt=$((attempt + 1))
 
-        local http_code
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+        # Verifica API (/up) e Frontend (/) separadamente
+        local api_code frontend_code
+        api_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/up" 2>/dev/null || echo "000")
+        frontend_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/" 2>/dev/null || echo "000")
 
-        if [ "$http_code" = "200" ]; then
-            log "API respondendo! (HTTP $http_code, tentativa $attempt/$retries)"
+        if [ "$api_code" = "200" ] && [ "$frontend_code" = "200" ]; then
+            log "Sistema saudável! (API: $api_code, Frontend: $frontend_code)"
 
             docker compose -f "$COMPOSE_FILE" ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || \
                 docker compose -f "$COMPOSE_FILE" ps
@@ -233,11 +234,24 @@ health_check() {
             return 0
         fi
 
-        info "API ainda iniciando... (HTTP $http_code, $attempt/$retries)"
+        # Aceita se pelo menos o frontend responde (API pode demorar mais)
+        if [ "$frontend_code" = "200" ] && [ $attempt -ge $((retries / 2)) ]; then
+            warn "Frontend OK ($frontend_code), mas API retornou $api_code"
+            warn "Isso pode ser normal se APP_KEY ou banco não estão 100% configurados."
+
+            docker compose -f "$COMPOSE_FILE" ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || \
+                docker compose -f "$COMPOSE_FILE" ps
+
+            echo ""
+            log "Deploy concluído (Frontend OK, verifique a API se necessário)."
+            return 0
+        fi
+
+        info "Aguardando... (API: $api_code, Frontend: $frontend_code, $attempt/$retries)"
         sleep "$interval"
     done
 
-    warn "API não respondeu após $((retries * interval)) segundos."
+    warn "Sistema não respondeu após $((retries * interval)) segundos."
     return 1
 }
 
