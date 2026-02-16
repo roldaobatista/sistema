@@ -138,18 +138,16 @@ backup_database() {
     fi
 
     local db_name db_user db_pass
-    db_name=$(grep -oP 'DB_DATABASE=\K.*' backend/.env | tr -d '\r' || echo "kalibrium")
-    db_user=$(grep -oP 'DB_USERNAME=\K.*' backend/.env | tr -d '\r' || echo "kalibrium")
-    db_pass=$(grep -oP 'DB_PASSWORD=\K.*' backend/.env | tr -d '\r' || echo "")
+    db_name=$(grep -oP '^DB_DATABASE=\K.*' backend/.env | tail -1 | tr -d '\r' || echo "kalibrium")
+    db_user=$(grep -oP '^DB_USERNAME=\K.*' backend/.env | tail -1 | tr -d '\r' || echo "kalibrium")
+    db_pass=$(grep -oP '^DB_PASSWORD=\K.*' backend/.env | tail -1 | tr -d '\r' || echo "")
 
-    # Nome do backup sem caracteres especiais (segurança)
     local safe_tag
     safe_tag=$(echo "$DEPLOY_TAG" | tr -dc '0-9_')
     local backup_file="${BACKUP_DIR}/kalibrium_${safe_tag}.sql.gz"
 
     log "Fazendo backup de '${db_name}'..."
 
-    # -e MYSQL_PWD no container evita senha em argumentos na linha de comando do host
     if docker exec -e MYSQL_PWD="$db_pass" "$db_container" mysqldump \
         -u"$db_user" \
         --single-transaction --quick --lock-tables=false \
@@ -187,9 +185,9 @@ restore_database() {
 
     local db_container="kalibrium_mysql"
     local db_name db_user db_pass
-    db_name=$(grep -oP 'DB_DATABASE=\K.*' backend/.env | tr -d '\r' || echo "kalibrium")
-    db_user=$(grep -oP 'DB_USERNAME=\K.*' backend/.env | tr -d '\r' || echo "kalibrium")
-    db_pass=$(grep -oP 'DB_PASSWORD=\K.*' backend/.env | tr -d '\r' || echo "")
+    db_name=$(grep -oP '^DB_DATABASE=\K.*' backend/.env | tail -1 | tr -d '\r' || echo "kalibrium")
+    db_user=$(grep -oP '^DB_USERNAME=\K.*' backend/.env | tail -1 | tr -d '\r' || echo "kalibrium")
+    db_pass=$(grep -oP '^DB_PASSWORD=\K.*' backend/.env | tail -1 | tr -d '\r' || echo "")
 
     warn "Restaurando banco de: $backup_file"
 
