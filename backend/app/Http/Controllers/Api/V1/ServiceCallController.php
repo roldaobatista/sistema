@@ -66,6 +66,8 @@ class ServiceCallController extends Controller
         if ($status = $request->get('status')) $query->where('status', $status);
         if ($techId = $request->get('technician_id')) $query->where('technician_id', $techId);
         if ($priority = $request->get('priority')) $query->where('priority', $priority);
+        if ($dateFrom = $request->get('date_from')) $query->where('created_at', '>=', $dateFrom);
+        if ($dateTo = $request->get('date_to')) $query->where('created_at', '<=', $dateTo . ' 23:59:59');
 
         return response()->json($query->orderByDesc('created_at')->paginate($request->get('per_page', 30)));
     }
@@ -413,6 +415,9 @@ class ServiceCallController extends Controller
 
         if ($status = $request->get('status')) $query->where('status', $status);
         if ($priority = $request->get('priority')) $query->where('priority', $priority);
+        if ($techId = $request->get('technician_id')) $query->where('technician_id', $techId);
+        if ($dateFrom = $request->get('date_from')) $query->where('created_at', '>=', $dateFrom);
+        if ($dateTo = $request->get('date_to')) $query->where('created_at', '<=', $dateTo . ' 23:59:59');
 
         $calls = $query->orderByDesc('created_at')->get();
 
@@ -546,6 +551,32 @@ class ServiceCallController extends Controller
                 ];
             })
         );
+    }
+
+    public function auditTrail(ServiceCall $serviceCall): JsonResponse
+    {
+        if ((int) $serviceCall->tenant_id !== $this->currentTenantId()) {
+            abort(403);
+        }
+
+        $logs = AuditLog::with('user:id,name')
+            ->where('auditable_type', ServiceCall::class)
+            ->where('auditable_id', $serviceCall->id)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action' => $log->action,
+                    'action_label' => AuditLog::ACTIONS[$log->action] ?? $log->action,
+                    'description' => $log->description,
+                    'user' => $log->user,
+                    'created_at' => $log->created_at,
+                ];
+            });
+
+        return response()->json($logs);
     }
 
     public function summary(): JsonResponse

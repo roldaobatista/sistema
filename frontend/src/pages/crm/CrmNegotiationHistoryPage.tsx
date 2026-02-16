@@ -65,7 +65,7 @@ export function CrmNegotiationHistoryPage() {
                                             <div className="flex items-center gap-3">
                                                 <Icon className="h-5 w-5 text-muted-foreground" />
                                                 <div>
-                                                    <p className="font-medium">{typeLabels[item.type as string]} {item.quote_number || item.os_number || item.business_number || item.title || ''}</p>
+                                                    <p className="font-medium">{typeLabels[item.type as string]} {String(item.quote_number ?? item.os_number ?? item.business_number ?? item.title ?? '')}</p>
                                                     <p className="text-sm text-muted-foreground">{fmtDate(item.created_at as string)}</p>
                                                 </div>
                                             </div>

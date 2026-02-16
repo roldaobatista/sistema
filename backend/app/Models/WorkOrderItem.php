@@ -60,8 +60,9 @@ class WorkOrderItem extends Model
             if ($item->type === self::TYPE_PRODUCT && $item->reference_id) {
                 $product = \App\Models\Product::find($item->reference_id);
                 if ($product && $product->track_stock) {
-                    // Reserva estoque (baixa)
-                    app(\App\Services\StockService::class)->reserve($product, (float) $item->quantity, $item->workOrder);
+                    $stockService = app(\App\Services\StockService::class);
+                    $stockService->reserve($product, (float) $item->quantity, $item->workOrder);
+                    static::createUsedStockItemIfTechnician($item, (float) $item->quantity);
                 }
             }
         });
@@ -87,6 +88,7 @@ class WorkOrderItem extends Model
                     $oldProduct = \App\Models\Product::find($oldRefId);
                     if ($oldProduct && $oldProduct->track_stock) {
                         $stockService->returnStock($oldProduct, $oldQty, $item->workOrder);
+                        \App\Models\UsedStockItem::where('work_order_item_id', $item->id)->delete();
                     }
                 }
 
@@ -95,6 +97,7 @@ class WorkOrderItem extends Model
                     $newProduct = \App\Models\Product::find($newRefId);
                     if ($newProduct && $newProduct->track_stock) {
                         $stockService->reserve($newProduct, $newQty, $item->workOrder);
+                        static::createUsedStockItemIfTechnician($item, $newQty);
                     }
                 }
 
@@ -108,6 +111,7 @@ class WorkOrderItem extends Model
                         } elseif ($diff < 0) {
                             $stockService->returnStock($product, abs($diff), $item->workOrder);
                         }
+                        static::syncUsedStockItemQuantity($item, $newQty);
                     }
                 }
             }
@@ -118,11 +122,40 @@ class WorkOrderItem extends Model
             if ($item->type === self::TYPE_PRODUCT && $item->reference_id) {
                 $product = \App\Models\Product::find($item->reference_id);
                 if ($product && $product->track_stock) {
-                    // Devolve estoque
                     app(\App\Services\StockService::class)->returnStock($product, (float) $item->quantity, $item->workOrder);
                 }
+                \App\Models\UsedStockItem::where('work_order_item_id', $item->id)->delete();
             }
         });
+    }
+
+    protected static function createUsedStockItemIfTechnician(self $item, float $quantity): void
+    {
+        $stockService = app(\App\Services\StockService::class);
+        $warehouseId = $stockService->resolveWarehouseIdForWorkOrder($item->workOrder);
+        if (!$warehouseId) {
+            return;
+        }
+        $warehouse = \App\Models\Warehouse::find($warehouseId);
+        if (!$warehouse || !$warehouse->isTechnician()) {
+            return;
+        }
+        \App\Models\UsedStockItem::updateOrCreate(
+            ['work_order_item_id' => $item->id],
+            [
+                'tenant_id' => $item->tenant_id,
+                'work_order_id' => $item->work_order_id,
+                'product_id' => $item->reference_id,
+                'technician_warehouse_id' => $warehouseId,
+                'quantity' => $quantity,
+                'status' => \App\Models\UsedStockItem::STATUS_PENDING_RETURN,
+            ]
+        );
+    }
+
+    protected static function syncUsedStockItemQuantity(self $item, float $quantity): void
+    {
+        \App\Models\UsedStockItem::where('work_order_item_id', $item->id)->update(['quantity' => $quantity]);
     }
 
     public function workOrder(): BelongsTo

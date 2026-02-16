@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Batch;
@@ -36,6 +37,8 @@ class Product extends Model
         'track_batch',
         'track_serial',
         'min_repo_point',
+        'manufacturer_code',
+        'storage_location',
     ];
 
     protected function casts(): array
@@ -86,6 +89,11 @@ class Product extends Model
     public function isChildOf(): HasMany
     {
         return $this->hasMany(ProductKit::class, 'child_id');
+    }
+
+    public function equipmentModels(): BelongsToMany
+    {
+        return $this->belongsToMany(EquipmentModel::class, 'equipment_model_product');
     }
 
     public function priceHistories()

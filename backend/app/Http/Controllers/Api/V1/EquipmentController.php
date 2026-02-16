@@ -67,6 +67,8 @@ class EquipmentController extends Controller
         $equipment->load([
             'customer:id,name,document,phone',
             'responsible:id,name',
+            'equipmentModel:id,name,brand,category',
+            'equipmentModel.products:id,name,code',
             'calibrations' => fn($q) => $q->limit(10),
             'calibrations.performer:id,name',
             'maintenances' => fn($q) => $q->limit(10),
@@ -311,6 +313,8 @@ class EquipmentController extends Controller
             if ($equipment->calibration_interval_months) {
                 $data['next_due_date'] = \Carbon\Carbon::parse($data['calibration_date'])
                     ->addMonths($equipment->calibration_interval_months);
+            } else {
+                $data['next_due_date'] = \Carbon\Carbon::parse($data['calibration_date'])->addMonths(12);
             }
 
             $calibration = $equipment->calibrations()->create($data);

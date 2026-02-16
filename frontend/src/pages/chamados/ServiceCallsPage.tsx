@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useDebounce } from '@/hooks/useDebounce'
 import { useNavigate } from 'react-router-dom'
 import {
     Plus, Search, Phone, MapPin, AlertTriangle, Pencil, Trash2,
@@ -23,24 +24,38 @@ export function ServiceCallsPage() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
     const [priorityFilter, setPriorityFilter] = useState('')
+    const [technicianFilter, setTechnicianFilter] = useState('')
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
     const [page, setPage] = useState(1)
     const perPage = 30
+    const debouncedSearch = useDebounce(search, 300)
 
     const [deleteTarget, setDeleteTarget] = useState<any>(null)
 
+    const { data: assigneesRes } = useQuery({
+        queryKey: ['service-call-assignees'],
+        queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
+    })
+
     const { data, isLoading } = useQuery({
-        queryKey: ['service-calls', search, statusFilter, priorityFilter, page],
+        queryKey: ['service-calls', debouncedSearch, statusFilter, priorityFilter, technicianFilter, dateFrom, dateTo, page],
         queryFn: () =>
             api.get('/service-calls', {
                 params: {
-                    search: search || undefined,
+                    search: debouncedSearch || undefined,
                     status: statusFilter || undefined,
                     priority: priorityFilter || undefined,
+                    technician_id: technicianFilter || undefined,
+                    date_from: dateFrom || undefined,
+                    date_to: dateTo || undefined,
                     page,
                     per_page: perPage,
                 },
             }).then((r) => r.data),
     })
+
+    const technicians = assigneesRes?.technicians ?? []
 
     const { data: summary } = useQuery({
         queryKey: ['service-calls-summary'],
@@ -70,7 +85,13 @@ export function ServiceCallsPage() {
     const handleExport = async () => {
         try {
             const { data } = await api.get('/service-calls-export', {
-                params: { status: statusFilter || undefined, priority: priorityFilter || undefined },
+                params: {
+                    status: statusFilter || undefined,
+                    priority: priorityFilter || undefined,
+                    technician_id: technicianFilter || undefined,
+                    date_from: dateFrom || undefined,
+                    date_to: dateTo || undefined,
+                },
             })
             const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8;' })
             const url = URL.createObjectURL(blob)
@@ -123,7 +144,7 @@ export function ServiceCallsPage() {
                 </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
                     <input
@@ -156,6 +177,31 @@ export function ServiceCallsPage() {
                         <option key={k} value={k}>{v.label}</option>
                     ))}
                 </select>
+                <select
+                    aria-label="Filtrar por técnico"
+                    value={technicianFilter}
+                    onChange={(e) => { setTechnicianFilter(e.target.value); setPage(1) }}
+                    className="px-3 py-2 rounded-lg border border-default bg-surface-0 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                >
+                    <option value="">Todos os técnicos</option>
+                    {technicians.map((t: { id: number; name: string }) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                </select>
+                <input
+                    type="date"
+                    aria-label="Data inicial"
+                    value={dateFrom}
+                    onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+                    className="px-3 py-2 rounded-lg border border-default bg-surface-0 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                />
+                <input
+                    type="date"
+                    aria-label="Data final"
+                    value={dateTo}
+                    onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+                    className="px-3 py-2 rounded-lg border border-default bg-surface-0 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                />
             </div>
 
             <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
@@ -175,8 +221,8 @@ export function ServiceCallsPage() {
                     <EmptyState
                         icon={Phone}
                         title="Nenhum chamado encontrado"
-                        description={search || statusFilter || priorityFilter ? 'Tente alterar os filtros' : 'Crie seu primeiro chamado'}
-                        action={canCreate && !search && !statusFilter && !priorityFilter ? {
+                        description={search || statusFilter || priorityFilter || technicianFilter || dateFrom || dateTo ? 'Tente alterar os filtros' : 'Crie seu primeiro chamado'}
+                        action={canCreate && !search && !statusFilter && !priorityFilter && !technicianFilter && !dateFrom && !dateTo ? {
                             label: 'Novo Chamado',
                             onClick: () => navigate('/chamados/novo'),
                             icon: <Plus className="h-4 w-4" />,

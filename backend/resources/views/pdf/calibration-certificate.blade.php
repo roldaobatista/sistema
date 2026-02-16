@@ -49,7 +49,7 @@
         </div>
     </div>
 
-    {{-- Condições Ambientais (ISO 17025) --}}
+    {{-- Condições Ambientais --}}
     @if($calibration->temperature || $calibration->humidity || $calibration->pressure)
         <div class="info-box" style="margin-top: 12px;">
             <div class="info-box-title" style="color: #059669;">Condições Ambientais</div>
@@ -110,8 +110,9 @@
         </div>
     </div>
 
-    {{-- Padrões Utilizados - Pesos Padrão (ISO 17025) --}}
+    {{-- Padrões Utilizados - Pesos Padrão (certificados RBC) --}}
     @if(isset($standardWeights) && $standardWeights->count())
+        <div style="font-size: 8px; color: #64748b; margin-bottom: 4px;">Os padrões abaixo possuem certificados de calibração RBC. A rastreabilidade desta calibração à Rede Brasileira de Calibração é feita através dos certificados dos pesos (número e validade na tabela).</div>
         <table class="data-table">
             <thead>
                 <tr>
@@ -354,18 +355,16 @@
         </div>
     @endif
 
-    {{-- Rastreabilidade (ISO 17025) --}}
+    {{-- Rastreabilidade --}}
     <div style="background: #f0fdf4; border: 2px solid #059669; border-radius: 6px; padding: 14px 16px; margin-top: 15px;">
         <div style="font-size: 8px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Declaração de Rastreabilidade</div>
         <div style="font-size: 9px; color: #334155; line-height: 1.7;">
             Declaramos que o equipamento acima identificado foi calibrado conforme os procedimentos internos da empresa,
             rastreáveis à Rede Brasileira de Calibração (RBC) e aos padrões do INMETRO.
             @if(isset($standardWeights) && $standardWeights->count())
-                Os padrões de medição utilizados nesta calibração possuem certificados de calibração válidos,
-                emitidos por laboratórios acreditados, conforme relacionados na tabela "Padrões de Medição Utilizados".
+                Os padrões de medição utilizados nesta calibração possuem certificados de calibração RBC (ou emitidos por laboratórios acreditados na RBC), permitindo ao cliente rastrear esta calibração à Rede Brasileira de Calibração através dos certificados dos pesos relacionados na tabela "Padrões de Medição Utilizados".
             @endif
-            O resultado expresso refere-se exclusivamente às condições no momento da calibração.
-            Este certificado atende aos requisitos da norma ABNT NBR ISO/IEC 17025.
+            O resultado expresso refere-se exclusivamente às condições no momento da calibração. Este certificado foi emitido conforme procedimentos internos e boas práticas de calibração.
         </div>
     </div>
 

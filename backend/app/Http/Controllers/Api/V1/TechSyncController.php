@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Equipment;
 use App\Models\EquipmentCalibration;
 use App\Models\ServiceChecklist;
+use App\Models\WorkOrderDisplacementLocation;
+use App\Models\WorkOrderDisplacementStop;
 use App\Models\StandardWeight;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderChecklistResponse;
@@ -32,14 +34,15 @@ class TechSyncController extends Controller
         // Work orders assigned to this technician
         $workOrders = WorkOrder::where('updated_at', '>=', $sinceDate)
             ->where(function ($q) use ($userId) {
-                $q->where('performed_by', $userId)
+                $q->where('assigned_to', $userId)
                   ->orWhereHas('technicians', fn ($t) => $t->where('user_id', $userId));
             })
             ->select([
                 'id', 'number', 'os_number', 'status', 'priority',
                 'scheduled_date', 'customer_id', 'description', 'sla_due_at', 'updated_at',
+                'displacement_started_at', 'displacement_arrived_at', 'displacement_duration_minutes',
             ])
-            ->with(['customer:id,name,phone,address,city,latitude,longitude'])
+            ->with(['customer:id,name,phone,address,city,latitude,longitude', 'displacementStops'])
             ->get()
             ->map(function ($wo) {
                 return [
@@ -59,6 +62,16 @@ class TechSyncController extends Controller
                     'latitude' => $wo->customer?->latitude,
                     'longitude' => $wo->customer?->longitude,
                     'updated_at' => $wo->updated_at->toISOString(),
+                    'displacement_started_at' => $wo->displacement_started_at?->toISOString(),
+                    'displacement_arrived_at' => $wo->displacement_arrived_at?->toISOString(),
+                    'displacement_duration_minutes' => $wo->displacement_duration_minutes,
+                    'displacement_status' => $this->displacementStatus($wo),
+                    'displacement_stops' => ($wo->displacementStops ?? collect())->sortBy('started_at')->values()->map(fn ($s) => [
+                        'id' => $s->id,
+                        'type' => $s->type,
+                        'started_at' => $s->started_at->toISOString(),
+                        'ended_at' => $s->ended_at?->toISOString(),
+                    ])->toArray(),
                 ];
             });
 
@@ -128,7 +141,7 @@ class TechSyncController extends Controller
     {
         $request->validate([
             'mutations' => 'required|array',
-            'mutations.*.type' => 'required|string|in:checklist_response,expense,signature,status_change',
+            'mutations.*.type' => 'required|string|in:checklist_response,expense,signature,status_change,displacement_start,displacement_arrive,displacement_location,displacement_stop',
             'mutations.*.data' => 'required|array',
         ]);
 
@@ -146,6 +159,10 @@ class TechSyncController extends Controller
                         'expense' => $this->processExpense($mutation['data'], $processed, $conflicts),
                         'signature' => $this->processSignature($mutation['data'], $processed, $conflicts),
                         'status_change' => $this->processStatusChange($mutation['data'], $processed, $conflicts),
+                        'displacement_start' => $this->processDisplacementStart($mutation['data'], $processed, $conflicts),
+                        'displacement_arrive' => $this->processDisplacementArrive($mutation['data'], $processed, $conflicts),
+                        'displacement_location' => $this->processDisplacementLocation($mutation['data'], $processed, $conflicts),
+                        'displacement_stop' => $this->processDisplacementStop($mutation['data'], $processed, $conflicts),
                     };
                     $processed++;
                 } catch (\Exception $e) {
@@ -270,5 +287,128 @@ class TechSyncController extends Controller
         }
 
         $workOrder->update(['status' => $data['status']]);
+    }
+
+    private function processDisplacementStart(array $data, int &$processed, array &$conflicts): void
+    {
+        $workOrder = WorkOrder::findOrFail($data['work_order_id']);
+        if (!$workOrder->isTechnicianAuthorized(auth()->id())) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Não autorizado.');
+        }
+        if ($workOrder->displacement_started_at) {
+            return;
+        }
+        $workOrder->update(['displacement_started_at' => now()]);
+        if (!empty($data['latitude']) && !empty($data['longitude'])) {
+            WorkOrderDisplacementLocation::create([
+                'work_order_id' => $workOrder->id,
+                'user_id' => auth()->id(),
+                'latitude' => $data['latitude'],
+                'longitude' => $data['longitude'],
+                'recorded_at' => now(),
+            ]);
+        }
+    }
+
+    private function processDisplacementArrive(array $data, int &$processed, array &$conflicts): void
+    {
+        $workOrder = WorkOrder::findOrFail($data['work_order_id']);
+        if (!$workOrder->isTechnicianAuthorized(auth()->id())) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Não autorizado.');
+        }
+        if (!$workOrder->displacement_started_at || $workOrder->displacement_arrived_at) {
+            return;
+        }
+        $workOrder->update(['displacement_arrived_at' => now()]);
+        if (!empty($data['latitude']) && !empty($data['longitude'])) {
+            WorkOrderDisplacementLocation::create([
+                'work_order_id' => $workOrder->id,
+                'user_id' => auth()->id(),
+                'latitude' => $data['latitude'],
+                'longitude' => $data['longitude'],
+                'recorded_at' => now(),
+            ]);
+        }
+        $this->recalculateDisplacementDuration($workOrder);
+    }
+
+    private function processDisplacementLocation(array $data, int &$processed, array &$conflicts): void
+    {
+        $workOrder = WorkOrder::findOrFail($data['work_order_id']);
+        if (!$workOrder->isTechnicianAuthorized(auth()->id())) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Não autorizado.');
+        }
+        if (!$workOrder->displacement_started_at || $workOrder->displacement_arrived_at) {
+            return;
+        }
+        WorkOrderDisplacementLocation::create([
+            'work_order_id' => $workOrder->id,
+            'user_id' => auth()->id(),
+            'latitude' => $data['latitude'],
+            'longitude' => $data['longitude'],
+            'recorded_at' => isset($data['recorded_at']) ? Carbon::parse($data['recorded_at']) : now(),
+        ]);
+    }
+
+    private function processDisplacementStop(array $data, int &$processed, array &$conflicts): void
+    {
+        $workOrder = WorkOrder::findOrFail($data['work_order_id']);
+        if (!$workOrder->isTechnicianAuthorized(auth()->id())) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Não autorizado.');
+        }
+        $type = $data['type'] ?? 'other';
+        if (!in_array($type, ['lunch', 'hotel', 'br_stop', 'other'], true)) {
+            $type = 'other';
+        }
+        if (isset($data['ended_at']) && (isset($data['stop_id']) || !empty($data['end_latest']))) {
+            $stop = isset($data['stop_id'])
+                ? WorkOrderDisplacementStop::where('work_order_id', $workOrder->id)->where('id', $data['stop_id'])->first()
+                : WorkOrderDisplacementStop::where('work_order_id', $workOrder->id)->whereNull('ended_at')->orderByDesc('started_at')->first();
+            if ($stop && !$stop->ended_at) {
+                $stop->update(['ended_at' => Carbon::parse($data['ended_at'])]);
+                if ($workOrder->displacement_arrived_at) {
+                    $this->recalculateDisplacementDuration($workOrder);
+                }
+            }
+            return;
+        }
+        if (!$workOrder->displacement_started_at || $workOrder->displacement_arrived_at) {
+            return;
+        }
+        WorkOrderDisplacementStop::create([
+            'work_order_id' => $workOrder->id,
+            'type' => $type,
+            'started_at' => isset($data['started_at']) ? Carbon::parse($data['started_at']) : now(),
+            'notes' => $data['notes'] ?? null,
+            'location_lat' => $data['latitude'] ?? null,
+            'location_lng' => $data['longitude'] ?? null,
+        ]);
+    }
+
+    private function recalculateDisplacementDuration(WorkOrder $workOrder): void
+    {
+        if (!$workOrder->displacement_started_at || !$workOrder->displacement_arrived_at) {
+            return;
+        }
+        $start = Carbon::parse($workOrder->displacement_started_at);
+        $arrived = Carbon::parse($workOrder->displacement_arrived_at);
+        $grossMinutes = (int) $start->diffInMinutes($arrived);
+        $stopMinutes = $workOrder->displacementStops()
+            ->whereNotNull('ended_at')
+            ->get()
+            ->sum(fn ($s) => $s->duration_minutes ?? 0);
+        $effectiveMinutes = max(0, $grossMinutes - $stopMinutes);
+        $workOrder->update(['displacement_duration_minutes' => $effectiveMinutes]);
+    }
+
+    private function displacementStatus(WorkOrder $wo): string
+    {
+        if (!$wo->displacement_started_at) {
+            return 'not_started';
+        }
+        if ($wo->displacement_arrived_at) {
+            return 'arrived';
+        }
+        return 'in_progress';
     }
 }

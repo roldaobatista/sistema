@@ -1263,10 +1263,15 @@ class CrmFeaturesController extends Controller
 
     public function interactiveProposals(Request $request): JsonResponse
     {
-        $proposals = CrmInteractiveProposal::where('tenant_id', $this->tenantId($request))
+        $query = CrmInteractiveProposal::where('tenant_id', $this->tenantId($request))
             ->with(['quote:id,quote_number,total,status', 'deal:id,title'])
-            ->orderByDesc('created_at')
-            ->paginate($request->input('per_page', 20));
+            ->orderByDesc('created_at');
+
+        if ($request->has('quote_id')) {
+            $query->where('quote_id', (int) $request->input('quote_id'));
+        }
+
+        $proposals = $query->paginate($request->input('per_page', 20));
 
         return response()->json($proposals);
     }

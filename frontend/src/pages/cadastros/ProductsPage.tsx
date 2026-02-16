@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Pencil, Trash2, Package, AlertTriangle, UploadCloud } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Package, AlertTriangle, UploadCloud, Scale } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuvoExport } from '@/hooks/useAuvoExport'
@@ -19,13 +19,16 @@ interface Product {
     id: number; code: string | null; name: string; description: string | null
     unit: string; cost_price: string; sell_price: string
     stock_qty: string; stock_min: string; is_active: boolean
+    manufacturer_code?: string | null; storage_location?: string | null
     category: { id: number; name: string } | null
+    equipment_models?: { id: number; name: string; brand: string | null; category: string | null }[]
 }
 
 const emptyForm = {
     category_id: '' as string | number, code: '', name: '', description: '',
     unit: 'UN', cost_price: '0', sell_price: '0',
     stock_qty: '0', stock_min: '0', is_active: true,
+    manufacturer_code: '', storage_location: '',
 }
 
 export function ProductsPage() {
@@ -99,6 +102,13 @@ export function ProductsPage() {
         onError: () => toast.error('Erro ao criar categoria.')
     })
 
+    const { data: productDetail } = useQuery({
+        queryKey: ['product', editing?.id],
+        queryFn: () => api.get(`/products/${editing!.id}`).then((r) => r.data),
+        enabled: !!editing?.id && showForm,
+    })
+    const productEquipmentModels: { id: number; name: string; brand: string | null }[] = productDetail?.equipment_models ?? []
+
     const openCreate = () => { setEditing(null); setForm(emptyForm); setShowForm(true) }
     const openEdit = (p: Product) => {
         setEditing(p)
@@ -107,6 +117,7 @@ export function ProductsPage() {
             description: p.description ?? '', unit: p.unit,
             cost_price: p.cost_price, sell_price: p.sell_price,
             stock_qty: p.stock_qty, stock_min: p.stock_min, is_active: p.is_active,
+            manufacturer_code: p.manufacturer_code ?? '', storage_location: p.storage_location ?? '',
         })
         setShowForm(true)
     }
@@ -225,6 +236,8 @@ export function ProductsPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Input label="Nome" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required />
                         <Input label="Código" value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('code', e.target.value)} placeholder="Opcional" />
+                        <Input label="Código fabricante" value={form.manufacturer_code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('manufacturer_code', e.target.value)} placeholder="Opcional" />
+                        <Input label="Endereço no estoque" value={form.storage_location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('storage_location', e.target.value)} placeholder="Ex: A-01-02" />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
@@ -255,6 +268,20 @@ export function ProductsPage() {
                         <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
+                    {editing && productEquipmentModels.length > 0 && (
+                        <div>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Usado nos modelos de balança</label>
+                            <ul className="rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm space-y-1">
+                                {productEquipmentModels.map((m) => (
+                                    <li key={m.id} className="flex items-center gap-2">
+                                        <Scale className="h-3.5 w-3.5 text-surface-400 shrink-0" />
+                                        {m.brand ? `${m.brand} - ${m.name}` : m.name}
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="mt-1 text-xs text-surface-500">Para alterar, edite em Equipamentos → Modelos de balança.</p>
+                        </div>
+                    )}
                     <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
                         <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancelar</Button>
                         <Button type="submit" loading={saveMut.isPending}>{editing ? 'Salvar' : 'Criar'}</Button>

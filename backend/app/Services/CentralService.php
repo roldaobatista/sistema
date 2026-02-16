@@ -20,17 +20,22 @@ class CentralService
         $query = CentralItem::query()
             ->with(['responsavel:id,name', 'criadoPor:id,name', 'source']);
 
-        // Filtro de Responsável / Visibilidade
         $userId = request()->user()?->id;
-        
-        // Se user tem permissão de ver time, vê itens do time. Se empresa, vê tudo.
-        // Implementação básica: vê itens onde é responsável OU visibilidade permite
-        $query->where(function ($q) use ($userId) {
-            $q->where('responsavel_user_id', $userId)
-              ->orWhere('visibilidade', CentralItemVisibility::EQUIPE) // Ajustar logica de time futuramente
-              ->orWhere('visibilidade', CentralItemVisibility::EMPRESA)
-              ->orWhere('criado_por_user_id', $userId);
-        });
+
+        // Escopo: "só minhas" = apenas itens atribuídos a mim (uso tipo agenda/lembretes)
+        $scope = $filters['scope'] ?? null;
+        $onlyMine = $scope === 'minhas' || !empty($filters['only_mine']);
+
+        if ($onlyMine && $userId) {
+            $query->where('responsavel_user_id', $userId);
+        } else {
+            $query->where(function ($q) use ($userId) {
+                $q->where('responsavel_user_id', $userId)
+                  ->orWhere('visibilidade', CentralItemVisibility::EQUIPE)
+                  ->orWhere('visibilidade', CentralItemVisibility::EMPRESA)
+                  ->orWhere('criado_por_user_id', $userId);
+            });
+        }
 
         // Search
         if (!empty($filters['search'])) {
@@ -58,6 +63,12 @@ class CentralService
             $query->where('prioridade', strtoupper((string) $filters['prioridade']));
         }
 
+        // Responsável (filtrar por quem está atribuído)
+        $responsavelId = $filters['responsavel_user_id'] ?? $filters['responsavel'] ?? null;
+        if ($responsavelId !== null && $responsavelId !== '') {
+            $query->where('responsavel_user_id', (int) $responsavelId);
+        }
+
         // Aba: Hoje, Atrasadas, Sem Prazo
         $tab = $filters['tab'] ?? $filters['aba'] ?? null;
         if (!empty($tab)) {
@@ -70,19 +81,43 @@ class CentralService
         }
 
         // Sorting
-        $sort = $filters['sort_by'] ?? 'created_at';
-        $dir = $filters['sort_dir'] ?? 'desc';
-        
-        // Smart sort for inbox
-        if (empty($filters['sort_by'])) {
-            $query->orderByRaw("CASE WHEN prioridade = 'URGENTE' THEN 1 ELSE 2 END ASC")
+        $sort = $filters['sort_by'] ?? null;
+        $dir = strtolower((string) ($filters['sort_dir'] ?? 'asc'));
+        $dir = in_array($dir, ['asc', 'desc'], true) ? $dir : 'asc';
+
+        if (empty($sort)) {
+            $query->orderByRaw("CASE WHEN prioridade = 'URGENTE' THEN 1 WHEN prioridade = 'ALTA' THEN 2 WHEN prioridade = 'MEDIA' THEN 3 WHEN prioridade = 'BAIXA' THEN 4 ELSE 5 END ASC")
+                  ->orderBy('due_at', 'asc')
+                  ->orderBy('created_at', 'desc');
+        } elseif ($sort === 'prioridade') {
+            $query->orderByRaw("CASE WHEN prioridade = 'URGENTE' THEN 1 WHEN prioridade = 'ALTA' THEN 2 WHEN prioridade = 'MEDIA' THEN 3 WHEN prioridade = 'BAIXA' THEN 4 ELSE 5 END " . ($dir === 'desc' ? 'DESC' : 'ASC'))
                   ->orderBy('due_at', 'asc')
                   ->orderBy('created_at', 'desc');
         } else {
-            $query->orderBy($sort, $dir);
+            $allowedSort = in_array($sort, ['due_at', 'created_at', 'titulo', 'prioridade'], true) ? $sort : 'created_at';
+            $query->orderBy($allowedSort, $dir);
         }
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Verifica se o usuário atual pode acessar (ver/editar) o item (visibilidade + responsável + criador).
+     */
+    public function usuarioPodeAcessarItem(CentralItem $item): bool
+    {
+        $userId = request()->user()?->id;
+        if (!$userId) {
+            return false;
+        }
+        if ($item->responsavel_user_id === (int) $userId || $item->criado_por_user_id === (int) $userId) {
+            return true;
+        }
+        if ($item->visibilidade === CentralItemVisibility::EQUIPE || $item->visibilidade === CentralItemVisibility::EMPRESA) {
+            return true;
+        }
+
+        return false;
     }
 
     public function criar(array $data): CentralItem
@@ -165,6 +200,9 @@ class CentralService
     public function resumo(): array
     {
         $userId = request()->user()?->id;
+        if (!$userId) {
+            return ['hoje' => 0, 'atrasadas' => 0, 'sem_prazo' => 0, 'total_aberto' => 0, 'abertas' => 0, 'urgentes' => 0];
+        }
         $base = CentralItem::query()->doUsuario($userId);
         $abertas = (clone $base)
             ->whereNotIn('status', [CentralItemStatus::CONCLUIDO, CentralItemStatus::CANCELADO])

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { crmFeaturesApi } from '@/lib/crm-features-api'
 import { QUOTE_STATUS } from '@/lib/constants'
 import { QUOTE_STATUS_CONFIG } from '@/features/quotes/constants'
 import type { Quote } from '@/types/quote'
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
     ArrowLeft, Pencil, Send, CheckCircle, XCircle, Copy,
-    ArrowRightLeft, FileDown, Trash2, RefreshCw, Link as LinkIcon, Clock
+    ArrowRightLeft, FileDown, Trash2, RefreshCw, Link as LinkIcon, Clock, History, Phone, FileText
 } from 'lucide-react'
 
 const formatCurrency = (v: number | string) => {
@@ -29,13 +30,18 @@ export function QuoteDetailPage() {
     const [rejectOpen, setRejectOpen] = useState(false)
     const [rejectReason, setRejectReason] = useState('')
     const [deleteOpen, setDeleteOpen] = useState(false)
+    const [proposalOpen, setProposalOpen] = useState(false)
+    const [proposalExpires, setProposalExpires] = useState('')
 
     const canUpdate = hasPermission('quotes.quote.update')
     const canDelete = hasPermission('quotes.quote.delete')
     const canSend = hasPermission('quotes.quote.send')
     const canApprove = hasPermission('quotes.quote.approve')
+    const canInternalApprove = hasPermission('quotes.quote.internal_approve')
     const canCreate = hasPermission('quotes.quote.create')
     const canConvert = hasPermission('quotes.quote.convert')
+    const canProposalView = hasPermission('crm.proposal.view')
+    const canProposalManage = hasPermission('crm.proposal.manage')
 
     const { data: quote, isLoading } = useQuery<Quote>({
         queryKey: ['quote', id],
@@ -43,11 +49,50 @@ export function QuoteDetailPage() {
         enabled: !!id,
     })
 
+    const { data: timelineData } = useQuery<{ id: number; action: string; description: string; user_id?: number; created_at: string }[]>({
+        queryKey: ['quote-timeline', id],
+        queryFn: () => api.get(`/quotes/${id}/timeline`).then(r => r.data),
+        enabled: !!id,
+    })
+    const timeline = Array.isArray(timelineData) ? timelineData : []
+
+    const { data: proposalsRes } = useQuery({
+        queryKey: ['crm-proposals-by-quote', id],
+        queryFn: () => crmFeaturesApi.getProposals({ quote_id: Number(id), per_page: 1 }),
+        enabled: !!id && !!canProposalView,
+    })
+    const proposalList = proposalsRes?.data?.data ?? (Array.isArray(proposalsRes?.data) ? proposalsRes.data : [])
+    const hasProposal = Array.isArray(proposalList) && proposalList.length > 0
+
+    const createProposalMut = useMutation({
+        mutationFn: (data: { quote_id: number; expires_at?: string }) => crmFeaturesApi.createProposal(data),
+        onSuccess: () => {
+            toast.success('Proposta interativa criada!')
+            qc.invalidateQueries({ queryKey: ['crm-proposals-by-quote', id] })
+            qc.invalidateQueries({ queryKey: ['crm-proposals'] })
+            setProposalOpen(false)
+            setProposalExpires('')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar proposta'),
+    })
+
     const invalidateAll = () => {
         qc.invalidateQueries({ queryKey: ['quote', id] })
         qc.invalidateQueries({ queryKey: ['quotes'] })
         qc.invalidateQueries({ queryKey: ['quotes-summary'] })
     }
+
+    const requestInternalApprovalMut = useMutation({
+        mutationFn: () => api.post(`/quotes/${id}/request-internal-approval`),
+        onSuccess: () => { toast.success('Solicitação de aprovação interna enviada!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao solicitar aprovação'),
+    })
+
+    const internalApproveMut = useMutation({
+        mutationFn: () => api.post(`/quotes/${id}/internal-approve`),
+        onSuccess: () => { toast.success('Orçamento aprovado internamente!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao aprovar internamente'),
+    })
 
     const sendMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/send`),
@@ -69,8 +114,24 @@ export function QuoteDetailPage() {
 
     const convertMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/convert-to-os`),
-        onSuccess: () => { toast.success('OS criada a partir do orçamento!'); invalidateAll() },
+        onSuccess: (res: any) => {
+            toast.success('OS criada a partir do orçamento!')
+            invalidateAll()
+            const woId = res?.data?.id ?? res?.data?.data?.id
+            if (woId) navigate(`/os/${woId}`)
+        },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao converter'),
+    })
+
+    const convertToChamadoMut = useMutation({
+        mutationFn: () => api.post(`/quotes/${id}/convert-to-chamado`),
+        onSuccess: (res: any) => {
+            toast.success('Chamado criado a partir do orçamento!')
+            invalidateAll()
+            const callId = res?.data?.id ?? res?.data?.data?.id
+            if (callId) navigate(`/chamados/${callId}`)
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao converter em chamado'),
     })
 
     const duplicateMut = useMutation({
@@ -163,8 +224,13 @@ export function QuoteDetailPage() {
                         <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orçamentos/${id}/editar`)}>Editar</Button>
                     )}
                     {canSend && isDraft && (
-                        <Button size="sm" variant="outline" icon={<Send className="h-4 w-4" />} onClick={() => sendMut.mutate()} disabled={sendMut.isPending}>
-                            {sendMut.isPending ? 'Solicitando...' : 'Solicitar Aprovação Interna'}
+                        <Button size="sm" variant="outline" icon={<Send className="h-4 w-4" />} onClick={() => requestInternalApprovalMut.mutate()} disabled={requestInternalApprovalMut.isPending}>
+                            {requestInternalApprovalMut.isPending ? 'Solicitando...' : 'Solicitar Aprovação Interna'}
+                        </Button>
+                    )}
+                    {(canInternalApprove && (isDraft || isPendingInternal)) && (
+                        <Button size="sm" variant="outline" icon={<CheckCircle className="h-4 w-4" />} onClick={() => internalApproveMut.mutate()} disabled={internalApproveMut.isPending}>
+                            {internalApproveMut.isPending ? 'Aprovando...' : 'Aprovar internamente'}
                         </Button>
                     )}
                     {canSend && isInternallyApproved && (
@@ -183,9 +249,14 @@ export function QuoteDetailPage() {
                         </>
                     )}
                     {canConvert && isApproved && (
-                        <Button size="sm" icon={<ArrowRightLeft className="h-4 w-4" />} onClick={() => convertMut.mutate()} disabled={convertMut.isPending}>
-                            {convertMut.isPending ? 'Convertendo...' : 'Converter em OS'}
-                        </Button>
+                        <>
+                            <Button size="sm" icon={<ArrowRightLeft className="h-4 w-4" />} onClick={() => convertMut.mutate()} disabled={convertMut.isPending}>
+                                {convertMut.isPending ? 'Convertendo...' : 'Converter em OS'}
+                            </Button>
+                            <Button size="sm" variant="outline" icon={<Phone className="h-4 w-4" />} onClick={() => convertToChamadoMut.mutate()} disabled={convertToChamadoMut.isPending}>
+                                {convertToChamadoMut.isPending ? 'Convertendo...' : 'Converter em Chamado'}
+                            </Button>
+                        </>
                     )}
                     {canUpdate && (isRejected || isExpired) && (
                         <Button size="sm" variant="outline" icon={<RefreshCw className="h-4 w-4" />} onClick={() => reopenMut.mutate()} disabled={reopenMut.isPending}>
@@ -196,6 +267,14 @@ export function QuoteDetailPage() {
                     {isSent && quote.approval_url && (
                         <Button variant="outline" size="sm" icon={<LinkIcon className="h-4 w-4" />} onClick={handleCopyApprovalLink}>
                             Copiar Link
+                        </Button>
+                    )}
+                    {canProposalView && hasProposal && (
+                        <Badge variant="outline" className="text-xs">Proposta interativa enviada</Badge>
+                    )}
+                    {canProposalManage && !hasProposal && (
+                        <Button variant="outline" size="sm" icon={<FileText className="h-4 w-4" />} onClick={() => setProposalOpen(true)}>
+                            Criar proposta interativa
                         </Button>
                     )}
                     {canCreate && (
@@ -318,6 +397,50 @@ export function QuoteDetailPage() {
                             <p className="text-sm text-content-primary whitespace-pre-line">{quote.internal_notes}</p>
                         </Card>
                     )}
+                </div>
+            )}
+
+            <Card className="p-5">
+                <h3 className="text-sm font-semibold text-content-secondary mb-3 flex items-center gap-2">
+                    <History className="h-4 w-4" /> Histórico
+                </h3>
+                {timeline.length === 0 ? (
+                    <p className="text-sm text-content-tertiary">Nenhum evento registrado.</p>
+                ) : (
+                    <ul className="space-y-2">
+                        {timeline.map((log) => (
+                            <li key={log.id} className="flex flex-wrap items-baseline gap-2 text-sm border-b border-default/50 pb-2 last:border-0 last:pb-0">
+                                <span className="text-content-secondary shrink-0">
+                                    {log.created_at ? new Date(log.created_at).toLocaleString('pt-BR') : '—'}
+                                </span>
+                                <span className="text-content-primary">{log.description || log.action}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </Card>
+
+            {proposalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setProposalOpen(false)}>
+                    <div className="bg-surface-0 rounded-xl p-6 max-w-md mx-4 shadow-elevated w-full" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-content-primary mb-2">Criar proposta interativa</h3>
+                        <p className="text-content-secondary text-sm mb-4">Envie este orçamento como proposta pelo CRM (link para o cliente ver e aceitar).</p>
+                        <label htmlFor="quote-proposal-expires" className="block text-sm font-medium text-content-secondary mb-1">Validade da proposta (opcional)</label>
+                        <input
+                            id="quote-proposal-expires"
+                            type="date"
+                            value={proposalExpires}
+                            onChange={(e) => setProposalExpires(e.target.value)}
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm mb-4"
+                            aria-label="Validade da proposta"
+                        />
+                        <div className="flex gap-3 justify-end">
+                            <Button variant="outline" size="sm" onClick={() => { setProposalOpen(false); setProposalExpires('') }}>Cancelar</Button>
+                            <Button size="sm" onClick={() => createProposalMut.mutate({ quote_id: Number(id), expires_at: proposalExpires || undefined })} disabled={createProposalMut.isPending}>
+                                {createProposalMut.isPending ? 'Criando...' : 'Criar'}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
 

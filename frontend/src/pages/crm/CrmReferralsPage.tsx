@@ -30,7 +30,7 @@ export function CrmReferralsPage() {
         queryKey: ['crm-referrals', filterStatus],
         queryFn: () => crmFeaturesApi.getReferrals(filterStatus ? { status: filterStatus } : undefined),
     })
-    const referrals: CrmReferral[] = res?.data?.data ?? res?.data ?? []
+    const referrals: CrmReferral[] = Array.isArray(res?.data) ? res.data : (res?.data as { data?: CrmReferral[] })?.data ?? []
 
     const { data: statsRes } = useQuery({
         queryKey: ['crm-referral-stats'],

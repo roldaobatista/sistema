@@ -132,6 +132,8 @@ export function StockDashboardPage() {
                     { label: 'Lotes', icon: Tag, path: '/estoque/lotes', color: 'text-purple-600 bg-purple-50 hover:bg-purple-100' },
                     { label: 'Movimentações', icon: ArrowLeftRight, path: '/estoque/movimentacoes', color: 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' },
                     { label: 'Inventário Cego', icon: ClipboardCheck, path: '/estoque/inventarios', color: 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' },
+                    { label: 'Meu inventário', icon: ClipboardCheck, path: '/estoque/inventario-pwa', color: 'text-teal-600 bg-teal-50 hover:bg-teal-100' },
+                    { label: 'Etiquetas', icon: Tag, path: '/estoque/etiquetas', color: 'text-violet-600 bg-violet-50 hover:bg-violet-100' },
                     { label: 'Kardex', icon: ScrollText, path: '/estoque/kardex', color: 'text-amber-600 bg-amber-50 hover:bg-amber-100' },
                     { label: 'Inteligência', icon: BarChart3, path: '/estoque/inteligencia', color: 'text-rose-600 bg-rose-50 hover:bg-rose-100' },
                     { label: 'Integração', icon: QrCode, path: '/estoque/integracao', color: 'text-cyan-600 bg-cyan-50 hover:bg-cyan-100' },

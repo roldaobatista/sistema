@@ -55,6 +55,7 @@ class Equipment extends Model
     protected $fillable = [
         'tenant_id', 'customer_id', 'code', 'type', 'category', 'brand',
         'manufacturer', 'model', 'serial_number', 'capacity', 'capacity_unit',
+        'equipment_model_id',
         'resolution', 'precision_class', 'status', 'location',
         'responsible_user_id', 'purchase_date', 'purchase_value',
         'warranty_expires_at', 'last_calibration_at', 'next_calibration_at',
@@ -178,6 +179,11 @@ class Equipment extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(EquipmentDocument::class)->orderByDesc('created_at');
+    }
+
+    public function equipmentModel(): BelongsTo
+    {
+        return $this->belongsTo(EquipmentModel::class);
     }
 
     // ─── Import Support ─────────────────────────────────────

@@ -43,6 +43,7 @@ class UpdateEquipmentRequest extends FormRequest
             'is_critical' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'notes' => 'nullable|string',
+            'equipment_model_id' => ['nullable', Rule::exists('equipment_models', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ];
     }
 }

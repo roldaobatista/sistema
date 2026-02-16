@@ -140,9 +140,16 @@ class FinancialAnalyticsController extends Controller
             'over_90' => ['label' => '> 90 dias', 'total' => 0, 'count' => 0, 'items' => []],
         ];
 
+        $netAmountAccessor = function ($rec) {
+            $amount = (float) $rec->amount;
+            $paid = (float) $rec->amount_paid;
+            return round($amount - $paid, 2);
+        };
+
         foreach ($receivables as $rec) {
             $dueDate = Carbon::parse($rec->due_date);
             $daysOverdue = $today->diffInDays($dueDate, false);
+            $netAmount = $netAmountAccessor($rec);
 
             $bucket = match (true) {
                 $daysOverdue >= 0 => 'current',
@@ -152,8 +159,16 @@ class FinancialAnalyticsController extends Controller
                 default => 'over_90',
             };
 
-            $buckets[$bucket]['total'] += (float) $rec->net_amount;
+            $buckets[$bucket]['total'] += $netAmount;
             $buckets[$bucket]['count']++;
+            $buckets[$bucket]['items'][] = [
+                'id' => $rec->id,
+                'customer_name' => $rec->customer->name ?? '',
+                'description' => $rec->description ?? '',
+                'amount' => round($netAmount, 2),
+                'due_date' => $rec->due_date?->toDateString(),
+                'days_overdue' => $daysOverdue < 0 ? (int) abs($daysOverdue) : 0,
+            ];
         }
 
         $total = array_sum(array_column($buckets, 'total'));
@@ -278,5 +293,113 @@ class FinancialAnalyticsController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Erro ao aprovar pagamentos'], 500);
         }
+    }
+
+    /**
+     * GET /financial/cash-flow-weekly
+     * Daily (or weekly) cash flow projection with running balance and health alerts.
+     * Returns for each day: inflows, outflows, balance_projected, obligations_total, alert (shortage|tight|ok).
+     */
+    public function cashFlowWeekly(Request $request): JsonResponse
+    {
+        $tenantId = $this->tenantId();
+        $weeks = min(max((int) $request->input('weeks', 4), 1), 12);
+        $from = Carbon::parse($request->input('from', now()->toDateString()));
+        $to = $request->filled('to')
+            ? Carbon::parse($request->input('to'))
+            : $from->copy()->addWeeks($weeks)->subDay();
+        $initialBalance = (float) $request->input('initial_balance', 0);
+        $marginThreshold = (float) $request->input('margin_threshold', 0.15); // 15% margin = tight
+
+        if ($to->lt($from)) {
+            $to = $from->copy()->addWeeks($weeks)->subDay();
+        }
+
+        $days = [];
+        $current = $from->copy();
+        while ($current->lte($to)) {
+            $days[] = $current->copy()->toDateString();
+            $current->addDay();
+        }
+
+        $receivablesByDate = AccountReceivable::where('tenant_id', $tenantId)
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->whereBetween('due_date', [$from->toDateString(), $to->toDateString()])
+            ->selectRaw('DATE(due_date) as d, COALESCE(SUM(amount - amount_paid), 0) as total')
+            ->groupByRaw('DATE(due_date)')
+            ->get()
+            ->keyBy('d');
+
+        $payablesByDate = AccountPayable::where('tenant_id', $tenantId)
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->whereBetween('due_date', [$from->toDateString(), $to->toDateString()])
+            ->selectRaw('DATE(due_date) as d, COALESCE(SUM(amount - amount_paid), 0) as total')
+            ->groupByRaw('DATE(due_date)')
+            ->get()
+            ->keyBy('d');
+
+        $expensesByDate = Expense::where('tenant_id', $tenantId)
+            ->where('status', Expense::STATUS_APPROVED)
+            ->whereBetween('expense_date', [$from->toDateString(), $to->toDateString()])
+            ->selectRaw('DATE(expense_date) as d, COALESCE(SUM(amount), 0) as total')
+            ->groupByRaw('DATE(expense_date)')
+            ->get()
+            ->keyBy('d');
+
+        $result = [];
+        $balance = $initialBalance;
+        $today = Carbon::today()->toDateString();
+
+        foreach ($days as $d) {
+            $inflows = (float) ($receivablesByDate->get($d)?->total ?? 0);
+            $outflowsPay = (float) ($payablesByDate->get($d)?->total ?? 0);
+            $outflowsExp = (float) ($expensesByDate->get($d)?->total ?? 0);
+            $outflows = $outflowsPay + $outflowsExp;
+            $balance += $inflows - $outflows;
+            $balance = round($balance, 2);
+
+            $obligations = $outflows;
+            $alert = 'ok';
+            if ($obligations > 0) {
+                if ($balance < $obligations) {
+                    $alert = 'shortage';
+                } elseif ($balance > 0) {
+                    $margin = ($balance - $obligations) / $obligations;
+                    if ($margin < $marginThreshold) {
+                        $alert = 'tight';
+                    }
+                }
+            }
+
+            $result[] = [
+                'date' => $d,
+                'label' => Carbon::parse($d)->format('d/m'),
+                'inflows' => round($inflows, 2),
+                'outflows' => round($outflows, 2),
+                'obligations_total' => round($obligations, 2),
+                'balance_projected' => $balance,
+                'alert' => $alert,
+                'is_today' => $d === $today,
+            ];
+        }
+
+        $shortageDays = array_filter($result, fn ($r) => $r['alert'] === 'shortage');
+        $tightDays = array_filter($result, fn ($r) => $r['alert'] === 'tight');
+        $minBalance = $result ? min(array_column($result, 'balance_projected')) : 0;
+        $minBalanceDate = $result ? $result[array_search($minBalance, array_column($result, 'balance_projected'))]['date'] ?? null : null;
+
+        return response()->json([
+            'data' => [
+                'period' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
+                'initial_balance' => $initialBalance,
+                'days' => $result,
+                'summary' => [
+                    'days_shortage' => count($shortageDays),
+                    'days_tight' => count($tightDays),
+                    'min_balance' => round($minBalance, 2),
+                    'min_balance_date' => $minBalanceDate,
+                ],
+            ],
+        ]);
     }
 }

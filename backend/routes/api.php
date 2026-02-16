@@ -189,6 +189,22 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:cadastros.supplier.update')->put('suppliers/{supplier}', [SupplierController::class, 'update']);
         Route::middleware('check.permission:cadastros.supplier.delete')->delete('suppliers/{supplier}', [SupplierController::class, 'destroy']);
 
+        // Catálogo de Serviços (editável, link compartilhável)
+        Route::middleware('check.permission:catalog.view')->group(function () {
+            Route::get('catalogs', [\App\Http\Controllers\Api\V1\CatalogController::class, 'index']);
+            Route::get('catalogs/{catalog}/items', [\App\Http\Controllers\Api\V1\CatalogController::class, 'items']);
+        });
+        Route::middleware('check.permission:catalog.manage')->group(function () {
+            Route::post('catalogs', [\App\Http\Controllers\Api\V1\CatalogController::class, 'store']);
+            Route::put('catalogs/{catalog}', [\App\Http\Controllers\Api\V1\CatalogController::class, 'update']);
+            Route::delete('catalogs/{catalog}', [\App\Http\Controllers\Api\V1\CatalogController::class, 'destroy']);
+            Route::post('catalogs/{catalog}/items', [\App\Http\Controllers\Api\V1\CatalogController::class, 'storeItem']);
+            Route::put('catalogs/{catalog}/items/{item}', [\App\Http\Controllers\Api\V1\CatalogController::class, 'updateItem']);
+            Route::delete('catalogs/{catalog}/items/{item}', [\App\Http\Controllers\Api\V1\CatalogController::class, 'destroyItem']);
+            Route::post('catalogs/{catalog}/items/{item}/image', [\App\Http\Controllers\Api\V1\CatalogController::class, 'uploadImage']);
+            Route::post('catalogs/{catalog}/reorder', [\App\Http\Controllers\Api\V1\CatalogController::class, 'reorderItems']);
+        });
+
         // Histórico de Preços
         Route::middleware('check.permission:cadastros.product.view')->group(function () {
             Route::get('price-history', [\App\Http\Controllers\Api\V1\PriceHistoryController::class, 'index']);
@@ -233,12 +249,20 @@ Route::prefix('v1')->group(function () {
 
             // Aliases de compatibilidade para frontend legado
             Route::middleware('check.permission:estoque.movement.view')->get('stock/inventories', [InventoryController::class, 'index']);
+            Route::middleware('check.permission:estoque.view')->get('stock/inventory-pwa/my-warehouses', [\App\Http\Controllers\Api\V1\InventoryPwaController::class, 'myWarehouses']);
+            Route::middleware('check.permission:estoque.view')->get('stock/inventory-pwa/warehouses/{warehouse}/products', [\App\Http\Controllers\Api\V1\InventoryPwaController::class, 'warehouseProducts']);
+            Route::middleware('check.permission:estoque.view')->post('stock/inventory-pwa/submit-counts', [\App\Http\Controllers\Api\V1\InventoryPwaController::class, 'submitCounts']);
             Route::middleware('check.permission:estoque.movement.view')->post('stock/inventories', [InventoryController::class, 'store']);
             Route::middleware('check.permission:estoque.movement.view')->get('stock/inventories/{inventory}', [InventoryController::class, 'show']);
             Route::middleware('check.permission:estoque.movement.view')->put('stock/inventories/{inventory}/items/{item}', [InventoryController::class, 'updateItem']);
             Route::middleware('check.permission:estoque.movement.view')->post('stock/inventories/{inventory}/complete', [InventoryController::class, 'complete']);
             Route::middleware('check.permission:estoque.movement.view')->post('stock/inventories/{inventory}/cancel', [InventoryController::class, 'cancel']);
             Route::middleware('check.permission:estoque.movement.view')->get('stock/warehouses', [WarehouseController::class, 'index']);
+
+            // Etiquetas de estoque
+            Route::middleware('check.permission:estoque.label.print')->get('stock/labels/formats', [\App\Http\Controllers\Api\V1\StockLabelController::class, 'formats']);
+            Route::middleware('check.permission:estoque.label.print')->get('stock/labels/preview', [\App\Http\Controllers\Api\V1\StockLabelController::class, 'preview']);
+            Route::middleware('check.permission:estoque.label.print')->post('stock/labels/generate', [\App\Http\Controllers\Api\V1\StockLabelController::class, 'generate']);
 
             // Kardex
             Route::middleware('check.permission:estoque.movement.view')->get('products/{product}/kardex', [KardexController::class, 'show']);
@@ -396,6 +420,14 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:os.work_order.delete')->delete('work-orders/{work_order}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'destroy']);
         // Anexos/Fotos da OS
         Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/attachments', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'attachments']);
+        Route::middleware('check.permission:os.work_order.view')->group(function () {
+            Route::get('work-orders/{work_order}/displacement', [\App\Http\Controllers\Api\V1\Os\WorkOrderDisplacementController::class, 'index']);
+            Route::post('work-orders/{work_order}/displacement/start', [\App\Http\Controllers\Api\V1\Os\WorkOrderDisplacementController::class, 'start']);
+            Route::post('work-orders/{work_order}/displacement/arrive', [\App\Http\Controllers\Api\V1\Os\WorkOrderDisplacementController::class, 'arrive']);
+            Route::post('work-orders/{work_order}/displacement/location', [\App\Http\Controllers\Api\V1\Os\WorkOrderDisplacementController::class, 'recordLocation']);
+            Route::post('work-orders/{work_order}/displacement/stops', [\App\Http\Controllers\Api\V1\Os\WorkOrderDisplacementController::class, 'addStop']);
+            Route::patch('work-orders/{work_order}/displacement/stops/{stop}', [\App\Http\Controllers\Api\V1\Os\WorkOrderDisplacementController::class, 'endStop']);
+        });
         Route::middleware('check.permission:os.work_order.update')->group(function () {
             Route::post('work-orders/{work_order}/attachments', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'storeAttachment']);
             Route::delete('work-orders/{work_order}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'destroyAttachment']);
@@ -957,6 +989,7 @@ Route::prefix('v1')->group(function () {
             Route::post('quotes/{quote}/reject', [\App\Http\Controllers\Api\V1\QuoteController::class, 'reject']);
         });
         // GAP-01: Internal approval (before sending to client)
+        Route::middleware('check.permission:quotes.quote.send')->post('quotes/{quote}/request-internal-approval', [\App\Http\Controllers\Api\V1\QuoteController::class, 'requestInternalApproval']);
         Route::middleware('check.permission:quotes.quote.internal_approve')->post('quotes/{quote}/internal-approve', [\App\Http\Controllers\Api\V1\QuoteController::class, 'internalApprove']);
         Route::middleware('check.permission:quotes.quote.send')->post('quotes/{quote}/send', [\App\Http\Controllers\Api\V1\QuoteController::class, 'send']);
         Route::middleware('check.permission:quotes.quote.convert')->post('quotes/{quote}/convert-to-os', [\App\Http\Controllers\Api\V1\QuoteController::class, 'convertToWorkOrder']);
@@ -975,6 +1008,7 @@ Route::prefix('v1')->group(function () {
             Route::get('service-calls-export', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'exportCsv']);
             Route::get('service-calls/{serviceCall}', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'show']);
             Route::get('service-calls/{serviceCall}/comments', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'comments']);
+            Route::get('service-calls/{serviceCall}/audit-trail', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'auditTrail']);
         });
         Route::middleware('check.permission:service_calls.service_call.create')->group(function () {
             Route::post('service-calls', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'store']);
@@ -1038,6 +1072,18 @@ Route::prefix('v1')->group(function () {
             Route::delete('equipments/{equipment}', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'destroy']);
             Route::delete('equipment-documents/{document}', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'deleteDocument']);
         });
+
+        // Modelos de balança (equipment models / peças compatíveis)
+        Route::middleware('check.permission:equipments.equipment_model.view')->group(function () {
+            Route::get('equipment-models', [\App\Http\Controllers\Api\V1\EquipmentModelController::class, 'index']);
+            Route::get('equipment-models/{equipmentModel}', [\App\Http\Controllers\Api\V1\EquipmentModelController::class, 'show']);
+        });
+        Route::middleware('check.permission:equipments.equipment_model.create')->post('equipment-models', [\App\Http\Controllers\Api\V1\EquipmentModelController::class, 'store']);
+        Route::middleware('check.permission:equipments.equipment_model.update')->group(function () {
+            Route::put('equipment-models/{equipmentModel}', [\App\Http\Controllers\Api\V1\EquipmentModelController::class, 'update']);
+            Route::put('equipment-models/{equipmentModel}/products', [\App\Http\Controllers\Api\V1\EquipmentModelController::class, 'syncProducts']);
+        });
+        Route::middleware('check.permission:equipments.equipment_model.delete')->delete('equipment-models/{equipmentModel}', [\App\Http\Controllers\Api\V1\EquipmentModelController::class, 'destroy']);
 
         // Pesos Padrão (Standard Weights)
         Route::middleware('check.permission:equipments.standard_weight.view')->group(function () {
@@ -2009,6 +2055,13 @@ Route::prefix('v1')->group(function () {
             Route::post('transfers', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'store']);
             Route::post('transfers/{transfer}/accept', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'accept']);
             Route::post('transfers/{transfer}/reject', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'reject']);
+            // Peças usadas (técnico informa, estoquista confirma)
+            Route::get('used-stock-items', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'index']);
+            Route::post('used-stock-items/{usedStockItem}/report', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'report']);
+            Route::post('used-stock-items/{usedStockItem}/confirm-return', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'confirmReturn']);
+            Route::post('used-stock-items/{usedStockItem}/confirm-write-off', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'confirmWriteOff']);
+            // Rastreamento de garantia (por OS, cliente, equipamento)
+            Route::get('warranty-tracking', [\App\Http\Controllers\Api\V1\WarrantyTrackingController::class, 'index']);
             // Serial Numbers
             Route::get('serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'serialNumbers']);
             Route::post('serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeSerialNumber']);
@@ -2225,6 +2278,7 @@ Route::prefix('v1')->group(function () {
         // ═══ Análise Financeira ═══════════════════════════════════════
         Route::prefix('financial')->middleware('check.permission:financeiro.view')->group(function () {
             Route::get('cash-flow-projection', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'cashFlowProjection']);
+            Route::get('cash-flow-weekly', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'cashFlowWeekly']);
             Route::get('dre', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'dre']);
             Route::get('aging-report', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'agingReport']);
             Route::get('expense-allocation', [\App\Http\Controllers\Api\V1\Financial\FinancialAnalyticsController::class, 'expenseAllocation']);
@@ -2352,18 +2406,35 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:equipamentos.equipment.update')->post('equipments/{equipment}/generate-qr', [$fc, 'generateEquipmentQr']);
 
-        // --- Qualidade ISO ---
-        Route::prefix('quality-audits')->middleware('check.permission:qualidade.procedure.view')->group(function () use ($fc) {
+        // --- Qualidade: Auditorias internas ---
+        Route::prefix('quality-audits')->middleware('check.permission:quality.audit.view')->group(function () use ($fc) {
             Route::get('/', [$fc, 'indexAudits']);
-            Route::middleware('check.permission:qualidade.procedure.create')->post('/', [$fc, 'storeAudit']);
-            Route::middleware('check.permission:qualidade.procedure.update')->put('items/{item}', [$fc, 'updateAuditItem']);
+            Route::get('{audit}', [$fc, 'showAudit']);
+            Route::middleware('check.permission:quality.audit.create')->post('/', [$fc, 'storeAudit']);
+            Route::middleware('check.permission:quality.audit.update')->put('{audit}', [$fc, 'updateAudit']);
+            Route::middleware('check.permission:quality.audit.update')->put('items/{item}', [$fc, 'updateAuditItem']);
         });
 
-        // --- Documentos ISO ---
-        Route::prefix('iso-documents')->middleware('check.permission:qualidade.procedure.view')->group(function () use ($fc) {
+        // --- Qualidade: Documentos controlados ---
+        Route::prefix('iso-documents')->middleware('check.permission:quality.document.view')->group(function () use ($fc) {
             Route::get('/', [$fc, 'indexDocuments']);
-            Route::middleware('check.permission:qualidade.procedure.create')->post('/', [$fc, 'storeDocument']);
-            Route::middleware('check.permission:qualidade.procedure.update')->post('{document}/approve', [$fc, 'approveDocument']);
+            Route::get('{document}/download', [$fc, 'downloadDocument']);
+            Route::middleware('check.permission:quality.document.create')->post('/', [$fc, 'storeDocument']);
+            Route::middleware('check.permission:quality.document.create')->post('{document}/upload', [$fc, 'uploadDocumentFile']);
+            Route::middleware('check.permission:quality.document.approve')->post('{document}/approve', [$fc, 'approveDocument']);
+        });
+
+        // --- Qualidade: Revisão pela direção ---
+        $mrc = \App\Http\Controllers\Api\V1\ManagementReviewController::class;
+        Route::prefix('management-reviews')->middleware('check.permission:quality.management_review.view')->group(function () use ($mrc) {
+            Route::get('/', [$mrc, 'index']);
+            Route::get('dashboard', [$mrc, 'dashboard']);
+            Route::get('{management_review}', [$mrc, 'show']);
+            Route::middleware('check.permission:quality.management_review.create')->post('/', [$mrc, 'store']);
+            Route::middleware('check.permission:quality.management_review.update')->put('{management_review}', [$mrc, 'update']);
+            Route::middleware('check.permission:quality.management_review.update')->delete('{management_review}', [$mrc, 'destroy']);
+            Route::middleware('check.permission:quality.management_review.create')->post('{management_review}/actions', [$mrc, 'storeAction']);
+            Route::middleware('check.permission:quality.management_review.update')->put('actions/{action}', [$mrc, 'updateAction']);
         });
 
         // --- Pesos Padrão: Atribuição ---
@@ -2401,6 +2472,9 @@ Route::prefix('quotes')->group(function () {
 
 // QR Code público — status de calibração do equipamento
 Route::middleware('throttle:120,1')->get('v1/equipment-qr/{token}', [\App\Http\Controllers\Api\V1\FeaturesController::class, 'equipmentByQr']);
+
+// Catálogo público — serviços por slug (link compartilhável)
+Route::middleware('throttle:120,1')->get('v1/catalog/{slug}', [\App\Http\Controllers\Api\V1\CatalogController::class, 'publicShow']);
 
 // Email Tracking (Pixel)
 Route::middleware('throttle:600,1')->get('pixel/{trackingId}', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'track']);

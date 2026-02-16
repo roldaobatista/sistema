@@ -26,6 +26,8 @@ const BatchExportPage = lazy(() => import('@/pages/cadastros/BatchExportPage').t
 const ProductsPage = lazy(() => import('@/pages/cadastros/ProductsPage').then(m => ({ default: m.ProductsPage })))
 const ServicesPage = lazy(() => import('@/pages/cadastros/ServicesPage').then(m => ({ default: m.ServicesPage })))
 const SuppliersPage = lazy(() => import('@/pages/cadastros/SuppliersPage').then(m => ({ default: m.SuppliersPage })))
+const CatalogAdminPage = lazy(() => import('@/pages/catalogo/CatalogAdminPage').then(m => ({ default: m.CatalogAdminPage })))
+const CatalogPublicPage = lazy(() => import('@/pages/catalogo/CatalogPublicPage'))
 const WorkOrdersListPage = lazy(() => import('@/pages/os/WorkOrdersListPage').then(m => ({ default: m.WorkOrdersListPage })))
 const WorkOrderKanbanPage = lazy(() => import('@/pages/os/WorkOrderKanbanPage').then(m => ({ default: m.WorkOrderKanbanPage })))
 
@@ -52,10 +54,12 @@ const FuelingLogsPage = lazy(() => import('@/pages/financeiro/FuelingLogsPage').
 const PaymentMethodsPage = lazy(() => import('@/pages/financeiro/PaymentMethodsPage').then(m => ({ default: m.PaymentMethodsPage })))
 const PaymentsPage = lazy(() => import('@/pages/financeiro/PaymentsPage').then(m => ({ default: m.PaymentsPage })))
 const CashFlowPage = lazy(() => import('@/pages/financeiro/CashFlowPage').then(m => ({ default: m.CashFlowPage })))
+const CashFlowWeeklyDashboardPage = lazy(() => import('@/pages/financeiro/CashFlowWeeklyDashboardPage').then(m => ({ default: m.CashFlowWeeklyDashboardPage })))
 const InvoicesPage = lazy(() => import('@/pages/financeiro/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
 const BankReconciliationPage = lazy(() => import('@/pages/financeiro/BankReconciliationPage').then(m => ({ default: m.BankReconciliationPage })))
 const ReconciliationRulesPage = lazy(() => import('@/pages/financeiro/ReconciliationRulesPage'))
 const ReconciliationDashboardPage = lazy(() => import('@/pages/financeiro/ReconciliationDashboardPage').then(m => ({ default: m.ReconciliationDashboardPage })))
+const FinanceiroDashboardPage = lazy(() => import('@/pages/financeiro/FinanceiroDashboardPage').then(m => ({ default: m.FinanceiroDashboardPage })))
 const ConsolidatedFinancialPage = lazy(() => import('@/pages/financeiro/ConsolidatedFinancialPage').then(m => ({ default: m.ConsolidatedFinancialPage })))
 const ChartOfAccountsPage = lazy(() => import('@/pages/financeiro/ChartOfAccountsPage').then(m => ({ default: m.ChartOfAccountsPage })))
 const SlaPoliciesPage = lazy(() => import('@/pages/os/SlaPoliciesPage').then(m => ({ default: m.SlaPoliciesPage })))
@@ -87,7 +91,9 @@ const EmailInboxPage = lazy(() => import('@/pages/emails/EmailInboxPage'))
 const EmailComposePage = lazy(() => import('@/pages/emails/EmailComposePage'))
 const EmailSettingsPage = lazy(() => import('@/pages/emails/EmailSettingsPage'))
 const EquipmentListPage = lazy(() => import('@/pages/equipamentos/EquipmentListPage'))
+const EquipmentModelsPage = lazy(() => import('@/pages/equipamentos/EquipmentModelsPage').then(m => ({ default: m.default })))
 const EquipmentDetailPage = lazy(() => import('@/pages/equipamentos/EquipmentDetailPage'))
+const EquipmentEditPage = lazy(() => import('@/pages/equipamentos/EquipmentEditPage').then(m => ({ default: m.default })))
 const EquipmentCreatePage = lazy(() => import('@/pages/equipamentos/EquipmentCreatePage'))
 const EquipmentCalendarPage = lazy(() => import('@/pages/equipamentos/EquipmentCalendarPage'))
 const StandardWeightsPage = lazy(() => import('@/pages/equipamentos/StandardWeightsPage'))
@@ -137,9 +143,12 @@ const WarehousesPage = lazy(() => import('@/pages/estoque/WarehousesPage').then(
 const InventoryListPage = lazy(() => import('@/pages/estoque/InventoryListPage'))
 const InventoryExecutionPage = lazy(() => import('@/pages/estoque/InventoryExecutionPage'))
 const InventoryCreatePage = lazy(() => import('@/pages/estoque/InventoryCreatePage'))
+const InventoryPwaListPage = lazy(() => import('@/pages/estoque/InventoryPwaListPage'))
+const InventoryPwaCountPage = lazy(() => import('@/pages/estoque/InventoryPwaCountPage'))
 const BatchManagementPage = lazy(() => import('@/pages/estoque/BatchManagementPage'))
 const KardexPage = lazy(() => import('@/pages/estoque/KardexPage'))
 const StockIntelligencePage = lazy(() => import('@/pages/estoque/StockIntelligencePage'))
+const StockLabelsPage = lazy(() => import('@/pages/estoque/StockLabelsPage'))
 const StockIntegrationPage = lazy(() => import('@/pages/estoque/StockIntegrationPage'))
 const CentralPage = lazy(() => import('@/pages/central/CentralPage').then(m => ({ default: m.CentralPage })))
 const CentralDashboardPage = lazy(() => import('@/pages/central/CentralDashboardPage').then(m => ({ default: m.CentralDashboardPage })))
@@ -176,11 +185,13 @@ const OnboardingPage = lazy(() => import('@/pages/rh/OnboardingPage'))
 const QualityPage = lazy(() => import('@/pages/qualidade/QualityPage'))
 const QualityAuditsPage = lazy(() => import('@/pages/qualidade/QualityAuditsPage'))
 const IsoDocumentsPage = lazy(() => import('@/pages/qualidade/IsoDocumentsPage'))
+const ManagementReviewPage = lazy(() => import('@/pages/qualidade/ManagementReviewPage'))
 const AutomationPage = lazy(() => import('@/pages/automacao/AutomationPage'))
 const AdvancedFeaturesPage = lazy(() => import('@/pages/avancado/AdvancedFeaturesPage'))
 const AlertsPage = lazy(() => import('@/pages/alertas/AlertsPage'))
 const CalibrationReadingsPage = lazy(() => import('@/pages/calibracao/CalibrationReadingsPage'))
 const WhatsAppConfigPage = lazy(() => import('@/pages/configuracoes/WhatsAppConfigPage'))
+const AgingReceivablesPage = lazy(() => import('@/pages/financeiro/AgingReceivablesPage').then(m => ({ default: m.AgingReceivablesPage })))
 const DebtRenegotiationPage = lazy(() => import('@/pages/financeiro/DebtRenegotiationPage'))
 const WeightAssignmentsPage = lazy(() => import('@/pages/equipamentos/WeightAssignmentsPage'))
 const ToolCalibrationsPage = lazy(() => import('@/pages/estoque/ToolCalibrationsPage'))
@@ -269,6 +280,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/cadastros/clientes', permission: 'cadastros.customer.view' },
   { match: '/cadastros/produtos', permission: 'cadastros.product.view' },
   { match: '/cadastros/serviços', permission: 'cadastros.service.view' },
+  { match: '/catalogo', permission: 'catalog.view' },
   { match: '/cadastros/histórico-precos', permission: 'cadastros.product.view' },
   { match: '/cadastros/exportação-lote', permission: 'cadastros.customer.view' },
   { match: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
@@ -290,6 +302,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/técnicos/agenda', permission: 'technicians.schedule.view' },
   { match: '/técnicos/apontamentos', permission: 'technicians.time_entry.view' },
   { match: '/técnicos/caixa', permission: 'technicians.cashbox.view' },
+  { match: '/financeiro', permission: 'financeiro.view' },
   { match: '/financeiro/receber', permission: 'finance.receivable.view' },
   { match: '/financeiro/pagar', permission: 'finance.payable.view' },
   { match: '/financeiro/comissões/dashboard', permission: 'commissions.rule.view' },
@@ -298,6 +311,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/financeiro/pagamentos', permission: 'finance.receivable.view|finance.payable.view' },
   { match: '/financeiro/formas-pagamento', permission: 'finance.payable.view' },
   { match: '/financeiro/fluxo-caixa', permission: 'finance.cashflow.view' },
+  { match: '/financeiro/fluxo-caixa-semanal', permission: 'finance.cashflow.view' },
   { match: '/financeiro/faturamento', permission: 'finance.receivable.view' },
   { match: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
   { match: '/financeiro/regras-conciliacao', permission: 'finance.receivable.view' },
@@ -310,6 +324,8 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/fiscal/notas', permission: 'fiscal.note.view' },
   { match: '/estoque/movimentacoes', permission: 'estoque.movement.view' },
   { match: '/estoque/armazens', permission: 'estoque.warehouse.view' },
+  { match: '/estoque/inventario-pwa', permission: 'estoque.view' },
+  { match: '/estoque/etiquetas', permission: 'estoque.label.print' },
   { match: '/estoque', permission: 'estoque.movement.view' },
   { match: '/relatórios', permission: 'reports.os_report.view' },
   { match: '/notificações', permission: 'notifications.notification.view' },
@@ -320,6 +336,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/emails', permission: 'email.inbox.view' },
   { match: '/inmetro/selos', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro', permission: 'inmetro.intelligence.view' },
+  { match: '/equipamentos/modelos', permission: 'equipments.equipment_model.view' },
   { match: '/equipamentos/pesos-padrão', permission: 'equipments.standard_weight.view' },
   { match: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
   { match: '/equipamentos', permission: 'equipments.equipment.view' },
@@ -331,10 +348,12 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/configurações/whatsapp', permission: 'whatsapp.config.view' },
   { match: '/configurações/auditoria', permission: 'iam.audit_log.view' },
   { match: '/configurações', permission: 'platform.settings.view' },
+  { match: '/financeiro/regua-cobranca', permission: 'finance.receivable.view' },
   { match: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
   { match: '/alertas', permission: 'alerts.alert.view' },
   { match: '/qualidade/auditorias', permission: 'quality.audit.view' },
   { match: '/qualidade/documentos', permission: 'quality.document.view' },
+  { match: '/qualidade/revisao-direcao', permission: 'quality.management_review.view' },
   { match: '/crm/pipeline', permission: 'crm.pipeline.view' },
   { match: '/crm/clientes', permission: 'crm.deal.view' },
   { match: '/crm/templates', permission: 'crm.message.view' },
@@ -386,6 +405,9 @@ function resolveRequiredPermission(pathname: string): string | null {
   }
   if (/^\/chamados\/[^/]+\/editar$/.test(pathname)) {
     return 'service_calls.service_call.update'
+  }
+  if (/^\/equipamentos\/[^/]+\/editar$/.test(pathname)) {
+    return 'equipments.equipment.update'
   }
 
   for (const rule of routePermissionRules) {
@@ -538,6 +560,7 @@ export default function App() {
             <Route path="/cadastros/historico-precos" element={<ProtectedRoute><PriceHistoryPage /></ProtectedRoute>} />
             <Route path="/cadastros/exportacao-lote" element={<ProtectedRoute><BatchExportPage /></ProtectedRoute>} />
             <Route path="/cadastros/fornecedores" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+            <Route path="/catalogo" element={<ProtectedRoute><CatalogAdminPage /></ProtectedRoute>} />
 
             {/* Orçamentos */}
             <Route path="/orcamentos" element={<ProtectedRoute><QuotesListPage /></ProtectedRoute>} />
@@ -569,6 +592,7 @@ export default function App() {
             <Route path="/tecnicos/caixa" element={<ProtectedRoute><TechnicianCashPage /></ProtectedRoute>} />
 
             {/* Financeiro */}
+            <Route path="/financeiro" element={<ProtectedRoute><FinanceiroDashboardPage /></ProtectedRoute>} />
             <Route path="/financeiro/receber" element={<ProtectedRoute><AccountsReceivablePage /></ProtectedRoute>} />
             <Route path="/financeiro/pagar" element={<ProtectedRoute><AccountsPayablePage /></ProtectedRoute>} />
             <Route path="/financeiro/comissoes" element={<ProtectedRoute><CommissionsPage /></ProtectedRoute>} />
@@ -578,6 +602,7 @@ export default function App() {
             <Route path="/financeiro/pagamentos" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
             <Route path="/financeiro/formas-pagamento" element={<ProtectedRoute><PaymentMethodsPage /></ProtectedRoute>} />
             <Route path="/financeiro/fluxo-caixa" element={<ProtectedRoute><CashFlowPage /></ProtectedRoute>} />
+            <Route path="/financeiro/fluxo-caixa-semanal" element={<ProtectedRoute><CashFlowWeeklyDashboardPage /></ProtectedRoute>} />
             <Route path="/financeiro/faturamento" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
             <Route path="/financeiro/conciliacao-bancaria" element={<ProtectedRoute><BankReconciliationPage /></ProtectedRoute>} />
             <Route path="/financeiro/regras-conciliacao" element={<ProtectedRoute><ReconciliationRulesPage /></ProtectedRoute>} />
@@ -599,9 +624,12 @@ export default function App() {
             <Route path="/estoque/inventarios" element={<ProtectedRoute><InventoryListPage /></ProtectedRoute>} />
             <Route path="/estoque/inventarios/novo" element={<ProtectedRoute><InventoryCreatePage /></ProtectedRoute>} />
             <Route path="/estoque/inventarios/:id" element={<ProtectedRoute><InventoryExecutionPage /></ProtectedRoute>} />
+            <Route path="/estoque/inventario-pwa" element={<ProtectedRoute><InventoryPwaListPage /></ProtectedRoute>} />
+            <Route path="/estoque/inventario-pwa/:warehouseId" element={<ProtectedRoute><InventoryPwaCountPage /></ProtectedRoute>} />
             <Route path="/estoque/kardex" element={<ProtectedRoute><KardexPage /></ProtectedRoute>} />
             <Route path="/estoque/calibracoes-ferramentas" element={<ProtectedRoute><ToolCalibrationsPage /></ProtectedRoute>} />
             <Route path="/estoque/inteligencia" element={<ProtectedRoute><StockIntelligencePage /></ProtectedRoute>} />
+            <Route path="/estoque/etiquetas" element={<ProtectedRoute><StockLabelsPage /></ProtectedRoute>} />
             <Route path="/estoque/integracao" element={<ProtectedRoute><StockIntegrationPage /></ProtectedRoute>} />
 
             {/* Relatórios */}
@@ -635,10 +663,12 @@ export default function App() {
 
             {/* Equipamentos */}
             <Route path="/equipamentos" element={<ProtectedRoute><EquipmentListPage /></ProtectedRoute>} />
+            <Route path="/equipamentos/modelos" element={<ProtectedRoute><EquipmentModelsPage /></ProtectedRoute>} />
             <Route path="/equipamentos/novo" element={<ProtectedRoute><EquipmentCreatePage /></ProtectedRoute>} />
             <Route path="/equipamentos/pesos-padrao" element={<ProtectedRoute><StandardWeightsPage /></ProtectedRoute>} />
             <Route path="/equipamentos/atribuicao-pesos" element={<ProtectedRoute><WeightAssignmentsPage /></ProtectedRoute>} />
             <Route path="/equipamentos/:id" element={<ProtectedRoute><EquipmentDetailPage /></ProtectedRoute>} />
+            <Route path="/equipamentos/:id/editar" element={<ProtectedRoute><EquipmentEditPage /></ProtectedRoute>} />
             <Route path="/agenda-calibracoes" element={<ProtectedRoute><EquipmentCalendarPage /></ProtectedRoute>} />
 
             {/* Configurações */}
@@ -723,11 +753,12 @@ export default function App() {
             <Route path="/qualidade" element={<ProtectedRoute><QualityPage /></ProtectedRoute>} />
             <Route path="/qualidade/auditorias" element={<ProtectedRoute><QualityAuditsPage /></ProtectedRoute>} />
             <Route path="/qualidade/documentos" element={<ProtectedRoute><IsoDocumentsPage /></ProtectedRoute>} />
+            <Route path="/qualidade/revisao-direcao" element={<ProtectedRoute><ManagementReviewPage /></ProtectedRoute>} />
 
             {/* Alertas */}
             <Route path="/alertas" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
 
-            {/* Calibração — Leituras para certificado ISO */}
+            {/* Calibração — Leituras para certificado */}
             <Route path="/calibracao/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
             <Route path="/calibracao/:calibrationId/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
             <Route path="/calibracao/templates" element={<ProtectedRoute><CertificateTemplatesPage /></ProtectedRoute>} />
@@ -737,6 +768,7 @@ export default function App() {
             <Route path="/configuracoes/whatsapp/logs" element={<ProtectedRoute><WhatsAppLogPage /></ProtectedRoute>} />
 
             {/* Financeiro — Cobrança Automática */}
+            <Route path="/financeiro/regua-cobranca" element={<ProtectedRoute><AgingReceivablesPage /></ProtectedRoute>} />
             <Route path="/financeiro/cobranca-automatica" element={<ProtectedRoute><CollectionAutomationPage /></ProtectedRoute>} />
 
             {/* Financeiro — Renegociação */}
@@ -814,6 +846,9 @@ export default function App() {
 
             {/* Página pública QR Code Equipamento */}
             <Route path="/equipamento-qr/:token" element={<EquipmentQrPublicPage />} />
+
+            {/* Catálogo público — link compartilhável com clientes */}
+            <Route path="/catalogo/:slug" element={<CatalogPublicPage />} />
 
             {/* Fallback para URLs não encontradas */}
             <Route path="*" element={<Navigate to="/" replace />} />

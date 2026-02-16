@@ -8,11 +8,13 @@ use App\Models\EquipmentCalibration;
 use App\Models\Quote;
 use App\Models\Tenant;
 use App\Models\WorkOrder;
+use App\Services\CalibrationCertificateService;
 use App\Support\ReportExportAuthorization;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -64,24 +66,37 @@ class PdfController extends Controller
         return $pdf->download("Orcamento-{$quote->quote_number}.pdf");
     }
 
-    public function calibrationCertificate(Request $request, Equipment $equipment, EquipmentCalibration $calibration): Response
+    public function calibrationCertificate(Request $request, Equipment $equipment, EquipmentCalibration $calibration): Response|StreamedResponse
     {
-        $equipment->load('customer');
-        $calibration->load(['performer', 'approver', 'standardWeights', 'workOrder']);
+        $storedPath = $calibration->certificate_pdf_path;
+        $fullPath = $storedPath ? storage_path('app/' . $storedPath) : null;
 
-        $pdf = Pdf::loadView('pdf.calibration-certificate', [
-            'equipment' => $equipment,
-            'calibration' => $calibration,
-            'tenant' => $this->tenant($request),
-            'standardWeights' => $calibration->standardWeights,
-            'workOrder' => $calibration->workOrder,
-        ]);
+        if ($fullPath && is_file($fullPath)) {
+            $certNumber = $calibration->certificate_number ?? 'CAL-' . str_pad($calibration->id, 6, '0', STR_PAD_LEFT);
 
-        $pdf->setPaper('A4', 'portrait');
+            return response()->streamDownload(
+                static function () use ($fullPath) {
+                    echo file_get_contents($fullPath);
+                },
+                "Certificado-{$certNumber}.pdf",
+                ['Content-Type' => 'application/pdf'],
+                'inline'
+            );
+        }
 
+        $service = app(CalibrationCertificateService::class);
+        $fileName = $service->generateAndStore($calibration);
+        $path = storage_path('app/public/' . $fileName);
         $certNumber = $calibration->certificate_number ?? 'CAL-' . str_pad($calibration->id, 6, '0', STR_PAD_LEFT);
 
-        return $pdf->download("Certificado-{$certNumber}.pdf");
+        return response()->streamDownload(
+            static function () use ($path) {
+                echo file_get_contents($path);
+            },
+            "Certificado-{$certNumber}.pdf",
+            ['Content-Type' => 'application/pdf'],
+            'inline'
+        );
     }
 
     public function reportExport(Request $request, string $type): Response

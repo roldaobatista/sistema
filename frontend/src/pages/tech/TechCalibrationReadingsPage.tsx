@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
     Scale, Plus, Trash2, CheckCircle2, XCircle, Save, ChevronDown, ChevronUp,
-    Loader2, ArrowLeft, Gauge, FlaskConical,
+    Loader2, ArrowLeft, Gauge, FlaskConical, FileText,
 } from 'lucide-react'
 import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
@@ -51,6 +51,8 @@ export default function TechCalibrationReadingsPage() {
     const [excentricity, setExcentricity] = useState<ExcentricityPositions>({
         center: '', front: '', back: '', left: '', right: '',
     })
+    const [readingsSaved, setReadingsSaved] = useState(false)
+    const [generatingCert, setGeneratingCert] = useState(false)
 
     const equipmentList = equipments.length > 0
         ? equipments
@@ -114,6 +116,7 @@ export default function TechCalibrationReadingsPage() {
         setReadings([{ nominal: '', indication: '', unit: 'kg' }])
         setExcentricityLoad('')
         setExcentricity({ center: '', front: '', back: '', left: '', right: '' })
+        setReadingsSaved(false)
     }
 
     const addReading = () => {
@@ -209,10 +212,27 @@ export default function TechCalibrationReadingsPage() {
             }
 
             toast.success('Leituras salvas com sucesso')
+            setReadingsSaved(true)
         } catch (err: unknown) {
             toast.error(getApiErrorMessage(err, 'Erro ao salvar leituras'))
         } finally {
             setSaving(false)
+        }
+    }
+
+    const handleGenerateCertificate = async () => {
+        if (!calibrationId || !selectedEquipment) return
+        setGeneratingCert(true)
+        try {
+            await api.post(`/calibration/${calibrationId}/generate-certificate`)
+            const { data } = await api.get(`/equipments/${selectedEquipment.id}/calibrations/${calibrationId}/pdf`, { responseType: 'blob' })
+            const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+            window.open(url, '_blank')
+            toast.success('Certificado gerado. Abra a nova aba para visualizar ou imprimir.')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao gerar certificado'))
+        } finally {
+            setGeneratingCert(false)
         }
     }
 
@@ -224,8 +244,10 @@ export default function TechCalibrationReadingsPage() {
             <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
                 <div className="flex items-center gap-3">
                     <button
+                        type="button"
                         onClick={() => navigate(`/tech/os/${id}`)}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                        aria-label="Voltar"
                     >
                         <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
                     </button>
@@ -356,22 +378,26 @@ export default function TechCalibrationReadingsPage() {
                                                         </p>
                                                     </div>
                                                     <div className="w-14">
-                                                        <label className="text-xs text-surface-500 block mb-1">
+                                                        <label className="text-xs text-surface-500 block mb-1" htmlFor={`reading-unit-${i}`}>
                                                             Unid.
                                                         </label>
                                                         <input
+                                                            id={`reading-unit-${i}`}
                                                             type="text"
                                                             value={r.unit}
                                                             onChange={(e) =>
                                                                 updateReading(i, 'unit', e.target.value)
                                                             }
                                                             className={inputClass}
+                                                            aria-label="Unidade da leitura"
                                                         />
                                                     </div>
                                                     <button
+                                                        type="button"
                                                         onClick={() => removeReading(i)}
                                                         disabled={readings.length <= 1}
                                                         className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-40"
+                                                        aria-label="Remover leitura"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -455,16 +481,18 @@ export default function TechCalibrationReadingsPage() {
                                     )}
                                 </div>
 
-                                <div className="flex gap-2">
-                                    <label className="text-sm text-surface-600 dark:text-surface-400">
+                                <div className="flex gap-2 items-center">
+                                    <label className="text-sm text-surface-600 dark:text-surface-400" htmlFor="tolerance-input">
                                         Tolerância:
                                     </label>
                                     <input
+                                        id="tolerance-input"
                                         type="number"
                                         step="0.01"
                                         value={tolerance}
                                         onChange={(e) => setTolerance(parseFloat(e.target.value) || 0)}
                                         className={cn(inputClass, 'w-20')}
+                                        aria-label="Tolerância em kg"
                                     />
                                 </div>
 
@@ -520,6 +548,26 @@ export default function TechCalibrationReadingsPage() {
                                         </>
                                     )}
                                 </button>
+                                {readingsSaved && (
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateCertificate}
+                                        disabled={generatingCert}
+                                        className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-xl font-medium disabled:opacity-50 mt-2"
+                                    >
+                                        {generatingCert ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Gerando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FileText className="w-5 h-5" />
+                                                Gerar certificado
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                             </>
                         )}
                     </>

@@ -33,6 +33,7 @@ class CentralItem extends Model
         'visibilidade' => CentralItemVisibility::class,
         'due_at' => 'datetime',
         'remind_at' => 'datetime',
+        'remind_notified_at' => 'datetime',
         'snooze_until' => 'datetime',
         'sla_due_at' => 'datetime',
         'closed_at' => 'datetime',
@@ -179,7 +180,8 @@ class CentralItem extends Model
         string $type = 'central_item_assigned',
         ?string $title = null,
         ?string $message = null,
-        array $extraData = []
+        array $extraData = [],
+        array $opts = []
     ): void
     {
         if (!$this->tenant_id || !$this->responsavel_user_id) {
@@ -191,7 +193,7 @@ class CentralItem extends Model
             (int) $this->responsavel_user_id,
             $type,
             $title ?? "Central: {$this->titulo}",
-            [
+            array_merge([
                 'message' => $message ?? ($this->descricao_curta ?: null),
                 'icon' => 'inbox',
                 'color' => 'blue',
@@ -203,7 +205,7 @@ class CentralItem extends Model
                     'status' => $this->status?->value,
                     'prioridade' => $this->prioridade?->value,
                 ], $extraData),
-            ]
+            ], $opts)
         );
     }
 

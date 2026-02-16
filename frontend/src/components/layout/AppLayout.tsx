@@ -10,10 +10,10 @@ import {
     Weight, RotateCcw, TrendingUp, History, Warehouse, ArrowLeftRight, Bell,
     CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
     MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
-    Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy,
+    Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy, Wallet,
     GitBranch, PieChart, Swords, Globe, Eye, Video,
     MapPin, StickyNote, Handshake, Lightbulb, ShieldCheck, CalendarHeart, Route,
-    UserX, Medal,
+    UserX, Medal, Printer,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -22,6 +22,7 @@ import { usePWA } from '@/hooks/usePWA'
 import { useAppMode } from '@/hooks/useAppMode'
 import { useCurrentTenant as useTenantHook } from '@/hooks/useCurrentTenant'
 import NotificationPanel from '@/components/notifications/NotificationPanel'
+import { QuickReminderButton } from '@/components/central/QuickReminderButton'
 import OfflineIndicator from '@/components/pwa/OfflineIndicator'
 import { ModeSwitcher } from '@/components/pwa/ModeSwitcher'
 import { InstallBanner } from '@/components/pwa/InstallBanner'
@@ -158,6 +159,7 @@ const navigationSections: NavSection[] = [
                 label: 'Equipamentos', icon: Scale, path: '/equipamentos', permission: 'equipments.equipment.view',
                 children: [
                     { label: 'Lista', icon: Scale, path: '/equipamentos' },
+                    { label: 'Modelos de balança', icon: Package, path: '/equipamentos/modelos', permission: 'equipments.equipment_model.view' },
                     { label: 'Pesos Padrão', icon: Weight, path: '/equipamentos/pesos-padrao', permission: 'equipments.standard_weight.view' },
                     { label: 'Atr. Pesos', icon: ArrowLeftRight, path: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
                     { label: 'Leituras', icon: BookOpen, path: '/calibracao/leituras', permission: 'calibration.reading.view' },
@@ -176,6 +178,7 @@ const navigationSections: NavSection[] = [
                     { label: 'Clientes', icon: Users, path: '/cadastros/clientes' },
                     { label: 'Produtos', icon: Package, path: '/cadastros/produtos' },
                     { label: 'Serviços', icon: Briefcase, path: '/cadastros/servicos' },
+                    { label: 'Catálogo', icon: BookOpen, path: '/catalogo', permission: 'catalog.view' },
                     { label: 'Fornecedores', icon: Truck, path: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
                 ],
             },
@@ -186,6 +189,8 @@ const navigationSections: NavSection[] = [
                     { label: 'Movimentações', icon: ArrowLeftRight, path: '/estoque/movimentacoes' },
                     { label: 'Armazéns', icon: Warehouse, path: '/estoque/armazens' },
                     { label: 'Inventário', icon: ClipboardCheck, path: '/estoque/inventarios' },
+                    { label: 'Meu inventário', icon: ClipboardCheck, path: '/estoque/inventario-pwa', permission: 'estoque.view' },
+                    { label: 'Etiquetas', icon: Printer, path: '/estoque/etiquetas', permission: 'estoque.label.print' },
                     { label: 'Kardex', icon: ScrollText, path: '/estoque/kardex' },
                     { label: 'Calib. Ferramentas', icon: Wrench, path: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
                 ],
@@ -205,9 +210,12 @@ const navigationSections: NavSection[] = [
                     { label: 'Pagamentos', icon: DollarSign, path: '/financeiro/pagamentos', permission: 'finance.receivable.view|finance.payable.view' },
                     { label: 'Comissões', icon: Award, path: '/financeiro/comissoes', permission: 'commissions.rule.view' },
                     { label: 'Despesas', icon: Receipt, path: '/financeiro/despesas', permission: 'expenses.expense.view' },
+                    { label: 'Fluxo de Caixa', icon: BarChart3, path: '/financeiro/fluxo-caixa', permission: 'finance.cashflow.view' },
+                    { label: 'Fluxo Caixa Semanal', icon: Wallet, path: '/financeiro/fluxo-caixa-semanal', permission: 'finance.cashflow.view' },
                     { label: 'Faturamento', icon: FileText, path: '/financeiro/faturamento', permission: 'finance.receivable.view' },
                     { label: 'Conciliação', icon: ArrowLeftRight, path: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
                     { label: 'Renegociação', icon: RotateCcw, path: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
+                    { label: 'Régua de Cobrança', icon: ArrowDownToLine, path: '/financeiro/regua-cobranca', permission: 'finance.receivable.view' },
                     { label: 'Cobrança Auto', icon: Zap, path: '/financeiro/cobranca-automatica', permission: 'finance.receivable.view' },
                     { label: 'Plano de Contas', icon: FileText, path: '/financeiro/plano-contas', permission: 'finance.chart.view' },
                     { label: 'Consolidado', icon: Building2, path: '/financeiro/consolidado', permission: 'financeiro.view' },
@@ -276,8 +284,9 @@ const navigationSections: NavSection[] = [
                 label: 'Qualidade', icon: ClipboardCheck, path: '/qualidade', permission: 'quality.procedure.view',
                 children: [
                     { label: 'Visão Geral', icon: ClipboardCheck, path: '/qualidade' },
-                    { label: 'Auditorias ISO', icon: Search, path: '/qualidade/auditorias', permission: 'quality.audit.view' },
-                    { label: 'Documentos ISO', icon: FileText, path: '/qualidade/documentos', permission: 'quality.document.view' },
+                    { label: 'Auditorias Internas', icon: Search, path: '/qualidade/auditorias', permission: 'quality.audit.view' },
+                    { label: 'Documentos da Qualidade', icon: FileText, path: '/qualidade/documentos', permission: 'quality.document.view' },
+                    { label: 'Revisão pela direção', icon: Users, path: '/qualidade/revisao-direcao', permission: 'quality.management_review.view' },
                 ],
             },
             { label: 'Alertas', icon: Bell, path: '/alertas', permission: 'alerts.alert.view' },
@@ -286,21 +295,16 @@ const navigationSections: NavSection[] = [
     },
 ]
 
-/** Sidebar do Modo Vendedor (comercial/vendedor) — vê tudo de vendas */
+/** Sidebar do Modo Vendedor — CRM com children (como Gestão) para submenus não sumirem */
+const crmNavItem = navigationSections.find(s => s.label === 'Comercial')?.items.find(i => i.path === '/crm')
 const salesOnlySections: NavSection[] = [
     {
         label: 'Comercial',
         items: [
-            { label: 'Dashboard CRM', icon: BarChart3, path: '/crm', permission: 'crm.deal.view' },
-            { label: 'Pipeline', icon: Grid3x3, path: '/crm/pipeline', permission: 'crm.pipeline.view' },
-            { label: 'Calendário', icon: Calendar, path: '/crm/calendar', permission: 'crm.deal.view' },
-            { label: 'Alertas', icon: AlertTriangle, path: '/crm/alerts', permission: 'crm.deal.view' },
-            { label: 'Metas', icon: Trophy, path: '/crm/goals', permission: 'crm.goal.view' },
-            { label: 'Cadências', icon: GitBranch, path: '/crm/sequences', permission: 'crm.sequence.view' },
+            ...(crmNavItem ? [crmNavItem] : []),
             { label: 'Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
             { label: 'Clientes', icon: Users, path: '/cadastros/clientes', permission: 'cadastros.customer.view' },
-            { label: 'Templates', icon: FileText, path: '/crm/templates', permission: 'crm.message.view' },
-            { label: 'Leads', icon: Target, path: '/inmetro/leads', permission: 'inmetro.intelligence.view' },
+            { label: 'Leads INMETRO', icon: Target, path: '/inmetro/leads', permission: 'inmetro.intelligence.view' },
             {
                 label: 'Chamados', icon: Phone, path: '/chamados', permission: 'service_calls.service_call.view',
                 children: [
@@ -657,6 +661,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         )}
 
                         {canViewNotifications ? <NotificationPanel /> : null}
+
+                        {hasPermission('central.create.task') ? (
+                            <QuickReminderButton className="rounded-md p-1.5 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors" />
+                        ) : null}
 
                         <button
                             onClick={toggleDarkMode}

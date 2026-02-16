@@ -1,36 +1,44 @@
-import { useState , useMemo } from 'react'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
-    TrendingUp, DollarSign, Users, Target, AlertTriangle,
-    Calendar, Phone, ArrowRight, Scale, Handshake, XCircle,
+    TrendingUp, DollarSign, Target, AlertTriangle,
+    ArrowRight, Scale, Handshake, XCircle,
     ArrowUpRight, BarChart3, Clock, MessageCircle, Mail, Send,
     RefreshCw,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
 import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
 import { useAuthStore } from '@/stores/auth-store'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+type PeriodKey = 'month' | 'quarter' | 'year'
+
 export function CrmDashboardPage() {
-
-  // MVP: Action feedback
-  const handleAction = () => { toast.success('Ação realizada com sucesso') }
-  const { hasPermission } = useAuthStore()
-
+    const { hasPermission } = useAuthStore()
+    const [period, setPeriod] = useState<PeriodKey>('month')
     const [nowTs] = useState(() => Date.now())
+
     const { data, isLoading, isError, refetch } = useQuery({
-        queryKey: ['crm', 'dashboard'],
-        queryFn: () => crmApi.getDashboard().then(r => r.data),
+        queryKey: ['crm', 'dashboard', period],
+        queryFn: () => crmApi.getDashboard({ period }).then(r => r.data),
         refetchInterval: 60_000,
         meta: { errorMessage: 'Erro ao carregar dashboard CRM' },
     })
 
     const kpis = data?.kpis
+    const prevPeriod = data?.previous_period
+    const periodLabel = data?.period?.label ?? (period === 'month' ? 'Este mês' : period === 'quarter' ? 'Este trimestre' : 'Este ano')
     const msgStats = data?.messaging_stats
     const pipelines = data?.pipelines ?? []
     const recentDeals = data?.recent_deals ?? []
@@ -38,18 +46,18 @@ export function CrmDashboardPage() {
     const topCustomers = data?.top_customers ?? []
     const calibrationAlerts = data?.calibration_alerts ?? []
 
-    const kpiCards = [
-        { label: 'Deals Abertos', value: kpis?.open_deals ?? 0, icon: Target, color: 'text-blue-600 bg-blue-50' },
-        { label: 'Ganhos (mês)', value: kpis?.won_month ?? 0, icon: Handshake, color: 'text-emerald-600 bg-emerald-50' },
-        { label: 'Perdidos (mês)', value: kpis?.lost_month ?? 0, icon: XCircle, color: 'text-red-500 bg-red-50' },
+    const kpiCards: { label: string; value: React.ReactNode; icon: React.ElementType; color: string; href?: string }[] = [
+        { label: 'Deals Abertos', value: kpis?.open_deals ?? 0, icon: Target, color: 'text-blue-600 bg-blue-50', href: '/crm/pipeline' },
+        { label: `Ganhos (${periodLabel})`, value: kpis?.won_month ?? 0, icon: Handshake, color: 'text-emerald-600 bg-emerald-50', href: '/crm/pipeline' },
+        { label: `Perdidos (${periodLabel})`, value: kpis?.lost_month ?? 0, icon: XCircle, color: 'text-red-500 bg-red-50', href: '/crm/pipeline' },
         { label: 'Conversão', value: `${kpis?.conversion_rate ?? 0}%`, icon: TrendingUp, color: 'text-brand-600 bg-brand-50' },
     ]
 
-    const kpiCards2 = [
-        { label: 'Receita no Pipeline', value: fmtBRL(kpis?.revenue_in_pipeline ?? 0), icon: DollarSign, color: 'text-emerald-600 bg-emerald-50' },
-        { label: 'Receita Ganha (mês)', value: fmtBRL(kpis?.won_revenue ?? 0), icon: ArrowUpRight, color: 'text-blue-600 bg-blue-50' },
+    const kpiCards2: { label: string; value: React.ReactNode; icon: React.ElementType; color: string; href?: string }[] = [
+        { label: 'Receita no Pipeline', value: fmtBRL(kpis?.revenue_in_pipeline ?? 0), icon: DollarSign, color: 'text-emerald-600 bg-emerald-50', href: '/crm/pipeline' },
+        { label: `Receita Ganha (${periodLabel})`, value: fmtBRL(kpis?.won_revenue ?? 0), icon: ArrowUpRight, color: 'text-blue-600 bg-blue-50', href: '/crm/pipeline' },
         { label: 'Health Score Médio', value: kpis?.avg_health_score ?? 0, icon: BarChart3, color: 'text-amber-600 bg-amber-50' },
-        { label: 'Sem Contato > 90d', value: kpis?.no_contact_90d ?? 0, icon: AlertTriangle, color: 'text-red-500 bg-red-50' },
+        { label: 'Sem Contato > 90d', value: kpis?.no_contact_90d ?? 0, icon: AlertTriangle, color: 'text-red-500 bg-red-50', href: '/crm/forgotten-clients' },
     ]
 
     if (isError) {
@@ -68,12 +76,22 @@ export function CrmDashboardPage() {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">CRM</h1>
                     <p className="mt-0.5 text-sm text-surface-500">Pipeline de vendas e relacionamento com clientes</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                    <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="month">Este mês</SelectItem>
+                            <SelectItem value="quarter">Este trimestre</SelectItem>
+                            <SelectItem value="year">Este ano</SelectItem>
+                        </SelectContent>
+                    </Select>
                     {pipelines.map(p => (
                         <Link
                             key={p.id}
@@ -90,9 +108,8 @@ export function CrmDashboardPage() {
 
             {/* KPI Row 1 */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {kpiCards.map(card => (
-                    <div key={card.label}
-                        className="group rounded-xl border border-default bg-surface-0 p-5 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5">
+                {kpiCards.map(card => {
+                    const content = (
                         <div className="flex items-start justify-between">
                             <div>
                                 <p className="text-xs font-medium text-surface-500 uppercase tracking-wider">{card.label}</p>
@@ -102,13 +119,21 @@ export function CrmDashboardPage() {
                                 <card.icon className="h-5 w-5" />
                             </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                    const className = "group rounded-xl border border-default bg-surface-0 p-5 shadow-card transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
+                    return card.href ? (
+                        <Link key={card.label} to={card.href} className={cn(className, 'block')}>
+                            {content}
+                        </Link>
+                    ) : (
+                        <div key={card.label} className={className}>{content}</div>
+                    )
+                })}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {kpiCards2.map(card => (
-                    <div key={card.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                {kpiCards2.map(card => {
+                    const content = (
                         <div className="flex items-center gap-3">
                             <div className={cn('rounded-lg p-2.5', card.color)}>
                                 <card.icon className="h-5 w-5" />
@@ -118,8 +143,16 @@ export function CrmDashboardPage() {
                                 <p className="text-sm font-semibold tabular-nums text-surface-900">{isLoading ? '…' : card.value}</p>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                    const className = "rounded-xl border border-default bg-surface-0 p-4 shadow-card"
+                    return card.href ? (
+                        <Link key={card.label} to={card.href} className={cn(className, 'block hover:shadow-elevated transition-shadow')}>
+                            {content}
+                        </Link>
+                    ) : (
+                        <div key={card.label} className={className}>{content}</div>
+                    )
+                })}
             </div>
 
             {/* Pipeline Funnel Summary */}

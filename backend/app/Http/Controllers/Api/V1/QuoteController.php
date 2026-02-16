@@ -160,6 +160,22 @@ class QuoteController extends Controller
 
     // ── Ações de Negócio ──
 
+    /**
+     * Solicitar aprovação interna: draft -> pending_internal_approval.
+     */
+    public function requestInternalApproval(Quote $quote): JsonResponse
+    {
+        try {
+            $this->service->requestInternalApproval($quote);
+            return response()->json($quote->fresh()->load(['customer', 'seller', 'equipments.items']));
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao solicitar aprovação interna'], 500);
+        }
+    }
+
     public function send(Quote $quote): JsonResponse
     {
         try {
@@ -515,6 +531,8 @@ class QuoteController extends Controller
         $base = Quote::where('tenant_id', $tenantId);
         return response()->json([
             'draft' => (clone $base)->where('status', Quote::STATUS_DRAFT)->count(),
+            'pending_internal_approval' => (clone $base)->where('status', Quote::STATUS_PENDING_INTERNAL)->count(),
+            'internally_approved' => (clone $base)->where('status', Quote::STATUS_INTERNALLY_APPROVED)->count(),
             'sent' => (clone $base)->where('status', Quote::STATUS_SENT)->count(),
             'approved' => (clone $base)->where('status', Quote::STATUS_APPROVED)->count(),
             'invoiced' => (clone $base)->where('status', Quote::STATUS_INVOICED)->count(),

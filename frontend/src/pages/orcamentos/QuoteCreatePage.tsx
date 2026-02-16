@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -57,10 +57,12 @@ interface ItemRow {
 
 export function QuoteCreatePage() {
     const { hasPermission } = useAuthStore()
+    const [searchParams] = useSearchParams()
+    const customerIdFromUrl = searchParams.get('customer_id')
 
     const navigate = useNavigate()
     const [step, setStep] = useState<Step>('customer')
-    const [customerId, setCustomerId] = useState<number | null>(null)
+    const [customerId, setCustomerId] = useState<number | null>(customerIdFromUrl ? Number(customerIdFromUrl) : null)
     const [customerSearch, setCustomerSearch] = useState('')
     const [validUntil, setValidUntil] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
@@ -69,6 +71,18 @@ export function QuoteCreatePage() {
     const [source, setSource] = useState<string>('')
     const [blocks, setBlocks] = useState<EquipmentBlock[]>([])
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+    const { data: preselectedCustomer } = useQuery({
+        queryKey: ['customer', customerIdFromUrl],
+        queryFn: () => api.get(`/customers/${customerIdFromUrl}`).then((r) => r.data),
+        enabled: !!customerIdFromUrl,
+    })
+
+    useEffect(() => {
+        if (preselectedCustomer?.name) {
+            setCustomerSearch(preselectedCustomer.name)
+        }
+    }, [preselectedCustomer])
 
     // Lookups
     const { data: customersRes } = useQuery({

@@ -103,7 +103,7 @@ export function useTechAlerts() {
         }
 
         for (const wo of workOrders) {
-            const woAny = wo as Record<string, unknown>
+            const woAny = wo as unknown as Record<string, unknown>
             const woLat = woAny.latitude as number | undefined
             const woLng = woAny.longitude as number | undefined
             const custCoords = wo.customer_id ? customerCoords.get(wo.customer_id) : undefined

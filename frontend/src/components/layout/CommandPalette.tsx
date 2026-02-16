@@ -12,7 +12,7 @@ import {
 import {
     LayoutDashboard, FileText, Users, Package, DollarSign, Scale, Settings,
     Search, Briefcase, Phone, Wrench, Calendar, BarChart3, Shield, Plus,
-    Upload, Warehouse,
+    Upload, Warehouse, BookOpen,
 } from 'lucide-react'
 
 interface CommandRoute {
@@ -39,6 +39,7 @@ const routes: CommandRoute[] = [
     { label: 'Clientes', path: '/cadastros/clientes', icon: Users, group: 'Navegação', keywords: ['customers', 'cadastro'] },
     { label: 'Produtos', path: '/cadastros/produtos', icon: Package, group: 'Navegação', keywords: ['itens'] },
     { label: 'Fornecedores', path: '/cadastros/fornecedores', icon: Package, group: 'Navegação', keywords: ['suppliers'] },
+    { label: 'Catálogo', path: '/catalogo', icon: BookOpen, group: 'Navegação', keywords: ['catalog', 'serviços', 'link'] },
     { label: 'Técnicos - Agenda', path: '/tecnicos/agenda', icon: Wrench, group: 'Navegação', keywords: ['schedule'] },
     { label: 'Equipamentos', path: '/equipamentos', icon: Scale, group: 'Navegação', keywords: ['instruments', 'calibração'] },
     { label: 'Pesos Padrão', path: '/equipamentos/pesos-padrao', icon: Scale, group: 'Navegação', keywords: ['standard weights', 'peso'] },

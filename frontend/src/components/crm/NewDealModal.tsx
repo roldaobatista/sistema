@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
@@ -12,9 +12,12 @@ interface Props {
     onClose: () => void
     pipelineId: number
     stageId: number
+    initialCustomerId?: number
+    initialTitle?: string
+    initialSource?: string
 }
 
-export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
+export function NewDealModal({ open, onClose, pipelineId, stageId, initialCustomerId, initialTitle, initialSource }: Props) {
     const queryClient = useQueryClient()
     const [form, setForm] = useState({
         title: '',
@@ -24,6 +27,17 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
         source: '',
         notes: '',
     })
+
+    useEffect(() => {
+        if (open && (initialCustomerId != null || initialTitle != null || initialSource != null)) {
+            setForm(prev => ({
+                ...prev,
+                ...(initialCustomerId != null && { customer_id: String(initialCustomerId) }),
+                ...(initialTitle != null && initialTitle !== '' && { title: initialTitle }),
+                ...(initialSource != null && initialSource !== '' && { source: initialSource }),
+            }))
+        }
+    }, [open, initialCustomerId, initialTitle, initialSource])
 
     // Fetch customers for select
     const { data: customersRes } = useQuery({
@@ -79,8 +93,9 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-surface-600 mb-1 block">Cliente *</label>
+                    <label className="text-xs font-medium text-surface-600 mb-1 block" id="new-deal-customer-label">Cliente *</label>
                     <select
+                        aria-labelledby="new-deal-customer-label"
                         value={form.customer_id}
                         onChange={e => set('customer_id', e.target.value)}
                         className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
@@ -113,14 +128,15 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-surface-600 mb-1 block">Origem</label>
+                    <label className="text-xs font-medium text-surface-600 mb-1 block" id="new-deal-source-label">Origem</label>
                     <select
+                        aria-labelledby="new-deal-source-label"
                         value={form.source}
                         onChange={e => set('source', e.target.value)}
                         className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                     >
                         <option value="">Selecione</option>
-                        <option value="calibração_vencendo">Calibração Vencendo</option>
+                        <option value="calibracao_vencendo">Calibração Vencendo</option>
                         <option value="indicacao">Indicação</option>
                         <option value="prospeccao">Prospecção</option>
                         <option value="chamado">Chamado Técnico</option>

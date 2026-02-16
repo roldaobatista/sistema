@@ -92,7 +92,7 @@ export default function CertificateTemplatesPage() {
         <div className="space-y-6">
             <PageHeader
                 title="Templates de Certificado"
-                subtitle="Gerencie layouts personalizados para certificados de calibração ISO 17025"
+                subtitle="Gerencie layouts personalizados para certificados de calibração"
                 action={
                     <button
                         onClick={() => { closeDialog(); setShowDialog(true) }}
@@ -182,7 +182,7 @@ export default function CertificateTemplatesPage() {
                                     className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                                     value={form.name}
                                     onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                                    placeholder="Ex: Certificado ISO Padrão"
+                                    placeholder="Ex: Certificado padrão"
                                 />
                             </div>
                             <div>

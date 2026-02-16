@@ -5,7 +5,7 @@ import type { AxiosError } from 'axios'
 import {
     ArrowLeft, Phone, Clock, Truck, AlertCircle, CheckCircle, XCircle,
     UserCheck, ArrowRight, MapPin, ClipboardList, Wrench, Link as LinkIcon,
-    Send, AlertTriangle, RotateCcw, MessageSquare, Pencil,
+    Send, AlertTriangle, RotateCcw, MessageSquare, Pencil, History,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
@@ -41,6 +41,17 @@ const statusTransitions: Record<string, string[]> = {
     cancelled: ['open'],
 }
 
+function formatSlaRemaining(minutes: number | null | undefined): string {
+    if (minutes == null) return ''
+    const abs = Math.abs(minutes)
+    const h = Math.floor(abs / 60)
+    const m = abs % 60
+    const parts = []
+    if (h > 0) parts.push(`${h}h`)
+    if (m > 0 || parts.length === 0) parts.push(`${m}min`)
+    return minutes >= 0 ? `Restam ${parts.join(' ')}` : `Estourado há ${parts.join(' ')}`
+}
+
 function toLocalDateTimeInput(value?: string | null): string {
     if (!value) return ''
 
@@ -62,7 +73,7 @@ export function ServiceCallDetailPage() {
     const [reopenModalOpen, setReopenModalOpen] = useState(false)
     const [resolutionNotes, setResolutionNotes] = useState('')
     const [commentText, setCommentText] = useState('')
-    const [activeTab, setActiveTab] = useState<'info' | 'comments'>('info')
+    const [activeTab, setActiveTab] = useState<'info' | 'comments' | 'history'>('info')
     const [assignment, setAssignment] = useState({
         technician_id: '',
         driver_id: '',
@@ -91,10 +102,17 @@ export function ServiceCallDetailPage() {
         enabled: canAssign || canCreate,
     })
 
+    const { data: auditLogs = [] } = useQuery({
+        queryKey: ['service-call-audit', id],
+        queryFn: () => api.get(`/service-calls/${id}/audit-trail`).then((r) => r.data),
+        enabled: !!id && activeTab === 'history',
+    })
+
     const invalidateAll = () => {
         queryClient.invalidateQueries({ queryKey: ['service-call', id] })
         queryClient.invalidateQueries({ queryKey: ['service-calls'] })
         queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
+        queryClient.invalidateQueries({ queryKey: ['service-call-audit', id] })
     }
 
     useEffect(() => {
@@ -245,6 +263,11 @@ export function ServiceCallDetailPage() {
                                     <AlertTriangle className="w-3 h-3 mr-1" /> SLA Estourado
                                 </Badge>
                             )}
+                            {call.sla_remaining_minutes != null && (
+                                <Badge variant={call.sla_remaining_minutes >= 0 ? 'warning' : 'danger'}>
+                                    {formatSlaRemaining(call.sla_remaining_minutes)}
+                                </Badge>
+                            )}
                         </h1>
                     </div>
                 </div>
@@ -313,6 +336,15 @@ export function ServiceCallDetailPage() {
                             {comments.length}
                         </span>
                     )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('history')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'history'
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-surface-500 hover:text-surface-700'
+                        }`}
+                >
+                    <History className="w-4 h-4 inline mr-1" /> Histórico
                 </button>
             </div>
 
@@ -575,6 +607,31 @@ export function ServiceCallDetailPage() {
                                         </span>
                                     </div>
                                     <p className="text-sm text-surface-700 whitespace-pre-wrap">{c.content}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {activeTab === 'history' && (
+                <div className="bg-surface-0 rounded-xl shadow-card border border-default overflow-hidden">
+                    {auditLogs.length === 0 ? (
+                        <div className="flex flex-col items-center py-12 text-surface-500">
+                            <History className="w-10 h-10 mb-3 opacity-30" />
+                            <p className="text-sm">Nenhum registro no histórico</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-subtle">
+                            {auditLogs.map((log: any) => (
+                                <div key={log.id} className="flex gap-4 px-5 py-4">
+                                    <div className="flex-shrink-0 w-2 h-2 mt-1.5 rounded-full bg-surface-300" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-surface-900">{log.description}</p>
+                                        <p className="text-xs text-surface-500 mt-0.5">
+                                            {log.action_label || log.action} • {log.user?.name || 'Sistema'} • {log.created_at ? new Date(log.created_at).toLocaleString('pt-BR') : ''}
+                                        </p>
+                                    </div>
                                 </div>
                             ))}
                         </div>

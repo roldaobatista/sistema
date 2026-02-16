@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Edit, Scale, Wrench, FileText, Download,
     Calendar, User, MapPin, Hash, CheckCircle2, AlertTriangle,
-    XCircle, Clock, Activity, Plus, X, Search, Loader2, QrCode
+    XCircle, Clock, Activity, Plus, X, Search, Loader2, QrCode, Package
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -71,6 +71,7 @@ interface Equipment {
     notes: string | null
     customer?: { id: number; name: string; document: string | null; phone: string | null }
     responsible?: { id: number; name: string }
+    equipment_model?: { id: number; name: string; brand: string | null; category: string | null; products?: { id: number; name: string; code: string | null }[] } | null
     calibrations: Calibration[]
     maintenances: Maintenance[]
     documents: { id: number; name: string; file_path: string; type: string; created_at: string }[]
@@ -311,6 +312,30 @@ export default function EquipmentDetailPage() {
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card p-4">
                     <h3 className="text-xs font-semibold text-surface-700 uppercase tracking-wider mb-2">Observações</h3>
                     <p className="text-sm text-surface-600">{equipment.notes}</p>
+                </div>
+            )}
+
+            {equipment.equipment_model && (
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
+                    <div className="border-b border-default bg-surface-50 px-4 py-2.5">
+                        <h3 className="text-xs font-semibold text-surface-700 uppercase tracking-wider">Peças compatíveis</h3>
+                        <p className="text-xs text-surface-500 mt-0.5">Modelo: {equipment.equipment_model.brand ? `${equipment.equipment_model.brand} - ${equipment.equipment_model.name}` : equipment.equipment_model.name}</p>
+                    </div>
+                    <div className="p-4">
+                        {equipment.equipment_model.products && equipment.equipment_model.products.length > 0 ? (
+                            <ul className="space-y-1.5">
+                                {equipment.equipment_model.products.map((p) => (
+                                    <li key={p.id} className="flex items-center gap-2 text-sm">
+                                        <Package className="h-3.5 w-3.5 text-surface-400 shrink-0" />
+                                        <span className="font-medium text-surface-800">{p.name}</span>
+                                        {p.code && <span className="text-surface-500">#{p.code}</span>}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-surface-500">Nenhuma peça vinculada a este modelo.</p>
+                        )}
+                    </div>
                 </div>
             )}
 

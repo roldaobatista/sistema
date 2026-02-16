@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -25,8 +25,15 @@ export default function EquipmentCreatePage() {
         meta: { errorMessage: 'Erro ao carregar lista de clientes' },
     })
 
+    const { data: modelsData } = useQuery({
+        queryKey: ['equipment-models'],
+        queryFn: () => api.get('/equipment-models', { params: { per_page: 200 } }),
+    })
+    const equipmentModels: { id: number; name: string; brand: string | null }[] = modelsData?.data?.data ?? []
+
     const [form, setForm] = useState({
         customer_id: '',
+        equipment_model_id: '' as string | number,
         type: 'Balança',
         category: 'balanca_plataforma',
         brand: '',
@@ -76,6 +83,7 @@ export default function EquipmentCreatePage() {
         mutation.mutate({
             ...form,
             customer_id: +form.customer_id || undefined,
+            equipment_model_id: form.equipment_model_id ? +form.equipment_model_id : null,
             capacity: form.capacity ? +form.capacity : null,
             resolution: form.resolution ? +form.resolution : null,
             purchase_value: form.purchase_value ? +form.purchase_value : null,
@@ -128,7 +136,16 @@ export default function EquipmentCreatePage() {
                             <input value={form.manufacturer} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('manufacturer', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">Modelo</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Modelo de balança (catálogo)</label>
+                            <select value={form.equipment_model_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('equipment_model_id', e.target.value === '' ? '' : Number(e.target.value))} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm">
+                                <option value="">— Nenhum —</option>
+                                {equipmentModels.map((m) => (
+                                    <option key={m.id} value={m.id}>{m.brand ? `${m.brand} - ${m.name}` : m.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Modelo (texto livre)</label>
                             <input value={form.model} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('model', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: 2098" />
                         </div>
                         <div>

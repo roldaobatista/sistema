@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { PageHeader } from '@/components/ui/pageheader';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, FileText, Check, Clock, Archive, AlertTriangle } from 'lucide-react';
+import { Plus, FileText, Check, Clock, Archive, AlertTriangle, Download, Upload } from 'lucide-react';
 
 const categoryLabels: Record<string, string> = {
   procedure: 'Procedimento', instruction: 'Instrução de Trabalho', form: 'Formulário',
@@ -24,12 +24,14 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 
 export default function IsoDocumentsPage() {
   const qc = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showForm, setShowForm] = useState(false);
+  const [currentOnly, setCurrentOnly] = useState(false);
   const [form, setForm] = useState({ document_code: '', title: '', category: 'procedure', version: '1.0', description: '', effective_date: '', review_date: '' });
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['iso-documents'],
-    queryFn: () => api.get('/iso-documents').then(r => r.data),
+    queryKey: ['iso-documents', currentOnly],
+    queryFn: () => api.get('/iso-documents', { params: { current_only: currentOnly ? 1 : undefined } }).then(r => r.data),
   });
 
   const createMut = useMutation({
@@ -42,9 +44,48 @@ export default function IsoDocumentsPage() {
     onSuccess: () => { toast.success('Documento aprovado'); qc.invalidateQueries({ queryKey: ['iso-documents'] }); },
   });
 
+  const uploadMut = useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return api.post(`/iso-documents/${id}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    onSuccess: () => { toast.success('Arquivo anexado'); qc.invalidateQueries({ queryKey: ['iso-documents'] }); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Erro ao anexar'),
+  });
+
+  const handleDownload = (doc: any) => {
+    api.get(`/iso-documents/${doc.id}/download`, { responseType: 'blob' }).then((r) => {
+      const url = window.URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (doc.file_path ? doc.file_path.split('/').pop() : doc.title) || 'documento';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }).catch(() => toast.error('Erro ao baixar'));
+  };
+
+  const triggerUpload = (id: number) => {
+    fileInputRef.current?.setAttribute('data-doc-id', String(id));
+    fileInputRef.current?.click();
+  };
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const id = e.target.getAttribute('data-doc-id');
+    const file = e.target.files?.[0];
+    if (id && file) uploadMut.mutate({ id: Number(id), file });
+    e.target.value = '';
+    e.target.removeAttribute('data-doc-id');
+  };
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Documentos ISO" subtitle="Controle de documentos do sistema de gestão da qualidade (ISO 17025)">
+      <PageHeader title="Documentos da Qualidade" subtitle="Controle de documentos do sistema de gestão da qualidade">
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={currentOnly} onChange={e => setCurrentOnly(e.target.checked)} className="rounded" />
+            Apenas versão vigente
+          </label>
+        </div>
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" /> Novo Documento</Button></DialogTrigger>
           <DialogContent>
@@ -132,11 +173,21 @@ export default function IsoDocumentsPage() {
                       <td className="p-3"><Badge variant={st.color as any}>{st.label}</Badge></td>
                       <td className="p-3">{doc.review_date ? new Date(doc.review_date).toLocaleDateString('pt-BR') : '—'}</td>
                       <td className="p-3">
-                        {doc.status === 'draft' && (
-                          <Button size="sm" variant="outline" onClick={() => approveMut.mutate(doc.id)}>
-                            <Check className="h-3 w-3 mr-1" /> Aprovar
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {doc.file_path && (
+                            <Button size="sm" variant="ghost" onClick={() => handleDownload(doc)} title="Baixar">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => triggerUpload(doc.id)} title="Anexar arquivo" disabled={uploadMut.isPending}>
+                            <Upload className="h-4 w-4" />
                           </Button>
-                        )}
+                          {doc.status === 'draft' && (
+                            <Button size="sm" variant="outline" onClick={() => approveMut.mutate(doc.id)}>
+                              <Check className="h-3 w-3 mr-1" /> Aprovar
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -146,6 +197,7 @@ export default function IsoDocumentsPage() {
           )}
         </CardContent>
       </Card>
+      <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.odt" onChange={onFileChange} />
     </div>
   );
 }

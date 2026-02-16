@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\StockMovementType;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\Warehouse;
 use App\Models\WorkOrder;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,8 +13,32 @@ use Illuminate\Support\Facades\Auth;
 
 class StockService
 {
+    /**
+     * Resolve warehouse for WO: technician warehouse if assigned_to, else central.
+     */
+    public function resolveWarehouseIdForWorkOrder(WorkOrder $workOrder): ?int
+    {
+        $tenantId = $workOrder->tenant_id;
+        if ($workOrder->assigned_to) {
+            $w = Warehouse::where('tenant_id', $tenantId)
+                ->where('type', Warehouse::TYPE_TECHNICIAN)
+                ->where('user_id', $workOrder->assigned_to)
+                ->first();
+            if ($w) {
+                return (int) $w->id;
+            }
+        }
+        $central = Warehouse::where('tenant_id', $tenantId)
+            ->where('type', Warehouse::TYPE_FIXED)
+            ->whereNull('user_id')
+            ->whereNull('vehicle_id')
+            ->first();
+        return $central ? (int) $central->id : null;
+    }
+
     public function reserve(Product $product, float $qty, WorkOrder $workOrder, ?int $warehouseId = null): StockMovement
     {
+        $warehouseId = $warehouseId ?? $this->resolveWarehouseIdForWorkOrder($workOrder);
         return $this->createMovement(
             product: $product,
             type: StockMovementType::Reserve,
@@ -26,6 +51,7 @@ class StockService
 
     public function deduct(Product $product, float $qty, WorkOrder $workOrder, ?int $warehouseId = null): StockMovement
     {
+        $warehouseId = $warehouseId ?? $this->resolveWarehouseIdForWorkOrder($workOrder);
         return $this->createMovement(
             product: $product,
             type: StockMovementType::Exit,
@@ -38,6 +64,7 @@ class StockService
 
     public function returnStock(Product $product, float $qty, WorkOrder $workOrder, ?int $warehouseId = null): StockMovement
     {
+        $warehouseId = $warehouseId ?? $this->resolveWarehouseIdForWorkOrder($workOrder);
         return $this->createMovement(
             product: $product,
             type: StockMovementType::Return,

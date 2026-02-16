@@ -310,7 +310,7 @@ export default function TechToolInventoryPage() {
                                                             )}
                                                         </p>
                                                     </div>
-                                                    <StatusBadge status={tool.status} />
+                                                    <StatusBadge status={tool.status ?? 'valid'} />
                                                 </div>
                                                 <div className="flex items-center gap-4 mt-2 text-xs text-surface-500">
                                                     <span className="flex items-center gap-1">
@@ -379,7 +379,7 @@ export default function TechToolInventoryPage() {
                                                 <p className="font-medium text-surface-900 dark:text-surface-50">
                                                     {w.value} {w.unit ?? 'kg'}
                                                 </p>
-                                                <StatusBadge status={w.status} />
+                                                <StatusBadge status={w.status ?? 'valid'} />
                                             </div>
                                             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-surface-500">
                                                 {w.serial_number && <span>S/N: {w.serial_number}</span>}

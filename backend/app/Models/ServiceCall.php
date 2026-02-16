@@ -27,6 +27,8 @@ class ServiceCall extends Model
         'sla_breached',
         'response_time_minutes',
         'resolution_time_minutes',
+        'sla_remaining_minutes',
+        'sla_limit_hours',
     ];
 
     protected function casts(): array
@@ -150,6 +152,22 @@ class ServiceCall extends Model
             ? $this->created_at->diffInHours($this->completed_at)
             : $this->created_at->diffInHours(now());
         return $elapsed > $limit;
+    }
+
+    public function getSlaLimitHoursAttribute(): int
+    {
+        return self::SLA_HOURS[$this->priority ?? 'normal'] ?? 24;
+    }
+
+    /** Minutes remaining until SLA breach (negative = overdue). Null when completed/cancelled. */
+    public function getSlaRemainingMinutesAttribute(): ?int
+    {
+        if (in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_CANCELLED], true)) {
+            return null;
+        }
+        $limitMinutes = ($this->sla_limit_hours ?? 24) * 60;
+        $elapsedMinutes = (int) $this->created_at->diffInMinutes(now());
+        return $limitMinutes - $elapsedMinutes;
     }
 
     // ── Central Sync ──

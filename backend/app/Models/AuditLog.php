@@ -34,6 +34,7 @@ class AuditLog extends Model
         'login' => 'Login',
         'logout' => 'Logout',
         'status_changed' => 'Status Alterado',
+        'commented' => 'Comentário',
     ];
 
     public function user(): BelongsTo

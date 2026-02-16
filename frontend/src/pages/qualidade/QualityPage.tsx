@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Search, ClipboardCheck, AlertTriangle, MessageSquare, ThumbsUp,
     ChevronLeft, ChevronRight, BarChart3, CheckCircle2, Clock,
-    Plus, Pencil, Trash2, X
+    Plus, Pencil, Trash2, X, Wrench
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -22,7 +22,7 @@ type ModalEntity = 'procedure' | 'action' | 'complaint' | null
 
 const emptyProcedure = { code: '', title: '', revision: 1, status: 'draft', next_review_date: '' }
 const emptyAction = { type: 'corrective', nonconformity_description: '', root_cause: '', action_plan: '', deadline: '', status: 'open' }
-const emptyComplaint = { description: '', severity: 'medium', status: 'open', resolution: '' }
+const emptyComplaint = { description: '', severity: 'medium', status: 'open', resolution: '', response_due_at: '', responded_at: '' }
 
 export default function QualityPage() {
     const { hasPermission } = useAuthStore()
@@ -35,23 +35,32 @@ export default function QualityPage() {
     // Modal state
     const [modalEntity, setModalEntity] = useState<ModalEntity>(null)
     const [editingId, setEditingId] = useState<number | null>(null)
+    const [fromComplaintId, setFromComplaintId] = useState<number | null>(null)
     const [procForm, setProcForm] = useState(emptyProcedure)
     const [actionForm, setActionForm] = useState(emptyAction)
     const [complaintForm, setComplaintForm] = useState(emptyComplaint)
 
     const openCreate = (entity: ModalEntity) => {
         setEditingId(null)
+        setFromComplaintId(null)
         if (entity === 'procedure') setProcForm(emptyProcedure)
         if (entity === 'action') setActionForm(emptyAction)
         if (entity === 'complaint') setComplaintForm(emptyComplaint)
         setModalEntity(entity)
     }
 
+    const openActionFromComplaint = (c: any) => {
+        setFromComplaintId(c.id)
+        setEditingId(null)
+        setActionForm({ ...emptyAction, nonconformity_description: c.description || '' })
+        setModalEntity('action')
+    }
+
     const openEdit = (entity: ModalEntity, item: any) => {
         setEditingId(item.id)
         if (entity === 'procedure') setProcForm({ code: item.code || '', title: item.title || '', revision: item.revision || 1, status: item.status || 'draft', next_review_date: item.next_review_date?.substring(0, 10) || '' })
         if (entity === 'action') setActionForm({ type: item.type || 'corrective', nonconformity_description: item.nonconformity_description || '', root_cause: item.root_cause || '', action_plan: item.action_plan || '', deadline: item.deadline?.substring(0, 10) || '', status: item.status || 'open' })
-        if (entity === 'complaint') setComplaintForm({ description: item.description || '', severity: item.severity || 'medium', status: item.status || 'open', resolution: item.resolution || '' })
+        if (entity === 'complaint') setComplaintForm({ description: item.description || '', severity: item.severity || 'medium', status: item.status || 'open', resolution: item.resolution || '', response_due_at: item.response_due_at?.toString().slice(0, 10) || '', responded_at: item.responded_at ? new Date(item.responded_at).toISOString().slice(0, 10) : '' })
         setModalEntity(entity)
     }
 
@@ -63,8 +72,22 @@ export default function QualityPage() {
     })
 
     const saveAction = useMutation({
-        mutationFn: (data: typeof actionForm) => editingId ? api.put(`/quality/corrective-actions/${editingId}`, data) : api.post('/quality/corrective-actions', data),
-        onSuccess: () => { toast.success(editingId ? 'Ação atualizada' : 'Ação criada'); setModalEntity(null); queryClient.invalidateQueries({ queryKey: ['quality-corrective-actions'] }) },
+        mutationFn: (data: typeof actionForm) => {
+            if (fromComplaintId) {
+                return api.post('/quality/corrective-actions', {
+                    type: data.type,
+                    source: 'complaint',
+                    sourceable_type: 'App\\Models\\CustomerComplaint',
+                    sourceable_id: fromComplaintId,
+                    nonconformity_description: data.nonconformity_description,
+                    root_cause: data.root_cause || undefined,
+                    action_plan: data.action_plan || undefined,
+                    deadline: data.deadline || undefined,
+                })
+            }
+            return editingId ? api.put(`/quality/corrective-actions/${editingId}`, data) : api.post('/quality/corrective-actions', data)
+        },
+        onSuccess: () => { toast.success(editingId ? 'Ação atualizada' : 'Ação criada'); setModalEntity(null); setFromComplaintId(null); queryClient.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }) },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar ação'),
     })
 
@@ -129,7 +152,7 @@ export default function QualityPage() {
 
     return (
         <div className="space-y-5">
-            <PageHeader title="Qualidade & SGQ" subtitle="Procedimentos ISO, ações corretivas, NPS e satisfação" />
+            <PageHeader title="Qualidade & SGQ" subtitle="Procedimentos, ações corretivas, NPS e satisfação" />
 
             <div className="flex gap-1 rounded-xl border border-default bg-surface-50 p-1">
                 {tabs.map(t => (
@@ -248,12 +271,13 @@ export default function QualityPage() {
                                 <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Descrição</th>
                                 <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Severidade</th>
                                 <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
+                                <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Prazo resposta</th>
                                 <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data</th>
                                 <th className="px-4 py-2.5 text-right font-semibold text-surface-600">Ações</th>
                             </tr></thead>
                             <tbody className="divide-y divide-subtle">
-                                {loadingComplaints && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
-                                {!loadingComplaints && complaints.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-surface-400">Nenhuma reclamação</td></tr>}
+                                {loadingComplaints && <tr><td colSpan={7} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
+                                {!loadingComplaints && complaints.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-surface-400">Nenhuma reclamação</td></tr>}
                                 {complaints.map((c: any) => (
                                     <tr key={c.id} className="transition-colors hover:bg-surface-50/50">
                                         <td className="px-4 py-3 font-medium text-surface-900">{c.customer?.name ?? '—'}</td>
@@ -264,9 +288,11 @@ export default function QualityPage() {
                                         <td className="px-4 py-3"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                                             c.status === 'resolved' || c.status === 'closed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                                         )}>{c.status === 'resolved' ? 'Resolvida' : c.status === 'closed' ? 'Fechada' : c.status === 'investigating' ? 'Investigando' : 'Aberta'}</span></td>
+                                        <td className="px-4 py-3 text-surface-600">{c.response_due_at ? new Date(c.response_due_at).toLocaleDateString('pt-BR') : '—'}</td>
                                         <td className="px-4 py-3 text-surface-600">{new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex items-center justify-end gap-1">
+                                                <button onClick={() => openActionFromComplaint(c)} className="rounded-lg p-1.5 text-surface-400 hover:bg-brand-50 hover:text-brand-600" title="Abrir ação corretiva"><Wrench size={14} /></button>
                                                 <button onClick={() => openEdit('complaint', c)} className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-brand-600"><Pencil size={14} /></button>
                                                 <button onClick={() => handleDelete('complaints', c.id)} className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
                                             </div>
@@ -460,6 +486,12 @@ export default function QualityPage() {
                             </div>
                             <div><label className="block text-sm font-medium text-surface-700 mb-1">Resolução</label>
                                 <textarea rows={2} value={complaintForm.resolution} onChange={e => setComplaintForm({ ...complaintForm, resolution: e.target.value })} className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100" placeholder="Resolução adotada..." /></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-sm font-medium text-surface-700 mb-1">Prazo para resposta</label>
+                                    <input type="date" value={complaintForm.response_due_at} onChange={e => setComplaintForm({ ...complaintForm, response_due_at: e.target.value })} className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100" /></div>
+                                <div><label className="block text-sm font-medium text-surface-700 mb-1">Respondido em</label>
+                                    <input type="date" value={complaintForm.responded_at} onChange={e => setComplaintForm({ ...complaintForm, responded_at: e.target.value })} className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100" /></div>
+                            </div>
                             <div className="flex justify-end gap-3 pt-2">
                                 <button type="button" onClick={() => setModalEntity(null)} className="rounded-lg border border-default px-4 py-2 text-sm font-medium text-surface-600 hover:bg-surface-50">Cancelar</button>
                                 <button type="submit" disabled={saveComplaint.isPending} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">{saveComplaint.isPending ? 'Salvando...' : 'Salvar'}</button>

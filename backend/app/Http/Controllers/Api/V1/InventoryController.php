@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Inventory;
 use App\Models\InventoryItem;
+use App\Models\Notification;
+use App\Models\SystemAlert;
 use App\Models\WarehouseStock;
 use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
@@ -149,22 +151,24 @@ class InventoryController extends Controller
 
         try {
             return DB::transaction(function () use ($inventory) {
+                $discrepancyDetails = [];
                 foreach ($inventory->items as $item) {
                     $discrepancy = $item->discrepancy;
 
                     if ($discrepancy != 0) {
-                        // Aplica o ajuste de estoque
+                        $adjustQty = $discrepancy;
                         $this->stockService->manualAdjustment(
                             product: $item->product,
-                            qty: abs($discrepancy),
+                            qty: $adjustQty,
                             warehouseId: $inventory->warehouse_id,
                             batchId: $item->batch_id,
-                            serialId: $item->product_serial_id,
+                            serialId: $item->product_serial_id ?? null,
                             notes: "Ajuste automático via Inventário #{$inventory->id} ({$inventory->reference})",
                             user: Auth::user()
                         );
 
                         $item->update(['adjustment_quantity' => $discrepancy]);
+                        $discrepancyDetails[] = $item->product->name . ': esperado ' . $item->expected_quantity . ', contado ' . $item->counted_quantity;
                     }
                 }
 
@@ -172,6 +176,29 @@ class InventoryController extends Controller
                     'status' => Inventory::STATUS_COMPLETED,
                     'completed_at' => now()
                 ]);
+
+                if (count($discrepancyDetails) > 0) {
+                    $warehouse = $inventory->warehouse;
+                    $title = 'Diferença no inventário - ' . ($warehouse ? $warehouse->name : '#' . $inventory->warehouse_id);
+                    SystemAlert::create([
+                        'tenant_id' => $inventory->tenant_id,
+                        'alert_type' => 'inventory_discrepancy_critical',
+                        'severity' => 'critical',
+                        'title' => $title,
+                        'message' => implode('; ', array_slice($discrepancyDetails, 0, 5)),
+                        'status' => 'active',
+                        'alertable_type' => Inventory::class,
+                        'alertable_id' => $inventory->id,
+                    ]);
+                    $estoquistas = \App\Models\User::where('tenant_id', $inventory->tenant_id)->role('estoquista')->pluck('id');
+                    foreach ($estoquistas as $uid) {
+                        Notification::notify($inventory->tenant_id, $uid, 'inventory_discrepancy_critical', $title, [
+                            'message' => 'Inventário finalizado com diferenças. Revise em Estoque > Inventários.',
+                            'link' => '/estoque/inventarios/' . $inventory->id,
+                            'data' => ['inventory_id' => $inventory->id],
+                        ]);
+                    }
+                }
 
                 return response()->json([
                     'message' => 'Inventário finalizado e ajustes aplicados',

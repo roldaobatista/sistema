@@ -37,16 +37,62 @@ class CrmController extends Controller
     }
     // ─── Dashboard ──────────────────────────────────────
 
+    private function dashboardPeriod(Request $request): array
+    {
+        $period = $request->input('period', 'month');
+        $periodRef = $request->input('period_ref');
+
+        $now = now();
+        if ($periodRef) {
+            if (preg_match('/^\d{4}-\d{2}$/', $periodRef)) {
+                $start = \Carbon\Carbon::parse($periodRef . '-01');
+            } else {
+                $start = \Carbon\Carbon::parse($periodRef);
+            }
+        } else {
+            $start = $now->copy();
+        }
+
+        if ($period === 'quarter') {
+            $start->startOfQuarter();
+            $end = $start->copy()->endOfQuarter();
+        } elseif ($period === 'year') {
+            $start->startOfYear();
+            $end = $start->copy()->endOfYear();
+        } else {
+            $start->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+        }
+
+        $label = $period === 'month'
+            ? $start->translatedFormat('F Y')
+            : ($period === 'quarter'
+                ? $start->format('Y') . ' T' . $start->quarter
+                : $start->format('Y'));
+
+        return [
+            'start' => $start,
+            'end' => $end,
+            'label' => $label,
+            'period' => $period,
+        ];
+    }
+
     public function dashboard(Request $request): JsonResponse
     {
         $tenantId = $this->tenantId($request);
+        $range = $this->dashboardPeriod($request);
+        $start = $range['start'];
+        $end = $range['end'];
 
         $openDeals = CrmDeal::where('tenant_id', $tenantId)->open()->count();
-        $wonMonth = CrmDeal::where('tenant_id', $tenantId)->won()
-            ->where('won_at', '>=', now()->startOfMonth())
+        $wonInPeriod = CrmDeal::where('tenant_id', $tenantId)->won()
+            ->where('won_at', '>=', $start)
+            ->where('won_at', '<=', $end)
             ->count();
-        $lostMonth = CrmDeal::where('tenant_id', $tenantId)->lost()
-            ->where('lost_at', '>=', now()->startOfMonth())
+        $lostInPeriod = CrmDeal::where('tenant_id', $tenantId)->lost()
+            ->where('lost_at', '>=', $start)
+            ->where('lost_at', '<=', $end)
             ->count();
 
         $revenueInPipeline = CrmDeal::where('tenant_id', $tenantId)->open()
@@ -54,7 +100,8 @@ class CrmController extends Controller
             ->value('weighted_value') ?? 0;
 
         $wonRevenue = CrmDeal::where('tenant_id', $tenantId)->won()
-            ->where('won_at', '>=', now()->startOfMonth())
+            ->where('won_at', '>=', $start)
+            ->where('won_at', '<=', $end)
             ->sum('value');
 
         $avgHealthScore = Customer::where('tenant_id', $tenantId)->where('is_active', true)
@@ -66,10 +113,27 @@ class CrmController extends Controller
             ->count();
 
         $conversionRate = 0;
-        $totalClosed = $wonMonth + $lostMonth;
+        $totalClosed = $wonInPeriod + $lostInPeriod;
         if ($totalClosed > 0) {
-            $conversionRate = round(($wonMonth / $totalClosed) * 100, 1);
+            $conversionRate = round(($wonInPeriod / $totalClosed) * 100, 1);
         }
+
+        if ($range['period'] === 'quarter') {
+            $prevStart = $start->copy()->subQuarter()->startOfQuarter();
+            $prevEnd = $prevStart->copy()->endOfQuarter();
+        } elseif ($range['period'] === 'year') {
+            $prevStart = $start->copy()->subYear()->startOfYear();
+            $prevEnd = $prevStart->copy()->endOfYear();
+        } else {
+            $prevStart = $start->copy()->subMonth()->startOfMonth();
+            $prevEnd = $prevStart->copy()->endOfMonth();
+        }
+        $prevWon = CrmDeal::where('tenant_id', $tenantId)->won()
+            ->where('won_at', '>=', $prevStart)->where('won_at', '<=', $prevEnd)->count();
+        $prevLost = CrmDeal::where('tenant_id', $tenantId)->lost()
+            ->where('lost_at', '>=', $prevStart)->where('lost_at', '<=', $prevEnd)->count();
+        $prevWonRevenue = CrmDeal::where('tenant_id', $tenantId)->won()
+            ->where('won_at', '>=', $prevStart)->where('won_at', '<=', $prevEnd)->sum('value');
 
         // Funil por pipeline
         $pipelines = CrmPipeline::where('tenant_id', $tenantId)->active()
@@ -95,8 +159,9 @@ class CrmController extends Controller
             ->take(10)
             ->get();
 
-        // Top clientes por receita (deals ganhos)
+        // Top clientes por receita (deals ganhos no período)
         $topCustomers = CrmDeal::where('tenant_id', $tenantId)->won()
+            ->where('won_at', '>=', $start)->where('won_at', '<=', $end)
             ->select('customer_id', DB::raw('SUM(value) as total_value'), DB::raw('COUNT(*) as deal_count'))
             ->groupBy('customer_id')
             ->orderByDesc('total_value')
@@ -112,26 +177,38 @@ class CrmController extends Controller
             ->take(10)
             ->get(['id', 'code', 'brand', 'model', 'customer_id', 'next_calibration_at']);
 
-        // Messaging stats
-        $msgThisMonth = CrmMessage::where('tenant_id', $tenantId)->where('created_at', '>=', now()->startOfMonth());
-        $totalSent = (clone $msgThisMonth)->outbound()->count();
-        $totalReceived = (clone $msgThisMonth)->inbound()->count();
-        $whatsappSent = (clone $msgThisMonth)->outbound()->byChannel('whatsapp')->count();
-        $emailSent = (clone $msgThisMonth)->outbound()->byChannel('email')->count();
-        $delivered = (clone $msgThisMonth)->outbound()->whereIn('status', [CrmMessage::STATUS_DELIVERED, CrmMessage::STATUS_READ])->count();
-        $failed = (clone $msgThisMonth)->outbound()->where('status', CrmMessage::STATUS_FAILED)->count();
+        // Messaging stats (período selecionado)
+        $msgInPeriod = CrmMessage::where('tenant_id', $tenantId)
+            ->where('created_at', '>=', $start)->where('created_at', '<=', $end);
+        $totalSent = (clone $msgInPeriod)->outbound()->count();
+        $totalReceived = (clone $msgInPeriod)->inbound()->count();
+        $whatsappSent = (clone $msgInPeriod)->outbound()->byChannel('whatsapp')->count();
+        $emailSent = (clone $msgInPeriod)->outbound()->byChannel('email')->count();
+        $delivered = (clone $msgInPeriod)->outbound()->whereIn('status', [CrmMessage::STATUS_DELIVERED, CrmMessage::STATUS_READ])->count();
+        $failed = (clone $msgInPeriod)->outbound()->where('status', CrmMessage::STATUS_FAILED)->count();
         $deliveryRate = $totalSent > 0 ? round(($delivered / $totalSent) * 100, 1) : 0;
 
         return response()->json([
+            'period' => [
+                'label' => $range['label'],
+                'start' => $start->toIso8601String(),
+                'end' => $end->toIso8601String(),
+                'period' => $range['period'],
+            ],
             'kpis' => [
                 'open_deals' => $openDeals,
-                'won_month' => $wonMonth,
-                'lost_month' => $lostMonth,
+                'won_month' => $wonInPeriod,
+                'lost_month' => $lostInPeriod,
                 'revenue_in_pipeline' => (float) $revenueInPipeline,
                 'won_revenue' => (float) $wonRevenue,
                 'avg_health_score' => round($avgHealthScore),
                 'no_contact_90d' => $noContact90,
                 'conversion_rate' => $conversionRate,
+            ],
+            'previous_period' => [
+                'won_month' => $prevWon,
+                'lost_month' => $prevLost,
+                'won_revenue' => (float) $prevWonRevenue,
             ],
             'messaging_stats' => [
                 'sent_month' => $totalSent,
@@ -731,7 +808,7 @@ class CrmController extends Controller
             ->take(20);
         
         if (!$isAdmin) {
-            $serviceCallsQuery->where('user_id', $user->id);
+            $serviceCallsQuery->where('created_by', $user->id);
         }
         $serviceCalls = $serviceCallsQuery->get();
 

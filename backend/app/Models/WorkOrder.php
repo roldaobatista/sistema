@@ -34,6 +34,7 @@ class WorkOrder extends Model
         'checklist_id', 'sla_policy_id', 'sla_due_at', 'sla_responded_at',
         'dispatch_authorized_by', 'dispatch_authorized_at',
         'parent_id', 'is_master', 'is_warranty',
+        'displacement_started_at', 'displacement_arrived_at', 'displacement_duration_minutes',
     ];
 
     protected function casts(): array
@@ -46,6 +47,8 @@ class WorkOrder extends Model
             'signature_at' => 'datetime',
             'sla_due_at' => 'datetime',
             'sla_responded_at' => 'datetime',
+            'displacement_started_at' => 'datetime',
+            'displacement_arrived_at' => 'datetime',
             'discount' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
@@ -242,6 +245,27 @@ class WorkOrder extends Model
         return $this->belongsToMany(Equipment::class, 'work_order_equipments')
             ->withPivot('observations')
             ->withTimestamps();
+    }
+
+    public function displacementStops(): HasMany
+    {
+        return $this->hasMany(WorkOrderDisplacementStop::class)->orderBy('started_at');
+    }
+
+    public function displacementLocations(): HasMany
+    {
+        return $this->hasMany(WorkOrderDisplacementLocation::class)->orderBy('recorded_at');
+    }
+
+    public function isTechnicianAuthorized(?int $userId): bool
+    {
+        if (!$userId) {
+            return false;
+        }
+        if ((int) $this->assigned_to === $userId) {
+            return true;
+        }
+        return $this->technicians()->where('user_id', $userId)->exists();
     }
 
     // GAP-23: Configurable warranty days (no hardcode)

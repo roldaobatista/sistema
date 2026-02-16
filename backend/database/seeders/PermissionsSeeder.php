@@ -52,6 +52,10 @@ class PermissionsSeeder extends Seeder
             'cadastros.supplier.update',
             'cadastros.supplier.view',
 
+            // ─── Catálogo de Serviços (público) ───
+            'catalog.view',
+            'catalog.manage',
+
             // ─── Central de Atendimento ───
             'central.assign',
             'central.close.self',
@@ -172,6 +176,10 @@ class PermissionsSeeder extends Seeder
             'equipments.standard_weight.delete',
             'equipments.standard_weight.update',
             'equipments.standard_weight.view',
+            'equipments.equipment_model.view',
+            'equipments.equipment_model.create',
+            'equipments.equipment_model.update',
+            'equipments.equipment_model.delete',
 
             // ─── Estoque ───
             'estoque.manage',
@@ -179,6 +187,13 @@ class PermissionsSeeder extends Seeder
             'estoque.movement.view',
             'estoque.view',
             'estoque.warehouse.view',
+            'estoque.transfer.create',
+            'estoque.transfer.accept',
+            'estoque.used_stock.view',
+            'estoque.used_stock.report',
+            'estoque.used_stock.confirm',
+            'estoque.warranty.view',
+            'estoque.label.print',
 
             // ─── Despesas / Abastecimento ───
             'expenses.expense.approve',
@@ -356,6 +371,9 @@ class PermissionsSeeder extends Seeder
             'quality.document.view',
             'quality.document.create',
             'quality.document.approve',
+            'quality.management_review.view',
+            'quality.management_review.create',
+            'quality.management_review.update',
 
             // ─── 75 Features — Permissões novas ───
             'equipamentos.calibration.view',
@@ -521,6 +539,7 @@ class PermissionsSeeder extends Seeder
                 str_starts_with($p, 'cadastros.customer.view') ||
                 str_starts_with($p, 'cadastros.product.view') ||
                 str_starts_with($p, 'cadastros.service.view') ||
+                str_starts_with($p, 'catalog.') ||
                 str_starts_with($p, 'estoque.movement.view') ||
                 str_starts_with($p, 'notifications.') ||
                 $p === 'platform.dashboard.view' ||
@@ -545,10 +564,16 @@ class PermissionsSeeder extends Seeder
                 'service_calls.service_call.view',
                 'service_calls.service_call.update',
                 'equipments.equipment.view',
+                'equipments.equipment_model.view',
+                'estoque.view',
                 'estoque.movement.view',
+                'estoque.transfer.accept',
+                'estoque.used_stock.view',
+                'estoque.used_stock.report',
                 'cadastros.customer.view',
                 'cadastros.product.view',
                 'cadastros.service.view',
+                'catalog.view',
                 'notifications.notification.view',
                 'notifications.notification.update',
                 'hr.clock.view',
@@ -595,6 +620,7 @@ class PermissionsSeeder extends Seeder
                 str_starts_with($p, 'customer.') ||
                 str_starts_with($p, 'cadastros.product.view') ||
                 str_starts_with($p, 'cadastros.service.view') ||
+                str_starts_with($p, 'catalog.') ||
                 str_starts_with($p, 'reports.crm') ||
                 str_starts_with($p, 'reports.quotes') ||
                 str_starts_with($p, 'reports.customers') ||
@@ -702,6 +728,7 @@ class PermissionsSeeder extends Seeder
                 str_starts_with($p, 'customer.') ||
                 str_starts_with($p, 'cadastros.product.view') ||
                 str_starts_with($p, 'cadastros.service.view') ||
+                str_starts_with($p, 'catalog.') ||
                 str_starts_with($p, 'reports.crm') ||
                 str_starts_with($p, 'reports.quotes') ||
                 str_starts_with($p, 'reports.customers') ||
@@ -733,6 +760,7 @@ class PermissionsSeeder extends Seeder
                 str_starts_with($p, 'customer.') ||
                 str_starts_with($p, 'cadastros.product.') ||
                 str_starts_with($p, 'cadastros.service.') ||
+                str_starts_with($p, 'catalog.') ||
                 str_starts_with($p, 'reports.crm') ||
                 str_starts_with($p, 'reports.quotes') ||
                 str_starts_with($p, 'reports.customers') ||
@@ -765,6 +793,10 @@ class PermissionsSeeder extends Seeder
                 'notifications.notification.update',
                 'hr.clock.view',
                 'hr.clock.manage',
+                'estoque.view',
+                'estoque.transfer.create',
+                'estoque.transfer.accept',
+                'estoque.movement.view',
             ];
             $motorista->syncPermissions($motoristaPerms);
         }

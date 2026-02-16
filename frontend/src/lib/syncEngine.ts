@@ -25,7 +25,7 @@ interface SyncPullResponse {
 }
 
 interface SyncBatchItem {
-    type: 'checklist_response' | 'expense' | 'signature' | 'status_change'
+    type: 'checklist_response' | 'expense' | 'signature' | 'status_change' | 'displacement_start' | 'displacement_arrive' | 'displacement_location' | 'displacement_stop'
     data: Record<string, unknown>
 }
 

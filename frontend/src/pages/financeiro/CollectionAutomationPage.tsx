@@ -37,16 +37,16 @@ export default function CollectionAutomationPage() {
 
     const { data: summary } = useQuery<CollectionSummary>({
         queryKey: ['collection-summary'],
-        queryFn: () => api.get('/api/v1/collection/summary').then(r => r.data.data ?? r.data),
+        queryFn: () => api.get('/collection/summary').then(r => r.data.data ?? r.data),
     })
 
     const { data: actions, isLoading } = useQuery<CollectionAction[]>({
         queryKey: ['collection-actions'],
-        queryFn: () => api.get('/api/v1/collection/actions').then(r => r.data.data ?? r.data),
+        queryFn: () => api.get('/collection/actions').then(r => r.data.data ?? r.data),
     })
 
     const runMutation = useMutation({
-        mutationFn: () => api.post('/api/v1/collection/run'),
+        mutationFn: () => api.post('/collection/run'),
         onSuccess: (res) => {
             const processed = res.data?.processed ?? 0
             toast.success(`Motor de cobrança executado. ${processed} ação(ões) processadas.`)

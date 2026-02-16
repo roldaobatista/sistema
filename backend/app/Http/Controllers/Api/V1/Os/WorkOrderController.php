@@ -260,6 +260,7 @@ class WorkOrderController extends Controller
             'items',
             'attachments',
             'checklistResponses.item',
+            'displacementStops',
         ]);
 
         $data = $workOrder->toArray();

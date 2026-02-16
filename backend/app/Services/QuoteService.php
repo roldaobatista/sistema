@@ -67,6 +67,25 @@ class QuoteService
         });
     }
 
+    /**
+     * Request internal approval: draft -> pending_internal_approval.
+     */
+    public function requestInternalApproval(Quote $quote): Quote
+    {
+        if ($quote->status !== Quote::STATUS_DRAFT) {
+            throw new \DomainException('Apenas orçamentos em rascunho podem solicitar aprovação interna');
+        }
+
+        $hasItems = $quote->equipments()->whereHas('items')->exists();
+        if (!$hasItems) {
+            throw new \DomainException('Orçamento precisa ter pelo menos um equipamento com itens');
+        }
+
+        $quote->update(['status' => Quote::STATUS_PENDING_INTERNAL]);
+        AuditLog::log('status_changed', "Orçamento {$quote->quote_number} enviado para aprovação interna", $quote);
+        return $quote;
+    }
+
     public function sendQuote(Quote $quote): Quote
     {
         if ($quote->status !== Quote::STATUS_INTERNALLY_APPROVED) {

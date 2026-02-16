@@ -27,6 +27,10 @@ class ProductController extends Controller
             $query->where('category_id', $categoryId);
         }
 
+        if ($location = $request->get('storage_location')) {
+            $query->where('storage_location', 'like', "%{$location}%");
+        }
+
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }
@@ -54,6 +58,8 @@ class ProductController extends Controller
             'stock_qty' => 'numeric|min:0',
             'stock_min' => 'numeric|min:0',
             'is_active' => 'boolean',
+            'manufacturer_code' => 'nullable|string|max:100',
+            'storage_location' => 'nullable|string|max:100',
         ]);
 
         try {
@@ -67,7 +73,7 @@ class ProductController extends Controller
 
     public function show(Product $product): JsonResponse
     {
-        return response()->json($product->load('category:id,name'));
+        return response()->json($product->load(['category:id,name', 'equipmentModels:id,name,brand,category']));
     }
 
     public function update(Request $request, Product $product): JsonResponse
@@ -83,6 +89,8 @@ class ProductController extends Controller
             'stock_qty' => 'numeric|min:0',
             'stock_min' => 'numeric|min:0',
             'is_active' => 'boolean',
+            'manufacturer_code' => 'nullable|string|max:100',
+            'storage_location' => 'nullable|string|max:100',
         ]);
 
         $product->update($validated);

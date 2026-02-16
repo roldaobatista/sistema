@@ -34,7 +34,8 @@ export function CrmCohortPage() {
         queryFn: () => crmFeaturesApi.getCohortAnalysis({ months: Number(months) }),
     })
 
-    const cohorts: CrmCohort[] = res?.data?.data ?? res?.data ?? []
+    const raw = res?.data
+    const cohorts: CrmCohort[] = Array.isArray(raw) ? raw : (raw as unknown as { data?: CrmCohort[] })?.data ?? []
 
     if (isLoading) {
         return (

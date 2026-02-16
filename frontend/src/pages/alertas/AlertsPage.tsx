@@ -164,7 +164,7 @@ export default function AlertsPage() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Alertas Ativos</CardTitle>
           <div className="flex items-center gap-2">
-            <Select value={groupBy} onValueChange={(v: GroupBy) => setGroupBy(v)}>
+            <Select value={groupBy} onValueChange={(v: string) => setGroupBy(v as GroupBy)}>
               <SelectTrigger className="w-[180px]">
                 <LayoutGrid className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Agrupar por" />

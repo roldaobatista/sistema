@@ -90,7 +90,7 @@ export default function CalibrationReadingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Leituras de Calibração"
-        subtitle={`Calibração #${calibrationId} — Dados para certificado ISO 17025`}
+        subtitle={`Calibração #${calibrationId} — Dados para certificado de calibração`}
       />
 
       <Card>
@@ -182,7 +182,7 @@ export default function CalibrationReadingsPage() {
             </Button>
             <Button variant="default" onClick={() => generateCertMutation.mutate()} disabled={generateCertMutation.isPending}>
               <FileCheck className="h-4 w-4 mr-1" />
-              {generateCertMutation.isPending ? 'Gerando...' : 'Gerar Certificado ISO'}
+              {generateCertMutation.isPending ? 'Gerando...' : 'Gerar Certificado'}
             </Button>
           </div>
         </CardContent>

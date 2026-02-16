@@ -14,11 +14,13 @@ class CustomerComplaint extends Model
     protected $fillable = [
         'tenant_id', 'customer_id', 'work_order_id', 'equipment_id',
         'description', 'category', 'severity', 'status', 'resolution',
-        'assigned_to', 'resolved_at',
+        'assigned_to', 'resolved_at', 'response_due_at', 'responded_at',
     ];
 
     protected $casts = [
         'resolved_at' => 'date',
+        'response_due_at' => 'date',
+        'responded_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo

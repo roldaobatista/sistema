@@ -33,13 +33,17 @@ class CentralController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
+            $tipos = array_map(fn ($c) => $c->value, \App\Enums\CentralItemType::cases());
+            $prioridades = array_map(fn ($c) => $c->value, \App\Enums\CentralItemPriority::cases());
             $validated = $request->validate([
-                'tipo' => 'required|string',
+                'tipo' => ['required', 'string', Rule::in(array_merge($tipos, array_map('strtolower', $tipos)))],
                 'titulo' => 'required|string|max:255',
                 'descricao_curta' => 'nullable|string|max:255',
                 'responsavel_user_id' => 'nullable|exists:users,id',
-                'prioridade' => 'nullable|string',
+                'prioridade' => ['nullable', 'string', Rule::in(array_merge($prioridades, array_map('strtolower', $prioridades)))],
+                'visibilidade' => ['nullable', 'string', Rule::in(['PRIVADO', 'EQUIPE', 'EMPRESA', 'privado', 'equipe', 'empresa'])],
                 'due_at' => 'nullable|date',
+                'remind_at' => 'nullable|date',
                 'contexto' => 'nullable|array',
                 'tags' => 'nullable|array',
             ]);
@@ -57,18 +61,29 @@ class CentralController extends Controller
 
     public function show(CentralItem $centralItem): JsonResponse
     {
+        if (!$this->service->usuarioPodeAcessarItem($centralItem)) {
+            return response()->json(['message' => 'Acesso negado a este item.'], 403);
+        }
+
         return response()->json($centralItem->load(['comments.user', 'history.user', 'source']));
     }
 
     public function update(Request $request, CentralItem $centralItem): JsonResponse
     {
+        if (!$this->service->usuarioPodeAcessarItem($centralItem)) {
+            return response()->json(['message' => 'Acesso negado a este item.'], 403);
+        }
+
+        $statuses = array_map(fn ($c) => $c->value, \App\Enums\CentralItemStatus::cases());
+        $prioridades = array_map(fn ($c) => $c->value, \App\Enums\CentralItemPriority::cases());
         $validated = $request->validate([
             'titulo' => 'sometimes|string|max:255',
             'descricao_curta' => 'nullable|string|max:255',
-            'status' => 'sometimes|string',
-            'prioridade' => 'sometimes|string',
+            'status' => ['sometimes', 'string', Rule::in(array_merge($statuses, array_map('strtolower', $statuses)))],
+            'prioridade' => ['sometimes', 'string', Rule::in(array_merge($prioridades, array_map('strtolower', $prioridades)))],
             'responsavel_user_id' => 'sometimes|exists:users,id',
             'due_at' => 'nullable|date',
+            'remind_at' => 'nullable|date',
             'snooze_until' => 'nullable|date',
             'tags' => 'nullable|array',
         ]);
@@ -80,7 +95,11 @@ class CentralController extends Controller
 
     public function comment(Request $request, CentralItem $centralItem): JsonResponse
     {
-        $request->validate(['body' => 'required|string']);
+        if (!$this->service->usuarioPodeAcessarItem($centralItem)) {
+            return response()->json(['message' => 'Acesso negado a este item.'], 403);
+        }
+
+        $request->validate(['body' => 'required|string|max:2000']);
         
         $comment = $this->service->comentar($centralItem, $request->input('body'), auth()->id());
         
@@ -89,6 +108,10 @@ class CentralController extends Controller
 
     public function assign(Request $request, CentralItem $centralItem): JsonResponse
     {
+        if (!$this->service->usuarioPodeAcessarItem($centralItem)) {
+            return response()->json(['message' => 'Acesso negado a este item.'], 403);
+        }
+
         $tenantId = $this->currentTenantId($request);
 
         $validated = $request->validate([

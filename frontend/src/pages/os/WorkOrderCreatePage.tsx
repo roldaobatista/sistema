@@ -34,8 +34,9 @@ export function WorkOrderCreatePage() {
     const qc = useQueryClient()
     const [searchParams] = useSearchParams()
 
+    const customerIdFromUrl = searchParams.get('customer_id')
     const [form, setForm] = useState({
-        customer_id: '' as string | number,
+        customer_id: (customerIdFromUrl || '') as string | number,
         equipment_id: '' as string | number,
         assigned_to: '' as string | number,
         priority: 'normal',
@@ -59,6 +60,18 @@ export function WorkOrderCreatePage() {
     const [showNewEquip, setShowNewEquip] = useState(false)
     const [items, setItems] = useState<ItemForm[]>([])
     const [customerSearch, setCustomerSearch] = useState('')
+
+    const { data: preselectedCustomer } = useQuery({
+        queryKey: ['customer', customerIdFromUrl],
+        queryFn: () => api.get(`/customers/${customerIdFromUrl}`).then((r) => r.data),
+        enabled: !!customerIdFromUrl,
+    })
+
+    useEffect(() => {
+        if (preselectedCustomer?.name) {
+            setCustomerSearch(preselectedCustomer.name)
+        }
+    }, [preselectedCustomer])
 
     // Queries
     const { data: customersRes } = useQuery({

@@ -56,7 +56,7 @@ export function CrmAlertsPage() {
         queryFn: () => crmFeaturesApi.getSmartAlerts(params).then(r => r.data),
     })
 
-    const alerts: CrmSmartAlert[] = alertsRes?.data ?? alertsRes ?? []
+    const alerts: CrmSmartAlert[] = Array.isArray(alertsRes) ? alertsRes : (alertsRes as { data?: CrmSmartAlert[] })?.data ?? []
 
     const acknowledgeMut = useMutation({
         mutationFn: (id: number) => crmFeaturesApi.acknowledgeAlert(id),

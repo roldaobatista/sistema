@@ -70,7 +70,7 @@ export default function InmetroSealReportPage() {
                         <LayoutDashboard className="w-7 h-7 text-brand-500" />
                         Relatório & Auditoria de Selos
                     </h1>
-                    <p className="text-surface-500 text-sm">Controle de rastreabilidade e conformidade ISO 17025.</p>
+                    <p className="text-surface-500 text-sm">Controle de rastreabilidade e conformidade de calibração.</p>
                 </div>
                 <button
                     onClick={handleExport}

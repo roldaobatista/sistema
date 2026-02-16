@@ -13,9 +13,11 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\WorkOrderCompleted::class => [
             \App\Listeners\HandleWorkOrderCompletion::class,
             \App\Listeners\TriggerNpsSurvey::class,
+            [\App\Listeners\CreateWarrantyTrackingOnWorkOrderInvoiced::class, 'handleWorkOrderCompleted'],
         ],
         \App\Events\WorkOrderInvoiced::class => [
             \App\Listeners\HandleWorkOrderInvoicing::class,
+            [\App\Listeners\CreateWarrantyTrackingOnWorkOrderInvoiced::class, 'handleWorkOrderInvoiced'],
         ],
         \App\Events\WorkOrderCancelled::class => [
             \App\Listeners\HandleWorkOrderCancellation::class,

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 import { ArrowLeft, Save, Wrench } from 'lucide-react'
@@ -38,6 +38,8 @@ interface Assignee {
 
 export function ServiceCallCreatePage() {
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
+    const customerIdFromUrl = searchParams.get('customer_id')
     const { hasPermission, hasRole } = useAuthStore()
 
     const canAssign = hasRole('super_admin') || hasPermission('service_calls.service_call.assign')
@@ -77,7 +79,34 @@ export function ServiceCallCreatePage() {
                 .then((r) => r.data),
     })
 
-    const customers: Customer[] = customersRes?.data ?? []
+    const { data: preselectedCustomer } = useQuery({
+        queryKey: ['customer', customerIdFromUrl],
+        queryFn: () => api.get(`/customers/${customerIdFromUrl}`).then((r) => r.data),
+        enabled: !!customerIdFromUrl,
+    })
+
+    const customers: Customer[] = useMemo(() => {
+        const list = customersRes?.data ?? []
+        if (preselectedCustomer && !list.some((c: Customer) => String(c.id) === String(preselectedCustomer.id))) {
+            return [preselectedCustomer as Customer, ...list]
+        }
+        return list
+    }, [customersRes?.data, preselectedCustomer])
+
+    const appliedPreselection = useRef(false)
+    useEffect(() => {
+        if (customerIdFromUrl && preselectedCustomer && !appliedPreselection.current) {
+            appliedPreselection.current = true
+            const c = preselectedCustomer as Customer
+            setForm((prev) => ({
+                ...prev,
+                customer_id: String(c.id),
+                city: c.address_city || prev.city,
+                state: c.address_state || prev.state,
+                address: [c.address_street, c.address_number, c.address_neighborhood].filter(Boolean).join(', ') || prev.address,
+            }))
+        }
+    }, [customerIdFromUrl, preselectedCustomer])
 
     const { data: assigneesRes, isError: assigneesError } = useQuery({
         queryKey: ['service-call-assignees'],

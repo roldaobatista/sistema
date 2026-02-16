@@ -74,11 +74,29 @@ Schedule::command('central:scan-financials')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/central-scan-financials.log'));
 
+// ─── Central: Lembretes (remind_at) a cada 5 min ───
+Schedule::command('central:send-reminders')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/central-reminders.log'));
+
 // ─── INMETRO Weekly Sync (semanal - segunda às 06:00) ───
 Schedule::command('inmetro:sync')
     ->weeklyOn(1, '06:00')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/inmetro-sync.log'));
+
+// ─── Inventário PWA: lembrete semanal (técnico e motorista) ───
+Schedule::command('inventory:weekly-reminder')
+    ->weeklyOn(1, '08:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/inventory-weekly-reminder.log'));
+
+// ─── Inventário central: lembrete mensal (estoquista) ───
+Schedule::command('inventory:monthly-central-reminder')
+    ->monthlyOn(1, '08:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/inventory-monthly-central.log'));
 
 // ─── INMETRO Lead Generation (diário às 07:45) ───
 Schedule::command('inmetro:generate-leads')

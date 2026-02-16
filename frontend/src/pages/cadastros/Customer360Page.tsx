@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import * as Tabs from '@radix-ui/react-tabs'
 import {
     ArrowLeft, User, Phone, Mail, MapPin, Building2, Tag,
@@ -35,8 +35,17 @@ import { toast } from 'sonner'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+const serviceCallStatusLabel: Record<string, string> = {
+    open: 'Aberto', scheduled: 'Agendado', in_transit: 'Em Trânsito',
+    in_progress: 'Em Atendimento', completed: 'Concluído', cancelled: 'Cancelado',
+}
+const serviceCallPriorityLabel: Record<string, string> = {
+    low: 'Baixa', normal: 'Normal', high: 'Alta', urgent: 'Urgente',
+}
+
 export function Customer360Page() {
     const { id } = useParams()
+    const navigate = useNavigate()
     const customerId = Number(id)
     const queryClient = useQueryClient()
     const { hasPermission, hasRole } = useAuthStore()
@@ -60,6 +69,8 @@ export function Customer360Page() {
     const canViewFinance = isAdmin || hasPermission('finance.receivable.view')
     const canViewPrices = canViewFinance || hasPermission('quotes.quote.create') // Técnico-Vendedor vê preços
     const canEdit = isAdmin || hasPermission('cadastros.customer.update')
+    const canCreateChamado = isAdmin || hasPermission('service_calls.service_call.create')
+    const canCreateOs = isAdmin || hasPermission('os.work_order.create')
 
     const { put: cacheCapsule, getById: getCachedCapsule } = useOfflineStore('customer-capsules')
     const [isOnline, setIsOnline] = useState(() => navigator.onLine)
@@ -437,7 +448,11 @@ export function Customer360Page() {
                         <div className="rounded-2xl border border-default bg-surface-0 shadow-sm overflow-hidden">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-subtle bg-surface-50/50">
                                 <h3 className="text-sm font-bold text-surface-900">Ordens de Serviço</h3>
-                                <Button variant="primary" size="xs">Nova OS</Button>
+                                {canCreateOs && (
+                                    <Button variant="primary" size="xs" onClick={() => navigate(`/os/nova?customer_id=${customerId}`)}>
+                                        Nova OS
+                                    </Button>
+                                )}
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
@@ -453,7 +468,7 @@ export function Customer360Page() {
                                         {workOrders.length === 0 ? (
                                             <tr><td colSpan={canViewPrices ? 4 : 3} className="px-5 py-8 text-center text-surface-400 italic">Nenhuma OS registrada</td></tr>
                                         ) : workOrders.map((wo: any) => (
-                                            <tr key={wo.id} className="hover:bg-surface-50 group transition-colors">
+                                            <tr key={wo.id} className="hover:bg-surface-50 group transition-colors cursor-pointer" onClick={() => navigate(`/os/${wo.id}`)}>
                                                 <td className="px-5 py-3 font-bold text-brand-600">#{wo.number}</td>
                                                 <td className="px-5 py-3 text-surface-600">{new Date(wo.created_at).toLocaleDateString()}</td>
                                                 <td className="px-5 py-3">
@@ -472,7 +487,11 @@ export function Customer360Page() {
                         <div className="rounded-2xl border border-default bg-surface-0 shadow-sm overflow-hidden">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-subtle bg-surface-50/50">
                                 <h3 className="text-sm font-bold text-surface-900">Chamados Técnicos</h3>
-                                <Button variant="outline" size="xs">Novo Chamado</Button>
+                                {canCreateChamado && (
+                                    <Button variant="outline" size="xs" onClick={() => navigate(`/chamados/novo?customer_id=${customerId}`)}>
+                                        Novo Chamado
+                                    </Button>
+                                )}
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
@@ -488,14 +507,18 @@ export function Customer360Page() {
                                         {serviceCalls.length === 0 ? (
                                             <tr><td colSpan={4} className="px-5 py-8 text-center text-surface-400 italic">Nenhum chamado aberto</td></tr>
                                         ) : serviceCalls.map((sc: any) => (
-                                            <tr key={sc.id} className="hover:bg-surface-50 transition-colors">
-                                                <td className="px-5 py-3 font-mono text-xs font-bold text-brand-600">#{sc.protocol}</td>
-                                                <td className="px-5 py-3 text-surface-800 font-medium">{sc.subject}</td>
-                                                <td className="px-5 py-3">
-                                                    <Badge variant={sc.priority === 'crítica' ? 'danger' : sc.priority === 'alta' ? 'warning' : 'default'}>{sc.priority}</Badge>
+                                            <tr key={sc.id} className="hover:bg-surface-50 transition-colors cursor-pointer" onClick={() => navigate(`/chamados/${sc.id}`)}>
+                                                <td className="px-5 py-3 font-mono text-xs font-bold text-brand-600">#{sc.call_number || sc.protocol}</td>
+                                                <td className="px-5 py-3 text-surface-800 font-medium max-w-[200px] truncate" title={sc.observations || sc.subject}>
+                                                    {sc.observations || sc.subject || '—'}
                                                 </td>
                                                 <td className="px-5 py-3">
-                                                    <Badge variant="outline">{sc.status}</Badge>
+                                                    <Badge variant={sc.priority === 'urgent' ? 'danger' : sc.priority === 'high' ? 'warning' : 'default'}>
+                                                        {serviceCallPriorityLabel[sc.priority] || sc.priority}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <Badge variant="outline">{serviceCallStatusLabel[sc.status] || sc.status}</Badge>
                                                 </td>
                                             </tr>
                                         ))}
@@ -510,7 +533,11 @@ export function Customer360Page() {
                         <div className="rounded-2xl border border-default bg-surface-0 shadow-sm overflow-hidden">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-subtle bg-surface-50/50">
                                 <h3 className="text-sm font-bold text-surface-900">Orçamentos e Propostas</h3>
-                                <Button variant="outline" size="xs">Novo Orçamento</Button>
+                                {(hasRole('super_admin') || hasPermission('quotes.quote.create')) && (
+                                    <Button variant="outline" size="xs" onClick={() => navigate(`/orcamentos/novo?customer_id=${customerId}`)}>
+                                        Novo Orçamento
+                                    </Button>
+                                )}
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
@@ -526,7 +553,7 @@ export function Customer360Page() {
                                         {quotes.length === 0 ? (
                                             <tr><td colSpan={canViewPrices ? 4 : 3} className="px-5 py-8 text-center text-surface-400 italic">Nenhum orçamento pendente</td></tr>
                                         ) : quotes.map((q: any) => (
-                                            <tr key={q.id} className="hover:bg-surface-50 transition-colors">
+                                            <tr key={q.id} className="hover:bg-surface-50 transition-colors cursor-pointer" onClick={() => navigate(`/orcamentos/${q.id}`)}>
                                                 <td className="px-5 py-3 font-bold text-brand-600">#{q.quote_number}</td>
                                                 <td className="px-5 py-3 text-surface-600">{new Date(q.created_at).toLocaleDateString()}</td>
                                                 <td className="px-5 py-3">

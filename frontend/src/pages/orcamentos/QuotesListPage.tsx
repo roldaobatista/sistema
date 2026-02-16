@@ -43,6 +43,9 @@ export function QuotesListPage() {
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [status, setStatus] = useState('')
+    const [sellerId, setSellerId] = useState('')
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
     const [page, setPage] = useState(1)
     const [deleteTarget, setDeleteTarget] = useState<Quote | null>(null)
     const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -52,6 +55,7 @@ export function QuotesListPage() {
     const canDelete = hasPermission('quotes.quote.delete')
     const canSend = hasPermission('quotes.quote.send')
     const canApprove = hasPermission('quotes.quote.approve')
+    const canInternalApprove = hasPermission('quotes.quote.internal_approve')
 
     useEffect(() => {
         if (debounceRef.current) {
@@ -73,9 +77,24 @@ export function QuotesListPage() {
         queryFn: () => api.get('/quotes-summary').then(r => r.data),
     })
 
+    const { data: usersRes } = useQuery({
+        queryKey: ['users-select-quotes'],
+        queryFn: () => api.get('/users', { params: { per_page: 200 } }).then(r => r.data),
+    })
+    const users = usersRes?.data ?? (Array.isArray(usersRes) ? usersRes : [])
+
     const { data: listData, isLoading } = useQuery({
-        queryKey: ['quotes', debouncedSearch, status, page],
-        queryFn: () => api.get('/quotes', { params: { search: debouncedSearch || undefined, status: status || undefined, page } }).then(r => r.data),
+        queryKey: ['quotes', debouncedSearch, status, sellerId, dateFrom, dateTo, page],
+        queryFn: () => api.get('/quotes', {
+            params: {
+                search: debouncedSearch || undefined,
+                status: status || undefined,
+                seller_id: sellerId || undefined,
+                date_from: dateFrom || undefined,
+                date_to: dateTo || undefined,
+                page,
+            },
+        }).then(r => r.data),
     })
     const quotes: Quote[] = listData?.data ?? []
     const pagination = listData
@@ -84,6 +103,18 @@ export function QuotesListPage() {
         qc.invalidateQueries({ queryKey: ['quotes'] })
         qc.invalidateQueries({ queryKey: ['quotes-summary'] })
     }
+
+    const requestInternalApprovalMut = useMutation({
+        mutationFn: (id: number) => api.post(`/quotes/${id}/request-internal-approval`),
+        onSuccess: () => { toast.success('Solicitação de aprovação interna enviada!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao solicitar aprovação'),
+    })
+
+    const internalApproveMut = useMutation({
+        mutationFn: (id: number) => api.post(`/quotes/${id}/internal-approve`),
+        onSuccess: () => { toast.success('Orçamento aprovado internamente!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao aprovar internamente'),
+    })
 
     const sendMut = useMutation({
         mutationFn: (id: number) => api.post(`/quotes/${id}/send`),
@@ -135,6 +166,8 @@ export function QuotesListPage() {
 
     const summaryCards = summary ? [
         { label: 'Rascunho', value: summary.draft, color: 'text-content-secondary' },
+        { label: 'Aguard. Aprov. Interna', value: summary.pending_internal_approval ?? 0, color: 'text-amber-600' },
+        { label: 'Aprov. Internamente', value: summary.internally_approved ?? 0, color: 'text-teal-600' },
         { label: 'Enviados', value: summary.sent, color: 'text-blue-600' },
         { label: 'Aprovados', value: summary.approved, color: 'text-green-600' },
         { label: 'Rejeitados', value: summary.rejected ?? 0, color: 'text-red-600' },
@@ -155,7 +188,7 @@ export function QuotesListPage() {
             </div>
 
             {summaryCards.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-4">
                     {summaryCards.map((c) => (
                         <Card key={c.label} className="p-4 text-center">
                             <p className="text-xs text-content-secondary mb-1">{c.label}</p>
@@ -165,29 +198,64 @@ export function QuotesListPage() {
                 </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-tertiary" />
-                    <Input
-                        placeholder="Buscar por número ou cliente..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-10"
-                    />
+            <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-tertiary" />
+                        <Input
+                            placeholder="Buscar por número ou cliente..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        {STATUS_FILTERS.map((f) => (
+                            <button
+                                key={f.value}
+                                onClick={() => { setStatus(f.value); setPage(1) }}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${status === f.value
+                                    ? 'bg-brand-600 text-white'
+                                    : 'bg-surface-100 text-content-secondary hover:bg-surface-200'
+                                    }`}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                    {STATUS_FILTERS.map((f) => (
-                        <button
-                            key={f.value}
-                            onClick={() => { setStatus(f.value); setPage(1) }}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${status === f.value
-                                ? 'bg-brand-600 text-white'
-                                : 'bg-surface-100 text-content-secondary hover:bg-surface-200'
-                                }`}
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <label className="flex items-center gap-2">
+                        <span className="text-content-secondary">Vendedor</span>
+                        <select
+                            value={sellerId}
+                            onChange={(e) => { setSellerId(e.target.value); setPage(1) }}
+                            className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 min-w-[140px]"
                         >
-                            {f.label}
-                        </button>
-                    ))}
+                            <option value="">Todos</option>
+                            {Array.isArray(users) && users.map((u: { id: number; name: string }) => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="flex items-center gap-2">
+                        <span className="text-content-secondary">De</span>
+                        <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+                            className="rounded-lg border border-default bg-surface-0 px-3 py-1.5"
+                        />
+                    </label>
+                    <label className="flex items-center gap-2">
+                        <span className="text-content-secondary">Até</span>
+                        <input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+                            className="rounded-lg border border-default bg-surface-0 px-3 py-1.5"
+                        />
+                    </label>
                 </div>
             </div>
 
@@ -198,6 +266,7 @@ export function QuotesListPage() {
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase">Número</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase">Cliente</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase">Vendedor</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase">Status</th>
                                 <th className="px-4 py-3 text-right text-xs font-semibold text-content-secondary uppercase">Total</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase">Validade</th>
@@ -215,13 +284,13 @@ export function QuotesListPage() {
                                 ))
                             ) : quotes.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-16 text-center">
+                                    <td colSpan={7} className="px-4 py-16 text-center">
                                         <FileText className="h-12 w-12 text-content-tertiary mx-auto mb-3" />
                                         <p className="text-content-secondary font-medium">Nenhum orçamento encontrado</p>
                                         <p className="text-sm text-content-tertiary mt-1">
-                                            {debouncedSearch || status ? 'Tente alterar os filtros' : 'Crie seu primeiro orçamento'}
+                                            {debouncedSearch || status || sellerId || dateFrom || dateTo ? 'Tente alterar os filtros' : 'Crie seu primeiro orçamento'}
                                         </p>
-                                        {canCreate && !debouncedSearch && !status && (
+                                        {canCreate && !debouncedSearch && !status && !sellerId && !dateFrom && !dateTo && (
                                             <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/orcamentos/novo')}>
                                                 <Plus className="h-4 w-4 mr-1" /> Novo Orçamento
                                             </Button>
@@ -246,6 +315,7 @@ export function QuotesListPage() {
                                                 {q.revision > 1 && <span className="text-xs text-content-tertiary ml-1">rev.{q.revision}</span>}
                                             </td>
                                             <td className="px-4 py-3 text-content-primary">{q.customer?.name ?? '—'}</td>
+                                            <td className="px-4 py-3 text-content-secondary text-sm">{q.seller?.name ?? '—'}</td>
                                             <td className="px-4 py-3"><Badge variant={cfg.variant}>{cfg.label}</Badge></td>
                                             <td className="px-4 py-3 text-right font-medium">{formatCurrency(q.total)}</td>
                                             <td className="px-4 py-3 text-content-secondary text-sm">
@@ -254,12 +324,17 @@ export function QuotesListPage() {
                                             <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex gap-1 justify-end">
                                                     {canSend && isDraft && (
-                                                        <button title="Solicitar Aprovação Interna" onClick={() => sendMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-amber-600">
+                                                        <button title="Solicitar Aprovação Interna" onClick={() => requestInternalApprovalMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-amber-600" disabled={requestInternalApprovalMut.isPending}>
                                                             <Send className="h-4 w-4" />
                                                         </button>
                                                     )}
+                                                    {(canInternalApprove && (isDraft || q.status === QUOTE_STATUS.PENDING_INTERNAL)) && (
+                                                        <button title="Aprovar internamente" onClick={() => internalApproveMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-teal-600" disabled={internalApproveMut.isPending}>
+                                                            <CheckCircle className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                     {canSend && isInternallyApproved && (
-                                                        <button title="Enviar ao Cliente" onClick={() => sendMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-blue-600">
+                                                        <button title="Enviar ao Cliente" onClick={() => sendMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-blue-600" disabled={sendMut.isPending}>
                                                             <Send className="h-4 w-4" />
                                                         </button>
                                                     )}

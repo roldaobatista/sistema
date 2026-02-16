@@ -25,6 +25,8 @@ class CalibrationCertificateService
             'approver',
             'workOrder',
             'standardWeights',
+            'readings',
+            'excentricityTests',
         ]);
 
         // P1.3: Checklist é PRÉ-REQUISITO para gerar certificado
@@ -39,6 +41,16 @@ class CalibrationCertificateService
         }
 
         $tenant = Tenant::find($calibration->tenant_id);
+
+        if (empty($calibration->approved_by) && $calibration->performed_by) {
+            $calibration->approved_by = $calibration->performed_by;
+            $calibration->save();
+            $calibration->load('approver');
+        }
+        if (empty(trim($calibration->laboratory ?? ''))) {
+            $calibration->laboratory = $tenant?->name ?? 'Laboratório de Calibração';
+            $calibration->save();
+        }
 
         // Auto-generate certificate number if empty
         if (empty($calibration->certificate_number)) {

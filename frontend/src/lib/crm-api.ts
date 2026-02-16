@@ -80,6 +80,12 @@ export interface CrmActivity {
 }
 
 export interface CrmDashboardData {
+    period?: {
+        label: string
+        start: string
+        end: string
+        period: 'month' | 'quarter' | 'year'
+    }
     kpis: {
         open_deals: number
         won_month: number
@@ -89,6 +95,11 @@ export interface CrmDashboardData {
         avg_health_score: number
         no_contact_90d: number
         conversion_rate: number
+    }
+    previous_period?: {
+        won_month: number
+        lost_month: number
+        won_revenue: number
     }
     messaging_stats: {
         sent_month: number
@@ -123,7 +134,8 @@ export interface CrmConstants {
 
 export const crmApi = {
     // Dashboard
-    getDashboard: () => api.get<CrmDashboardData>('/crm/dashboard'),
+    getDashboard: (params?: { period?: 'month' | 'quarter' | 'year'; period_ref?: string }) =>
+        api.get<CrmDashboardData>('/crm/dashboard', { params }),
 
     // Constants
     getConstants: () => api.get<CrmConstants>('/crm/constants'),

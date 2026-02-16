@@ -87,8 +87,10 @@ export default function TechContractInfoPage() {
                 const first = list[0]
                 return { first, customerId: res.config?.params?.customer_id }
             })
-            .then(({ first, customerId } = {}) => {
-                if (!first?.id || !customerId) return
+            .then((result?: { first?: RecurringContract; customerId?: number }) => {
+                const first = result?.first
+                const customerId = result?.customerId
+                if (!first?.id || customerId == null) return
                 return api.get('/work-orders', {
                     params: { customer_id: customerId, per_page: 20 },
                 }).then((r) => {

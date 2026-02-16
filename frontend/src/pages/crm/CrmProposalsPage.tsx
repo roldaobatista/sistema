@@ -45,7 +45,7 @@ export function CrmProposalsPage() {
         queryFn: () => crmFeaturesApi.getProposals(),
     })
 
-    const proposals: CrmInteractiveProposal[] = res?.data?.data ?? res?.data ?? []
+    const proposals: CrmInteractiveProposal[] = Array.isArray(res?.data) ? res.data : (res?.data as { data?: CrmInteractiveProposal[] })?.data ?? []
 
     const createMutation = useMutation({
         mutationFn: (data: { quote_id: number; deal_id?: number; expires_at?: string }) =>

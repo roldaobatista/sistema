@@ -6,11 +6,13 @@ import {
     CheckCircle2, Loader2, ChevronRight, WifiOff, ShieldCheck,
     Navigation, FileText, Send, Mic, Printer, ImagePlus,
     FlaskConical, Award, Flag, FileCheck, X, Star, MessageCircle,
+    Car, Coffee, MapPinned,
 } from 'lucide-react'
 import { useOfflineStore } from '@/hooks/useOfflineStore'
+import { useDisplacementTracking } from '@/hooks/useDisplacementTracking'
 import { useTechTimerStore } from '@/stores/tech-timer-store'
 import { cn } from '@/lib/utils'
-import { offlinePut } from '@/lib/syncEngine'
+import { offlinePost } from '@/lib/syncEngine'
 import api from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
 import SLACountdown from '@/components/common/SLACountdown'
@@ -62,6 +64,13 @@ export default function TechWorkOrderDetailPage() {
     const [quickNote, setQuickNote] = useState('')
     const [sendingNote, setSendingNote] = useState(false)
     const [notes, setNotes] = useState<{ content?: string; message?: string; body?: string; created_at?: string }[]>([])
+    const [displacementLoading, setDisplacementLoading] = useState(false)
+    const [showStopModal, setShowStopModal] = useState(false)
+    const [stopNotes, setStopNotes] = useState('')
+
+    const displacementActive = wo?.displacement_status === 'in_progress'
+    const openStop = wo?.displacement_stops?.find((s) => !s.ended_at)
+    useDisplacementTracking(wo?.id, !!displacementActive && !openStop)
 
 
     useEffect(() => {
@@ -160,7 +169,7 @@ export default function TechWorkOrderDetailPage() {
             setWo(updated as OfflineWorkOrder)
             setShowCompletionWizard(false)
 
-            await offlinePut(`/tech/sync/batch`, {
+            await offlinePost(`/tech/sync/batch`, {
                 mutations: [{
                     type: 'status_change',
                     data: {
@@ -176,6 +185,200 @@ export default function TechWorkOrderDetailPage() {
             setTransitioning(false)
         }
     }, [wo, put])
+
+    const handleStartDisplacement = async () => {
+        if (!wo || !navigator.geolocation) {
+            toast({ title: 'Erro', description: 'Geolocalização não suportada.', variant: 'destructive' })
+            return
+        }
+        setDisplacementLoading(true)
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                try {
+                    if (navigator.onLine) {
+                        await api.post(`/work-orders/${wo.id}/displacement/start`, {
+                            latitude: pos.coords.latitude,
+                            longitude: pos.coords.longitude,
+                        })
+                    } else {
+                        await offlinePost(`/tech/sync/batch`, {
+                            mutations: [{
+                                type: 'displacement_start',
+                                data: {
+                                    work_order_id: wo.id,
+                                    latitude: pos.coords.latitude,
+                                    longitude: pos.coords.longitude,
+                                },
+                            }],
+                        })
+                    }
+                    const updated = {
+                        ...wo,
+                        displacement_started_at: new Date().toISOString(),
+                        displacement_status: 'in_progress' as const,
+                        displacement_stops: wo.displacement_stops ?? [],
+                        updated_at: new Date().toISOString(),
+                    }
+                    await put(updated as OfflineWorkOrder)
+                    setWo(updated as OfflineWorkOrder)
+                    toast({ title: 'Deslocamento iniciado' })
+                    getById(wo.id).then((d) => d && setWo(d as OfflineWorkOrder))
+                } catch (e: any) {
+                    toast({ title: 'Erro', description: e?.response?.data?.message || 'Falha ao iniciar deslocamento', variant: 'destructive' })
+                } finally {
+                    setDisplacementLoading(false)
+                }
+            },
+            () => {
+                toast({ title: 'Erro', description: 'Não foi possível obter sua localização.', variant: 'destructive' })
+                setDisplacementLoading(false)
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        )
+    }
+
+    const handleArriveDisplacement = async () => {
+        if (!wo) return
+        setDisplacementLoading(true)
+        const sendArrive = async (lat?: number, lng?: number) => {
+            try {
+                if (navigator.onLine) {
+                    await api.post(`/work-orders/${wo.id}/displacement/arrive`, lat != null && lng != null ? { latitude: lat, longitude: lng } : {})
+                } else {
+                    await offlinePost(`/tech/sync/batch`, {
+                        mutations: [{
+                            type: 'displacement_arrive',
+                            data: {
+                                work_order_id: wo.id,
+                                ...(lat != null && lng != null && { latitude: lat, longitude: lng }),
+                            },
+                        }],
+                    })
+                }
+                const res = navigator.onLine ? await api.get(`/work-orders/${wo.id}/displacement`) : null
+                const data = res?.data
+                const updated = {
+                    ...wo,
+                    displacement_arrived_at: data?.displacement_arrived_at ?? new Date().toISOString(),
+                    displacement_duration_minutes: data?.displacement_duration_minutes ?? wo.displacement_duration_minutes,
+                    displacement_status: 'arrived' as const,
+                    updated_at: new Date().toISOString(),
+                }
+                await put(updated as OfflineWorkOrder)
+                setWo(updated as OfflineWorkOrder)
+                toast({ title: 'Chegada registrada' })
+                getById(wo.id).then((d) => d && setWo(d as OfflineWorkOrder))
+            } catch (e: any) {
+                toast({ title: 'Erro', description: e?.response?.data?.message || 'Falha ao registrar chegada', variant: 'destructive' })
+            } finally {
+                setDisplacementLoading(false)
+            }
+        }
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => sendArrive(pos.coords.latitude, pos.coords.longitude),
+                () => sendArrive(),
+                { enableHighAccuracy: true, timeout: 10000 }
+            )
+        } else {
+            sendArrive()
+        }
+    }
+
+    const handleAddStop = async (type: string) => {
+        if (!wo) return
+        setDisplacementLoading(true)
+        setShowStopModal(false)
+        const getPos = (): Promise<{ lat: number; lng: number } | null> =>
+            new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve(null)
+                    return
+                }
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    () => resolve(null),
+                    { enableHighAccuracy: true, timeout: 8000 }
+                )
+            })
+        const pos = await getPos()
+        try {
+            let createdStop: { id: number; type: string; started_at: string } | null = null
+            if (navigator.onLine) {
+                const res = await api.post(`/work-orders/${wo.id}/displacement/stops`, {
+                    type,
+                    notes: stopNotes || undefined,
+                    ...(pos && { latitude: pos.lat, longitude: pos.lng }),
+                })
+                createdStop = res.data?.stop ?? null
+            } else {
+                await offlinePost(`/tech/sync/batch`, {
+                    mutations: [{
+                        type: 'displacement_stop',
+                        data: {
+                            work_order_id: wo.id,
+                            type,
+                            started_at: new Date().toISOString(),
+                            notes: stopNotes || undefined,
+                            ...(pos && { latitude: pos.lat, longitude: pos.lng }),
+                        },
+                    }],
+                })
+            }
+            setStopNotes('')
+            toast({ title: 'Parada registrada' })
+            const optimisticStop = createdStop
+                ? { id: createdStop.id, type: createdStop.type, started_at: createdStop.started_at, ended_at: null as string | null }
+                : { id: ('temp-' + Date.now()) as any, type, started_at: new Date().toISOString(), ended_at: null as string | null }
+            const updated = {
+                ...wo,
+                displacement_stops: [...(wo.displacement_stops ?? []), optimisticStop],
+                updated_at: new Date().toISOString(),
+            }
+            await put(updated as OfflineWorkOrder)
+            setWo(updated as OfflineWorkOrder)
+            getById(wo.id).then((d) => d && setWo(d as OfflineWorkOrder))
+        } catch (e: any) {
+            toast({ title: 'Erro', description: e?.response?.data?.message || 'Falha ao registrar parada', variant: 'destructive' })
+        } finally {
+            setDisplacementLoading(false)
+        }
+    }
+
+    const handleEndStop = async () => {
+        if (!wo || !openStop) return
+        setDisplacementLoading(true)
+        try {
+            if (navigator.onLine) {
+                await api.patch(`/work-orders/${wo.id}/displacement/stops/${openStop.id}`, {})
+            } else {
+                await offlinePost(`/tech/sync/batch`, {
+                    mutations: [{
+                        type: 'displacement_stop',
+                        data: {
+                            work_order_id: wo.id,
+                            ended_at: new Date().toISOString(),
+                            ...(typeof openStop.id === 'number' ? { stop_id: openStop.id } : { end_latest: true }),
+                        },
+                    }],
+                })
+            }
+            toast({ title: 'Parada encerrada' })
+            const openIdx = wo.displacement_stops?.findIndex((s) => !s.ended_at && (typeof openStop.id === 'number' ? s.id === openStop.id : true)) ?? -1
+            const updatedStops = [...(wo.displacement_stops ?? [])]
+            if (openIdx !== undefined && openIdx >= 0) {
+                updatedStops[openIdx] = { ...updatedStops[openIdx], ended_at: new Date().toISOString() }
+            }
+            const updatedWo = { ...wo, displacement_stops: updatedStops, updated_at: new Date().toISOString() }
+            await put(updatedWo as OfflineWorkOrder)
+            setWo(updatedWo as OfflineWorkOrder)
+            getById(wo.id).then((d) => d && setWo(d as OfflineWorkOrder))
+        } catch (e: any) {
+            toast({ title: 'Erro', description: e?.response?.data?.message || 'Falha ao encerrar parada', variant: 'destructive' })
+        } finally {
+            setDisplacementLoading(false)
+        }
+    }
 
     const handleStatusTransition = useCallback(async () => {
         if (!wo) return
@@ -193,7 +396,7 @@ export default function TechWorkOrderDetailPage() {
             await put(updated as OfflineWorkOrder)
             setWo(updated as OfflineWorkOrder)
 
-            await offlinePut(`/tech/sync/batch`, {
+            await offlinePost(`/tech/sync/batch`, {
                 mutations: [{
                     type: 'status_change',
                     data: {
@@ -329,6 +532,70 @@ export default function TechWorkOrderDetailPage() {
                                     <Navigation className="w-3.5 h-3.5 text-[#33ccff]" /> Waze
                                 </a>
                             )}
+                        </div>
+
+                        {/* Deslocamento */}
+                        <div className="space-y-2 pt-2 border-t border-surface-100 dark:border-surface-700/50">
+                            {wo.displacement_status === 'not_started' || !wo.displacement_status ? (
+                                <button
+                                    onClick={handleStartDisplacement}
+                                    disabled={displacementLoading}
+                                    className="flex items-center justify-center gap-2 py-3 px-4 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
+                                >
+                                    {displacementLoading ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        <Car className="w-3.5 h-3.5" />
+                                    )}
+                                    Iniciar deslocamento
+                                </button>
+                            ) : wo.displacement_status === 'in_progress' ? (
+                                <>
+                                    <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                                        <MapPinned className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Em deslocamento</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {openStop ? (
+                                            <button
+                                                onClick={handleEndStop}
+                                                disabled={displacementLoading}
+                                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold active:scale-[0.98] disabled:opacity-50"
+                                            >
+                                                {displacementLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Coffee className="w-3.5 h-3.5" />}
+                                                Encerrar parada
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => setShowStopModal(true)}
+                                                disabled={displacementLoading}
+                                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300 text-[11px] font-bold active:scale-[0.98] disabled:opacity-50"
+                                            >
+                                                <Coffee className="w-3.5 h-3.5" /> Registrar parada
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={handleArriveDisplacement}
+                                            disabled={displacementLoading}
+                                            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold active:scale-[0.98] disabled:opacity-50"
+                                        >
+                                            {displacementLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
+                                            Cheguei ao cliente
+                                        </button>
+                                    </div>
+                                </>
+                            ) : wo.displacement_status === 'arrived' ? (
+                                <div className="py-2 px-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                                    <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                                        Chegou às {wo.displacement_arrived_at ? new Date(wo.displacement_arrived_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                    </p>
+                                    {wo.displacement_duration_minutes != null && (
+                                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                                            Tempo em deslocamento: {wo.displacement_duration_minutes} min
+                                        </p>
+                                    )}
+                                </div>
+                            ) : null}
                         </div>
 
                         <button
@@ -562,6 +829,43 @@ export default function TechWorkOrderDetailPage() {
                         <p className="text-[10px] text-surface-400 text-center mt-2">
                             Você pode concluir mesmo sem completar todos os itens
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {showStopModal && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-sm bg-white dark:bg-surface-900 rounded-t-2xl sm:rounded-2xl p-4 shadow-xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base font-bold text-surface-900 dark:text-surface-50">Registrar parada</h3>
+                            <button onClick={() => { setShowStopModal(false); setStopNotes('') }} className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+                                <X className="w-5 h-5 text-surface-500" />
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            {[
+                                { type: 'lunch', label: 'Almoço', icon: Coffee },
+                                { type: 'hotel', label: 'Hotel', icon: Car },
+                                { type: 'br_stop', label: 'Parada BR', icon: MapPin },
+                                { type: 'other', label: 'Outro', icon: Flag },
+                            ].map(({ type, label, icon: Icon }) => (
+                                <button
+                                    key={type}
+                                    onClick={() => handleAddStop(type)}
+                                    className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-surface-50 dark:bg-surface-800 hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-900 dark:text-surface-50 text-sm font-medium active:scale-[0.98]"
+                                >
+                                    <Icon className="w-5 h-5 text-surface-500" />
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        <input
+                            type="text"
+                            value={stopNotes}
+                            onChange={(e) => setStopNotes(e.target.value)}
+                            placeholder="Observação (opcional)"
+                            className="mt-3 w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30"
+                        />
                     </div>
                 </div>
             )}

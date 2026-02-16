@@ -42,6 +42,7 @@ class StoreEquipmentRequest extends FormRequest
             'tag' => 'nullable|string|max:50',
             'is_critical' => 'nullable|boolean',
             'notes' => 'nullable|string',
+            'equipment_model_id' => ['nullable', Rule::exists('equipment_models', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ];
     }
 

@@ -220,6 +220,7 @@ class QualityController extends Controller
             'category' => 'nullable|in:service,certificate,delay,billing,other',
             'severity' => 'nullable|in:low,medium,high,critical',
             'assigned_to' => 'nullable|exists:users,id',
+            'response_due_at' => 'nullable|date',
         ]);
 
         try {
@@ -240,12 +241,17 @@ class QualityController extends Controller
             'status' => 'nullable|in:open,investigating,resolved,closed',
             'resolution' => 'nullable|string',
             'assigned_to' => 'nullable|exists:users,id',
+            'response_due_at' => 'nullable|date',
+            'responded_at' => 'nullable|date',
         ]);
 
         try {
             DB::beginTransaction();
             if (($validated['status'] ?? null) === 'resolved') {
                 $validated['resolved_at'] = now();
+                if (empty($complaint->responded_at)) {
+                    $validated['responded_at'] = now();
+                }
             }
             $complaint->update($validated);
             DB::commit();

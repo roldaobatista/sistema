@@ -21,6 +21,11 @@ export interface OfflineWorkOrder {
     equipment_ids?: number[]
     technician_ids?: number[]
     updated_at: string
+    displacement_started_at?: string | null
+    displacement_arrived_at?: string | null
+    displacement_duration_minutes?: number | null
+    displacement_status?: 'not_started' | 'in_progress' | 'arrived'
+    displacement_stops?: Array<{ id: number; type: string; started_at: string; ended_at?: string | null }>
 }
 
 export interface OfflineEquipment {

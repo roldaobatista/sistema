@@ -46,6 +46,7 @@ export default function TechCertificatePage() {
         url?: string
     } | null>(null)
     const [emailForm, setEmailForm] = useState({ email: '', sending: false })
+    const [generatingAndPrint, setGeneratingAndPrint] = useState(false)
 
     useEffect(() => {
         if (!id) return
@@ -63,6 +64,7 @@ export default function TechCertificatePage() {
                     })
                 }
                 setEquipments(list)
+                if (list.length === 1) setSelectedEquipment(list[0])
             } catch {
                 toast.error('Erro ao carregar OS')
             } finally {
@@ -105,7 +107,11 @@ export default function TechCertificatePage() {
         fetchCalibrations()
     }, [selectedEquipment])
 
-    const latestCalibration = calibrations[0] ?? null
+    const workOrderId = id ? Number(id) : 0
+    const latestCalibration =
+        calibrations.find((c: Calibration & { work_order_id?: number }) => c.work_order_id === workOrderId) ??
+        calibrations[0] ??
+        null
 
     const handleSelectEquipment = (eq: Equipment) => {
         setSelectedEquipment(eq)
@@ -148,6 +154,35 @@ export default function TechCertificatePage() {
         }
     }
 
+    const handleGenerateAndPrint = async () => {
+        if (!latestCalibration || !selectedEquipment) return
+        setGeneratingAndPrint(true)
+        setCertificate(null)
+        try {
+            await api.post(
+                `/calibration/${latestCalibration.id}/generate-certificate`,
+                selectedTemplateId ? { template_id: selectedTemplateId } : {}
+            )
+            const { data } = await api.get(
+                `/equipments/${selectedEquipment.id}/calibrations/${latestCalibration.id}/pdf`,
+                { responseType: 'blob' }
+            )
+            const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+            const w = window.open(url, '_blank')
+            if (w) w.focus()
+            setCertificate({
+                certificate_number: latestCalibration.certificate_number ?? 'Gerado',
+                path: undefined,
+                url,
+            })
+            toast.success('Certificado aberto. Use Ctrl+P na nova aba para imprimir.')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao gerar certificado'))
+        } finally {
+            setGeneratingAndPrint(false)
+        }
+    }
+
     const handleSendEmail = async () => {
         const email = emailForm.email.trim()
         if (!email) {
@@ -178,8 +213,10 @@ export default function TechCertificatePage() {
             <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
                 <div className="flex items-center gap-3">
                     <button
+                        type="button"
                         onClick={() => navigate(`/tech/os/${id}`)}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                        aria-label="Voltar"
                     >
                         <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
                     </button>
@@ -310,23 +347,42 @@ export default function TechCertificatePage() {
                                     </div>
                                 )}
 
-                                <button
-                                    onClick={handleGenerate}
-                                    disabled={generating || !latestCalibration}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-brand-600 text-white rounded-xl font-medium disabled:opacity-50"
-                                >
-                                    {generating ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            Gerando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Download className="w-5 h-5" />
-                                            Gerar Certificado
-                                        </>
-                                    )}
-                                </button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <button
+                                        onClick={handleGenerate}
+                                        disabled={generating || generatingAndPrint || !latestCalibration}
+                                        className="flex items-center justify-center gap-2 py-3 bg-brand-600 text-white rounded-xl font-medium disabled:opacity-50"
+                                    >
+                                        {generating ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Gerando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Download className="w-5 h-5" />
+                                                Gerar Certificado
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={handleGenerateAndPrint}
+                                        disabled={generating || generatingAndPrint || !latestCalibration}
+                                        className="flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-xl font-medium disabled:opacity-50"
+                                    >
+                                        {generatingAndPrint ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Gerando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Printer className="w-5 h-5" />
+                                                Gerar e imprimir
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
 
                                 {certificate && (
                                     <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 space-y-3">

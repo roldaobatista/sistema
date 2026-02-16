@@ -5,8 +5,9 @@ import {
     ArrowLeft, Clock, User, Phone, Mail, MapPin, ClipboardList,
     Briefcase, Package, Plus, Trash2, Pencil, Download, Save, X,
     CheckCircle2, AlertTriangle, Play, Pause, Truck, XCircle,
-    DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users, Copy, RotateCcw, Navigation,
+    DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users, Copy, RotateCcw, Navigation, QrCode,
 } from 'lucide-react'
+import { parseLabelQrPayload } from '@/lib/labelQr'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -24,6 +25,7 @@ import AdminChatTab from '@/components/os/AdminChatTab'
 import AuditTrailTab from '@/components/os/AuditTrailTab'
 import GeoCheckinButton from '@/components/os/GeoCheckinButton'
 import SatisfactionTab from '@/components/os/SatisfactionTab'
+import { QrScannerModal } from '@/components/qr/QrScannerModal'
 
 const MAX_ATTACHMENT_SIZE_MB = 10
 
@@ -81,6 +83,7 @@ export function WorkOrderDetailPage() {
     // Delete confirmation state
     const [deleteItemId, setDeleteItemId] = useState<number | null>(null)
     const [deleteAttachId, setDeleteAttachId] = useState<number | null>(null)
+    const [showQrScanner, setShowQrScanner] = useState(false)
 
     // Queries
     const { data: res, isLoading, isError, refetch: refetchOrder } = useQuery({
@@ -348,6 +351,31 @@ export function WorkOrderDetailPage() {
         }))
     }
 
+    const handleScanLabel = () => setShowQrScanner(true)
+
+    const handleQrScanned = async (raw: string) => {
+        const productId = parseLabelQrPayload(raw)
+        if (!productId) {
+            toast.error('Código inválido. Use o formato P seguido do número (ex: P123).')
+            return
+        }
+        try {
+            const { data: product } = await api.get(`/products/${productId}`)
+            setEditingItem(null)
+            setItemForm({
+                type: 'product',
+                reference_id: String(product.id),
+                description: product.name ?? '',
+                quantity: '1',
+                unit_price: product.sell_price ?? '0',
+                discount: '0',
+            })
+            setShowItemModal(true)
+        } catch {
+            toast.error('Produto não encontrado.')
+        }
+    }
+
     const startEditing = () => {
         setEditForm({
             description: order.description ?? '',
@@ -611,15 +639,63 @@ export function WorkOrderDetailPage() {
                                             : <p className="text-sm text-surface-400 italic">Nenhum valor de deslocamento</p>
                                     ) : null}
                                 </div>
+
+                                {order.displacement_started_at && (
+                                    <div className="mt-4 border-t border-subtle pt-4">
+                                        <h3 className="text-sm font-semibold text-surface-900 mb-3">Deslocamento do Técnico</h3>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-surface-500">Início</span>
+                                                <span className="font-medium">{order.displacement_started_at ? new Date(order.displacement_started_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                                            </div>
+                                            {order.displacement_arrived_at && (
+                                                <>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-surface-500">Chegada</span>
+                                                        <span className="font-medium">{new Date(order.displacement_arrived_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                    {order.displacement_duration_minutes != null && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-surface-500">Tempo em deslocamento</span>
+                                                            <span className="font-medium text-emerald-600">{order.displacement_duration_minutes} min</span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                            {order.displacement_stops && order.displacement_stops.length > 0 && (
+                                                <div className="mt-3 pt-3 border-t border-subtle">
+                                                    <p className="text-xs font-medium text-surface-500 mb-2">Paradas</p>
+                                                    <ul className="space-y-1.5">
+                                                        {order.displacement_stops.map((s: { id: number; type: string; started_at: string; ended_at?: string | null }) => {
+                                                            const typeLabels: Record<string, string> = { lunch: 'Almoço', hotel: 'Hotel', br_stop: 'Parada BR', other: 'Outro' }
+                                                            const start = new Date(s.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                                                            const end = s.ended_at ? new Date(s.ended_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'em andamento'
+                                                            return (
+                                                                <li key={s.id} className="flex justify-between text-xs">
+                                                                    <span>{typeLabels[s.type] ?? s.type} ({start} – {end})</span>
+                                                                </li>
+                                                            )
+                                                        })}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-semibold text-surface-900">Itens</h3>
                                     {canUpdate && (
-                                        <Button variant="ghost" size="sm" onClick={() => openItemForm()} icon={<Plus className="h-4 w-4" />}>
-                                            Adicionar
-                                        </Button>
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="sm" onClick={() => openItemForm()} icon={<Plus className="h-4 w-4" />}>
+                                                Adicionar
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={handleScanLabel} icon={<QrCode className="h-4 w-4" />} title="Escanear etiqueta (QR da peça)">
+                                                Escanear etiqueta
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
 
@@ -1057,6 +1133,13 @@ export function WorkOrderDetailPage() {
                     </div>
                 </form>
             </Modal>
+
+            <QrScannerModal
+                open={showQrScanner}
+                onClose={() => setShowQrScanner(false)}
+                onScan={handleQrScanned}
+                title="Escanear etiqueta (QR da peça)"
+            />
 
             <Modal open={showStatusModal} onOpenChange={setShowStatusModal} title="Alterar Status" >
                 <div className="space-y-4">

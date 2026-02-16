@@ -72,7 +72,7 @@ export function CrmGoalsPage() {
     })
 
     const dashboard = dashRes?.data ?? dashRes ?? {}
-    const goals: CrmSalesGoal[] = goalsRes?.data ?? goalsRes ?? []
+    const goals: CrmSalesGoal[] = Array.isArray(goalsRes) ? goalsRes : (goalsRes as { data?: CrmSalesGoal[] })?.data ?? []
     const isLoading = dashLoading || goalsLoading
 
     const ranking = [...goals]

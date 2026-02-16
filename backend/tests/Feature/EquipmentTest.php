@@ -94,6 +94,26 @@ class EquipmentTest extends TestCase
         ]);
     }
 
+    public function test_add_calibration_sets_next_due_date_default_when_no_interval(): void
+    {
+        $equipment = Equipment::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'calibration_interval_months' => null,
+        ]);
+        $calibrationDate = '2024-06-15';
+
+        $response = $this->postJson("/api/v1/equipments/{$equipment->id}/calibrations", [
+            'calibration_date' => $calibrationDate,
+            'calibration_type' => 'interna',
+            'result' => 'aprovado',
+        ]);
+
+        $response->assertStatus(201);
+        $calibration = \App\Models\EquipmentCalibration::where('equipment_id', $equipment->id)->first();
+        $this->assertNotNull($calibration->next_due_date);
+        $this->assertEquals('2025-06-15', $calibration->next_due_date->format('Y-m-d'));
+    }
+
     public function test_can_add_maintenance_to_equipment()
     {
         $equipment = Equipment::factory()->create(['tenant_id' => $this->tenant->id]);

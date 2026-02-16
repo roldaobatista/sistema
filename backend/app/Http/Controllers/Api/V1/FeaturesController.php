@@ -8,6 +8,7 @@ use App\Models\{
     DebtRenegotiation, DocumentVersion, Equipment, EquipmentCalibration,
     ExcentricityTest, PaymentReceipt, QualityAudit, QualityAuditItem,
     StandardWeight, SystemAlert, ToolCalibration, WeightAssignment,
+    User,
     WhatsappConfig, WorkOrder, FollowUp, SatisfactionSurvey
 };
 use App\Services\{
@@ -18,7 +19,9 @@ use App\Services\{
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FeaturesController extends Controller
 {
@@ -527,6 +530,32 @@ class FeaturesController extends Controller
         );
     }
 
+    public function showAudit(Request $request, QualityAudit $audit): JsonResponse
+    {
+        if ($audit->tenant_id !== $this->tenantId($request)) {
+            abort(404);
+        }
+        $audit->load(['auditor:id,name', 'items' => fn ($q) => $q->orderBy('item_order')]);
+        return response()->json(['data' => $audit]);
+    }
+
+    public function updateAudit(Request $request, QualityAudit $audit): JsonResponse
+    {
+        if ($audit->tenant_id !== $this->tenantId($request)) {
+            abort(404);
+        }
+        $data = $request->validate([
+            'status' => 'nullable|in:planned,in_progress,completed,cancelled',
+            'executed_date' => 'nullable|date',
+            'summary' => 'nullable|string',
+        ]);
+        if (isset($data['status']) && $data['status'] === 'completed' && !$audit->executed_date && empty($data['executed_date'])) {
+            $data['executed_date'] = now()->toDateString();
+        }
+        $audit->update($data);
+        return response()->json($audit->fresh(['auditor:id,name', 'items']));
+    }
+
     public function storeAudit(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -579,9 +608,15 @@ class FeaturesController extends Controller
 
     public function indexDocuments(Request $request): JsonResponse
     {
-        $q = DocumentVersion::where('tenant_id', $this->tenantId($request));
+        $tid = $this->tenantId($request);
+        $q = DocumentVersion::where('tenant_id', $tid);
         if ($cat = $request->input('category')) $q->where('category', $cat);
         if ($status = $request->input('status')) $q->where('status', $status);
+        if ($request->boolean('current_only')) {
+            $codes = DocumentVersion::where('tenant_id', $tid)->where('status', 'approved')
+                ->selectRaw('document_code, MAX(id) as latest_id')->groupBy('document_code')->pluck('latest_id');
+            $q->whereIn('id', $codes);
+        }
 
         return response()->json($q->with('creator:id,name')->orderByDesc('updated_at')->paginate($request->input('per_page', 25)));
     }
@@ -621,6 +656,31 @@ class FeaturesController extends Controller
             ->update(['status' => 'obsolete']);
 
         return response()->json($document);
+    }
+
+    public function uploadDocumentFile(Request $request, DocumentVersion $document): JsonResponse
+    {
+        if ($document->tenant_id !== $this->tenantId($request)) {
+            abort(404);
+        }
+        $request->validate(['file' => 'required|file|max:51200']); // 50MB
+        $file = $request->file('file');
+        $dir = "quality_documents/{$document->tenant_id}/{$document->id}";
+        $path = $file->storeAs($dir, $file->getClientOriginalName(), 'public');
+        $document->update(['file_path' => $path]);
+        return response()->json(['message' => 'Arquivo anexado', 'file_path' => $path, 'data' => $document->fresh()]);
+    }
+
+    public function downloadDocument(Request $request, DocumentVersion $document): StreamedResponse
+    {
+        if ($document->tenant_id !== $this->tenantId($request) || !$document->file_path) {
+            abort(404);
+        }
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            abort(404);
+        }
+        $name = basename($document->file_path);
+        return Storage::disk('public')->download($document->file_path, $name);
     }
 
     // ═══════════════════════════════════════════════════════════════════

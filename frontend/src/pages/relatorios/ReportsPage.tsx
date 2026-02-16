@@ -36,7 +36,8 @@ const statusLabels: Record<string, string> = {
     waiting_approval: 'Aguardando Aprovação', completed: 'Concluída', delivered: 'Entregue', cancelled: 'Cancelada',
     pending: 'Pendente', approved: 'Aprovado', paid: 'Pago', reversed: 'Estornado',
     overdue: 'Vencido', partial: 'Parcial', rejected: 'Rejeitado', reimbursed: 'Reembolsado',
-    draft: 'Rascunho', sent: 'Enviado', expired: 'Expirado', invoiced: 'Faturado',
+    draft: 'Rascunho', pending_internal_approval: 'Aguard. Aprov. Interna', internally_approved: 'Aprovado Internamente',
+    sent: 'Enviado', expired: 'Expirado', invoiced: 'Faturado',
     scheduled: 'Agendado', in_transit: 'Em Trânsito',
     won: 'Ganho', lost: 'Perdido',
 }

@@ -37,6 +37,7 @@ class SystemAlert extends Model
         'renegotiation_pending' => 'Renegociação pendente de aprovação',
         'receivables_concentration' => 'Concentração de inadimplência',
         'scheduled_wo_not_started' => 'OS agendada/recebida sem início',
+        'inventory_discrepancy_critical' => 'Diferença crítica no inventário',
     ];
 
     protected $fillable = [

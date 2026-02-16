@@ -1,23 +1,38 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getLatentOpportunities } from '@/lib/crm-field-api'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { crmApi } from '@/lib/crm-api'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/pageheader'
 import { Button } from '@/components/ui/button'
-import { Loader2, Lightbulb, Wrench, UserX, FileText, ArrowRight } from 'lucide-react'
+import { NewDealModal } from '@/components/crm/NewDealModal'
+import { Loader2, Wrench, UserX, FileText, ArrowRight, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-const typeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-    calibration_expiring: { label: 'Calibração Vencendo', icon: Wrench, color: 'text-orange-600' },
-    inactive_customer: { label: 'Cliente Inativo', icon: UserX, color: 'text-red-600' },
-    contract_renewal: { label: 'Renovação de Contrato', icon: FileText, color: 'text-blue-600' },
+const typeConfig: Record<string, { label: string; icon: React.ElementType; color: string; source: string }> = {
+    calibration_expiring: { label: 'Calibração Vencendo', icon: Wrench, color: 'text-orange-600', source: 'calibracao_vencendo' },
+    inactive_customer: { label: 'Cliente Inativo', icon: UserX, color: 'text-red-600', source: 'retorno' },
+    contract_renewal: { label: 'Renovação de Contrato', icon: FileText, color: 'text-blue-600', source: 'contrato_renovacao' },
 }
 
 export function CrmOpportunitiesPage() {
     const navigate = useNavigate()
+    const [createDealFor, setCreateDealFor] = useState<{ customerId: number; title: string; source: string } | null>(null)
+
     const { data, isLoading } = useQuery({ queryKey: ['latent-opportunities'], queryFn: getLatentOpportunities })
+    const { data: pipelines = [] } = useQuery({
+        queryKey: ['crm', 'pipelines'],
+        queryFn: () => crmApi.getPipelines().then(r => r.data),
+        enabled: createDealFor !== null,
+    })
+
     const opportunities = data?.opportunities ?? []
     const summary = data?.summary ?? {}
+    const defaultPipeline = pipelines.find((p: { is_default: boolean }) => p.is_default) ?? pipelines[0]
+    const firstStage = defaultPipeline?.stages?.[0]
+
+    const handleCloseDealModal = () => setCreateDealFor(null)
 
     return (
         <div className="space-y-6">
@@ -36,6 +51,8 @@ export function CrmOpportunitiesPage() {
                             const tc = typeConfig[opp.type as string] ?? typeConfig.calibration_expiring
                             const Icon = tc.icon
                             const customer = opp.customer as Record<string, unknown> | null
+                            const customerId = customer?.id != null ? Number(customer.id) : 0
+                            const suggestedTitle = `${tc.label} - ${(customer?.name as string) ?? 'Cliente'}`
                             return (
                                 <Card key={i} className="hover:shadow-sm transition-shadow">
                                     <CardContent className="py-3">
@@ -50,7 +67,20 @@ export function CrmOpportunitiesPage() {
                                             <div className="flex items-center gap-2">
                                                 <Badge variant="outline">{tc.label}</Badge>
                                                 <Badge variant={opp.priority === 'high' ? 'destructive' : 'secondary'}>{opp.priority === 'high' ? 'Alta' : 'Média'}</Badge>
-                                                {customer?.id && <Button size="sm" variant="outline" onClick={() => navigate(`/crm/clientes/${customer.id}`)}><ArrowRight className="h-3.5 w-3.5" /></Button>}
+                                                {customerId > 0 && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="default"
+                                                        onClick={() => setCreateDealFor({ customerId, title: suggestedTitle, source: tc.source })}
+                                                    >
+                                                        <Plus className="h-3.5 w-3.5 mr-1" /> Criar deal
+                                                    </Button>
+                                                )}
+                                                {customerId > 0 && (
+                                                    <Button size="sm" variant="outline" onClick={() => navigate(`/crm/clientes/${customerId}`)} title="Ver Customer 360">
+                                                        <ArrowRight className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -59,6 +89,18 @@ export function CrmOpportunitiesPage() {
                         })}
                     </div>
                 </>
+            )}
+
+            {defaultPipeline && firstStage && createDealFor && (
+                <NewDealModal
+                    open={!!createDealFor}
+                    onClose={handleCloseDealModal}
+                    pipelineId={defaultPipeline.id}
+                    stageId={firstStage.id}
+                    initialCustomerId={createDealFor.customerId}
+                    initialTitle={createDealFor.title}
+                    initialSource={createDealFor.source}
+                />
             )}
         </div>
     )

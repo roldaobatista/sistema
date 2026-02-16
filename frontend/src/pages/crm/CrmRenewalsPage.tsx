@@ -33,7 +33,7 @@ export function CrmRenewalsPage() {
         queryKey: ['crm-renewals', filterStatus],
         queryFn: () => crmFeaturesApi.getRenewals(filterStatus ? { status: filterStatus } : undefined),
     })
-    const renewals: CrmContractRenewal[] = res?.data?.data ?? res?.data ?? []
+    const renewals: CrmContractRenewal[] = Array.isArray(res?.data) ? res.data : (res?.data as { data?: CrmContractRenewal[] })?.data ?? []
 
     const generateMut = useMutation({
         mutationFn: () => crmFeaturesApi.generateRenewals(),

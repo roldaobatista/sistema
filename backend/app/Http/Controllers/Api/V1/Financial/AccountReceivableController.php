@@ -38,7 +38,12 @@ class AccountReceivableController extends Controller
         }
 
         if ($status = $request->get('status')) {
-            $query->where('status', $status);
+            $statuses = array_filter(array_map('trim', explode(',', (string) $status)));
+            if (count($statuses) === 1) {
+                $query->where('status', $statuses[0]);
+            } elseif (count($statuses) > 1) {
+                $query->whereIn('status', $statuses);
+            }
         }
 
         if ($from = $request->get('due_from')) {
