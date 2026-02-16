@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 ## 🌐 Language Handling (MANDATORY)
 
@@ -73,3 +73,42 @@ Do not delete original skills from project-local path:
 
 - c:/Users/Roldão testes/projetos/sistema/.agent/skills
 Copy-only policy is mandatory.
+
+## Produção e Deploy (OBRIGATÓRIO)
+
+O sistema está em produção. A IA DEVE saber essas informações SEM perguntar ao usuário:
+
+### Servidor de Produção
+- **IP:** 178.156.176.145
+- **SSH:** `ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o StrictHostKeyChecking=no root@178.156.176.145`
+- **Diretório:** /root/sistema
+- **Stack:** Docker Compose (docker-compose.prod-http.yml)
+- **URL:** http://178.156.176.145
+- **Banco:** MySQL 8.0, database `kalibrium`, user `kalibrium`
+- **SSL:** Ainda NÃO configurado (HTTP only). Quando configurar, usar docker-compose.prod.yml
+
+### Como fazer deploy
+Ler a regra completa em `.cursor/rules/deploy-production.mdc`. Resumo:
+1. Commitar mudanças locais
+2. Push para GitHub
+3. Backup .env do servidor
+4. `git fetch` + `git reset --hard origin/main` no servidor
+5. Restaurar .env
+6. Build Docker + up -d
+7. Migrations + seeders + cache
+8. Health check
+
+### NUNCA perguntar ao usuário
+- Onde está o servidor (IP: 178.156.176.145)
+- Qual chave SSH usar (~/.ssh/id_ed25519)
+- Qual compose file usar (docker-compose.prod-http.yml)
+- Qual e-mail para SSL (já não é necessário, SSL não configurado ainda)
+- Se deve fazer backup (SEMPRE fazer antes de qualquer mudança)
+
+### Regras de migrations para produção
+Ler `.cursor/rules/migration-production.mdc`. Resumo:
+- NUNCA usar `->after()` em migrations
+- NUNCA usar `->default()` em colunas JSON
+- Sempre dar nome curto a índices compostos (< 64 chars)
+- Sempre usar `hasColumn`/`hasTable` guards
+- Sempre atualizar `composer.lock` se adicionar pacote

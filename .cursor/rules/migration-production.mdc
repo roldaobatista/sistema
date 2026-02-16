@@ -1,3 +1,9 @@
+---
+description: Regras obrigatórias para migrations seguras em produção - MySQL 8.0 strict mode
+globs: 
+alwaysApply: true
+---
+
 # Migrations Seguras para Produção (REGRA OBRIGATÓRIA)
 
 ## Contexto

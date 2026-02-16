@@ -1,3 +1,9 @@
+---
+description: Regras obrigatórias de deploy para produção - servidor, SSH, Docker, migrations
+globs: 
+alwaysApply: true
+---
+
 # Deploy para Produção (REGRA OBRIGATÓRIA)
 
 ## Quando o usuário pedir deploy
