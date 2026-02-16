@@ -79,7 +79,9 @@ function Push-ToGitHub {
     }
 
     Write-Host "Fazendo push para origin/$branch..."
-    git push origin $branch 2>&1
+    $ErrorActionPreference = "SilentlyContinue"
+    git push origin $branch 2>&1 | Out-Null
+    $ErrorActionPreference = "Stop"
     if ($LASTEXITCODE -ne 0) {
         Write-Err "Falha no git push. Verifique sua conexão e autenticação com o GitHub."
         exit 1
