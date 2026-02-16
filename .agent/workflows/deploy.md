@@ -1,176 +1,46 @@
 ---
-description: Deployment command for production releases. Pre-flight checks and deployment execution.
+description: Deploy para produção. Usar quando o usuário pedir para publicar, subir, ou atualizar o sistema em produção.
 ---
 
-# /deploy - Production Deployment
+# /deploy - Deploy para Produção
 
-$ARGUMENTS
+## Comando Rápido
 
----
-
-## Purpose
-
-This command handles production deployment with pre-flight checks, deployment execution, and verification.
-
----
-
-## Sub-commands
-
-```
-/deploy            - Interactive deployment wizard
-/deploy check      - Run pre-deployment checks only
-/deploy preview    - Deploy to preview/staging
-/deploy production - Deploy to production
-/deploy rollback   - Rollback to previous version
+```powershell
+# Do Cursor terminal (working_directory: C:\projetos\sistema)
+.\deploy-prod.ps1 -Migrate    # Com migrations (novas tabelas/colunas)
+.\deploy-prod.ps1              # Sem migrations (apenas código)
 ```
 
----
+## Fluxo Completo
 
-## Pre-Deployment Checklist
+1. Verificar mudanças não commitadas → commitar se necessário
+2. `.\deploy-prod.ps1 -Migrate` (ou sem -Migrate se não há migrations novas)
+3. O script cuida de tudo: push, SSH, backup, build, migrate, health check
 
-Before any deployment:
+## Sub-comandos
 
-```markdown
-## 🚀 Pre-Deploy Checklist
+| Comando | Quando usar |
+|---------|-------------|
+| `.\deploy-prod.ps1` | Apenas código alterado |
+| `.\deploy-prod.ps1 -Migrate` | Novas migrations/tabelas/colunas |
+| `.\deploy-prod.ps1 -Seed` | Novas permissões adicionadas |
+| `.\deploy-prod.ps1 -Rollback` | Reverter deploy com problema |
+| `.\deploy-prod.ps1 -Status` | Ver status dos containers |
+| `.\deploy-prod.ps1 -Logs` | Ver logs do backend |
+| `.\deploy-prod.ps1 -Backup` | Backup manual do banco |
 
-### Code Quality
-- [ ] No TypeScript errors (`npx tsc --noEmit`)
-- [ ] ESLint passing (`npx eslint .`)
-- [ ] All tests passing (`npm test`)
+## Servidor
 
-### Security
-- [ ] No hardcoded secrets
-- [ ] Environment variables documented
-- [ ] Dependencies audited (`npm audit`)
+- IP: 178.156.176.145
+- SSH: `ssh -i $env:USERPROFILE\.ssh\id_ed25519 root@178.156.176.145`
+- URL: http://178.156.176.145
+- Backups: /root/backups (7 dias)
 
-### Performance
-- [ ] Bundle size acceptable
-- [ ] No console.log statements
-- [ ] Images optimized
+## Proteções Automáticas
 
-### Documentation
-- [ ] README updated
-- [ ] CHANGELOG updated
-- [ ] API docs current
-
-### Ready to deploy? (y/n)
-```
-
----
-
-## Deployment Flow
-
-```
-┌─────────────────┐
-│  /deploy        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Pre-flight     │
-│  checks         │
-└────────┬────────┘
-         │
-    Pass? ──No──► Fix issues
-         │
-        Yes
-         │
-         ▼
-┌─────────────────┐
-│  Build          │
-│  application    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Deploy to      │
-│  platform       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Health check   │
-│  & verify       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  ✅ Complete    │
-└─────────────────┘
-```
-
----
-
-## Output Format
-
-### Successful Deploy
-
-```markdown
-## 🚀 Deployment Complete
-
-### Summary
-- **Version:** v1.2.3
-- **Environment:** production
-- **Duration:** 47 seconds
-- **Platform:** Vercel
-
-### URLs
-- 🌐 Production: https://app.example.com
-- 📊 Dashboard: https://vercel.com/project
-
-### What Changed
-- Added user profile feature
-- Fixed login bug
-- Updated dependencies
-
-### Health Check
-✅ API responding (200 OK)
-✅ Database connected
-✅ All services healthy
-```
-
-### Failed Deploy
-
-```markdown
-## ❌ Deployment Failed
-
-### Error
-Build failed at step: TypeScript compilation
-
-### Details
-```
-error TS2345: Argument of type 'string' is not assignable...
-```
-
-### Resolution
-1. Fix TypeScript error in `src/services/user.ts:45`
-2. Run `npm run build` locally to verify
-3. Try `/deploy` again
-
-### Rollback Available
-Previous version (v1.2.2) is still active.
-Run `/deploy rollback` if needed.
-```
-
----
-
-## Platform Support
-
-| Platform | Command | Notes |
-|----------|---------|-------|
-| Vercel | `vercel --prod` | Auto-detected for Next.js |
-| Railway | `railway up` | Needs Railway CLI |
-| Fly.io | `fly deploy` | Needs flyctl |
-| Docker | `docker compose up -d` | For self-hosted |
-
----
-
-## Examples
-
-```
-/deploy
-/deploy check
-/deploy preview
-/deploy production --skip-tests
-/deploy rollback
-```
+- Backup do banco antes de migrations
+- Build sem parar o sistema
+- Health check pós-deploy
+- Rollback automático se falhar
+- Bloqueia deploy com código não commitado

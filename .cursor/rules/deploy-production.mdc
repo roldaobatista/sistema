@@ -1,0 +1,119 @@
+# Deploy para Produção (REGRA OBRIGATÓRIA)
+
+## Quando o usuário pedir deploy
+
+Sempre que o usuário pedir para "fazer deploy", "atualizar produção", "subir para produção", "publicar", ou qualquer variação, siga EXATAMENTE este fluxo:
+
+### Passo 1: Verificar se há mudanças não commitadas
+
+```powershell
+git status
+```
+
+Se houver mudanças pendentes, pergunte ao usuário se deve commitar antes de fazer deploy.
+
+### Passo 2: Commitar se necessário
+
+Se houver mudanças, faça commit com mensagem descritiva:
+
+```powershell
+git add -A && git commit -m "descrição das mudanças"
+```
+
+### Passo 3: Executar o deploy
+
+Use o script `deploy-prod.ps1` na raiz do projeto com `working_directory: "C:\projetos\sistema"`:
+
+**Deploy SEM migrations (apenas código/frontend):**
+```powershell
+.\deploy-prod.ps1
+```
+
+**Deploy COM migrations (novas tabelas, colunas, etc.):**
+```powershell
+.\deploy-prod.ps1 -Migrate
+```
+
+**Apenas seeders (permissões novas):**
+```powershell
+.\deploy-prod.ps1 -Seed
+```
+
+**Rollback (reverter tudo):**
+```powershell
+.\deploy-prod.ps1 -Rollback
+```
+
+**Ver status do servidor:**
+```powershell
+.\deploy-prod.ps1 -Status
+```
+
+### Quando usar -Migrate
+
+Use `-Migrate` quando QUALQUER uma dessas condições for verdadeira:
+- Novas migrations foram criadas
+- Tabelas foram adicionadas ou alteradas
+- Colunas foram adicionadas, removidas ou renomeadas
+- Novas permissões foram criadas no PermissionsSeeder
+
+### Quando NÃO usar -Migrate
+
+Não use `-Migrate` quando:
+- Apenas código PHP/TypeScript/CSS foi alterado
+- Apenas textos ou layouts foram mudados
+- Apenas bugs foram corrigidos (sem mudança no banco)
+
+## Informações do Servidor
+
+- **IP:** 178.156.176.145
+- **Usuário SSH:** root
+- **Chave SSH:** %USERPROFILE%\.ssh\id_ed25519
+- **Diretório remoto:** /root/sistema
+- **Compose file:** docker-compose.prod-http.yml (HTTP) ou docker-compose.prod.yml (HTTPS)
+- **URL de acesso:** http://178.156.176.145
+- **Backups:** /root/backups (rotação 7 dias)
+
+## O que o deploy faz automaticamente
+
+1. Verifica se há código não commitado (bloqueia se houver)
+2. Faz `git push` para o GitHub
+3. Conecta via SSH no servidor
+4. Faz `git pull` no servidor
+5. Se `-Migrate`: faz backup do banco MySQL antes
+6. Builda novas imagens Docker (sem parar o sistema)
+7. Troca para os novos containers
+8. Se `-Migrate`: roda migrations e seeders
+9. Otimiza caches (config, routes, views)
+10. Faz health check (verifica se API responde)
+11. Se health check falhar: rollback automático
+
+## Troubleshooting
+
+### "Falha no git push"
+- Verificar se o repositório GitHub está configurado
+- Verificar autenticação: `git remote -v`
+
+### "Não foi possível conectar ao servidor"
+- Verificar se a chave SSH existe: `Test-Path $env:USERPROFILE\.ssh\id_ed25519`
+- Testar manualmente: `ssh -i $env:USERPROFILE\.ssh\id_ed25519 root@178.156.176.145 "echo ok"`
+
+### "Build falhou"
+- O sistema continua rodando a versão anterior (nada quebra)
+- Verificar erro no output e corrigir o código
+
+### "Migration falhou"
+- O banco é automaticamente restaurado do backup
+- Corrigir a migration e tentar novamente
+
+### "Health check falhou"
+- Rollback automático é executado
+- Verificar logs: `.\deploy-prod.ps1 -Logs`
+
+## NUNCA faça em produção
+
+- NUNCA execute `php artisan migrate:fresh` em produção (apaga TODOS os dados)
+- NUNCA execute `php artisan migrate:reset` em produção
+- NUNCA altere backend/.env do servidor sem backup
+- NUNCA delete volumes Docker em produção (`docker volume rm`)
+- NUNCA execute deploy sem commit (código sujo)
