@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ClipboardList, Trash2, Edit, CheckSquare, ToggleLeft, ToggleRight, GripVertical } from 'lucide-react'
@@ -30,7 +30,7 @@ interface Checklist {
 }
 
 export function ServiceChecklistsPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const [editing, setEditing] = useState<Checklist | null>(null)
@@ -39,9 +39,8 @@ export function ServiceChecklistsPage() {
     const [formDesc, setFormDesc] = useState('')
     const [formItems, setFormItems] = useState<ChecklistItem[]>([])
 
-    const { data: res, isLoading } = useQuery({
+    const { data: res, isLoading, isError } = useQuery({
         queryKey: ['service-checklists'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-checklists'),
     })
     const checklists: Checklist[] = res?.data?.data ?? []
@@ -53,7 +52,7 @@ export function ServiceChecklistsPage() {
                 : api.post('/service-checklists', payload),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['service-checklists'] })
+            qc.invalidateQueries({ queryKey: ['service-checklists'] })
             resetForm()
         },
     })
@@ -62,7 +61,7 @@ export function ServiceChecklistsPage() {
         mutationFn: (id: number) => api.delete(`/service-checklists/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['service-checklists'] })
+            qc.invalidateQueries({ queryKey: ['service-checklists'] })
         },
     })
 
@@ -116,17 +115,16 @@ export function ServiceChecklistsPage() {
                 </button>
             </div>
 
-            {/* Form */}
             {showForm && (
                 <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card space-y-4">
                     <h2 className="font-semibold text-surface-900">{editing ? 'Editar' : 'Novo'} Checklist</h2>
                     <div className="grid sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[13px] font-medium text-surface-700 mb-1">Nome</label>
+                            <label className="block text-sm font-medium text-surface-700 mb-1">Nome</label>
                             <input value={formName} onChange={e => setFormName(e.target.value)} className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
                         </div>
                         <div>
-                            <label className="block text-[13px] font-medium text-surface-700 mb-1">Descrição</label>
+                            <label className="block text-sm font-medium text-surface-700 mb-1">Descrição</label>
                             <input value={formDesc} onChange={e => setFormDesc(e.target.value)} className="w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
                         </div>
                     </div>
@@ -163,7 +161,7 @@ export function ServiceChecklistsPage() {
                     </div>
 
                     <div className="flex gap-3 justify-end">
-                        <button onClick={resetForm} className="px-4 py-2 text-[13px] text-surface-600 hover:text-surface-800">Cancelar</button>
+                        <button onClick={resetForm} className="px-4 py-2 text-sm text-surface-600 hover:text-surface-800">Cancelar</button>
                         <button onClick={handleSave} disabled={saveMut.isPending} className="px-4 py-2 text-sm font-medium rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">
                             {saveMut.isPending ? 'Salvando...' : 'Salvar'}
                         </button>
@@ -171,9 +169,14 @@ export function ServiceChecklistsPage() {
                 </div>
             )}
 
-            {/* List */}
             {isLoading ? (
                 <div className="text-center text-surface-400 py-12">Carregando...</div>
+            ) : isError ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ClipboardList className="h-12 w-12 text-red-300 mb-3" />
+                    <p className="text-sm font-medium text-red-600">Erro ao carregar checklists</p>
+                    <p className="text-xs text-surface-400 mt-1">Tente novamente mais tarde</p>
+                </div>
             ) : checklists.length === 0 ? (
                 <div className="text-center text-surface-400 py-12">Nenhum checklist cadastrado.</div>
             ) : (
@@ -189,11 +192,11 @@ export function ServiceChecklistsPage() {
                                     {c.is_active ? <ToggleRight className="h-5 w-5 text-emerald-500" /> : <ToggleLeft className="h-5 w-5 text-surface-300" />}
                                 </div>
                             </div>
-                            {c.description && <p className="text-[13px] text-surface-500">{c.description}</p>}
+                            {c.description && <p className="text-sm text-surface-500">{c.description}</p>}
 
                             <div className="space-y-1">
                                 {c.items.slice(0, 4).map((it, i) => (
-                                    <div key={i} className="flex items-center gap-2 text-[13px] text-surface-600">
+                                    <div key={i} className="flex items-center gap-2 text-sm text-surface-600">
                                         <CheckSquare className="h-3.5 w-3.5 text-surface-400" />
                                         <span>{it.description}</span>
                                         <span className="ml-auto text-xs text-surface-400">{itemTypes.find(t => t.value === it.type)?.label}</span>

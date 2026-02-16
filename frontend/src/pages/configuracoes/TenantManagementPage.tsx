@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Building2, Plus, Search, Users, MapPin, Mail, Phone, FileText,
@@ -136,21 +136,18 @@ export function TenantManagementPage() {
     // â”€â”€ Queries â”€â”€
     const { data: tenantsRes, isLoading, isError, refetch } = useQuery({
         queryKey: ['tenants'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/tenants'),
     })
     const tenants: Tenant[] = tenantsRes?.data ?? []
 
     const { data: statsRes } = useQuery({
         queryKey: ['tenants-stats'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/tenants-stats'),
     })
     const stats: TenantStats = statsRes?.data ?? { total: 0, active: 0, trial: 0, inactive: 0 }
 
     const { data: detailRes } = useQuery({
         queryKey: ['tenants', detailTenant?.id],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get(`/tenants/${detailTenant!.id}`),
         enabled: !!detailTenant,
     })
@@ -211,7 +208,7 @@ export function TenantManagementPage() {
                     { label: 'Teste', value: stats.trial, color: 'text-amber-700', bg: 'bg-amber-50' },
                     { label: 'Inativas', value: stats.inactive, color: 'text-red-700', bg: 'bg-red-50' },
                 ].map((s, i) => (
-                    <div key={i} className={cn('rounded-xl border border-surface-200 p-4 shadow-card', s.bg)}
+                    <div key={i} className={cn('rounded-xl border border-default p-4 shadow-card', s.bg)}
                         style={{ animationDelay: `${i * 80}ms` }}>
                         <p className="text-xs font-medium text-surface-500">{s.label}</p>
                         <p className={cn('text-2xl font-bold mt-1', s.color)}>{s.value}</p>
@@ -287,9 +284,9 @@ export function TenantManagementPage() {
             {/* Create/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <div className="w-full max-w-md rounded-2xl bg-surface-0 p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-[15px] font-semibold tabular-nums text-surface-900">{selectedTenant ? 'Editar Empresa' : 'Nova Empresa'}</h2>
+                            <h2 className="text-sm font-semibold tabular-nums text-surface-900">{selectedTenant ? 'Editar Empresa' : 'Nova Empresa'}</h2>
                             <button onClick={() => setShowModal(false)} className="rounded-lg p-1 hover:bg-surface-100" aria-label="Fechar modal"><X className="h-5 w-5" /></button>
                         </div>
                         <div className="space-y-4">
@@ -322,15 +319,15 @@ export function TenantManagementPage() {
             {detailTenant && (
                 <div className="fixed inset-0 z-50 flex items-end justify-end" onClick={() => setDetailTenant(null)}>
                     <div className="fixed inset-0 bg-black/30" />
-                    <div className="relative h-full w-full max-w-lg bg-white shadow-xl animate-slide-up overflow-y-auto"
+                    <div className="relative h-full w-full max-w-lg bg-surface-0 shadow-xl animate-slide-up overflow-y-auto"
                         onClick={e => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-white border-b border-subtle p-4 flex items-center justify-between z-10">
-                            <h2 className="text-[15px] font-semibold tabular-nums text-surface-900">{detailTenant.name}</h2>
+                        <div className="sticky top-0 bg-surface-0 border-b border-subtle p-4 flex items-center justify-between z-10">
+                            <h2 className="text-sm font-semibold tabular-nums text-surface-900">{detailTenant.name}</h2>
                             <button onClick={() => setDetailTenant(null)} className="rounded-lg p-1 hover:bg-surface-100" aria-label="Fechar painel"><X className="h-5 w-5" /></button>
                         </div>
                         <div className="p-5 space-y-5">
                             {/* Info */}
-                            <div className="rounded-xl border border-surface-200 p-4 space-y-3">
+                            <div className="rounded-xl border border-default p-4 space-y-3">
                                 <h3 className="text-sm font-semibold text-surface-700">Informações</h3>
                                 {detail && (
                                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -343,7 +340,7 @@ export function TenantManagementPage() {
                             </div>
 
                             {/* Users */}
-                            <div className="rounded-xl border border-surface-200 p-4 space-y-3">
+                            <div className="rounded-xl border border-default p-4 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-semibold text-surface-700">
                                         Usuários ({detail?.users?.length ?? 0})
@@ -375,7 +372,7 @@ export function TenantManagementPage() {
                             </div>
 
                             {/* Branches */}
-                            <div className="rounded-xl border border-surface-200 p-4 space-y-3">
+                            <div className="rounded-xl border border-default p-4 space-y-3">
                                 <h3 className="text-sm font-semibold text-surface-700">
                                     Filiais ({detail?.branches?.length ?? 0})
                                 </h3>
@@ -400,12 +397,12 @@ export function TenantManagementPage() {
             {/* Invite Modal */}
             {showInviteModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowInviteModal(false)}>
-                    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-[15px] font-semibold tabular-nums text-surface-900 mb-4">Convidar Usuário</h2>
+                    <div className="w-full max-w-sm rounded-2xl bg-surface-0 p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-sm font-semibold tabular-nums text-surface-900 mb-4">Convidar Usuário</h2>
                         <div className="space-y-4">
                             <Input label="Nome *" value={inviteForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, name: e.target.value }))} />
                             <Input label="E-mail *" type="email" value={inviteForm.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, email: e.target.value }))} />
-                            <Input label="Papel (role)" value={inviteForm.role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, role: e.target.value }))} placeholder="admin, technician..." />
+                            <Input label="Papel (role)" value={inviteForm.role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, role: e.target.value }))} placeholder="admin, tecnico, gerente..." />
                         </div>
                         <div className="mt-5 flex justify-end gap-2">
                             <Button variant="outline" onClick={() => setShowInviteModal(false)}>Cancelar</Button>
@@ -419,14 +416,14 @@ export function TenantManagementPage() {
             {/* Confirm Delete Modal */}
             {showConfirmDelete && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowConfirmDelete(null)}>
-                    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <div className="w-full max-w-sm rounded-2xl bg-surface-0 p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
                                 <AlertTriangle className="h-5 w-5 text-red-600" />
                             </div>
                             <div>
-                                <h2 className="text-[15px] font-semibold tabular-nums text-surface-900">Excluir Empresa</h2>
-                                <p className="text-[13px] text-surface-500">Esta ação não pode ser desfeita.</p>
+                            <h2 className="text-sm font-semibold tabular-nums text-surface-900">Excluir Empresa</h2>
+                            <p className="text-sm text-surface-500">Esta ação não pode ser desfeita.</p>
                             </div>
                         </div>
                         <p className="text-sm text-surface-700 mb-5">
@@ -444,12 +441,12 @@ export function TenantManagementPage() {
             {/* Confirm Remove User Modal */}
             {showConfirmRemoveUser && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowConfirmRemoveUser(null)}>
-                    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <div className="w-full max-w-sm rounded-2xl bg-surface-0 p-6 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
                                 <UserMinus className="h-5 w-5 text-amber-600" />
                             </div>
-                            <h2 className="text-[15px] font-semibold tabular-nums text-surface-900">Remover Usuário</h2>
+                            <h2 className="text-sm font-semibold tabular-nums text-surface-900">Remover Usuário</h2>
                         </div>
                         <p className="text-sm text-surface-700 mb-5">
                             Remover <strong>{showConfirmRemoveUser.name}</strong> desta empresa?

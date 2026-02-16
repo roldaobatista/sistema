@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { MapPin, Navigation, Clock, Wifi, WifiOff, RefreshCw } from 'lucide-react'
@@ -25,7 +26,6 @@ export function GpsLiveTab() {
 
     const { data: positions, isLoading, refetch, isFetching } = useQuery({
         queryKey: ['fleet-gps-live'],
-        const { data, isLoading, refetch } = useQuery({
         queryFn: () => api.get('/fleet/gps/live').then(r => r.data?.data),
         refetchInterval: 30000, // Auto-refresh a cada 30s
     })
@@ -35,20 +35,20 @@ export function GpsLiveTab() {
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-sm font-semibold text-surface-700">Rastreamento em Tempo Real</h3>
-                    <p className="text-[10px] text-surface-400">Atualização automática a cada 30 segundos</p>
+                    <p className="text-xs text-surface-400">Atualização automática a cada 30 segundos</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching} icon={<RefreshCw size={14} className={cn(isFetching && 'animate-spin')} />}>
                     Atualizar
                 </Button>
             </div>
 
-            {/* Mapa Visual Simplificado (cards com coordenadas) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {isLoading && [1, 2, 3].map(i => <div key={i} className="h-36 bg-surface-100 animate-pulse rounded-2xl" />)}
                 {positions?.map((v: any) => {
-                    const isRecent = v.last_gps_at && new Date(v.last_gps_at) > new Date(Date.now() - 5 * 60 * 1000)
+                    const now = new Date()
+                    const isRecent = v.last_gps_at && new Date(v.last_gps_at) > new Date(now.getTime() - 5 * 60 * 1000)
                     return (
-                        <div key={v.id} className="p-5 rounded-2xl border border-default bg-surface-0 hover:shadow-card transition-all space-y-3">
+                        <div key={v.id} className="p-5 rounded-2xl border border-default bg-surface-0 transition-all space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="px-3 py-1 bg-surface-900 rounded border-2 border-surface-700 shadow-sm">
                                     <span className="text-xs font-mono font-bold text-white tracking-widest">{v.plate}</span>
@@ -66,14 +66,14 @@ export function GpsLiveTab() {
 
                             <div className="grid grid-cols-2 gap-2 py-2 border-t border-subtle">
                                 <div>
-                                    <p className="text-[10px] uppercase text-surface-400 font-bold">Coordenadas</p>
-                                    <p className="text-[10px] font-mono text-surface-600">
+                                    <p className="text-xs uppercase text-surface-400 font-bold">Coordenadas</p>
+                                    <p className="text-xs font-mono text-surface-600">
                                         {Number(v.last_gps_lat).toFixed(5)}, {Number(v.last_gps_lng).toFixed(5)}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] uppercase text-surface-400 font-bold">Última Posição</p>
-                                    <p className="text-[10px] text-surface-600 flex items-center gap-1">
+                                    <p className="text-xs uppercase text-surface-400 font-bold">Última Posição</p>
+                                    <p className="text-xs text-surface-600 flex items-center gap-1">
                                         <Clock size={10} className="text-surface-400" />
                                         {v.last_gps_at ? new Date(v.last_gps_at).toLocaleTimeString() : '—'}
                                     </p>

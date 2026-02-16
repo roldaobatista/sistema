@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Plus, Trash2, Package, Briefcase, Users, Truck } from 'lucide-react'
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/pageheader'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePriceGate } from '@/hooks/usePriceGate'
+import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 
 interface ItemForm {
     type: 'product' | 'service'
@@ -26,6 +28,7 @@ const emptyItem: ItemForm = {
 
 export function WorkOrderCreatePage() {
   const { hasPermission } = useAuthStore()
+  const { canViewPrices } = usePriceGate()
 
     const navigate = useNavigate()
     const qc = useQueryClient()
@@ -48,6 +51,7 @@ export function WorkOrderCreatePage() {
         service_call_id: searchParams.get('service_call_id') || '',
         discount_percentage: '0',
         displacement_value: '0',
+        is_warranty: false,
     })
     const [selectedTechIds, setSelectedTechIds] = useState<number[]>([])
     const [selectedEquipIds, setSelectedEquipIds] = useState<number[]>([])
@@ -59,26 +63,22 @@ export function WorkOrderCreatePage() {
     // Queries
     const { data: customersRes } = useQuery({
         queryKey: ['customers-select', customerSearch],
-        const { data } = useQuery({
         queryFn: () => api.get('/customers', { params: { search: customerSearch, per_page: 20, is_active: true } }),
         enabled: customerSearch.length >= 2,
     })
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-select'],
-        const { data } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: servicesRes } = useQuery({
         queryKey: ['services-select'],
-        const { data } = useQuery({
         queryFn: () => api.get('/services', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians'],
-        const { data } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 50 } }),
     })
 
@@ -170,12 +170,11 @@ export function WorkOrderCreatePage() {
             />
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Cliente + Prioridade */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-4">
                     <h2 className="text-sm font-semibold text-surface-900">Dados Gerais</h2>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cliente *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Cliente *</label>
                             <input
                                 type="text"
                                 value={customerSearch}
@@ -202,7 +201,7 @@ export function WorkOrderCreatePage() {
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Prioridade</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Prioridade</label>
                             <select value={form.priority} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('priority', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="low">Baixa</option>
@@ -212,8 +211,21 @@ export function WorkOrderCreatePage() {
                             </select>
                         </div>
 
+                        <div className="flex items-center gap-2 pt-6">
+                            <label className="flex items-center gap-2 text-sm text-surface-700 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={form.is_warranty}
+                                    onChange={e => setForm(p => ({ ...p, is_warranty: e.target.checked }))}
+                                    className="rounded border-surface-400 text-brand-600 focus:ring-brand-500"
+                                />
+                                OS de Garantia
+                                <span className="text-xs text-surface-400">(não gera comissão)</span>
+                            </label>
+                        </div>
+
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico</label>
                             <select value={form.assigned_to} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('assigned_to', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Sem atribuição</option>
@@ -223,31 +235,30 @@ export function WorkOrderCreatePage() {
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Defeito Relatado / Descrição *</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Defeito Relatado / Descrição *</label>
                         <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)}
                             rows={3} required placeholder="Descreva o problema..."
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações Internas</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observações Internas</label>
                         <textarea value={form.internal_notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('internal_notes', e.target.value)}
                             rows={2} placeholder="Notas internas..."
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
                 </div>
 
-                {/* Campos v2: Vendedor, Motorista, NÂº Manual, Multi-Técnico */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-4">
                     <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2"><Users className="h-4 w-4 text-brand-500" />Equipe e Origem</h2>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">NÂº OS (manual)</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Nº OS (manual)</label>
                             <input value={form.os_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('os_number', e.target.value)} placeholder="Ex: 001234"
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Vendedor</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Vendedor</label>
                             <select value={form.seller_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('seller_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
@@ -255,7 +266,7 @@ export function WorkOrderCreatePage() {
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700 flex items-center gap-1"><Truck className="h-3.5 w-3.5" />Motorista (UMC)</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700 flex items-center gap-1"><Truck className="h-3.5 w-3.5" />Motorista (UMC)</label>
                             <select value={form.driver_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('driver_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
@@ -263,13 +274,13 @@ export function WorkOrderCreatePage() {
                             </select>
                         </div>
                     </div>
-                    {/* Multi-técnico */}
                     <div>
-                        <label className="mb-2 block text-[13px] font-medium text-surface-700">Técnicos (múltiplos)</label>
+                        <label className="mb-2 block text-sm font-medium text-surface-700">Técnicos (múltiplos)</label>
                         <div className="flex flex-wrap gap-2">
                             {technicians.map((t: any) => (
                                 <button key={t.id} type="button" onClick={() => setSelectedTechIds(prev => prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id])}
-                                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${selectedTechIds.includes(t.id) ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 text-surface-600 hover:border-surface-300'}`}>
+                                    className={cn('rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
+                                        selectedTechIds.includes(t.id) ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-default text-surface-600 hover:border-surface-400')}>
                                     {t.name}
                                 </button>
                             ))}
@@ -277,7 +288,6 @@ export function WorkOrderCreatePage() {
                     </div>
                 </div>
 
-                {/* Equipamento */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-sm font-semibold text-surface-900">Equipamento</h2>
@@ -295,7 +305,6 @@ export function WorkOrderCreatePage() {
                     )}
                 </div>
 
-                {/* Itens */}
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-sm font-semibold text-surface-900">Itens (Produtos & Serviços)</h2>
@@ -311,8 +320,7 @@ export function WorkOrderCreatePage() {
                             {items.map((item, i) => (
                                 <div key={i} className="rounded-lg border border-subtle p-2.5 space-y-3">
                                     <div className="flex items-center gap-2">
-                                        {/* Tipo toggle */}
-                                        <div className="flex rounded-lg border border-surface-200 overflow-hidden">
+                                        <div className="flex rounded-lg border border-default overflow-hidden">
                                             <button type="button" onClick={() => updateItem(i, 'type', 'product')}
                                                 className={cn('flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors',
                                                     item.type === 'product' ? 'bg-brand-50 text-brand-700' : 'text-surface-500 hover:bg-surface-50')}>
@@ -337,23 +345,35 @@ export function WorkOrderCreatePage() {
                                             <Trash2 className="h-4 w-4 text-red-500" />
                                         </Button>
                                     </div>
-                                    <div className="grid gap-3 sm:grid-cols-4">
+                                    {canViewPrices && item.reference_id && form.customer_id && (
+                                        <PriceHistoryHint
+                                            customerId={form.customer_id}
+                                            type={item.type}
+                                            referenceId={item.reference_id}
+                                            onApplyPrice={(price) => updateItem(i, 'unit_price', String(price))}
+                                        />
+                                    )}
+                                    <div className={`grid gap-3 ${canViewPrices ? 'sm:grid-cols-4' : 'sm:grid-cols-2'}`}>
                                         <Input label="Descrição" value={item.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'description', e.target.value)} />
                                         <Input label="Qtd" type="number" step="0.01" value={item.quantity} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'quantity', e.target.value)} />
-                                        <Input label="Preço Unitário" type="number" step="0.01" value={item.unit_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'unit_price', e.target.value)} />
-                                        <div>
-                                            <Input label="Desconto" type="number" step="0.01" value={item.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'discount', e.target.value)} />
-                                            <p className="mt-1 text-right text-xs font-medium text-surface-600">
-                                                Subtotal: {itemTotal(item).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                            </p>
-                                        </div>
+                                        {canViewPrices && (
+                                            <>
+                                                <Input label="Preço Unitário" type="number" step="0.01" value={item.unit_price} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'unit_price', e.target.value)} />
+                                                <div>
+                                                    <Input label="Desconto" type="number" step="0.01" value={item.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, 'discount', e.target.value)} />
+                                                    <p className="mt-1 text-right text-xs font-medium text-surface-600">
+                                                        Subtotal: {itemTotal(item).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Totais */}
+                    {canViewPrices && (
                     <div className="border-t border-subtle pt-4 space-y-2">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-surface-600">Subtotal</span>
@@ -363,30 +383,30 @@ export function WorkOrderCreatePage() {
                             <span className="text-surface-600">Desconto Fixo (R$)</span>
                             <input type="number" step="0.01" value={form.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount', e.target.value)}
                                 disabled={parseFloat(form.discount_percentage) > 0}
-                                className="w-28 rounded-lg border border-surface-200 px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
+                                className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
                         </div>
                         <div className="flex items-center justify-between gap-4 text-sm">
                             <span className="text-surface-600">Desconto Global (%)</span>
                             <input type="number" step="0.01" min="0" max="100" value={form.discount_percentage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount_percentage', e.target.value)}
                                 disabled={parseFloat(form.discount) > 0}
-                                className="w-28 rounded-lg border border-surface-200 px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
+                                className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
                         </div>
                         {parseFloat(form.discount) > 0 && parseFloat(form.discount_percentage) > 0 && (
-                            <p className="text-xs text-amber-600">âš  Apenas um tipo de desconto pode ser aplicado. O desconto percentual terá prioridade.</p>
+                            <p className="text-xs text-amber-600">âš  Apenas um tipo de desconto pode ser aplicado. O desconto percentual terá prioridade.</p>
                         )}
                         <div className="flex items-center justify-between gap-4 text-sm">
                             <span className="text-surface-600">Valor Deslocamento (R$)</span>
                             <input type="number" step="0.01" value={form.displacement_value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('displacement_value', e.target.value)}
-                                className="w-28 rounded-lg border border-surface-200 px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                         </div>
                         <div className="flex items-center justify-between text-base border-t border-subtle pt-2">
                             <span className="font-semibold text-surface-900">Total</span>
                             <span className="font-bold text-brand-600">{grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
                     </div>
+                    )}
                 </div>
 
-                {/* Ações */}
                 <div className="flex items-center justify-end gap-3">
                     <Button variant="outline" type="button" onClick={() => navigate('/os')}>Cancelar</Button>
                     <Button type="submit" loading={saveMut.isPending} disabled={!form.customer_id || !form.description}>

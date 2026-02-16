@@ -21,15 +21,12 @@ export default function InmetroSealReportPage() {
     const [techFilter, setTechFilter] = useState('')
     const [page, setPage] = useState(1)
 
-    // Detalhes da Auditoria (Selos parados)
     const { data: auditRes, isLoading: loadingAudit } = useQuery({
         queryKey: ['inmetro-seals-audit'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/inventory/seals/audit')
     })
     const auditData = auditRes?.data
 
-    // Dados do Relatório
     const { data: reportRes, isLoading: loadingReport } = useQuery({
         queryKey: ['inmetro-seals-report', search, statusFilter, typeFilter, techFilter, page],
         queryFn: () => api.get('/inventory/seals', {
@@ -67,10 +64,9 @@ export default function InmetroSealReportPage() {
 
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
-            {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-surface-900 flex items-center gap-2">
                         <LayoutDashboard className="w-7 h-7 text-brand-500" />
                         Relatório & Auditoria de Selos
                     </h1>
@@ -84,16 +80,15 @@ export default function InmetroSealReportPage() {
                 </button>
             </header>
 
-            {/* Widgets de Auditoria */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-surface-900 p-5 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-sm relative overflow-hidden group">
+                <div className="bg-surface-0 p-5 rounded-2xl border border-default shadow-sm relative overflow-hidden group">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                        <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
                             <AlertCircle className="w-6 h-6" />
                         </div>
                         <div>
                             <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Itens Parados</p>
-                            <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">
+                            <h3 className="text-2xl font-bold text-surface-900">
                                 {loadingAudit ? <Loader2 className="w-5 h-5 animate-spin" /> : auditData?.stale_count || 0}
                             </h3>
                         </div>
@@ -103,19 +98,19 @@ export default function InmetroSealReportPage() {
                     </p>
                 </div>
 
-                <div className="bg-white dark:bg-surface-900 p-5 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-sm">
+                <div className="bg-surface-0 p-5 rounded-2xl border border-default shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                        <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center text-brand-600">
                             <ShieldCheck className="w-6 h-6" />
                         </div>
                         <div>
                             <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Total em Estoque</p>
-                            <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">
+                            <h3 className="text-2xl font-bold text-surface-900">
                                 {pagination?.total || 0}
                             </h3>
                         </div>
                     </div>
-                    <div className="mt-4 h-1 w-full bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                    <div className="mt-4 h-1 w-full bg-surface-100 rounded-full overflow-hidden">
                         <div className="h-full bg-brand-500 w-[65%]" />
                     </div>
                 </div>
@@ -129,8 +124,7 @@ export default function InmetroSealReportPage() {
                 </div>
             </section>
 
-            {/* Filtros */}
-            <div className="bg-white dark:bg-surface-900 p-4 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-sm flex flex-wrap items-center gap-3">
+            <div className="bg-surface-0 p-4 rounded-2xl border border-default shadow-sm flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[200px] relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                     <input
@@ -138,7 +132,7 @@ export default function InmetroSealReportPage() {
                         placeholder="Buscar por número..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-default bg-surface-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                     />
                 </div>
 
@@ -146,7 +140,7 @@ export default function InmetroSealReportPage() {
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
                     title="Filtrar por tipo"
-                    className="px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-sm focus:outline-none"
+                    className="px-4 py-2 rounded-xl border border-default bg-surface-50 text-sm focus:outline-none"
                 >
                     <option value="">Tipos</option>
                     <option value="seal_reparo">Selo Reparo</option>
@@ -157,7 +151,7 @@ export default function InmetroSealReportPage() {
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     title="Filtrar por status"
-                    className="px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-sm focus:outline-none"
+                    className="px-4 py-2 rounded-xl border border-default bg-surface-50 text-sm focus:outline-none"
                 >
                     <option value="">Status</option>
                     <option value="available">Disponível</option>
@@ -167,12 +161,11 @@ export default function InmetroSealReportPage() {
                 </select>
             </div>
 
-            {/* Tabela de Resultados */}
-            <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800 shadow-sm overflow-hidden">
+            <div className="bg-surface-0 rounded-2xl border border-default shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800 text-surface-500 font-semibold text-xs uppercase tracking-wider">
+                            <tr className="bg-surface-50 border-b border-default text-surface-500 font-semibold text-xs uppercase tracking-wider">
                                 <th className="px-6 py-4">Selo/Lacre</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Técnico</th>
@@ -181,11 +174,11 @@ export default function InmetroSealReportPage() {
                                 <th className="px-6 py-4">Evidência</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                        <tbody className="divide-y divide-subtle">
                             {loadingReport ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td colSpan={6} className="px-6 py-4"><div className="h-10 bg-surface-100 dark:bg-surface-800 rounded-lg" /></td>
+                                        <td colSpan={6} className="px-6 py-4"><div className="h-10 bg-surface-100 rounded-lg" /></td>
                                     </tr>
                                 ))
                             ) : seals.length === 0 ? (
@@ -195,7 +188,7 @@ export default function InmetroSealReportPage() {
                                     </td>
                                 </tr>
                             ) : seals.map((seal: any) => (
-                                <tr key={seal.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/20 transition-colors">
+                                <tr key={seal.id} className="hover:bg-surface-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <div className={cn(
@@ -203,17 +196,17 @@ export default function InmetroSealReportPage() {
                                                 seal.type === 'seal_reparo' ? "bg-emerald-500" : "bg-sky-500"
                                             )} />
                                             <div>
-                                                <p className="font-bold text-surface-900 dark:text-surface-50">{seal.number}</p>
-                                                <p className="text-[10px] text-surface-400">{seal.type === 'seal_reparo' ? 'Selo Reparo' : 'Lacre'}</p>
+                                                <p className="font-bold text-surface-900">{seal.number}</p>
+                                                <p className="text-xs text-surface-400">{seal.type === 'seal_reparo' ? 'Selo Reparo' : 'Lacre'}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={cn(
-                                            "inline-flex px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight",
-                                            seal.status === 'used' ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" :
-                                                seal.status === 'assigned' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
-                                                    "bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400"
+                                            "inline-flex px-2 py-1 rounded-full text-xs font-bold uppercase tracking-tight",
+                                            seal.status === 'used' ? "bg-emerald-100 text-emerald-700" :
+                                                seal.status === 'assigned' ? "bg-blue-100 text-blue-700" :
+                                                    "bg-surface-100 text-surface-600"
                                         )}>
                                             {seal.status === 'used' ? 'Utilizado' : seal.status === 'assigned' ? 'Em Campo' : 'Estoque'}
                                         </span>
@@ -221,10 +214,10 @@ export default function InmetroSealReportPage() {
                                     <td className="px-6 py-4">
                                         {seal.assigned_to ? (
                                             <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-surface-200 dark:bg-surface-800 flex items-center justify-center overflow-hidden">
+                                                <div className="w-6 h-6 rounded-full bg-surface-200 flex items-center justify-center overflow-hidden">
                                                     <User className="w-3.5 h-3.5 text-surface-500" />
                                                 </div>
-                                                <span className="text-sm text-surface-700 dark:text-surface-300">{seal.assigned_to?.name}</span>
+                                                <span className="text-sm text-surface-700">{seal.assigned_to?.name}</span>
                                             </div>
                                         ) : <span className="text-surface-300">—</span>}
                                     </td>
@@ -234,7 +227,7 @@ export default function InmetroSealReportPage() {
                                                 <p className="text-xs font-semibold text-brand-600 flex items-center gap-1">
                                                     #{seal.work_order.os_number || seal.work_order.number}
                                                 </p>
-                                                <p className="text-[10px] text-surface-500 flex items-center gap-1">
+                                                <p className="text-xs text-surface-500 flex items-center gap-1">
                                                     <Calendar className="w-3 h-3" />
                                                     {format(new Date(seal.used_at), 'dd MMM yyyy', { locale: ptBR })}
                                                 </p>
@@ -244,10 +237,10 @@ export default function InmetroSealReportPage() {
                                     <td className="px-6 py-4">
                                         {seal.equipment ? (
                                             <div className="max-w-[150px]">
-                                                <p className="text-xs font-medium truncate text-surface-900 dark:text-surface-50">
+                                                <p className="text-xs font-medium truncate text-surface-900">
                                                     {seal.equipment.brand}
                                                 </p>
-                                                <p className="text-[10px] text-surface-400 truncate">
+                                                <p className="text-xs text-surface-400 truncate">
                                                     Mod: {seal.equipment.model}
                                                 </p>
                                             </div>
@@ -259,7 +252,7 @@ export default function InmetroSealReportPage() {
                                                 href={`/storage/${seal.photo_path}`}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="group relative flex items-center justify-center w-10 h-10 rounded-lg bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 overflow-hidden"
+                                                className="group relative flex items-center justify-center w-10 h-10 rounded-lg bg-surface-100 border border-default overflow-hidden"
                                             >
                                                 <img
                                                     src={`/storage/${seal.photo_path}`}
@@ -278,22 +271,21 @@ export default function InmetroSealReportPage() {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {pagination?.last_page > 1 && (
-                    <div className="px-6 py-4 bg-surface-50/50 dark:bg-surface-800/30 border-t border-surface-200 dark:border-surface-800 flex items-center justify-between">
+                    <div className="px-6 py-4 bg-surface-50/50 border-t border-default flex items-center justify-between">
                         <p className="text-xs text-surface-500">Mostrando {seals.length} de {pagination.total} registros</p>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="px-3 py-1.5 rounded-lg border border-surface-200 dark:border-surface-700 text-xs disabled:opacity-50"
+                                className="px-3 py-1.5 rounded-lg border border-default text-xs disabled:opacity-50"
                             >
                                 Anterior
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
                                 disabled={page === pagination.last_page}
-                                className="px-3 py-1.5 rounded-lg border border-surface-200 dark:border-surface-700 text-xs disabled:opacity-50"
+                                className="px-3 py-1.5 rounded-lg border border-default text-xs disabled:opacity-50"
                             >
                                 Próximo
                             </button>

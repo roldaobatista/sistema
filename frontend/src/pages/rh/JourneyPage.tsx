@@ -50,16 +50,15 @@ export default function JourneyPage() {
     const { hasPermission, hasRole } = useAuthStore()
     const canManage = hasRole('super_admin') || hasPermission('hr.journey.manage')
     const [selectedUser, setSelectedUser] = useState<number | null>(null)
+    const [searchTerm, setSearchTerm] = useState('')
     const [yearMonth, setYearMonth] = useState(() => {
         const now = new Date()
-  const [searchTerm, setSearchTerm] = useState('')
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     })
 
     // Users list
     const { data: usersRes } = useQuery({
         queryKey: ['technicians-options'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options').then(r => r.data),
     })
     const users: { id: number; name: string }[] = usersRes ?? []
@@ -67,7 +66,6 @@ export default function JourneyPage() {
     // Journey entries for selected user & month
     const { data: journeyRes, isLoading } = useQuery({
         queryKey: ['journey-entries', selectedUser, yearMonth],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/hr/journey/entries`, {
             params: { user_id: selectedUser, year_month: yearMonth },
         }).then(r => r.data?.data),
@@ -90,7 +88,6 @@ export default function JourneyPage() {
     // Hour bank
     const { data: hourBankRes } = useQuery({
         queryKey: ['hour-bank', selectedUser],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/hour-bank/balance', { params: { user_id: selectedUser } }).then(r => r.data?.data),
         enabled: !!selectedUser,
     })
@@ -110,7 +107,6 @@ export default function JourneyPage() {
         <div className="space-y-5">
             <PageHeader title="Jornada & Banco de Horas" subtitle="Controle de horas trabalhadas, extras e noturnas" />
 
-            {/* Summary Cards (when user selected) */}
             {summary && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                     {[
@@ -134,10 +130,8 @@ export default function JourneyPage() {
                 </div>
             )}
 
-            {/* Controls */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    {/* User Select */}
                     <select
                         aria-label="Selecionar técnico"
                         value={selectedUser ?? ''}
@@ -148,7 +142,6 @@ export default function JourneyPage() {
                         {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                     </select>
 
-                    {/* Month Navigator */}
                     <div className="flex items-center gap-1 rounded-lg border border-default bg-surface-50 px-1 py-0.5">
                         <button title="Mês anterior" onClick={() => navigateMonth(-1)} className="rounded p-1.5 hover:bg-surface-100">
                             <ChevronLeft className="h-4 w-4 text-surface-500" />
@@ -175,7 +168,6 @@ export default function JourneyPage() {
                 )}
             </div>
 
-            {/* Table */}
             <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full text-sm">
                     <thead>
@@ -232,8 +224,8 @@ export default function JourneyPage() {
                                             <span className="font-medium text-surface-900">
                                                 {date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
                                             </span>
-                                            {e.is_holiday && <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">Feriado</span>}
-                                            {e.is_dsr && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">DSR</span>}
+                                            {e.is_holiday && <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-600">Feriado</span>}
+                                            {e.is_dsr && <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-600">DSR</span>}
                                         </div>
                                     </td>
                                     <td className="px-4 py-2.5 text-center text-surface-500 tabular-nums">{fmt(e.scheduled_hours)}</td>
@@ -256,7 +248,7 @@ export default function JourneyPage() {
                                         {parseFloat(e.hour_bank_balance) > 0 ? '+' : ''}{fmt(e.hour_bank_balance)}
                                     </td>
                                     <td className="px-4 py-2.5 text-center">
-                                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', statusColors[e.status])}>
+                                        <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', statusColors[e.status])}>
                                             {e.status === 'calculated' ? 'Calc' : e.status === 'adjusted' ? 'Ajust' : 'Lock'}
                                         </span>
                                     </td>
@@ -267,7 +259,6 @@ export default function JourneyPage() {
                 </table>
             </div>
 
-            {/* Hour Bank Balance Card */}
             {hourBankRes && selectedUser && (
                 <div className="rounded-xl border border-default bg-gradient-to-br from-surface-0 to-surface-50 p-5 shadow-card">
                     <div className="flex items-center justify-between">

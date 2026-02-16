@@ -41,21 +41,18 @@ export default function OnboardingPage() {
 
     const { data: templatesRes } = useQuery({
         queryKey: ['onboarding-templates'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/onboarding/templates').then(r => r.data?.data ?? []),
     })
     const templates: Template[] = templatesRes ?? []
 
     const { data: checklistsRes, isLoading } = useQuery({
         queryKey: ['onboarding-checklists'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/onboarding/checklists').then(r => r.data?.data ?? []),
     })
     const checklists: Checklist[] = checklistsRes ?? []
 
     const { data: usersRes } = useQuery({
         queryKey: ['technicians-options'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options').then(r => r.data),
     })
     const users: { id: number; name: string }[] = usersRes ?? []
@@ -95,7 +92,6 @@ export default function OnboardingPage() {
         <div className="space-y-5">
             <PageHeader title="Onboarding / Offboarding" subtitle="Checklists de admissão e desligamento" />
 
-            {/* Tabs + Actions */}
             <div className="flex items-center justify-between gap-3">
                 <div className="flex gap-1 rounded-lg border border-default bg-surface-50 p-0.5">
                     {(['checklists', 'templates'] as const).map(t => (
@@ -120,11 +116,10 @@ export default function OnboardingPage() {
                 )}
             </div>
 
-            {/* Templates Tab */}
             {tab === 'templates' && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {templates.length === 0 && (
-                        <div className="col-span-full rounded-xl border border-dashed border-surface-300 bg-surface-50 py-12 text-center">
+                        <div className="col-span-full rounded-xl border border-dashed border-default bg-surface-50 py-12 text-center">
                             <ClipboardList className="mx-auto h-8 w-8 text-surface-300" />
                             <p className="mt-2 text-sm text-surface-400">Nenhum template criado</p>
                             {canManage && <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowTemplateModal(true)}>Criar Template</Button>}
@@ -157,12 +152,11 @@ export default function OnboardingPage() {
                 </div>
             )}
 
-            {/* Checklists Tab */}
             {tab === 'checklists' && (
                 <div className="space-y-4">
                     {isLoading && <p className="text-sm text-surface-400">Carregando...</p>}
                     {!isLoading && checklists.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-surface-300 bg-surface-50 py-12 text-center">
+                        <div className="rounded-xl border border-dashed border-default bg-surface-50 py-12 text-center">
                             <Users className="mx-auto h-8 w-8 text-surface-300" />
                             <p className="mt-2 text-sm text-surface-400">Nenhum onboarding em andamento</p>
                         </div>
@@ -187,9 +181,7 @@ export default function OnboardingPage() {
                                         </span>
                                     </div>
                                 </div>
-                                {/* Progress bar */}
                                 <Progress value={pct} className="h-2 mb-4" indicatorClassName={pct === 100 ? 'bg-emerald-500' : 'bg-brand-500'} />
-                                {/* Items */}
                                 <ul className="space-y-2">
                                     {items.map(item => (
                                         <li key={item.id} className="flex items-center justify-between rounded-lg border border-subtle p-3">
@@ -221,7 +213,6 @@ export default function OnboardingPage() {
                 </div>
             )}
 
-            {/* Create Template Modal */}
             <Modal open={showTemplateModal && canManage} onOpenChange={setShowTemplateModal} title="Novo Template" size="md">
                 <form onSubmit={handleCreateTemplate} className="space-y-4">
                     <Input label="Nome *" value={tmplForm.name} required
@@ -248,7 +239,6 @@ export default function OnboardingPage() {
                 </form>
             </Modal>
 
-            {/* Start Onboarding Modal */}
             <Modal open={showStartModal && canManage} onOpenChange={setShowStartModal} title="Iniciar Onboarding" size="sm">
                 <form onSubmit={handleStart} className="space-y-4">
                     <div>

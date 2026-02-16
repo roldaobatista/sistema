@@ -163,7 +163,7 @@ export function CustomerDocumentsTab({ customerId }: Props) {
                                 </div>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <a
-                                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/storage/${doc.file_path}`}
+                                        href={`${import.meta.env.VITE_API_URL}/storage/${doc.file_path}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >

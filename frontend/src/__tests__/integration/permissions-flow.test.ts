@@ -91,7 +91,7 @@ describe('Permission — Roles', () => {
         ]
 
         mockApi.get.mockResolvedValue({
-            data: { data: { id: 2, name: 'technician', permissions: techPermissions } },
+            data: { data: { id: 2, name: 'tecnico', permissions: techPermissions } },
         })
 
         const res = await mockApi.get('/roles/2')
@@ -104,9 +104,9 @@ describe('Permission — Roles', () => {
             data: {
                 data: [
                     { id: 1, name: 'admin', permissions_count: 100 },
-                    { id: 2, name: 'manager', permissions_count: 50 },
-                    { id: 3, name: 'technician', permissions_count: 15 },
-                    { id: 4, name: 'viewer', permissions_count: 10 },
+                    { id: 2, name: 'gerente', permissions_count: 50 },
+                    { id: 3, name: 'tecnico', permissions_count: 15 },
+                    { id: 4, name: 'visualizador', permissions_count: 10 },
                 ],
             },
         })

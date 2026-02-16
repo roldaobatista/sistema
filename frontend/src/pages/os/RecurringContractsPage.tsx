@@ -68,7 +68,6 @@ export function RecurringContractsPage() {
 
     const { data: res, isLoading, isError } = useQuery({
         queryKey: ['recurring-contracts', search],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/recurring-contracts', { params: { search } }).then((r: any) => r.data),
     })
 
@@ -76,7 +75,6 @@ export function RecurringContractsPage() {
 
     const { data: customers } = useQuery({
         queryKey: ['customers-list'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/customers', { params: { per_page: 200 } }).then((r: any) => r.data.data ?? r.data),
     })
 

@@ -133,7 +133,7 @@ describe('IAM — User Management', () => {
             data: {
                 data: [
                     { id: 1, name: 'Admin', email: 'admin@test.com', roles: ['admin'], is_active: true },
-                    { id: 2, name: 'Tech', email: 'tech@test.com', roles: ['technician'], is_active: true },
+                    { id: 2, name: 'Tech', email: 'tech@test.com', roles: ['tecnico'], is_active: true },
                 ],
                 meta: { total: 2 },
             },
@@ -147,7 +147,7 @@ describe('IAM — User Management', () => {
     it('create user', async () => {
         mockApi.post.mockResolvedValue({
             data: {
-                data: { id: 3, name: 'New User', email: 'new@test.com', roles: ['viewer'] },
+                data: { id: 3, name: 'New User', email: 'new@test.com', roles: ['visualizador'] },
             },
         })
 
@@ -155,18 +155,18 @@ describe('IAM — User Management', () => {
             name: 'New User',
             email: 'new@test.com',
             password: 'password123',
-            roles: ['viewer'],
+            roles: ['visualizador'],
         })
         expect(res.data.data.id).toBe(3)
     })
 
     it('assign role to user', async () => {
         mockApi.put.mockResolvedValue({
-            data: { data: { id: 2, roles: ['technician', 'manager'] } },
+            data: { data: { id: 2, roles: ['tecnico', 'gerente'] } },
         })
 
-        const res = await mockApi.put('/users/2/roles', { roles: ['technician', 'manager'] })
-        expect(res.data.data.roles).toContain('manager')
+        const res = await mockApi.put('/users/2/roles', { roles: ['tecnico', 'gerente'] })
+        expect(res.data.data.roles).toContain('gerente')
     })
 
     it('deactivate user', async () => {

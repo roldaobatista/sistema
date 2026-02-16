@@ -50,7 +50,6 @@ export function BankAccountsPage() {
 
     const { data: accountsRes, isLoading } = useQuery({
         queryKey: ['bank-accounts', search],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/bank-accounts', { params: { search: search || undefined } }),
     })
 
@@ -133,7 +132,7 @@ export function BankAccountsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Contas Bancárias</h1>
-                    <p className="text-[13px] text-surface-500">
+                    <p className="text-sm text-surface-500">
                         {accounts.length} {accounts.length === 1 ? 'conta cadastrada' : 'contas cadastradas'}
                     </p>
                 </div>
@@ -142,7 +141,6 @@ export function BankAccountsPage() {
                 )}
             </div>
 
-            {/* Search */}
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
                 <input
@@ -154,7 +152,6 @@ export function BankAccountsPage() {
                 />
             </div>
 
-            {/* Table */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                 {isLoading ? (
                     <div className="py-12 text-center text-sm text-surface-400">Carregando...</div>
@@ -232,7 +229,6 @@ export function BankAccountsPage() {
                 )}
             </div>
 
-            {/* Create/Edit Modal */}
             <Modal open={showModal} onOpenChange={setShowModal} title={editing ? 'Editar Conta Bancária' : 'Nova Conta Bancária'} size="md">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -249,7 +245,7 @@ export function BankAccountsPage() {
                         <Input label="Número da Conta" value={form.account_number}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(p => ({ ...p, account_number: e.target.value }))} />
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tipo *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo *</label>
                             <select value={form.account_type} required
                                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(p => ({ ...p, account_type: e.target.value }))}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
@@ -279,7 +275,6 @@ export function BankAccountsPage() {
                 </form>
             </Modal>
 
-            {/* Delete Confirm */}
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Conta Bancária" size="sm">
                 <p className="text-sm text-surface-600">
                     Tem certeza que deseja excluir a conta <strong>{deleteTarget?.name}</strong>?

@@ -24,8 +24,8 @@ describe('EmptyState', () => {
         expect(container.querySelector('svg')).toBeInTheDocument()
     })
 
-    it('renders custom icon when provided', () => {
-        render(<EmptyState message="Vazio" icon={<span data-testid="custom-icon">★</span>} />)
+    it('renders custom icon when provided in compact mode', () => {
+        render(<EmptyState message="Vazio" compact icon={<span data-testid="custom-icon">★</span>} />)
         expect(screen.getByTestId('custom-icon')).toBeInTheDocument()
     })
 
@@ -54,7 +54,7 @@ describe('EmptyState', () => {
 
     it('applies normal styles when compact=false', () => {
         const { container } = render(<EmptyState message="Vazio" />)
-        expect(container.firstChild).toHaveClass('py-10')
+        expect(container.firstChild).toHaveClass('py-12')
     })
 
     it('merges custom className', () => {

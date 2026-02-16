@@ -1,9 +1,13 @@
+import { useState } from 'react'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Truck, Fuel, Gauge, AlertCircle, TrendingUp, DollarSign } from 'lucide-react'
 import api from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function FleetDashboardTab() {
 
@@ -14,9 +18,8 @@ export function FleetDashboardTab() {
   const [searchTerm, setSearchTerm] = useState('')
   const { hasPermission } = useAuthStore()
 
-    const { data, isLoading, isError, refetch: dashboard } = useQuery({
+    const { data: dashboard, isLoading, isError, refetch } = useQuery({
         queryKey: ['fleet-dashboard-advanced'],
-        const { data } = useQuery({
         queryFn: () => api.get('/fleet/dashboard').then(r => r.data?.data)
     })
 
@@ -106,8 +109,8 @@ function StatsCard({ title, value, icon, trend, variant = 'default' }: any) {
         <Card className={cn(variant === 'warning' && 'border-amber-200 bg-amber-50/50')}>
             <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
-                    <div className="p-2 bg-white rounded-lg border border-default shadow-sm">{icon}</div>
-                    {trend && <span className="text-[10px] font-medium text-surface-500 flex items-center gap-0.5"><TrendingUp size={10} /> {trend}</span>}
+                    <div className="p-2 bg-surface-0 rounded-lg border border-default shadow-card">{icon}</div>
+                    {trend && <span className="text-xs font-medium text-surface-500 flex items-center gap-0.5"><TrendingUp size={10} /> {trend}</span>}
                 </div>
                 <div className="mt-4">
                     <p className="text-2xl font-bold text-surface-900">{value}</p>
@@ -133,6 +136,3 @@ function StatusProgress({ label, count, total, color }: any) {
     )
 }
 
-import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
-import { useAuthStore } from '@/stores/auth-store'

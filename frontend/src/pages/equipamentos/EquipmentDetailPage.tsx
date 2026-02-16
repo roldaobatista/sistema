@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Edit, Scale, Wrench, FileText, Download,
     Calendar, User, MapPin, Hash, CheckCircle2, AlertTriangle,
-    XCircle, Clock, Activity, Plus, X, Search, Loader2
+    XCircle, Clock, Activity, Plus, X, Search, Loader2, QrCode
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -112,9 +112,9 @@ function fmtDate(d: string | null | undefined) {
 
 function calibrationBadge(status: string | null) {
     if (!status) return null
-    if (status === 'overdue') return <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600"><XCircle className="h-3 w-3" /> Vencida</span>
-    if (status === 'due_soon') return <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600"><AlertTriangle className="h-3 w-3" /> Vencendo</span>
-    if (status === 'ok') return <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Em dia</span>
+    if (status === 'overdue') return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600"><XCircle className="h-3 w-3" /> Vencida</span>
+    if (status === 'due_soon') return <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600"><AlertTriangle className="h-3 w-3" /> Vencendo</span>
+    if (status === 'ok') return <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Em dia</span>
     return null
 }
 
@@ -168,7 +168,6 @@ export default function EquipmentDetailPage() {
 
     const { data, isLoading, error } = useQuery<{ equipment: Equipment }>({
         queryKey: ['equipment', id],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/equipments/${id}`).then(r => r.data),
         enabled: !!id,
     })
@@ -231,9 +230,26 @@ export default function EquipmentDetailPage() {
                 actions={
                     <div className="flex items-center gap-2">
                         {calibrationBadge(equipment.calibration_status)}
-                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold', statusColors[equipment.status] ?? 'bg-surface-100 text-surface-600')}>
+                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold', statusColors[equipment.status] ?? 'bg-surface-100 text-surface-600')}>
                             {equipment.status_label ?? equipment.status}
                         </span>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const res = await api.post(`/api/v1/equipments/${id}/generate-qr`)
+                                    const token = res.data.qr_token ?? res.data.data?.qr_token
+                                    const url = `${window.location.origin}/equipamento-qr/${token}`
+                                    await navigator.clipboard.writeText(url)
+                                    toast.success('Link QR copiado! Cole em qualquer gerador de QR Code.')
+                                } catch {
+                                    toast.error('Erro ao gerar QR Code')
+                                }
+                            }}
+                            className="btn-ghost text-xs gap-1.5"
+                            title="Gerar QR Code"
+                        >
+                            <QrCode className="h-3.5 w-3.5" /> QR Code
+                        </button>
                         {canEdit && (
                             <button onClick={() => navigate(`/equipamentos/${id}/editar`)} className="btn-ghost text-xs gap-1.5">
                                 <Edit className="h-3.5 w-3.5" /> Editar
@@ -243,9 +259,7 @@ export default function EquipmentDetailPage() {
                 }
             />
 
-            {/* Info Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Equipment Details */}
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                     <div className="border-b border-default bg-surface-50 px-4 py-2.5">
                         <h3 className="text-xs font-semibold text-surface-700 uppercase tracking-wider">Dados do Equipamento</h3>
@@ -264,7 +278,6 @@ export default function EquipmentDetailPage() {
                     </div>
                 </div>
 
-                {/* Customer + Calibration Info */}
                 <div className="space-y-4">
                     {equipment.customer && (
                         <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
@@ -294,7 +307,6 @@ export default function EquipmentDetailPage() {
                 </div>
             </div>
 
-            {/* Notes */}
             {equipment.notes && (
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card p-4">
                     <h3 className="text-xs font-semibold text-surface-700 uppercase tracking-wider mb-2">Observações</h3>
@@ -302,7 +314,6 @@ export default function EquipmentDetailPage() {
                 </div>
             )}
 
-            {/* Tabs */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                 <div className="flex items-center justify-between border-b border-default pr-3">
                     <div className="flex">
@@ -339,7 +350,6 @@ export default function EquipmentDetailPage() {
                 </div>
             </div>
 
-            {/* Calibration Modal */}
             {showCalModal && (
                 <CalibrationModal
                     equipmentId={Number(id)}
@@ -379,7 +389,7 @@ function TabButton({ active, onClick, children, count }: { active: boolean; onCl
         >
             {children}
             {count !== undefined && count > 0 && (
-                <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-semibold', active ? 'bg-brand-100 text-brand-700' : 'bg-surface-100 text-surface-500')}>
+                <span className={cn('rounded-full px-1.5 py-0.5 text-xs font-semibold', active ? 'bg-brand-100 text-brand-700' : 'bg-surface-100 text-surface-500')}>
                     {count}
                 </span>
             )}
@@ -410,10 +420,10 @@ function CalibrationTab({ calibrations, onDownloadCertificate }: { calibrations:
                                 <span className="text-xs font-mono font-semibold text-brand-600">
                                     {cal.certificate_number ?? `#${cal.id}`}
                                 </span>
-                                <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold', resultColors[cal.result] ?? 'bg-surface-100 text-surface-600')}>
+                                <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-semibold', resultColors[cal.result] ?? 'bg-surface-100 text-surface-600')}>
                                     {resultLabels[cal.result] ?? cal.result}
                                 </span>
-                                <span className="text-[10px] text-surface-400 bg-surface-100 rounded px-1.5 py-0.5">
+                                <span className="text-xs text-surface-400 bg-surface-100 rounded px-1.5 py-0.5">
                                     {typeLabels[cal.calibration_type] ?? cal.calibration_type}
                                 </span>
                             </div>
@@ -441,7 +451,7 @@ function CalibrationTab({ calibrations, onDownloadCertificate }: { calibrations:
                             {cal.standard_weights && cal.standard_weights.length > 0 && (
                                 <div className="flex items-center gap-1 mt-1 flex-wrap">
                                     {cal.standard_weights.map(sw => (
-                                        <span key={sw.id} className="inline-flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-600 rounded px-1.5 py-0.5">
+                                        <span key={sw.id} className="inline-flex items-center gap-0.5 text-xs bg-blue-50 text-blue-600 rounded px-1.5 py-0.5">
                                             <Scale className="h-2.5 w-2.5" /> {sw.code} ({sw.nominal_value}{sw.unit})
                                         </span>
                                     ))}
@@ -465,6 +475,9 @@ function CalibrationTab({ calibrations, onDownloadCertificate }: { calibrations:
 /* ═══════════ Calibration Modal ═══════════ */
 
 function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: number; onClose: () => void; onSuccess: () => void }) {
+    const [form, setForm] = useState<CalibrationForm>({ ...emptyCalForm })
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+    const [swSearch, setSwSearch] = useState('')
 
     const set = <K extends keyof CalibrationForm>(key: K, value: CalibrationForm[K]) =>
         setForm(prev => ({ ...prev, [key]: value }))
@@ -472,7 +485,6 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
     // Fetch standard weights
     const { data: swData } = useQuery<{ data: StandardWeight[] }>({
         queryKey: ['standard-weights-list'],
-        const { data } = useQuery({
         queryFn: () => api.get('/standard-weights?per_page=200').then(r => r.data),
     })
     const allWeights = swData?.data ?? []
@@ -537,7 +549,6 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
     return (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 bg-black/40 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
             <div className="bg-surface-0 rounded-xl shadow-xl border border-default w-full max-w-2xl my-8" onClick={e => e.stopPropagation()}>
-                {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-default">
                     <div>
                         <h2 className="text-sm font-semibold text-surface-800">Nova Calibração</h2>
@@ -597,7 +608,7 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
 
                     {/* Row 4: Environmental Conditions */}
                     <div>
-                        <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-2">Condições Ambientais</p>
+                        <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">Condições Ambientais</p>
                         <div className="grid grid-cols-3 gap-3">
                             <FormField label="Temp. (°C)" error={fieldErrors.temperature}>
                                 <input type="number" step="0.01" value={form.temperature} onChange={e => set('temperature', e.target.value)}
@@ -616,7 +627,7 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
 
                     {/* Standard Weights Picker */}
                     <div>
-                        <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider mb-2">
+                        <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">
                             Pesos Padrão Utilizados
                         </p>
 
@@ -649,7 +660,7 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
 
                         {/* Available Weights */}
                         {(swSearch || allWeights.length <= 10) && filteredWeights.length > 0 && (
-                            <div className="mt-1.5 max-h-32 overflow-y-auto rounded-lg border border-default divide-y divide-default">
+                            <div className="mt-1.5 max-h-32 overflow-y-auto rounded-lg border border-default divide-y divide-subtle">
                                 {filteredWeights.slice(0, 20).map(sw => (
                                     <button
                                         key={sw.id}
@@ -662,14 +673,14 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
                                         <span className="text-surface-500">{sw.nominal_value} {sw.unit}</span>
                                         <span className="text-surface-400 ml-auto">{sw.precision_class}</span>
                                         {sw.certificate_status === 'expired' && (
-                                            <span className="text-[9px] bg-red-100 text-red-600 rounded px-1 font-semibold">Vencido</span>
+                                            <span className="text-xs bg-red-100 text-red-600 rounded px-1 font-semibold">Vencido</span>
                                         )}
                                     </button>
                                 ))}
                             </div>
                         )}
                         {swSearch && filteredWeights.length === 0 && (
-                            <p className="text-[11px] text-surface-400 mt-1">Nenhum peso padrão encontrado</p>
+                            <p className="text-xs text-surface-400 mt-1">Nenhum peso padrão encontrado</p>
                         )}
                     </div>
 
@@ -708,9 +719,9 @@ function CalibrationModal({ equipmentId, onClose, onSuccess }: { equipmentId: nu
 function FormField({ label, error, children }: { label: string; error?: string[]; children: React.ReactNode }) {
     return (
         <div>
-            <label className="block text-[11px] font-medium text-surface-600 mb-1">{label}</label>
+            <label className="block text-xs font-medium text-surface-600 mb-1">{label}</label>
             {children}
-            {error?.map((e, i) => <p key={i} className="text-[10px] text-red-500 mt-0.5">{e}</p>)}
+            {error?.map((e, i) => <p key={i} className="text-xs text-red-500 mt-0.5">{e}</p>)}
         </div>
     )
 }

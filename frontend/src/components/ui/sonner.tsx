@@ -5,15 +5,16 @@ import {
   OctagonX,
   TriangleAlert,
 } from "lucide-react"
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  // Detecta dark mode pela classe no documentElement (compatível com useDarkMode hook)
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  const theme: ToasterProps["theme"] = isDark ? "dark" : "light"
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={theme}
       className="toaster group"
       icons={{
         success: <CircleCheck className="h-4 w-4" />,

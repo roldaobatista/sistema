@@ -158,7 +158,6 @@ export function SettingsPage() {
     // Settings
     const { data: settingsRes, isError } = useQuery({
         queryKey: ['settings'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/settings'),
         enabled: tab === 'settings',
     })
@@ -195,7 +194,6 @@ export function SettingsPage() {
     // Numbering Sequences
     const { data: seqRes } = useQuery({
         queryKey: ['numbering-sequences'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/numbering-sequences'),
         enabled: tab === 'numbering',
     })
@@ -261,13 +259,13 @@ export function SettingsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex rounded-lg border border-surface-200 bg-surface-50 p-0.5 w-fit">
+            <div className="flex rounded-lg border border-default bg-surface-50 p-0.5 w-fit">
                 {([{ key: 'settings' as const, label: 'Configurações', icon: Settings }, { key: 'numbering' as const, label: 'Numeração', icon: Hash }, { key: 'notifications' as const, label: 'Notificações', icon: Bell }, { key: 'audit' as const, label: 'Auditoria', icon: History }]).map(t => {
                     const Icon = t.icon
                     return (
                         <button key={t.key} onClick={() => setTab(t.key)}
                             className={cn('flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all',
-                                tab === t.key ? 'bg-white text-brand-700 shadow-sm' : 'text-surface-500 hover:text-surface-700')}>
+                                tab === t.key ? 'bg-surface-0 text-brand-700 shadow-card' : 'text-surface-500 hover:text-surface-700')}>
                             <Icon className="h-3.5 w-3.5" />{t.label}
                         </button>
                     )

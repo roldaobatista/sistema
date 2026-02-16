@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Briefcase, Clock, AlertTriangle, UploadCloud } from 'lucide-react'
@@ -45,14 +45,12 @@ export function ServicesPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['services', debouncedSearch],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/services', { params: { search: debouncedSearch, per_page: 50 } }),
     })
     const services: Service[] = res?.data?.data ?? []
 
     const { data: catsRes } = useQuery({
         queryKey: ['service-categories'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-categories'),
     })
     const categories = catsRes?.data ?? []
@@ -130,7 +128,7 @@ export function ServicesPage() {
                 <div className="skeleton h-9 w-28" />
             </div>
             <div className="skeleton h-10 w-full max-w-md" />
-            <div className="rounded-xl border border-surface-200 bg-surface-0 h-96"></div>
+            <div className="rounded-xl border border-default bg-surface-0 h-96"></div>
         </div>
     )
 
@@ -156,11 +154,11 @@ export function ServicesPage() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Serviço</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Categoria</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Preço</th>
-                            <th className="hidden px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Tempo</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Serviço</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 md:table-cell">Categoria</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Preço</th>
+                            <th className="hidden px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Tempo</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -181,7 +179,7 @@ export function ServicesPage() {
                                             <Briefcase className="h-4 w-4 text-emerald-600" />
                                         </div>
                                         <div>
-                                            <p className="text-[13px] font-medium text-surface-900">{s.name}</p>
+                                            <p className="text-sm font-medium text-surface-900">{s.name}</p>
                                             {s.code && <p className="text-xs text-surface-400">#{s.code}</p>}
                                         </div>
                                     </div>
@@ -189,9 +187,9 @@ export function ServicesPage() {
                                 <td className="hidden px-4 py-3 md:table-cell">
                                     {s.category ? <Badge variant="success">{s.category.name}</Badge> : <span className="text-xs text-surface-400">â€”</span>}
                                 </td>
-                                <td className="px-3.5 py-2.5 text-right text-[13px] font-medium text-surface-900">{formatBRL(s.default_price)}</td>
+                                <td className="px-3.5 py-2.5 text-right text-sm font-medium text-surface-900">{formatBRL(s.default_price)}</td>
                                 <td className="hidden px-3.5 py-2.5 text-right lg:table-cell">
-                                    <span className="flex items-center justify-end gap-1 text-[13px] text-surface-600">
+                                    <span className="flex items-center justify-end gap-1 text-sm text-surface-600">
                                         <Clock className="h-3.5 w-3.5" /> {formatTime(s.estimated_minutes)}
                                     </span>
                                 </td>
@@ -219,7 +217,6 @@ export function ServicesPage() {
                 </table>
             </div>
 
-            {/* Form */}
             <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Serviço' : 'Novo Serviço'} size="lg">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -228,7 +225,7 @@ export function ServicesPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Categoria</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Categoria</label>
                             <select value={form.category_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('category_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Sem categoria</option>
@@ -236,7 +233,7 @@ export function ServicesPage() {
                             </select>
                             <div className="mt-1.5 flex gap-1">
                                 <input value={newCat} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCat(e.target.value)} placeholder="Nova categoria"
-                                    className="flex-1 rounded-md border border-surface-200 px-2 py-1 text-xs" />
+                                    className="flex-1 rounded-md border border-default px-2 py-1 text-xs" />
                                 <Button variant="ghost" size="sm" type="button" disabled={!newCat}
                                     onClick={() => catMut.mutate(newCat)}>+</Button>
                             </div>
@@ -245,7 +242,7 @@ export function ServicesPage() {
                         <Input label="Tempo Estimado (min)" type="number" value={form.estimated_minutes} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('estimated_minutes', e.target.value)} placeholder="Ex: 60" />
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Descrição</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Descrição</label>
                         <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
@@ -256,7 +253,6 @@ export function ServicesPage() {
                 </form>
             </Modal>
 
-            {/* Confirm Delete Modal */}
             <Modal open={!!showConfirmDelete} onOpenChange={() => setShowConfirmDelete(null)} size="sm" title="Excluir Serviço">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
@@ -283,7 +279,7 @@ export function ServicesPage() {
                             <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(deleteDependencies).map(([key, count]) => (
-                                    <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
+                                    <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-default">
                                         <span className="text-surface-600 capitalize">{key.replace(/_/g, ' ')}</span>
                                         <Badge variant="neutral">{String(count)}</Badge>
                                     </div>

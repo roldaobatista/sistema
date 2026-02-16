@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Package, AlertTriangle, TrendingDown, DollarSign, ArrowRight, Warehouse, Tag, ClipboardCheck, ScrollText, ArrowLeftRight, BarChart3, QrCode } from 'lucide-react'
@@ -36,14 +37,12 @@ export function StockDashboardPage() {
 
     const { data: summaryRes, isLoading: loadingSummary } = useQuery({
         queryKey: ['stock-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/stock/summary'),
     })
     const summary: StockSummary = summaryRes?.data?.stats ?? { total_products: 0, total_value: 0, low_stock_count: 0, out_of_stock_count: 0 }
 
     const { data: alertsRes, isLoading: loadingAlerts } = useQuery({
         queryKey: ['stock-low-alerts'],
-        const { data } = useQuery({
         queryFn: () => api.get('/stock/low-alerts'),
     })
     const alerts: LowStockProduct[] = alertsRes?.data?.data ?? []
@@ -71,7 +70,6 @@ export function StockDashboardPage() {
                 ]}
             />
 
-            {/* Summary Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {cards.map(card => (
                     <div key={card.label} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
@@ -90,7 +88,6 @@ export function StockDashboardPage() {
                 ))}
             </div>
 
-            {/* Stock Health Bar */}
             {!loadingSummary && summary.total_products > 0 && (() => {
                 const ok = summary.total_products - summary.low_stock_count - summary.out_of_stock_count
                 const total = summary.total_products
@@ -129,7 +126,6 @@ export function StockDashboardPage() {
                 )
             })()}
 
-            {/* Quick Access Links */}
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-5">
                 {[
                     { label: 'Armazéns', icon: Warehouse, path: '/estoque/armazens', color: 'text-blue-600 bg-blue-50 hover:bg-blue-100' },
@@ -155,7 +151,6 @@ export function StockDashboardPage() {
                 ))}
             </div>
 
-            {/* Low Stock Alerts */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                 <div className="border-b border-subtle px-5 py-4">
                     <h2 className="flex items-center gap-2 text-lg font-semibold text-surface-900">
@@ -167,18 +162,18 @@ export function StockDashboardPage() {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-subtle bg-surface-50">
-                                <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Produto</th>
-                                <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Categoria</th>
-                                <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Atual</th>
-                                <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Mínimo</th>
-                                <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Deficit</th>
+                                <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Produto</th>
+                                <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 md:table-cell">Categoria</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Atual</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Mínimo</th>
+                                <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Deficit</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-subtle">
                             {loadingAlerts ? (
-                                <tr><td colSpan={5} className="px-4 py-12 text-center text-[13px] text-surface-500">Carregando...</td></tr>
+                                <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
                             ) : alerts.length === 0 ? (
-                                <tr><td colSpan={5} className="px-4 py-12 text-center text-[13px] text-surface-500">
+                                <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-surface-500">
                                     <div className="flex flex-col items-center gap-2">
                                         <Package className="h-8 w-8 text-surface-300" />
                                         Nenhum produto com estoque baixo 🎉
@@ -195,7 +190,7 @@ export function StockDashboardPage() {
                                                     {isZero ? <AlertTriangle className="h-4 w-4 text-red-600" /> : <TrendingDown className="h-4 w-4 text-amber-600" />}
                                                 </div>
                                                 <div>
-                                                    <p className="text-[13px] font-medium text-surface-900">{p.name}</p>
+                                                    <p className="text-sm font-medium text-surface-900">{p.name}</p>
                                                     {p.code && <p className="text-xs text-surface-400">#{p.code}</p>}
                                                 </div>
                                             </div>
@@ -208,7 +203,7 @@ export function StockDashboardPage() {
                                                 {parseFloat(p.stock_qty)} {p.unit}
                                             </span>
                                         </td>
-                                        <td className="px-3.5 py-2.5 text-right text-[13px] text-surface-600">
+                                        <td className="px-3.5 py-2.5 text-right text-sm text-surface-600">
                                             {parseFloat(p.stock_min)} {p.unit}
                                         </td>
                                         <td className="px-3.5 py-2.5 text-right">

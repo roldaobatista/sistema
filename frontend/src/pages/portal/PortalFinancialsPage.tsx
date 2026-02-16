@@ -32,7 +32,6 @@ export function PortalFinancialsPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-financials'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/portal/financials').then(res => res.data),
     })
 
@@ -56,10 +55,9 @@ export function PortalFinancialsPage() {
         <div className="space-y-5">
             <div>
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Financeiro</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Suas faturas e pagamentos</p>
+                <p className="mt-0.5 text-sm text-surface-500">Suas faturas e pagamentos</p>
             </div>
 
-            {/* Summary Cards */}
             <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                     <div className="flex items-center gap-2 text-amber-600"><Clock className="h-4 w-4" /><span className="text-xs font-medium">Pendente</span></div>
@@ -75,7 +73,6 @@ export function PortalFinancialsPage() {
                 </div>
             </div>
 
-            {/* Financials List */}
             {isLoading ? (
                 <div className="text-center text-surface-400 py-12">Carregando...</div>
             ) : financials.length === 0 ? (
@@ -92,19 +89,19 @@ export function PortalFinancialsPage() {
                         const StatusIcon = cfg.icon
                         return (
                             <div key={item.id} className={cn(
-                                'rounded-xl border bg-white p-4 shadow-card flex items-center gap-4 transition-all hover:shadow-elevated',
+                                'rounded-xl border bg-surface-0 p-4 shadow-card flex items-center gap-4 transition-all',
                                 isOverdue ? 'border-red-200' : 'border-surface-200'
                             )}>
                                 <div className={cn('rounded-lg p-2.5 flex-shrink-0', cfg.bg)}>
                                     <StatusIcon className={cn('h-4 w-4', cfg.color)} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-medium text-surface-900">{item.description || `Fatura #${item.id}`}</p>
+                                    <p className="text-sm font-medium text-surface-900">{item.description || `Fatura #${item.id}`}</p>
                                     <p className="text-xs text-surface-400 mt-0.5">Vencimento: {fmtDate(item.due_date)}</p>
                                 </div>
                                 <div className="text-right flex-shrink-0">
                                     <p className="text-sm font-bold text-surface-900">{fmtBRL(item.amount)}</p>
-                                    <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', cfg.bg, cfg.color)}>
+                                    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', cfg.bg, cfg.color)}>
                                         {cfg.label}
                                     </span>
                                 </div>

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud, FileText, MapPin } from 'lucide-react'
@@ -134,7 +134,6 @@ export function CustomersPage() {
   // Fetch CRM options
   const { data: crmOptions } = useQuery({
     queryKey: ['customer-options'],
-    const { data, isLoading } = useQuery({
     queryFn: () => api.get('/customers/options').then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
@@ -142,7 +141,6 @@ export function CustomersPage() {
   // Sellers
   const { data: sellersRes } = useQuery({
     queryKey: ['sellers-options'],
-    const { data, isLoading } = useQuery({
     queryFn: () => api.get('/users', { params: { role: 'vendedor', per_page: 100 } }).then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
@@ -411,7 +409,6 @@ export function CustomersPage() {
         ]}
       />
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
@@ -420,7 +417,7 @@ export function CustomersPage() {
             placeholder="Buscar por nome, documento, e-mail..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-surface-0"
           />
           {search && (
             <button onClick={() => handleSearch('')} aria-label="Limpar busca" className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600">
@@ -432,7 +429,7 @@ export function CustomersPage() {
           value={typeFilter}
           onChange={(e) => handleTypeFilter(e.target.value)}
           aria-label="Filtrar por tipo"
-          className="text-sm border border-surface-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">Todos os tipos</option>
           <option value="PF">Pessoa Física</option>
@@ -442,7 +439,7 @@ export function CustomersPage() {
           value={statusFilter}
           onChange={(e) => handleStatusFilter(e.target.value)}
           aria-label="Filtrar por status"
-          className="text-sm border border-surface-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">Todos os status</option>
           <option value="1">Ativos</option>
@@ -450,7 +447,6 @@ export function CustomersPage() {
         </select>
       </div>
 
-      {/* List */}
       {isLoading ? (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -470,7 +466,7 @@ export function CustomersPage() {
             {customers.map((c: any) => (
               <div
                 key={c.id}
-                className="group relative rounded-xl border border-surface-200 bg-white p-4 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer"
+                className="group relative rounded-xl border border-default bg-surface-0 p-4 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer"
                 onClick={() => navigate(`/cadastros/clientes/${c.id}`)}
               >
                 <div className="flex items-start justify-between">
@@ -487,7 +483,7 @@ export function CustomersPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     {c.rating && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${RATING_COLORS[c.rating] || 'bg-surface-100 text-surface-500'}`}>
+                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${RATING_COLORS[c.rating] || 'bg-surface-100 text-surface-500'}`}>
                         {c.rating}
                       </span>
                     )}
@@ -510,12 +506,12 @@ export function CustomersPage() {
                       </span>
                     )}
                     {c.assigned_seller && (
-                      <span className="text-[10px] text-surface-400">
+                      <span className="text-xs text-surface-400">
                         {c.assigned_seller.name}
                       </span>
                     )}
                     {c.documents_count > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-surface-400" title={`${c.documents_count} documentos anexados`}>
+                      <span className="flex items-center gap-1 text-xs font-bold text-surface-400" title={`${c.documents_count} documentos anexados`}>
                         <FileText className="h-3 w-3" />
                         {c.documents_count}
                       </span>
@@ -549,7 +545,6 @@ export function CustomersPage() {
             ))}
           </div>
 
-          {/* Pagination */}
           {lastPage > 1 && (
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-surface-500">
@@ -583,7 +578,6 @@ export function CustomersPage() {
         </>
       )}
 
-      {/* Create/Edit Modal */}
       <Modal
         isOpen={open}
         onClose={closeModal}
@@ -598,8 +592,7 @@ export function CustomersPage() {
           </div>
         }
       >
-        {/* Tabs */}
-        <div className="flex border-b border-surface-200 mb-4 -mx-1 overflow-x-auto">
+        <div className="flex border-b border-default mb-4 -mx-1 overflow-x-auto">
           {(['info', 'address', 'crm', 'contacts'] as const).map(tab => (
             <button
               key={tab}
@@ -611,7 +604,6 @@ export function CustomersPage() {
           ))}
         </div>
 
-        {/* Tab: Info */}
         {activeTab === 'info' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -622,7 +614,7 @@ export function CustomersPage() {
                     key={t}
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, type: t }))}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${form.type === t ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 text-surface-600 hover:bg-surface-50'}`}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${form.type === t ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-default text-surface-600 hover:bg-surface-50'}`}
                   >
                     {t === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
                   </button>
@@ -678,7 +670,7 @@ export function CustomersPage() {
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                className="w-full px-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                 rows={3}
               />
             </div>
@@ -688,14 +680,13 @@ export function CustomersPage() {
                 id="is_active"
                 checked={form.is_active}
                 onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                className="rounded border-surface-300"
+                className="rounded border-default"
               />
               <label htmlFor="is_active" className="text-sm text-surface-700">Cliente ativo</label>
             </div>
           </div>
         )}
 
-        {/* Tab: Address */}
         {activeTab === 'address' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
@@ -741,7 +732,7 @@ export function CustomersPage() {
               maxLength={2}
             />
 
-            <div className="sm:col-span-2 border-t border-surface-200 mt-2 pt-4">
+            <div className="sm:col-span-2 border-t border-default mt-2 pt-4">
               <h4 className="text-sm font-semibold text-surface-900 mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-brand-600" />
                 Localização (Google Maps)
@@ -803,7 +794,6 @@ export function CustomersPage() {
           </div>
         )}
 
-        {/* Tab: CRM */}
         {activeTab === 'crm' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -812,7 +802,7 @@ export function CustomersPage() {
                 id="crm-source"
                 value={form.source}
                 onChange={(e) => setForm({ ...form, source: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                className="w-full px-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0"
               >
                 <option value="">Selecione...</option>
                 {crmOptions?.sources && Object.entries(crmOptions.sources).map(([k, v]) => (
@@ -826,7 +816,7 @@ export function CustomersPage() {
                 id="crm-segment"
                 value={form.segment}
                 onChange={(e) => setForm({ ...form, segment: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                className="w-full px-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0"
               >
                 <option value="">Selecione...</option>
                 {crmOptions?.segments && Object.entries(crmOptions.segments).map(([k, v]) => (
@@ -840,7 +830,7 @@ export function CustomersPage() {
                 id="crm-company-size"
                 value={form.company_size}
                 onChange={(e) => setForm({ ...form, company_size: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                className="w-full px-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0"
               >
                 <option value="">Selecione...</option>
                 {crmOptions?.company_sizes && Object.entries(crmOptions.company_sizes).map(([k, v]) => (
@@ -854,7 +844,7 @@ export function CustomersPage() {
                 id="crm-rating"
                 value={form.rating}
                 onChange={(e) => setForm({ ...form, rating: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                className="w-full px-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0"
               >
                 <option value="">Selecione...</option>
                 {crmOptions?.ratings && Object.entries(crmOptions.ratings).map(([k, v]) => (
@@ -868,7 +858,7 @@ export function CustomersPage() {
                 id="crm-seller"
                 value={form.assigned_seller_id}
                 onChange={(e) => setForm({ ...form, assigned_seller_id: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                className="w-full px-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0"
               >
                 <option value="">Nenhum</option>
                 {sellers.map((s: any) => (
@@ -879,7 +869,6 @@ export function CustomersPage() {
           </div>
         )}
 
-        {/* Tab: Contacts */}
         {activeTab === 'contacts' && (
           <div className="space-y-4">
             {form.contacts.length === 0 && (
@@ -895,7 +884,7 @@ export function CustomersPage() {
                         type="checkbox"
                         checked={ct.is_primary}
                         onChange={(e) => updateContact(i, 'is_primary', e.target.checked)}
-                        className="rounded border-surface-300"
+                        className="rounded border-default"
                       />
                       Principal
                     </label>
@@ -930,7 +919,6 @@ export function CustomersPage() {
         )}
       </Modal>
 
-      {/* Delete Confirmation */}
       <Modal
         isOpen={delId !== null}
         onClose={() => { setDelId(null); setDelDeps(null) }}

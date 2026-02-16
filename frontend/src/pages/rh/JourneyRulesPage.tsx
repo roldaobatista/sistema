@@ -53,7 +53,6 @@ export default function JourneyRulesPage() {
 
     const { data: rulesRes, isLoading } = useQuery({
         queryKey: ['journey-rules'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/journey-rules').then(r => r.data?.data ?? []),
     })
 
@@ -133,7 +132,6 @@ export default function JourneyRulesPage() {
                 )}
             </div>
 
-            {/* Cards Grid */}
             {isLoading ? (
                 <div className="py-12 text-center text-surface-400">Carregando...</div>
             ) : rules.length === 0 ? (
@@ -150,7 +148,7 @@ export default function JourneyRulesPage() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {rules.map(r => (
                         <div key={r.id} className={cn(
-                            'rounded-xl border bg-surface-0 p-5 shadow-card transition-all hover:shadow-md',
+                            'rounded-xl border bg-surface-0 p-5 shadow-card transition-all',
                             r.is_default ? 'border-brand-200 ring-1 ring-brand-100' : 'border-default'
                         )}>
                             <div className="flex items-start justify-between">
@@ -158,7 +156,7 @@ export default function JourneyRulesPage() {
                                     <div className="flex items-center gap-2">
                                         <h3 className="font-semibold text-surface-900">{r.name}</h3>
                                         {r.is_default && (
-                                            <span className="rounded bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-700">PADRÃO</span>
+                                            <span className="rounded bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-700">PADRÃO</span>
                                         )}
                                     </div>
                                     <p className="mt-1 text-xs text-surface-500">
@@ -181,28 +179,28 @@ export default function JourneyRulesPage() {
                                 <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-1.5">
                                     <TrendingUp className="h-3.5 w-3.5 text-amber-600" />
                                     <div>
-                                        <p className="text-[10px] text-amber-600">HE Dia Útil</p>
+                                        <p className="text-xs text-amber-600">HE Dia Útil</p>
                                         <p className="text-xs font-bold text-amber-700">{r.overtime_weekday_pct}%</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 rounded-lg bg-red-50 px-2.5 py-1.5">
                                     <TrendingUp className="h-3.5 w-3.5 text-red-600" />
                                     <div>
-                                        <p className="text-[10px] text-red-600">HE Fds/Feriado</p>
+                                        <p className="text-xs text-red-600">HE Fds/Feriado</p>
                                         <p className="text-xs font-bold text-red-700">{r.overtime_weekend_pct}%/{r.overtime_holiday_pct}%</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 rounded-lg bg-indigo-50 px-2.5 py-1.5">
                                     <Moon className="h-3.5 w-3.5 text-indigo-600" />
                                     <div>
-                                        <p className="text-[10px] text-indigo-600">Noturno</p>
+                                        <p className="text-xs text-indigo-600">Noturno</p>
                                         <p className="text-xs font-bold text-indigo-700">{r.night_shift_pct}% ({r.night_start}-{r.night_end})</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 rounded-lg bg-surface-50 px-2.5 py-1.5">
                                     <Archive className="h-3.5 w-3.5 text-surface-500" />
                                     <div>
-                                        <p className="text-[10px] text-surface-500">Banco Horas</p>
+                                        <p className="text-xs text-surface-500">Banco Horas</p>
                                         <p className="text-xs font-bold text-surface-700">
                                             {r.uses_hour_bank ? `Sim (${r.hour_bank_expiry_months}m)` : 'Não'}
                                         </p>
@@ -214,7 +212,6 @@ export default function JourneyRulesPage() {
                 </div>
             )}
 
-            {/* Create/Edit Modal */}
             <Modal open={showModal && canManage} onOpenChange={setShowModal} title={editing ? 'Editar Regra' : 'Nova Regra'} size="lg">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input label="Nome *" value={form.name} required
@@ -263,7 +260,6 @@ export default function JourneyRulesPage() {
                 </form>
             </Modal>
 
-            {/* Delete Confirmation */}
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Regra" size="sm">
                 <p className="text-sm text-surface-600">
                     Tem certeza que deseja excluir a regra <strong>{deleteTarget?.name}</strong>?

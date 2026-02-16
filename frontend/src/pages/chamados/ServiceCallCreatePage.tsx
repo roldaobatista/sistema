@@ -81,7 +81,6 @@ export function ServiceCallCreatePage() {
 
     const { data: assigneesRes, isError: assigneesError } = useQuery({
         queryKey: ['service-call-assignees'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
         enabled: canAssign,
     })
@@ -209,33 +208,33 @@ export function ServiceCallCreatePage() {
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">Novo Chamado</h1>
-                    <p className="text-sm text-gray-500">Preencha os dados para abrir um novo atendimento tecnico.</p>
+                    <h1 className="text-xl font-bold text-surface-900">Novo Chamado</h1>
+                    <p className="text-sm text-surface-500">Preencha os dados para abrir um novo atendimento tecnico.</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2">
-                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Cliente e prioridade</h2>
+                <div className="space-y-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card lg:col-span-2">
+                    <h2 className="text-sm font-semibold text-surface-900">Cliente e prioridade</h2>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="md:col-span-2">
-                            <label className="mb-1 block text-xs font-medium text-gray-500">Buscar cliente</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-500">Buscar cliente</label>
                             <input
                                 type="text"
                                 value={customerSearch}
                                 onChange={(event) => setCustomerSearch(event.target.value)}
                                 placeholder="Digite nome ou documento"
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-500">Prioridade</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-500">Prioridade</label>
                             <select
                                 value={form.priority}
                                 onChange={(event) => setForm((previous) => ({ ...previous, priority: event.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             >
                                 <option value="low">Baixa</option>
                                 <option value="normal">Normal</option>
@@ -246,11 +245,11 @@ export function ServiceCallCreatePage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500">Cliente</label>
+                        <label className="mb-1 block text-xs font-medium text-surface-500">Cliente</label>
                         <select
                             value={form.customer_id}
                             onChange={(event) => handleSelectCustomer(event.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             disabled={customersLoading}
                         >
                             <option value="">Selecione</option>
@@ -265,7 +264,7 @@ export function ServiceCallCreatePage() {
                             <p className="mt-1 text-xs text-red-600">{firstError('customer_id')}</p>
                         )}
                         {selectedCustomer && (
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="mt-1 text-xs text-surface-500">
                                 Cliente selecionado: {selectedCustomer.name}
                             </p>
                         )}
@@ -277,16 +276,16 @@ export function ServiceCallCreatePage() {
                     </div>
                 </div>
 
-                <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Local e horario</h2>
+                <div className="space-y-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                    <h2 className="text-sm font-semibold text-surface-900">Local e horario</h2>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500">Data agendada</label>
+                        <label className="mb-1 block text-xs font-medium text-surface-500">Data agendada</label>
                         <input
                             type="datetime-local"
                             value={form.scheduled_date}
                             onChange={(event) => setForm((previous) => ({ ...previous, scheduled_date: event.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                         />
                         {firstError('scheduled_date') && (
                             <p className="mt-1 text-xs text-red-600">{firstError('scheduled_date')}</p>
@@ -294,28 +293,28 @@ export function ServiceCallCreatePage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500">Endereco</label>
+                        <label className="mb-1 block text-xs font-medium text-surface-500">Endereco</label>
                         <input
                             type="text"
                             value={form.address}
                             onChange={(event) => setForm((previous) => ({ ...previous, address: event.target.value }))}
                             placeholder="Rua, numero, bairro"
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-500">Cidade</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-500">Cidade</label>
                             <input
                                 type="text"
                                 value={form.city}
                                 onChange={(event) => setForm((previous) => ({ ...previous, city: event.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-500">UF</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-500">UF</label>
                             <input
                                 type="text"
                                 value={form.state}
@@ -326,7 +325,7 @@ export function ServiceCallCreatePage() {
                                         state: event.target.value.toUpperCase(),
                                     }))
                                 }
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm uppercase dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm uppercase"
                             />
                             {firstError('state') && <p className="mt-1 text-xs text-red-600">{firstError('state')}</p>}
                         </div>
@@ -334,41 +333,41 @@ export function ServiceCallCreatePage() {
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-500">Latitude</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-500">Latitude</label>
                             <input
                                 type="number"
                                 step="0.000001"
                                 value={form.latitude}
                                 onChange={(event) => setForm((previous) => ({ ...previous, latitude: event.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-500">Longitude</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-500">Longitude</label>
                             <input
                                 type="number"
                                 step="0.000001"
                                 value={form.longitude}
                                 onChange={(event) => setForm((previous) => ({ ...previous, longitude: event.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
                     </div>
                 </div>
 
-                <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Equipe e observacoes</h2>
+                <div className="space-y-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                    <h2 className="text-sm font-semibold text-surface-900">Equipe e observacoes</h2>
 
                     {canAssign ? (
                         <>
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-gray-500">Tecnico</label>
+                                <label className="mb-1 block text-xs font-medium text-surface-500">Tecnico</label>
                                 <select
                                     value={form.technician_id}
                                     onChange={(event) =>
                                         setForm((previous) => ({ ...previous, technician_id: event.target.value }))
                                     }
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                    className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                                 >
                                     <option value="">Nao atribuir</option>
                                     {technicians.map((technician) => (
@@ -383,13 +382,13 @@ export function ServiceCallCreatePage() {
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-gray-500">Motorista</label>
+                                <label className="mb-1 block text-xs font-medium text-surface-500">Motorista</label>
                                 <select
                                     value={form.driver_id}
                                     onChange={(event) =>
                                         setForm((previous) => ({ ...previous, driver_id: event.target.value }))
                                     }
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                    className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                                 >
                                     <option value="">Nao atribuir</option>
                                     {drivers.map((driver) => (
@@ -415,31 +414,31 @@ export function ServiceCallCreatePage() {
                     )}
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500">Observacoes</label>
+                        <label className="mb-1 block text-xs font-medium text-surface-500">Observacoes</label>
                         <textarea
                             value={form.observations}
                             onChange={(event) => setForm((previous) => ({ ...previous, observations: event.target.value }))}
                             rows={5}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             placeholder="Descreva o atendimento solicitado..."
                         />
                     </div>
                 </div>
 
                 {canViewEquipment && (
-                    <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div className="space-y-3 rounded-xl border border-default bg-surface-0 p-5 shadow-card lg:col-span-2">
+                        <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
                             <Wrench className="h-4 w-4" /> Equipamentos vinculados
                         </h2>
 
                         {!form.customer_id ? (
-                            <p className="text-sm text-gray-500">Selecione um cliente para listar os equipamentos.</p>
+                            <p className="text-sm text-surface-500">Selecione um cliente para listar os equipamentos.</p>
                         ) : equipmentsLoading ? (
-                            <p className="text-sm text-gray-500">Carregando equipamentos...</p>
+                            <p className="text-sm text-surface-500">Carregando equipamentos...</p>
                         ) : equipmentsError ? (
                             <p className="text-sm text-red-600">Nao foi possivel carregar os equipamentos.</p>
                         ) : equipments.length === 0 ? (
-                            <p className="text-sm text-gray-500">Nenhum equipamento encontrado para este cliente.</p>
+                            <p className="text-sm text-surface-500">Nenhum equipamento encontrado para este cliente.</p>
                         ) : (
                             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                                 {equipments.map((equipment) => {
@@ -447,7 +446,7 @@ export function ServiceCallCreatePage() {
                                     return (
                                         <label
                                             key={equipment.id}
-                                            className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700"
+                                            className="flex items-center gap-3 rounded-lg border border-default px-3 py-2 text-sm"
                                         >
                                             <input
                                                 type="checkbox"

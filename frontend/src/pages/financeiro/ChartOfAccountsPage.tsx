@@ -144,7 +144,6 @@ export function ChartOfAccountsPage() {
 
     const parentOptionsQuery = useQuery({
         queryKey: ['chart-of-accounts-parent-options'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: async () => {
             const response = await api.get<ApiResponse<Account[]>>('/chart-of-accounts', {
                 params: { is_active: 1 },
@@ -445,7 +444,7 @@ export function ChartOfAccountsPage() {
                         />
 
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tipo</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo</label>
                             <select
                                 value={form.type}
                                 onChange={(event: ChangeEvent<HTMLSelectElement>) => setForm((prev) => ({ ...prev, type: event.target.value as AccountType, parent_id: '' }))}
@@ -467,7 +466,7 @@ export function ChartOfAccountsPage() {
                     />
 
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Conta Pai (opcional)</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Conta Pai (opcional)</label>
                         <select
                             value={form.parent_id}
                             onChange={(event: ChangeEvent<HTMLSelectElement>) => setForm((prev) => ({ ...prev, parent_id: event.target.value }))}
@@ -486,7 +485,7 @@ export function ChartOfAccountsPage() {
                             type="checkbox"
                             checked={form.is_active}
                             onChange={(event: ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, is_active: event.target.checked }))}
-                            className="h-4 w-4 rounded border-surface-300"
+                            className="h-4 w-4 rounded border-default"
                         />
                         Conta ativa
                     </label>

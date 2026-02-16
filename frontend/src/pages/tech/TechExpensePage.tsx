@@ -1,4 +1,4 @@
-import { useState, useCallback , useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, Plus, Receipt, Loader2, CheckCircle2,
@@ -257,7 +257,7 @@ export default function TechExpensePage() {
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => remove(exp.id)}
+                                    onClick={() => { if (confirm('Deseja remover esta despesa?')) remove(exp.id) }}
                                     aria-label="Remover despesa"
                                     className="w-7 h-7 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                                 >

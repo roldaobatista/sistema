@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -30,6 +30,14 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
+
+const STATUS_LABELS: Record<string, string> = {
+    pending: 'Pendente',
+    processing: 'Processando',
+    done: 'Concluído',
+    failed: 'Falhou',
+    rolled_back: 'Desfeita',
+}
 
 const ENTITY_LABELS: Record<string, string> = {
     customers: 'Clientes',
@@ -377,16 +385,17 @@ export function AuvoImportPage() {
                                         <td className="px-4 py-2.5">
                                             <span className={cn(
                                                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                                                item.status === 'completed' && 'bg-green-50 text-green-700',
+                                                item.status === 'done' && 'bg-green-50 text-green-700',
                                                 item.status === 'failed' && 'bg-red-50 text-red-700',
-                                                item.status === 'running' && 'bg-blue-50 text-blue-700',
+                                                item.status === 'processing' && 'bg-blue-50 text-blue-700',
+                                                item.status === 'pending' && 'bg-surface-100 text-surface-600',
                                                 item.status === 'rolled_back' && 'bg-amber-50 text-amber-700',
                                             )}>
-                                                {item.status === 'completed' && <CheckCircle2 className="h-3 w-3" />}
+                                                {item.status === 'done' && <CheckCircle2 className="h-3 w-3" />}
                                                 {item.status === 'failed' && <XCircle className="h-3 w-3" />}
-                                                {item.status === 'running' && <Loader2 className="h-3 w-3 animate-spin" />}
+                                                {item.status === 'processing' && <Loader2 className="h-3 w-3 animate-spin" />}
                                                 {item.status === 'rolled_back' && <RotateCcw className="h-3 w-3" />}
-                                                {item.status}
+                                                {STATUS_LABELS[item.status] || item.status}
                                             </span>
                                         </td>
                                         <td className="px-4 py-2.5 text-right tabular-nums">{item.total_fetched}</td>
@@ -403,7 +412,7 @@ export function AuvoImportPage() {
                                         </td>
                                         <td className="px-4 py-2.5 text-surface-600">{item.user_name}</td>
                                         <td className="px-4 py-2.5 text-right">
-                                            {item.status === 'completed' && (
+                                            {item.status === 'done' && (
                                                 <button
                                                     onClick={() => handleRollback(item.id)}
                                                     disabled={rollback.isPending}

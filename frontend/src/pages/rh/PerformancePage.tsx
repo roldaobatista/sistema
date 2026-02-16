@@ -39,7 +39,6 @@ export default function PerformancePage() {
 
     const { data: usersResponse } = useQuery({
         queryKey: ['users-options'],
-        const { data } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 200, status: 'active' } }),
     })
     const users = usersResponse?.data?.data ?? usersResponse?.data ?? []
@@ -98,7 +97,6 @@ export default function PerformancePage() {
                 }
             />
 
-            {/* Tabs */}
             <div className="flex border-b border-subtle">
                 <button
                     onClick={() => setActiveTab('reviews')}
@@ -121,7 +119,6 @@ export default function PerformancePage() {
                     className={cn("px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2",
                         activeTab === 'ninebox' ? "border-brand-500 text-brand-600" : "border-transparent text-surface-500 hover:text-surface-700")}
                 >
-                    {/* Grid Icon */}
                     <div className="grid grid-cols-2 gap-0.5 h-4 w-4">
                         <div className="bg-current rounded-[1px]"></div>
                         <div className="bg-current rounded-[1px]"></div>
@@ -132,9 +129,8 @@ export default function PerformancePage() {
                 </button>
             </div>
 
-            {/* Reviews Content */}
             {activeTab === 'reviews' && (
-                <div className="rounded-xl border border-default bg-surface-0 shadow-sm">
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -185,7 +181,6 @@ export default function PerformancePage() {
                 </div>
             )}
 
-            {/* Feedback Content */}
             {activeTab === 'feedback' && (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {loadingFeedback ? (
@@ -194,7 +189,7 @@ export default function PerformancePage() {
                         <div className="col-span-full text-center py-8 text-surface-500">Nenhum feedback registrado.</div>
                     ) : (
                         feedbackList?.map(fb => (
-                            <div key={fb.id} className="rounded-xl border border-default bg-surface-0 p-5 shadow-sm space-y-3">
+                            <div key={fb.id} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-3">
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="h-10 w-10 rounded-full bg-surface-100 flex items-center justify-center text-sm font-bold text-surface-600">
@@ -206,7 +201,7 @@ export default function PerformancePage() {
                                         </div>
                                     </div>
                                     <span className={cn(
-                                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide",
                                         fb.type === 'praise' ? "bg-emerald-50 text-emerald-700" :
                                             fb.type === 'guidance' ? "bg-blue-50 text-blue-700" :
                                                 "bg-amber-50 text-amber-700"
@@ -227,17 +222,16 @@ export default function PerformancePage() {
                 </div>
             )}
 
-            {/* 9-Box Content */}
             {activeTab === 'ninebox' && (() => {
                 const nineBoxLabels = [
                     { label: 'Enigma', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
                     { label: 'Estrela em Crescimento', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700' },
                     { label: 'Estrela', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
                     { label: 'Risco', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
-                    { label: 'Profissional Confiável', bg: 'bg-surface-50', border: 'border-surface-200', text: 'text-surface-700' },
+                                    { label: 'Profissional Confiável', bg: 'bg-surface-50', border: 'border-default', text: 'text-surface-700' },
                     { label: 'Alto Potencial', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700' },
                     { label: 'Iceberg', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
-                    { label: 'Eficiente', bg: 'bg-surface-50', border: 'border-surface-200', text: 'text-surface-700' },
+                                    { label: 'Eficiente', bg: 'bg-surface-50', border: 'border-default', text: 'text-surface-700' },
                     { label: 'Comprometido', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
                 ]
 
@@ -266,7 +260,7 @@ export default function PerformancePage() {
                                     <span className={`text-xs font-semibold ${cell.text} mb-2`}>{cell.label}</span>
                                     <div className="flex flex-wrap gap-1">
                                         {(cellMap[i] ?? []).map((person, j) => (
-                                            <span key={j} className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-xs font-medium text-surface-700 shadow-xs border border-surface-100 truncate max-w-[120px]" title={`${person.name} (Score: ${person.score})`}>
+                                            <span key={j} className="inline-flex items-center rounded-full bg-surface-0 px-2 py-0.5 text-xs font-medium text-surface-700 shadow-xs border border-default truncate max-w-[120px]" title={`${person.name} (Score: ${person.score})`}>
                                                 {person.name.split(' ')[0]}
                                             </span>
                                         ))}
@@ -284,7 +278,6 @@ export default function PerformancePage() {
                 )
             })()}
 
-            {/* Review Modal */}
             <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -312,7 +305,7 @@ export default function PerformancePage() {
                                 <label className="text-sm font-medium">Tipo</label>
                                 <select
                                     aria-label="Tipo de avaliação"
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm"
                                     value={reviewForm.type || '180'}
                                     onChange={e => setReviewForm({ ...reviewForm, type: e.target.value as any })}
                                 >
@@ -366,7 +359,6 @@ export default function PerformancePage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Feedback Modal */}
             <Dialog open={feedbackModalOpen} onOpenChange={setFeedbackModalOpen}>
                 <DialogContent>
                     <DialogHeader>

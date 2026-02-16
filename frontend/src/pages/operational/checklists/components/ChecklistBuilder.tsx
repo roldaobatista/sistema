@@ -31,6 +31,7 @@ type ChecklistFormInput = z.input<typeof checklistSchema>
 type ChecklistFormValues = z.output<typeof checklistSchema>
 
 export function ChecklistBuilder({ onSuccess }: { onSuccess?: () => void }) {
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const form = useForm<ChecklistFormInput, unknown, ChecklistFormValues>({
         resolver: zodResolver(checklistSchema),

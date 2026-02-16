@@ -37,7 +37,6 @@ export default function GeofenceLocationsPage() {
 
     const { data: geofencesRes, isLoading } = useQuery({
         queryKey: ['geofences'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/geofences').then(r => r.data?.data ?? []),
     })
 
@@ -135,7 +134,6 @@ export default function GeofenceLocationsPage() {
                 )}
             </div>
 
-            {/* Table */}
             <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full text-sm">
                     <thead>
@@ -206,7 +204,6 @@ export default function GeofenceLocationsPage() {
                 </table>
             </div>
 
-            {/* Create/Edit Modal */}
             <Modal open={showModal && canManage} onOpenChange={setShowModal} title={editing ? 'Editar Localização' : 'Nova Localização'} size="md">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input label="Nome *" value={form.name} required
@@ -229,7 +226,6 @@ export default function GeofenceLocationsPage() {
                 </form>
             </Modal>
 
-            {/* Delete Confirmation */}
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Localização" size="sm">
                 <p className="text-sm text-surface-600">
                     Tem certeza que deseja excluir <strong>{deleteTarget?.name}</strong>? Esta ação não pode ser desfeita.

@@ -1,23 +1,20 @@
-import { useState, useEffect , useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent } from '@dnd-kit/core'
-import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { useRecruitment, JobPosting, Candidate } from '@/hooks/useRecruitment'
+import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useDroppable } from '@dnd-kit/core'
+import { useRecruitment, type JobPosting, type Candidate } from '@/hooks/useRecruitment'
 import api from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Plus, MoreHorizontal } from 'lucide-react'
+import { ArrowLeft, Plus, GripVertical } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-
-// Simple Draggable/Droppable implementation for now, or just columns
-// Since dnd-kit requires a bit of setup, I'll start with a detailed view that LISTS candidates by stage
-// and allows moving them via a select or drag if I can set it up quickly.
-// For "Lite" ATS, a board view where you can drag cards is ideal.
 
 const STAGES = [
     { id: 'applied', label: 'Aplicado', color: 'bg-slate-100 border-slate-200' },
@@ -29,6 +26,49 @@ const STAGES = [
     { id: 'rejected', label: 'Rejeitado', color: 'bg-red-50 border-red-200' }
 ]
 
+function DroppableColumn({ stageId, children }: { stageId: string; children: React.ReactNode }) {
+    const { setNodeRef, isOver } = useDroppable({ id: stageId })
+    return (
+        <div ref={setNodeRef} className={`flex-1 overflow-y-auto p-2 space-y-2 min-h-[60px] transition-colors rounded-b-lg ${isOver ? 'bg-brand-50/50 ring-2 ring-brand-200 ring-inset' : ''}`}>
+            {children}
+        </div>
+    )
+}
+
+function DraggableCard({ candidate, onSelectChange }: { candidate: Candidate; onSelectChange: (id: string, stage: string) => void }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: candidate.id, data: { stage: candidate.stage } })
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+
+    return (
+        <Card ref={setNodeRef} style={style} className="cursor-grab transition-all bg-surface-0 active:cursor-grabbing">
+            <CardContent className="p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                    <div {...attributes} {...listeners} className="mt-0.5 cursor-grab text-surface-300 hover:text-surface-500">
+                        <GripVertical className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="font-medium">{candidate.name}</div>
+                        <div className="text-xs text-surface-500 truncate">{candidate.email}</div>
+                        {candidate.phone && <div className="text-xs text-surface-500">{candidate.phone}</div>}
+                    </div>
+                </div>
+                <div className="flex justify-end pt-1">
+                    <select
+                        className="text-xs border rounded p-1"
+                        value={candidate.stage}
+                        onChange={(e) => onSelectChange(candidate.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        aria-label="Alterar fase do candidato"
+                    >
+                        {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function RecruitmentKanbanPage() {
 
     const { id } = useParams()
@@ -38,16 +78,21 @@ export default function RecruitmentKanbanPage() {
     const [candidates, setCandidates] = useState<Candidate[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false)
+    const [activeCandidate, setActiveCandidate] = useState<Candidate | null>(null)
     const [formData, setFormData] = useState<Partial<Candidate>>({
         name: '', email: '', phone: '', stage: 'applied'
     })
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor)
+    )
 
     const fetchJobDetails = async () => {
         setIsLoading(true)
         try {
             const response = await api.get(`/hr/job-postings/${id}`)
             setJob(response.data)
-            // Separate endpoint for candidates usually, but show method includes them
             setCandidates(response.data.candidates || [])
         } catch (error) {
             toast.error('Erro ao carregar vaga')
@@ -63,13 +108,6 @@ export default function RecruitmentKanbanPage() {
     const handleCandidateSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
-            // Need endpoint to create candidate. Previous controller didn't have it explicitly documented but I can add it or use a nested resource.
-            // I'll assume I need to update the controller or use a generic "candidates" endpoint.
-            // For now, let's assume I add a store method to JobPostingController or separate CandidateController.
-            // Wait, I didn't create CandidateController. I should have. 
-            // I'll add a temporary method to create via relationship or separate controller.
-            // Let's assume endpoint: POST /hr/job-postings/{id}/candidates
-
             await api.post(`/hr/job-postings/${id}/candidates`, { ...formData, job_posting_id: id })
             toast.success('Candidato adicionado!')
             fetchJobDetails()
@@ -80,19 +118,47 @@ export default function RecruitmentKanbanPage() {
         }
     }
 
-    // For drag and drop, I'd need a robust setup. 
-    // To be safe and fast, I'll implement "Click to Move" or simple select for stage change first.
-    // Or I can implement a simple visual board where you click "Move to Next" or select stage.
-
-    const updateStage = async (candidateId: string, newStage: string) => {
+    const updateStage = useCallback(async (candidateId: string, newStage: string) => {
+        const prevCandidates = [...candidates]
+        setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, stage: newStage as any } : c))
         try {
-            // Need update endpoint. PUT /hr/candidates/{id} or similiar.
-            // I'll assume I need to create the backend logic for this.
             await api.put(`/hr/candidates/${candidateId}`, { stage: newStage })
-            toast.success('Fase atualizada')
-                setCandidates(prev => prev.map(c => c.id === candidateId ? { ...c, stage: newStage as any } : c))
         } catch (error) {
+            setCandidates(prevCandidates)
             toast.error('Erro ao atualizar fase')
+        }
+    }, [candidates])
+
+    const handleDragStart = (event: DragStartEvent) => {
+        const candidate = candidates.find(c => c.id === event.active.id)
+        setActiveCandidate(candidate || null)
+    }
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        setActiveCandidate(null)
+        const { active, over } = event
+        if (!over) return
+
+        const candidateId = active.id as string
+        const overId = over.id as string
+
+        // Check if dropped over a stage column
+        const targetStage = STAGES.find(s => s.id === overId)
+        if (targetStage) {
+            const candidate = candidates.find(c => c.id === candidateId)
+            if (candidate && candidate.stage !== targetStage.id) {
+                updateStage(candidateId, targetStage.id)
+            }
+            return
+        }
+
+        // Check if dropped over another candidate (get their stage)
+        const targetCandidate = candidates.find(c => c.id === overId)
+        if (targetCandidate) {
+            const sourceCandidate = candidates.find(c => c.id === candidateId)
+            if (sourceCandidate && sourceCandidate.stage !== targetCandidate.stage) {
+                updateStage(candidateId, targetCandidate.stage)
+            }
         }
     }
 
@@ -111,7 +177,7 @@ export default function RecruitmentKanbanPage() {
                             {job.title}
                             <Badge variant="outline">{job.status}</Badge>
                         </h1>
-                        <p className="text-sm text-muted-foreground">{job.department?.name} • {candidates.length} candidatos</p>
+                        <p className="text-sm text-surface-500">{job.department?.name} • {candidates.length} candidatos</p>
                     </div>
                 </div>
                 <Button onClick={() => setIsCandidateModalOpen(true)}>
@@ -119,40 +185,46 @@ export default function RecruitmentKanbanPage() {
                 </Button>
             </div>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
-                <div className="flex h-full gap-4 min-w-[1200px]">
-                    {STAGES.map(stage => (
-                        <div key={stage.id} className={`flex-1 min-w-[200px] flex flex-col rounded-lg border ${stage.color} bg-opacity-50`}>
-                            <div className="p-3 font-semibold text-sm flex justify-between items-center border-b border-black/5">
-                                {stage.label}
-                                <Badge variant="secondary" className="bg-white/50">{candidates.filter(c => c.stage === stage.id).length}</Badge>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                                {candidates.filter(c => c.stage === stage.id).map(candidate => (
-                                    <Card key={candidate.id} className="cursor-pointer hover:shadow-md transition-all bg-surface-0">
-                                        <CardContent className="p-3 space-y-2">
-                                            <div className="font-medium">{candidate.name}</div>
-                                            <div className="text-xs text-muted-foreground truncate">{candidate.email}</div>
-                                            <div className="flex justify-end pt-2">
-                                                <select
-
-                                                    className="text-xs border rounded p-1"
-                                                    value={candidate.stage}
-                                                    onChange={(e) => updateStage(candidate.id, e.target.value)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    aria-label="Alterar fase do candidato"
-                                                >
-                                                    {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                                                </select>
+            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
+                    <div className="flex h-full gap-4 min-w-[1200px]">
+                        {STAGES.map(stage => {
+                            const stageCandidates = candidates.filter(c => c.stage === stage.id)
+                            return (
+                                <div key={stage.id} className={`flex-1 min-w-[200px] flex flex-col rounded-lg border ${stage.color} bg-opacity-50`}>
+                                    <div className="p-3 font-semibold text-sm flex justify-between items-center border-b border-subtle">
+                                        {stage.label}
+                                        <Badge variant="secondary" className="bg-surface-0/50">{stageCandidates.length}</Badge>
+                                    </div>
+                                    <DroppableColumn stageId={stage.id}>
+                                        <SortableContext items={stageCandidates.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                                            {stageCandidates.map(candidate => (
+                                                <DraggableCard key={candidate.id} candidate={candidate} onSelectChange={updateStage} />
+                                            ))}
+                                        </SortableContext>
+                                        {stageCandidates.length === 0 && (
+                                            <div className="text-center text-xs text-surface-400 py-4">
+                                                Arraste candidatos aqui
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                                        )}
+                                    </DroppableColumn>
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
-            </div>
+
+                <DragOverlay>
+                    {activeCandidate && (
+                        <Card className="shadow-xl rotate-2 bg-surface-0 w-[200px]">
+                            <CardContent className="p-3 space-y-1">
+                                <div className="font-medium">{activeCandidate.name}</div>
+                                <div className="text-xs text-surface-500 truncate">{activeCandidate.email}</div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </DragOverlay>
+            </DndContext>
 
             <Dialog open={isCandidateModalOpen} onOpenChange={setIsCandidateModalOpen}>
                 <DialogContent>

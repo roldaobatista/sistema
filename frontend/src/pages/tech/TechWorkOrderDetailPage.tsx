@@ -296,8 +296,8 @@ export default function TechWorkOrderDetailPage() {
                         <button
                             key={card.key}
                             onClick={() => {
-                                card.key === 'chat' ? setIsChatOpen(true) :
-                                    navigate(`/tech/os/${wo.id}/${card.key}`)
+                                if (card.key === 'chat') { setIsChatOpen(true) }
+                                else { navigate(`/tech/os/${wo.id}/${card.key}`) }
                             }}
                             className="flex flex-col items-start gap-4 bg-white dark:bg-surface-800/80 rounded-2xl p-5 border border-surface-100 dark:border-surface-700/50 shadow-sm active:scale-[0.96] active:bg-surface-50 dark:active:bg-surface-700 transition-all group"
                         >

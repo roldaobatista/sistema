@@ -35,7 +35,6 @@ export default function HolidaysPage() {
 
     const { data: holidaysRes, isLoading } = useQuery({
         queryKey: ['holidays', yearFilter],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/holidays', { params: { year: yearFilter } }).then(r => r.data?.data ?? []),
     })
 
@@ -104,7 +103,6 @@ export default function HolidaysPage() {
         <div className="space-y-5">
             <PageHeader title="Feriados" subtitle="Feriados nacionais e locais que afetam o cálculo de jornada" />
 
-            {/* Controls */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -141,7 +139,6 @@ export default function HolidaysPage() {
                 )}
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-4">
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                     <div className="flex items-center gap-3">
@@ -172,7 +169,6 @@ export default function HolidaysPage() {
                 </div>
             </div>
 
-            {/* Table */}
             <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full text-sm">
                     <thead>
@@ -245,7 +241,6 @@ export default function HolidaysPage() {
                 </table>
             </div>
 
-            {/* Create/Edit Modal */}
             <Modal open={showModal && canManage} onOpenChange={setShowModal} title={editing ? 'Editar Feriado' : 'Novo Feriado'} size="sm">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input label="Nome *" value={form.name} required
@@ -279,7 +274,6 @@ export default function HolidaysPage() {
                 </form>
             </Modal>
 
-            {/* Delete Confirmation */}
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Feriado" size="sm">
                 <p className="text-sm text-surface-600">
                     Tem certeza que deseja excluir <strong>{deleteTarget?.name}</strong>?

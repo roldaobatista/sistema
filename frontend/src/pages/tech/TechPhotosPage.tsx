@@ -1,4 +1,4 @@
-import { useState, useRef , useMemo } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -113,7 +113,7 @@ export default function TechPhotosPage() {
                                 )}
 
                                 <button
-                                    onClick={() => remove(photo.id)}
+                                    onClick={() => { if (confirm('Deseja remover esta foto?')) remove(photo.id) }}
                                     aria-label="Remover foto"
                                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center"
                                 >

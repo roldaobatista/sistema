@@ -1,4 +1,4 @@
-﻿import { useEffect , useState } from 'react'
+import { useEffect , useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
@@ -28,19 +28,16 @@ export function PortalDashboardPage() {
 
     const { data: workOrders, isLoading: loadingWorkOrders, isError: errorWO } = useQuery({
         queryKey: ['portal-dashboard-os'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/portal/work-orders').then(res => res.data),
     })
 
     const { data: quotes, isLoading: loadingQuotes, isError: errorQuotes } = useQuery({
         queryKey: ['portal-dashboard-quotes'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/portal/quotes').then(res => res.data),
     })
 
     const { data: financials, isLoading: loadingFinancials, isError: errorFin } = useQuery({
         queryKey: ['portal-dashboard-financials'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/portal/financials').then(res => res.data),
     })
 
@@ -78,7 +75,7 @@ export function PortalDashboardPage() {
         <div className="space-y-5">
             <div>
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Portal do Cliente</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Acompanhe suas ordens de serviço, orçamentos e faturas.</p>
+                <p className="mt-0.5 text-sm text-surface-500">Acompanhe suas ordens de serviço, orçamentos e faturas.</p>
             </div>
             {isLoading && (
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-sm text-surface-500">
@@ -86,7 +83,6 @@ export function PortalDashboardPage() {
                 </div>
             )}
 
-            {/* KPI Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {cards.map(c => (
                     <button key={c.label} onClick={() => navigate(c.link)}
@@ -107,7 +103,6 @@ export function PortalDashboardPage() {
                 ))}
             </div>
 
-            {/* Recent OS with Status Tracking */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                 <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
                     <h2 className="text-sm font-semibold text-surface-900">Ãšltimas Ordens de Serviço</h2>
@@ -128,7 +123,7 @@ export function PortalDashboardPage() {
                                     os.status === WORK_ORDER_STATUS.IN_PROGRESS || os.status === WORK_ORDER_STATUS.WAITING_PARTS ? 'in_progress' : 'open'
                             )
                             return (
-                                <div key={os.id} className="px-5 py-4 hover:bg-surface-50 transition-colors duration-100">
+                                <div key={os.id} className="px-5 py-4 hover:bg-surface-50 transition-colors">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                             <span className="text-sm font-bold text-brand-600">{os.number}</span>
@@ -141,7 +136,6 @@ export function PortalDashboardPage() {
                                             {statusConfig[os.status]?.label ?? os.status}
                                         </span>
                                     </div>
-                                    {/* Tracking Progress */}
                                     <div className="flex items-center gap-1">
                                         {trackingSteps.map((step, i) => (
                                             <div key={step} className="flex items-center flex-1">
@@ -157,7 +151,7 @@ export function PortalDashboardPage() {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="flex items-center justify-between mt-2 text-[10px] text-surface-400">
+                                    <div className="flex items-center justify-between mt-2 text-xs text-surface-400">
                                         <span>Aberta</span>
                                         <span>Em Andamento</span>
                                         <span>Concluída</span>
@@ -169,7 +163,6 @@ export function PortalDashboardPage() {
                 )}
             </div>
 
-            {/* Quick Links */}
             <div className="grid gap-3 sm:grid-cols-3">
                 <button onClick={() => navigate('/portal/chamados/novo')} className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-left hover:shadow-elevated transition-all group">
                     <Clock className="h-6 w-6 text-sky-500 mb-2" />

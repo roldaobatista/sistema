@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
     ClipboardList, Users, DollarSign, Award, TrendingUp,
@@ -144,21 +144,19 @@ export function ReportsPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div>
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Relatórios</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Análise de desempenho e resultados</p>
+                <p className="mt-0.5 text-sm text-surface-500">Análise de desempenho e resultados</p>
             </div>
 
-            {/* Tabs */}
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap rounded-lg border border-surface-200 bg-surface-50 p-0.5">
+                <div className="flex flex-wrap rounded-lg border border-default bg-surface-50 p-0.5">
                     {tabs.map(t => {
                         const Icon = t.icon
                         return (
                             <button key={t.key} onClick={() => setTab(t.key)}
                                 className={cn('flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all',
-                                    tab === t.key ? 'bg-white text-brand-700 shadow-sm' : 'text-surface-500 hover:text-surface-700')}>
+                                    tab === t.key ? 'bg-surface-0 text-brand-700 shadow-sm' : 'text-surface-500 hover:text-surface-700')}>
                                 <Icon className="h-3.5 w-3.5" />{t.label}
                             </button>
                         )
@@ -213,9 +211,8 @@ export function ReportsPage() {
                     </div>
                 </div>
             )}
-            {isError && <div className="py-12 text-center text-[13px] text-red-600">Erro ao carregar relatório. Verifique sua conexão e tente novamente.</div>}
+            {isError && <div className="py-12 text-center text-sm text-red-600">Erro ao carregar relatório. Verifique sua conexão e tente novamente.</div>}
 
-            {/* OS Report */}
             {tab === 'os' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -244,7 +241,7 @@ export function ReportsPage() {
                             <div className="space-y-3">
                                 <div>
                                     <span className="text-xs text-surface-500">Tempo médio de conclusão</span>
-                                    <p className="text-[15px] font-semibold tabular-nums text-surface-900">{data.avg_completion_hours ?? 0}h</p>
+                                    <p className="text-sm font-semibold tabular-nums text-surface-900">{data.avg_completion_hours ?? 0}h</p>
                                 </div>
                             </div>
                         </div>
@@ -259,7 +256,7 @@ export function ReportsPage() {
                                         <div className="flex-1 rounded-full bg-surface-100 h-5">
                                             <div className="h-5 rounded-full bg-brand-500 flex items-center px-2"
                                                 style={{ width: `${Math.min(100, (m.count / Math.max(1, ...data.monthly.map((x: any) => x.count))) * 100)}%` }}>
-                                                <span className="text-[10px] font-bold text-white">{m.count}</span>
+                                                <span className="text-xs font-bold text-white">{m.count}</span>
                                             </div>
                                         </div>
                                         <span className="text-xs font-medium text-surface-600">{fmtBRL(Number(m.total))}</span>
@@ -271,7 +268,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Productivity Report */}
             {tab === 'productivity' && !isLoading && (
                 <div className="space-y-5">
                     <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
@@ -287,10 +283,10 @@ export function ReportsPage() {
                             </thead>
                             <tbody className="divide-y divide-subtle">
                                 {(data.technicians ?? []).length === 0 ? (
-                                    <tr><td colSpan={5} className="px-4 py-8 text-center text-[13px] text-surface-500">Sem dados</td></tr>
+                                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-surface-500">Sem dados</td></tr>
                                 ) : (data.technicians ?? []).map((t: any) => (
                                     <tr key={t.id} className="hover:bg-surface-50">
-                                        <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{t.name}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-surface-900">{t.name}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm text-emerald-600 font-semibold">{fmtHours(t.work_minutes ?? 0)}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm text-sky-600">{fmtHours(t.travel_minutes ?? 0)}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm text-amber-600">{fmtHours(t.waiting_minutes ?? 0)}</td>
@@ -319,7 +315,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Financial Report */}
             {tab === 'financial' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -328,10 +323,10 @@ export function ReportsPage() {
                                 <DollarSign className="h-4 w-4" /> Contas a Receber
                             </h3>
                             <div className="space-y-2">
-                                <div className="flex justify-between"><span className="text-[13px] text-surface-500">Total</span><span className="text-sm font-bold">{fmtBRL(Number(data.receivable?.total ?? 0))}</span></div>
-                                <div className="flex justify-between"><span className="text-[13px] text-surface-500">Recebido</span><span className="text-sm font-bold text-emerald-600">{fmtBRL(Number(data.receivable?.total_paid ?? 0))}</span></div>
-                                <div className="flex justify-between"><span className="text-[13px] text-surface-500">Vencido</span><span className="text-sm font-bold text-red-600">{fmtBRL(Number(data.receivable?.overdue ?? 0))}</span></div>
-                                <div className="flex justify-between"><span className="text-[13px] text-surface-500">Títulos</span><span className="text-sm font-bold">{data.receivable?.count ?? 0}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Total</span><span className="text-sm font-bold">{fmtBRL(Number(data.receivable?.total ?? 0))}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Recebido</span><span className="text-sm font-bold text-emerald-600">{fmtBRL(Number(data.receivable?.total_paid ?? 0))}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Vencido</span><span className="text-sm font-bold text-red-600">{fmtBRL(Number(data.receivable?.overdue ?? 0))}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Títulos</span><span className="text-sm font-bold">{data.receivable?.count ?? 0}</span></div>
                             </div>
                         </div>
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
@@ -339,9 +334,9 @@ export function ReportsPage() {
                                 <DollarSign className="h-4 w-4" /> Contas a Pagar
                             </h3>
                             <div className="space-y-2">
-                                <div className="flex justify-between"><span className="text-[13px] text-surface-500">Total</span><span className="text-sm font-bold">{fmtBRL(Number(data.payable?.total ?? 0))}</span></div>
-                                <div className="flex justify-between"><span className="text-[13px] text-surface-500">Pago</span><span className="text-sm font-bold text-emerald-600">{fmtBRL(Number(data.payable?.total_paid ?? 0))}</span></div>
-                                <div className="flex justify-between"><span className="text-[13px] text-surface-500">Contas</span><span className="text-sm font-bold">{data.payable?.count ?? 0}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Total</span><span className="text-sm font-bold">{fmtBRL(Number(data.payable?.total ?? 0))}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Pago</span><span className="text-sm font-bold text-emerald-600">{fmtBRL(Number(data.payable?.total_paid ?? 0))}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Contas</span><span className="text-sm font-bold">{data.payable?.count ?? 0}</span></div>
                             </div>
                         </div>
                     </div>
@@ -390,7 +385,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Commissions Report */}
             {tab === 'commissions' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -415,10 +409,10 @@ export function ReportsPage() {
                             </thead>
                             <tbody className="divide-y divide-subtle">
                                 {(data.by_technician ?? []).length === 0 ? (
-                                    <tr><td colSpan={5} className="px-4 py-8 text-center text-[13px] text-surface-500">Sem dados</td></tr>
+                                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-surface-500">Sem dados</td></tr>
                                 ) : (data.by_technician ?? []).map((t: any) => (
                                     <tr key={t.id} className="hover:bg-surface-50">
-                                        <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{t.name}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-surface-900">{t.name}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm">{t.events_count}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm font-bold">{fmtBRL(Number(t.total_commission))}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm text-amber-600">{fmtBRL(Number(t.pending))}</td>
@@ -431,7 +425,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Profitability Report */}
             {tab === 'profitability' && !isLoading && (
                 <div className="space-y-5">
                     <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
@@ -476,25 +469,24 @@ export function ReportsPage() {
                         </div>
                     </div>
 
-                    {/* Visual breakdown bar */}
                     {(data.revenue ?? 0) > 0 && (
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <h3 className="mb-3 text-sm font-semibold text-surface-700">Composição dos Custos</h3>
                             <div className="flex h-8 overflow-hidden rounded-full bg-surface-100">
                                 {data.costs > 0 && (
-                                    <div className="flex items-center justify-center bg-red-500 text-[10px] font-bold text-white"
+                                    <div className="flex items-center justify-center bg-red-500 text-xs font-bold text-white"
                                         style={{ width: `${(data.costs / (data.total_costs || 1)) * 100}%` }}>AP</div>
                                 )}
                                 {data.expenses > 0 && (
-                                    <div className="flex items-center justify-center bg-amber-500 text-[10px] font-bold text-white"
+                                    <div className="flex items-center justify-center bg-amber-500 text-xs font-bold text-white"
                                         style={{ width: `${(data.expenses / (data.total_costs || 1)) * 100}%` }}>Desp</div>
                                 )}
                                 {data.commissions > 0 && (
-                                    <div className="flex items-center justify-center bg-sky-500 text-[10px] font-bold text-white"
+                                    <div className="flex items-center justify-center bg-sky-500 text-xs font-bold text-white"
                                         style={{ width: `${(data.commissions / (data.total_costs || 1)) * 100}%` }}>Com</div>
                                 )}
                                 {data.item_costs > 0 && (
-                                    <div className="flex items-center justify-center bg-violet-500 text-[10px] font-bold text-white"
+                                    <div className="flex items-center justify-center bg-violet-500 text-xs font-bold text-white"
                                         style={{ width: `${(data.item_costs / (data.total_costs || 1)) * 100}%` }}>Peças</div>
                                 )}
                             </div>
@@ -509,7 +501,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Quotes Report */}
             {tab === 'quotes' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-3">
@@ -553,7 +544,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Service Calls Report */}
             {tab === 'service_calls' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -624,10 +614,10 @@ export function ReportsPage() {
                             </thead>
                             <tbody className="divide-y divide-subtle">
                                 {(data.funds ?? []).length === 0 ? (
-                                    <tr><td colSpan={4} className="px-4 py-8 text-center text-[13px] text-surface-500">Sem dados</td></tr>
+                                    <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-surface-500">Sem dados</td></tr>
                                 ) : (data.funds ?? []).map((f: any) => (
                                     <tr key={f.user_id} className="hover:bg-surface-50">
-                                        <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{f.user_name}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-surface-900">{f.user_name}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm font-bold">{fmtBRL(f.balance)}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm text-emerald-600">{fmtBRL(f.credits_period)}</td>
                                         <td className="px-3.5 py-2.5 text-right text-sm text-red-600">{fmtBRL(f.debits_period)}</td>
@@ -639,7 +629,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* CRM Report */}
             {tab === 'crm' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -694,7 +683,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Equipments Report */}
             {tab === 'equipments' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -757,7 +745,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Suppliers Report */}
             {tab === 'suppliers' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -802,7 +789,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Stock Report */}
             {tab === 'stock' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -843,12 +829,12 @@ export function ReportsPage() {
                                 <tbody className="divide-y divide-subtle">
                                     {(data.products ?? []).map((p: any) => (
                                         <tr key={p.id} className="hover:bg-surface-50">
-                                            <td className="px-4 py-3 text-[13px] text-surface-600">{p.code}</td>
-                                            <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{p.name}</td>
+                                            <td className="px-4 py-3 text-sm text-surface-600">{p.code}</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-surface-900">{p.name}</td>
                                             <td className={`px-3.5 py-2.5 text-right text-sm font-bold ${Number(p.stock_qty ?? 0) <= 0 ? 'text-red-600' : Number(p.stock_qty) <= Number(p.stock_min ?? 0) ? 'text-amber-600' : 'text-surface-900'}`}>
                                                 {p.stock_qty}
                                             </td>
-                                            <td className="px-3.5 py-2.5 text-right text-[13px] text-surface-500">{p.stock_min}</td>
+                                            <td className="px-3.5 py-2.5 text-right text-sm text-surface-500">{p.stock_min}</td>
                                             <td className="px-3.5 py-2.5 text-right text-sm">{fmtBRL(Number(p.cost_price ?? 0))}</td>
                                             <td className="px-3.5 py-2.5 text-right text-sm">{fmtBRL(Number(p.sell_price ?? 0))}</td>
                                         </tr>
@@ -873,15 +859,15 @@ export function ReportsPage() {
                                 <tbody className="divide-y divide-subtle">
                                     {(data.recent_movements ?? []).map((m: any, i: number) => (
                                         <tr key={m.id ?? i} className="hover:bg-surface-50">
-                                            <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{m.product_name ?? '—'}</td>
-                                            <td className="px-4 py-3 text-[13px]">
+                                            <td className="px-4 py-3 text-sm font-medium text-surface-900">{m.product_name ?? '—'}</td>
+                                            <td className="px-4 py-3 text-sm">
                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${m.type === 'in' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                                                     {m.type === 'in' ? 'Entrada' : 'Saída'}
                                                 </span>
                                             </td>
                                             <td className={`px-3.5 py-2.5 text-right text-sm font-bold ${m.type === 'in' ? 'text-emerald-600' : 'text-red-600'}`}>{m.type === 'in' ? '+' : '-'}{m.quantity}</td>
-                                            <td className="px-4 py-3 text-[13px] text-surface-600">{m.reference ?? '—'}</td>
-                                            <td className="px-4 py-3 text-[13px] text-surface-500">{m.created_at ? new Date(m.created_at).toLocaleDateString('pt-BR') : '—'}</td>
+                                            <td className="px-4 py-3 text-sm text-surface-600">{m.reference ?? '—'}</td>
+                                            <td className="px-4 py-3 text-sm text-surface-500">{m.created_at ? new Date(m.created_at).toLocaleDateString('pt-BR') : '—'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -891,7 +877,6 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Customers Report */}
             {tab === 'customers' && !isLoading && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -919,7 +904,7 @@ export function ReportsPage() {
                                 <tbody className="divide-y divide-subtle">
                                     {(data.top_by_revenue ?? []).map((c: any) => (
                                         <tr key={c.id} className="hover:bg-surface-50">
-                                            <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{c.name}</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-surface-900">{c.name}</td>
                                             <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-surface-900">{c.os_count}</td>
                                             <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-emerald-600">{fmtBRL(Number(c.total_revenue ?? 0))}</td>
                                         </tr>

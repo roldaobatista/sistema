@@ -28,7 +28,6 @@ export default function TechSealsPage() {
     // Buscar equipamentos da OS
     const { data: woRes } = useQuery({
         queryKey: ['tech-wo-detail', woId],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/tech/os/${woId}`)
     })
     // No nosso sistema mobile offline, os dados podem vir de fontes diferentes,
@@ -39,7 +38,6 @@ export default function TechSealsPage() {
     // Buscar meus selos
     const { data: mySealsRes, isLoading: loadingSeals } = useQuery({
         queryKey: ['my-seals'],
-        const { data } = useQuery({
         queryFn: () => api.get('/inventory/seals/my')
     })
     const mySeals: TechSeal[] = mySealsRes?.data ?? []

@@ -78,7 +78,6 @@ export default function FleetPage() {
 
     const { data: fleetSummary, isLoading, isError, error } = useQuery({
         queryKey: ['fleet-summary'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/fleet/dashboard-summary').then(r => r.data),
         retry: 1,
     })
@@ -94,7 +93,6 @@ export default function FleetPage() {
                 subtitle={`Controle inteligente de veículos, custos, motoristas e manutenção${fleetSummary?.total_vehicles ? ` • ${fleetSummary.total_vehicles} veículos` : ''}`}
             />
 
-            {/* Menu de Navegação Horizontal — PWA-Friendly com scroll */}
             <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
                 <div className="flex bg-surface-100/50 p-1 rounded-2xl border border-default min-w-max">
                     {tabs.map((tab) => (
@@ -104,7 +102,7 @@ export default function FleetPage() {
                             className={cn(
                                 "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap",
                                 activeTab === tab.id
-                                    ? "bg-white text-brand-700 shadow-sm border border-default"
+                                    ? "bg-surface-0 text-brand-700 shadow-sm border border-default"
                                     : "text-surface-500 hover:text-brand-600"
                             )}
                         >
@@ -115,7 +113,6 @@ export default function FleetPage() {
                 </div>
             </div>
 
-            {/* Conteúdo da Aba Ativa */}
             <div className="mt-4">
                 {isLoading ? (
                     <div className="flex items-center justify-center py-16">

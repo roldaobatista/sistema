@@ -66,7 +66,6 @@ export function ServiceCallEditPage() {
 
     const { data: serviceCall, isLoading: loadingCall, isError: callError } = useQuery({
         queryKey: ['service-call', id],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/service-calls/${id}`).then((r) => r.data),
         enabled: !!id,
     })
@@ -99,7 +98,6 @@ export function ServiceCallEditPage() {
         isError: customersError,
     } = useQuery({
         queryKey: ['service-call-edit-customers', customerSearch],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () =>
             api.get('/customers', { params: { search: customerSearch || undefined, per_page: 50 } }).then((r) => r.data),
     })
@@ -107,7 +105,6 @@ export function ServiceCallEditPage() {
 
     const { data: assigneesRes, isError: assigneesError } = useQuery({
         queryKey: ['service-call-assignees'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
         enabled: canAssign,
     })
@@ -120,7 +117,6 @@ export function ServiceCallEditPage() {
         isError: equipmentsError,
     } = useQuery({
         queryKey: ['service-call-edit-equipments', form.customer_id],
-        const { data } = useQuery({
         queryFn: () =>
             api.get('/equipments', { params: { customer_id: form.customer_id, per_page: 100 } }).then((r) => r.data),
         enabled: canViewEquipment && !!form.customer_id,
@@ -217,10 +213,10 @@ export function ServiceCallEditPage() {
     if (loadingCall) {
         return (
             <div className="mx-auto max-w-5xl space-y-6 animate-pulse">
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64" />
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4">
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                <div className="h-8 bg-surface-200 rounded w-64" />
+                <div className="bg-surface-0 rounded-xl p-6 space-y-4">
+                    <div className="h-6 bg-surface-200 rounded w-48" />
+                    <div className="h-4 bg-surface-200 rounded w-full" />
                 </div>
             </div>
         )
@@ -228,7 +224,7 @@ export function ServiceCallEditPage() {
 
     if (callError || !serviceCall) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+            <div className="flex flex-col items-center justify-center py-20 text-surface-500">
                 <AlertCircle className="w-12 h-12 mb-4 opacity-30" />
                 <p className="text-lg font-medium">Chamado não encontrado</p>
                 <Button variant="outline" className="mt-4" onClick={() => navigate('/chamados')}>
@@ -245,38 +241,37 @@ export function ServiceCallEditPage() {
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                    <h1 className="text-xl font-bold text-surface-900">
                         Editar Chamado {serviceCall.call_number}
                     </h1>
-                    <p className="text-sm text-gray-500">Atualize os dados do chamado técnico.</p>
+                    <p className="text-sm text-surface-500">Atualize os dados do chamado técnico.</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {/* Cliente e prioridade */}
-                <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2">
-                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Cliente e prioridade</h2>
+                <div className="space-y-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card lg:col-span-2">
+                    <h2 className="text-sm font-semibold text-surface-900">Cliente e prioridade</h2>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="md:col-span-2">
-                            <label htmlFor="customer-search" className="mb-1 block text-xs font-medium text-gray-500">Buscar cliente</label>
+                            <label htmlFor="customer-search" className="mb-1 block text-xs font-medium text-surface-500">Buscar cliente</label>
                             <input
                                 id="customer-search"
                                 type="text"
                                 value={customerSearch}
                                 onChange={(e) => setCustomerSearch(e.target.value)}
                                 placeholder="Digite nome ou documento"
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="priority-select" className="mb-1 block text-xs font-medium text-gray-500">Prioridade</label>
+                            <label htmlFor="priority-select" className="mb-1 block text-xs font-medium text-surface-500">Prioridade</label>
                             <select
                                 id="priority-select"
                                 value={form.priority}
                                 onChange={(e) => setForm((prev) => ({ ...prev, priority: e.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             >
                                 <option value="low">Baixa</option>
                                 <option value="normal">Normal</option>
@@ -287,12 +282,12 @@ export function ServiceCallEditPage() {
                     </div>
 
                     <div>
-                        <label htmlFor="customer-select" className="mb-1 block text-xs font-medium text-gray-500">Cliente</label>
+                        <label htmlFor="customer-select" className="mb-1 block text-xs font-medium text-surface-500">Cliente</label>
                         <select
                             id="customer-select"
                             value={form.customer_id}
                             onChange={(e) => handleSelectCustomer(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             disabled={customersLoading}
                         >
                             <option value="">Selecione</option>
@@ -303,59 +298,58 @@ export function ServiceCallEditPage() {
                             ))}
                         </select>
                         {firstError('customer_id') && <p className="mt-1 text-xs text-red-600">{firstError('customer_id')}</p>}
-                        {selectedCustomer && <p className="mt-1 text-xs text-gray-500">Cliente selecionado: {selectedCustomer.name}</p>}
+                        {selectedCustomer && <p className="mt-1 text-xs text-surface-500">Cliente selecionado: {selectedCustomer.name}</p>}
                         {customersError && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os clientes.</p>}
                     </div>
                 </div>
 
-                {/* Local e horário */}
-                <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Local e horário</h2>
+                <div className="space-y-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                    <h2 className="text-sm font-semibold text-surface-900">Local e horário</h2>
 
                     <div>
-                        <label htmlFor="scheduled-date" className="mb-1 block text-xs font-medium text-gray-500">Data agendada</label>
+                        <label htmlFor="scheduled-date" className="mb-1 block text-xs font-medium text-surface-500">Data agendada</label>
                         <input
                             id="scheduled-date"
                             type="datetime-local"
                             value={form.scheduled_date}
                             onChange={(e) => setForm((prev) => ({ ...prev, scheduled_date: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                         />
                         {firstError('scheduled_date') && <p className="mt-1 text-xs text-red-600">{firstError('scheduled_date')}</p>}
                     </div>
 
                     <div>
-                        <label htmlFor="address-input" className="mb-1 block text-xs font-medium text-gray-500">Endereço</label>
+                        <label htmlFor="address-input" className="mb-1 block text-xs font-medium text-surface-500">Endereço</label>
                         <input
                             id="address-input"
                             type="text"
                             value={form.address}
                             onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
                             placeholder="Rua, número, bairro"
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label htmlFor="city-input" className="mb-1 block text-xs font-medium text-gray-500">Cidade</label>
+                            <label htmlFor="city-input" className="mb-1 block text-xs font-medium text-surface-500">Cidade</label>
                             <input
                                 id="city-input"
                                 type="text"
                                 value={form.city}
                                 onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
                         <div>
-                            <label htmlFor="state-input" className="mb-1 block text-xs font-medium text-gray-500">UF</label>
+                            <label htmlFor="state-input" className="mb-1 block text-xs font-medium text-surface-500">UF</label>
                             <input
                                 id="state-input"
                                 type="text"
                                 value={form.state}
                                 maxLength={2}
                                 onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value.toUpperCase() }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm uppercase dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm uppercase"
                             />
                             {firstError('state') && <p className="mt-1 text-xs text-red-600">{firstError('state')}</p>}
                         </div>
@@ -363,43 +357,42 @@ export function ServiceCallEditPage() {
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label htmlFor="lat-input" className="mb-1 block text-xs font-medium text-gray-500">Latitude</label>
+                            <label htmlFor="lat-input" className="mb-1 block text-xs font-medium text-surface-500">Latitude</label>
                             <input
                                 id="lat-input"
                                 type="number"
                                 step="0.000001"
                                 value={form.latitude}
                                 onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
                         <div>
-                            <label htmlFor="lng-input" className="mb-1 block text-xs font-medium text-gray-500">Longitude</label>
+                            <label htmlFor="lng-input" className="mb-1 block text-xs font-medium text-surface-500">Longitude</label>
                             <input
                                 id="lng-input"
                                 type="number"
                                 step="0.000001"
                                 value={form.longitude}
                                 onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Equipe e observações */}
-                <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Equipe e observações</h2>
+                <div className="space-y-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                    <h2 className="text-sm font-semibold text-surface-900">Equipe e observações</h2>
 
                     {canAssign ? (
                         <>
                             <div>
-                                <label htmlFor="technician-select" className="mb-1 block text-xs font-medium text-gray-500">Técnico</label>
+                                <label htmlFor="technician-select" className="mb-1 block text-xs font-medium text-surface-500">Técnico</label>
                                 <select
                                     id="technician-select"
                                     value={form.technician_id}
                                     onChange={(e) => setForm((prev) => ({ ...prev, technician_id: e.target.value }))}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                    className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                                 >
                                     <option value="">Não atribuir</option>
                                     {technicians.map((tech) => (
@@ -410,12 +403,12 @@ export function ServiceCallEditPage() {
                             </div>
 
                             <div>
-                                <label htmlFor="driver-select" className="mb-1 block text-xs font-medium text-gray-500">Motorista</label>
+                                <label htmlFor="driver-select" className="mb-1 block text-xs font-medium text-surface-500">Motorista</label>
                                 <select
                                     id="driver-select"
                                     value={form.driver_id}
                                     onChange={(e) => setForm((prev) => ({ ...prev, driver_id: e.target.value }))}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                    className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                                 >
                                     <option value="">Não atribuir</option>
                                     {drivers.map((driver) => (
@@ -437,25 +430,25 @@ export function ServiceCallEditPage() {
                     )}
 
                     <div>
-                        <label htmlFor="observations-textarea" className="mb-1 block text-xs font-medium text-gray-500">Observações</label>
+                        <label htmlFor="observations-textarea" className="mb-1 block text-xs font-medium text-surface-500">Observações</label>
                         <textarea
                             id="observations-textarea"
                             value={form.observations}
                             onChange={(e) => setForm((prev) => ({ ...prev, observations: e.target.value }))}
                             rows={4}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             placeholder="Descreva o atendimento solicitado..."
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="resolution-textarea" className="mb-1 block text-xs font-medium text-gray-500">Notas de resolução</label>
+                        <label htmlFor="resolution-textarea" className="mb-1 block text-xs font-medium text-surface-500">Notas de resolução</label>
                         <textarea
                             id="resolution-textarea"
                             value={form.resolution_notes}
                             onChange={(e) => setForm((prev) => ({ ...prev, resolution_notes: e.target.value }))}
                             rows={3}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                            className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                             placeholder="Notas de resolução (opcional)..."
                         />
                     </div>
@@ -463,19 +456,19 @@ export function ServiceCallEditPage() {
 
                 {/* Equipamentos */}
                 {canViewEquipment && (
-                    <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div className="space-y-3 rounded-xl border border-default bg-surface-0 p-5 shadow-card lg:col-span-2">
+                        <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
                             <Wrench className="h-4 w-4" /> Equipamentos vinculados
                         </h2>
 
                         {!form.customer_id ? (
-                            <p className="text-sm text-gray-500">Selecione um cliente para listar os equipamentos.</p>
+                            <p className="text-sm text-surface-500">Selecione um cliente para listar os equipamentos.</p>
                         ) : equipmentsLoading ? (
-                            <p className="text-sm text-gray-500">Carregando equipamentos...</p>
+                            <p className="text-sm text-surface-500">Carregando equipamentos...</p>
                         ) : equipmentsError ? (
                             <p className="text-sm text-red-600">Não foi possível carregar os equipamentos.</p>
                         ) : equipments.length === 0 ? (
-                            <p className="text-sm text-gray-500">Nenhum equipamento encontrado para este cliente.</p>
+                            <p className="text-sm text-surface-500">Nenhum equipamento encontrado para este cliente.</p>
                         ) : (
                             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                                 {equipments.map((equipment) => {
@@ -483,7 +476,7 @@ export function ServiceCallEditPage() {
                                     return (
                                         <label
                                             key={equipment.id}
-                                            className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700"
+                                            className="flex items-center gap-3 rounded-lg border border-default px-3 py-2 text-sm"
                                         >
                                             <input
                                                 type="checkbox"

@@ -58,28 +58,24 @@ export default function StockIntelligencePage() {
 
     const { data: abcData, isLoading: abcLoading } = useQuery({
         queryKey: ['stock-intelligence-abc', months],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/abc-curve', { params: { months } }).then(r => r.data),
         enabled: activeTab === 'abc',
     });
 
     const { data: turnoverData, isLoading: turnoverLoading } = useQuery({
         queryKey: ['stock-intelligence-turnover', months],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/turnover', { params: { months } }).then(r => r.data),
         enabled: activeTab === 'turnover',
     });
 
     const { data: costData, isLoading: costLoading } = useQuery({
         queryKey: ['stock-intelligence-cost'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/average-cost').then(r => r.data),
         enabled: activeTab === 'cost',
     });
 
     const { data: reorderData, isLoading: reorderLoading } = useQuery({
         queryKey: ['stock-intelligence-reorder'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/api/v1/stock/intelligence/reorder-points').then(r => r.data),
         enabled: activeTab === 'reorder',
     });
@@ -91,21 +87,19 @@ export default function StockIntelligencePage() {
 
     return (
         <div className="p-6 space-y-6">
-            {/* Header */}
             <div className="flex items-center gap-3">
                 <BarChart3 className="h-7 w-7 text-indigo-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Inteligência de Estoque</h1>
+                <h1 className="text-2xl font-bold text-surface-900">Inteligência de Estoque</h1>
             </div>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-1 p-1 bg-gray-100 rounded-xl">
+            <div className="flex flex-wrap gap-1 p-1 bg-surface-100 rounded-xl">
                 {tabs.map(tab => (
                     <button
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === tab.key
-                            ? 'bg-white text-indigo-700 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-surface-0 text-indigo-700 shadow-sm'
+                            : 'text-surface-600 hover:text-surface-900'
                             }`}
                     >
                         <tab.icon className="h-4 w-4" />
@@ -114,24 +108,23 @@ export default function StockIntelligencePage() {
                 ))}
             </div>
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Buscar produto..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
+                <input
+                    type="text"
+                    placeholder="Buscar produto..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-default rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
                 </div>
                 {(activeTab === 'abc' || activeTab === 'turnover') && (
                     <select
                         title="Período em meses"
                         value={months}
                         onChange={e => setMonths(Number(e.target.value))}
-                        className="px-4 py-2 border border-gray-300 rounded-lg"
+                        className="px-4 py-2 border border-default rounded-lg"
                     >
                         <option value={3}>3 meses</option>
                         <option value={6}>6 meses</option>
@@ -141,17 +134,14 @@ export default function StockIntelligencePage() {
                 )}
             </div>
 
-            {/* Loading */}
             {isLoading && (
                 <div className="flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
                 </div>
             )}
 
-            {/* ABC Curve */}
             {activeTab === 'abc' && !abcLoading && abcData && (
                 <div className="space-y-4">
-                    {/* Summary */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <SummaryCard label="Classe A (80%)" value={abcData.summary?.A ?? 0} color="text-emerald-600" />
                         <SummaryCard label="Classe B (15%)" value={abcData.summary?.B ?? 0} color="text-amber-600" />
@@ -159,9 +149,8 @@ export default function StockIntelligencePage() {
                         <SummaryCard label="Valor Total" value={formatBRL(abcData.summary?.total_value ?? 0)} color="text-indigo-600" />
                     </div>
 
-                    {/* ABC Bar */}
-                    <div className="bg-white rounded-xl border p-4">
-                        <div className="flex h-6 rounded-full overflow-hidden bg-gray-100">
+                    <div className="bg-surface-0 rounded-xl border border-default p-4">
+                        <div className="flex h-6 rounded-full overflow-hidden bg-surface-100">
                             {['A', 'B', 'C'].map(cls => {
                                 const count = abcData.summary?.[cls] ?? 0;
                                 const total = (abcData.summary?.A ?? 0) + (abcData.summary?.B ?? 0) + (abcData.summary?.C ?? 0);
@@ -170,7 +159,7 @@ export default function StockIntelligencePage() {
                                 return <div key={cls} className={`${bg} transition-all duration-700`} style={{ width: `${pct}%` }} title={`${cls}: ${count} (${pct.toFixed(0)}%)`} />;
                             })}
                         </div>
-                        <div className="flex gap-4 mt-2 text-xs text-gray-600">
+                        <div className="flex gap-4 mt-2 text-xs text-surface-600">
                             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" />A ({abcData.summary?.A})</span>
                             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />B ({abcData.summary?.B})</span>
                             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />C ({abcData.summary?.C})</span>
@@ -181,7 +170,7 @@ export default function StockIntelligencePage() {
                     <DataTable
                         items={filterBySearch(abcData.data ?? [])}
                         columns={[
-                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-gray-400 ml-1">({i.code})</span>}</> },
+                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-surface-400 ml-1">({i.code})</span>}</> },
                             { key: 'total_qty', label: 'Qtd Saída', align: 'right' },
                             { key: 'total_value', label: 'Valor', align: 'right', render: (i: any) => formatBRL(i.total_value) },
                             { key: 'percentage', label: '%', align: 'right', render: (i: any) => `${i.percentage}%` },
@@ -204,7 +193,7 @@ export default function StockIntelligencePage() {
                     <DataTable
                         items={filterBySearch(turnoverData.data ?? [])}
                         columns={[
-                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-gray-400 ml-1">({i.code})</span>}</> },
+                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-surface-400 ml-1">({i.code})</span>}</> },
                             { key: 'stock_qty', label: 'Estoque', align: 'right' },
                             { key: 'total_exits', label: 'Saídas', align: 'right' },
                             { key: 'turnover_rate', label: 'Giro', align: 'right', render: (i: any) => `${i.turnover_rate}x` },
@@ -220,12 +209,12 @@ export default function StockIntelligencePage() {
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <SummaryCard label="Valor Total em Estoque" value={formatBRL(costData.total_value ?? 0)} color="text-indigo-600" icon={<DollarSign className="h-4 w-4" />} />
-                        <SummaryCard label="Produtos" value={(costData.data ?? []).length} color="text-gray-600" icon={<Package className="h-4 w-4" />} />
+                        <SummaryCard label="Produtos" value={(costData.data ?? []).length} color="text-surface-600" icon={<Package className="h-4 w-4" />} />
                     </div>
                     <DataTable
                         items={filterBySearch(costData.data ?? [])}
                         columns={[
-                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-gray-400 ml-1">({i.code})</span>}</> },
+                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-surface-400 ml-1">({i.code})</span>}</> },
                             { key: 'stock_qty', label: 'Estoque', align: 'right' },
                             { key: 'current_cost', label: 'Custo Cadastro', align: 'right', render: (i: any) => formatBRL(i.current_cost) },
                             { key: 'average_cost', label: 'Custo Médio', align: 'right', render: (i: any) => formatBRL(i.average_cost) },
@@ -249,7 +238,7 @@ export default function StockIntelligencePage() {
                     <DataTable
                         items={filterBySearch(reorderData.all ?? [])}
                         columns={[
-                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-gray-400 ml-1">({i.code})</span>}</> },
+                            { key: 'name', label: 'Produto', render: (i: any) => <><span className="font-medium">{i.name}</span>{i.code && <span className="text-xs text-surface-400 ml-1">({i.code})</span>}</> },
                             { key: 'stock_qty', label: 'Atual', align: 'right' },
                             { key: 'stock_min', label: 'Mínimo', align: 'right' },
                             { key: 'daily_consumption', label: 'Consumo/dia', align: 'right' },
@@ -268,10 +257,10 @@ export default function StockIntelligencePage() {
 
 function SummaryCard({ label, value, color, icon }: { label: string; value: string | number; color: string; icon?: React.ReactNode }) {
     return (
-        <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <div className="bg-surface-0 rounded-xl border border-default p-4 flex items-center gap-3">
             {icon && <div className={color}>{icon}</div>}
             <div>
-                <p className="text-xs text-gray-500">{label}</p>
+                <p className="text-xs text-surface-500">{label}</p>
                 <p className={`text-xl font-bold ${color}`}>{value}</p>
             </div>
         </div>
@@ -287,26 +276,26 @@ interface Column {
 
 function DataTable({ items, columns }: { items: any[]; columns: Column[] }) {
     return (
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+        <div className="bg-surface-0 rounded-xl shadow-card overflow-x-auto">
+            <table className="min-w-full divide-y divide-subtle">
+                <thead className="bg-surface-50">
                     <tr>
                         {columns.map(col => (
-                            <th key={col.key} className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase text-${col.align ?? 'left'}`}>
+                            <th key={col.key} className={`px-4 py-3 text-xs font-medium text-surface-500 uppercase text-${col.align ?? 'left'}`}>
                                 {col.label}
                             </th>
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-subtle">
                     {items.length === 0 && (
-                        <tr><td colSpan={columns.length} className="px-4 py-12 text-center text-gray-400">
-                            <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                        <tr><td colSpan={columns.length} className="px-4 py-12 text-center text-surface-400">
+                            <Package className="h-8 w-8 mx-auto mb-2 text-surface-300" />
                             Nenhum dado encontrado
                         </td></tr>
                     )}
                     {items.map((item, idx) => (
-                        <tr key={item.id ?? idx} className="hover:bg-gray-50">
+                        <tr key={item.id ?? idx} className="hover:bg-surface-50">
                             {columns.map(col => (
                                 <td key={col.key} className={`px-4 py-3 text-sm text-${col.align ?? 'left'}`}>
                                     {col.render ? col.render(item) : item[col.key]}

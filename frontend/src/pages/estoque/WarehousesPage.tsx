@@ -39,7 +39,6 @@ export function WarehousesPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['warehouses', search],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/warehouses', { params: { search } }),
     })
     const warehouses: Warehouse[] = res?.data?.data ?? []
@@ -124,7 +123,7 @@ export function WarehousesPage() {
                 ) : warehouses.length === 0 ? (
                     <div className="col-span-full py-20 text-center text-surface-500">Nenhum armazém encontrado.</div>
                 ) : warehouses.map(w => (
-                    <div key={w.id} className="group relative overflow-hidden rounded-xl border border-default bg-surface-0 p-5 shadow-sm transition-all hover:shadow-md">
+                    <div key={w.id} className="group relative overflow-hidden rounded-xl border border-default bg-surface-0 p-5 shadow-card transition-all">
                         <div className="flex items-start justify-between">
                             <div className={cn(
                                 "flex h-12 w-12 items-center justify-center rounded-xl",
@@ -164,7 +163,7 @@ export function WarehousesPage() {
                                 <Package className="h-3.5 w-3.5" />
                                 <span>Ver Estoque</span>
                             </div>
-                            <span className="text-[10px] text-surface-400">Criado em {new Date(w.created_at).toLocaleDateString()}</span>
+                            <span className="text-xs text-surface-400">Criado em {new Date(w.created_at).toLocaleDateString()}</span>
                         </div>
                     </div>
                 ))}
@@ -176,7 +175,7 @@ export function WarehousesPage() {
                     <Input label="Código único" value={form.code} onChange={e => set('code', e.target.value.toUpperCase())} required placeholder="Ex: DP01, V01..." />
 
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tipo de Armazém</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo de Armazém</label>
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 type="button"

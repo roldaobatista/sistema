@@ -283,29 +283,68 @@
 
 /* ── Stagger Delays ── */
 @layer utilities {
-  .stagger-1 {
-    animation-delay: 0.04s;
-  }
+  .stagger-1 { animation-delay: 0.04s; }
+  .stagger-2 { animation-delay: 0.08s; }
+  .stagger-3 { animation-delay: 0.12s; }
+  .stagger-4 { animation-delay: 0.16s; }
+  .stagger-5 { animation-delay: 0.20s; }
+  .stagger-6 { animation-delay: 0.24s; }
+  .stagger-7 { animation-delay: 0.28s; }
+  .stagger-8 { animation-delay: 0.32s; }
+}
 
-  .stagger-2 {
-    animation-delay: 0.08s;
-  }
+/* ── Semantic Typography Scale ──
+   Restricted to 6 sizes. All pages MUST use these instead of arbitrary values. */
+@utility text-caption {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
 
-  .stagger-3 {
-    animation-delay: 0.12s;
-  }
+@utility text-label {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
-  .stagger-4 {
-    animation-delay: 0.16s;
-  }
+@utility text-body-sm {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
 
-  .stagger-5 {
-    animation-delay: 0.20s;
-  }
+@utility text-body {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
 
-  .stagger-6 {
-    animation-delay: 0.24s;
-  }
+@utility text-subtitle {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+}
+
+@utility text-heading {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.011em;
+}
+
+@utility text-display {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-display-lg {
+  font-size: 2rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Skeleton Loader ── */

@@ -1,4 +1,5 @@
-﻿import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import DOMPurify from 'dompurify'
 import { toast } from 'sonner'
 import { useEmails, useEmail, useEmailStats, useToggleEmailStar, useMarkEmailRead, useArchiveEmail, useEmailBatchAction, useReplyEmail, useForwardEmail, useCreateTaskFromEmail, type EmailItem, type EmailFilters } from '@/hooks/useEmails'
 import { useEmailAccounts } from '@/hooks/useEmailAccounts'
@@ -28,11 +29,11 @@ import { ptBR } from 'date-fns/locale'
 function AICategoryBadge({ category }: { category: string | null }) {
     if (!category) return null
     const variants: Record<string, { color: string; icon: React.ReactNode }> = {
-        'orcamento': { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: <FileText className="w-3 h-3" /> },
-        'suporte': { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', icon: <Wrench className="w-3 h-3" /> },
-        'financeiro': { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: <Tag className="w-3 h-3" /> },
-        'reclamacao': { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: <AlertCircle className="w-3 h-3" /> },
-        'informacao': { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', icon: <Mail className="w-3 h-3" /> },
+        'orcamento': { color: 'bg-blue-100 text-blue-800', icon: <FileText className="w-3 h-3" /> },
+        'suporte': { color: 'bg-orange-100 text-orange-800', icon: <Wrench className="w-3 h-3" /> },
+        'financeiro': { color: 'bg-green-100 text-green-800', icon: <Tag className="w-3 h-3" /> },
+        'reclamacao': { color: 'bg-red-100 text-red-800', icon: <AlertCircle className="w-3 h-3" /> },
+        'informacao': { color: 'bg-surface-100 text-surface-800', icon: <Mail className="w-3 h-3" /> },
     }
     const v = variants[category] || variants['informacao']!
     return (
@@ -48,9 +49,9 @@ function AIPriorityBadge({ priority }: { priority: string | null }) {
         'urgente': 'bg-red-500 text-white',
         'alta': 'bg-orange-500 text-white',
         'media': 'bg-yellow-100 text-yellow-800',
-        'baixa': 'bg-gray-100 text-gray-600',
+        'baixa': 'bg-surface-100 text-surface-600',
     }
-    return <Badge className={cn('text-xs', colors[priority] || 'bg-gray-100')}>{priority}</Badge>
+    return <Badge className={cn('text-xs', colors[priority] || 'bg-surface-100')}>{priority}</Badge>
 }
 
 function formatEmailDate(dateStr: string): string {
@@ -311,7 +312,7 @@ export default function EmailInboxPage() {
                                 className={cn(
                                     'flex items-start gap-3 px-3 py-2.5 cursor-pointer transition-colors group',
                                     selectedEmailId === e.id ? 'bg-primary/5' : 'hover:bg-muted/50',
-                                    !e.is_read && 'bg-blue-50/50 dark:bg-blue-950/20'
+                                    !e.is_read && 'bg-blue-50/50'
                                 )}
                             >
                                 <Checkbox
@@ -415,11 +416,11 @@ export default function EmailInboxPage() {
 
                             {/* AI Analysis */}
                             {email.ai_category && (
-                                <Card className="bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20 border-violet-200/50">
+                                <Card className="bg-gradient-to-r from-violet-50 to-indigo-50 border-violet-200/50">
                                     <CardContent className="p-3 space-y-2">
                                         <div className="flex items-center gap-2 text-xs">
                                             <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-                                            <span className="font-medium text-violet-700 dark:text-violet-400">Análise AI</span>
+                                            <span className="font-medium text-violet-700">Análise AI</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5">
                                             <AICategoryBadge category={email.ai_category} />
@@ -464,8 +465,8 @@ export default function EmailInboxPage() {
                         <div className="flex-1 overflow-y-auto p-4">
                             {email.body_html ? (
                                 <div
-                                    className="prose prose-sm dark:prose-invert max-w-none"
-                                    dangerouslySetInnerHTML={{ __html: email.body_html }}
+                                    className="prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.body_html) }}
                                 />
                             ) : (
                                 <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">

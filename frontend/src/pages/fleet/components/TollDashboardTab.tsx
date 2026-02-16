@@ -15,13 +15,11 @@ export function TollDashboardTab() {
 
     const { data: tolls, isLoading } = useQuery({
         queryKey: ['fleet-tolls', vehicleFilter],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/tolls', { params: { fleet_vehicle_id: vehicleFilter || undefined } }).then(r => r.data)
     })
 
     const { data: summary } = useQuery({
         queryKey: ['fleet-tolls-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/tolls/summary').then(r => r.data)
     })
 
@@ -37,7 +35,6 @@ export function TollDashboardTab() {
 
     return (
         <div className="space-y-6">
-            {/* Sumarização */}
             {summary && (
                 <div className="p-5 rounded-2xl bg-gradient-to-r from-brand-50 to-surface-50 border border-brand-200">
                     <div className="flex items-center justify-between mb-4">
@@ -46,12 +43,12 @@ export function TollDashboardTab() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {summary.data?.map((v: any) => (
-                            <div key={v.id} className="p-3 bg-white rounded-xl border border-default shadow-sm">
-                                <div className="px-2 py-0.5 bg-surface-900 rounded text-white text-[10px] font-mono font-bold tracking-wider inline-block mb-2">
+                            <div key={v.id} className="p-3 bg-surface-0 rounded-xl border border-default shadow-sm">
+                                <div className="px-2 py-0.5 bg-surface-900 rounded text-white text-xs font-mono font-bold tracking-wider inline-block mb-2">
                                     {v.plate}
                                 </div>
                                 <p className="text-sm font-bold text-brand-600">R$ {Number(v.total_value).toLocaleString()}</p>
-                                <p className="text-[10px] text-surface-400">{v.total_passages} passagens</p>
+                                <p className="text-xs text-surface-400">{v.total_passages} passagens</p>
                             </div>
                         ))}
                     </div>
@@ -67,12 +64,12 @@ export function TollDashboardTab() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="bg-surface-50 border-b border-default">
-                            <th className="px-4 py-3 text-left text-[10px] uppercase font-bold text-surface-500">Data</th>
-                            <th className="px-4 py-3 text-left text-[10px] uppercase font-bold text-surface-500">Veículo</th>
-                            <th className="px-4 py-3 text-left text-[10px] uppercase font-bold text-surface-500">Praça</th>
-                            <th className="px-4 py-3 text-left text-[10px] uppercase font-bold text-surface-500">Rodovia</th>
-                            <th className="px-4 py-3 text-right text-[10px] uppercase font-bold text-surface-500">Valor</th>
-                            <th className="px-4 py-3 text-center text-[10px] uppercase font-bold text-surface-500">Tag</th>
+                            <th className="px-4 py-3 text-left text-xs uppercase font-bold text-surface-500">Data</th>
+                            <th className="px-4 py-3 text-left text-xs uppercase font-bold text-surface-500">Veículo</th>
+                            <th className="px-4 py-3 text-left text-xs uppercase font-bold text-surface-500">Praça</th>
+                            <th className="px-4 py-3 text-left text-xs uppercase font-bold text-surface-500">Rodovia</th>
+                            <th className="px-4 py-3 text-right text-xs uppercase font-bold text-surface-500">Valor</th>
+                            <th className="px-4 py-3 text-center text-xs uppercase font-bold text-surface-500">Tag</th>
                             <th className="px-4 py-3 w-10"></th>
                         </tr>
                     </thead>
@@ -87,7 +84,7 @@ export function TollDashboardTab() {
                                     {new Date(t.passage_date).toLocaleDateString()}
                                 </td>
                                 <td className="px-4 py-3">
-                                    <span className="px-2 py-0.5 bg-surface-900 text-white text-[10px] font-mono rounded font-bold tracking-wider">
+                                    <span className="px-2 py-0.5 bg-surface-900 text-white text-xs font-mono rounded font-bold tracking-wider">
                                         {t.plate}
                                     </span>
                                 </td>

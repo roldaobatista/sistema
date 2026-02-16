@@ -31,6 +31,7 @@ interface InmetroOwnerEditModalProps {
 export function InmetroOwnerEditModal({ open, onOpenChange, owner }: InmetroOwnerEditModalProps) {
 
     const updateOwnerMutation = useUpdateOwner()
+    const {
         register,
         handleSubmit,
         reset,

@@ -72,7 +72,6 @@ export default function KardexPage() {
 
     const { data: kardex, isLoading, refetch, isRefetching } = useQuery({
         queryKey: ['kardex', productId, warehouseId, dateFrom, dateTo],
-        const { data, isLoading, refetch } = useQuery({
         queryFn: () =>
             api.get(`/api/v1/stock/products/${productId}/kardex`, {
                 params: { warehouse_id: warehouseId, date_from: dateFrom || undefined, date_to: dateTo || undefined },
@@ -88,33 +87,30 @@ export default function KardexPage() {
 
     return (
         <div className="p-6 space-y-6">
-            {/* Header */}
             <div className="flex items-center gap-3">
                 <ScrollText className="h-7 w-7 text-indigo-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Kardex de Produto</h1>
+                <h1 className="text-2xl font-bold text-surface-900">Kardex de Produto</h1>
             </div>
 
-            {/* Filtros */}
-            <div className="bg-white rounded-xl shadow p-4 space-y-4">
+            <div className="bg-surface-0 rounded-xl shadow-card p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Produto */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Produto *</label>
+                        <label className="block text-sm font-medium text-surface-700 mb-1">Produto *</label>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
                             <input
                                 type="text"
                                 placeholder="Buscar produto..."
                                 value={productSearch}
                                 onChange={e => setProductSearch(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                className="w-full pl-10 pr-3 py-2 border border-default rounded-lg text-sm"
                             />
                         </div>
                         <select
                             title="Selecionar produto"
                             value={productId}
                             onChange={e => setProductId(e.target.value)}
-                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            className="w-full mt-1 px-3 py-2 border border-default rounded-lg text-sm"
                             size={Math.min(filteredProducts.length + 1, 6)}
                         >
                             <option value="">Selecione um produto</option>
@@ -124,16 +120,15 @@ export default function KardexPage() {
                         </select>
                     </div>
 
-                    {/* Depósito */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Depósito *</label>
+                        <label className="block text-sm font-medium text-surface-700 mb-1">Depósito *</label>
                         <div className="relative">
-                            <WarehouseIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <WarehouseIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
                             <select
                                 title="Selecionar depósito"
                                 value={warehouseId}
                                 onChange={e => setWarehouseId(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                className="w-full pl-10 pr-3 py-2 border border-default rounded-lg text-sm"
                             >
                                 <option value="">Selecione...</option>
                                 {(Array.isArray(warehouses) ? warehouses : []).map((w: WarehouseOption) => (
@@ -143,29 +138,28 @@ export default function KardexPage() {
                         </div>
                     </div>
 
-                    {/* Período */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data Início</label>
+                        <label className="block text-sm font-medium text-surface-700 mb-1">Data Início</label>
                         <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
                             <input
                                 type="date"
                                 value={dateFrom}
                                 onChange={e => setDateFrom(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                className="w-full pl-10 pr-3 py-2 border border-default rounded-lg text-sm"
                                 aria-label="Data início"
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data Fim</label>
+                        <label className="block text-sm font-medium text-surface-700 mb-1">Data Fim</label>
                         <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
                             <input
                                 type="date"
                                 value={dateTo}
                                 onChange={e => setDateTo(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                className="w-full pl-10 pr-3 py-2 border border-default rounded-lg text-sm"
                                 aria-label="Data fim"
                             />
                         </div>
@@ -174,7 +168,7 @@ export default function KardexPage() {
 
                 {productId && warehouseId && (
                     <div className="flex items-center justify-between border-t pt-3">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-surface-600">
                             {kardex?.product?.name && (
                                 <span>Produto: <strong>{kardex.product.name}</strong> | Depósito: <strong>{kardex.warehouse?.name}</strong></span>
                             )}
@@ -190,37 +184,36 @@ export default function KardexPage() {
                 )}
             </div>
 
-            {/* Tabela Kardex */}
             {!productId || !warehouseId ? (
-                <div className="bg-white rounded-xl shadow p-12 text-center text-gray-400">
-                    <ScrollText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <div className="bg-surface-0 rounded-xl shadow-card p-12 text-center text-surface-400">
+                    <ScrollText className="h-12 w-12 mx-auto mb-3 text-surface-300" />
                     <p>Selecione um <strong>produto</strong> e um <strong>depósito</strong> para visualizar o Kardex.</p>
                 </div>
             ) : isLoading ? (
                 <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
             ) : (
-                <div className="bg-white rounded-xl shadow overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead className="bg-gray-50">
+                <div className="bg-surface-0 rounded-xl shadow-card overflow-x-auto">
+                    <table className="min-w-full divide-y divide-subtle text-sm">
+                        <thead className="bg-surface-50">
                             <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantidade</th>
-                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase font-bold">Saldo</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lote</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuário</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Observação</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Data</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Tipo</th>
+                                <th className="px-4 py-3 text-right text-xs font-medium text-surface-500 uppercase">Quantidade</th>
+                                <th className="px-4 py-3 text-right text-xs font-medium text-surface-500 uppercase font-bold">Saldo</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Lote</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Usuário</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Observação</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-subtle">
                             {entries.map((entry) => {
-                                const typeInfo = typeIcons[entry.type] || { icon: RefreshCw, color: 'text-gray-500' };
+                                const typeInfo = typeIcons[entry.type] || { icon: RefreshCw, color: 'text-surface-500' };
                                 const Icon = typeInfo.icon;
                                 const isPositive = entry.quantity > 0 && ['entry', 'return'].includes(entry.type);
 
                                 return (
-                                    <tr key={entry.id} className="hover:bg-gray-50">
-                                        <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">
+                                    <tr key={entry.id} className="hover:bg-surface-50">
+                                        <td className="px-4 py-2.5 text-surface-600 whitespace-nowrap">
                                             {new Date(entry.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </td>
                                         <td className="px-4 py-2.5">
@@ -232,17 +225,17 @@ export default function KardexPage() {
                                         <td className={`px-4 py-2.5 text-right font-mono ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                                             {isPositive ? '+' : ''}{entry.quantity.toFixed(2)}
                                         </td>
-                                        <td className="px-4 py-2.5 text-right font-mono font-bold text-gray-900">
+                                        <td className="px-4 py-2.5 text-right font-mono font-bold text-surface-900">
                                             {entry.balance.toFixed(2)}
                                         </td>
-                                        <td className="px-4 py-2.5 text-gray-500">{entry.batch || '—'}</td>
-                                        <td className="px-4 py-2.5 text-gray-500">{entry.user || '—'}</td>
-                                        <td className="px-4 py-2.5 text-gray-400 max-w-[200px] truncate">{entry.notes || '—'}</td>
+                                        <td className="px-4 py-2.5 text-surface-500">{entry.batch || '—'}</td>
+                                        <td className="px-4 py-2.5 text-surface-500">{entry.user || '—'}</td>
+                                        <td className="px-4 py-2.5 text-surface-400 max-w-[200px] truncate">{entry.notes || '—'}</td>
                                     </tr>
                                 );
                             })}
                             {entries.length === 0 && (
-                                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">Nenhuma movimentação encontrada para este produto/depósito</td></tr>
+                                <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">Nenhuma movimentação encontrada para este produto/depósito</td></tr>
                             )}
                         </tbody>
                     </table>

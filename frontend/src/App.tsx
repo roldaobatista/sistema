@@ -1,170 +1,185 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { CommandPalette } from '@/components/layout/CommandPalette'
-import { LoginPage } from '@/pages/LoginPage'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { UsersPage } from '@/pages/iam/UsersPage'
-import { RolesPage } from '@/pages/iam/RolesPage'
-import { PermissionsMatrixPage } from '@/pages/iam/PermissionsMatrixPage'
-import { AuditLogPage } from '@/pages/admin/AuditLogPage'
-import { CustomersPage } from '@/pages/cadastros/CustomersPage'
-import { Customer360Page } from '@/pages/cadastros/Customer360Page'
-import { CustomerMergePage } from '@/pages/cadastros/CustomerMergePage'
-import { PriceHistoryPage } from '@/pages/cadastros/PriceHistoryPage'
-import { BatchExportPage } from '@/pages/cadastros/BatchExportPage'
-import { ProductsPage } from '@/pages/cadastros/ProductsPage'
-import { ServicesPage } from '@/pages/cadastros/ServicesPage'
-import { SuppliersPage } from '@/pages/cadastros/SuppliersPage'
-import { WorkOrdersListPage } from '@/pages/os/WorkOrdersListPage'
-import { WorkOrderKanbanPage } from '@/pages/os/WorkOrderKanbanPage'
+import { PortalLayout } from './components/layout/PortalLayout'
+import { usePortalAuthStore } from './stores/portal-auth-store'
+import TechShell from '@/components/layout/TechShell'
+import { TechAutoRedirect } from '@/components/auth/TechAutoRedirect'
+import { Toaster } from '@/components/ui/sonner'
+
+// --- Lazy-loaded pages (code splitting) ---
+const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const UsersPage = lazy(() => import('@/pages/iam/UsersPage').then(m => ({ default: m.UsersPage })))
+const RolesPage = lazy(() => import('@/pages/iam/RolesPage').then(m => ({ default: m.RolesPage })))
+const PermissionsMatrixPage = lazy(() => import('@/pages/iam/PermissionsMatrixPage').then(m => ({ default: m.PermissionsMatrixPage })))
+const AuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
+const CustomersPage = lazy(() => import('@/pages/cadastros/CustomersPage').then(m => ({ default: m.CustomersPage })))
+const Customer360Page = lazy(() => import('@/pages/cadastros/Customer360Page').then(m => ({ default: m.Customer360Page })))
+const CustomerMergePage = lazy(() => import('@/pages/cadastros/CustomerMergePage').then(m => ({ default: m.CustomerMergePage })))
+const PriceHistoryPage = lazy(() => import('@/pages/cadastros/PriceHistoryPage').then(m => ({ default: m.PriceHistoryPage })))
+const BatchExportPage = lazy(() => import('@/pages/cadastros/BatchExportPage').then(m => ({ default: m.BatchExportPage })))
+const ProductsPage = lazy(() => import('@/pages/cadastros/ProductsPage').then(m => ({ default: m.ProductsPage })))
+const ServicesPage = lazy(() => import('@/pages/cadastros/ServicesPage').then(m => ({ default: m.ServicesPage })))
+const SuppliersPage = lazy(() => import('@/pages/cadastros/SuppliersPage').then(m => ({ default: m.SuppliersPage })))
+const WorkOrdersListPage = lazy(() => import('@/pages/os/WorkOrdersListPage').then(m => ({ default: m.WorkOrdersListPage })))
+const WorkOrderKanbanPage = lazy(() => import('@/pages/os/WorkOrderKanbanPage').then(m => ({ default: m.WorkOrderKanbanPage })))
 
 // Portal do Cliente
-import { PortalLoginPage } from './pages/portal/PortalLoginPage'
-import { PortalLayout } from './components/layout/PortalLayout'
-import { PortalDashboardPage } from './pages/portal/PortalDashboardPage'
-import { PortalWorkOrdersPage } from './pages/portal/PortalWorkOrdersPage'
-import { PortalQuotesPage } from './pages/portal/PortalQuotesPage'
-import { PortalFinancialsPage } from './pages/portal/PortalFinancialsPage'
-import { PortalServiceCallPage } from './pages/portal/PortalServiceCallPage'
-import { usePortalAuthStore } from './stores/portal-auth-store'
+const PortalLoginPage = lazy(() => import('./pages/portal/PortalLoginPage').then(m => ({ default: m.PortalLoginPage })))
+const PortalDashboardPage = lazy(() => import('./pages/portal/PortalDashboardPage').then(m => ({ default: m.PortalDashboardPage })))
+const PortalWorkOrdersPage = lazy(() => import('./pages/portal/PortalWorkOrdersPage').then(m => ({ default: m.PortalWorkOrdersPage })))
+const PortalQuotesPage = lazy(() => import('./pages/portal/PortalQuotesPage').then(m => ({ default: m.PortalQuotesPage })))
+const PortalFinancialsPage = lazy(() => import('./pages/portal/PortalFinancialsPage').then(m => ({ default: m.PortalFinancialsPage })))
+const PortalServiceCallPage = lazy(() => import('./pages/portal/PortalServiceCallPage').then(m => ({ default: m.PortalServiceCallPage })))
 
-import { WorkOrderCreatePage } from '@/pages/os/WorkOrderCreatePage'
-import { WorkOrderDetailPage } from '@/pages/os/WorkOrderDetailPage'
-import { RecurringContractsPage } from '@/pages/os/RecurringContractsPage'
-import { SchedulesPage } from '@/pages/tecnicos/SchedulesPage'
-import { TimeEntriesPage } from '@/pages/tecnicos/TimeEntriesPage'
-import { TechnicianCashPage } from '@/pages/tecnicos/TechnicianCashPage'
-import { AccountsReceivablePage } from '@/pages/financeiro/AccountsReceivablePage'
-import { AccountsPayablePage } from '@/pages/financeiro/AccountsPayablePage'
-import { CommissionsPage } from '@/pages/financeiro/CommissionsPage'
-import { CommissionDashboardPage } from '@/pages/financeiro/CommissionDashboardPage'
-import { ExpensesPage } from '@/pages/financeiro/ExpensesPage'
-import { FuelingLogsPage } from '@/pages/financeiro/FuelingLogsPage'
-import { PaymentMethodsPage } from '@/pages/financeiro/PaymentMethodsPage'
-import { PaymentsPage } from '@/pages/financeiro/PaymentsPage'
-import { CashFlowPage } from '@/pages/financeiro/CashFlowPage'
-import { InvoicesPage } from '@/pages/financeiro/InvoicesPage'
-import { BankReconciliationPage } from '@/pages/financeiro/BankReconciliationPage'
-import ReconciliationRulesPage from '@/pages/financeiro/ReconciliationRulesPage'
-import { ReconciliationDashboardPage } from '@/pages/financeiro/ReconciliationDashboardPage'
-import { ChartOfAccountsPage } from '@/pages/financeiro/ChartOfAccountsPage'
-import { SlaPoliciesPage } from '@/pages/os/SlaPoliciesPage'
-import { SlaDashboardPage } from '@/pages/os/SlaDashboardPage'
-import { ChecklistPage } from '@/pages/operational/checklists/ChecklistPage'
-import { NotificationsPage } from '@/pages/notificacoes/NotificationsPage'
-import { AccountPayableCategoriesPage } from '@/pages/financeiro/AccountPayableCategoriesPage'
-import { BankAccountsPage } from '@/pages/financeiro/BankAccountsPage'
-import { FundTransfersPage } from '@/pages/financeiro/FundTransfersPage'
-import FiscalNotesPage from '@/pages/fiscal/FiscalNotesPage'
-import { ReportsPage } from '@/pages/relatorios/ReportsPage'
-import { SettingsPage } from '@/pages/configuracoes/SettingsPage'
-import { BranchesPage } from '@/pages/configuracoes/BranchesPage'
-import { ProfilePage } from '@/pages/configuracoes/ProfilePage'
-import { TenantManagementPage } from '@/pages/configuracoes/TenantManagementPage'
-import { QuotesListPage } from '@/pages/orcamentos/QuotesListPage'
-import { QuoteCreatePage } from '@/pages/orcamentos/QuoteCreatePage'
-import { QuoteDetailPage } from '@/pages/orcamentos/QuoteDetailPage'
-import { QuoteEditPage } from '@/pages/orcamentos/QuoteEditPage'
-import { ServiceCallsPage } from '@/pages/chamados/ServiceCallsPage'
-import { ServiceCallCreatePage } from '@/pages/chamados/ServiceCallCreatePage'
-import { ServiceCallMapPage } from '@/pages/chamados/ServiceCallMapPage'
-import { TechnicianAgendaPage } from '@/pages/chamados/TechnicianAgendaPage'
-import { ServiceCallDetailPage } from '@/pages/chamados/ServiceCallDetailPage'
-import { ServiceCallEditPage } from '@/pages/chamados/ServiceCallEditPage'
-import ImportPage from '@/pages/importacao/ImportPage'
-import AuvoImportPage from '@/pages/integracao/AuvoImportPage'
-import EmailInboxPage from '@/pages/emails/EmailInboxPage'
-import EmailComposePage from '@/pages/emails/EmailComposePage'
-import EmailSettingsPage from '@/pages/emails/EmailSettingsPage'
-import EquipmentListPage from '@/pages/equipamentos/EquipmentListPage'
-import EquipmentDetailPage from '@/pages/equipamentos/EquipmentDetailPage'
-import EquipmentCreatePage from '@/pages/equipamentos/EquipmentCreatePage'
-import EquipmentCalendarPage from '@/pages/equipamentos/EquipmentCalendarPage'
-import StandardWeightsPage from '@/pages/equipamentos/StandardWeightsPage'
-import { CrmDashboardPage } from '@/pages/CrmDashboardPage'
-import { CrmPipelinePage } from '@/pages/CrmPipelinePage'
-// import { Customer360Page } from '@/pages/CrmCustomer360Page' // Remoção da importação antiga
-import { MessageTemplatesPage } from '@/pages/MessageTemplatesPage'
-import { StockDashboardPage } from '@/pages/estoque/StockDashboardPage'
-import { StockMovementsPage } from '@/pages/estoque/StockMovementsPage'
-import { WarehousesPage } from '@/pages/estoque/WarehousesPage'
-import InventoryListPage from '@/pages/estoque/InventoryListPage'
-import InventoryExecutionPage from '@/pages/estoque/InventoryExecutionPage'
-import InventoryCreatePage from '@/pages/estoque/InventoryCreatePage'
-import BatchManagementPage from '@/pages/estoque/BatchManagementPage'
-import KardexPage from '@/pages/estoque/KardexPage'
-import StockIntelligencePage from '@/pages/estoque/StockIntelligencePage'
-import StockIntegrationPage from '@/pages/estoque/StockIntegrationPage'
-import { CentralPage } from '@/pages/central/CentralPage'
-import { CentralDashboardPage } from '@/pages/central/CentralDashboardPage'
-import { CentralRulesPage } from '@/pages/central/CentralRulesPage'
-import { InmetroDashboardPage } from '@/pages/inmetro/InmetroDashboardPage'
-import { InmetroLeadsPage } from '@/pages/inmetro/InmetroLeadsPage'
-import { InmetroImportPage } from '@/pages/inmetro/InmetroImportPage'
-import { InmetroCompetitorsPage } from '@/pages/inmetro/InmetroCompetitorsPage'
-import { InmetroOwnerDetailPage } from '@/pages/inmetro/InmetroOwnerDetailPage'
-import { InmetroInstrumentsPage } from '@/pages/inmetro/InmetroInstrumentsPage'
-import { InmetroMapPage } from '@/pages/inmetro/InmetroMapPage'
-import { InmetroMarketPage } from '@/pages/inmetro/InmetroMarketPage'
-import InmetroProspectionPage from '@/pages/inmetro/InmetroProspectionPage'
-import InmetroExecutivePage from '@/pages/inmetro/InmetroExecutivePage'
-import InmetroCompliancePage from '@/pages/inmetro/InmetroCompliancePage'
-import InmetroWebhooksPage from '@/pages/inmetro/InmetroWebhooksPage'
-import InmetroCompetitorPage from '@/pages/inmetro/InmetroCompetitorPage' // Novo, substitui InmetroCompetitorsPage anterior se houver conflito de lógica, mas vamos manter a rota
-import InmetroSealManagement from '@/pages/inmetro/InmetroSealManagement'
-import InmetroSealReportPage from '@/pages/inmetro/InmetroSealReportPage'
+const WorkOrderCreatePage = lazy(() => import('@/pages/os/WorkOrderCreatePage').then(m => ({ default: m.WorkOrderCreatePage })))
+const WorkOrderDetailPage = lazy(() => import('@/pages/os/WorkOrderDetailPage').then(m => ({ default: m.WorkOrderDetailPage })))
+const RecurringContractsPage = lazy(() => import('@/pages/os/RecurringContractsPage').then(m => ({ default: m.RecurringContractsPage })))
+const SchedulesPage = lazy(() => import('@/pages/tecnicos/SchedulesPage').then(m => ({ default: m.SchedulesPage })))
+const TimeEntriesPage = lazy(() => import('@/pages/tecnicos/TimeEntriesPage').then(m => ({ default: m.TimeEntriesPage })))
+const TechnicianCashPage = lazy(() => import('@/pages/tecnicos/TechnicianCashPage').then(m => ({ default: m.TechnicianCashPage })))
+const AccountsReceivablePage = lazy(() => import('@/pages/financeiro/AccountsReceivablePage').then(m => ({ default: m.AccountsReceivablePage })))
+const AccountsPayablePage = lazy(() => import('@/pages/financeiro/AccountsPayablePage').then(m => ({ default: m.AccountsPayablePage })))
+const CommissionsPage = lazy(() => import('@/pages/financeiro/CommissionsPage').then(m => ({ default: m.CommissionsPage })))
+const CommissionDashboardPage = lazy(() => import('@/pages/financeiro/CommissionDashboardPage').then(m => ({ default: m.CommissionDashboardPage })))
+const ExpensesPage = lazy(() => import('@/pages/financeiro/ExpensesPage').then(m => ({ default: m.ExpensesPage })))
+const FuelingLogsPage = lazy(() => import('@/pages/financeiro/FuelingLogsPage').then(m => ({ default: m.FuelingLogsPage })))
+const PaymentMethodsPage = lazy(() => import('@/pages/financeiro/PaymentMethodsPage').then(m => ({ default: m.PaymentMethodsPage })))
+const PaymentsPage = lazy(() => import('@/pages/financeiro/PaymentsPage').then(m => ({ default: m.PaymentsPage })))
+const CashFlowPage = lazy(() => import('@/pages/financeiro/CashFlowPage').then(m => ({ default: m.CashFlowPage })))
+const InvoicesPage = lazy(() => import('@/pages/financeiro/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
+const BankReconciliationPage = lazy(() => import('@/pages/financeiro/BankReconciliationPage').then(m => ({ default: m.BankReconciliationPage })))
+const ReconciliationRulesPage = lazy(() => import('@/pages/financeiro/ReconciliationRulesPage'))
+const ReconciliationDashboardPage = lazy(() => import('@/pages/financeiro/ReconciliationDashboardPage').then(m => ({ default: m.ReconciliationDashboardPage })))
+const ConsolidatedFinancialPage = lazy(() => import('@/pages/financeiro/ConsolidatedFinancialPage').then(m => ({ default: m.ConsolidatedFinancialPage })))
+const ChartOfAccountsPage = lazy(() => import('@/pages/financeiro/ChartOfAccountsPage').then(m => ({ default: m.ChartOfAccountsPage })))
+const SlaPoliciesPage = lazy(() => import('@/pages/os/SlaPoliciesPage').then(m => ({ default: m.SlaPoliciesPage })))
+const SlaDashboardPage = lazy(() => import('@/pages/os/SlaDashboardPage').then(m => ({ default: m.SlaDashboardPage })))
+const ChecklistPage = lazy(() => import('@/pages/operational/checklists/ChecklistPage').then(m => ({ default: m.ChecklistPage })))
+const NotificationsPage = lazy(() => import('@/pages/notificacoes/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
+const AccountPayableCategoriesPage = lazy(() => import('@/pages/financeiro/AccountPayableCategoriesPage').then(m => ({ default: m.AccountPayableCategoriesPage })))
+const BankAccountsPage = lazy(() => import('@/pages/financeiro/BankAccountsPage').then(m => ({ default: m.BankAccountsPage })))
+const FundTransfersPage = lazy(() => import('@/pages/financeiro/FundTransfersPage').then(m => ({ default: m.FundTransfersPage })))
+const FiscalNotesPage = lazy(() => import('@/pages/fiscal/FiscalNotesPage'))
+const ReportsPage = lazy(() => import('@/pages/relatorios/ReportsPage').then(m => ({ default: m.ReportsPage })))
+const SettingsPage = lazy(() => import('@/pages/configuracoes/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const BranchesPage = lazy(() => import('@/pages/configuracoes/BranchesPage').then(m => ({ default: m.BranchesPage })))
+const ProfilePage = lazy(() => import('@/pages/configuracoes/ProfilePage').then(m => ({ default: m.ProfilePage })))
+const TenantManagementPage = lazy(() => import('@/pages/configuracoes/TenantManagementPage').then(m => ({ default: m.TenantManagementPage })))
+const QuotesListPage = lazy(() => import('@/pages/orcamentos/QuotesListPage').then(m => ({ default: m.QuotesListPage })))
+const QuoteCreatePage = lazy(() => import('@/pages/orcamentos/QuoteCreatePage').then(m => ({ default: m.QuoteCreatePage })))
+const QuoteDetailPage = lazy(() => import('@/pages/orcamentos/QuoteDetailPage').then(m => ({ default: m.QuoteDetailPage })))
+const QuoteEditPage = lazy(() => import('@/pages/orcamentos/QuoteEditPage').then(m => ({ default: m.QuoteEditPage })))
+const ServiceCallsPage = lazy(() => import('@/pages/chamados/ServiceCallsPage').then(m => ({ default: m.ServiceCallsPage })))
+const ServiceCallCreatePage = lazy(() => import('@/pages/chamados/ServiceCallCreatePage').then(m => ({ default: m.ServiceCallCreatePage })))
+const ServiceCallMapPage = lazy(() => import('@/pages/chamados/ServiceCallMapPage').then(m => ({ default: m.ServiceCallMapPage })))
+const TechnicianAgendaPage = lazy(() => import('@/pages/chamados/TechnicianAgendaPage').then(m => ({ default: m.TechnicianAgendaPage })))
+const ServiceCallDetailPage = lazy(() => import('@/pages/chamados/ServiceCallDetailPage').then(m => ({ default: m.ServiceCallDetailPage })))
+const ServiceCallEditPage = lazy(() => import('@/pages/chamados/ServiceCallEditPage').then(m => ({ default: m.ServiceCallEditPage })))
+const ImportPage = lazy(() => import('@/pages/importacao/ImportPage'))
+const AuvoImportPage = lazy(() => import('@/pages/integracao/AuvoImportPage'))
+const EmailInboxPage = lazy(() => import('@/pages/emails/EmailInboxPage'))
+const EmailComposePage = lazy(() => import('@/pages/emails/EmailComposePage'))
+const EmailSettingsPage = lazy(() => import('@/pages/emails/EmailSettingsPage'))
+const EquipmentListPage = lazy(() => import('@/pages/equipamentos/EquipmentListPage'))
+const EquipmentDetailPage = lazy(() => import('@/pages/equipamentos/EquipmentDetailPage'))
+const EquipmentCreatePage = lazy(() => import('@/pages/equipamentos/EquipmentCreatePage'))
+const EquipmentCalendarPage = lazy(() => import('@/pages/equipamentos/EquipmentCalendarPage'))
+const StandardWeightsPage = lazy(() => import('@/pages/equipamentos/StandardWeightsPage'))
+const CrmDashboardPage = lazy(() => import('@/pages/CrmDashboardPage').then(m => ({ default: m.CrmDashboardPage })))
+const CrmPipelinePage = lazy(() => import('@/pages/CrmPipelinePage').then(m => ({ default: m.CrmPipelinePage })))
+const MessageTemplatesPage = lazy(() => import('@/pages/MessageTemplatesPage').then(m => ({ default: m.MessageTemplatesPage })))
+const StockDashboardPage = lazy(() => import('@/pages/estoque/StockDashboardPage').then(m => ({ default: m.StockDashboardPage })))
+const StockMovementsPage = lazy(() => import('@/pages/estoque/StockMovementsPage').then(m => ({ default: m.StockMovementsPage })))
+const WarehousesPage = lazy(() => import('@/pages/estoque/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
+const InventoryListPage = lazy(() => import('@/pages/estoque/InventoryListPage'))
+const InventoryExecutionPage = lazy(() => import('@/pages/estoque/InventoryExecutionPage'))
+const InventoryCreatePage = lazy(() => import('@/pages/estoque/InventoryCreatePage'))
+const BatchManagementPage = lazy(() => import('@/pages/estoque/BatchManagementPage'))
+const KardexPage = lazy(() => import('@/pages/estoque/KardexPage'))
+const StockIntelligencePage = lazy(() => import('@/pages/estoque/StockIntelligencePage'))
+const StockIntegrationPage = lazy(() => import('@/pages/estoque/StockIntegrationPage'))
+const CentralPage = lazy(() => import('@/pages/central/CentralPage').then(m => ({ default: m.CentralPage })))
+const CentralDashboardPage = lazy(() => import('@/pages/central/CentralDashboardPage').then(m => ({ default: m.CentralDashboardPage })))
+const CentralRulesPage = lazy(() => import('@/pages/central/CentralRulesPage').then(m => ({ default: m.CentralRulesPage })))
+const InmetroDashboardPage = lazy(() => import('@/pages/inmetro/InmetroDashboardPage').then(m => ({ default: m.InmetroDashboardPage })))
+const InmetroLeadsPage = lazy(() => import('@/pages/inmetro/InmetroLeadsPage').then(m => ({ default: m.InmetroLeadsPage })))
+const InmetroImportPage = lazy(() => import('@/pages/inmetro/InmetroImportPage').then(m => ({ default: m.InmetroImportPage })))
+
+const InmetroOwnerDetailPage = lazy(() => import('@/pages/inmetro/InmetroOwnerDetailPage').then(m => ({ default: m.InmetroOwnerDetailPage })))
+const InmetroInstrumentsPage = lazy(() => import('@/pages/inmetro/InmetroInstrumentsPage').then(m => ({ default: m.InmetroInstrumentsPage })))
+const InmetroMapPage = lazy(() => import('@/pages/inmetro/InmetroMapPage').then(m => ({ default: m.InmetroMapPage })))
+const InmetroMarketPage = lazy(() => import('@/pages/inmetro/InmetroMarketPage').then(m => ({ default: m.InmetroMarketPage })))
+const InmetroProspectionPage = lazy(() => import('@/pages/inmetro/InmetroProspectionPage'))
+const InmetroExecutivePage = lazy(() => import('@/pages/inmetro/InmetroExecutivePage'))
+const InmetroCompliancePage = lazy(() => import('@/pages/inmetro/InmetroCompliancePage'))
+const InmetroWebhooksPage = lazy(() => import('@/pages/inmetro/InmetroWebhooksPage'))
+const InmetroCompetitorPage = lazy(() => import('@/pages/inmetro/InmetroCompetitorPage'))
+const InmetroSealManagement = lazy(() => import('@/pages/inmetro/InmetroSealManagement'))
+const InmetroSealReportPage = lazy(() => import('@/pages/inmetro/InmetroSealReportPage'))
 
 // 200 Features — Novos Módulos
-import FleetPage from '@/pages/fleet/FleetPage'
-import HRPage from '@/pages/rh/HRPage'
-import ClockInPage from '@/pages/rh/ClockInPage'
-import GeofenceLocationsPage from '@/pages/rh/GeofenceLocationsPage'
-import ClockAdjustmentsPage from '@/pages/rh/ClockAdjustmentsPage'
-import JourneyPage from '@/pages/rh/JourneyPage'
-import JourneyRulesPage from '@/pages/rh/JourneyRulesPage'
-import HolidaysPage from '@/pages/rh/HolidaysPage'
-import LeavesPage from '@/pages/rh/LeavesPage'
-import VacationBalancePage from '@/pages/rh/VacationBalancePage'
-import EmployeeDocumentsPage from '@/pages/rh/EmployeeDocumentsPage'
-import OnboardingPage from '@/pages/rh/OnboardingPage'
-import QualityPage from '@/pages/qualidade/QualityPage'
-import AutomationPage from '@/pages/automacao/AutomationPage'
-import AdvancedFeaturesPage from '@/pages/avancado/AdvancedFeaturesPage'
-import OrgChartPage from '@/pages/rh/OrgChartPage'
-import SkillsMatrixPage from '@/pages/rh/SkillsMatrixPage'
-import PerformancePage from '@/pages/rh/PerformancePage'
-import BenefitsPage from '@/pages/rh/BenefitsPage'
-import RecruitmentPage from '@/pages/rh/RecruitmentPage'
-import RecruitmentKanbanPage from '@/pages/rh/RecruitmentKanbanPage'
-import PerformanceReviewDetailPage from '@/pages/rh/PerformanceReviewDetailPage'
-import TvDashboard from '@/pages/tv/TvDashboard'
-import AIAnalyticsPage from '@/pages/ia/AIAnalyticsPage'
-import PeopleAnalyticsPage from '@/pages/rh/PeopleAnalyticsPage'
-import AccountingReportsPage from '@/pages/rh/AccountingReportsPage'
+const FleetPage = lazy(() => import('@/pages/fleet/FleetPage'))
+const HRPage = lazy(() => import('@/pages/rh/HRPage'))
+const ClockInPage = lazy(() => import('@/pages/rh/ClockInPage'))
+const GeofenceLocationsPage = lazy(() => import('@/pages/rh/GeofenceLocationsPage'))
+const ClockAdjustmentsPage = lazy(() => import('@/pages/rh/ClockAdjustmentsPage'))
+const JourneyPage = lazy(() => import('@/pages/rh/JourneyPage'))
+const JourneyRulesPage = lazy(() => import('@/pages/rh/JourneyRulesPage'))
+const HolidaysPage = lazy(() => import('@/pages/rh/HolidaysPage'))
+const LeavesPage = lazy(() => import('@/pages/rh/LeavesPage'))
+const VacationBalancePage = lazy(() => import('@/pages/rh/VacationBalancePage'))
+const EmployeeDocumentsPage = lazy(() => import('@/pages/rh/EmployeeDocumentsPage'))
+const OnboardingPage = lazy(() => import('@/pages/rh/OnboardingPage'))
+const QualityPage = lazy(() => import('@/pages/qualidade/QualityPage'))
+const QualityAuditsPage = lazy(() => import('@/pages/qualidade/QualityAuditsPage'))
+const IsoDocumentsPage = lazy(() => import('@/pages/qualidade/IsoDocumentsPage'))
+const AutomationPage = lazy(() => import('@/pages/automacao/AutomationPage'))
+const AdvancedFeaturesPage = lazy(() => import('@/pages/avancado/AdvancedFeaturesPage'))
+const AlertsPage = lazy(() => import('@/pages/alertas/AlertsPage'))
+const CalibrationReadingsPage = lazy(() => import('@/pages/calibracao/CalibrationReadingsPage'))
+const WhatsAppConfigPage = lazy(() => import('@/pages/configuracoes/WhatsAppConfigPage'))
+const DebtRenegotiationPage = lazy(() => import('@/pages/financeiro/DebtRenegotiationPage'))
+const WeightAssignmentsPage = lazy(() => import('@/pages/equipamentos/WeightAssignmentsPage'))
+const ToolCalibrationsPage = lazy(() => import('@/pages/estoque/ToolCalibrationsPage'))
+const EquipmentQrPublicPage = lazy(() => import('@/pages/equipamentos/EquipmentQrPublicPage'))
+const CertificateTemplatesPage = lazy(() => import('@/pages/calibracao/CertificateTemplatesPage'))
+const WhatsAppLogPage = lazy(() => import('@/pages/configuracoes/WhatsAppLogPage'))
+const CollectionAutomationPage = lazy(() => import('@/pages/financeiro/CollectionAutomationPage'))
+const OrgChartPage = lazy(() => import('@/pages/rh/OrgChartPage'))
+const SkillsMatrixPage = lazy(() => import('@/pages/rh/SkillsMatrixPage'))
+const PerformancePage = lazy(() => import('@/pages/rh/PerformancePage'))
+const BenefitsPage = lazy(() => import('@/pages/rh/BenefitsPage'))
+const RecruitmentPage = lazy(() => import('@/pages/rh/RecruitmentPage'))
+const RecruitmentKanbanPage = lazy(() => import('@/pages/rh/RecruitmentKanbanPage'))
+const PerformanceReviewDetailPage = lazy(() => import('@/pages/rh/PerformanceReviewDetailPage'))
+const TvDashboard = lazy(() => import('@/pages/tv/TvDashboard'))
+const AIAnalyticsPage = lazy(() => import('@/pages/ia/AIAnalyticsPage'))
+const PeopleAnalyticsPage = lazy(() => import('@/pages/rh/PeopleAnalyticsPage'))
+const AccountingReportsPage = lazy(() => import('@/pages/rh/AccountingReportsPage'))
 
 // Tech (PWA Mobile)
-import TechShell from '@/components/layout/TechShell'
-import TechWorkOrdersPage from '@/pages/tech/TechWorkOrdersPage'
-import TechWorkOrderDetailPage from '@/pages/tech/TechWorkOrderDetailPage'
-import TechChecklistPage from '@/pages/tech/TechChecklistPage'
-import TechExpensePage from '@/pages/tech/TechExpensePage'
-import TechPhotosPage from '@/pages/tech/TechPhotosPage'
-import TechSignaturePage from '@/pages/tech/TechSignaturePage'
-import TechProfilePage from '@/pages/tech/TechProfilePage'
-import { TechAutoRedirect } from '@/components/auth/TechAutoRedirect'
-import TechSealsPage from '@/pages/tech/TechSealsPage'
-import TechSettingsPage from '@/pages/tech/TechSettingsPage'
-import TechBarcodePage from '@/pages/tech/TechBarcodePage'
-import TechChatPage from '@/pages/tech/TechChatPage'
-import TechPhotoAnnotationPage from '@/pages/tech/TechPhotoAnnotationPage'
-import TechVoiceReportPage from '@/pages/tech/TechVoiceReportPage'
-import TechBluetoothPrintPage from '@/pages/tech/TechBluetoothPrintPage'
-import TechThermalCameraPage from '@/pages/tech/TechThermalCameraPage'
-import TechWidgetPage from '@/pages/tech/TechWidgetPage'
+const TechWorkOrdersPage = lazy(() => import('@/pages/tech/TechWorkOrdersPage'))
+const TechWorkOrderDetailPage = lazy(() => import('@/pages/tech/TechWorkOrderDetailPage'))
+const TechChecklistPage = lazy(() => import('@/pages/tech/TechChecklistPage'))
+const TechExpensePage = lazy(() => import('@/pages/tech/TechExpensePage'))
+const TechPhotosPage = lazy(() => import('@/pages/tech/TechPhotosPage'))
+const TechSignaturePage = lazy(() => import('@/pages/tech/TechSignaturePage'))
+const TechProfilePage = lazy(() => import('@/pages/tech/TechProfilePage'))
+const TechSealsPage = lazy(() => import('@/pages/tech/TechSealsPage'))
+const TechSettingsPage = lazy(() => import('@/pages/tech/TechSettingsPage'))
+const TechBarcodePage = lazy(() => import('@/pages/tech/TechBarcodePage'))
+const TechChatPage = lazy(() => import('@/pages/tech/TechChatPage'))
+const TechPhotoAnnotationPage = lazy(() => import('@/pages/tech/TechPhotoAnnotationPage'))
+const TechVoiceReportPage = lazy(() => import('@/pages/tech/TechVoiceReportPage'))
+const TechBluetoothPrintPage = lazy(() => import('@/pages/tech/TechBluetoothPrintPage'))
+const TechThermalCameraPage = lazy(() => import('@/pages/tech/TechThermalCameraPage'))
+const TechWidgetPage = lazy(() => import('@/pages/tech/TechWidgetPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -221,6 +236,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
   { match: '/financeiro/regras-conciliacao', permission: 'finance.receivable.view' },
   { match: '/financeiro/dashboard-conciliacao', permission: 'finance.receivable.view' },
+  { match: '/financeiro/consolidado', permission: 'financeiro.view' },
   { match: '/financeiro/plano-contas', permission: 'finance.chart.view' },
   { match: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
   { match: '/financeiro/contas-bancarias', permission: 'financial.bank_account.view' },
@@ -239,12 +255,20 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/inmetro/selos', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro', permission: 'inmetro.intelligence.view' },
   { match: '/equipamentos/pesos-padrao', permission: 'equipments.standard_weight.view' },
+  { match: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
   { match: '/equipamentos', permission: 'equipments.equipment.view' },
   { match: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
+  { match: '/calibracao/leituras', permission: 'calibration.reading.view' },
+  { match: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
   { match: '/configuracoes/filiais', permission: 'platform.branch.view' },
   { match: '/configuracoes/empresas', permission: 'platform.tenant.view' },
+  { match: '/configuracoes/whatsapp', permission: 'whatsapp.config.view' },
   { match: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
   { match: '/configuracoes', permission: 'platform.settings.view' },
+  { match: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
+  { match: '/alertas', permission: 'alerts.alert.view' },
+  { match: '/qualidade/auditorias', permission: 'quality.audit.view' },
+  { match: '/qualidade/documentos', permission: 'quality.document.view' },
   { match: '/crm/pipeline', permission: 'crm.pipeline.view' },
   { match: '/crm/clientes', permission: 'crm.deal.view' },
   { match: '/crm/templates', permission: 'crm.message.view' },
@@ -305,6 +329,14 @@ function hasPermissionExpression(
     .map(item => item.trim())
     .filter(Boolean)
     .some(permission => hasPermission(permission))
+}
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" />
+    </div>
+  )
 }
 
 function AccessDeniedState({ permission }: { permission: string }) {
@@ -388,7 +420,9 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={300}>
         <BrowserRouter>
+          <Toaster position="top-right" richColors closeButton duration={4000} />
           <CommandPalette />
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Rotas públicas */}
             <Route
@@ -466,6 +500,7 @@ export default function App() {
             <Route path="/financeiro/conciliacao-bancaria" element={<ProtectedRoute><BankReconciliationPage /></ProtectedRoute>} />
             <Route path="/financeiro/regras-conciliacao" element={<ProtectedRoute><ReconciliationRulesPage /></ProtectedRoute>} />
             <Route path="/financeiro/dashboard-conciliacao" element={<ProtectedRoute><ReconciliationDashboardPage /></ProtectedRoute>} />
+            <Route path="/financeiro/consolidado" element={<ProtectedRoute><ConsolidatedFinancialPage /></ProtectedRoute>} />
             <Route path="/financeiro/plano-contas" element={<ProtectedRoute><ChartOfAccountsPage /></ProtectedRoute>} />
             <Route path="/financeiro/categorias-pagar" element={<ProtectedRoute><AccountPayableCategoriesPage /></ProtectedRoute>} />
             <Route path="/financeiro/contas-bancarias" element={<ProtectedRoute><BankAccountsPage /></ProtectedRoute>} />
@@ -483,6 +518,7 @@ export default function App() {
             <Route path="/estoque/inventarios/novo" element={<ProtectedRoute><InventoryCreatePage /></ProtectedRoute>} />
             <Route path="/estoque/inventarios/:id" element={<ProtectedRoute><InventoryExecutionPage /></ProtectedRoute>} />
             <Route path="/estoque/kardex" element={<ProtectedRoute><KardexPage /></ProtectedRoute>} />
+            <Route path="/estoque/calibracoes-ferramentas" element={<ProtectedRoute><ToolCalibrationsPage /></ProtectedRoute>} />
             <Route path="/estoque/inteligencia" element={<ProtectedRoute><StockIntelligencePage /></ProtectedRoute>} />
             <Route path="/estoque/integracao" element={<ProtectedRoute><StockIntegrationPage /></ProtectedRoute>} />
 
@@ -519,6 +555,7 @@ export default function App() {
             <Route path="/equipamentos" element={<ProtectedRoute><EquipmentListPage /></ProtectedRoute>} />
             <Route path="/equipamentos/novo" element={<ProtectedRoute><EquipmentCreatePage /></ProtectedRoute>} />
             <Route path="/equipamentos/pesos-padrao" element={<ProtectedRoute><StandardWeightsPage /></ProtectedRoute>} />
+            <Route path="/equipamentos/atribuicao-pesos" element={<ProtectedRoute><WeightAssignmentsPage /></ProtectedRoute>} />
             <Route path="/equipamentos/:id" element={<ProtectedRoute><EquipmentDetailPage /></ProtectedRoute>} />
             <Route path="/agenda-calibracoes" element={<ProtectedRoute><EquipmentCalendarPage /></ProtectedRoute>} />
 
@@ -564,6 +601,26 @@ export default function App() {
 
             {/* Qualidade */}
             <Route path="/qualidade" element={<ProtectedRoute><QualityPage /></ProtectedRoute>} />
+            <Route path="/qualidade/auditorias" element={<ProtectedRoute><QualityAuditsPage /></ProtectedRoute>} />
+            <Route path="/qualidade/documentos" element={<ProtectedRoute><IsoDocumentsPage /></ProtectedRoute>} />
+
+            {/* Alertas */}
+            <Route path="/alertas" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
+
+            {/* Calibração — Leituras para certificado ISO */}
+            <Route path="/calibracao/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
+            <Route path="/calibracao/:calibrationId/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
+            <Route path="/calibracao/templates" element={<ProtectedRoute><CertificateTemplatesPage /></ProtectedRoute>} />
+
+            {/* Configurações — WhatsApp */}
+            <Route path="/configuracoes/whatsapp" element={<ProtectedRoute><WhatsAppConfigPage /></ProtectedRoute>} />
+            <Route path="/configuracoes/whatsapp/logs" element={<ProtectedRoute><WhatsAppLogPage /></ProtectedRoute>} />
+
+            {/* Financeiro — Cobrança Automática */}
+            <Route path="/financeiro/cobranca-automatica" element={<ProtectedRoute><CollectionAutomationPage /></ProtectedRoute>} />
+
+            {/* Financeiro — Renegociação */}
+            <Route path="/financeiro/renegociacao" element={<ProtectedRoute><DebtRenegotiationPage /></ProtectedRoute>} />
 
             {/* Automação */}
             <Route path="/automacao" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
@@ -606,9 +663,13 @@ export default function App() {
             <Route path="/portal/financeiro" element={<ProtectedPortalRoute><PortalFinancialsPage /></ProtectedPortalRoute>} />
             <Route path="/portal/chamados/novo" element={<ProtectedPortalRoute><PortalServiceCallPage /></ProtectedPortalRoute>} />
 
+            {/* Página pública QR Code Equipamento */}
+            <Route path="/equipamento-qr/:token" element={<EquipmentQrPublicPage />} />
+
             {/* Fallback para URLs não encontradas */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

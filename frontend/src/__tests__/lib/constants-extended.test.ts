@@ -38,7 +38,9 @@ describe('QUOTE_STATUS', () => {
     it('has REJECTED', () => { expect(QUOTE_STATUS.REJECTED).toBe('rejected') })
     it('has EXPIRED', () => { expect(QUOTE_STATUS.EXPIRED).toBe('expired') })
     it('has INVOICED', () => { expect(QUOTE_STATUS.INVOICED).toBe('invoiced') })
-    it('has exactly 6 keys', () => { expect(Object.keys(QUOTE_STATUS)).toHaveLength(6) })
+    it('has PENDING_INTERNAL', () => { expect(QUOTE_STATUS.PENDING_INTERNAL).toBe('pending_internal_approval') })
+    it('has INTERNALLY_APPROVED', () => { expect(QUOTE_STATUS.INTERNALLY_APPROVED).toBe('internally_approved') })
+    it('has exactly 8 keys', () => { expect(Object.keys(QUOTE_STATUS)).toHaveLength(8) })
     it('all values are strings', () => {
         Object.values(QUOTE_STATUS).forEach(v => expect(typeof v).toBe('string'))
     })
@@ -102,8 +104,9 @@ describe('EXPENSE_STATUS', () => {
     it('has PENDING', () => { expect(EXPENSE_STATUS.PENDING).toBe('pending') })
     it('has APPROVED', () => { expect(EXPENSE_STATUS.APPROVED).toBe('approved') })
     it('has REJECTED', () => { expect(EXPENSE_STATUS.REJECTED).toBe('rejected') })
+    it('has REVIEWED', () => { expect(EXPENSE_STATUS.REVIEWED).toBe('reviewed') })
     it('has REIMBURSED', () => { expect(EXPENSE_STATUS.REIMBURSED).toBe('reimbursed') })
-    it('has exactly 4 keys', () => { expect(Object.keys(EXPENSE_STATUS)).toHaveLength(4) })
+    it('has exactly 5 keys', () => { expect(Object.keys(EXPENSE_STATUS)).toHaveLength(5) })
 })
 
 describe('EQUIPMENT_STATUS', () => {

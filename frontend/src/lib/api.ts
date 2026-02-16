@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-    baseURL: '/api/v1',
+    baseURL: import.meta.env.VITE_API_URL || '/api/v1',
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-// Interceptor: trata 401 (token expirado)
+// Interceptor: trata 401 (token expirado) e 403 (sem permissão)
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -29,6 +29,13 @@ api.interceptors.response.use(
             localStorage.removeItem('portal-auth-store')
             window.location.href = '/login'
         }
+
+        if (error.response?.status === 403) {
+            const message = error.response?.data?.message || 'Você não tem permissão para realizar esta ação.'
+            // Dispara evento customizado para que a UI possa reagir (toast, etc.)
+            window.dispatchEvent(new CustomEvent('api:forbidden', { detail: { message } }))
+        }
+
         return Promise.reject(error)
     }
 )

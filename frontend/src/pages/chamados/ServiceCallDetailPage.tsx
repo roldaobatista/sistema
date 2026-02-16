@@ -75,21 +75,18 @@ export function ServiceCallDetailPage() {
 
     const { data: call, isLoading, isError } = useQuery({
         queryKey: ['service-call', id],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get(`/service-calls/${id}`).then((r) => r.data),
         enabled: !!id,
     })
 
     const { data: comments = [], refetch: refetchComments } = useQuery({
         queryKey: ['service-call-comments', id],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/service-calls/${id}/comments`).then((r) => r.data),
         enabled: !!id,
     })
 
     const { data: assigneesRes } = useQuery({
         queryKey: ['service-call-assignees'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
         enabled: canAssign || canCreate,
     })
@@ -174,11 +171,11 @@ export function ServiceCallDetailPage() {
     if (isLoading) {
         return (
             <div className="space-y-6 animate-pulse">
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64" />
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4">
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                <div className="h-8 bg-surface-200 rounded w-64" />
+                <div className="bg-surface-0 rounded-xl p-6 space-y-4">
+                    <div className="h-6 bg-surface-200 rounded w-48" />
+                    <div className="h-4 bg-surface-200 rounded w-full" />
+                    <div className="h-4 bg-surface-200 rounded w-3/4" />
                 </div>
             </div>
         )
@@ -186,7 +183,7 @@ export function ServiceCallDetailPage() {
 
     if (isError || !call) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+            <div className="flex flex-col items-center justify-center py-20 text-surface-500">
                 <AlertCircle className="w-12 h-12 mb-4 opacity-30" />
                 <p className="text-lg font-medium">Chamado não encontrado</p>
                 <Button variant="outline" className="mt-4" onClick={() => navigate('/chamados')}>
@@ -230,14 +227,13 @@ export function ServiceCallDetailPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="sm" onClick={() => navigate('/chamados')}>
                         <ArrowLeft className="w-4 h-4" />
                     </Button>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <h1 className="text-xl font-bold text-surface-900 flex items-center gap-2">
                             Chamado {call.call_number}
                             <Badge variant={sc?.variant || 'default'}>
                                 <StatusIcon className="w-3 h-3 mr-1" />
@@ -271,7 +267,6 @@ export function ServiceCallDetailPage() {
                 </div>
             </div>
 
-            {/* Status Actions */}
             {canUpdate && transitions.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {transitions.map((t) => {
@@ -295,13 +290,12 @@ export function ServiceCallDetailPage() {
                 </div>
             )}
 
-            {/* Tabs */}
-            <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex gap-1 border-b border-default">
                 <button
                     onClick={() => setActiveTab('info')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'info'
                         ? 'border-primary-500 text-primary-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        : 'border-transparent text-surface-500 hover:text-surface-700'
                         }`}
                 >
                     <ClipboardList className="w-4 h-4 inline mr-1" /> Informações
@@ -310,12 +304,12 @@ export function ServiceCallDetailPage() {
                     onClick={() => setActiveTab('comments')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'comments'
                         ? 'border-primary-500 text-primary-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        : 'border-transparent text-surface-500 hover:text-surface-700'
                         }`}
                 >
                     <MessageSquare className="w-4 h-4 inline mr-1" /> Comentários
                     {comments.length > 0 && (
-                        <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded-full">
+                        <span className="ml-1 px-1.5 py-0.5 text-xs bg-surface-200 rounded-full">
                             {comments.length}
                         </span>
                     )}
@@ -324,21 +318,20 @@ export function ServiceCallDetailPage() {
 
             {activeTab === 'info' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Customer & Contact */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div className="bg-surface-0 rounded-xl shadow-card border border-default p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
                             <Phone className="w-4 h-4" /> Cliente
                         </h2>
                         {call.customer ? (
                             <div className="space-y-2 text-sm">
-                                <p className="font-medium text-gray-900 dark:text-white">{call.customer.name}</p>
-                                {call.customer.phone && <p className="text-gray-600 dark:text-gray-400">{call.customer.phone}</p>}
-                                {call.customer.email && <p className="text-gray-600 dark:text-gray-400">{call.customer.email}</p>}
+                                <p className="font-medium text-surface-900">{call.customer.name}</p>
+                                {call.customer.phone && <p className="text-surface-600">{call.customer.phone}</p>}
+                                {call.customer.email && <p className="text-surface-600">{call.customer.email}</p>}
                                 {call.customer.contacts?.length > 0 && (
-                                    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                                        <p className="text-xs font-medium text-gray-500 mb-1">Contatos</p>
+                                    <div className="mt-2 pt-2 border-t border-subtle">
+                                        <p className="text-xs font-medium text-surface-500 mb-1">Contatos</p>
                                         {call.customer.contacts.map((c: any) => (
-                                            <p key={c.id} className="text-gray-600 dark:text-gray-400">
+                                            <p key={c.id} className="text-surface-600">
                                                 {c.name} — {c.phone || c.email}
                                             </p>
                                         ))}
@@ -346,26 +339,25 @@ export function ServiceCallDetailPage() {
                                 )}
                             </div>
                         ) : (
-                            <p className="text-gray-400 text-sm">Nenhum cliente</p>
+                            <p className="text-surface-400 text-sm">Nenhum cliente</p>
                         )}
                     </div>
 
-                    {/* Technician & Schedule */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div className="bg-surface-0 rounded-xl shadow-card border border-default p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
                             <UserCheck className="w-4 h-4" /> Técnico & Agendamento
                         </h2>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Técnico</span>
-                                <span className="font-medium">{call.technician?.name || <span className="text-gray-400 italic">Não atribuído</span>}</span>
+                                <span className="text-surface-500">Técnico</span>
+                                <span className="font-medium">{call.technician?.name || <span className="text-surface-400 italic">Não atribuído</span>}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Motorista</span>
-                                <span className="font-medium">{call.driver?.name || <span className="text-gray-400">—</span>}</span>
+                                <span className="text-surface-500">Motorista</span>
+                                <span className="font-medium">{call.driver?.name || <span className="text-surface-400">—</span>}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Agendado para</span>
+                                <span className="text-surface-500">Agendado para</span>
                                 <span className="font-medium">
                                     {call.scheduled_date
                                         ? new Date(call.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -374,30 +366,30 @@ export function ServiceCallDetailPage() {
                             </div>
                             {call.started_at && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Iniciado em</span>
+                                    <span className="text-surface-500">Iniciado em</span>
                                     <span className="font-medium">{new Date(call.started_at).toLocaleString('pt-BR')}</span>
                                 </div>
                             )}
                             {call.completed_at && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Concluído em</span>
+                                    <span className="text-surface-500">Concluído em</span>
                                     <span className="font-medium">{new Date(call.completed_at).toLocaleString('pt-BR')}</span>
                                 </div>
                             )}
                             {call.response_time_minutes != null && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Tempo de Resposta</span>
+                                    <span className="text-surface-500">Tempo de Resposta</span>
                                     <span className="font-medium">{call.response_time_minutes} min</span>
                                 </div>
                             )}
                             {call.resolution_time_minutes != null && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Tempo de Resolução</span>
+                                    <span className="text-surface-500">Tempo de Resolução</span>
                                     <span className="font-medium">{call.resolution_time_minutes} min</span>
                                 </div>
                             )}
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Criado em</span>
+                                <span className="text-surface-500">Criado em</span>
                                 <span className="font-medium">
                                     {call.created_at
                                         ? new Date(call.created_at).toLocaleString('pt-BR')
@@ -406,13 +398,13 @@ export function ServiceCallDetailPage() {
                             </div>
                             {call.created_by && typeof call.created_by === 'object' && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Criado por</span>
+                                    <span className="text-surface-500">Criado por</span>
                                     <span className="font-medium">{call.created_by.name}</span>
                                 </div>
                             )}
                             {call.quote && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Orçamento</span>
+                                    <span className="text-surface-500">Orçamento</span>
                                     <button
                                         onClick={() => navigate(`/orcamentos/${call.quote.id}`)}
                                         className="font-medium text-primary-600 hover:underline"
@@ -423,18 +415,18 @@ export function ServiceCallDetailPage() {
                             )}
                         </div>
                         {canAssign && (
-                            <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700 space-y-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            <div className="mt-4 border-t border-subtle pt-4 space-y-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-surface-500">
                                     Atribuicao
                                 </p>
 
                                 <div>
-                                    <label htmlFor="assign-technician" className="mb-1 block text-xs text-gray-500">Tecnico</label>
+                                    <label htmlFor="assign-technician" className="mb-1 block text-xs text-surface-500">Tecnico</label>
                                     <select
                                         id="assign-technician"
                                         value={assignment.technician_id}
                                         onChange={(e) => setAssignment((prev) => ({ ...prev, technician_id: e.target.value }))}
-                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                        className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                                     >
                                         <option value="">Selecione</option>
                                         {technicians.map((tech: any) => (
@@ -446,12 +438,12 @@ export function ServiceCallDetailPage() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="assign-driver" className="mb-1 block text-xs text-gray-500">Motorista</label>
+                                    <label htmlFor="assign-driver" className="mb-1 block text-xs text-surface-500">Motorista</label>
                                     <select
                                         id="assign-driver"
                                         value={assignment.driver_id}
                                         onChange={(e) => setAssignment((prev) => ({ ...prev, driver_id: e.target.value }))}
-                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                        className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                                     >
                                         <option value="">Sem motorista</option>
                                         {drivers.map((driver: any) => (
@@ -463,13 +455,13 @@ export function ServiceCallDetailPage() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="assign-scheduled-date" className="mb-1 block text-xs text-gray-500">Data agendada</label>
+                                    <label htmlFor="assign-scheduled-date" className="mb-1 block text-xs text-surface-500">Data agendada</label>
                                     <input
                                         id="assign-scheduled-date"
                                         type="datetime-local"
                                         value={assignment.scheduled_date}
                                         onChange={(e) => setAssignment((prev) => ({ ...prev, scheduled_date: e.target.value }))}
-                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                                        className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                                     />
                                 </div>
 
@@ -482,14 +474,13 @@ export function ServiceCallDetailPage() {
                         )}
                     </div>
 
-                    {/* Location */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div className="bg-surface-0 rounded-xl shadow-card border border-default p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
                             <MapPin className="w-4 h-4" /> Localização
                         </h2>
                         <div className="space-y-2 text-sm">
-                            {call.address && <p className="text-gray-700 dark:text-gray-300">{call.address}</p>}
-                            {call.city && <p className="text-gray-600 dark:text-gray-400">{call.city}/{call.state}</p>}
+                            {call.address && <p className="text-surface-700">{call.address}</p>}
+                            {call.city && <p className="text-surface-600">{call.city}/{call.state}</p>}
                             {call.latitude && call.longitude && (
                                 <a
                                     href={`https://www.google.com/maps?q=${call.latitude},${call.longitude}`}
@@ -500,44 +491,42 @@ export function ServiceCallDetailPage() {
                                     Ver no Google Maps ↗
                                 </a>
                             )}
-                            {!call.address && !call.city && <p className="text-gray-400">Sem endereço</p>}
+                            {!call.address && !call.city && <p className="text-surface-400">Sem endereço</p>}
                         </div>
                     </div>
 
-                    {/* Equipments */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div className="bg-surface-0 rounded-xl shadow-card border border-default p-5 space-y-4">
+                        <h2 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
                             <Wrench className="w-4 h-4" /> Equipamentos ({call.equipments?.length || 0})
                         </h2>
                         {call.equipments?.length > 0 ? (
                             <div className="space-y-2">
                                 {call.equipments.map((eq: any) => (
-                                    <div key={eq.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg text-sm">
+                                    <div key={eq.id} className="flex items-center justify-between p-2 bg-surface-50 rounded-lg text-sm">
                                         <div>
                                             <p className="font-medium">{eq.tag || eq.model || `#${eq.id}`}</p>
-                                            {eq.serial_number && <p className="text-xs text-gray-500">S/N: {eq.serial_number}</p>}
+                                            {eq.serial_number && <p className="text-xs text-surface-500">S/N: {eq.serial_number}</p>}
                                         </div>
                                         {eq.pivot?.observations && (
-                                            <span className="text-xs text-gray-500 max-w-32 truncate">{eq.pivot.observations}</span>
+                                            <span className="text-xs text-surface-500 max-w-32 truncate">{eq.pivot.observations}</span>
                                         )}
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-gray-400 text-sm">Nenhum equipamento vinculado</p>
+                            <p className="text-surface-400 text-sm">Nenhum equipamento vinculado</p>
                         )}
                     </div>
 
-                    {/* Observations & Resolution */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 space-y-4 lg:col-span-2">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Observações</h2>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                            {call.observations || <span className="text-gray-400">Sem observações</span>}
+                    <div className="bg-surface-0 rounded-xl shadow-card border border-default p-5 space-y-4 lg:col-span-2">
+                        <h2 className="text-sm font-semibold text-surface-900">Observações</h2>
+                        <p className="text-sm text-surface-700 whitespace-pre-wrap">
+                            {call.observations || <span className="text-surface-400">Sem observações</span>}
                         </p>
                         {call.resolution_notes && (
                             <>
-                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white mt-4">Notas de Resolução</h2>
-                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{call.resolution_notes}</p>
+                                <h2 className="text-sm font-semibold text-surface-900 mt-4">Notas de Resolução</h2>
+                                <p className="text-sm text-surface-700 whitespace-pre-wrap">{call.resolution_notes}</p>
                             </>
                         )}
                     </div>
@@ -546,15 +535,14 @@ export function ServiceCallDetailPage() {
 
             {activeTab === 'comments' && (
                 <div className="space-y-4">
-                    {/* Add Comment */}
                     {canCreate && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="bg-surface-0 rounded-xl shadow-card border border-default p-4">
                             <textarea
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
                                 placeholder="Adicionar comentário interno..."
                                 rows={3}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full px-3 py-2 rounded-lg border border-default bg-surface-0 text-sm resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             />
                             <div className="flex justify-end mt-2">
                                 <Button
@@ -569,25 +557,24 @@ export function ServiceCallDetailPage() {
                         </div>
                     )}
 
-                    {/* Comment List */}
                     {comments.length === 0 ? (
-                        <div className="flex flex-col items-center py-12 text-gray-500">
+                        <div className="flex flex-col items-center py-12 text-surface-500">
                             <MessageSquare className="w-10 h-10 mb-3 opacity-30" />
                             <p className="text-sm">Nenhum comentário ainda</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
                             {comments.map((c: any) => (
-                                <div key={c.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                                <div key={c.id} className="bg-surface-0 rounded-xl shadow-card border border-default p-4">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        <span className="text-sm font-medium text-surface-900">
                                             {c.user?.name || 'Usuário'}
                                         </span>
-                                        <span className="text-xs text-gray-500">
+                                        <span className="text-xs text-surface-500">
                                             {new Date(c.created_at).toLocaleString('pt-BR')}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{c.content}</p>
+                                    <p className="text-sm text-surface-700 whitespace-pre-wrap">{c.content}</p>
                                 </div>
                             ))}
                         </div>
@@ -595,10 +582,9 @@ export function ServiceCallDetailPage() {
                 </div>
             )}
 
-            {/* Cancel Modal */}
             <Modal open={cancelModalOpen} onOpenChange={setCancelModalOpen} title="Cancelar Chamado">
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-surface-600">
                         Tem certeza que deseja cancelar o chamado <strong>{call.call_number}</strong>?
                     </p>
                     <div className="flex justify-end gap-3">
@@ -614,10 +600,9 @@ export function ServiceCallDetailPage() {
                 </div>
             </Modal>
 
-            {/* Complete Modal */}
             <Modal open={completeModalOpen} onOpenChange={setCompleteModalOpen} title="Concluir Chamado">
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-surface-600">
                         Registre o que foi feito para concluir o chamado <strong>{call.call_number}</strong>.
                     </p>
                     <textarea
@@ -625,7 +610,7 @@ export function ServiceCallDetailPage() {
                         onChange={(e) => setResolutionNotes(e.target.value)}
                         placeholder="Notas de resolução (opcional)..."
                         rows={4}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm resize-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-3 py-2 rounded-lg border border-default bg-surface-0 text-sm resize-none focus:ring-2 focus:ring-primary-500"
                     />
                     <div className="flex justify-end gap-3">
                         <Button variant="outline" onClick={() => setCompleteModalOpen(false)}>Voltar</Button>
@@ -639,10 +624,9 @@ export function ServiceCallDetailPage() {
                 </div>
             </Modal>
 
-            {/* Reopen Modal */}
             <Modal open={reopenModalOpen} onOpenChange={setReopenModalOpen} title="Reabrir Chamado">
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-surface-600">
                         Deseja reabrir o chamado <strong>{call.call_number}</strong>?
                     </p>
                     <div className="flex justify-end gap-3">

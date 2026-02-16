@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -41,7 +41,6 @@ export function CentralDashboardPage() {
 
     const { data: kpisRes, isLoading: loadingKpis } = useQuery({
         queryKey: ['central-kpis'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/kpis'),
         refetchInterval: 60000,
     })
@@ -49,7 +48,6 @@ export function CentralDashboardPage() {
 
     const { data: workloadRes, isLoading: loadingWorkload } = useQuery({
         queryKey: ['central-workload'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/workload'),
         refetchInterval: 60000,
     })
@@ -57,7 +55,6 @@ export function CentralDashboardPage() {
 
     const { data: overdueRes, isLoading: loadingOverdue } = useQuery({
         queryKey: ['central-overdue-by-team'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/overdue-by-team'),
         refetchInterval: 60000,
     })
@@ -81,11 +78,10 @@ export function CentralDashboardPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Dashboard Gerencial</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Visão analítica da Central de Trabalho</p>
+                    <p className="mt-0.5 text-sm text-surface-500">Visão analítica da Central de Trabalho</p>
                 </div>
                 <Link to="/central"
                     className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-700">
@@ -105,7 +101,7 @@ export function CentralDashboardPage() {
                         {kpiCards.map(k => {
                             const Icon = k.icon
                             return (
-                                <div key={k.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-md transition-shadow">
+                                <div key={k.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card transition-shadow">
                                     <div className={`mb-2 inline-flex rounded-lg p-2 ${k.bg}`}>
                                         <Icon className={`h-5 w-5 ${k.color}`} />
                                     </div>
@@ -131,7 +127,7 @@ export function CentralDashboardPage() {
                                     {workload.map((w: any) => (
                                         <div key={w.user_id} className="group">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-[13px] font-medium text-surface-700 truncate">{w.nome}</span>
+                                                <span className="text-sm font-medium text-surface-700 truncate">{w.nome}</span>
                                                 <div className="flex items-center gap-2 text-xs">
                                                     <span className="text-surface-500">{w.total} itens</span>
                                                     {(w.atrasadas ?? 0) > 0 && (
@@ -163,7 +159,7 @@ export function CentralDashboardPage() {
                             {overdueByTeam.length === 0 ? (
                                 <div className="flex flex-col items-center py-8">
                                     <CheckCircle className="h-10 w-10 text-emerald-400 mb-2" />
-                                    <p className="text-[13px] text-surface-500">Nenhum item atrasado! 🎉</p>
+                                    <p className="text-sm text-surface-500">Nenhum item atrasado! 🎉</p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -183,7 +179,7 @@ export function CentralDashboardPage() {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-xl font-bold text-red-600">{row.total}</p>
-                                                    <p className="text-[10px] text-surface-400">itens</p>
+                                                    <p className="text-xs text-surface-400">itens</p>
                                                 </div>
                                             </div>
                                         )

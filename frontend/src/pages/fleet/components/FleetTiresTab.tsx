@@ -25,7 +25,6 @@ export function FleetTiresTab() {
 
     const { data: tires, isLoading } = useQuery({
         queryKey: ['fleet-tires', vehicleId],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/tires', { params: { fleet_vehicle_id: vehicleId || undefined } }).then(r => r.data)
     })
 
@@ -49,7 +48,6 @@ export function FleetTiresTab() {
                 </div>
 
                 <div className="relative aspect-[3/4] max-w-sm mx-auto bg-surface-50 border border-default rounded-3xl p-8 overflow-hidden shadow-inner">
-                    {/* Chassi Visual Simplificado */}
                     <div className="absolute inset-x-12 inset-y-8 border-4 border-surface-200 rounded-lg" />
                     <div className="absolute top-4 inset-x-16 h-8 bg-surface-300 rounded-t-xl" />
 
@@ -60,7 +58,7 @@ export function FleetTiresTab() {
                                 key={pos.id}
                                 pos={pos}
                                 tire={tire}
-                                onClick={() => console.log('Tire', pos.id)}
+                                onClick={() => {}}
                             />
                         )
                     })}
@@ -75,10 +73,10 @@ export function FleetTiresTab() {
                         <div key={t.id} className="p-4 rounded-xl border border-red-200 bg-red-50 space-y-2">
                             <div className="flex items-center justify-between">
                                 <Badge variant="danger">{t.position}</Badge>
-                                <span className="text-[10px] font-mono text-red-600 font-bold">{t.tread_depth}mm</span>
+                                <span className="text-xs font-mono text-red-600 font-bold">{t.tread_depth}mm</span>
                             </div>
                             <p className="text-xs font-medium text-red-800">{t.vehicle?.plate} - {t.brand}</p>
-                            <p className="text-[10px] text-red-600">Sulco abaixo do limite de segurança (3mm).</p>
+                            <p className="text-xs text-red-600">Sulco abaixo do limite de segurança (3mm).</p>
                         </div>
                     ))}
                     {tires?.data?.length === 0 && <p className="text-center text-xs text-surface-500 py-10">Nenhum pneu registrado.</p>}
@@ -103,20 +101,19 @@ function TireMarker({ pos, tire, onClick }: any) {
                 tire ? (isCritical ? "bg-red-500 border-red-700 text-white" : isWarning ? "bg-amber-400 border-amber-600 text-amber-950" : "bg-surface-900 border-black text-white")
                     : "bg-surface-200 border-surface-300 text-surface-400 border-dashed"
             )}>
-                <span className="text-[10px] font-bold">{pos.id}</span>
-                {tire && <span className="text-[8px] opacity-80">{tire.tread_depth}mm</span>}
+                <span className="text-xs font-bold">{pos.id}</span>
+                {tire && <span className="text-xs opacity-80">{tire.tread_depth}mm</span>}
 
-                {/* Tooltip Hover */}
                 <div className="absolute bottom-full mb-2 hidden group-hover:block z-20 w-32 bg-surface-900 text-white p-2 rounded-lg text-left shadow-xl border border-surface-700">
-                    <p className="text-[10px] font-bold border-b border-surface-700 pb-1 mb-1">{pos.label}</p>
+                    <p className="text-xs font-bold border-b border-surface-700 pb-1 mb-1">{pos.label}</p>
                     {tire ? (
                         <>
-                            <p className="text-[9px]">Marca: {tire.brand}</p>
-                            <p className="text-[9px]">Sulco: {tire.tread_depth}mm</p>
-                            <p className="text-[9px]">Recap: {tire.retread_count}</p>
+                            <p className="text-xs">Marca: {tire.brand}</p>
+                            <p className="text-xs">Sulco: {tire.tread_depth}mm</p>
+                            <p className="text-xs">Recap: {tire.retread_count}</p>
                         </>
                     ) : (
-                        <p className="text-[9px]">Não instalado</p>
+                        <p className="text-xs">Não instalado</p>
                     )}
                 </div>
             </div>

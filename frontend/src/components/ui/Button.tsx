@@ -30,12 +30,12 @@ const buttonVariants = cva(
           'bg-red-600 text-white shadow-sm hover:bg-red-500 active:bg-red-700',
       },
       size: {
-        xs: 'h-6 gap-1 rounded-md px-2 text-[11px] font-medium',
+        xs: 'h-6 gap-1 rounded-md px-2 text-xs font-medium',
         sm: 'h-7 gap-1.5 rounded-md px-2.5 text-xs font-medium',
-        md: 'h-8 gap-2 rounded-md px-3.5 text-[13px] font-medium',
+        md: 'h-8 gap-2 rounded-md px-3.5 text-sm font-medium',
         lg: 'h-9.5 gap-2 rounded-lg px-4 text-sm font-semibold',
         icon: 'h-8 w-8 rounded-md p-0 flex items-center justify-center',
-        default: 'h-8 gap-2 rounded-md px-3.5 text-[13px] font-medium',
+        default: 'h-8 gap-2 rounded-md px-3.5 text-sm font-medium',
       },
     },
     defaultVariants: {

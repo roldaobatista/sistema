@@ -32,11 +32,13 @@ interface Fund {
     user_id: number
     technician?: Technician
     balance: string
+    card_balance?: string
 }
 
 interface Transaction {
     id: number
     type: 'credit' | 'debit'
+    payment_method?: 'cash' | 'corporate_card'
     amount: string
     balance_after: string
     description: string
@@ -59,12 +61,14 @@ interface CreditPayload {
     user_id: number
     amount: number
     description: string
+    payment_method?: 'cash' | 'corporate_card'
 }
 
 interface DebitPayload {
     user_id: number
     amount: number
     description: string
+    payment_method?: 'cash' | 'corporate_card'
 }
 
 const woIdentifier = (wo?: WorkOrder | null) =>
@@ -77,26 +81,23 @@ export function TechnicianCashPage() {
     const [selectedTech, setSelectedTech] = useState<number | null>(null)
     const [showCreditModal, setShowCreditModal] = useState(false)
     const [showDebitModal, setShowDebitModal] = useState(false)
-    const [txForm, setTxForm] = useState({ user_id: '', amount: '', description: '' })
+    const [txForm, setTxForm] = useState({ user_id: '', amount: '', description: '', payment_method: 'cash' })
 
     const [page, setPage] = useState(1)
     const [filters, setFilters] = useState({ date_from: '', date_to: '' })
 
     const { data: summaryRes } = useQuery({
         queryKey: ['tech-cash-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technician-cash-summary'),
     })
 
     const { data: fundsRes } = useQuery({
         queryKey: ['tech-cash-funds'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technician-cash'),
     })
 
     const { data: detailRes, isLoading: detailLoading } = useQuery({
         queryKey: ['tech-cash-detail', selectedTech, page, filters],
-        const { data } = useQuery({
         queryFn: () => api.get(`/technician-cash/${selectedTech}`, {
             params: { page, ...filters }
         }),
@@ -129,7 +130,6 @@ export function TechnicianCashPage() {
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-cash'],
-        const { data } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const allTechnicians: Technician[] = techsRes?.data ?? []
@@ -150,13 +150,13 @@ export function TechnicianCashPage() {
 
     const openCreditModal = (userId?: number) => {
         if (!canManageCash) return
-        setTxForm({ user_id: userId ? String(userId) : '', amount: '', description: '' })
+        setTxForm({ user_id: userId ? String(userId) : '', amount: '', description: '', payment_method: 'cash' })
         setShowCreditModal(true)
     }
 
     const openDebitModal = (userId?: number) => {
         if (!canManageCash) return
-        setTxForm({ user_id: userId ? String(userId) : '', amount: '', description: '' })
+        setTxForm({ user_id: userId ? String(userId) : '', amount: '', description: '', payment_method: 'cash' })
         setShowDebitModal(true)
     }
 
@@ -165,7 +165,7 @@ export function TechnicianCashPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Caixa do Técnico</h1>
-                    <p className="text-[13px] text-surface-500">Controle de verba rotativa por técnico</p>
+                    <p className="text-sm text-surface-500">Controle de verba rotativa por técnico</p>
                 </div>
                 {canManageCash && (
                     <div className="flex gap-2">
@@ -175,7 +175,6 @@ export function TechnicianCashPage() {
                 )}
             </div>
 
-            {/* Stats */}
             {summary && (
                 <div className="grid gap-4 sm:grid-cols-4">
                     {[
@@ -189,7 +188,7 @@ export function TechnicianCashPage() {
                                 <div className={`rounded-lg p-2.5 ${s.color}`}><s.icon className="h-5 w-5" /></div>
                                 <div>
                                     <p className="text-xs text-surface-500">{s.label}</p>
-                                    <p className="text-[15px] font-semibold tabular-nums text-surface-900">{s.value}</p>
+                                    <p className="text-sm font-semibold tabular-nums text-surface-900">{s.value}</p>
                                 </div>
                             </div>
                         </div>
@@ -198,7 +197,6 @@ export function TechnicianCashPage() {
             )}
 
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Fundos (lista) */}
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                     <div className="border-b border-subtle px-5 py-3">
                         <h3 className="text-sm font-semibold text-surface-900">Saldos por Técnico</h3>
@@ -215,15 +213,19 @@ export function TechnicianCashPage() {
                                     </div>
                                     <span className="text-sm font-medium text-surface-800">{f.technician?.name}</span>
                                 </div>
-                                <span className={`text-sm font-bold ${parseFloat(f.balance) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                    {formatBRL(f.balance)}
-                                </span>
+                                <div className="text-right shrink-0">
+                                    <p className={`text-sm font-bold ${parseFloat(f.balance) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {formatBRL(f.balance)}
+                                    </p>
+                                    {f.card_balance && parseFloat(f.card_balance) !== 0 && (
+                                        <p className="text-xs text-surface-400">Cartão: {formatBRL(f.card_balance)}</p>
+                                    )}
+                                </div>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Extrato */}
                 <div className="lg:col-span-2 rounded-xl border border-default bg-surface-0 shadow-card flex flex-col">
                     <div className="border-b border-subtle px-5 py-3 flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-surface-900">
@@ -282,6 +284,7 @@ export function TechnicianCashPage() {
                                     <p className="text-sm font-medium text-surface-800 truncate">{tx.description}</p>
                                     <div className="flex items-center gap-2 text-xs text-surface-400">
                                         <span>{new Date(tx.transaction_date).toLocaleDateString('pt-BR')}</span>
+                                        {tx.payment_method === 'corporate_card' && <span className="px-1 py-0.5 bg-purple-50 text-purple-600 rounded text-xs font-bold">CARTÃO</span>}
                                         {tx.work_order && <span>· OS {woIdentifier(tx.work_order)}</span>}
                                         {tx.expense && <span>· Desp. {tx.expense.description}</span>}
                                         {tx.creator && <span>· {tx.creator.name}</span>}
@@ -291,7 +294,7 @@ export function TechnicianCashPage() {
                                     <p className={`text-sm font-bold ${tx.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
                                         {tx.type === 'credit' ? '+' : '-'}{formatBRL(tx.amount)}
                                     </p>
-                                    <p className="text-[10px] text-surface-400">Saldo: {formatBRL(tx.balance_after)}</p>
+                                    <p className="text-xs text-surface-400">Saldo: {formatBRL(tx.balance_after)}</p>
                                 </div>
                             </div>
                         ))}
@@ -323,12 +326,11 @@ export function TechnicianCashPage() {
                 </div>
             </div>
 
-            {/* Credit Modal */}
             <Modal open={showCreditModal && canManageCash} onOpenChange={setShowCreditModal} title="Adicionar Crédito" size="sm">
-                <form onSubmit={e => { e.preventDefault(); creditMut.mutate({ ...txForm, user_id: Number(txForm.user_id), amount: Number(txForm.amount) }) }} className="space-y-4">
+                <form onSubmit={e => { e.preventDefault(); creditMut.mutate({ ...txForm, user_id: Number(txForm.user_id), amount: Number(txForm.amount), payment_method: txForm.payment_method } as any) }} className="space-y-4">
                     {!txForm.user_id && (
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico</label>
                             <select value={txForm.user_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTxForm(p => ({ ...p, user_id: e.target.value }))} required
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">— Selecionar —</option>
@@ -336,6 +338,19 @@ export function TechnicianCashPage() {
                             </select>
                         </div>
                     )}
+                    <div>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Meio de Pagamento</label>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => setTxForm(p => ({ ...p, payment_method: 'cash' }))}
+                                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${txForm.payment_method === 'cash' ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-default bg-surface-50 text-surface-500'}`}>
+                                💵 Dinheiro
+                            </button>
+                            <button type="button" onClick={() => setTxForm(p => ({ ...p, payment_method: 'corporate_card' }))}
+                                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${txForm.payment_method === 'corporate_card' ? 'border-purple-400 bg-purple-50 text-purple-700' : 'border-default bg-surface-50 text-surface-500'}`}>
+                                💳 Cartão Corporativo
+                            </button>
+                        </div>
+                    </div>
                     <Input label="Valor (R$)" type="number" step="0.01" min="0.01" value={txForm.amount} required
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTxForm(p => ({ ...p, amount: e.target.value }))} />
                     <Input label="Descrição" value={txForm.description} required
@@ -347,12 +362,11 @@ export function TechnicianCashPage() {
                 </form>
             </Modal>
 
-            {/* Debit Modal */}
             <Modal open={showDebitModal && canManageCash} onOpenChange={setShowDebitModal} title="Lançar Débito" size="sm">
-                <form onSubmit={e => { e.preventDefault(); debitMut.mutate({ ...txForm, user_id: Number(txForm.user_id), amount: Number(txForm.amount) }) }} className="space-y-4">
+                <form onSubmit={e => { e.preventDefault(); debitMut.mutate({ ...txForm, user_id: Number(txForm.user_id), amount: Number(txForm.amount), payment_method: txForm.payment_method } as any) }} className="space-y-4">
                     {!txForm.user_id && (
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico</label>
                             <select value={txForm.user_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTxForm(p => ({ ...p, user_id: e.target.value }))} required
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">— Selecionar —</option>
@@ -360,6 +374,19 @@ export function TechnicianCashPage() {
                             </select>
                         </div>
                     )}
+                    <div>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Meio de Pagamento</label>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => setTxForm(p => ({ ...p, payment_method: 'cash' }))}
+                                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${txForm.payment_method === 'cash' ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-default bg-surface-50 text-surface-500'}`}>
+                                💵 Dinheiro
+                            </button>
+                            <button type="button" onClick={() => setTxForm(p => ({ ...p, payment_method: 'corporate_card' }))}
+                                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${txForm.payment_method === 'corporate_card' ? 'border-purple-400 bg-purple-50 text-purple-700' : 'border-default bg-surface-50 text-surface-500'}`}>
+                                💳 Cartão Corporativo
+                            </button>
+                        </div>
+                    </div>
                     <Input label="Valor (R$)" type="number" step="0.01" min="0.01" value={txForm.amount} required
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTxForm(p => ({ ...p, amount: e.target.value }))} />
                     <Input label="Descrição" value={txForm.description} required

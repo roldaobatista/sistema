@@ -15,14 +15,12 @@ export default function EquipmentCreatePage() {
 
     const { data: constants, isError: constantsError } = useQuery({
         queryKey: ['equipments-constants'],
-        const { data, isError } = useQuery({
         queryFn: () => api.get('/equipments-constants').then(r => r.data),
         meta: { errorMessage: 'Erro ao carregar constantes de equipamentos' },
     })
 
     const { data: customers, isError: customersError } = useQuery({
         queryKey: ['customers-list'],
-        const { data } = useQuery({
         queryFn: () => api.get('/customers?per_page=100').then(r => r.data.data),
         meta: { errorMessage: 'Erro ao carregar lista de clientes' },
     })

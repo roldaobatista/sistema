@@ -141,6 +141,7 @@ interface ChecklistFormProps {
 }
 
 export function ChecklistForm({ checklist, workOrderId, onSuccess }: ChecklistFormProps) {
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Dynamic schema generation based on items
     const generateSchema = () => {

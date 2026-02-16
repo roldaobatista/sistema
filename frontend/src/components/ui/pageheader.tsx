@@ -79,7 +79,7 @@ export function PageHeader({
     let headerIcon: React.ReactNode = null
     if (React.isValidElement(icon)) {
         headerIcon = icon
-    } else if (typeof icon === 'function') {
+    } else if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null && '$$typeof' in icon)) {
         const IconComponent = icon as React.ComponentType<{ className?: string }>
         headerIcon = <IconComponent className="h-5 w-5 text-surface-500" />
     }
@@ -87,23 +87,23 @@ export function PageHeader({
 
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="min-w-0">
                 <div className="flex items-center gap-2.5">
                     {headerIcon}
-                    <h1 className="text-lg font-semibold text-surface-900 tracking-tight">
+                    <h1 className="text-heading text-surface-900 truncate">
                         {title}
                     </h1>
                     {count !== undefined && (
-                        <span className="inline-flex items-center rounded-md bg-surface-100 px-2 py-0.5 text-[11px] font-semibold text-surface-500 tabular-nums">
+                        <span className="inline-flex items-center rounded-md bg-surface-100 px-2 py-0.5 text-xs font-semibold text-surface-500 tabular-nums">
                             {count}
                         </span>
                     )}
                 </div>
                 {titleDescription && (
-                    <p className="mt-0.5 text-[13px] text-surface-500">{titleDescription}</p>
+                    <p className="mt-0.5 text-sm text-surface-500">{titleDescription}</p>
                 )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
                 {shouldShowBackButton && (
                     <Button
                         variant="outline"

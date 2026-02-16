@@ -34,7 +34,6 @@ export function CrmPipelinePage() {
     // Fetch pipelines to find current pipeline
     const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery({
         queryKey: ['crm', 'pipelines'],
-        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getPipelines().then(r => r.data),
     })
 
@@ -44,7 +43,6 @@ export function CrmPipelinePage() {
     // Fetch deals for pipeline
     const { data: dealsResponse, isLoading: dealsLoading } = useQuery({
         queryKey: ['crm', 'deals', pipelineId, statusFilter],
-        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getDeals({ pipeline_id: pipelineId, status: statusFilter, per_page: 200 }).then(r => r.data),
         enabled: !!pipelineId,
     })
@@ -143,20 +141,18 @@ export function CrmPipelinePage() {
 
     return (
         <div className="flex h-full flex-col -m-4 lg:-m-6">
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-default bg-surface-0 px-5 py-3">
                 <div className="flex items-center gap-3">
                     <Link to="/crm" className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors">
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
                     <div>
-                        <h1 className="text-[15px] font-semibold tabular-nums text-surface-900">{pipeline?.name ?? 'Pipeline'}</h1>
+                        <h1 className="text-sm font-semibold tabular-nums text-surface-900">{pipeline?.name ?? 'Pipeline'}</h1>
                         <p className="text-xs text-surface-500">{deals.length} deal(s)</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Pipeline Tabs */}
-                    <div className="hidden sm:flex items-center gap-1 rounded-lg border border-surface-200 bg-surface-50 p-0.5">
+                    <div className="hidden sm:flex items-center gap-1 rounded-lg border border-default bg-surface-50 p-0.5">
                         {pipelines.map(p => (
                             <Link
                                 key={p.id}
@@ -164,7 +160,7 @@ export function CrmPipelinePage() {
                                 className={cn(
                                     'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                                     p.id === pipelineId
-                                        ? 'bg-white text-surface-900 shadow-sm'
+                                        ? 'bg-surface-0 text-surface-900 shadow-sm'
                                         : 'text-surface-500 hover:text-surface-700'
                                 )}
                             >
@@ -173,7 +169,6 @@ export function CrmPipelinePage() {
                         ))}
                     </div>
 
-                    {/* Status filter */}
                     <select
                         value={statusFilter}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
@@ -186,7 +181,6 @@ export function CrmPipelinePage() {
                 </div>
             </div>
 
-            {/* Kanban Board */}
             <div className="flex-1 overflow-x-auto">
                 <DndContext
                     sensors={sensors}
@@ -205,7 +199,6 @@ export function CrmPipelinePage() {
                                 onAddDeal={() => openNewDeal(stage.id)}
                             />
                         ))}
-                        {/* Won / Lost columns (condensed) */}
                         {pipeline?.stages.filter(s => s.is_won || s.is_lost).map(stage => (
                             <KanbanColumn
                                 key={stage.id}
@@ -256,6 +249,7 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ stage, deals, isLoading, onDealClick, onAddDeal, condensed }: KanbanColumnProps) {
+    const { setNodeRef, isOver } = useDroppable({ id: stage.id })
     const totalValue = deals.reduce((sum, d) => sum + Number(d.value), 0)
 
     return (
@@ -267,12 +261,11 @@ function KanbanColumn({ stage, deals, isLoading, onDealClick, onAddDeal, condens
                 isOver && 'bg-brand-50/50 border-brand-200'
             )}
         >
-            {/* Column header */}
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-subtle/60">
                 <div className="flex items-center gap-2 min-w-0">
                     <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: stage.color || '#94a3b8' }} />
                     <span className="text-xs font-semibold text-surface-700 truncate">{stage.name}</span>
-                    <span className="rounded-full bg-surface-200 px-1.5 py-0.5 text-[10px] font-bold text-surface-600">{deals.length}</span>
+                    <span className="rounded-full bg-surface-200 px-1.5 py-0.5 text-xs font-bold text-surface-600">{deals.length}</span>
                 </div>
                 {!condensed && (
                     <button
@@ -284,14 +277,12 @@ function KanbanColumn({ stage, deals, isLoading, onDealClick, onAddDeal, condens
                 )}
             </div>
 
-            {/* Total value */}
             {totalValue > 0 && (
-                <div className="px-3 py-1.5 text-[10px] font-medium text-surface-400">
+                <div className="px-3 py-1.5 text-xs font-medium text-surface-400">
                     {fmtBRL(totalValue)}
                 </div>
             )}
 
-            {/* Cards */}
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 <SortableContext items={deals.map(d => d.id)} strategy={verticalListSortingStrategy}>
                     {isLoading ? (

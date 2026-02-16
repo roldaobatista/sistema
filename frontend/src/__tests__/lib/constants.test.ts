@@ -23,9 +23,11 @@ describe('Status Constants', () => {
     })
 
     it('QUOTE_STATUS should have all expected statuses', () => {
-        const expected = ['DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'EXPIRED', 'INVOICED']
+        const expected = ['DRAFT', 'PENDING_INTERNAL', 'INTERNALLY_APPROVED', 'SENT', 'APPROVED', 'REJECTED', 'EXPIRED', 'INVOICED']
         expect(Object.keys(QUOTE_STATUS)).toEqual(expected)
         expect(QUOTE_STATUS.DRAFT).toBe('draft')
+        expect(QUOTE_STATUS.PENDING_INTERNAL).toBe('pending_internal_approval')
+        expect(QUOTE_STATUS.INTERNALLY_APPROVED).toBe('internally_approved')
         expect(QUOTE_STATUS.INVOICED).toBe('invoiced')
     })
 
@@ -65,7 +67,8 @@ describe('Status Constants', () => {
     })
 
     it('EXPENSE_STATUS should have correct values', () => {
-        expect(Object.keys(EXPENSE_STATUS)).toHaveLength(4)
+        expect(Object.keys(EXPENSE_STATUS)).toHaveLength(5)
+        expect(EXPENSE_STATUS.REVIEWED).toBe('reviewed')
         expect(EXPENSE_STATUS.REIMBURSED).toBe('reimbursed')
     })
 

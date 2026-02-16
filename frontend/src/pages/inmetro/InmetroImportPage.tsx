@@ -17,6 +17,7 @@ const UF_REGIONS: Record<string, string[]> = {
 }
 
 export function InmetroImportPage() {
+    const { hasPermission } = useAuthStore()
 
     const canImport = hasPermission('inmetro.intelligence.import')
     const [importType, setImportType] = useState('all')
@@ -123,13 +124,11 @@ export function InmetroImportPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div>
                 <h1 className="text-xl font-bold text-surface-900">Importação INMETRO</h1>
                 <p className="text-sm text-surface-500 mt-0.5">Configurar estados, tipos e importar dados do portal RBMLQ</p>
             </div>
 
-            {/* Config Section */}
             <div className="rounded-xl border border-default bg-surface-0 p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -160,7 +159,6 @@ export function InmetroImportPage() {
                     </div>
                 ) : (
                     <div className="space-y-5">
-                        {/* UF Selection by Region */}
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <MapPin className="h-4 w-4 text-surface-500" />
@@ -199,7 +197,6 @@ export function InmetroImportPage() {
                             </div>
                         </div>
 
-                        {/* Instrument Type Selection */}
                         <div>
                             <label className="text-xs font-medium text-surface-700 block mb-2">Tipos de Instrumento ({selectedTypes.length})</label>
                             <div className="flex flex-wrap gap-1.5">
@@ -218,7 +215,6 @@ export function InmetroImportPage() {
                             </div>
                         </div>
 
-                        {/* Sync Settings */}
                         <div className="flex items-center gap-6 pt-2 border-t border-subtle">
                             <label className="inline-flex items-center gap-2 text-xs text-surface-600 cursor-pointer">
                                 <input
@@ -250,7 +246,6 @@ export function InmetroImportPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* XML Import */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
@@ -303,7 +298,6 @@ export function InmetroImportPage() {
                     )}
                 </div>
 
-                {/* PSIE Scraping */}
                 <div className="rounded-xl border border-default bg-surface-0 p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="h-10 w-10 rounded-lg bg-brand-100 flex items-center justify-center">
@@ -351,10 +345,8 @@ export function InmetroImportPage() {
                 </div>
             </div>
 
-            {/* Base de Operações */}
             <InmetroBaseConfigSection />
 
-            {/* Info Box */}
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                 <div className="flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />

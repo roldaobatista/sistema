@@ -7,7 +7,8 @@ describe('cn (class name merger)', () => {
     })
 
     it('should handle conditional classes', () => {
-        expect(cn('base', false && 'hidden', 'visible')).toBe('base visible')
+        const shouldHide = false
+        expect(cn('base', shouldHide && 'hidden', 'visible')).toBe('base visible')
     })
 
     it('should resolve tailwind conflicts', () => {

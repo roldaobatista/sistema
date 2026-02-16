@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -70,7 +70,6 @@ export function CentralPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['central-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/summary'),
         refetchInterval: 30000,
     })
@@ -92,7 +91,6 @@ export function CentralPage() {
 
     const { data: usersRes } = useQuery({
         queryKey: ['users-central'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 100 } }),
     })
     const users = usersRes?.data?.data ?? []
@@ -170,21 +168,19 @@ export function CentralPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Central</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Inbox unificado de trabalho â€” OS, Chamados, Tarefas e mais</p>
+                    <p className="mt-0.5 text-sm text-surface-500">Inbox unificado de trabalho â€” OS, Chamados, Tarefas e mais</p>
                 </div>
                 <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowCreate(true)}>Nova Tarefa</Button>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {stats.map(s => {
                     const Icon = s.icon
                     return (
-                        <div key={s.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-md transition-shadow">
+                        <div key={s.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card transition-shadow">
                             <div className="flex items-center gap-3">
                                 <div className={`rounded-lg p-2 ${s.bg}`}><Icon className={`h-5 w-5 ${s.color}`} /></div>
                                 <div><p className="text-xs text-surface-500">{s.label}</p><p className="text-xl font-bold text-surface-900">{s.value}</p></div>
@@ -194,15 +190,14 @@ export function CentralPage() {
                 })}
             </div>
 
-            {/* Tabs + Filters */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex gap-1 rounded-lg bg-surface-100 p-1">
                     {tabs.map(t => (
                         <button key={t.key} onClick={() => setTab(t.key)}
-                            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${tab === t.key ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}>
+                            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${tab === t.key ? 'bg-surface-0 text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}>
                             {t.label}
                             {t.key === 'atrasadas' && (summary.atrasadas ?? 0) > 0 && (
-                                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
                                     {summary.atrasadas}
                                 </span>
                             )}
@@ -228,7 +223,6 @@ export function CentralPage() {
                 </div>
             </div>
 
-            {/* Items List */}
             <div className="space-y-2">
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
@@ -237,7 +231,7 @@ export function CentralPage() {
                 ) : items.length === 0 ? (
                     <div className="rounded-xl border border-default bg-surface-0 py-16 text-center">
                         <Inbox className="mx-auto h-12 w-12 text-surface-300" />
-                        <p className="mt-3 text-[13px] text-surface-500">Nenhum item encontrado</p>
+                        <p className="mt-3 text-sm text-surface-500">Nenhum item encontrado</p>
                     </div>
                 ) : items.map((item: any) => {
                     const tipo = tipoConfig[item.tipo] ?? tipoConfig.tarefa
@@ -248,14 +242,12 @@ export function CentralPage() {
 
                     return (
                         <div key={item.id} onClick={() => fetchDetail(item.id)}
-                            className={`group cursor-pointer rounded-xl border bg-white p-4 shadow-card transition-all hover:shadow-md hover:border-brand-200 ${overdue ? 'border-red-200 bg-red-50/30' : 'border-surface-200'} ${prio.bg}`}>
+                            className={`group cursor-pointer rounded-xl border bg-surface-0 p-4 shadow-card transition-all hover:shadow-elevated hover:border-brand-200 ${overdue ? 'border-red-200 bg-red-50/30' : 'border-default'} ${prio.bg}`}>
                             <div className="flex items-start gap-3">
-                                {/* Type icon */}
                                 <div className={`mt-0.5 rounded-lg p-2 ${tipo.color}`}>
                                     <TipoIcon className="h-4 w-4" />
                                 </div>
 
-                                {/* Content */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-sm font-semibold text-surface-900 truncate">{item.titulo}</h3>
@@ -273,7 +265,6 @@ export function CentralPage() {
                                     </div>
                                 </div>
 
-                                {/* Quick actions */}
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     {item.status === 'aberto' && (
                                         <button onClick={(e) => { e.stopPropagation(); updateMut.mutate({ id: item.id, data: { status: 'em_andamento' } }) }}
@@ -297,17 +288,17 @@ export function CentralPage() {
                     <Input label="Descrição" value={form.descricao_curta} onChange={(e: any) => setForm(f => ({ ...f, descricao_curta: e.target.value }))} />
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[13px] font-medium text-surface-700">Tipo</label>
+                            <label className="text-sm font-medium text-surface-700">Tipo</label>
                             <select value={form.tipo} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, tipo: e.target.value }))}
-                                className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
+                                className="mt-1 w-full rounded-lg border border-default px-3 py-2 text-sm">
                                 <option value="tarefa">Tarefa</option>
                                 <option value="lembrete">Lembrete</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-[13px] font-medium text-surface-700">Prioridade</label>
+                            <label className="text-sm font-medium text-surface-700">Prioridade</label>
                             <select value={form.prioridade} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, prioridade: e.target.value }))}
-                                className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
+                                className="mt-1 w-full rounded-lg border border-default px-3 py-2 text-sm">
                                 {Object.entries(prioridadeConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                             </select>
                         </div>
@@ -315,9 +306,9 @@ export function CentralPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Prazo" type="datetime-local" value={form.due_at} onChange={(e: any) => setForm(f => ({ ...f, due_at: e.target.value }))} />
                         <div>
-                            <label className="text-[13px] font-medium text-surface-700">Visibilidade</label>
+                            <label className="text-sm font-medium text-surface-700">Visibilidade</label>
                             <select value={form.visibilidade} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, visibilidade: e.target.value }))}
-                                className="mt-1 w-full rounded-lg border border-surface-300 px-3 py-2 text-sm">
+                                className="mt-1 w-full rounded-lg border border-default px-3 py-2 text-sm">
                                 <option value="privado">Privado</option>
                                 <option value="equipe">Equipe</option>
                                 <option value="empresa">Empresa</option>
@@ -335,7 +326,6 @@ export function CentralPage() {
             <Modal open={!!showDetail} onOpenChange={(v) => { if (!v) setShowDetail(null) }} title={showDetail?.titulo ?? 'Detalhes'}>
                 {showDetail && (
                     <div className="space-y-4">
-                        {/* Info */}
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div><span className="text-surface-500">Status:</span> <Badge variant={statusConfig[showDetail.status]?.variant ?? 'default'}>{statusConfig[showDetail.status]?.label ?? showDetail.status}</Badge></div>
                             <div><span className="text-surface-500">Prioridade:</span> <span className={`font-medium ${prioridadeConfig[showDetail.prioridade]?.color ?? ''}`}>{prioridadeConfig[showDetail.prioridade]?.label ?? showDetail.prioridade}</span></div>
@@ -346,10 +336,9 @@ export function CentralPage() {
                         </div>
 
                         {showDetail.descricao_curta && (
-                            <p className="text-[13px] text-surface-600 bg-surface-50 rounded-lg p-3">{showDetail.descricao_curta}</p>
+                            <p className="text-sm text-surface-600 bg-surface-50 rounded-lg p-3">{showDetail.descricao_curta}</p>
                         )}
 
-                        {/* Actions */}
                         <div className="flex flex-wrap gap-2 border-t border-subtle pt-3">
                             {showDetail.status !== 'concluido' && showDetail.status !== 'cancelado' && (
                                 <Button size="sm" variant="outline" icon={<CheckCircle className="h-4 w-4" />}
@@ -365,26 +354,24 @@ export function CentralPage() {
                             </select>
                         </div>
 
-                        {/* Comments */}
                         <div className="border-t border-subtle pt-3">
                             <h4 className="text-sm font-semibold text-surface-700 mb-2">Comentários</h4>
                             <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {(showDetail.comments ?? []).map((c: any) => (
                                     <div key={c.id} className="rounded-lg bg-surface-50 p-2">
                                         <p className="text-xs text-surface-900">{c.body}</p>
-                                        <p className="text-[10px] text-surface-400 mt-1">{c.user?.name ?? 'Sistema'} â€¢ {formatDate(c.created_at)}</p>
+                                        <p className="text-xs text-surface-400 mt-1">{c.user?.name ?? 'Sistema'} • {formatDate(c.created_at)}</p>
                                     </div>
                                 ))}
                             </div>
                             <div className="mt-2 flex gap-2">
                                 <input value={comment} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComment(e.target.value)} placeholder="Adicionar comentário..."
-                                    className="flex-1 rounded-lg border border-surface-300 px-3 py-2 text-sm" />
+                                    className="flex-1 rounded-lg border border-default px-3 py-2 text-sm" />
                                 <Button size="sm" onClick={() => commentMut.mutate({ id: showDetail.id, body: comment })} loading={commentMut.isPending}
                                     disabled={!comment.trim()}>Enviar</Button>
                             </div>
                         </div>
 
-                        {/* History */}
                         {(showDetail.history ?? []).length > 0 && (
                             <div className="border-t border-subtle pt-3">
                                 <h4 className="text-sm font-semibold text-surface-700 mb-2">Histórico</h4>

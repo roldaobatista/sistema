@@ -1,6 +1,11 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import api from '@/lib/api'
+
+interface RoleDetail {
+    name: string
+    display_name: string
+}
 
 interface User {
     id: number
@@ -10,6 +15,7 @@ interface User {
     tenant_id: number | null
     permissions: string[]
     roles: string[]
+    role_details?: RoleDetail[]
     all_permissions?: string[]
     all_roles?: string[]
     tenant?: Tenant | null
@@ -52,6 +58,7 @@ function normalizeUser(rawUser: any): User {
         ...rawUser,
         permissions,
         roles,
+        role_details: Array.isArray(rawUser?.role_details) ? rawUser.role_details : [],
         all_permissions: permissions,
         all_roles: roles,
     }
@@ -122,7 +129,7 @@ export const useAuthStore = create<AuthState>()(
                         isAuthenticated: true,
                     })
                 } catch (err) {
-                    console.error('Erro ao buscar dados do usuario:', err)
+                    // Erro ao buscar dados do usuário
                     set({ isAuthenticated: false, user: null, tenant: null })
                 }
             },

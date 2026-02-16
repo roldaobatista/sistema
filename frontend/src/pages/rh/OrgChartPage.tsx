@@ -1,4 +1,4 @@
-﻿import { useState , useMemo } from 'react'
+import { useState , useMemo } from 'react'
 import { useOrganization } from '@/hooks/useOrganization'
 import { PageHeader } from '@/components/ui/pageheader'
 import { Button } from '@/components/ui/button'
@@ -91,7 +91,6 @@ export default function OrgChartPage() {
                 }
             />
 
-            {/* Tabs */}
             <div className="flex border-b border-subtle">
                 <button
                     onClick={() => setActiveTab('chart')}
@@ -131,7 +130,6 @@ export default function OrgChartPage() {
                 </button>
             </div>
 
-            {/* Content */}
             {activeTab === 'chart' && (() => {
                 type DeptNode = Omit<Department, 'children'> & { children: DeptNode[] }
 
@@ -152,7 +150,7 @@ export default function OrgChartPage() {
 
                 const OrgNode = ({ node, level = 0 }: { node: DeptNode; level?: number }) => (
                     <div className={`flex flex-col items-center ${level > 0 ? 'mt-4' : ''}`}>
-                        <div className="rounded-xl border border-default bg-white shadow-sm p-4 text-center min-w-[160px] hover:shadow-md transition-shadow">
+                        <div className="rounded-xl border border-default bg-surface-0 shadow-card p-4 text-center min-w-[160px] transition-shadow">
                             <div className="flex items-center justify-center gap-2 mb-1">
                                 <Building2 className="h-4 w-4 text-brand-500" />
                                 <span className="font-semibold text-sm text-surface-900">{node.name}</span>
@@ -205,7 +203,7 @@ export default function OrgChartPage() {
             })()}
 
             {activeTab === 'departments' && (
-                <div className="rounded-xl border border-default bg-surface-0 shadow-sm">
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -253,7 +251,7 @@ export default function OrgChartPage() {
             )}
 
             {activeTab === 'positions' && (
-                <div className="rounded-xl border border-default bg-surface-0 shadow-sm">
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -302,7 +300,6 @@ export default function OrgChartPage() {
                 </div>
             )}
 
-            {/* Department Modal */}
             <Dialog open={deptModalOpen} onOpenChange={setDeptModalOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -325,7 +322,20 @@ export default function OrgChartPage() {
                                 placeholder="Ex: CC-001"
                             />
                         </div>
-                        {/* Parent selection would go here */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Departamento Pai</label>
+                            <select
+                                aria-label="Departamento Pai"
+                                className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm"
+                                value={deptForm.parent_id || ''}
+                                onChange={e => setDeptForm({ ...deptForm, parent_id: e.target.value ? Number(e.target.value) : undefined })}
+                            >
+                                <option value="">Nenhum (raiz)</option>
+                                {departments?.filter(d => d.id !== editingDept?.id).map(d => (
+                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeptModalOpen(false)}>Cancelar</Button>
@@ -334,7 +344,6 @@ export default function OrgChartPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Position Modal */}
             <Dialog open={posModalOpen} onOpenChange={setPosModalOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -353,7 +362,7 @@ export default function OrgChartPage() {
                             <label className="text-sm font-medium">Nível</label>
                             <select
                                 aria-label="Nível do cargo"
-                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm"
                                 value={posForm.level || 'junior'}
                                 onChange={e => setPosForm({ ...posForm, level: e.target.value as any })}
                             >
@@ -369,7 +378,7 @@ export default function OrgChartPage() {
                             <label className="text-sm font-medium">Departamento</label>
                             <select
                                 aria-label="Departamento"
-                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm"
                                 value={posForm.department_id || ''}
                                 onChange={e => setPosForm({ ...posForm, department_id: Number(e.target.value) })}
                             >

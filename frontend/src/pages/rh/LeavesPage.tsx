@@ -71,7 +71,6 @@ export default function LeavesPage() {
 
     const { data: leavesRes, isLoading } = useQuery({
         queryKey: ['leaves', page, statusFilter, search],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/leaves', {
             params: { page, per_page: 20, status: statusFilter || undefined, search: search || undefined },
         }).then(r => r.data),
@@ -138,7 +137,6 @@ export default function LeavesPage() {
         <div className="space-y-5">
             <PageHeader title="Férias & Afastamentos" subtitle="Solicitações de férias, licenças e afastamentos" />
 
-            {/* Filters */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className="relative flex-1 max-w-sm">
@@ -249,7 +247,6 @@ export default function LeavesPage() {
                 </table>
             </div>
 
-            {/* Pagination */}
             {lastPage > 1 && (
                 <div className="flex items-center justify-between">
                     <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}
@@ -261,7 +258,6 @@ export default function LeavesPage() {
                 </div>
             )}
 
-            {/* Create Modal */}
             <Modal open={showModal} onOpenChange={setShowModal} title="Nova Solicitação" size="md">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -312,7 +308,6 @@ export default function LeavesPage() {
                 </form>
             </Modal>
 
-            {/* Reject Modal */}
             <Modal open={!!rejectTarget} onOpenChange={() => setRejectTarget(null)} title="Rejeitar Solicitação" size="sm">
                 <div className="space-y-4">
                     <p className="text-sm text-surface-600">

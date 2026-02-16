@@ -112,7 +112,6 @@ export function InvoicesPage() {
 
     const metadataQuery = useQuery({
         queryKey: ['invoices-metadata'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: async () => {
             const { data } = await api.get<InvoiceMetadata>('/invoices/metadata')
             return data
@@ -423,7 +422,7 @@ export function InvoicesPage() {
                         {detailInvoice.items && detailInvoice.items.length > 0 ? (
                             <div>
                                 <span className="font-medium text-surface-500">Itens:</span>
-                                <div className="mt-2 overflow-hidden rounded-lg border border-surface-200">
+                                <div className="mt-2 overflow-hidden rounded-lg border border-default">
                                     <table className="w-full text-xs">
                                         <thead className="bg-surface-50">
                                             <tr>
@@ -461,12 +460,12 @@ export function InvoicesPage() {
                     className="space-y-4"
                 >
                     <div>
-                        <label className="mb-1 block text-[13px] font-medium text-surface-700">Cliente *</label>
+                        <label className="mb-1 block text-sm font-medium text-surface-700">Cliente *</label>
                         <select
                             required
                             value={form.customer_id}
                             onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setForm((prev) => ({ ...prev, customer_id: event.target.value }))}
-                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                            className="w-full rounded-lg border border-default px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                         >
                             <option value="">Selecione o cliente</option>
                             {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
@@ -474,11 +473,11 @@ export function InvoicesPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-[13px] font-medium text-surface-700">OS (opcional)</label>
+                        <label className="mb-1 block text-sm font-medium text-surface-700">OS (opcional)</label>
                         <select
                             value={form.work_order_id}
                             onChange={(event: React.ChangeEvent<HTMLSelectElement>) => handleWorkOrderChange(event.target.value)}
-                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                            className="w-full rounded-lg border border-default px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                         >
                             <option value="">Nenhuma OS vinculada</option>
                             {workOrders.map((workOrder) => (
@@ -490,31 +489,31 @@ export function InvoicesPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-[13px] font-medium text-surface-700">Numero da NF</label>
+                        <label className="mb-1 block text-sm font-medium text-surface-700">Numero da NF</label>
                         <input
                             value={form.nf_number}
                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, nf_number: event.target.value }))}
-                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                            className="w-full rounded-lg border border-default px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-[13px] font-medium text-surface-700">Data de vencimento</label>
+                        <label className="mb-1 block text-sm font-medium text-surface-700">Data de vencimento</label>
                         <input
                             type="date"
                             value={form.due_date}
                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, due_date: event.target.value }))}
-                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                            className="w-full rounded-lg border border-default px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-[13px] font-medium text-surface-700">Observacoes</label>
+                        <label className="mb-1 block text-sm font-medium text-surface-700">Observacoes</label>
                         <textarea
                             value={form.observations}
                             onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setForm((prev) => ({ ...prev, observations: event.target.value }))}
                             rows={3}
-                            className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                            className="w-full rounded-lg border border-default px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                         />
                     </div>
 
@@ -527,7 +526,7 @@ export function InvoicesPage() {
 
             <Modal open={!!confirmAction} onOpenChange={() => setConfirmAction(null)} title={confirmTitle ?? 'Confirmacao'}>
                 <div className="space-y-4">
-                    <p className="text-[13px] text-surface-600">{confirmDescription}</p>
+                    <p className="text-sm text-surface-600">{confirmDescription}</p>
                     <div className="flex justify-end gap-3 border-t pt-4">
                         <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancelar</Button>
                         <Button variant={confirmButtonVariant} loading={confirmLoading} onClick={runConfirmAction}>

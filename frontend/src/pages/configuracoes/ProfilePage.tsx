@@ -22,7 +22,6 @@ export function ProfilePage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['profile'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/profile'),
     })
     const profile = res?.data

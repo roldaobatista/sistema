@@ -44,7 +44,6 @@ export function PaymentMethodsPage() {
 
     const { data: res, isLoading, isError } = useQuery({
         queryKey: ['payment-methods'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/payment-methods'),
     })
     const methods: PaymentMethod[] = res?.data ?? []
@@ -120,13 +119,13 @@ export function PaymentMethodsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
-                    <p className="col-span-full py-12 text-center text-[13px] text-surface-500">Carregando...</p>
+                    <p className="col-span-full py-12 text-center text-sm text-surface-500">Carregando...</p>
                 ) : isError ? (
-                    <p className="col-span-full py-12 text-center text-[13px] text-red-600">Nao foi possivel carregar as formas de pagamento.</p>
+                    <p className="col-span-full py-12 text-center text-sm text-red-600">Nao foi possivel carregar as formas de pagamento.</p>
                 ) : methods.length === 0 ? (
                     <div className="col-span-full"><EmptyState icon={<CreditCard className="h-5 w-5 text-surface-300" />} message="Nenhuma forma cadastrada" action={canCreate ? { label: 'Nova Forma', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} /></div>
                 ) : methods.map(method => (
-                    <div key={method.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-0 p-4 shadow-card transition-shadow hover:shadow-md">
+                    <div key={method.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50">
                                 <CreditCard className="h-5 w-5 text-sky-600" />
@@ -158,7 +157,7 @@ export function PaymentMethodsPage() {
                     <div className="flex items-center gap-2">
                         <input type="checkbox" id="pm-active" checked={form.is_active}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('is_active', e.target.checked)}
-                            className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+                            className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
                         <label htmlFor="pm-active" className="text-sm text-surface-700">Ativo</label>
                     </div>
                     <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
@@ -170,7 +169,7 @@ export function PaymentMethodsPage() {
 
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Forma de Pagamento">
                 <div className="space-y-4">
-                    <p className="text-[13px] text-surface-600">Tem certeza que deseja excluir {deleteTarget?.name}?</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir {deleteTarget?.name}?</p>
                     <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button variant="danger" loading={delMut.isPending} onClick={() => { if (deleteTarget) delMut.mutate(deleteTarget.id) }}>Excluir</Button>

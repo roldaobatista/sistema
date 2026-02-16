@@ -25,6 +25,8 @@ interface PermissionGroup {
 interface Role {
     id: number
     name: string
+    display_name: string | null
+    label: string
     description: string | null
     permissions_count: number
     users_count: number
@@ -40,6 +42,7 @@ export function RolesPage() {
     const [showForm, setShowForm] = useState(false)
     const [editingRole, setEditingRole] = useState<Role | null>(null)
     const [roleName, setRoleName] = useState('')
+    const [roleDisplayName, setRoleDisplayName] = useState('')
     const [roleDescription, setRoleDescription] = useState('')
     const [selectedPermissions, setSelectedPermissions] = useState<number[]>([])
     const [loadingEditId, setLoadingEditId] = useState<number | null>(null)
@@ -49,20 +52,18 @@ export function RolesPage() {
 
     const { data: rolesData, isLoading, isError, refetch } = useQuery({
         queryKey: ['roles'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/roles').then(r => r.data),
     })
     const roles: Role[] = rolesData?.data ?? rolesData ?? []
 
     const { data: permGroupsData } = useQuery({
         queryKey: ['permissions'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/permissions').then(r => r.data),
     })
     const permissionGroups: PermissionGroup[] = Array.isArray(permGroupsData) ? permGroupsData : permGroupsData?.data ?? []
 
     const saveMutation = useMutation({
-        mutationFn: (data: { name: string; description: string; permissions: number[] }) =>
+        mutationFn: (data: { name: string; display_name: string; description: string; permissions: number[] }) =>
             editingRole
                 ? api.put(`/roles/${editingRole.id}`, data)
                 : api.post('/roles', data),
@@ -111,6 +112,7 @@ export function RolesPage() {
     const openCreate = () => {
         setEditingRole(null)
         setRoleName('')
+        setRoleDisplayName('')
         setRoleDescription('')
         setSelectedPermissions([])
         setShowForm(true)
@@ -122,6 +124,7 @@ export function RolesPage() {
             const { data } = await api.get(`/roles/${role.id}`)
             setEditingRole(data)
             setRoleName(data.name)
+            setRoleDisplayName(data.display_name ?? '')
             setRoleDescription(data.description ?? '')
             setSelectedPermissions(data.permissions?.map((p: any) => p.id) ?? [])
             setShowForm(true)
@@ -155,7 +158,6 @@ export function RolesPage() {
                 actions={canCreate ? [{ label: 'Nova Role', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []}
             />
 
-            {/* Roles Grid */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
                     <>{[...Array(6)].map((_, i) => (
@@ -197,7 +199,7 @@ export function RolesPage() {
                                     <Shield className="h-5 w-5 text-brand-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-surface-900">{role.name}</h3>
+                                    <h3 className="font-semibold text-surface-900">{role.display_name || role.label || role.name}</h3>
                                     <div className="mt-1 flex gap-3 text-xs text-surface-500">
                                         <span>{role.permissions_count} permissões</span>
                                         <span>·</span>
@@ -248,7 +250,6 @@ export function RolesPage() {
                 ))}
             </div>
 
-            {/* Modal Form */}
             <Modal
                 open={showForm}
                 onOpenChange={setShowForm}
@@ -256,19 +257,25 @@ export function RolesPage() {
                 size="xl"
             >
                 <form
-                    onSubmit={(e) => { e.preventDefault(); saveMutation.mutate({ name: roleName, description: roleDescription, permissions: selectedPermissions }) }}
+                    onSubmit={(e) => { e.preventDefault(); saveMutation.mutate({ name: roleName, display_name: roleDisplayName, description: roleDescription, permissions: selectedPermissions }) }}
                     className="space-y-4"
                 >
                     <Input
-                        label="Nome da Role"
+                        label="Identificador (interno)"
                         value={roleName}
                         onChange={(e) => setRoleName(e.target.value)}
                         placeholder="ex: supervisor"
                         required
                         disabled={!!editingRole?.name && ['super_admin', 'admin'].includes(editingRole.name)}
                     />
+                    <Input
+                        label="Nome de Exibição"
+                        value={roleDisplayName}
+                        onChange={(e) => setRoleDisplayName(e.target.value)}
+                        placeholder="ex: Supervisor de Campo"
+                    />
                     <div>
-                        <label className="mb-1 block text-[13px] font-medium text-surface-700">Descrição</label>
+                        <label className="mb-1 block text-sm font-medium text-surface-700">Descrição</label>
                         <textarea
                             value={roleDescription}
                             onChange={(e) => setRoleDescription(e.target.value)}
@@ -279,14 +286,13 @@ export function RolesPage() {
                         />
                     </div>
 
-                    {/* Permission groups */}
                     <div>
                         <label className="mb-3 block text-sm font-semibold text-surface-900">Permissões</label>
-                        <div className="max-h-96 overflow-y-auto space-y-4 rounded-lg border border-surface-200 p-4">
+                        <div className="max-h-96 overflow-y-auto space-y-4 rounded-lg border border-default p-4">
                             {permissionGroups.map((group: any) => (
                                 <div key={group.id}>
                                     <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-[11px] font-medium uppercase tracking-wider text-surface-500">
+                                        <h4 className="text-xs font-medium uppercase tracking-wider text-surface-500">
                                             {group.name}
                                         </h4>
                                         <button
@@ -307,7 +313,7 @@ export function RolesPage() {
                                                     'rounded-md border px-2.5 py-1 text-xs font-medium transition-all',
                                                     selectedPermissions.includes(perm.id)
                                                         ? 'border-brand-400 bg-brand-50 text-brand-700'
-                                                        : 'border-default bg-surface-0 text-surface-500 hover:border-surface-300'
+                                                        : 'border-default text-surface-500 hover:border-surface-400'
                                                 )}
                                             >
                                                 {perm.name.split('.').slice(1).join('.')}
@@ -331,7 +337,6 @@ export function RolesPage() {
                 </form>
             </Modal>
 
-            {/* Modal Delete Confirmation */}
             <Modal
                 open={!!deleteConfirmRole}
                 onOpenChange={(open) => { if (!open) setDeleteConfirmRole(null) }}
@@ -358,7 +363,6 @@ export function RolesPage() {
                 </div>
             </Modal>
 
-            {/* Modal Clone */}
             <Modal
                 open={!!cloneRole}
                 onOpenChange={(open) => { if (!open) { setCloneRole(null); setCloneName('') } }}

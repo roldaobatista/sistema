@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Bell, Check, CheckCheck, AlertTriangle, Info, DollarSign, Wrench } from 'lucide-react'
@@ -41,7 +41,6 @@ export function NotificationsPage() {
 
     const { data: res, isLoading, isError } = useQuery({
         queryKey: ['notifications-full'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/notifications?limit=100'),
         enabled: canViewNotifications,
     })
@@ -73,7 +72,7 @@ export function NotificationsPage() {
             <div className="rounded-xl border border-default bg-surface-0 p-8 text-center shadow-card">
                 <Bell className="mx-auto mb-3 h-10 w-10 text-surface-300" />
                 <h1 className="text-base font-semibold text-surface-900">Sem acesso a notificações</h1>
-                <p className="mt-1 text-[13px] text-surface-500">
+                <p className="mt-1 text-sm text-surface-500">
                     Você não possui permissão para visualizar este módulo.
                 </p>
             </div>
@@ -103,7 +102,7 @@ export function NotificationsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Notificações</h1>
-                    <p className="text-[13px] text-surface-500 mt-1">
+                    <p className="text-sm text-surface-500 mt-1">
                         {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Todas lidas'}
                     </p>
                 </div>
@@ -111,14 +110,13 @@ export function NotificationsPage() {
                     <button
                         onClick={() => markAllMut.mutate()}
                         disabled={markAllMut.isPending}
-                        className="inline-flex items-center gap-2 rounded-lg border border-surface-300 px-4 py-2 text-[13px] font-medium text-surface-700 hover:bg-surface-50 transition-colors duration-100"
+                        className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors duration-100"
                     >
                         <CheckCheck className="h-4 w-4" /> Marcar todas como lidas
                     </button>
                 )}
             </div>
 
-            {/* Filter pills */}
             <div className="flex flex-wrap gap-2">
                 {filterTypes.map(f => (
                     <button
@@ -133,7 +131,7 @@ export function NotificationsPage() {
                     >
                         {f.label}
                         <span className={cn(
-                            'rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                            'rounded-full px-1.5 py-0.5 text-xs font-bold',
                             filter === f.key ? 'bg-white/20' : 'bg-surface-200'
                         )}>{f.count}</span>
                     </button>
@@ -174,7 +172,7 @@ export function NotificationsPage() {
                                         </p>
                                         {isUnread && <span className="h-2 w-2 rounded-full bg-brand-500 flex-shrink-0" />}
                                     </div>
-                                    <p className="text-[13px] text-surface-500 mt-0.5 line-clamp-2">{n.message}</p>
+                                    <p className="text-sm text-surface-500 mt-0.5 line-clamp-2">{n.message}</p>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <span className="text-xs text-surface-400">{fmtDate(n.created_at)}</span>

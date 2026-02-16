@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -37,21 +37,18 @@ export default function HRPage() {
 
     const { data: schedulesData, isLoading: loadingSchedules, isError: isErrorSchedules } = useQuery({
         queryKey: ['hr-schedules', page],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/hr/schedules', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'schedules',
     })
 
     const { data: clockData, isLoading: loadingClock, isError: isErrorClock } = useQuery({
         queryKey: ['hr-clock-all', page],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/hr/clock/all', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'clock',
     })
 
     const { data: trainingsData, isLoading: loadingTrainings, isError: isErrorTrainings } = useQuery({
         queryKey: ['hr-trainings', page],
-        const { data } = useQuery({
         queryFn: () => api.get('/hr/trainings', { params: { page, per_page: 20 } }).then(r => r.data),
         enabled: tab === 'trainings',
     })
@@ -69,7 +66,6 @@ export default function HRPage() {
 
     const { data: users } = useQuery({
         queryKey: ['users-list'],
-        const { data } = useQuery({
         queryFn: () => api.get('/users').then(r => r.data?.data),
         enabled: tab === 'feedback'
     })
@@ -103,7 +99,6 @@ export default function HRPage() {
 
     const { data: dashboard } = useQuery({
         queryKey: ['hr-dashboard'],
-        const { data } = useQuery({
         queryFn: () => api.get('/hr/dashboard').then(r => r.data?.data),
         enabled: tab === 'dashboard',
     })
@@ -128,7 +123,6 @@ export default function HRPage() {
                 ))}
             </div>
 
-            {/* SCHEDULES */}
             {tab === 'schedules' && (
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
@@ -156,7 +150,6 @@ export default function HRPage() {
                 </div>
             )}
 
-            {/* CLOCK */}
             {tab === 'clock' && (
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
@@ -184,7 +177,6 @@ export default function HRPage() {
                 </div>
             )}
 
-            {/* TRAININGS */}
             {tab === 'trainings' && (
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
@@ -214,7 +206,6 @@ export default function HRPage() {
                 </div>
             )}
 
-            {/* REVIEWS */}
             {tab === 'reviews' && (
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
@@ -262,7 +253,6 @@ export default function HRPage() {
                 </div>
             )}
 
-            {/* FEEDBACK */}
             {tab === 'feedback' && (
                 <div className="space-y-4">
                     <div className="flex justify-end">
@@ -381,7 +371,6 @@ export default function HRPage() {
                 </div>
             )}
 
-            {/* DASHBOARD */}
             {tab === 'dashboard' && dashboard && (
                 <div className="grid grid-cols-4 gap-4">
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">

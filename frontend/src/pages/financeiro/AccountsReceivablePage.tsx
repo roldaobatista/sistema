@@ -120,7 +120,6 @@ export function AccountsReceivablePage() {
 
     const { data: res, isLoading, isError, refetch } = useQuery({
         queryKey: ['accounts-receivable', search, statusFilter, page],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/accounts-receivable', { params: { search: search || undefined, status: statusFilter || undefined, per_page: 50, page } }),
     })
     const records: AR[] = res?.data?.data ?? []
@@ -128,14 +127,12 @@ export function AccountsReceivablePage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['ar-summary'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/accounts-receivable-summary'),
     })
     const summary = summaryRes?.data ?? {}
 
     const { data: custsRes } = useQuery({
         queryKey: ['customers-select'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/customers', { params: { per_page: 100 } }),
         enabled: showForm,
     })
@@ -143,7 +140,6 @@ export function AccountsReceivablePage() {
 
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-financial'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
         enabled: showGenOS || showForm,
     })
@@ -151,14 +147,12 @@ export function AccountsReceivablePage() {
 
     const { data: pmRes } = useQuery({
         queryKey: ['payment-methods'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/payment-methods'),
     })
     const paymentMethods: { id: number; name: string; code: string }[] = pmRes?.data ?? []
 
     const { data: chartRes } = useQuery({
         queryKey: ['chart-of-accounts-receivable'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/chart-of-accounts', { params: { is_active: 1, type: 'revenue' } }),
         enabled: canViewChart && showForm,
     })
@@ -332,7 +326,6 @@ export function AccountsReceivablePage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <PageHeader
                 title="Contas a Receber"
                 subtitle="Títulos, recebimentos e cobranças"
@@ -344,7 +337,6 @@ export function AccountsReceivablePage() {
             />
             <FinancialExportButtons type="receivable" />
 
-            {/* Summary Cards */}
             <div className="grid gap-3 sm:grid-cols-5">
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                     <div className="flex items-center gap-2 text-amber-600"><Clock className="h-4 w-4" /><span className="text-xs font-medium">Pendente</span></div>
@@ -368,7 +360,6 @@ export function AccountsReceivablePage() {
                 </div>
             </div>
 
-            {/* Aging bar */}
             {records.length > 0 && (() => {
                 const groups = [
                     { key: FINANCIAL_STATUS.PAID, label: 'Pago', color: 'bg-emerald-500', count: records.filter(r => r.status === FINANCIAL_STATUS.PAID).length },
@@ -397,7 +388,6 @@ export function AccountsReceivablePage() {
                 )
             })()}
 
-            {/* Filters */}
             <div className="flex gap-3">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -411,7 +401,6 @@ export function AccountsReceivablePage() {
                 </select>
             </div>
 
-            {/* Table */}
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full">
                     <thead>
@@ -427,23 +416,23 @@ export function AccountsReceivablePage() {
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {isLoading ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">Carregando...</td></tr>
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
                         ) : isError ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-red-600">Erro ao carregar titulos. <button className="underline" onClick={() => refetch()}>Tentar novamente</button></td></tr>
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-red-600">Erro ao carregar titulos. <button className="underline" onClick={() => refetch()}>Tentar novamente</button></td></tr>
                         ) : records.length === 0 ? (
                             <tr><td colSpan={7} className="px-4 py-2"><EmptyState icon={<DollarSign className="h-5 w-5 text-surface-300" />} message="Nenhum titulo encontrado" action={canCreate ? { label: 'Novo Titulo', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} compact /></td></tr>
                         ) : records.map(r => (
                             <tr key={r.id} className="hover:bg-surface-50 transition-colors duration-100">
                                 <td className="px-4 py-3">
-                                    <p className="text-[13px] font-medium text-surface-900">{r.description}</p>
+                                    <p className="text-sm font-medium text-surface-900">{r.description}</p>
                                     {r.work_order && <p className="text-xs text-brand-500">{woIdentifier(r.work_order)}</p>}
                                     {r.chart_of_account && <p className="text-xs text-surface-500">{r.chart_of_account.code} - {r.chart_of_account.name}</p>}
                                 </td>
-                                <td className="px-4 py-3 text-[13px] text-surface-600">{r.customer.name}</td>
-                                <td className="hidden px-4 py-3 text-[13px] text-surface-500 md:table-cell">{fmtDate(r.due_date)}</td>
+                                <td className="px-4 py-3 text-sm text-surface-600">{r.customer.name}</td>
+                                <td className="hidden px-4 py-3 text-sm text-surface-500 md:table-cell">{fmtDate(r.due_date)}</td>
                                 <td className="px-4 py-3"><Badge variant={statusConfig[r.status]?.variant}>{statusConfig[r.status]?.label}</Badge></td>
                                 <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-surface-900">{fmtBRL(r.amount)}</td>
-                                <td className="px-3.5 py-2.5 text-right text-[13px] text-surface-600">{fmtBRL(r.amount_paid)}</td>
+                                <td className="px-3.5 py-2.5 text-right text-sm text-surface-600">{fmtBRL(r.amount_paid)}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-end gap-1">
                                         <IconButton label="Ver detalhes" icon={<Eye className="h-4 w-4" />} onClick={() => loadDetail(r)} />
@@ -469,10 +458,9 @@ export function AccountsReceivablePage() {
                 </table>
             </div>
 
-            {/* Pagination */}
             {pagination.lastPage > 1 && (
                 <div className="flex items-center justify-between rounded-xl border border-default bg-surface-0 px-4 py-3 shadow-card">
-                    <span className="text-[13px] text-surface-500">{pagination.total} registro(s)</span>
+                    <span className="text-sm text-surface-500">{pagination.total} registro(s)</span>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" disabled={pagination.currentPage <= 1} onClick={() => setPage(p => p - 1)}>Anterior</Button>
                         <span className="text-sm text-surface-700">Página {pagination.currentPage} de {pagination.lastPage}</span>
@@ -481,12 +469,11 @@ export function AccountsReceivablePage() {
                 </div>
             )}
 
-            {/* Create Modal */}
             <Modal open={showForm} onOpenChange={setShowForm} title={editingId ? 'Editar Titulo a Receber' : 'Novo Titulo a Receber'} size="lg">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cliente *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Cliente *</label>
                             <select value={form.customer_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('customer_id', e.target.value)} required
                                 disabled={editingId !== null}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-60">
@@ -496,7 +483,7 @@ export function AccountsReceivablePage() {
                             {formErrors.customer_id && <p className="mt-1 text-xs text-red-500">{formErrors.customer_id[0]}</p>}
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS vinculada</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">OS vinculada</label>
                             <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
                                 disabled={editingId !== null}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-60">
@@ -509,7 +496,7 @@ export function AccountsReceivablePage() {
 
                     {canViewChart && (
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Plano de Contas</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Plano de Contas</label>
                             <select value={form.chart_of_account_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('chart_of_account_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nao classificado</option>
@@ -524,7 +511,7 @@ export function AccountsReceivablePage() {
                         <Input label="Valor (R$)" type="number" step="0.01" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('amount', e.target.value)} error={formErrors.amount?.[0]} required />
                         <Input label="Vencimento" type="date" value={form.due_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('due_date', e.target.value)} error={formErrors.due_date?.[0]} required />
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Forma Pgto</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Forma Pgto</label>
                             <select value={form.payment_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('payment_method', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nao definido</option>
@@ -534,7 +521,7 @@ export function AccountsReceivablePage() {
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observacoes</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observacoes</label>
                         <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                         {formErrors.notes && <p className="mt-1 text-xs text-red-500">{formErrors.notes[0]}</p>}
@@ -546,7 +533,6 @@ export function AccountsReceivablePage() {
                 </form>
             </Modal>
 
-            {/* Pay Modal */}
             <Modal open={!!showPay} onOpenChange={() => setShowPay(null)} title="Registrar Recebimento">
                 {showPay && (
                     <form onSubmit={e => { e.preventDefault(); payMut.mutate({ id: showPay.id, data: payForm }) }} className="space-y-4">
@@ -559,7 +545,7 @@ export function AccountsReceivablePage() {
                             <Input label="Valor" type="number" step="0.01" value={payForm.amount}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPayForm(p => ({ ...p, amount: e.target.value }))} error={payErrors.amount?.[0]} required />
                             <div>
-                                <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Forma Pgto *</label>
+                                <label className="mb-1.5 block text-sm font-medium text-surface-700">Forma Pgto *</label>
                                 <select value={payForm.payment_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPayForm(p => ({ ...p, payment_method: e.target.value }))} required
                                     className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                     {paymentMethods.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
@@ -570,7 +556,7 @@ export function AccountsReceivablePage() {
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPayForm(p => ({ ...p, payment_date: e.target.value }))} error={payErrors.payment_date?.[0]} required />
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observacoes</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Observacoes</label>
                             <textarea value={payForm.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPayForm(p => ({ ...p, notes: e.target.value }))} rows={2}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                         </div>
@@ -582,11 +568,10 @@ export function AccountsReceivablePage() {
                 )}
             </Modal>
 
-            {/* Generate from OS Modal */}
             <Modal open={showGenOS} onOpenChange={setShowGenOS} title="Gerar Titulo da OS">
                 <form onSubmit={e => { e.preventDefault(); genMut.mutate(genForm) }} className="space-y-4">
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS *</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">OS *</label>
                         <select value={genForm.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGenForm(p => ({ ...p, work_order_id: e.target.value }))} required
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                             <option value="">Selecionar</option>
@@ -596,7 +581,7 @@ export function AccountsReceivablePage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Input label="Vencimento" type="date" value={genForm.due_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGenForm(p => ({ ...p, due_date: e.target.value }))} required />
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Forma Pgto</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Forma Pgto</label>
                             <select value={genForm.payment_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGenForm(p => ({ ...p, payment_method: e.target.value }))}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nao definido</option>
@@ -611,7 +596,6 @@ export function AccountsReceivablePage() {
                 </form>
             </Modal>
 
-            {/* Detail Modal */}
             <Modal open={!!showDetail} onOpenChange={() => setShowDetail(null)} title="Detalhes do Titulo" size="lg">
                 {showDetail && (
                     <div className="space-y-4">
@@ -619,8 +603,8 @@ export function AccountsReceivablePage() {
                             <div><span className="text-xs text-surface-500">Descricao</span><p className="text-sm font-medium">{showDetail.description}</p></div>
                             <div><span className="text-xs text-surface-500">Cliente</span><p className="text-sm font-medium">{showDetail.customer.name}</p></div>
                             <div><span className="text-xs text-surface-500">Plano de Contas</span><p className="text-sm font-medium">{showDetail.chart_of_account ? `${showDetail.chart_of_account.code} - ${showDetail.chart_of_account.name}` : '-'}</p></div>
-                            <div><span className="text-xs text-surface-500">Valor</span><p className="text-[15px] font-semibold tabular-nums">{fmtBRL(showDetail.amount)}</p></div>
-                            <div><span className="text-xs text-surface-500">Pago</span><p className="text-[15px] font-semibold tabular-nums text-emerald-600">{fmtBRL(showDetail.amount_paid)}</p></div>
+                            <div><span className="text-xs text-surface-500">Valor</span><p className="text-sm font-semibold tabular-nums">{fmtBRL(showDetail.amount)}</p></div>
+                            <div><span className="text-xs text-surface-500">Pago</span><p className="text-sm font-semibold tabular-nums text-emerald-600">{fmtBRL(showDetail.amount_paid)}</p></div>
                             <div><span className="text-xs text-surface-500">Vencimento</span><p className="text-sm">{fmtDate(showDetail.due_date)}</p></div>
                             <div><span className="text-xs text-surface-500">Status</span><Badge variant={statusConfig[showDetail.status]?.variant}>{statusConfig[showDetail.status]?.label}</Badge></div>
                         </div>
@@ -643,10 +627,9 @@ export function AccountsReceivablePage() {
                 )}
             </Modal>
 
-            {/* Delete Modal */}
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Titulo">
                 <div className="space-y-4">
-                    <p className="text-[13px] text-surface-600">Tem certeza que deseja excluir este titulo? Esta acao nao pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir este titulo? Esta acao nao pode ser desfeita.</p>
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button variant="danger" loading={delMut.isPending} onClick={() => { if (deleteTarget) delMut.mutate(deleteTarget.id) }}>Excluir</Button>

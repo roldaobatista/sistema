@@ -109,14 +109,12 @@ export default function ImportPage() {
     // Templates
     const { data: templates } = useQuery({
         queryKey: ['import-templates', entity],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/import/templates?entity_type=${entity}`).then(r => r.data.templates),
     })
 
     // Estatísticas
     const { data: statsData } = useQuery({
         queryKey: ['import-stats'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/import-stats').then(r => r.data.stats),
         enabled: showStats,
     })
@@ -124,7 +122,6 @@ export default function ImportPage() {
     // F6: Contagem de registros por entidade
     const { data: entityCounts } = useQuery({
         queryKey: ['import-entity-counts'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/import-entity-counts').then(r => r.data.counts),
         staleTime: 60_000,
     })

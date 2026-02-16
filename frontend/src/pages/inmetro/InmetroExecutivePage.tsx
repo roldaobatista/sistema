@@ -34,7 +34,7 @@ function KpiCard({ label, value, icon: Icon, trend, trendLabel }: {
                         <p className="text-sm text-muted-foreground">{label}</p>
                         <p className="text-2xl font-bold mt-1">{value}</p>
                         {trendLabel && (
-                            <p className={`text-xs mt-1 flex items-center gap-1 ${trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-gray-500'}`}>
+                            <p className={`text-xs mt-1 flex items-center gap-1 ${trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-surface-500'}`}>
                                 {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : trend === 'down' ? <TrendingDown className="w-3 h-3" /> : null}
                                 {trendLabel}
                             </p>
@@ -130,7 +130,7 @@ export default function InmetroExecutivePage() {
                                         label={labels[stage] || stage}
                                         value={count as number}
                                         max={maxVal}
-                                        color={colors[stage] || 'bg-gray-500'}
+                                        color={colors[stage] || 'bg-surface-500'}
                                     />
                                 )
                             })

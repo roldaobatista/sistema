@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -72,6 +72,7 @@ function calibrationBadge(nextDate: string | null) {
 
 export default function EquipmentListPage() {
   const { hasPermission } = useAuthStore()
+    const qc = useQueryClient()
 
     const [search, setSearch] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
@@ -81,13 +82,11 @@ export default function EquipmentListPage() {
 
     const { data: dashboard } = useQuery<DashboardData>({
         queryKey: ['equipments-dashboard'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/equipments-dashboard').then(r => r.data),
     })
 
     const { data: constants } = useQuery({
         queryKey: ['equipments-constants'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/equipments-constants').then(r => r.data),
     })
 
@@ -148,7 +147,6 @@ export default function EquipmentListPage() {
                 ]}
             />
 
-            {/* KPI Cards */}
             {dashboard && (
                 <div className="grid grid-cols-5 gap-3">
                     <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -199,7 +197,6 @@ export default function EquipmentListPage() {
                 </div>
             )}
 
-            {/* Category distribution bar */}
             {dashboard && Object.keys(dashboard.by_category ?? {}).length > 0 && (() => {
                 const cats = Object.entries(dashboard.by_category)
                 const total = cats.reduce((s, [, v]) => s + v, 0)
@@ -231,7 +228,6 @@ export default function EquipmentListPage() {
                 )
             })()}
 
-            {/* Filtros */}
             <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
@@ -277,7 +273,6 @@ export default function EquipmentListPage() {
                 </button>
             </div>
 
-            {/* Tabela */}
             <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full text-sm">
                     <thead>
@@ -359,21 +354,20 @@ export default function EquipmentListPage() {
                 </table>
             </div>
 
-            {/* Paginação */}
             {lastPage > 1 && (
                 <div className="flex items-center justify-center gap-2">
                     <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1}
-                        className="rounded-lg border border-surface-200 p-2 hover:bg-surface-50 disabled:opacity-50"
+                        className="rounded-lg border border-default p-2 hover:bg-surface-50 disabled:opacity-50"
                     >
                         <ChevronLeft size={16} />
                     </button>
-                    <span className="text-[13px] text-surface-600">Página {page} de {lastPage}</span>
+                    <span className="text-sm text-surface-600">Página {page} de {lastPage}</span>
                     <button
                         onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                         disabled={page === lastPage}
-                        className="rounded-lg border border-surface-200 p-2 hover:bg-surface-50 disabled:opacity-50"
+                        className="rounded-lg border border-default p-2 hover:bg-surface-50 disabled:opacity-50"
                     >
                         <ChevronRight size={16} />
                     </button>

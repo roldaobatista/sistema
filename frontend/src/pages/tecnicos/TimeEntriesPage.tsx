@@ -102,21 +102,18 @@ export function TimeEntriesPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['time-entries-summary', dateFrom, dateTo],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/time-entries-summary', { params: { from: dateFrom, to: dateTo } }),
     })
     const summary: SummaryItem[] = summaryRes?.data?.data ?? []
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-time-entries'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const technicians: Technician[] = techsRes?.data ?? []
 
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-select-te'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
         enabled: showForm,
     })
@@ -153,7 +150,7 @@ export function TimeEntriesPage() {
         onError: (err: { response?: { data?: { message?: string } } }) => toast.error(err?.response?.data?.message ?? 'Erro ao excluir apontamento'),
     })
 
-    const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+    const set = <K extends keyof typeof form,>(k: K, v: (typeof form)[K]) =>
         setForm(prev => ({ ...prev, [k]: v }))
 
     const formatDuration = (m: number | null) => {
@@ -177,11 +174,10 @@ export function TimeEntriesPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Apontamento de Horas</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Registro de tempo dos técnicos nas OS</p>
+                    <p className="mt-0.5 text-sm text-surface-500">Registro de tempo dos técnicos nas OS</p>
                 </div>
                 {canCreate && (
                     <Button icon={<Plus className="h-4 w-4" />} onClick={() => { setForm(emptyForm); setShowForm(true) }}>
@@ -190,7 +186,6 @@ export function TimeEntriesPage() {
                 )}
             </div>
 
-            {/* Running Timers */}
             {runningEntries.length > 0 && (
                 <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4">
                     <h3 className="text-sm font-semibold text-emerald-800 mb-2 flex items-center gap-1.5">
@@ -202,10 +197,10 @@ export function TimeEntriesPage() {
                             const tc = typeConfig[e.type]
                             const Icon = tc?.icon ?? Timer
                             return (
-                                <div key={e.id} className="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm">
+                                <div key={e.id} className="flex items-center gap-3 rounded-lg bg-surface-0 p-3 shadow-sm">
                                     <Icon className="h-4 w-4 text-emerald-600" />
                                     <div className="flex-1 min-w-0">
-                                        <span className="text-[13px] font-medium text-surface-900">{e.technician.name}</span>
+                                        <span className="text-sm font-medium text-surface-900">{e.technician.name}</span>
                                         {e.work_order && <span className="ml-2 text-xs text-brand-500">{woIdentifier(e.work_order)}</span>}
                                         <p className="text-xs text-surface-500">{tc?.label} — Iniciado {formatTime(e.started_at)}</p>
                                     </div>
@@ -221,23 +216,21 @@ export function TimeEntriesPage() {
                 </div>
             )}
 
-            {/* Summary Cards */}
             {Object.keys(techSummary).length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {Object.values(techSummary).map(ts => (
                         <div key={ts.name} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                             <p className="text-sm font-semibold text-surface-900">{ts.name}</p>
                             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                                <div><p className="text-[15px] font-semibold tabular-nums text-emerald-600">{formatDuration(ts.work)}</p><p className="text-[10px] text-surface-500">Trabalho</p></div>
-                                <div><p className="text-[15px] font-semibold tabular-nums text-sky-600">{formatDuration(ts.travel)}</p><p className="text-[10px] text-surface-500">Desloc.</p></div>
-                                <div><p className="text-[15px] font-semibold tabular-nums text-amber-600">{formatDuration(ts.waiting)}</p><p className="text-[10px] text-surface-500">Espera</p></div>
+                                <div><p className="text-sm font-semibold tabular-nums text-emerald-600">{formatDuration(ts.work)}</p><p className="text-xs text-surface-500">Trabalho</p></div>
+                                <div><p className="text-sm font-semibold tabular-nums text-sky-600">{formatDuration(ts.travel)}</p><p className="text-xs text-surface-500">Desloc.</p></div>
+                                <div><p className="text-sm font-semibold tabular-nums text-amber-600">{formatDuration(ts.waiting)}</p><p className="text-xs text-surface-500">Espera</p></div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Time composition bar */}
             {Object.keys(techSummary).length > 0 && (() => {
                 let totalWork = 0, totalTravel = 0, totalWait = 0
                 Object.values(techSummary).forEach(ts => { totalWork += ts.work; totalTravel += ts.travel; totalWait += ts.waiting })
@@ -263,7 +256,6 @@ export function TimeEntriesPage() {
                 )
             })()}
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <select value={techFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTechFilter(e.target.value)}
                     className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
@@ -281,31 +273,30 @@ export function TimeEntriesPage() {
                     className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
             </div>
 
-            {/* Entries Table */}
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Técnico</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">OS</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Tipo</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Data</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Horário</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Duração</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Técnico</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">OS</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Tipo</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 md:table-cell">Data</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Horário</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Duração</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {isLoading ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">Carregando...</td></tr>
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
                         ) : entries.length === 0 ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum apontamento encontrado</td></tr>
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-surface-500">Nenhum apontamento encontrado</td></tr>
                         ) : entries.map(e => {
                             const tc = typeConfig[e.type] ?? typeConfig.work
                             const Icon = tc.icon
                             return (
                                 <tr key={e.id} className="hover:bg-surface-50 transition-colors duration-100">
-                                    <td className="px-4 py-3 text-[13px] font-medium text-surface-900">{e.technician.name}</td>
+                                    <td className="px-4 py-3 text-sm font-medium text-surface-900">{e.technician.name}</td>
                                     <td className="px-4 py-3 text-xs text-brand-600 font-medium">{woIdentifier(e.work_order)}</td>
                                     <td className="px-4 py-3">
                                         <Badge variant={tc.variant} className="gap-1"><Icon className="h-3 w-3" />{tc.label}</Badge>
@@ -338,12 +329,11 @@ export function TimeEntriesPage() {
                 </table>
             </div>
 
-            {/* Manual Entry Modal */}
             <Modal open={showForm && canCreate} onOpenChange={setShowForm} title="Novo Apontamento">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico *</label>
                             <select value={form.technician_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('technician_id', e.target.value)} required
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecionar</option>
@@ -351,7 +341,7 @@ export function TimeEntriesPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">OS *</label>
                             <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)} required
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecionar</option>
@@ -360,7 +350,7 @@ export function TimeEntriesPage() {
                         </div>
                     </div>
                     <div>
-                        <label className="mb-2 block text-[13px] font-medium text-surface-700">Tipo</label>
+                        <label className="mb-2 block text-sm font-medium text-surface-700">Tipo</label>
                         <div className="flex gap-2">
                             {Object.entries(typeConfig).map(([k, v]) => {
                                 const Icon = v.icon
@@ -379,7 +369,7 @@ export function TimeEntriesPage() {
                         <Input label="Fim" type="datetime-local" value={form.ended_at} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('ended_at', e.target.value)} />
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Descrição</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Descrição</label>
                         <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>

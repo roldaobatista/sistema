@@ -82,7 +82,6 @@ export function ReconciliationDashboardPage() {
 
     const dashboardQuery = useQuery<DashboardData>({
         queryKey: ['reconciliation-dashboard', startDate, endDate],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: async () => {
             const { data } = await api.get('/bank-reconciliation/dashboard', {
                 params: { start_date: startDate, end_date: endDate },
@@ -97,14 +96,13 @@ export function ReconciliationDashboardPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Dashboard de Conciliação</h1>
                     <p className="text-sm text-surface-500">Visão analítica da conciliação bancária</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-3 py-1.5">
+                    <div className="flex items-center gap-2 rounded-lg border border-default bg-surface-0 px-3 py-1.5">
                         <CalendarDays className="h-4 w-4 text-surface-400" />
                         <label htmlFor="dash-start" className="sr-only">Data início</label>
                         <input
@@ -149,7 +147,6 @@ export function ReconciliationDashboardPage() {
                 </div>
             ) : data ? (
                 <>
-                    {/* KPI Cards */}
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                         <KpiCard
                             label="Taxa de Conciliação"
@@ -181,9 +178,8 @@ export function ReconciliationDashboardPage() {
                         />
                     </div>
 
-                    {/* Credit/Debit Total Cards */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center gap-4 rounded-xl border border-surface-100 bg-white p-5 shadow-sm">
+                        <div className="flex items-center gap-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">
                                 <ArrowUpRight className="h-6 w-6 text-emerald-600" />
                             </div>
@@ -192,7 +188,7 @@ export function ReconciliationDashboardPage() {
                                 <p className="text-xl font-bold text-emerald-600">{fmtBRL(kpis?.total_credits ?? 0)}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 rounded-xl border border-surface-100 bg-white p-5 shadow-sm">
+                        <div className="flex items-center gap-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50">
                                 <ArrowDownRight className="h-6 w-6 text-red-600" />
                             </div>
@@ -203,10 +199,8 @@ export function ReconciliationDashboardPage() {
                         </div>
                     </div>
 
-                    {/* Charts Row */}
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        {/* Pie Chart — Status Distribution */}
-                        <div className="rounded-xl border border-surface-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <h3 className="mb-4 text-sm font-semibold text-surface-900">Distribuição por Status</h3>
                             <ResponsiveContainer width="100%" height={260}>
                                 <PieChart>
@@ -231,8 +225,7 @@ export function ReconciliationDashboardPage() {
                             </ResponsiveContainer>
                         </div>
 
-                        {/* Bar Chart — Credits vs Debits by Week */}
-                        <div className="rounded-xl border border-surface-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <h3 className="mb-4 text-sm font-semibold text-surface-900">Créditos vs Débitos por Semana</h3>
                             <ResponsiveContainer width="100%" height={260}>
                                 <BarChart data={data.weekly_data}>
@@ -248,8 +241,7 @@ export function ReconciliationDashboardPage() {
                         </div>
                     </div>
 
-                    {/* Area Chart — Reconciliation Progress */}
-                    <div className="rounded-xl border border-surface-100 bg-white p-5 shadow-sm">
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <h3 className="mb-4 text-sm font-semibold text-surface-900">
                             <TrendingUp className="mr-1.5 inline h-4 w-4" />
                             Progresso de Conciliação por Dia
@@ -268,10 +260,8 @@ export function ReconciliationDashboardPage() {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Bottom Row: Categories + Top Unreconciled */}
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        {/* Top Categories */}
-                        <div className="rounded-xl border border-surface-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <h3 className="mb-4 text-sm font-semibold text-surface-900">
                                 <Filter className="mr-1.5 inline h-4 w-4" />
                                 Top Categorias
@@ -283,7 +273,7 @@ export function ReconciliationDashboardPage() {
                                     {data.categories.map((cat) => (
                                         <div key={cat.category} className="flex items-center justify-between rounded-lg bg-surface-50 px-3 py-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-[10px] font-bold text-purple-700">
+                                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-purple-700">
                                                     {cat.count}
                                                 </span>
                                                 <span className="text-sm font-medium text-surface-800">{cat.category}</span>
@@ -295,8 +285,7 @@ export function ReconciliationDashboardPage() {
                             )}
                         </div>
 
-                        {/* Top Unreconciled */}
-                        <div className="rounded-xl border border-surface-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <h3 className="mb-4 text-sm font-semibold text-surface-900">
                                 <BarChart3 className="mr-1.5 inline h-4 w-4" />
                                 Top 10 Pendentes (maior valor)
@@ -309,10 +298,10 @@ export function ReconciliationDashboardPage() {
                             ) : (
                                 <div className="space-y-1.5">
                                     {data.top_unreconciled.map((item) => (
-                                        <div key={item.id} className="flex items-center justify-between rounded-lg border border-surface-100 px-3 py-2">
+                                        <div key={item.id} className="flex items-center justify-between rounded-lg border border-default px-3 py-2">
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate text-[13px] font-medium text-surface-800">{item.description}</p>
-                                                <p className="text-[11px] text-surface-400">{fmtDate(item.date)}</p>
+                                                <p className="truncate text-sm font-medium text-surface-800">{item.description}</p>
+                                                <p className="text-xs text-surface-400">{fmtDate(item.date)}</p>
                                             </div>
                                             <span className={`ml-3 shrink-0 text-sm font-bold ${item.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
                                                 {fmtBRL(item.amount)}
@@ -347,7 +336,7 @@ function KpiCard({ label, value, icon, color, subtitle }: {
     const c = colorMap[color]
 
     return (
-        <div className="rounded-xl border border-surface-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
             <div className="flex items-center justify-between">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.bg} ${c.text} ring-1 ${c.ring}`}>
                     {icon}
@@ -355,7 +344,7 @@ function KpiCard({ label, value, icon, color, subtitle }: {
             </div>
             <p className="mt-3 text-2xl font-bold text-surface-900">{value}</p>
             <p className="text-xs font-medium text-surface-500">{label}</p>
-            <p className="mt-0.5 text-[11px] text-surface-400">{subtitle}</p>
+            <p className="mt-0.5 text-xs text-surface-400">{subtitle}</p>
         </div>
     )
 }

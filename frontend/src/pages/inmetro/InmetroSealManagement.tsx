@@ -64,7 +64,6 @@ export default function InmetroSealManagement() {
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-options'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const technicians = techsRes?.data ?? []
@@ -124,7 +123,6 @@ export default function InmetroSealManagement() {
                 ]}
             />
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative max-w-sm flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -159,18 +157,17 @@ export default function InmetroSealManagement() {
                 </select>
             </div>
 
-            {/* Table */}
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full text-left">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
                             <th className="w-10 px-4 py-3"></th>
-                            <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-surface-500">Número</th>
-                            <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-surface-500">Tipo</th>
-                            <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-surface-500">Status</th>
-                            <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-surface-500">Responsável</th>
-                            <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-surface-500">Vínculo</th>
-                            <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-surface-500">Data</th>
+                            <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-surface-500">Número</th>
+                            <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-surface-500">Tipo</th>
+                            <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-surface-500">Status</th>
+                            <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-surface-500">Responsável</th>
+                            <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-surface-500">Vínculo</th>
+                            <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-surface-500">Data</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -215,9 +212,6 @@ export default function InmetroSealManagement() {
                 </table>
             </div>
 
-            {/* Pagination omitted for brevity, would follow standard pattern */}
-
-            {/* Batch Modal */}
             <Modal open={showBatchModal} onOpenChange={setShowBatchModal} title="Entrada em Lote" size="md">
                 <form onSubmit={(e) => {
                     e.preventDefault();
@@ -248,7 +242,6 @@ export default function InmetroSealManagement() {
                 </form>
             </Modal>
 
-            {/* Assign Modal */}
             <Modal open={showAssignModal} onOpenChange={setShowAssignModal} title="Atribuir a Técnico" size="sm">
                 <form onSubmit={(e) => {
                     e.preventDefault();

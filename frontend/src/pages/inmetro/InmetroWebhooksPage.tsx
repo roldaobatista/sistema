@@ -1,4 +1,4 @@
-﻿import { useState , useMemo } from 'react'
+import { useState , useMemo } from 'react'
 import { useWebhooks, useWebhookEvents, useCreateWebhook, useUpdateWebhook, useDeleteWebhook } from '@/hooks/useInmetroAdvanced'
 import type { InmetroWebhookConfig } from '@/hooks/useInmetroAdvanced'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -81,7 +81,7 @@ export default function InmetroWebhooksPage() {
                                         <TableCell><Badge variant="outline">{wh.event_type}</Badge></TableCell>
                                         <TableCell className="font-mono text-xs max-w-xs truncate">{wh.url}</TableCell>
                                         <TableCell>
-                                            <Badge className={wh.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                                            <Badge className={wh.is_active ? 'bg-green-100 text-green-800' : 'bg-surface-100 text-surface-800'}>
                                                 {wh.is_active ? 'Ativo' : 'Inativo'}
                                             </Badge>
                                         </TableCell>

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/stores/auth-store'
+import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 
 // Strings constant for easy localization in the future
 const STRINGS = {
@@ -63,6 +64,7 @@ export function QuoteCreatePage() {
     const [customerSearch, setCustomerSearch] = useState('')
     const [validUntil, setValidUntil] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
+    const [displacementValue, setDisplacementValue] = useState(0)
     const [observations, setObservations] = useState('')
     const [source, setSource] = useState<string>('')
     const [blocks, setBlocks] = useState<EquipmentBlock[]>([])
@@ -71,7 +73,6 @@ export function QuoteCreatePage() {
     // Lookups
     const { data: customersRes } = useQuery({
         queryKey: ['customers-search', customerSearch],
-        const { data } = useQuery({
         queryFn: () => api.get('/customers', { params: { search: customerSearch, per_page: 10 } }),
         enabled: customerSearch.length > 1,
     })
@@ -79,7 +80,6 @@ export function QuoteCreatePage() {
 
     const { data: equipmentsRes } = useQuery({
         queryKey: ['equipments-for-customer', customerId],
-        const { data } = useQuery({
         queryFn: () => api.get(`/customers/${customerId}`),
         enabled: !!customerId,
     })
@@ -87,14 +87,12 @@ export function QuoteCreatePage() {
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-all'],
-        const { data } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 200 } }),
     })
     const products = productsRes?.data?.data ?? []
 
     const { data: servicesRes } = useQuery({
         queryKey: ['services-all'],
-        const { data } = useQuery({
         queryFn: () => api.get('/services', { params: { per_page: 200 } }),
     })
     const services = servicesRes?.data?.data ?? []
@@ -131,7 +129,7 @@ export function QuoteCreatePage() {
         return a + price * it.quantity
     }, 0), 0)
     const discountAmount = discountPercentage > 0 ? subtotal * (discountPercentage / 100) : 0
-    const total = subtotal - discountAmount
+    const total = subtotal - discountAmount + displacementValue
 
     const qc = useQueryClient()
 
@@ -143,6 +141,7 @@ export function QuoteCreatePage() {
                 source: source || null,
                 valid_until: validUntil || null,
                 discount_percentage: discountPercentage,
+                displacement_value: displacementValue,
                 observations,
                 equipments: blocks.map(b => ({
                     equipment_id: b.equipment_id,
@@ -318,24 +317,34 @@ export function QuoteCreatePage() {
 
                                 {/* Items */}
                                 {block.items.map((it, iIdx) => (
-                                    <div key={iIdx} className="flex items-center gap-2 rounded-lg bg-surface-50 p-2 text-sm">
-                                        <span className="w-16 text-xs text-surface-500">{it.type === 'product' ? 'Produto' : 'Serviço'}</span>
-                                        <span className="flex-1 font-medium text-surface-800">{it.name}</span>
-                                        <input type="number" min={1} value={it.quantity}
-                                            onChange={e => updateItem(bIdx, iIdx, 'quantity', Number(e.target.value))}
-                                            className="w-16 rounded border border-default bg-surface-0 px-2 py-1 text-center text-sm" />
-                                        <input type="number" step="0.01" value={it.unit_price}
-                                            onChange={e => updateItem(bIdx, iIdx, 'unit_price', Number(e.target.value))}
-                                            className="w-24 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
-                                        <input type="number" step="0.01" min={0} max={100} value={it.discount_percentage}
-                                            onChange={e => updateItem(bIdx, iIdx, 'discount_percentage', Number(e.target.value))}
-                                            className="w-20 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
-                                        <span className="w-24 text-right font-medium text-surface-900">
-                                            {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
-                                        </span>
-                                        <button onClick={() => { if (window.confirm('Deseja realmente excluir?')) removeItem(bIdx, iIdx) }} className="text-surface-400 hover:text-red-500">
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                        </button>
+                                    <div key={iIdx} className="space-y-1">
+                                        <div className="flex items-center gap-2 rounded-lg bg-surface-50 p-2 text-sm">
+                                            <span className="w-16 text-xs text-surface-500">{it.type === 'product' ? 'Produto' : 'Serviço'}</span>
+                                            <span className="flex-1 font-medium text-surface-800">{it.name}</span>
+                                            <input type="number" min={1} value={it.quantity}
+                                                onChange={e => updateItem(bIdx, iIdx, 'quantity', Number(e.target.value))}
+                                                className="w-16 rounded border border-default bg-surface-0 px-2 py-1 text-center text-sm" />
+                                            <input type="number" step="0.01" value={it.unit_price}
+                                                onChange={e => updateItem(bIdx, iIdx, 'unit_price', Number(e.target.value))}
+                                                className="w-24 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
+                                            <input type="number" step="0.01" min={0} max={100} value={it.discount_percentage}
+                                                onChange={e => updateItem(bIdx, iIdx, 'discount_percentage', Number(e.target.value))}
+                                                className="w-20 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
+                                            <span className="w-24 text-right font-medium text-surface-900">
+                                                {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
+                                            </span>
+                                            <button onClick={() => { if (window.confirm('Deseja realmente excluir?')) removeItem(bIdx, iIdx) }} className="text-surface-400 hover:text-red-500">
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+                                        {customerId && (it.product_id || it.service_id) && (
+                                            <PriceHistoryHint
+                                                customerId={customerId}
+                                                type={it.type}
+                                                referenceId={it.product_id || it.service_id}
+                                                onApplyPrice={(price) => updateItem(bIdx, iIdx, 'unit_price', price)}
+                                            />
+                                        )}
                                     </div>
                                 ))}
 
@@ -402,6 +411,12 @@ export function QuoteCreatePage() {
                                 <input type="number" min={0} max={100} step="0.01" value={discountPercentage}
                                     onChange={e => setDiscountPercentage(Number(e.target.value))}
                                     className="w-20 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm" />
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-surface-600">Deslocamento (R$)</span>
+                                <input type="number" min={0} step="0.01" value={displacementValue}
+                                    onChange={e => setDisplacementValue(Number(e.target.value))}
+                                    className="w-28 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm" />
                             </div>
                             <div className="flex justify-between text-base font-bold pt-2">
                                 <span className="text-surface-900">{STRINGS.total}</span>

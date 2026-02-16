@@ -27,9 +27,12 @@ export interface AuvoConnectionStatus {
 
 export interface AuvoSyncStatus {
     entities: Record<string, {
+        label: string
         last_import_at: string | null
         total_imported: number
+        total_updated: number
         total_errors: number
+        total_mapped: number
         status: string
     }>
     total_mappings: number

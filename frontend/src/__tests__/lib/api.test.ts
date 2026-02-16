@@ -11,7 +11,8 @@ describe('API axios instance', () => {
 
     it('should have correct baseURL', async () => {
         const api = (await import('@/lib/api')).default
-        expect(api.defaults.baseURL).toBe('/api/v1')
+        const baseURL = api.defaults.baseURL || ''
+        expect(baseURL.endsWith('/api/v1')).toBe(true)
     })
 
     it('should set correct default headers', async () => {

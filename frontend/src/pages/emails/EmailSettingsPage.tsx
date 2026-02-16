@@ -214,7 +214,7 @@ export default function EmailSettingsPage() {
                                         <div className="flex items-center gap-3">
                                             <div className={cn(
                                                 'w-2 h-2 rounded-full',
-                                                account.is_active ? 'bg-green-500' : 'bg-gray-400'
+                                                account.is_active ? 'bg-green-500' : 'bg-surface-400'
                                             )} />
                                             <div>
                                                 <CardTitle className="text-base">{account.name}</CardTitle>
@@ -348,7 +348,7 @@ export default function EmailSettingsPage() {
                                         ))}
                                         <span className="text-xs text-muted-foreground mx-1">→</span>
                                         {rule.actions.map((a, i) => (
-                                            <Badge key={i} variant="outline" className="text-xs bg-violet-50 dark:bg-violet-950/20">
+                                            <Badge key={i} variant="outline" className="text-xs bg-violet-50">
                                                 {a.type}
                                             </Badge>
                                         ))}

@@ -57,7 +57,6 @@ export function AccountPayableCategoriesPage() {
 
     const categoriesQuery = useQuery({
         queryKey: ['ap-categories'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: async () => {
             const { data } = await api.get<Category[]>('/account-payable-categories')
             return data
@@ -186,9 +185,9 @@ export function AccountPayableCategoriesPage() {
             />
 
             {categoriesQuery.isLoading ? (
-                <div className="py-12 text-center text-[13px] text-surface-500">Carregando...</div>
+                <div className="py-12 text-center text-sm text-surface-500">Carregando...</div>
             ) : categoriesQuery.isError ? (
-                <div className="py-12 text-center text-[13px] text-red-600">
+                <div className="py-12 text-center text-sm text-red-600">
                     Erro ao carregar categorias. <button className="underline" onClick={() => categoriesQuery.refetch()}>Tentar novamente</button>
                 </div>
             ) : categories.length === 0 ? (
@@ -221,7 +220,7 @@ export function AccountPayableCategoriesPage() {
                     <Input label="Descricao" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} />
 
                     <div>
-                        <label className="mb-2 block text-[13px] font-medium text-surface-700">Cor</label>
+                        <label className="mb-2 block text-sm font-medium text-surface-700">Cor</label>
                         <div className="flex flex-wrap gap-2">
                             {presetColors.map((color) => (
                                 <button
@@ -244,7 +243,7 @@ export function AccountPayableCategoriesPage() {
 
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Categoria">
                 <div className="space-y-4">
-                    <p className="text-[13px] text-surface-600">Tem certeza que deseja excluir a categoria {deleteTarget?.name}?</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir a categoria {deleteTarget?.name}?</p>
                     <div className="flex justify-end gap-3 border-t border-subtle pt-4">
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button variant="danger" loading={deleteMut.isPending} onClick={() => { if (deleteTarget) deleteMut.mutate(deleteTarget.id) }}>

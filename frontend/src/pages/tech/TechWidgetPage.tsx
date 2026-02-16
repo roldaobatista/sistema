@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
@@ -49,7 +50,6 @@ export default function TechWidgetPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['tech-widget-os'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technician/work-orders', {
             params: { per_page: 3, status: 'open,in_progress,scheduled' },
         }),

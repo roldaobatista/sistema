@@ -23,12 +23,15 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
     const isNFe = type === 'nfe'
     const title = isNFe ? 'Emitir NF-e' : 'Emitir NFS-e'
 
+    const [customerId, setCustomerId] = useState<number | null>(null)
+    const [workOrderId, setWorkOrderId] = useState<number | null>(null)
+    const [notes, setNotes] = useState('')
+    const [items, setItems] = useState<ItemRow[]>([
         { description: '', quantity: 1, unit_price: 0, ncm: '', service_code: '' },
     ])
 
     const { data: customers } = useQuery({
         queryKey: ['customers-select'],
-        const { data } = useQuery({
         queryFn: async () => {
             const { data } = await api.get('/customers?per_page=500&fields=id,name')
             return data.data ?? data ?? []
@@ -105,33 +108,30 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="relative bg-surface-0 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-default">
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${isNFe ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
                             <FileText className="w-5 h-5" />
                         </div>
                         <h2 className="text-lg font-semibold">{title}</h2>
                     </div>
-                    <button onClick={onClose} className="p-1.5 rounded-md hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors" aria-label="Fechar">
+                    <button onClick={onClose} className="p-1.5 rounded-md hover:bg-surface-100 transition-colors" aria-label="Fechar">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Body */}
                 <div className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
-                    {/* Customer & Work Order */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                            <label className="block text-sm font-medium text-surface-700 mb-1">
                                 Cliente <span className="text-red-500">*</span>
                             </label>
                             <select
-                                value={customerId}
-                                onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : '')}
+                                value={customerId ?? ''}
+                                onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : null)}
                                 aria-label="Selecionar cliente"
-                                className="w-full px-3 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm focus:ring-2 focus:ring-brand-500"
+                                className="w-full px-3 py-2.5 rounded-lg border border-default bg-surface-0 text-sm focus:ring-2 focus:ring-brand-500"
                             >
                                 <option value="">Selecione...</option>
                                 {(customers ?? []).map((c: any) => (
@@ -140,23 +140,22 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">
+                            <label className="block text-sm font-medium text-surface-700 mb-1">
                                 Ordem de Serviço
                             </label>
                             <input
                                 type="number"
                                 placeholder="ID da OS (opcional)"
-                                value={workOrderId}
-                                onChange={(e) => setWorkOrderId(e.target.value ? Number(e.target.value) : '')}
-                                className="w-full px-3 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm focus:ring-2 focus:ring-brand-500"
+                                value={workOrderId ?? ''}
+                                onChange={(e) => setWorkOrderId(e.target.value ? Number(e.target.value) : null)}
+                                className="w-full px-3 py-2.5 rounded-lg border border-default bg-surface-0 text-sm focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
                     </div>
 
-                    {/* Items */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                            <label className="text-sm font-medium text-surface-700">
                                 {isNFe ? 'Itens' : 'Serviços'} <span className="text-red-500">*</span>
                             </label>
                             <button
@@ -169,14 +168,14 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
 
                         <div className="space-y-3">
                             {items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-12 gap-2 items-end p-3 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700">
+                                <div key={index} className="grid grid-cols-12 gap-2 items-end p-3 rounded-lg bg-surface-50 border border-default">
                                     <div className="col-span-5">
                                         <label className="block text-xs text-surface-500 mb-1">Descrição</label>
                                         <input
                                             value={item.description}
                                             onChange={(e) => updateItem(index, 'description', e.target.value)}
                                             placeholder="Descrição do item..."
-                                            className="w-full px-2.5 py-2 rounded-md border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-sm"
+                                            className="w-full px-2.5 py-2 rounded-md border border-default bg-surface-0 text-sm"
                                         />
                                     </div>
                                     <div className="col-span-2">
@@ -188,7 +187,7 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
                                             value={item.quantity}
                                             onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
                                             aria-label="Quantidade"
-                                            className="w-full px-2.5 py-2 rounded-md border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-sm"
+                                            className="w-full px-2.5 py-2 rounded-md border border-default bg-surface-0 text-sm"
                                         />
                                     </div>
                                     <div className="col-span-2">
@@ -200,7 +199,7 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
                                             value={item.unit_price}
                                             onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
                                             aria-label="Preço unitário"
-                                            className="w-full px-2.5 py-2 rounded-md border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-sm"
+                                            className="w-full px-2.5 py-2 rounded-md border border-default bg-surface-0 text-sm"
                                         />
                                     </div>
                                     <div className="col-span-2">
@@ -209,7 +208,7 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
                                             value={isNFe ? (item.ncm ?? '') : (item.service_code ?? '')}
                                             onChange={(e) => updateItem(index, isNFe ? 'ncm' : 'service_code', e.target.value)}
                                             placeholder={isNFe ? '0000.00.00' : '01.02'}
-                                            className="w-full px-2.5 py-2 rounded-md border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-sm"
+                                            className="w-full px-2.5 py-2 rounded-md border border-default bg-surface-0 text-sm"
                                         />
                                     </div>
                                     <div className="col-span-1 flex justify-center">
@@ -227,19 +226,17 @@ export default function FiscalEmitirDialog({ type, onClose, onSuccess }: Props) 
                         </div>
                     </div>
 
-                    {/* Total */}
                     <div className="flex justify-end">
                         <div className="text-right">
                             <span className="text-sm text-surface-500">Total: </span>
-                            <span className="text-lg font-bold text-surface-900 dark:text-surface-100">
+                            <span className="text-lg font-bold text-surface-900">
                                 {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/30">
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-default bg-surface-50">
                     <button
                         onClick={onClose}
                         className="px-4 py-2.5 text-sm font-medium text-surface-600 hover:text-surface-800 rounded-lg hover:bg-surface-100 transition-colors"

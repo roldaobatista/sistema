@@ -179,7 +179,7 @@ describe('Auth Store', () => {
     })
 
     describe('persist partialize', () => {
-        it('should only persist token and isAuthenticated', () => {
+        it('should persist token, isAuthenticated, user and tenant', () => {
             useAuthStore.setState({
                 user: {
                     id: 1,
@@ -195,11 +195,10 @@ describe('Auth Store', () => {
             })
 
             const stored = JSON.parse(localStorage.getItem('auth-store') || '{}')
-            // Persisted fields
             expect(stored.state?.token).toBe('abc123')
             expect(stored.state?.isAuthenticated).toBe(true)
-            // Non-persisted fields should NOT be in storage
-            expect(stored.state?.user).toBeUndefined()
+            expect(stored.state?.user).toBeDefined()
+            expect(stored.state?.user?.id).toBe(1)
         })
     })
 })

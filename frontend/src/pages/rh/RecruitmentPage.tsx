@@ -24,6 +24,7 @@ export default function RecruitmentPage() {
         salary_range_min: 0,
         salary_range_max: 0
     })
+    const [searchTerm, setSearchTerm] = useState('')
 
     const filteredJobs = jobs?.filter(job =>
         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

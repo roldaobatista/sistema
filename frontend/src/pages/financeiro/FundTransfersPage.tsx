@@ -89,19 +89,16 @@ export function FundTransfersPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['fund-transfers-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fund-transfers/summary'),
     })
 
     const { data: accountsRes } = useQuery({
         queryKey: ['bank-accounts-active'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/bank-accounts', { params: { is_active: true } }),
     })
 
     const { data: techsRes } = useQuery({
         queryKey: ['technicians-options'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
 
@@ -170,14 +167,13 @@ export function FundTransfersPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Transferências p/ Técnicos</h1>
-                    <p className="text-[13px] text-surface-500">Transferências de verba empresa → caixa do técnico</p>
+                    <p className="text-sm text-surface-500">Transferências de verba empresa → caixa do técnico</p>
                 </div>
                 {canCreate && (
                     <Button onClick={openCreate} icon={<Plus className="h-4 w-4" />}>Nova Transferência</Button>
                 )}
             </div>
 
-            {/* Summary Cards */}
             {summary && (
                 <div className="grid gap-4 sm:grid-cols-3">
                     {[
@@ -190,7 +186,7 @@ export function FundTransfersPage() {
                                 <div className={`rounded-lg p-2.5 ${s.color}`}><s.icon className="h-5 w-5" /></div>
                                 <div>
                                     <p className="text-xs text-surface-500">{s.label}</p>
-                                    <p className="text-[15px] font-semibold tabular-nums text-surface-900">{s.value}</p>
+                                    <p className="text-sm font-semibold tabular-nums text-surface-900">{s.value}</p>
                                 </div>
                             </div>
                         </div>
@@ -198,7 +194,6 @@ export function FundTransfersPage() {
                 </div>
             )}
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -222,7 +217,6 @@ export function FundTransfersPage() {
                     className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none" />
             </div>
 
-            {/* Table */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                 {isLoading ? (
                     <div className="py-12 text-center text-sm text-surface-400">Carregando...</div>
@@ -296,7 +290,6 @@ export function FundTransfersPage() {
                     </div>
                 )}
 
-                {/* Pagination */}
                 {pagination && pagination.last_page > 1 && (
                     <div className="border-t border-subtle px-5 py-3 flex items-center justify-between">
                         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
@@ -312,12 +305,11 @@ export function FundTransfersPage() {
                 )}
             </div>
 
-            {/* Create Modal */}
             <Modal open={showModal} onOpenChange={setShowModal} title="Nova Transferência" size="md">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Conta Bancária *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Conta Bancária *</label>
                             <select value={form.bank_account_id} required
                                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(p => ({ ...p, bank_account_id: e.target.value }))}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
@@ -328,7 +320,7 @@ export function FundTransfersPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico Destino *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico Destino *</label>
                             <select value={form.to_user_id} required
                                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(p => ({ ...p, to_user_id: e.target.value }))}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
@@ -345,7 +337,7 @@ export function FundTransfersPage() {
                         <Input label="Data *" type="date" value={form.transfer_date} required
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(p => ({ ...p, transfer_date: e.target.value }))} />
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Método *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Método *</label>
                             <select value={form.payment_method} required
                                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(p => ({ ...p, payment_method: e.target.value }))}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
@@ -365,7 +357,6 @@ export function FundTransfersPage() {
                 </form>
             </Modal>
 
-            {/* Cancel Confirm */}
             <Modal open={!!cancelTarget} onOpenChange={() => setCancelTarget(null)} title="Cancelar Transferência" size="sm">
                 <p className="text-sm text-surface-600">
                     Tem certeza que deseja cancelar esta transferência de{' '}

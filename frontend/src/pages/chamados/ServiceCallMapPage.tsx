@@ -83,15 +83,15 @@ function CallCard({ call, isSelected, onClick }: { call: any; isSelected: boolea
         <div
             onClick={onClick}
             className={`p-3 rounded-lg border cursor-pointer transition-all ${isSelected
-                    ? 'border-brand-400 bg-brand-50/50 dark:bg-brand-900/20 shadow-sm'
-                    : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/40'
+                    ? 'border-brand-400 bg-brand-50/50 shadow-card'
+                    : 'border-surface-200 hover:border-surface-300 hover:bg-surface-50'
                 }`}
         >
             <div className="flex items-start justify-between gap-2 mb-1.5">
-                <span className="text-[11px] font-mono text-surface-400">{call.call_number}</span>
+                <span className="text-xs font-mono text-surface-400">{call.call_number}</span>
                 <Badge variant={sc.variant} className="text-[10px] px-1.5 py-0">{sc.label}</Badge>
             </div>
-            <p className="text-[13px] font-semibold text-surface-900 dark:text-white truncate mb-1">{call.customer?.name || '—'}</p>
+            <p className="text-sm font-semibold text-surface-900 truncate mb-1">{call.customer?.name || '—'}</p>
             <div className="flex items-center gap-3 text-[11px] text-surface-500">
                 {call.city && (
                     <span className="flex items-center gap-0.5">
@@ -138,7 +138,6 @@ export function ServiceCallMapPage() {
 
     const { data: res, isLoading, refetch } = useQuery({
         queryKey: ['service-calls-map', statusFilter],
-        const { data, isLoading, refetch } = useQuery({
         queryFn: () => api.get('/service-calls-map', {
             params: statusFilter ? { status: statusFilter } : {},
         }),
@@ -185,26 +184,26 @@ export function ServiceCallMapPage() {
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)]">
             {/* Top Bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-surface-0 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 rounded-t-xl shadow-card z-10">
+            <div className="flex items-center justify-between px-4 py-3 bg-surface-0 border-b border-default rounded-t-xl shadow-card z-10">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/chamados')} className="rounded-lg p-1.5 hover:bg-surface-100 dark:hover:bg-surface-800">
+                    <button onClick={() => navigate('/chamados')} className="rounded-lg p-1.5 hover:bg-surface-100">
                         <ArrowLeft className="h-5 w-5 text-surface-500" />
                     </button>
                     <div>
-                        <h1 className="text-base font-semibold text-surface-900 dark:text-white tracking-tight">Mapa de Chamados</h1>
-                        <p className="text-[11px] text-surface-500">{stats.total} chamados no mapa</p>
+                        <h1 className="text-base font-semibold text-surface-900 tracking-tight">Mapa de Chamados</h1>
+                        <p className="text-xs text-surface-500">{stats.total} chamados no mapa</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                     {/* Quick Stats */}
                     {stats.urgent > 0 && (
-                        <div className="hidden md:flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 text-[11px] font-medium">
+                        <div className="hidden md:flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 text-red-600 text-xs font-medium">
                             <Zap className="w-3 h-3" /> {stats.urgent} urgente{stats.urgent > 1 ? 's' : ''}
                         </div>
                     )}
                     {stats.noTech > 0 && (
-                        <div className="hidden md:flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 text-[11px] font-medium">
+                        <div className="hidden md:flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 text-amber-600 text-xs font-medium">
                             <User className="w-3 h-3" /> {stats.noTech} sem técnico
                         </div>
                     )}
@@ -213,7 +212,7 @@ export function ServiceCallMapPage() {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="rounded-lg border border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 px-2.5 py-1.5 text-[12px] focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                        className="rounded-lg border border-default bg-surface-50 px-2.5 py-1.5 text-xs focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                     >
                         <option value="">Todos os status</option>
                         {Object.entries(statusConfig).map(([k, v]) => (
@@ -223,7 +222,7 @@ export function ServiceCallMapPage() {
                     <select
                         value={priorityFilter}
                         onChange={(e) => setPriorityFilter(e.target.value)}
-                        className="rounded-lg border border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 px-2.5 py-1.5 text-[12px] focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                        className="rounded-lg border border-default bg-surface-50 px-2.5 py-1.5 text-xs focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                     >
                         <option value="">Todas as prioridades</option>
                         {Object.entries(priorityConfig).map(([k, v]) => (
@@ -231,32 +230,32 @@ export function ServiceCallMapPage() {
                         ))}
                     </select>
 
-                    <button onClick={() => refetch()} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-500" title="Atualizar">
+                    <button onClick={() => refetch()} className="p-1.5 rounded-lg hover:bg-surface-100 text-surface-500" title="Atualizar">
                         <RefreshCcw className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-500" title="Painel lateral">
+                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-surface-100 text-surface-500" title="Painel lateral">
                         <Layers className="w-4 h-4" />
                     </button>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="flex flex-1 overflow-hidden rounded-b-xl border border-t-0 border-surface-200 dark:border-surface-700">
+            <div className="flex flex-1 overflow-hidden rounded-b-xl border border-t-0 border-default">
                 {/* Map */}
                 <div className="flex-1 relative">
                     {isLoading ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-surface-100 dark:bg-surface-800">
+                        <div className="absolute inset-0 flex items-center justify-center bg-surface-100">
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-10 h-10 border-4 border-brand-200 dark:border-brand-800 border-t-brand-600 rounded-full animate-spin" />
-                                <p className="text-[13px] text-surface-500">Carregando mapa...</p>
+                                <div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+                                <p className="text-sm text-surface-500">Carregando mapa...</p>
                             </div>
                         </div>
                     ) : points.length === 0 ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-surface-50 dark:bg-surface-800">
+                        <div className="absolute inset-0 flex items-center justify-center bg-surface-50">
                             <div className="text-center">
-                                <MapPin className="w-16 h-16 mx-auto text-surface-300 dark:text-surface-600 mb-4" />
-                                <p className="text-[15px] font-medium text-surface-600 dark:text-surface-400">Nenhum chamado com localização</p>
-                                <p className="text-[12px] text-surface-400 dark:text-surface-500 mt-1">Chamados precisam de latitude/longitude para aparecer no mapa</p>
+                                <MapPin className="w-16 h-16 mx-auto text-surface-300 mb-4" />
+                                <p className="text-sm font-medium text-surface-600">Nenhum chamado com localização</p>
+                                <p className="text-xs text-surface-400 mt-1">Chamados precisam de latitude/longitude para aparecer no mapa</p>
                             </div>
                         </div>
                     ) : (
@@ -285,16 +284,16 @@ export function ServiceCallMapPage() {
                                     <Popup maxWidth={280} className="custom-popup">
                                         <div className="p-1">
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[11px] font-mono text-gray-400">{call.call_number}</span>
+                                                <span className="text-xs font-mono text-surface-400">{call.call_number}</span>
                                                 <Badge variant={statusConfig[call.status]?.variant || 'default'} className="text-[10px] px-1.5 py-0">
                                                     {statusConfig[call.status]?.label || call.status}
                                                 </Badge>
                                             </div>
-                                            <p className="text-[13px] font-semibold text-gray-900 mb-1">{call.customer?.name || '—'}</p>
+                                            <p className="text-sm font-semibold text-surface-900 mb-1">{call.customer?.name || '—'}</p>
                                             {call.description && (
-                                                <p className="text-[11px] text-gray-500 mb-2 line-clamp-2">{call.description}</p>
+                                                <p className="text-xs text-surface-500 mb-2 line-clamp-2">{call.description}</p>
                                             )}
-                                            <div className="space-y-1 text-[11px] text-gray-600">
+                                            <div className="space-y-1 text-xs text-surface-600">
                                                 {call.customer?.phone && (
                                                     <p className="flex items-center gap-1">
                                                         <Phone className="w-3 h-3" /> {call.customer.phone}
@@ -316,7 +315,7 @@ export function ServiceCallMapPage() {
                                                     </p>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-100">
+                                            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-subtle">
                                                 <button
                                                     onClick={() => navigate(`/chamados/${call.id}`)}
                                                     className="flex-1 text-center py-1 text-[11px] font-medium text-brand-600 hover:bg-brand-50 rounded transition-colors"
@@ -340,17 +339,17 @@ export function ServiceCallMapPage() {
                     )}
 
                     {/* Legend overlay */}
-                    <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-surface-900/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-[500] border border-surface-200 dark:border-surface-700">
+                    <div className="absolute bottom-4 left-4 bg-surface-0/90 backdrop-blur-sm rounded-lg p-3 shadow-card z-[500] border border-default">
                         <p className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2">Legenda</p>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                             {Object.entries(statusConfig).map(([k, v]) => (
-                                <div key={k} className="flex items-center gap-1.5 text-[11px] text-surface-600 dark:text-surface-400">
+                                <div key={k} className="flex items-center gap-1.5 text-xs text-surface-600">
                                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
                                     {v.label}
                                 </div>
                             ))}
                         </div>
-                        <div className="border-t border-surface-200 dark:border-surface-700 mt-2 pt-2">
+                        <div className="border-t border-subtle mt-2 pt-2">
                             <div className="flex items-center gap-3 text-[10px] text-surface-500">
                                 <span className="flex items-center gap-1">
                                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Urgente
@@ -365,12 +364,12 @@ export function ServiceCallMapPage() {
 
                 {/* Sidebar */}
                 {sidebarOpen && (
-                    <div className="w-80 border-l border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 flex flex-col overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-surface-200 dark:border-surface-700">
-                            <p className="text-[13px] font-semibold text-surface-900 dark:text-white">
+                    <div className="w-80 border-l border-default bg-surface-0 flex flex-col overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-default">
+                            <p className="text-sm font-semibold text-surface-900">
                                 Chamados ({filteredCalls.length})
                             </p>
-                            <button onClick={() => setSidebarOpen(false)} className="p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800">
+                            <button onClick={() => setSidebarOpen(false)} className="p-1 rounded hover:bg-surface-100">
                                 <X className="w-4 h-4 text-surface-400" />
                             </button>
                         </div>
@@ -378,7 +377,7 @@ export function ServiceCallMapPage() {
                             {filteredCalls.length === 0 ? (
                                 <div className="flex flex-col items-center py-8 text-surface-400">
                                     <Filter className="w-8 h-8 mb-2 opacity-30" />
-                                    <p className="text-[12px]">Nenhum resultado</p>
+                                    <p className="text-xs">Nenhum resultado</p>
                                 </div>
                             ) : (
                                 filteredCalls.map((call: any) => (

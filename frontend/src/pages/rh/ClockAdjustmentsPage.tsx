@@ -52,7 +52,6 @@ export default function ClockAdjustmentsPage() {
 
     const { data: adjustmentsRes, isLoading } = useQuery({
         queryKey: ['clock-adjustments', page, statusFilter, search],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/adjustments', {
             params: { page, per_page: 20, status: statusFilter || undefined, search: search || undefined },
         }).then(r => r.data),
@@ -89,7 +88,6 @@ export default function ClockAdjustmentsPage() {
         <div className="space-y-5">
             <PageHeader title="Ajustes de Ponto" subtitle="Solicitações de ajuste pendentes de aprovação" />
 
-            {/* Filters */}
             <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -119,7 +117,6 @@ export default function ClockAdjustmentsPage() {
                 </div>
             </div>
 
-            {/* Table */}
             <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full text-sm">
                     <thead>
@@ -194,7 +191,6 @@ export default function ClockAdjustmentsPage() {
                 </table>
             </div>
 
-            {/* Pagination */}
             {lastPage > 1 && (
                 <div className="flex items-center justify-between">
                     <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}
@@ -206,7 +202,6 @@ export default function ClockAdjustmentsPage() {
                 </div>
             )}
 
-            {/* Reject Modal */}
             <Modal open={!!rejectTarget} onOpenChange={() => setRejectTarget(null)} title="Rejeitar Ajuste" size="sm">
                 <div className="space-y-4">
                     <p className="text-sm text-surface-600">

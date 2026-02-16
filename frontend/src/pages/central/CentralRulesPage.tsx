@@ -28,23 +28,21 @@ const emptyForm = {
 }
 
 export function CentralRulesPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<number | null>(null)
     const [form, setForm] = useState({ ...emptyForm })
 
-    const { data: rulesRes, isLoading } = useQuery({
+    const { data: rulesRes, isLoading, isError } = useQuery({
         queryKey: ['central-rules'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/central/rules'),
     })
     const rules: any[] = rulesRes?.data?.data ?? []
 
     const { data: usersRes } = useQuery({
         queryKey: ['users-central-rules'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/users', { params: { per_page: 100 } }),
     })
     const users: any[] = usersRes?.data?.data ?? []
@@ -62,7 +60,7 @@ export function CentralRulesPage() {
         },
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['central-rules'] })
+            qc.invalidateQueries({ queryKey: ['central-rules'] })
             resetForm()
         },
     })
@@ -71,7 +69,7 @@ export function CentralRulesPage() {
         mutationFn: (id: number) => api.delete(`/central/rules/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['central-rules'] })
+            qc.invalidateQueries({ queryKey: ['central-rules'] })
         },
     })
 
@@ -80,7 +78,7 @@ export function CentralRulesPage() {
             api.patch(`/central/rules/${id}`, { ativo }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['central-rules'] })
+            qc.invalidateQueries({ queryKey: ['central-rules'] })
         },
     })
 
@@ -127,6 +125,12 @@ export function CentralRulesPage() {
             {isLoading ? (
                 <div className="flex items-center justify-center py-16">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+                </div>
+            ) : isError ? (
+                <div className="rounded-xl border border-default bg-surface-0 py-16 text-center">
+                    <Zap className="mx-auto h-12 w-12 text-red-300" />
+                    <p className="mt-3 text-[13px] font-medium text-red-600">Erro ao carregar regras</p>
+                    <p className="text-xs text-surface-400 mt-1">Tente novamente mais tarde</p>
                 </div>
             ) : rules.length === 0 ? (
                 <div className="rounded-xl border border-default bg-surface-0 py-16 text-center">

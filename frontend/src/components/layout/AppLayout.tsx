@@ -1,64 +1,15 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useDarkMode } from '@/hooks/useDarkMode'
 import { AppBreadcrumb } from './AppBreadcrumb'
 import {
-    LayoutDashboard,
-    Users,
-    FileText,
-    Wrench,
-    DollarSign,
-    BarChart3,
-    Settings,
-    Shield,
-    ChevronLeft,
-    ChevronRight,
-    LogOut,
-    Menu,
-    X,
-    Building2,
-    Package,
-    Briefcase,
-    KeyRound,
-    Grid3x3,
-    Calendar,
-    Clock,
-    ArrowDownToLine,
-    ArrowUpFromLine,
-    Award,
-    Receipt,
-    WifiOff,
-    Download,
-    Phone,
-    Upload,
-    Truck,
-    CreditCard,
-    Scale,
-    Weight,
-    RotateCcw,
-    TrendingUp,
-    History,
-    Warehouse,
-    ArrowLeftRight,
-    Bell,
-    CheckSquare,
-    Tag,
-    Inbox,
-    Heart,
-    Zap,
-    Search,
-    Moon,
-    Sun,
-    Star,
-    ClipboardCheck,
-    MapPinned,
-    BookOpen,
-    Fuel,
-    ScrollText,
-    Brain,
-    QrCode,
-    Network,
-    User,
-    BarChart,
+    LayoutDashboard, Users, FileText, Wrench, DollarSign, BarChart3, Settings,
+    Shield, ChevronLeft, ChevronRight, LogOut, Menu, X, Building2, Package,
+    Briefcase, KeyRound, Grid3x3, Calendar, Clock, ArrowDownToLine, ArrowUpFromLine,
+    Award, Receipt, WifiOff, Download, Phone, Upload, Truck, CreditCard, Scale,
+    Weight, RotateCcw, TrendingUp, History, Warehouse, ArrowLeftRight, Bell,
+    CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
+    MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -66,6 +17,7 @@ import { useUIStore } from '@/stores/ui-store'
 import { usePWA } from '@/hooks/usePWA'
 import { useCurrentTenant as useTenantHook } from '@/hooks/useCurrentTenant'
 import NotificationPanel from '@/components/notifications/NotificationPanel'
+import OfflineIndicator from '@/components/pwa/OfflineIndicator'
 
 interface NavItem {
     label: string
@@ -108,10 +60,7 @@ const navigationSections: NavSection[] = [
         label: 'Comercial',
         items: [
             {
-                label: 'CRM',
-                icon: Briefcase,
-                path: '/crm',
-                permission: 'crm.deal.view',
+                label: 'CRM', icon: Briefcase, path: '/crm', permission: 'crm.deal.view',
                 children: [
                     { label: 'Dashboard', icon: BarChart3, path: '/crm' },
                     { label: 'Pipeline', icon: Grid3x3, path: '/crm/pipeline' },
@@ -120,14 +69,11 @@ const navigationSections: NavSection[] = [
             },
             { label: 'Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
             {
-                label: 'Chamados',
-                icon: Phone,
-                path: '/chamados',
-                permission: 'service_calls.service_call.view',
+                label: 'Chamados', icon: Phone, path: '/chamados', permission: 'service_calls.service_call.view',
                 children: [
                     { label: 'Lista', icon: FileText, path: '/chamados' },
                     { label: 'Mapa', icon: Scale, path: '/chamados/mapa' },
-                    { label: 'Agenda Técnicos', icon: Calendar, path: '/chamados/agenda' },
+                    { label: 'Agenda', icon: Calendar, path: '/chamados/agenda' },
                 ],
             },
         ],
@@ -136,75 +82,57 @@ const navigationSections: NavSection[] = [
         label: 'Operacional',
         items: [
             {
-                label: 'Ordens de Serviço',
-                icon: FileText,
-                path: '/os',
-                permission: 'os.work_order.view',
+                label: 'Ordens de Serviço', icon: FileText, path: '/os', permission: 'os.work_order.view',
                 children: [
                     { label: 'Lista', icon: FileText, path: '/os' },
                     { label: 'Kanban', icon: Grid3x3, path: '/os/kanban' },
-                    { label: 'SLA Políticas', icon: Shield, path: '/os/sla' },
-                    { label: 'SLA Dashboard', icon: BarChart3, path: '/os/sla-dashboard' },
+                    { label: 'SLA', icon: Shield, path: '/os/sla' },
                     { label: 'Checklists', icon: CheckSquare, path: '/os/checklists' },
+                    { label: 'Contratos', icon: RotateCcw, path: '/os/contratos-recorrentes' },
                 ]
             },
-            { label: 'Contratos Recorrentes', icon: RotateCcw, path: '/os/contratos-recorrentes', permission: 'os.work_order.view' },
             {
-                label: 'Técnicos',
-                icon: Wrench,
-                path: '/tecnicos',
-                permission: 'technicians.schedule.view',
+                label: 'Técnicos', icon: Wrench, path: '/tecnicos', permission: 'technicians.schedule.view',
                 children: [
-                    { label: 'Agenda', icon: Calendar, path: '/tecnicos/agenda', permission: 'technicians.schedule.view' },
+                    { label: 'Agenda', icon: Calendar, path: '/tecnicos/agenda' },
                     { label: 'Apontamentos', icon: Clock, path: '/tecnicos/apontamentos', permission: 'technicians.time_entry.view' },
                     { label: 'Caixa', icon: DollarSign, path: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
                 ],
             },
             {
-                label: 'Equipamentos',
-                icon: Scale,
-                path: '/equipamentos',
-                permission: 'equipments.equipment.view',
+                label: 'Equipamentos', icon: Scale, path: '/equipamentos', permission: 'equipments.equipment.view',
                 children: [
                     { label: 'Lista', icon: Scale, path: '/equipamentos' },
                     { label: 'Pesos Padrão', icon: Weight, path: '/equipamentos/pesos-padrao', permission: 'equipments.standard_weight.view' },
-                    { label: 'Agenda Calibrações', icon: Calendar, path: '/agenda-calibracoes' },
+                    { label: 'Atr. Pesos', icon: ArrowLeftRight, path: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
+                    { label: 'Leituras', icon: BookOpen, path: '/calibracao/leituras', permission: 'calibration.reading.view' },
+                    { label: 'Templates Cert.', icon: FileText, path: '/calibracao/templates', permission: 'calibration.reading.view' },
+                    { label: 'Agenda', icon: Calendar, path: '/agenda-calibracoes' },
                 ],
             },
         ],
     },
     {
-        label: 'Cadastros & Estoque',
+        label: 'Cadastros',
         items: [
             {
-                label: 'Cadastros',
-                icon: Package,
-                path: '/cadastros',
-                permission: 'cadastros.customer.view',
+                label: 'Cadastros', icon: Package, path: '/cadastros', permission: 'cadastros.customer.view',
                 children: [
                     { label: 'Clientes', icon: Users, path: '/cadastros/clientes' },
-                    { label: 'Fusão Clientes', icon: Users, path: '/cadastros/clientes/fusao' },
                     { label: 'Produtos', icon: Package, path: '/cadastros/produtos' },
                     { label: 'Serviços', icon: Briefcase, path: '/cadastros/servicos' },
                     { label: 'Fornecedores', icon: Truck, path: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
-                    { label: 'Histórico Preços', icon: TrendingUp, path: '/cadastros/historico-precos' },
-                    { label: 'Exportação Lote', icon: Upload, path: '/cadastros/exportacao-lote' },
                 ],
             },
             {
-                label: 'Estoque',
-                icon: Warehouse,
-                path: '/estoque',
-                permission: 'estoque.movement.view',
+                label: 'Estoque', icon: Warehouse, path: '/estoque', permission: 'estoque.movement.view',
                 children: [
                     { label: 'Dashboard', icon: BarChart3, path: '/estoque' },
                     { label: 'Movimentações', icon: ArrowLeftRight, path: '/estoque/movimentacoes' },
                     { label: 'Armazéns', icon: Warehouse, path: '/estoque/armazens' },
-                    { label: 'Lotes', icon: Tag, path: '/estoque/lotes' },
                     { label: 'Inventário', icon: ClipboardCheck, path: '/estoque/inventarios' },
                     { label: 'Kardex', icon: ScrollText, path: '/estoque/kardex' },
-                    { label: 'Inteligência', icon: BarChart3, path: '/estoque/inteligencia' },
-                    { label: 'Integração', icon: QrCode, path: '/estoque/integracao' },
+                    { label: 'Calib. Ferramentas', icon: Wrench, path: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
                 ],
             },
         ],
@@ -213,28 +141,21 @@ const navigationSections: NavSection[] = [
         label: 'Financeiro',
         items: [
             {
-                label: 'Financeiro',
-                icon: DollarSign,
-                path: '/financeiro',
+                label: 'Financeiro', icon: DollarSign, path: '/financeiro',
                 permission: 'finance.receivable.view|finance.payable.view|finance.cashflow.view|finance.chart.view|commissions.rule.view|expenses.expense.view',
                 children: [
                     { label: 'Contas a Receber', icon: ArrowDownToLine, path: '/financeiro/receber', permission: 'finance.receivable.view' },
                     { label: 'Contas a Pagar', icon: ArrowUpFromLine, path: '/financeiro/pagar', permission: 'finance.payable.view' },
                     { label: 'Contas Bancárias', icon: Building2, path: '/financeiro/contas-bancarias', permission: 'financial.bank_account.view' },
-                    { label: 'Transf. Técnicos', icon: ArrowLeftRight, path: '/financeiro/transferencias-tecnicos', permission: 'financial.fund_transfer.view' },
                     { label: 'Pagamentos', icon: DollarSign, path: '/financeiro/pagamentos', permission: 'finance.receivable.view|finance.payable.view' },
                     { label: 'Comissões', icon: Award, path: '/financeiro/comissoes', permission: 'commissions.rule.view' },
-                    { label: 'Dashboard Comissões', icon: BarChart3, path: '/financeiro/comissoes/dashboard', permission: 'commissions.rule.view' },
                     { label: 'Despesas', icon: Receipt, path: '/financeiro/despesas', permission: 'expenses.expense.view' },
-                    { label: 'Abastecimento', icon: Fuel, path: '/financeiro/abastecimento', permission: 'expenses.fueling_log.view' },
-                    { label: 'Formas de Pagamento', icon: CreditCard, path: '/financeiro/formas-pagamento', permission: 'finance.payable.view' },
-                    { label: 'Fluxo de Caixa', icon: TrendingUp, path: '/financeiro/fluxo-caixa', permission: 'finance.cashflow.view' },
                     { label: 'Faturamento', icon: FileText, path: '/financeiro/faturamento', permission: 'finance.receivable.view' },
-                    { label: 'Conciliação Bancária', icon: ArrowLeftRight, path: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
-                    { label: 'Regras Conciliação', icon: Zap, path: '/financeiro/regras-conciliacao', permission: 'finance.receivable.view' },
-                    { label: 'Dashboard Conciliação', icon: TrendingUp, path: '/financeiro/dashboard-conciliacao', permission: 'finance.receivable.view' },
+                    { label: 'Conciliação', icon: ArrowLeftRight, path: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
+                    { label: 'Renegociação', icon: RotateCcw, path: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
+                    { label: 'Cobrança Auto', icon: Zap, path: '/financeiro/cobranca-automatica', permission: 'finance.receivable.view' },
                     { label: 'Plano de Contas', icon: FileText, path: '/financeiro/plano-contas', permission: 'finance.chart.view' },
-                    { label: 'Categorias', icon: Tag, path: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
+                    { label: 'Consolidado', icon: Building2, path: '/financeiro/consolidado', permission: 'financeiro.view' },
                 ],
             },
             { label: 'Relatórios', icon: BarChart3, path: '/relatorios', permission: 'reports.os_report.view' },
@@ -244,41 +165,26 @@ const navigationSections: NavSection[] = [
         label: 'Administração',
         items: [
             {
-                label: 'Intel. INMETRO',
-                icon: Search,
-                path: '/inmetro',
-                permission: 'inmetro.intelligence.view',
+                label: 'INMETRO', icon: Search, path: '/inmetro', permission: 'inmetro.intelligence.view',
                 children: [
                     { label: 'Dashboard', icon: BarChart3, path: '/inmetro' },
-                    { label: 'Executivo', icon: TrendingUp, path: '/inmetro/executivo' },
-                    { label: 'Prospecção', icon: Phone, path: '/inmetro/prospeccao' },
-                    { label: 'Leads', icon: Users, path: '/inmetro/leads' },
                     { label: 'Instrumentos', icon: Scale, path: '/inmetro/instrumentos' },
-                    { label: 'Compliance', icon: Shield, path: '/inmetro/compliance' },
                     { label: 'Mapa', icon: Search, path: '/inmetro/mapa' },
                     { label: 'Mercado', icon: BarChart3, path: '/inmetro/mercado' },
-                    { label: 'Concorrentes', icon: Warehouse, path: '/inmetro/concorrentes' },
                     { label: 'Importação', icon: Upload, path: '/inmetro/importacao' },
-                    { label: 'Webhooks', icon: Zap, path: '/inmetro/webhooks' },
                 ],
             },
             { label: 'Importação', icon: Upload, path: '/importacao', permission: 'import.data.view' },
-            { label: 'Integração Auvo', icon: Download, path: '/integracao/auvo', permission: 'auvo.import.view' },
+            { label: 'Auvo', icon: Download, path: '/integracao/auvo', permission: 'auvo.import.view' },
             {
-                label: 'Email',
-                icon: Inbox,
-                path: '/emails',
-                permission: 'email.inbox.view',
+                label: 'Email', icon: Inbox, path: '/emails', permission: 'email.inbox.view',
                 children: [
                     { label: 'Caixa de Entrada', icon: Inbox, path: '/emails' },
                     { label: 'Configurações', icon: Settings, path: '/emails/configuracoes', permission: 'email.account.view' },
                 ],
             },
             {
-                label: 'IAM',
-                icon: Shield,
-                path: '/iam',
-                permission: 'iam.user.view',
+                label: 'IAM', icon: Shield, path: '/iam', permission: 'iam.user.view',
                 children: [
                     { label: 'Usuários', icon: Users, path: '/iam/usuarios' },
                     { label: 'Roles', icon: KeyRound, path: '/iam/roles', permission: 'iam.role.view' },
@@ -286,75 +192,45 @@ const navigationSections: NavSection[] = [
                 ],
             },
             {
-                label: 'Configurações',
-                icon: Settings,
-                path: '/configuracoes',
-                permission: 'platform.settings.view',
+                label: 'Configurações', icon: Settings, path: '/configuracoes', permission: 'platform.settings.view',
                 children: [
                     { label: 'Filiais', icon: Building2, path: '/configuracoes/filiais', permission: 'platform.branch.view' },
                     { label: 'Empresas', icon: Building2, path: '/configuracoes/empresas', permission: 'platform.tenant.view' },
+                    { label: 'WhatsApp', icon: Phone, path: '/configuracoes/whatsapp', permission: 'whatsapp.config.view' },
+                    { label: 'WhatsApp Logs', icon: Phone, path: '/configuracoes/whatsapp/logs', permission: 'whatsapp.log.view' },
                     { label: 'Auditoria', icon: History, path: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
                 ],
             },
         ],
     },
     {
-        label: 'Gestão Avançada',
+        label: 'Avançado',
         items: [
+            { label: 'Frota', icon: Truck, path: '/frota', permission: 'fleet.vehicle.view' },
             {
-                label: 'Frota',
-                icon: Truck,
-                path: '/frota',
-                permission: 'fleet.vehicle.view',
-            },
-            {
-                label: 'RH',
-                icon: Users,
-                path: '/rh',
-                permission: 'hr.schedule.view',
+                label: 'RH', icon: Users, path: '/rh', permission: 'hr.schedule.view',
                 children: [
                     { label: 'Visão Geral', icon: Users, path: '/rh' },
                     { label: 'Organograma', icon: Network, path: '/rh/organograma', permission: 'hr.organization.view' },
-                    { label: 'Matriz Skills', icon: Star, path: '/rh/skills', permission: 'hr.skills.view' },
-                    { label: 'Desempenho', icon: Award, path: '/rh/desempenho', permission: 'hr.performance.view' },
                     { label: 'Ponto', icon: Clock, path: '/rh/ponto', permission: 'hr.clock.view' },
-                    { label: 'Jornada', icon: Calendar, path: '/rh/jornada', permission: 'hr.journey.view' },
                     { label: 'Benefícios', icon: Heart, path: '/rh/beneficios', permission: 'hr.benefits.view' },
-                    { label: 'Recrutamento', icon: User, path: '/rh/recrutamento', permission: 'hr.recruitment.view' },
-                    { label: 'Indicadores', icon: BarChart, path: '/rh/analytics', permission: 'hr.analytics.view' },
-                    { label: 'Relatórios', icon: FileText, path: '/rh/relatorios', permission: 'hr.reports.view' },
                     { label: 'Férias', icon: Sun, path: '/rh/ferias', permission: 'hr.leave.view' },
                 ],
             },
             {
-                label: 'Qualidade',
-                icon: ClipboardCheck,
-                path: '/qualidade',
-                permission: 'quality.procedure.view',
+                label: 'Qualidade', icon: ClipboardCheck, path: '/qualidade', permission: 'quality.procedure.view',
+                children: [
+                    { label: 'Visão Geral', icon: ClipboardCheck, path: '/qualidade' },
+                    { label: 'Auditorias ISO', icon: Search, path: '/qualidade/auditorias', permission: 'quality.audit.view' },
+                    { label: 'Documentos ISO', icon: FileText, path: '/qualidade/documentos', permission: 'quality.document.view' },
+                ],
             },
-            {
-                label: 'Automação',
-                icon: Zap,
-                path: '/automacao',
-                permission: 'automation.rule.view',
-            },
-            {
-                label: 'Avançado',
-                icon: BookOpen,
-                path: '/avancado',
-                permission: 'advanced.follow_up.view',
-            },
-            {
-                label: 'IA & Análise',
-                icon: Brain,
-                path: '/ia',
-                permission: 'ai.analytics.view',
-            },
+            { label: 'Alertas', icon: Bell, path: '/alertas', permission: 'alerts.alert.view' },
+            { label: 'Automação', icon: Zap, path: '/automacao', permission: 'automation.rule.view' },
         ],
     },
 ]
 
-// Flatten for permission filtering
 const navigation: NavItem[] = navigationSections.flatMap(s => s.items)
 
 function filterNavByPermission(items: NavItem[], userPerms: string[], isSuperAdmin: boolean): NavItem[] {
@@ -374,9 +250,7 @@ function filterNavByPermission(items: NavItem[], userPerms: string[], isSuperAdm
             child => !child.permission || hasPermissionExpression(child.permission, userPerms)
         )
 
-        if (!canAccessItem && allowedChildren.length === 0) {
-            continue
-        }
+        if (!canAccessItem && allowedChildren.length === 0) continue
 
         filtered.push({
             ...item,
@@ -412,21 +286,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const filteredNav = filteredSections.flatMap(s => s.items)
     const canViewNotifications = hasRole('super_admin') || hasPermission('notifications.notification.view')
 
-    const [darkMode, setDarkMode] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark')
-        }
-        return false
-    })
-
-    const toggleDarkMode = () => {
-        setDarkMode(prev => {
-            const next = !prev
-            document.documentElement.classList.toggle('dark', next)
-            localStorage.setItem('theme', next ? 'dark' : 'light')
-            return next
-        })
-    }
+    const { isDark: darkMode, toggle: toggleDarkMode } = useDarkMode()
 
     const [favorites, setFavorites] = useState<string[]>(() => {
         try {
@@ -459,11 +319,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const toggleGroup = (path: string) => {
         setExpandedGroups((prev) => {
             const next = new Set(prev)
-            if (next.has(path)) {
-                next.delete(path)
-            } else {
-                next.add(path)
-            }
+            if (next.has(path)) next.delete(path)
+            else next.add(path)
             return next
         })
     }
@@ -472,15 +329,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="flex h-screen overflow-hidden bg-surface-50">
-            {/* --- Overlay Mobile --- */}
             {sidebarMobileOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-                    onClick={toggleMobileSidebar}
-                />
+                <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={toggleMobileSidebar} />
             )}
 
-            {/* --- Sidebar --- */}
             <aside
                 className={cn(
                     'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-default bg-surface-0 transition-[width,transform] duration-200 ease-out',
@@ -489,25 +341,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     sidebarMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                 )}
             >
-                {/* Logo */}
                 <div className="flex h-[var(--topbar-height)] items-center gap-2.5 border-b border-subtle px-3.5">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-600 text-white font-bold text-xs">
                         K
                     </div>
                     {!sidebarCollapsed && (
-                        <span className="truncate font-semibold text-surface-900 text-[13px] tracking-tight">
+                        <span className="truncate font-semibold text-surface-900 text-sm tracking-tight">
                             KALIBRIUM
                         </span>
                     )}
                 </div>
 
-                {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto px-2 py-2">
-                    {/* ★ Favorites section */}
                     {favoriteItems.length > 0 && (
                         <div>
                             {!sidebarCollapsed && (
-                                <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-500 flex items-center gap-1">
+                                <div className="px-2.5 pt-1 pb-1.5 text-label text-amber-500 flex items-center gap-1">
                                     <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                                     Favoritos
                                 </div>
@@ -518,7 +367,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         key={`fav-${item.path}`}
                                         to={item.path}
                                         className={cn(
-                                            'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
+                                            'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                             isActive(item.path)
                                                 ? 'bg-surface-100 text-surface-900'
                                                 : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
@@ -538,21 +387,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                     </Link>
                                 ))}
                             </div>
-                            {!sidebarCollapsed && (
-                                <div className="mt-1.5 mx-2 border-t border-subtle" />
-                            )}
-                            {sidebarCollapsed && (
-                                <div className="my-1.5 mx-2 border-t border-subtle" />
-                            )}
+                            <div className={cn('border-t border-subtle', sidebarCollapsed ? 'my-1.5 mx-2' : 'mt-1.5 mx-2')} />
                         </div>
                     )}
 
                     {filteredSections.map((section, sectionIdx) => (
                         <div key={section.label}>
-                            {/* Section label */}
                             {!sidebarCollapsed && (
                                 <div className={cn(
-                                    'px-2.5 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-surface-400',
+                                    'px-2.5 pt-3 pb-1.5 text-label text-surface-400',
                                     sectionIdx > 0 && 'mt-1.5 border-t border-subtle pt-3.5'
                                 )}>
                                     {section.label}
@@ -568,7 +411,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                             <button
                                                 onClick={() => toggleGroup(item.path)}
                                                 className={cn(
-                                                    'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
+                                                    'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     item.children.some(c => isActive(c.path))
                                                         ? 'bg-surface-100 text-surface-900'
                                                         : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
@@ -595,7 +438,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                             <Link
                                                 to={item.path}
                                                 className={cn(
-                                                    'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] font-medium transition-colors duration-100',
+                                                    'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     isActive(item.path)
                                                         ? 'bg-surface-100 text-surface-900'
                                                         : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
@@ -629,7 +472,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                             </Link>
                                         )}
 
-                                        {/* Sub-items */}
                                         {item.children && !sidebarCollapsed && expandedGroups.has(item.path) && (
                                             <div className="ml-[18px] mt-0.5 space-y-0.5 border-l border-subtle pl-2.5">
                                                 {item.children.map((child) => (
@@ -637,7 +479,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                         key={child.path}
                                                         to={child.path}
                                                         className={cn(
-                                                            'relative flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-[12px] font-medium transition-colors duration-100',
+                                                            'relative flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-xs font-medium transition-colors duration-100',
                                                             isActive(child.path)
                                                                 ? 'bg-brand-50 text-brand-700'
                                                                 : 'text-surface-500 hover:bg-surface-50 hover:text-surface-700'
@@ -656,7 +498,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     ))}
                 </nav>
 
-                {/* Collapse toggle */}
                 <div className="hidden border-t border-subtle p-2 lg:block">
                     <button
                         onClick={toggleSidebar}
@@ -667,17 +508,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
             </aside>
 
-            {/* --- Main Area --- */}
             <div className="flex flex-1 flex-col overflow-hidden">
-                {/* Offline indicator */}
                 {!isOnline && (
-                    <div className="flex items-center justify-center gap-2 bg-amber-500 px-4 py-1 text-[11px] font-medium text-white">
+                    <div className="flex items-center justify-center gap-2 bg-amber-500 px-4 py-1 text-xs font-medium text-white">
                         <WifiOff className="h-3 w-3" />
                         Você está offline — dados em cache serão exibidos
                     </div>
                 )}
 
-                {/* Topbar */}
                 <header className="flex h-[var(--topbar-height)] items-center justify-between border-b border-default bg-surface-0 px-4 lg:px-5">
                     <div className="flex items-center gap-2">
                         <button
@@ -689,37 +527,33 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* Install PWA button */}
                         {isInstallable && (
                             <button onClick={install}
-                                className="flex items-center gap-1.5 rounded-md bg-surface-100 px-2.5 py-1 text-[11px] font-medium text-surface-700 transition-colors hover:bg-surface-200">
+                                className="flex items-center gap-1.5 rounded-md bg-surface-100 px-2.5 py-1 text-xs font-medium text-surface-700 transition-colors hover:bg-surface-200">
                                 <Download className="h-3 w-3" />
                                 Instalar
                             </button>
                         )}
 
-                        {/* Tenant selector */}
                         {tenants.length > 1 ? (
                             <select
                                 value={currentTenant?.id ?? ''}
                                 onChange={e => switchTenant(Number(e.target.value))}
                                 disabled={isSwitching}
                                 aria-label="Selecionar empresa"
-                                className="hidden appearance-none rounded-md border border-default bg-surface-0 px-2.5 py-1 text-[12px] font-medium text-surface-700 sm:block focus:outline-none focus:ring-2 focus:ring-brand-500/15 cursor-pointer"
+                                className="hidden appearance-none rounded-md border border-default bg-surface-0 px-2.5 py-1 text-xs font-medium text-surface-700 sm:block focus:outline-none focus:ring-2 focus:ring-brand-500/15 cursor-pointer"
                             >
                                 {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
                         ) : (
-                            <span className="hidden items-center gap-1.5 rounded-md border border-subtle bg-surface-50 px-2.5 py-1 text-[11px] font-medium text-surface-600 sm:flex">
+                            <span className="hidden items-center gap-1.5 rounded-md border border-subtle bg-surface-50 px-2.5 py-1 text-xs font-medium text-surface-600 sm:flex">
                                 <Building2 className="h-3 w-3" />
                                 {currentTenant?.name ?? '—'}
                             </span>
                         )}
 
-                        {/* Notifications */}
                         {canViewNotifications ? <NotificationPanel /> : null}
 
-                        {/* Dark mode toggle */}
                         <button
                             onClick={toggleDarkMode}
                             className="rounded-md p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors duration-100"
@@ -728,14 +562,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                         </button>
 
-                        {/* User */}
                         <Link to="/perfil" className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-surface-50 transition-colors duration-100">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 text-brand-700 text-[11px] font-bold ring-1 ring-brand-200/50">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 text-brand-700 text-xs font-bold ring-1 ring-brand-200/50">
                                 {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                             </div>
-                            <span className="hidden text-[13px] font-medium text-surface-700 sm:block">
-                                {user?.name ?? 'Usuário'}
-                            </span>
+                            <div className="hidden sm:flex flex-col">
+                                <span className="text-sm font-medium text-surface-700 leading-tight">
+                                    {user?.name ?? 'Usuário'}
+                                </span>
+                                {user?.role_details?.[0] && (
+                                    <span className="text-xs text-surface-400 leading-tight">
+                                        {user.role_details[0].display_name}
+                                    </span>
+                                )}
+                            </div>
                         </Link>
 
                         <button
@@ -748,11 +588,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 </header>
 
-                {/* Content */}
                 <main className="flex-1 overflow-y-auto p-4 lg:p-5">
                     <AppBreadcrumb />
                     {children}
                 </main>
+
+                <OfflineIndicator />
             </div>
         </div>
     )

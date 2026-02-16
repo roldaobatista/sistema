@@ -55,7 +55,6 @@ export function InmetroMarketPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Dashboard de Mercado</h1>
@@ -71,7 +70,6 @@ export function InmetroMarketPage() {
                 </div>
             </div>
 
-            {/* Market KPIs */}
             {overview && (
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <KPICard icon={Users} label="Proprietários" value={overview.total_owners} color="brand" />
@@ -82,9 +80,7 @@ export function InmetroMarketPage() {
                 </div>
             )}
 
-            {/* Row 1: Expiration Forecast + Regional */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Expiration Forecast Chart */}
                 {forecast && (
                     <div className="rounded-xl border border-default bg-surface-0 p-5">
                         <h2 className="text-sm font-semibold text-surface-800 mb-1 flex items-center gap-2">
@@ -96,19 +92,18 @@ export function InmetroMarketPage() {
                         <div className="flex items-end gap-1 h-40">
                             {forecast.months.map(m => (
                                 <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                                    <span className="text-[9px] font-bold text-surface-600">{m.count || ''}</span>
+                                    <span className="text-xs font-bold text-surface-600">{m.count || ''}</span>
                                     <div
                                         className={`w-full rounded-t transition-all ${m.count > 0 ? 'bg-gradient-to-t from-amber-500 to-amber-300' : 'bg-surface-100'}`}
                                         style={{ height: `${Math.max((m.count / maxForecast) * 100, 2)}%`, minHeight: '2px' }}
                                     />
-                                    <span className="text-[8px] text-surface-400 -rotate-45 origin-center whitespace-nowrap">{m.label}</span>
+                                    <span className="text-xs text-surface-400 -rotate-45 origin-center whitespace-nowrap">{m.label}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* Regional by State */}
                 {regional && (
                     <div className="rounded-xl border border-default bg-surface-0 p-5">
                         <h2 className="text-sm font-semibold text-surface-800 mb-4 flex items-center gap-2">
@@ -125,12 +120,12 @@ export function InmetroMarketPage() {
                                                 className="h-full rounded bg-gradient-to-r from-brand-400 to-brand-500 transition-all"
                                                 style={{ width: `${(row.instrument_count / maxInst) * 100}%` }}
                                             />
-                                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-surface-700">
+                                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-surface-700">
                                                 {row.instrument_count} equip. • {row.owner_count} prop.
                                             </span>
                                         </div>
                                         {row.overdue_count > 0 && (
-                                            <span className="text-[10px] font-medium text-red-500">{row.overdue_count} venc.</span>
+                                            <span className="text-xs font-medium text-red-500">{row.overdue_count} venc.</span>
                                         )}
                                     </div>
                                 )
@@ -142,16 +137,14 @@ export function InmetroMarketPage() {
 
             {/* Row 2: Brands + Competitor Analysis */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Brand Analysis */}
                 {brands && (
                     <div className="rounded-xl border border-default bg-surface-0 p-5">
                         <h2 className="text-sm font-semibold text-surface-800 mb-4 flex items-center gap-2">
                             <Shield className="h-4 w-4 text-blue-500" /> Análise de Marcas
                         </h2>
                         <div className="grid grid-cols-2 gap-4">
-                            {/* Top Brands */}
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-400 mb-2">Top Marcas</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">Top Marcas</p>
                                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                                     {brands.by_brand.slice(0, 10).map((b, i) => (
                                         <div key={b.brand} className="flex items-center justify-between">
@@ -165,7 +158,7 @@ export function InmetroMarketPage() {
                             </div>
                             {/* By Type */}
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-400 mb-2">Por Tipo</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">Por Tipo</p>
                                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                                     {brands.by_type.map(t => (
                                         <div key={t.type} className="flex items-center justify-between">
@@ -176,9 +169,8 @@ export function InmetroMarketPage() {
                                 </div>
                             </div>
                         </div>
-                        {/* Status Distribution */}
                         <div className="mt-4 pt-3 border-t border-subtle">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-400 mb-2">Por Status</p>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">Por Status</p>
                             <div className="flex gap-2">
                                 {brands.by_status.map(s => {
                                     const total = brands.by_status.reduce((acc, x) => acc + x.total, 0) || 1
@@ -191,7 +183,7 @@ export function InmetroMarketPage() {
                                                 />
                                             </div>
                                             <p className="text-xs font-bold text-surface-700">{s.total}</p>
-                                            <p className="text-[9px] text-surface-400">{statusLabels[s.status] || s.status}</p>
+                                            <p className="text-xs text-surface-400">{statusLabels[s.status] || s.status}</p>
                                         </div>
                                     )
                                 })}
@@ -200,11 +192,9 @@ export function InmetroMarketPage() {
                     </div>
                 )}
 
-                {/* Competitor Analysis */}
                 {competitors && <CompetitorSection data={competitors} />}
             </div>
 
-            {/* Row 3: Top Cities */}
             {regional && (
                 <div className="rounded-xl border border-default bg-surface-0 p-5">
                     <h2 className="text-sm font-semibold text-surface-800 mb-4 flex items-center gap-2">
@@ -263,12 +253,13 @@ function KPICard({ icon: Icon, label, value, color, subtitle }: {
             </div>
             <p className="text-2xl font-bold">{typeof value === 'number' ? value.toLocaleString() : value}</p>
             <p className="text-xs font-medium opacity-70 mt-0.5">{label}</p>
-            {subtitle && <p className="text-[10px] opacity-50 mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-xs opacity-50 mt-0.5">{subtitle}</p>}
         </div>
     )
 }
 
 function CompetitorSection({ data }: { data: NonNullable<ReturnType<typeof useCompetitorAnalysis>['data']> }) {
+    const [showAll, setShowAll] = useState(false)
     const citiesToShow = showAll ? data.by_city : data.by_city.slice(0, 8)
     const maxComp = data.by_city[0]?.total || 1
 
@@ -281,9 +272,8 @@ function CompetitorSection({ data }: { data: NonNullable<ReturnType<typeof useCo
                 {data.total_competitor_cities} cidades com concorrentes • Nossa presença em {data.our_presence_in_competitor_cities}
             </p>
 
-            {/* By City Bars */}
             <div className="space-y-1.5 mb-4">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-400 mb-1">Concorrentes por Cidade</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-1">Concorrentes por Cidade</p>
                 {citiesToShow.map(c => (
                     <div key={c.city} className="flex items-center gap-2">
                         <span className="text-xs text-surface-700 truncate w-28">{c.city}</span>
@@ -306,13 +296,12 @@ function CompetitorSection({ data }: { data: NonNullable<ReturnType<typeof useCo
                 )}
             </div>
 
-            {/* Species Distribution */}
             {Object.keys(data.species_distribution).length > 0 && (
                 <div className="pt-3 border-t border-subtle">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-surface-400 mb-2">Espécies Autorizadas</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">Espécies Autorizadas</p>
                     <div className="flex flex-wrap gap-1.5">
                         {Object.entries(data.species_distribution).slice(0, 10).map(([species, count]) => (
-                            <span key={species} className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-700 rounded-full px-2 py-0.5 border border-amber-200">
+                            <span key={species} className="inline-flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 rounded-full px-2 py-0.5 border border-amber-200">
                                 {species} <span className="font-bold">({count})</span>
                             </span>
                         ))}

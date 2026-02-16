@@ -18,11 +18,13 @@ describe('cn — edge cases', () => {
     })
 
     it('handles boolean false', () => {
-        expect(cn(false && 'hidden', 'visible')).toBe('visible')
+        const shouldHide = false
+        expect(cn(shouldHide && 'hidden', 'visible')).toBe('visible')
     })
 
     it('handles boolean true', () => {
-        const result = cn(true && 'active', 'base')
+        const isActive = true
+        const result = cn(isActive && 'active', 'base')
         expect(result).toContain('active')
         expect(result).toContain('base')
     })

@@ -41,21 +41,18 @@ export default function EmployeeDocumentsPage() {
 
     const { data: docsRes, isLoading } = useQuery({
         queryKey: ['employee-documents', categoryFilter, search],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/documents', { params: { category: categoryFilter || undefined, search: search || undefined } }).then(r => r.data?.data ?? []),
     })
     const documents: EmployeeDocument[] = docsRes ?? []
 
     const { data: expiringRes } = useQuery({
         queryKey: ['employee-documents-expiring'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/documents/expiring').then(r => r.data?.data ?? []),
     })
     const expiringDocs: EmployeeDocument[] = expiringRes ?? []
 
     const { data: usersRes } = useQuery({
         queryKey: ['technicians-options'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/technicians/options').then(r => r.data),
     })
     const users: { id: number; name: string }[] = usersRes ?? []
@@ -188,13 +185,13 @@ export default function EmployeeDocumentsPage() {
                     <Input label="Emissor *" value={form.issuer} required onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('issuer', e.target.value)} />
                     <div>
                         <label className="mb-1.5 block text-sm font-medium text-surface-700">Arquivo *</label>
-                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-surface-300 bg-surface-50 px-4 py-3 text-sm text-surface-500 hover:border-brand-400 hover:bg-brand-50/30">
+                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-default bg-surface-50 px-4 py-3 text-sm text-surface-500 hover:border-brand-400 hover:bg-brand-50/30">
                             <Upload className="h-4 w-4" />{file ? file.name : 'Selecione (PDF, JPG, PNG)'}
                             <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFile(e.target.files?.[0] ?? null)} />
                         </label>
                     </div>
                     <label className="flex items-center gap-2 text-sm text-surface-700">
-                        <input type="checkbox" checked={form.is_mandatory} onChange={e => set('is_mandatory', e.target.checked)} className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+                        <input type="checkbox" checked={form.is_mandatory} onChange={e => set('is_mandatory', e.target.checked)} className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
                         Documento obrigatório
                     </label>
                     <div className="flex justify-end gap-2 pt-2">

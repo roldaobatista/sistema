@@ -99,14 +99,12 @@ export function SchedulesPage() {
 
     const { data: techniciansResponse } = useQuery({
         queryKey: ['technicians-schedules'],
-        const { data } = useQuery({
         queryFn: () => api.get('/technicians/options'),
     })
     const technicians: Technician[] = techniciansResponse?.data ?? []
 
     const { data: workOrdersResponse } = useQuery({
         queryKey: ['work-orders-select'],
-        const { data } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50, status: 'open' } }),
         enabled: showForm,
     })
@@ -114,7 +112,6 @@ export function SchedulesPage() {
 
     const { data: customersResponse } = useQuery({
         queryKey: ['customers-select'],
-        const { data } = useQuery({
         queryFn: () => api.get('/customers', { params: { per_page: 50 } }),
         enabled: showForm,
     })
@@ -269,7 +266,7 @@ export function SchedulesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold tracking-tight text-surface-900">Agenda Técnica</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Gestão visual de visitas e atividades</p>
+                    <p className="mt-0.5 text-sm text-surface-500">Gestão visual de visitas e atividades</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="flex rounded-lg border border-surface-200 bg-surface-50 p-1">
@@ -277,7 +274,7 @@ export function SchedulesPage() {
                             onClick={() => setViewMode('week')}
                             className={cn(
                                 "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                                viewMode === 'week' ? "bg-white text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
+                                viewMode === 'week' ? "bg-surface-0 text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
                             )}
                         >
                             <Calendar className="h-3.5 w-3.5" /> Semana
@@ -286,7 +283,7 @@ export function SchedulesPage() {
                             onClick={() => setViewMode('timeline')}
                             className={cn(
                                 "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                                viewMode === 'timeline' ? "bg-white text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
+                                viewMode === 'timeline' ? "bg-surface-0 text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
                             )}
                         >
                             <BarChartHorizontal className="h-3.5 w-3.5" /> Timeline
@@ -295,7 +292,7 @@ export function SchedulesPage() {
                             onClick={() => setViewMode('map')}
                             className={cn(
                                 "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                                viewMode === 'map' ? "bg-white text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
+                                viewMode === 'map' ? "bg-surface-0 text-brand-700 shadow-sm" : "text-surface-500 hover:text-surface-900"
                             )}
                         >
                             <MapIcon className="h-3.5 w-3.5" /> Mapa
@@ -367,23 +364,23 @@ export function SchedulesPage() {
                                         key={item.id}
                                         onClick={() => openEdit(item)}
                                         className={cn(
-                                            'group w-full rounded-lg border border-surface-100 bg-white p-2 text-left shadow-sm transition-all',
-                                            canManageSchedules ? 'hover:shadow-card' : 'cursor-default'
+                                            'group w-full rounded-lg border border-surface-100 bg-surface-0 p-2 text-left shadow-sm transition-all',
+                                            canManageSchedules ? 'hover:shadow-card' : ''
                                         )}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-medium text-surface-400">{formatTime(item.start)}</span>
-                                            <Badge variant={statusConfig[item.status]?.variant ?? 'default'} className="px-1 py-0 text-[9px]">
+                                            <span className="text-xs font-medium text-surface-400">{formatTime(item.start)}</span>
+                                            <Badge variant={statusConfig[item.status]?.variant ?? 'default'} className="px-1 py-0 text-xs">
                                                 {statusConfig[item.status]?.label ?? item.status}
                                             </Badge>
                                         </div>
                                         <p className="mt-0.5 truncate text-xs font-medium text-surface-800">{item.title}</p>
-                                        <p className="flex items-center gap-0.5 truncate text-[10px] text-surface-500">
+                                        <p className="flex items-center gap-0.5 truncate text-xs text-surface-500">
                                             <User className="h-2.5 w-2.5" />
                                             {item.technician?.name}
                                         </p>
                                         {item.work_order && (
-                                            <p className="truncate text-[10px] text-brand-500">{workOrderIdentifier(item.work_order)}</p>
+                                            <p className="truncate text-xs text-brand-500">{workOrderIdentifier(item.work_order)}</p>
                                         )}
                                     </button>
                                 ))}
@@ -418,7 +415,7 @@ export function SchedulesPage() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Técnico *</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico *</label>
                             <select value={form.technician_id} title="Técnico" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('technician_id', event.target.value)} required
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecionar</option>
@@ -437,7 +434,7 @@ export function SchedulesPage() {
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">OS Vinculada</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">OS Vinculada</label>
                             <select value={form.work_order_id} title="OS Vinculada" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('work_order_id', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhuma</option>
@@ -452,7 +449,7 @@ export function SchedulesPage() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cliente</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Cliente</label>
                             <select value={form.customer_id} title="Cliente" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('customer_id', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
@@ -463,7 +460,7 @@ export function SchedulesPage() {
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Status</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Status</label>
                             <select value={form.status} title="Status" onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setFormField('status', event.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 {Object.entries(statusConfig).filter(([key]) => ['scheduled', 'confirmed', 'completed', 'cancelled'].includes(key)).map(([key, value]) => (
@@ -481,7 +478,7 @@ export function SchedulesPage() {
                     <Input label="Endereco" value={form.address} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('address', event.target.value)} placeholder="Local da visita" />
 
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observacoes</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observacoes</label>
                         <textarea value={form.notes} onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setFormField('notes', event.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
@@ -511,7 +508,6 @@ export function SchedulesPage() {
                 </form>
             </Modal>
 
-            {/* Modal de Detalhe (read-only para CRM/Chamados) */}
             <Modal open={showDetail} onOpenChange={setShowDetail} title={`Detalhe: ${editing?.title ?? ''}`} size="lg">
                 {editing && (
                     <div className="space-y-4">

@@ -40,7 +40,6 @@ export function PortalWorkOrdersPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-work-orders'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/portal/work-orders').then(res => res.data),
     })
 
@@ -77,14 +76,13 @@ export function PortalWorkOrdersPage() {
         <div className="space-y-5">
             <div>
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Minhas Ordens de Serviço</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Acompanhe o progresso dos seus serviços</p>
+                <p className="mt-0.5 text-sm text-surface-500">Acompanhe o progresso dos seus serviços</p>
             </div>
 
-            {/* Status KPI Chips */}
             <div className="flex flex-wrap gap-2">
                 <button onClick={() => setStatusFilter('')}
                     className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
-                        !statusFilter ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-surface-600 border-surface-300 hover:bg-surface-50'
+                        !statusFilter ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface-0 text-surface-600 border-default hover:bg-surface-50'
                     )}>
                     Todas ({all.length})
                 </button>
@@ -92,7 +90,7 @@ export function PortalWorkOrdersPage() {
                     counts[key] > 0 && (
                         <button key={key} onClick={() => setStatusFilter(statusFilter === key ? '' : key)}
                             className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
-                                statusFilter === key ? `${cfg.bg} ${cfg.color} border-current` : 'bg-white text-surface-600 border-surface-300 hover:bg-surface-50'
+                                statusFilter === key ? `${cfg.bg} ${cfg.color} border-current` : 'bg-surface-0 text-surface-600 border-default hover:bg-surface-50'
                             )}>
                             {cfg.label} ({counts[key]})
                         </button>
@@ -100,14 +98,12 @@ export function PortalWorkOrdersPage() {
                 ))}
             </div>
 
-            {/* Search */}
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar OS..."
                     className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none" />
             </div>
 
-            {/* OS Cards */}
             {isLoading ? (
                 <div className="space-y-3">
                     {[1, 2, 3].map(i => (
@@ -168,13 +164,11 @@ export function PortalWorkOrdersPage() {
                                     <p className="text-sm text-surface-700 mb-3 line-clamp-2">{os.description}</p>
                                 )}
 
-                                {/* Info Row */}
                                 <div className="flex flex-wrap gap-4 text-xs text-surface-500 mb-4">
                                     {os.assignee?.name && <span>Técnico: <strong className="text-surface-700">{os.assignee.name}</strong></span>}
                                     {os.total && parseFloat(os.total) > 0 && <span>Valor: <strong className="text-surface-700">{fmtBRL(os.total)}</strong></span>}
                                 </div>
 
-                                {/* Progress Tracker */}
                                 {os.status !== 'cancelled' && (
                                     <div>
                                         <div className="flex items-center gap-1">
@@ -182,7 +176,7 @@ export function PortalWorkOrdersPage() {
                                                 <div key={step} className="flex items-center flex-1">
                                                     <div className={cn(
                                                         'h-2.5 w-2.5 rounded-full flex-shrink-0 transition-colors border-2',
-                                                        i <= stepIdx ? 'bg-brand-500 border-brand-500' : 'bg-white border-surface-300'
+                                                        i <= stepIdx ? 'bg-brand-500 border-brand-500' : 'bg-surface-0 border-default'
                                                     )} />
                                                     {i < trackingSteps.length - 1 && (
                                                         <div className={cn(
@@ -193,7 +187,7 @@ export function PortalWorkOrdersPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="flex justify-between mt-1.5 text-[10px] text-surface-400">
+                                        <div className="flex justify-between mt-1.5 text-xs text-surface-400">
                                             <span>Aberta</span>
                                             <span>Em Andamento</span>
                                             <span>Concluída</span>

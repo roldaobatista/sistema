@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Shield, AlertTriangle, CheckCircle, Clock, TrendingUp } from 'lucide-react'
@@ -25,17 +26,14 @@ export function SlaDashboardPage() {
 
     const { data: overview, isLoading } = useQuery({
         queryKey: ['sla-dashboard-overview'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-dashboard/overview'),
     })
     const { data: byPolicy } = useQuery({
         queryKey: ['sla-dashboard-by-policy'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-dashboard/by-policy'),
     })
     const { data: breached } = useQuery({
         queryKey: ['sla-dashboard-breached'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-dashboard/breached'),
     })
 
@@ -49,10 +47,9 @@ export function SlaDashboardPage() {
         <div className="space-y-5">
             <div>
                 <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Dashboard SLA</h1>
-                <p className="mt-0.5 text-[13px] text-surface-500">Acompanhamento de cumprimento de SLA em tempo real</p>
+                <p className="mt-0.5 text-sm text-surface-500">Acompanhamento de cumprimento de SLA em tempo real</p>
             </div>
 
-            {/* KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <KpiCard icon={<Shield className="h-5 w-5 text-brand-500" />} label="Total com SLA" value={ov?.total_com_sla ?? 0} />
                 <KpiCard icon={<CheckCircle className="h-5 w-5 text-emerald-500" />} label="Resposta OK" value={`${ov?.response?.taxa ?? 0}%`} sub={`${ov?.response?.cumprido ?? 0} de ${(ov?.response?.cumprido ?? 0) + (ov?.response?.estourado ?? 0)}`} />
@@ -61,12 +58,11 @@ export function SlaDashboardPage() {
                 <KpiCard icon={<Clock className="h-5 w-5 text-amber-500" />} label="Em Risco" value={ov?.em_risco ?? 0} warning />
             </div>
 
-            {/* Por Política */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
-                <div className="border-b border-surface-100 px-5 py-3">
+                <div className="border-b border-subtle px-5 py-3">
                     <h2 className="text-sm font-bold text-surface-900">Compliance por Política</h2>
                 </div>
-                <div className="divide-y divide-surface-50">
+                <div className="divide-y divide-subtle">
                     {policies.map((p: any) => {
                         const pri = priorityConfig[p.priority] ?? priorityConfig.medium
                         return (
@@ -74,7 +70,7 @@ export function SlaDashboardPage() {
                                 <div className="flex items-center gap-3">
                                     <span className="text-lg">{pri.icon}</span>
                                     <div>
-                                        <p className="text-[13px] font-medium text-surface-900">{p.name}</p>
+                                        <p className="text-sm font-medium text-surface-900">{p.name}</p>
                                         <p className="text-xs text-surface-500">{p.total} OS • {p.breached} estouradas</p>
                                     </div>
                                 </div>
@@ -96,9 +92,8 @@ export function SlaDashboardPage() {
                 </div>
             </div>
 
-            {/* OS com SLA estourado */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
-                <div className="border-b border-surface-100 px-5 py-3">
+                <div className="border-b border-subtle px-5 py-3">
                     <h2 className="text-sm font-bold text-surface-900">OS com SLA Estourado</h2>
                 </div>
                 {breachedOrders.length === 0 ? (
@@ -113,7 +108,7 @@ export function SlaDashboardPage() {
                                 <th className="px-4 py-2 text-left font-medium">SLA</th>
                                 <th className="px-4 py-2 text-left font-medium">Breach</th>
                             </tr></thead>
-                            <tbody className="divide-y divide-surface-50">
+                            <tbody className="divide-y divide-subtle">
                                 {breachedOrders.map((wo: any) => (
                                     <tr key={wo.id} className="hover:bg-red-50/30">
                                         <td className="px-4 py-2 font-mono text-brand-600">{woIdentifier(wo)}</td>
@@ -137,7 +132,7 @@ export function SlaDashboardPage() {
 
 function KpiCard({ icon, label, value, sub, danger, warning }: { icon: React.ReactNode; label: string; value: string | number; sub?: string; danger?: boolean; warning?: boolean }) {
     return (
-        <div className={cn('rounded-xl border bg-white p-4 shadow-card', danger && 'border-red-200', warning && 'border-amber-200')}>
+        <div className={cn('rounded-xl border bg-surface-0 p-4 shadow-card', danger && 'border-red-200', warning && 'border-amber-200')}>
             <div className="flex items-center gap-2 mb-2">{icon}<span className="text-xs text-surface-500">{label}</span></div>
             <p className={cn('text-2xl font-bold', danger ? 'text-red-600' : warning ? 'text-amber-600' : 'text-surface-900')}>{value}</p>
             {sub && <p className="text-xs text-surface-400 mt-0.5">{sub}</p>}

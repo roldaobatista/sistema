@@ -103,7 +103,6 @@ export function PaymentsPage() {
 
     const { data: methods = [] } = useQuery({
         queryKey: ['payment-methods'],
-        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const { data } = await api.get<Array<{ id: number; name: string; code: string }>>('/payment-methods')
             return data
@@ -179,7 +178,7 @@ export function PaymentsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                    <div className="flex items-center gap-2 text-[13px] text-surface-500"><DollarSign className="h-4 w-4" /> Movimentacoes</div>
+                    <div className="flex items-center gap-2 text-sm text-surface-500"><DollarSign className="h-4 w-4" /> Movimentacoes</div>
                     <p className="mt-1 text-lg font-semibold text-surface-900 tracking-tight">{summary.count}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -191,7 +190,7 @@ export function PaymentsPage() {
                     <p className="mt-1 text-2xl font-bold text-red-700">{formatBRL(summary.total_paid)}</p>
                 </div>
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
-                    <div className="flex items-center gap-2 text-[13px] text-surface-500"><DollarSign className="h-4 w-4" /> Saldo</div>
+                    <div className="flex items-center gap-2 text-sm text-surface-500"><DollarSign className="h-4 w-4" /> Saldo</div>
                     <p className={`mt-1 text-2xl font-bold ${summary.net >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                         {formatBRL(summary.net)}
                     </p>
@@ -239,19 +238,19 @@ export function PaymentsPage() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Data</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Tipo</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Metodo</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Valor</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Observacoes</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Acoes</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Data</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Tipo</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 md:table-cell">Metodo</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Valor</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Observacoes</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Acoes</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {isLoading ? (
-                            <tr><td colSpan={6} className="px-4 py-12 text-center text-[13px] text-surface-500">Carregando...</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
                         ) : listError ? (
-                            <tr><td colSpan={6} className="px-4 py-12 text-center text-[13px] text-red-600">Erro ao carregar pagamentos</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-red-600">Erro ao carregar pagamentos</td></tr>
                         ) : payments.length === 0 ? (
                             <tr><td colSpan={6} className="px-4 py-2"><EmptyState icon={<DollarSign className="h-5 w-5 text-surface-300" />} message="Nenhum pagamento encontrado" compact /></td></tr>
                         ) : payments.map(payment => {
@@ -267,13 +266,13 @@ export function PaymentsPage() {
                                             {isReceivable ? 'Recebimento' : 'Pagamento'}
                                         </Badge>
                                     </td>
-                                    <td className="hidden px-4 py-3 text-[13px] text-surface-600 md:table-cell">
+                                    <td className="hidden px-4 py-3 text-sm text-surface-600 md:table-cell">
                                         {payment.payment_method || '-'}
                                     </td>
                                     <td className={`px-3.5 py-2.5 text-right text-sm font-semibold ${isReceivable ? 'text-emerald-700' : 'text-red-700'}`}>
                                         {isReceivable ? '+' : '-'}{formatBRL(payment.amount)}
                                     </td>
-                                    <td className="hidden max-w-xs truncate px-4 py-3 text-[13px] text-surface-500 lg:table-cell">
+                                    <td className="hidden max-w-xs truncate px-4 py-3 text-sm text-surface-500 lg:table-cell">
                                         {payment.notes || '-'}
                                     </td>
                                     <td className="px-3.5 py-2.5 text-right">
@@ -310,7 +309,7 @@ export function PaymentsPage() {
 
             <Modal open={!!reverseTarget} onOpenChange={() => setReverseTarget(null)} title="Estornar Pagamento">
                 <div className="space-y-4">
-                    <p className="text-[13px] text-surface-600">
+                    <p className="text-sm text-surface-600">
                         Confirmar estorno do pagamento de{' '}
                         <strong>{reverseTarget ? formatBRL(reverseTarget.amount) : ''}</strong>?
                     </p>

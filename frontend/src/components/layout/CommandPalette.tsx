@@ -25,8 +25,8 @@ interface CommandRoute {
 
 const routes: CommandRoute[] = [
     // Quick Actions
-    { label: 'Nova OS', path: '/os/criar', icon: Plus, group: 'Ações Rápidas', keywords: ['criar', 'ordem', 'serviço'] },
-    { label: 'Novo Orçamento', path: '/orcamentos/criar', icon: Plus, group: 'Ações Rápidas', keywords: ['criar', 'orcamento'] },
+    { label: 'Nova OS', path: '/os/nova', icon: Plus, group: 'Ações Rápidas', keywords: ['criar', 'ordem', 'serviço'] },
+    { label: 'Novo Orçamento', path: '/orcamentos/novo', icon: Plus, group: 'Ações Rápidas', keywords: ['criar', 'orcamento'] },
     { label: 'Novo Cliente', path: '/cadastros/clientes/novo', icon: Plus, group: 'Ações Rápidas', keywords: ['criar', 'customer'] },
 
     // Navigation

@@ -46,7 +46,6 @@ export default function EquipmentCalendarPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['equipments-alerts'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/equipments-alerts').then(r => r.data),
     })
 

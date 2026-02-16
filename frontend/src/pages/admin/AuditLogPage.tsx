@@ -66,7 +66,6 @@ export function AuditLogPage() {
 
     const { data: actions } = useQuery<string[]>({
         queryKey: ['audit-actions'],
-        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const res = await api.get('/audit-logs/actions')
             return res.data.data
@@ -75,7 +74,6 @@ export function AuditLogPage() {
 
     const { data: entityTypes } = useQuery<{ value: string; label: string }[]>({
         queryKey: ['audit-entity-types'],
-        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const res = await api.get('/audit-logs/entity-types')
             return res.data.data
@@ -128,11 +126,10 @@ export function AuditLogPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Log de Auditoria</h1>
-                    <p className="text-[13px] text-surface-500 mt-1">Rastreamento de todas as alterações no sistema</p>
+                    <p className="text-sm text-surface-500 mt-1">Rastreamento de todas as alterações no sistema</p>
                 </div>
                 <button
                     onClick={handleExport}
@@ -143,8 +140,7 @@ export function AuditLogPage() {
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-end gap-3 bg-white rounded-xl border border-surface-200 p-4">
+            <div className="flex flex-wrap items-end gap-3 bg-surface-0 rounded-xl border border-default p-4">
                 <div className="flex-1 min-w-[200px]">
                     <label className="block text-xs font-medium text-surface-500 mb-1">Buscar</label>
                     <div className="relative">
@@ -154,7 +150,7 @@ export function AuditLogPage() {
                             value={search}
                             onChange={e => { setSearch(e.target.value); setPage(1) }}
                             placeholder="Pesquisar na descrição..."
-                            className="w-full pl-10 pr-3 py-2 rounded-lg border border-surface-200 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                            className="w-full pl-10 pr-3 py-2 rounded-lg border border-default text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                         />
                     </div>
                 </div>
@@ -163,7 +159,7 @@ export function AuditLogPage() {
                     <select
                         value={action}
                         onChange={e => { setAction(e.target.value); setPage(1) }}
-                        className="px-3 py-2 rounded-lg border border-surface-200 text-sm"
+                        className="px-3 py-2 rounded-lg border border-default text-sm"
                     >
                         <option value="">Todas</option>
                         {actions?.map(a => (
@@ -176,7 +172,7 @@ export function AuditLogPage() {
                     <select
                         value={entityType}
                         onChange={e => { setEntityType(e.target.value); setPage(1) }}
-                        className="px-3 py-2 rounded-lg border border-surface-200 text-sm"
+                        className="px-3 py-2 rounded-lg border border-default text-sm"
                     >
                         <option value="">Todas</option>
                         {entityTypes?.map(t => (
@@ -186,22 +182,21 @@ export function AuditLogPage() {
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-surface-500 mb-1">De</label>
-                    <input type="date" value={from} onChange={e => { setFrom(e.target.value); setPage(1) }} className="px-3 py-2 rounded-lg border border-surface-200 text-sm" />
+                    <input type="date" value={from} onChange={e => { setFrom(e.target.value); setPage(1) }} className="px-3 py-2 rounded-lg border border-default text-sm" />
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-surface-500 mb-1">Até</label>
-                    <input type="date" value={to} onChange={e => { setTo(e.target.value); setPage(1) }} className="px-3 py-2 rounded-lg border border-surface-200 text-sm" />
+                    <input type="date" value={to} onChange={e => { setTo(e.target.value); setPage(1) }} className="px-3 py-2 rounded-lg border border-default text-sm" />
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-xl border border-surface-200 overflow-hidden">
+            <div className="bg-surface-0 rounded-xl border border-default overflow-hidden">
                 {isLoading ? (
                     <div className="flex justify-center py-12">
                         <Loader2 className="w-6 h-6 animate-spin text-surface-400" />
                     </div>
                 ) : (
-                    <table className="min-w-full divide-y divide-surface-200">
+                    <table className="min-w-full divide-y divide-subtle">
                         <thead className="bg-surface-50">
                             <tr>
                                 <th className="px-3.5 py-2.5 text-left text-xs font-medium text-surface-500 uppercase">
@@ -222,7 +217,7 @@ export function AuditLogPage() {
                         <tbody className="divide-y divide-subtle">
                             {logs.map(entry => (
                                 <tr key={entry.id} className="hover:bg-surface-50 transition-colors duration-100">
-                                    <td className="px-4 py-3 text-[13px] text-surface-600 whitespace-nowrap">
+                                    <td className="px-4 py-3 text-sm text-surface-600 whitespace-nowrap">
                                         {format(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-surface-700">
@@ -233,7 +228,7 @@ export function AuditLogPage() {
                                             {ACTION_LABELS[entry.action] ?? entry.action}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-[13px] text-surface-600 max-w-md truncate">
+                                    <td className="px-4 py-3 text-sm text-surface-600 max-w-md truncate">
                                         {entry.description}
                                     </td>
                                     <td className="px-3.5 py-2.5 text-right">
@@ -260,22 +255,21 @@ export function AuditLogPage() {
                     </table>
                 )}
 
-                {/* Pagination */}
                 {lastPage > 1 && (
                     <div className="flex items-center justify-between px-4 py-3 border-t border-subtle">
-                        <span className="text-[13px] text-surface-500">Página {page} de {lastPage}</span>
+                        <span className="text-sm text-surface-500">Página {page} de {lastPage}</span>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page <= 1}
-                                className="p-1.5 rounded-md border border-surface-200 disabled:opacity-50 hover:bg-surface-50"
+                                className="p-1.5 rounded-md border border-default disabled:opacity-50 hover:bg-surface-50"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                                 disabled={page >= lastPage}
-                                className="p-1.5 rounded-md border border-surface-200 disabled:opacity-50 hover:bg-surface-50"
+                                className="p-1.5 rounded-md border border-default disabled:opacity-50 hover:bg-surface-50"
                             >
                                 <ChevronRight className="w-4 h-4" />
                             </button>
@@ -284,10 +278,9 @@ export function AuditLogPage() {
                 )}
             </div>
 
-            {/* Diff Modal */}
             {selectedEntry && detailData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+                    <div className="bg-surface-0 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-subtle">
                             <h2 className="text-lg font-semibold text-surface-900">Diff de Alterações</h2>
                             <button onClick={() => setSelectedEntry(null)} className="p-1 rounded-md hover:bg-surface-100">
@@ -295,7 +288,7 @@ export function AuditLogPage() {
                             </button>
                         </div>
                         <div className="p-6 overflow-y-auto max-h-[60vh]">
-                            <p className="text-[13px] text-surface-500 mb-4">{detailData.data.description}</p>
+                            <p className="text-sm text-surface-500 mb-4">{detailData.data.description}</p>
                             {(detailData.diff as DiffItem[])?.length > 0 ? (
                                 <div className="space-y-2">
                                     {(detailData.diff as DiffItem[]).map((d: DiffItem, i: number) => (

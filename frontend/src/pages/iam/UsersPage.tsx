@@ -14,6 +14,8 @@ import { useAuthStore } from '@/stores/auth-store'
 interface Role {
     id: number
     name: string
+    display_name?: string | null
+    label?: string
 }
 
 interface User {
@@ -82,7 +84,6 @@ export function UsersPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['users', page, search, statusFilter, roleFilter],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/users', { params: { page, search, per_page: 20, ...(statusFilter !== 'all' && { is_active: statusFilter === 'active' ? 1 : 0 }), ...(roleFilter && { role: roleFilter }) } }).then(r => r.data),
     })
 
@@ -92,21 +93,18 @@ export function UsersPage() {
 
     const { data: rolesData } = useQuery({
         queryKey: ['roles'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/roles').then(r => r.data),
     })
     const roles: Role[] = rolesData?.data ?? rolesData ?? []
 
     const { data: branchesData } = useQuery({
         queryKey: ['branches'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/branches').then(r => r.data),
     })
     const branches: Branch[] = branchesData?.data ?? branchesData ?? []
 
     const { data: statsData } = useQuery({
         queryKey: ['users-stats'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/users/stats').then(r => r.data),
         enabled: canView,
     })
@@ -185,7 +183,6 @@ export function UsersPage() {
 
     const sessionsQuery = useQuery({
         queryKey: ['user-sessions', sessionsUser?.id],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get(`/users/${sessionsUser!.id}/sessions`).then(r => r.data),
         enabled: !!sessionsUser,
     })
@@ -293,7 +290,6 @@ export function UsersPage() {
                 ]}
             />
 
-            {/* Stats Cards */}
             {canView && statsData && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -335,7 +331,6 @@ export function UsersPage() {
                 </div>
             )}
 
-            {/* Status Tabs + Search */}
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-1 rounded-lg border border-default bg-surface-50 p-1">
                     {([['all', 'Todos'], ['active', 'Ativos'], ['inactive', 'Inativos']] as const).map(([key, label]) => (
@@ -361,7 +356,7 @@ export function UsersPage() {
                     >
                         <option value="">Todas as roles</option>
                         {roles.map(r => (
-                            <option key={r.id} value={r.name}>{r.name}</option>
+                            <option key={r.id} value={r.name}>{r.display_name || r.label || r.name}</option>
                         ))}
                     </select>
                     <div className="relative max-w-sm w-full">
@@ -377,10 +372,9 @@ export function UsersPage() {
                 </div>
             </div>
 
-            {/* Bulk Actions Toolbar */}
             {selectedIds.length > 0 && canUpdate && (
                 <div className="flex items-center gap-3 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2.5">
-                    <span className="text-[13px] font-medium text-brand-700">
+                        <span className="text-sm font-medium text-brand-700">
                         {selectedIds.length} selecionado(s)
                     </span>
                     <div className="flex items-center gap-2">
@@ -410,7 +404,6 @@ export function UsersPage() {
                 </div>
             )}
 
-            {/* Table */}
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full">
                     <thead>
@@ -424,13 +417,13 @@ export function UsersPage() {
                                     </button>
                                 </th>
                             )}
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Nome</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">E-mail</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Roles</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Status</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 hidden lg:table-cell">Último Login</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 hidden xl:table-cell">Criado em</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Nome</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">E-mail</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Roles</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Status</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 hidden lg:table-cell">Último Login</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 hidden xl:table-cell">Criado em</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -453,7 +446,7 @@ export function UsersPage() {
                                 <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>Tentar novamente</Button>
                             </td></tr>
                         ) : users.length === 0 ? (
-                            <tr><td colSpan={canUpdate ? 8 : 7} className="px-4 py-12 text-center text-[13px] text-surface-500">Nenhum usuário encontrado</td></tr>
+                            <tr><td colSpan={canUpdate ? 8 : 7} className="px-4 py-12 text-center text-sm text-surface-500">Nenhum usuário encontrado</td></tr>
                         ) : users.map((user) => (
                             <tr key={user.id} className="hover:bg-surface-50 transition-colors duration-100">
                                 {canUpdate && (
@@ -471,16 +464,16 @@ export function UsersPage() {
                                             {user.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="text-[13px] font-medium text-surface-900">{user.name}</p>
+                                            <p className="text-sm font-medium text-surface-900">{user.name}</p>
                                             <p className="text-xs text-surface-500">{user.phone ?? '—'}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-4 py-3 text-[13px] text-surface-600">{user.email}</td>
+                                <td className="px-4 py-3 text-sm text-surface-600">{user.email}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex flex-wrap gap-1">
                                         {user.roles.map(role => (
-                                            <Badge key={role.id} variant="brand">{role.name}</Badge>
+                                            <Badge key={role.id} variant="brand">{role.display_name || role.label || role.name}</Badge>
                                         ))}
                                     </div>
                                 </td>
@@ -580,7 +573,7 @@ export function UsersPage() {
                 {/* Paginação */}
                 {lastPage > 1 && (
                     <div className="flex items-center justify-between border-t border-subtle px-4 py-3">
-                        <p className="text-[13px] text-surface-500">
+                        <p className="text-sm text-surface-500">
                             Mostrando página {page} de {lastPage} ({totalUsers} usuários)
                         </p>
                         <div className="flex gap-2">
@@ -605,7 +598,6 @@ export function UsersPage() {
                 )}
             </div>
 
-            {/* Modal Form */}
             <Modal
                 open={showForm}
                 onOpenChange={setShowForm}
@@ -645,10 +637,9 @@ export function UsersPage() {
                         />
                     </div>
 
-                    {/* Branch Selector */}
                     {branches.length > 0 && (
                         <div>
-                            <label className="mb-1 block text-[13px] font-medium text-surface-700">Filial</label>
+                            <label className="mb-1 block text-sm font-medium text-surface-700">Filial</label>
                             <select
                                 value={formData.branch_id ?? ''}
                                 onChange={(e) => setFormData(prev => ({ ...prev, branch_id: e.target.value ? Number(e.target.value) : null }))}
@@ -664,7 +655,7 @@ export function UsersPage() {
 
                     {/* Roles */}
                     <div>
-                        <label className="mb-2 block text-[13px] font-medium text-surface-700">Roles</label>
+                        <label className="mb-2 block text-sm font-medium text-surface-700">Roles</label>
                         <div className="flex flex-wrap gap-2">
                             {roles.map((role: any) => (
                                 <button
@@ -675,31 +666,30 @@ export function UsersPage() {
                                         'rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
                                         formData.roles.includes(role.id)
                                             ? 'border-brand-500 bg-brand-50 text-brand-700'
-                                            : 'border-default bg-surface-50 text-surface-600 hover:border-surface-400'
+                                            : 'border-default text-surface-600 hover:border-surface-400'
                                     )}
                                 >
-                                    {role.name}
+                                    {role.display_name || role.label || role.name}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Status Ativo */}
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
                             className={cn(
                                 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                                formData.is_active ? 'bg-brand-500' : 'bg-surface-300'
+                                formData.is_active ? 'bg-brand-500' : 'bg-surface-400'
                             )}
                         >
                             <span className={cn(
-                                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                                'inline-block h-4 w-4 transform rounded-full bg-surface-0 transition-transform',
                                 formData.is_active ? 'translate-x-6' : 'translate-x-1'
                             )} />
                         </button>
-                        <span className="text-[13px] font-medium text-surface-700">
+                        <span className="text-sm font-medium text-surface-700">
                             {formData.is_active ? 'Ativo' : 'Inativo'}
                         </span>
                     </div>
@@ -715,7 +705,6 @@ export function UsersPage() {
                 </form>
             </Modal>
 
-            {/* Modal Reset Password */}
             <Modal
                 open={!!resetPasswordUser}
                 onOpenChange={(open) => { if (!open) { setResetPasswordUser(null); setNewPassword(''); setNewPasswordConfirmation('') } }}
@@ -758,7 +747,6 @@ export function UsersPage() {
                 </form>
             </Modal>
 
-            {/* Modal Delete Confirmation */}
             <Modal
                 open={!!deleteConfirmUser}
                 onOpenChange={(open) => { if (!open) setDeleteConfirmUser(null) }}
@@ -785,7 +773,6 @@ export function UsersPage() {
                 </div>
             </Modal>
 
-            {/* Modal Sessions */}
             <Modal
                 open={!!sessionsUser}
                 onOpenChange={(open) => { if (!open) setSessionsUser(null) }}
@@ -837,7 +824,6 @@ export function UsersPage() {
                 </div>
             </Modal>
 
-            {/* Modal Audit Trail */}
             <AuditTrailModal user={auditTrailUser} onClose={() => setAuditTrailUser(null)} />
         </div>
     )
@@ -846,7 +832,6 @@ export function UsersPage() {
 function AuditTrailModal({ user, onClose }: { user: User | null; onClose: () => void }) {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['user-audit-trail', user?.id],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/users/${user!.id}/audit-trail`).then(r => r.data),
         enabled: !!user,
     })
@@ -900,7 +885,7 @@ function AuditTrailModal({ user, onClose }: { user: User | null; onClose: () => 
                 ) : (
                     entries.map((entry: any, idx: number) => (
                         <div key={entry.id ?? idx} className="flex items-start gap-3 rounded-lg border border-default bg-surface-50 px-4 py-3">
-                            <span className={cn('mt-0.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase', actionColors[entry.action] ?? 'bg-surface-200 text-surface-700')}>
+                            <span className={cn('mt-0.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase', actionColors[entry.action] ?? 'bg-surface-200 text-surface-700')}>
                                 {actionLabels[entry.action] ?? entry.action}
                             </span>
                             <div className="flex-1 min-w-0">

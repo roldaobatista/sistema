@@ -13,6 +13,13 @@ import { useAuthStore } from '@/stores/auth-store'
 interface RoleInfo {
     id: number
     name: string
+    display_name?: string | null
+    label?: string
+}
+
+interface RoleMatrixEntry {
+    name: string
+    display_name: string
 }
 
 export function PermissionsMatrixPage() {
@@ -24,17 +31,20 @@ export function PermissionsMatrixPage() {
 
     const { data: matrixData, isLoading, isError, refetch } = useQuery({
         queryKey: ['permissions-matrix'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/permissions/matrix'),
     })
 
     const rawMatrix = matrixData?.data?.matrix ?? []
-    const roleNames: string[] = matrixData?.data?.roles ?? []
+    const rawRoles = matrixData?.data?.roles ?? []
+    // Suporta tanto formato antigo (string[]) quanto novo ({name, display_name}[])
+    const roleEntries: RoleMatrixEntry[] = rawRoles.map((r: any) =>
+        typeof r === 'string' ? { name: r, display_name: r } : { name: r.name, display_name: r.display_name || r.name }
+    )
+    const roleNames: string[] = roleEntries.map((r: RoleMatrixEntry) => r.name)
 
     // Build a map of role name -> role id for toggle
     const { data: rolesData } = useQuery({
         queryKey: ['roles'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/roles').then(r => r.data),
     })
     const rolesArray: RoleInfo[] = rolesData?.data ?? rolesData ?? []
@@ -138,7 +148,6 @@ export function PermissionsMatrixPage() {
                 </div>
             </div>
 
-            {/* Legend */}
             <div className="flex items-center gap-4 text-xs text-surface-500">
                 <span className="flex items-center gap-1.5">
                     <span className="h-4 w-4 rounded bg-emerald-100 flex items-center justify-center">
@@ -168,7 +177,6 @@ export function PermissionsMatrixPage() {
                 )}
             </div>
 
-            {/* Matrix Table */}
             {matrix.length === 0 ? (
                 <EmptyState
                     icon={<ShieldOff className="h-5 w-5 text-surface-300" />}
@@ -179,14 +187,14 @@ export function PermissionsMatrixPage() {
                     <table className="w-full min-w-[800px]">
                         <thead>
                             <tr className="border-b border-subtle bg-surface-50">
-                                <th className="sticky left-0 z-10 bg-surface-50 px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 min-w-[240px]">
+                                <th className="sticky left-0 z-10 bg-surface-50 px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 min-w-[240px]">
                                     Permissão
                                 </th>
-                                {roleNames.map(role => (
-                                    <th key={role} className="px-3 py-3 text-center text-[11px] font-medium uppercase tracking-wider text-surface-500 min-w-[100px]">
+                                {roleEntries.map(role => (
+                                    <th key={role.name} className="px-3 py-3 text-center text-xs font-medium uppercase tracking-wider text-surface-500 min-w-[100px]">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <Shield className="h-3 w-3" />
-                                            {role}
+                                            {role.display_name}
                                         </div>
                                     </th>
                                 ))}
@@ -195,7 +203,6 @@ export function PermissionsMatrixPage() {
                         <tbody>
                             {matrix.map((group: any, gi: number) => (
                                 <Fragment key={`group-${gi}`}>
-                                    {/* Group header */}
                                     <tr key={`g-${gi}`} className="bg-surface-50/50">
                                         <td
                                             colSpan={roleNames.length + 1}
@@ -204,22 +211,21 @@ export function PermissionsMatrixPage() {
                                             {group.group}
                                         </td>
                                     </tr>
-                                    {/* Permissions */}
                                     {group.permissions.map((perm: any) => (
                                         <tr key={perm.id} className="border-t border-surface-100 hover:bg-surface-50/50 transition-colors">
-                                            <td className="sticky left-0 z-10 bg-white px-4 py-2">
+                                            <td className="sticky left-0 z-10 bg-surface-0 px-4 py-2">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm text-surface-700">
                                                         {perm.name.split('.').slice(1).join('.')}
                                                     </span>
                                                     {perm.criticality === 'HIGH' && (
-                                                        <Badge variant="danger" className="text-[10px]">HIGH</Badge>
+                                                        <Badge variant="danger" className="text-xs">HIGH</Badge>
                                                     )}
                                                     {perm.criticality === 'MED' && (
-                                                        <Badge variant="warning" className="text-[10px]">MED</Badge>
+                                                        <Badge variant="warning" className="text-xs">MED</Badge>
                                                     )}
                                                     {perm.criticality === 'LOW' && (
-                                                        <Badge variant="default" className="text-[10px]">LOW</Badge>
+                                                        <Badge variant="default" className="text-xs">LOW</Badge>
                                                     )}
                                                 </div>
                                             </td>
@@ -239,7 +245,6 @@ export function PermissionsMatrixPage() {
                                                             className={cn(
                                                                 'inline-flex h-6 w-6 items-center justify-center rounded-md transition-all',
                                                                 isClickable && 'cursor-pointer hover:ring-2 hover:ring-brand-300',
-                                                                !isClickable && 'cursor-default',
                                                                 isGranted ? 'bg-emerald-100' : 'bg-surface-100',
                                                             )}
                                                             title={

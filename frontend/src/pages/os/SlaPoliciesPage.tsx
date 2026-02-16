@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Edit2, Trash2, Shield, Clock, X, AlertTriangle } from 'lucide-react'
@@ -24,14 +24,13 @@ const priorityConfig: Record<string, { label: string; color: string; icon: strin
 }
 
 export function SlaPoliciesPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const [modal, setModal] = useState<{ mode: 'create' | 'edit'; policy?: SlaPolicy } | null>(null)
 
-    const { data: res, isLoading } = useQuery({
+    const { data: res, isLoading, isError } = useQuery({
         queryKey: ['sla-policies'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/sla-policies'),
     })
     const policies: SlaPolicy[] = res?.data?.data ?? []
@@ -41,7 +40,7 @@ export function SlaPoliciesPage() {
             data.id ? api.put(`/sla-policies/${data.id}`, data) : api.post('/sla-policies', data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['sla-policies'] })
+            qc.invalidateQueries({ queryKey: ['sla-policies'] })
             setModal(null)
         },
     })
@@ -50,7 +49,7 @@ export function SlaPoliciesPage() {
         mutationFn: (id: number) => api.delete(`/sla-policies/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['sla-policies'] })
+            qc.invalidateQueries({ queryKey: ['sla-policies'] })
         },
     })
 
@@ -61,7 +60,7 @@ export function SlaPoliciesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Políticas de SLA</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Defina tempos de resposta e resolução por prioridade</p>
+                    <p className="mt-0.5 text-sm text-surface-500">Defina tempos de resposta e resolução por prioridade</p>
                 </div>
                 <button onClick={() => setModal({ mode: 'create' })}
                     className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-brand-600 transition-colors">
@@ -71,10 +70,18 @@ export function SlaPoliciesPage() {
 
             {isLoading && <p className="text-sm text-surface-400 text-center py-8">Carregando...</p>}
 
-            {!isLoading && policies.length === 0 && (
+            {!isLoading && isError && (
+                <div className="rounded-xl border border-default bg-surface-0 p-12 text-center">
+                    <AlertTriangle className="mx-auto h-12 w-12 text-red-300" />
+                    <p className="mt-3 text-sm font-medium text-red-600">Erro ao carregar políticas de SLA</p>
+                    <p className="text-xs text-surface-400 mt-1">Tente novamente mais tarde</p>
+                </div>
+            )}
+
+            {!isLoading && !isError && policies.length === 0 && (
                 <div className="rounded-xl border border-dashed border-default bg-surface-50 p-12 text-center">
                     <Shield className="mx-auto h-12 w-12 text-surface-300" />
-                    <p className="mt-3 text-[13px] text-surface-500">Nenhuma política de SLA cadastrada</p>
+                    <p className="mt-3 text-sm text-surface-500">Nenhuma política de SLA cadastrada</p>
                 </div>
             )}
 
@@ -83,7 +90,7 @@ export function SlaPoliciesPage() {
                     const pri = priorityConfig[p.priority] ?? priorityConfig.medium
                     return (
                         <div key={p.id} className={cn(
-                            'rounded-xl border bg-white shadow-card p-5 transition-all hover:shadow-lg group',
+                            'rounded-xl border bg-surface-0 shadow-card p-5 transition-all hover:shadow-lg group',
                             !p.is_active && 'opacity-60'
                         )}>
                             <div className="flex items-start justify-between">
@@ -114,12 +121,12 @@ export function SlaPoliciesPage() {
                                 <div className="rounded-lg bg-blue-50 p-3 text-center">
                                     <Clock className="mx-auto h-4 w-4 text-blue-500 mb-1" />
                                     <p className="text-xs text-blue-600 font-medium">Resposta</p>
-                                    <p className="text-[15px] font-semibold tabular-nums text-blue-700">{fmtHours(p.response_time_hours)}</p>
+                                    <p className="text-sm font-semibold tabular-nums text-blue-700">{fmtHours(p.response_time_hours)}</p>
                                 </div>
                                 <div className="rounded-lg bg-emerald-50 p-3 text-center">
                                     <AlertTriangle className="mx-auto h-4 w-4 text-emerald-500 mb-1" />
                                     <p className="text-xs text-emerald-600 font-medium">Resolução</p>
-                                    <p className="text-[15px] font-semibold tabular-nums text-emerald-700">{fmtHours(p.resolution_time_hours)}</p>
+                                    <p className="text-sm font-semibold tabular-nums text-emerald-700">{fmtHours(p.resolution_time_hours)}</p>
                                 </div>
                             </div>
 
@@ -131,12 +138,11 @@ export function SlaPoliciesPage() {
                 })}
             </div>
 
-            {/* Modal CRUD */}
             {modal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="w-full max-w-md rounded-2xl bg-surface-0 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
-                            <h3 className="text-[15px] font-semibold tabular-nums text-surface-900">{modal.mode === 'edit' ? 'Editar Política' : 'Nova Política SLA'}</h3>
+                            <h3 className="text-sm font-semibold tabular-nums text-surface-900">{modal.mode === 'edit' ? 'Editar Política' : 'Nova Política SLA'}</h3>
                             <button onClick={() => setModal(null)}><X className="h-5 w-5 text-surface-400" /></button>
                         </div>
                         <form onSubmit={e => {

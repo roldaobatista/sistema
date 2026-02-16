@@ -1,34 +1,20 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
-    Plus, Search, Phone, MapPin, UserCheck, ArrowRight, Trash2,
-    AlertCircle, Clock, Truck, CheckCircle, XCircle, Map, Calendar,
-    Download, ChevronLeft, ChevronRight, AlertTriangle, Pencil,
+    Plus, Search, Phone, MapPin, AlertTriangle, Pencil, Trash2,
+    Map, Calendar, Download, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
+import { EmptyState } from '@/components/ui/emptystate'
+import { PageHeader } from '@/components/ui/pageheader'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
-
-const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
-    [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', icon: AlertCircle },
-    [SERVICE_CALL_STATUS.SCHEDULED]: { label: 'Agendado', variant: 'warning', icon: Clock },
-    [SERVICE_CALL_STATUS.IN_TRANSIT]: { label: 'Em Trânsito', variant: 'info', icon: Truck },
-    [SERVICE_CALL_STATUS.IN_PROGRESS]: { label: 'Em Atendimento', variant: 'warning', icon: ArrowRight },
-    [SERVICE_CALL_STATUS.COMPLETED]: { label: 'Concluído', variant: 'success', icon: CheckCircle },
-    [SERVICE_CALL_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'danger', icon: XCircle },
-}
-
-const priorityConfig: Record<string, { label: string; variant: any }> = {
-    low: { label: 'Baixa', variant: 'default' },
-    normal: { label: 'Normal', variant: 'info' },
-    high: { label: 'Alta', variant: 'warning' },
-    urgent: { label: 'Urgente', variant: 'danger' },
-}
+import { serviceCallStatus, priorityConfig, getStatusEntry } from '@/lib/status-config'
+import { cn } from '@/lib/utils'
 
 export function ServiceCallsPage() {
     const navigate = useNavigate()
@@ -58,7 +44,6 @@ export function ServiceCallsPage() {
 
     const { data: summary } = useQuery({
         queryKey: ['service-calls-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-calls-summary').then((r) => r.data),
     })
 
@@ -66,7 +51,7 @@ export function ServiceCallsPage() {
         mutationFn: (id: number) => api.delete(`/service-calls/${id}`),
         onSuccess: () => {
             toast.success('Chamado excluído com sucesso')
-                queryClient.invalidateQueries({ queryKey: ['service-calls'] })
+            queryClient.invalidateQueries({ queryKey: ['service-calls'] })
             queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
             setDeleteTarget(null)
         },
@@ -109,75 +94,54 @@ export function ServiceCallsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Chamados Técnicos
-                        {pagination && (
-                            <span className="ml-2 text-sm font-normal text-gray-500">
-                                ({pagination.total} {pagination.total === 1 ? 'registro' : 'registros'})
-                            </span>
-                        )}
-                    </h1>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => navigate('/chamados/mapa')}>
-                        <Map className="w-4 h-4 mr-1" /> Mapa
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/chamados/agenda')}>
-                        <Calendar className="w-4 h-4 mr-1" /> Agenda
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleExport}>
-                        <Download className="w-4 h-4 mr-1" /> CSV
-                    </Button>
-                    {canCreate && (
-                        <Button onClick={() => navigate('/chamados/novo')}>
-                            <Plus className="w-4 h-4 mr-1" /> Novo Chamado
-                        </Button>
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="Chamados Técnicos"
+                count={pagination?.total}
+                actions={[
+                    { label: 'Mapa', icon: <Map className="h-4 w-4" />, variant: 'outline', onClick: () => navigate('/chamados/mapa') },
+                    { label: 'Agenda', icon: <Calendar className="h-4 w-4" />, variant: 'outline', onClick: () => navigate('/chamados/agenda') },
+                    { label: 'CSV', icon: <Download className="h-4 w-4" />, variant: 'outline', onClick: handleExport },
+                    ...(canCreate ? [{ label: 'Novo Chamado', icon: <Plus className="h-4 w-4" />, onClick: () => navigate('/chamados/novo') }] : []),
+                ]}
+            />
 
-            {/* Summary Cards */}
             {summary && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {[
-                        { label: 'Abertos', value: summary.open, color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-                        { label: 'Agendados', value: summary.scheduled, color: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-                        { label: 'Em Trânsito', value: summary.in_transit, color: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-                        { label: 'Em Atendimento', value: summary.in_progress, color: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-                        { label: 'Concluídos Hoje', value: summary.completed_today, color: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-                        { label: 'SLA Estourado', value: summary.sla_breached_active, color: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+                        { label: 'Abertos', value: summary.open, color: 'text-sky-600 bg-sky-50' },
+                        { label: 'Agendados', value: summary.scheduled, color: 'text-amber-600 bg-amber-50' },
+                        { label: 'Em Trânsito', value: summary.in_transit, color: 'text-indigo-600 bg-indigo-50' },
+                        { label: 'Em Atendimento', value: summary.in_progress, color: 'text-orange-600 bg-orange-50' },
+                        { label: 'Concluídos Hoje', value: summary.completed_today, color: 'text-emerald-600 bg-emerald-50' },
+                        { label: 'SLA Estourado', value: summary.sla_breached_active, color: 'text-red-600 bg-red-50' },
                     ].map((item) => (
-                        <div key={item.label} className={`rounded-xl p-3 ${item.color}`}>
-                            <p className="text-xs font-medium opacity-80">{item.label}</p>
-                            <p className="text-2xl font-bold">{item.value ?? 0}</p>
+                        <div key={item.label} className={cn('rounded-xl p-3', item.color)}>
+                            <p className="text-xs font-medium opacity-70">{item.label}</p>
+                            <p className="text-xl font-bold tabular-nums">{item.value ?? 0}</p>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
                     <input
                         type="text"
                         placeholder="Buscar por número ou cliente..."
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-default bg-surface-0 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                     />
                 </div>
                 <select
                     aria-label="Filtrar por status"
                     value={statusFilter}
                     onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                    className="px-3 py-2 rounded-lg border border-default bg-surface-0 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                 >
                     <option value="">Todos os status</option>
-                    {Object.entries(statusConfig).map(([k, v]) => (
+                    {Object.entries(serviceCallStatus).map(([k, v]) => (
                         <option key={k} value={k}>{v.label}</option>
                     ))}
                 </select>
@@ -185,7 +149,7 @@ export function ServiceCallsPage() {
                     aria-label="Filtrar por prioridade"
                     value={priorityFilter}
                     onChange={(e) => { setPriorityFilter(e.target.value); setPage(1) }}
-                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+                    className="px-3 py-2 rounded-lg border border-default bg-surface-0 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                 >
                     <option value="">Todas as prioridades</option>
                     {Object.entries(priorityConfig).map(([k, v]) => (
@@ -194,68 +158,65 @@ export function ServiceCallsPage() {
                 </select>
             </div>
 
-            {/* Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                 {isLoading ? (
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <div className="divide-y divide-subtle">
                         {Array.from({ length: 8 }).map((_, i) => (
                             <div key={i} className="flex items-center gap-4 p-4 animate-pulse">
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" />
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40" />
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" />
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" />
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded flex-1" />
+                                <div className="h-4 w-20 rounded bg-surface-200" />
+                                <div className="h-4 w-40 rounded bg-surface-100" />
+                                <div className="h-4 w-24 rounded bg-surface-100" />
+                                <div className="h-4 w-20 rounded bg-surface-100" />
+                                <div className="h-4 rounded bg-surface-100 flex-1" />
                             </div>
                         ))}
                     </div>
                 ) : calls.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400">
-                        <Phone className="w-12 h-12 mb-4 opacity-30" />
-                        <p className="text-lg font-medium">Nenhum chamado encontrado</p>
-                        <p className="text-sm mt-1">
-                            {search || statusFilter || priorityFilter ? 'Tente alterar os filtros' : 'Crie seu primeiro chamado'}
-                        </p>
-                        {canCreate && !search && !statusFilter && !priorityFilter && (
-                            <Button className="mt-4" onClick={() => navigate('/chamados/novo')}>
-                                <Plus className="w-4 h-4 mr-1" /> Novo Chamado
-                            </Button>
-                        )}
-                    </div>
+                    <EmptyState
+                        icon={Phone}
+                        title="Nenhum chamado encontrado"
+                        description={search || statusFilter || priorityFilter ? 'Tente alterar os filtros' : 'Crie seu primeiro chamado'}
+                        action={canCreate && !search && !statusFilter && !priorityFilter ? {
+                            label: 'Novo Chamado',
+                            onClick: () => navigate('/chamados/novo'),
+                            icon: <Plus className="h-4 w-4" />,
+                        } : undefined}
+                    />
                 ) : (
                     <>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                <thead className="bg-surface-50">
                                     <tr>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Nº</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Cliente</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Status</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Prioridade</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">SLA</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Técnico</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Cidade</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Agendado</th>
-                                        <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Criado em</th>
-                                        <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Ações</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Nº</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Cliente</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Status</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Prioridade</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">SLA</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Técnico</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Cidade</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Agendado</th>
+                                        <th className="text-left px-4 py-3 text-xs font-medium text-surface-500">Criado em</th>
+                                        <th className="text-right px-4 py-3 text-xs font-medium text-surface-500">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody className="divide-y divide-subtle">
                                     {calls.map((call: any) => {
-                                        const sc = statusConfig[call.status]
+                                        const sc = getStatusEntry(serviceCallStatus, call.status)
                                         const pc = priorityConfig[call.priority]
-                                        const StatusIcon = sc?.icon || AlertCircle
+                                        const StatusIcon = sc.icon
                                         return (
                                             <tr
                                                 key={call.id}
-                                                className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
+                                                className="hover:bg-surface-50 cursor-pointer transition-colors"
                                                 onClick={() => navigate(`/chamados/${call.id}`)}
                                             >
-                                                <td className="px-4 py-3 font-mono text-xs font-semibold">{call.call_number}</td>
-                                                <td className="px-4 py-3 font-medium">{call.customer?.name || '—'}</td>
+                                                <td className="px-4 py-3 font-mono text-xs font-semibold text-surface-900">{call.call_number}</td>
+                                                <td className="px-4 py-3 font-medium text-surface-900">{call.customer?.name || '—'}</td>
                                                 <td className="px-4 py-3">
-                                                    <Badge variant={sc?.variant || 'default'}>
-                                                        <StatusIcon className="w-3 h-3 mr-1" />
-                                                        {sc?.label || call.status}
+                                                    <Badge variant={sc.variant}>
+                                                        <StatusIcon className="h-3 w-3" />
+                                                        {sc.label}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -264,28 +225,28 @@ export function ServiceCallsPage() {
                                                 <td className="px-4 py-3">
                                                     {call.sla_breached ? (
                                                         <Badge variant="danger">
-                                                            <AlertTriangle className="w-3 h-3 mr-1" /> Estourado
+                                                            <AlertTriangle className="h-3 w-3" /> Estourado
                                                         </Badge>
                                                     ) : call.status !== 'completed' && call.status !== 'cancelled' ? (
                                                         <Badge variant="success">OK</Badge>
                                                     ) : (
-                                                        <span className="text-gray-400">—</span>
+                                                        <span className="text-surface-400">—</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                <td className="px-4 py-3 text-surface-600">
                                                     {call.technician?.name || (
-                                                        <span className="text-gray-400 italic">Não atribuído</span>
+                                                        <span className="text-surface-400 italic">Não atribuído</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                <td className="px-4 py-3 text-surface-600">
                                                     {call.city ? `${call.city}/${call.state}` : '—'}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                <td className="px-4 py-3 text-surface-600 tabular-nums">
                                                     {call.scheduled_date
                                                         ? new Date(call.scheduled_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
                                                         : '—'}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                <td className="px-4 py-3 text-surface-600 tabular-nums">
                                                     {call.created_at
                                                         ? new Date(call.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
                                                         : '—'}
@@ -295,19 +256,19 @@ export function ServiceCallsPage() {
                                                         {canUpdate && (
                                                             <button
                                                                 onClick={() => navigate(`/chamados/${call.id}/editar`)}
-                                                                className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                                                                className="p-1.5 text-surface-400 hover:text-brand-600 rounded-lg hover:bg-brand-50 transition-colors"
                                                                 title="Editar"
                                                             >
-                                                                <Pencil className="w-4 h-4" />
+                                                                <Pencil className="h-4 w-4" />
                                                             </button>
                                                         )}
                                                         {canDelete && (
                                                             <button
                                                                 onClick={() => setDeleteTarget(call)}
-                                                                className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                                className="p-1.5 text-surface-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                                                                 title="Excluir"
                                                             >
-                                                                <Trash2 className="w-4 h-4" />
+                                                                <Trash2 className="h-4 w-4" />
                                                             </button>
                                                         )}
                                                     </div>
@@ -319,28 +280,17 @@ export function ServiceCallsPage() {
                             </table>
                         </div>
 
-                        {/* Pagination */}
                         {pagination && pagination.last_page > 1 && (
-                            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <div className="flex items-center justify-between px-4 py-3 border-t border-subtle">
+                                <p className="text-sm text-surface-500">
                                     Página {pagination.current_page} de {pagination.last_page}
                                 </p>
                                 <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={page <= 1}
-                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    >
-                                        <ChevronLeft className="w-4 h-4" />
+                                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                                        <ChevronLeft className="h-4 w-4" />
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={page >= pagination.last_page}
-                                        onClick={() => setPage((p) => p + 1)}
-                                    >
-                                        <ChevronRight className="w-4 h-4" />
+                                    <Button variant="outline" size="sm" disabled={page >= pagination.last_page} onClick={() => setPage((p) => p + 1)}>
+                                        <ChevronRight className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -349,27 +299,24 @@ export function ServiceCallsPage() {
                 )}
             </div>
 
-            {/* Delete Confirmation Modal */}
             <Modal
                 open={!!deleteTarget}
                 onOpenChange={(open) => !open && setDeleteTarget(null)}
                 title="Excluir Chamado"
             >
                 <div className="space-y-4">
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-surface-600">
                         Tem certeza que deseja excluir o chamado <strong>{deleteTarget?.call_number}</strong>?
                         Esta ação não pode ser desfeita.
                     </p>
                     <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-                            Cancelar
-                        </Button>
+                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button
                             variant="danger"
                             loading={deleteMutation.isPending}
                             onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
                         >
-                            <Trash2 className="w-4 h-4 mr-1" /> Excluir
+                            Excluir
                         </Button>
                     </div>
                 </div>

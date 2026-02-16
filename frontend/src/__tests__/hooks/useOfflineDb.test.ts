@@ -37,9 +37,12 @@ describe('offlineDb — generateUlid', () => {
 
     it('is lexicographically sortable by time', () => {
         const a = generateUlid()
+        // Small delay to guarantee different timestamp
+        const start = Date.now()
+        while (Date.now() === start) { /* spin */ }
         const b = generateUlid()
-        // Given monotonic increment, b >= a
-        expect(b >= a).toBe(true)
+        // Given different millisecond, b > a
+        expect(b > a).toBe(true)
     })
 
     it('generates IDs that are alphanumeric only', () => {

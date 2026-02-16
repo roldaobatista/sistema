@@ -157,7 +157,6 @@ export function BankReconciliationPage() {
 
     const summaryQuery = useQuery({
         queryKey: ['bank-reconciliation-summary'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: async () => {
             const { data } = await api.get<{ success: boolean; data: SummaryData }>('/bank-reconciliation/summary')
             return data.data
@@ -465,7 +464,7 @@ export function BankReconciliationPage() {
 
     const scoreBadge = (score: number) => {
         const color = score >= 80 ? 'text-emerald-600 bg-emerald-50' : score >= 50 ? 'text-amber-600 bg-amber-50' : 'text-red-600 bg-red-50'
-        return <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold', color)}>{score}%</span>
+        return <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold', color)}>{score}%</span>
     }
 
     // ─── Render ──────────────────────────────────────
@@ -478,7 +477,6 @@ export function BankReconciliationPage() {
                 actions={[{ label: 'Importar Extrato', onClick: handleUpload, icon: <Upload className="h-4 w-4" />, disabled: !canManage || importMut.isPending }]}
             />
 
-            {/* ── F3: Summary KPIs ── */}
             {summary ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
                     {[
@@ -490,10 +488,10 @@ export function BankReconciliationPage() {
                         { label: 'Créditos', value: fmtBRL(summary.total_credits), icon: ArrowUpRight, color: 'text-emerald-600' },
                         { label: 'Débitos', value: fmtBRL(summary.total_debits), icon: ArrowDownRight, color: 'text-red-600' },
                     ].map(({ label, value, icon: Icon, color }) => (
-                        <div key={label} className="rounded-xl border border-default bg-surface-0 p-3 shadow-sm">
+                        <div key={label} className="rounded-xl border border-default bg-surface-0 p-3 shadow-card">
                             <div className="flex items-center gap-2">
                                 <Icon className={cn('h-4 w-4', color)} />
-                                <span className="text-[11px] font-medium text-surface-500">{label}</span>
+                                <span className="text-xs font-medium text-surface-500">{label}</span>
                             </div>
                             <p className={cn('mt-1 text-lg font-bold', color)}>{value}</p>
                         </div>
@@ -501,14 +499,13 @@ export function BankReconciliationPage() {
                 </div>
             ) : null}
 
-            {/* ── F1: Bank Account Selector for Import ── */}
             {canManage && bankAccounts.length > 0 ? (
                 <div className="flex items-center gap-3 rounded-xl border border-default bg-surface-0 px-4 py-3">
                     <label className="text-xs font-medium text-surface-600 whitespace-nowrap">Conta bancária para importação:</label>
                     <select
                         value={importAccountId ?? ''}
                         onChange={(e) => setImportAccountId(e.target.value ? Number(e.target.value) : null)}
-                        className="flex-1 max-w-xs rounded-lg border border-surface-300 px-3 py-1.5 text-sm"
+                        className="flex-1 max-w-xs rounded-lg border border-default px-3 py-1.5 text-sm"
                         aria-label="Conta bancária"
                     >
                         <option value="">Nenhuma (não vincular)</option>
@@ -527,7 +524,6 @@ export function BankReconciliationPage() {
                 </div>
             ) : null}
 
-            {/* ── Statements List ── */}
             <div className="space-y-3">
                 {statementsQuery.isLoading ? (
                     <p className="py-8 text-center text-sm text-surface-400">Carregando extratos...</p>
@@ -566,16 +562,15 @@ export function BankReconciliationPage() {
                                         <p className="text-xs text-surface-500">{statement.entries_count ?? statement.total_entries} lançamentos</p>
                                         <p className="text-xs text-emerald-600">{statement.matched_entries} conciliados</p>
                                     </div>
-                                    {/* F9: Export & F6: Delete */}
                                     <div className="flex gap-1">
-                                        <button onClick={() => handleExport(statement.id)} title="Exportar JSON" className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50">
+                                        <button onClick={() => handleExport(statement.id)} title="Exportar JSON" className="rounded-lg border border-default p-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50">
                                             <Download className="h-3.5 w-3.5 text-brand-600" />
                                         </button>
-                                        <button onClick={() => handleExportPdf(statement.id)} title="Exportar PDF" className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-red-300 hover:bg-red-50">
+                                        <button onClick={() => handleExportPdf(statement.id)} title="Exportar PDF" className="rounded-lg border border-default p-1.5 transition-colors hover:border-red-300 hover:bg-red-50">
                                             <FileText className="h-3.5 w-3.5 text-red-600" />
                                         </button>
                                         {canDelete ? (
-                                            <button onClick={() => setDeleteConfirm(statement.id)} title="Excluir extrato" className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-red-300 hover:bg-red-50">
+                                            <button onClick={() => setDeleteConfirm(statement.id)} title="Excluir extrato" className="rounded-lg border border-default p-1.5 transition-colors hover:border-red-300 hover:bg-red-50">
                                                 <Trash2 className="h-3.5 w-3.5 text-red-500" />
                                             </button>
                                         ) : null}
@@ -584,9 +579,8 @@ export function BankReconciliationPage() {
                             </div>
 
                             {expandedId === statement.id ? (
-                                <div className="border-t border-surface-100 p-4">
-                                    {/* F7: Filters Bar */}
-                                    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-surface-100 bg-surface-50 p-3">
+                                <div className="border-t border-subtle p-4">
+                                    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-default bg-surface-50 p-3">
                                         <div className="relative flex-1 min-w-[180px]">
                                             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface-400" />
                                             <input
@@ -594,27 +588,26 @@ export function BankReconciliationPage() {
                                                 placeholder="Buscar descrição..."
                                                 value={filters.search}
                                                 onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setEntriesPage(1) }}
-                                                className="w-full rounded-lg border border-surface-200 py-1.5 pl-8 pr-3 text-sm"
+                                                className="w-full rounded-lg border border-default py-1.5 pl-8 pr-3 text-sm"
                                             />
                                         </div>
-                                        <select value={filters.status} onChange={(e) => { setFilters((f) => ({ ...f, status: e.target.value })); setEntriesPage(1) }} className="rounded-lg border border-surface-200 px-2 py-1.5 text-sm" aria-label="Filtrar por status">
+                                        <select value={filters.status} onChange={(e) => { setFilters((f) => ({ ...f, status: e.target.value })); setEntriesPage(1) }} className="rounded-lg border border-default px-2 py-1.5 text-sm" aria-label="Filtrar por status">
                                             <option value="">Todos status</option>
                                             <option value="pending">Pendentes</option>
                                             <option value="matched">Conciliados</option>
                                             <option value="ignored">Ignorados</option>
                                         </select>
-                                        <select value={filters.type} onChange={(e) => { setFilters((f) => ({ ...f, type: e.target.value })); setEntriesPage(1) }} className="rounded-lg border border-surface-200 px-2 py-1.5 text-sm" aria-label="Filtrar por tipo">
+                                        <select value={filters.type} onChange={(e) => { setFilters((f) => ({ ...f, type: e.target.value })); setEntriesPage(1) }} className="rounded-lg border border-default px-2 py-1.5 text-sm" aria-label="Filtrar por tipo">
                                             <option value="">Todos tipos</option>
                                             <option value="credit">Crédito</option>
                                             <option value="debit">Débito</option>
                                         </select>
-                                        <label className="flex items-center gap-1.5 text-xs text-surface-600 cursor-pointer">
+                                        <label className="flex items-center gap-1.5 text-xs text-surface-600">
                                             <input type="checkbox" checked={filters.duplicates_only} onChange={(e) => { setFilters((f) => ({ ...f, duplicates_only: e.target.checked })); setEntriesPage(1) }} className="rounded" />
                                             Só duplicatas
                                         </label>
                                     </div>
 
-                                    {/* F8: Bulk Actions Bar */}
                                     {hasSelected && canManage ? (
                                         <div className="mb-3 flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2">
                                             <span className="text-xs font-medium text-brand-700">{selectedEntries.size} selecionado(s)</span>
@@ -640,17 +633,15 @@ export function BankReconciliationPage() {
                                         <p className="py-4 text-center text-sm text-surface-400">Nenhum lançamento encontrado com os filtros aplicados.</p>
                                     ) : (
                                         <div className="space-y-2">
-                                            {/* Select all checkbox */}
                                             {canManage ? (
-                                                <label className="flex items-center gap-2 px-1 text-xs text-surface-500 cursor-pointer">
+                                                <label className="flex items-center gap-2 px-1 text-xs text-surface-500">
                                                     <input type="checkbox" checked={entries.length > 0 && entries.every((e) => selectedEntries.has(e.id))} onChange={() => toggleAll(entries)} className="rounded" />
                                                     Selecionar todos
                                                 </label>
                                             ) : null}
 
                                             {entries.map((entry) => (
-                                                <div key={entry.id} className={cn('flex items-center gap-2 rounded-lg border p-3 transition-colors hover:bg-surface-50', entry.possible_duplicate ? 'border-orange-200 bg-orange-50/30' : 'border-surface-100')}>
-                                                    {/* F8: Checkbox */}
+                                                <div key={entry.id} className={cn('flex items-center gap-2 rounded-lg border p-3 transition-colors hover:bg-surface-50', entry.possible_duplicate ? 'border-orange-200 bg-orange-50/30' : 'border-default')}>
                                                     {canManage ? (
                                                         <input type="checkbox" checked={selectedEntries.has(entry.id)} onChange={() => toggleEntry(entry.id)} className="rounded shrink-0" />
                                                     ) : null}
@@ -661,22 +652,21 @@ export function BankReconciliationPage() {
                                                             : <ArrowDownRight className="h-4 w-4 shrink-0 text-red-500" />}
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-2 flex-wrap">
-                                                                <p className="truncate text-[13px] font-medium text-surface-900">{entry.description}</p>
-                                                                {/* F10: Duplicate badge */}
+                                                                <p className="truncate text-sm font-medium text-surface-900">{entry.description}</p>
                                                                 {entry.possible_duplicate ? (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
                                                                         <AlertTriangle className="h-2.5 w-2.5" /> Duplicata?
                                                                     </span>
                                                                 ) : null}
                                                                 {/* Rule badge */}
                                                                 {entry.reconciled_by === 'rule' && entry.rule ? (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
                                                                         <Zap className="h-2.5 w-2.5" /> {entry.rule.name}
                                                                     </span>
                                                                 ) : null}
                                                                 {/* Category badge */}
                                                                 {entry.category ? (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700">
                                                                         {entry.category}
                                                                     </span>
                                                                 ) : null}
@@ -685,7 +675,7 @@ export function BankReconciliationPage() {
                                                                 <p className="text-xs text-surface-500">{fmtDate(entry.date)}</p>
                                                                 {/* Audit info */}
                                                                 {entry.reconciled_by && entry.reconciled_at ? (
-                                                                    <span className="text-[10px] text-surface-400">
+                                                                    <span className="text-xs text-surface-400">
                                                                         {entry.reconciled_by === 'manual' ? '✋ Manual' : entry.reconciled_by === 'rule' ? '⚡ Regra' : '🤖 Auto'}
                                                                         {entry.reconciled_by_user?.name ? ` por ${entry.reconciled_by_user.name}` : ''}
                                                                     </span>
@@ -703,10 +693,10 @@ export function BankReconciliationPage() {
                                                             <div className="flex gap-1">
                                                                 {entry.status === 'pending' ? (
                                                                     <>
-                                                                        <button onClick={() => openMatchModal(entry)} title="Conciliar" className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50">
+                                                                        <button onClick={() => openMatchModal(entry)} title="Conciliar" className="rounded-lg border border-default p-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50">
                                                                             <Link2 className="h-3.5 w-3.5 text-brand-600" />
                                                                         </button>
-                                                                        <button onClick={() => ignoreMut.mutate(entry.id)} title="Ignorar" className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-red-300 hover:bg-red-50">
+                                                                        <button onClick={() => ignoreMut.mutate(entry.id)} title="Ignorar" className="rounded-lg border border-default p-1.5 transition-colors hover:border-red-300 hover:bg-red-50">
                                                                             <X className="h-3.5 w-3.5 text-red-500" />
                                                                         </button>
                                                                     </>
@@ -714,7 +704,7 @@ export function BankReconciliationPage() {
                                                                 {/* F5: Unmatch button */}
                                                                 {entry.status === 'matched' ? (
                                                                     <>
-                                                                        <button onClick={() => unmatchMut.mutate(entry.id)} title="Desfazer conciliação" className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-amber-300 hover:bg-amber-50">
+                                                                        <button onClick={() => unmatchMut.mutate(entry.id)} title="Desfazer conciliação" className="rounded-lg border border-default p-1.5 transition-colors hover:border-amber-300 hover:bg-amber-50">
                                                                             <Undo2 className="h-3.5 w-3.5 text-amber-600" />
                                                                         </button>
                                                                         {/* Suggest rule from manual match */}
@@ -722,7 +712,7 @@ export function BankReconciliationPage() {
                                                                             <button
                                                                                 onClick={() => suggestRuleMut.mutate(entry.id)}
                                                                                 title="Criar regra a partir deste lançamento"
-                                                                                className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                                                                className="rounded-lg border border-default p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50"
                                                                             >
                                                                                 <Zap className="h-3.5 w-3.5 text-blue-600" />
                                                                             </button>
@@ -730,7 +720,7 @@ export function BankReconciliationPage() {
                                                                     </>
                                                                 ) : null}
                                                                 {entry.status === 'ignored' ? (
-                                                                    <button onClick={() => unmatchMut.mutate(entry.id)} title="Restaurar para pendente" className="rounded-lg border border-surface-200 p-1.5 transition-colors hover:border-amber-300 hover:bg-amber-50">
+                                                                    <button onClick={() => unmatchMut.mutate(entry.id)} title="Restaurar para pendente" className="rounded-lg border border-default p-1.5 transition-colors hover:border-amber-300 hover:bg-amber-50">
                                                                         <Undo2 className="h-3.5 w-3.5 text-amber-600" />
                                                                     </button>
                                                                 ) : null}
@@ -742,7 +732,6 @@ export function BankReconciliationPage() {
                                         </div>
                                     )}
 
-                                    {/* Entries Pagination */}
                                     <div className="mt-3 flex items-center justify-end gap-2">
                                         <Button variant="outline" size="sm" disabled={entriesCurrentPage <= 1} onClick={() => setEntriesPage((p) => Math.max(1, p - 1))}>
                                             Anterior
@@ -759,7 +748,6 @@ export function BankReconciliationPage() {
                 )}
             </div>
 
-            {/* Statements Pagination */}
             <div className="flex items-center justify-end gap-2">
                 <Button variant="outline" size="sm" disabled={statementsCurrentPage <= 1} onClick={() => setStatementPage((p) => Math.max(1, p - 1))}>
                     Anterior
@@ -770,14 +758,11 @@ export function BankReconciliationPage() {
                 </Button>
             </div>
 
-            {/* ── Match Modal (F2 + F4) ── */}
             {matchModal ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setMatchModal(null)}>
-                    <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-[15px] font-semibold text-surface-900">Conciliar lançamento</h3>
-                        <p className="mt-0.5 text-[13px] text-surface-500">{matchModal.description} — {fmtBRL(matchModal.amount)}</p>
-
-                        {/* F4: Suggestions */}
+                    <div className="w-full max-w-lg rounded-2xl bg-surface-0 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-sm font-semibold text-surface-900">Conciliar lançamento</h3>
+                        <p className="mt-0.5 text-sm text-surface-500">{matchModal.description} — {fmtBRL(matchModal.amount)}</p>
                         {suggestionsLoading ? (
                             <p className="mt-3 text-xs text-surface-400">Buscando sugestões...</p>
                         ) : suggestions.length > 0 ? (
@@ -790,13 +775,13 @@ export function BankReconciliationPage() {
                                             onClick={() =>
                                                 matchMut.mutate({ entryId: matchModal.id, matchedType: sug.type, matchedId: sug.id })
                                             }
-                                            className="flex w-full items-center justify-between rounded-lg border border-surface-100 p-2 text-left transition-colors hover:border-brand-300 hover:bg-brand-50"
+                                            className="flex w-full items-center justify-between rounded-lg border border-default p-2 text-left transition-colors hover:border-brand-300 hover:bg-brand-50"
                                         >
                                             <div className="min-w-0">
                                                 <p className="truncate text-xs font-medium text-surface-800">
                                                     {sug.description} — {sug.customer_name ?? sug.supplier_name ?? ''}
                                                 </p>
-                                                <p className="text-[11px] text-surface-400">
+                                                <p className="text-xs text-surface-400">
                                                     {fmtBRL(sug.amount)} • Venc: {fmtDate(sug.due_date)}
                                                 </p>
                                             </div>
@@ -807,7 +792,7 @@ export function BankReconciliationPage() {
                             </div>
                         ) : null}
 
-                        <div className="mt-4 rounded-lg border border-surface-100 bg-surface-50 p-3">
+                        <div className="mt-4 rounded-lg border border-default bg-surface-50 p-3">
                             <p className="text-xs font-semibold text-surface-600 mb-2">Conciliação manual</p>
 
                             {/* F2: Search Financials */}
@@ -823,13 +808,13 @@ export function BankReconciliationPage() {
                                             setSearchQuery(e.target.value)
                                             searchFinancials(e.target.value, matchType)
                                         }}
-                                        className="w-full rounded-lg border border-surface-300 py-2 pl-8 pr-3 text-sm"
+                                        className="w-full rounded-lg border border-default py-2 pl-8 pr-3 text-sm"
                                     />
                                 </div>
                                 {searchLoading ? (
                                     <p className="mt-1 text-xs text-surface-400">Buscando...</p>
                                 ) : searchResults.length > 0 ? (
-                                    <div className="mt-1.5 space-y-1 max-h-32 overflow-y-auto rounded-lg border border-surface-100 bg-white p-1">
+                                    <div className="mt-1.5 space-y-1 max-h-32 overflow-y-auto rounded-lg border border-default bg-surface-0 p-1">
                                         {searchResults.map((res) => (
                                             <button
                                                 key={`${res.type}-${res.id}`}
@@ -869,7 +854,7 @@ export function BankReconciliationPage() {
                                             setMatchType(e.target.value)
                                             if (searchQuery.length >= 2) searchFinancials(searchQuery, e.target.value)
                                         }}
-                                        className="mt-1 block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm"
+                                        className="mt-1 block w-full rounded-lg border border-default px-3 py-2 text-sm"
                                         aria-label="Tipo de conciliação"
                                     >
                                         <option value={RECEIVABLE_TYPE}>Conta a receber</option>
@@ -886,7 +871,7 @@ export function BankReconciliationPage() {
                                         required
                                         aria-label="ID do título"
                                         placeholder="Ex: 42"
-                                        className="mt-1 block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm"
+                                        className="mt-1 block w-full rounded-lg border border-default px-3 py-2 text-sm"
                                     />
                                 </div>
 
@@ -904,10 +889,9 @@ export function BankReconciliationPage() {
                 </div>
             ) : null}
 
-            {/* ── F6: Delete Confirmation Dialog ── */}
             {deleteConfirm !== null ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
-                    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full max-w-sm rounded-2xl bg-surface-0 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-3">
                             <div className="rounded-full bg-red-100 p-2">
                                 <AlertTriangle className="h-5 w-5 text-red-600" />

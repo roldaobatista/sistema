@@ -35,7 +35,6 @@ export function CustomerMergePage() {
 
     const { data: duplicates, isLoading, refetch } = useQuery({
         queryKey: ['customer-duplicates', searchType],
-        const { data, isLoading, refetch } = useQuery({
         queryFn: () => api.get('/customers/search-duplicates', { params: { type: searchType } }).then(res => res.data),
     })
 

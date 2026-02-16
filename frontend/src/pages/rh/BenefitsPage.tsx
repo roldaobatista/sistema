@@ -25,6 +25,7 @@ export default function BenefitsPage() {
         employee_contribution: 0,
         is_active: true
     })
+    const [searchTerm, setSearchTerm] = useState('')
 
     const filteredBenefits = benefits?.filter((b: EmployeeBenefit) =>
         b.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,7 +94,7 @@ export default function BenefitsPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Gestão de Benefícios</h1>
-                    <p className="text-muted-foreground">Gerencie os benefícios dos colaboradores.</p>
+                    <p className="text-surface-500">Gerencie os benefícios dos colaboradores.</p>
                 </div>
                 <Button onClick={() => { setEditingBenefit(null); setFormData({ type: 'vt', value: 0, employee_contribution: 0, is_active: true }); setIsModalOpen(true) }}>
                     <Plus className="mr-2 h-4 w-4" /> Novo Benefício
@@ -104,13 +105,13 @@ export default function BenefitsPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Custo Total Mensal</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                        <AlertCircle className="h-4 w-4 text-surface-400" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalCost)}
                         </div>
-                        <p className="text-xs text-muted-foreground">Valor pago pela empresa</p>
+                        <p className="text-xs text-surface-500">Valor pago pela empresa</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -122,13 +123,13 @@ export default function BenefitsPage() {
                         <div className="text-2xl font-bold">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalContribution)}
                         </div>
-                        <p className="text-xs text-muted-foreground">Descontado dos colaboradores</p>
+                        <p className="text-xs text-surface-500">Descontado dos colaboradores</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Beneficiários</CardTitle>
-                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <Filter className="h-4 w-4 text-surface-400" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{new Set(filteredBenefits?.map((b: EmployeeBenefit) => b.user_id)).size}</div>
@@ -143,7 +144,7 @@ export default function BenefitsPage() {
                         <CardTitle>Benefícios Ativos</CardTitle>
                         <div className="flex items-center gap-2">
                             <div className="relative">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-surface-400" />
                                 <Input
                                     placeholder="Buscar por nome ou tipo..."
                                     className="pl-8 w-[250px]"
@@ -155,9 +156,9 @@ export default function BenefitsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="rounded-md border">
+                    <div className="rounded-md border border-default">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-muted/50 text-muted-foreground">
+                            <thead className="bg-surface-50 text-surface-600">
                                 <tr>
                                     <th className="p-3 font-medium">Colaborador</th>
                                     <th className="p-3 font-medium">Tipo</th>
@@ -169,14 +170,14 @@ export default function BenefitsPage() {
                                     <th className="p-3 font-medium text-right">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-subtle">
                                 {isLoading ? (
                                     <tr><td colSpan={8} className="p-4 text-center">Carregando...</td></tr>
                                 ) : filteredBenefits?.length === 0 ? (
-                                    <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Nenhum benefício encontrado.</td></tr>
+                                    <tr><td colSpan={8} className="p-4 text-center text-surface-500">Nenhum benefício encontrado.</td></tr>
                                 ) : (
                                     filteredBenefits?.map((benefit: EmployeeBenefit) => (
-                                        <tr key={benefit.id} className="hover:bg-muted/50">
+                                        <tr key={benefit.id} className="hover:bg-surface-50/50">
                                             <td className="p-3">{benefit.user?.name || '---'}</td>
                                             <td className="p-3 font-medium">{getBenefitLabel(benefit.type)}</td>
                                             <td className="p-3">{benefit.provider || '-'}</td>
@@ -232,7 +233,7 @@ export default function BenefitsPage() {
                                 <Label>Tipo</Label>
                                 <select
                                     aria-label="Tipo de benefício"
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm"
                                     value={formData.type}
                                     onChange={e => setFormData({ ...formData, type: e.target.value as any })}
                                 >

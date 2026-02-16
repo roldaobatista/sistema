@@ -54,7 +54,6 @@ export default function VacationBalancePage() {
 
     const { data: balancesRes, isLoading } = useQuery({
         queryKey: ['vacation-balances'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/hr/vacation-balances').then(r => r.data?.data ?? []),
     })
 
@@ -64,9 +63,10 @@ export default function VacationBalancePage() {
     )
 
     // Summary stats
+    const nowTs = new Date().getTime()
     const expiringSoon = balances.filter(b => {
         if (!b.deadline) return false
-        const diff = (new Date(b.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        const diff = (new Date(b.deadline).getTime() - nowTs) / (1000 * 60 * 60 * 24)
         return diff > 0 && diff <= 60 && b.remaining_days > 0
     })
     const expired = balances.filter(b => b.status === 'expired')
@@ -159,7 +159,7 @@ export default function VacationBalancePage() {
                         )}
                         {filtered.map(b => {
                             const deadlineDays = b.deadline
-                                ? Math.ceil((new Date(b.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                                ? Math.ceil((new Date(b.deadline).getTime() - nowTs) / (1000 * 60 * 60 * 24))
                                 : null
                             const isUrgent = deadlineDays !== null && deadlineDays <= 60 && b.remaining_days > 0
 

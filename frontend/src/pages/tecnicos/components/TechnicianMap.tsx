@@ -46,6 +46,8 @@ function MapBounds({ items }: { items: ScheduleItem[] }) {
 }
 
 export function TechnicianMap({ items, technicianId }: TechnicianMapProps) {
+    const [optimizedRoute, setOptimizedRoute] = useState<ScheduleItem[]>([])
+    const [optimizing, setOptimizing] = useState(false)
 
     // Filter items regarding the selected technician (if any)
     const displayItems = useMemo(() => {
@@ -202,6 +204,6 @@ function newItemStatusColor(status: string) {
         case 'confirmed': return 'bg-indigo-500'
         case 'completed': return 'bg-green-500'
         case 'cancelled': return 'bg-red-500'
-        default: return 'bg-gray-500'
+        default: return 'bg-surface-500'
     }
 }

@@ -18,7 +18,6 @@ export default function InventoryCreatePage() {
 
     const { data: warehousesRes, isLoading: loadingWarehouses } = useQuery({
         queryKey: ['warehouses'],
-        const { data } = useQuery({
         queryFn: () => api.get('/inventory/warehouses')
     })
     const warehouses = warehousesRes?.data || []
@@ -55,14 +54,13 @@ export default function InventoryCreatePage() {
                 <ArrowLeft className="w-4 h-4" /> Voltar para Listagem
             </button>
 
-            <div className="bg-white dark:bg-surface-900 rounded-3xl border border-surface-200 dark:border-surface-800 shadow-sm overflow-hidden">
+            <div className="bg-surface-0 rounded-3xl border border-default shadow-card overflow-hidden">
                 <div className="bg-brand-600 p-8 text-white relative overflow-hidden">
                     <div className="relative z-10">
                         <PackageSearch className="w-10 h-10 mb-4 opacity-80" />
                         <h1 className="text-2xl font-bold">Iniciar Novo Inventário</h1>
                         <p className="text-brand-100 text-sm mt-1">Configure a sessão de auditoria e contagem blindada.</p>
                     </div>
-                    {/* Pattern Decorativo */}
                     <div className="absolute top-0 right-0 p-8 opacity-10">
                         <Warehouse className="w-32 h-32 rotate-12" />
                     </div>
@@ -78,7 +76,7 @@ export default function InventoryCreatePage() {
                                 value={warehouseId}
                                 onChange={(e) => setWarehouseId(e.target.value)}
                                 title="Depósito para Auditoria"
-                                className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                                className="w-full px-4 py-3 bg-surface-50 border border-default rounded-xl focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
                                 required
                             >
                                 <option value="">Selecione um depósito...</option>
@@ -97,14 +95,14 @@ export default function InventoryCreatePage() {
                                 value={reference}
                                 onChange={(e) => setReference(e.target.value)}
                                 placeholder="Ex: Inventário Mensal de Fevereiro"
-                                className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                                className="w-full px-4 py-3 bg-surface-50 border border-default rounded-xl focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
                             />
                         </div>
                     </div>
 
-                    <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-2xl flex items-start gap-3">
+                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3">
                         <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                        <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
+                        <p className="text-xs text-amber-700 leading-relaxed">
                             Ao iniciar, o sistema tirará uma foto instantly do estoque atual. Qualquer movimentação realizada após o início não será considerada na expectativa original desta auditoria.
                         </p>
                     </div>

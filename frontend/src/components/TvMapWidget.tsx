@@ -8,7 +8,7 @@ import { Truck, AlertCircle, Wrench, User } from 'lucide-react';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-let DefaultIcon = L.icon({
+const DefaultIcon = L.icon({
     iconUrl: icon,
     shadowUrl: iconShadow,
     iconSize: [25, 41],
@@ -159,7 +159,7 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
         if (s.customer?.latitude) allMarkers.push([s.customer.latitude, s.customer.longitude]);
     });
 
-    const defaultCenter: L.LatLngExpression = [-23.550520, -46.633308];
+    const defaultCenter: L.LatLngExpression = [-16.4673, -54.6353]; // Rondonópolis, MT
 
     return (
         <div className={`relative w-full h-full rounded-lg overflow-hidden border border-neutral-800 bg-neutral-900 ${className}`}>
@@ -220,7 +220,9 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
                                     </div>
                                     <div className="font-bold text-[11px]">{call.customer.name}</div>
                                     <div className="text-[10px] text-neutral-400">{call.subject}</div>
-                                    <div className="text-[9px] bg-red-900/30 text-red-200 px-1 rounded w-fit mt-1">PRIORIDADE ALTA</div>
+                                    <div className="text-[9px] bg-red-900/30 text-red-200 px-1 rounded w-fit mt-1">
+                                        {call.priority ? `PRIORIDADE ${call.priority.toUpperCase()}` : `STATUS: ${(call.status || '').toUpperCase()}`}
+                                    </div>
                                 </div>
                             </Popup>
                         </Marker>

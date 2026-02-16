@@ -69,7 +69,6 @@ export function TechnicianAgendaPage() {
 
     const { data: assigneesRes } = useQuery({
         queryKey: ['service-call-assignees'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/service-calls-assignees').then((r) => r.data),
     })
 
@@ -130,24 +129,24 @@ export function TechnicianAgendaPage() {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/chamados')} className="rounded-lg p-1.5 hover:bg-surface-100 dark:hover:bg-surface-800">
+                    <button onClick={() => navigate('/chamados')} className="rounded-lg p-1.5 hover:bg-surface-100">
                         <ArrowLeft className="h-5 w-5 text-surface-500" />
                     </button>
                     <div>
-                        <h1 className="text-lg font-semibold tracking-tight text-surface-900 dark:text-white">Agenda de Tecnicos</h1>
-                        <p className="text-[13px] text-surface-500">Visao semanal de chamados agendados</p>
+                        <h1 className="text-lg font-semibold tracking-tight text-surface-900">Agenda de Tecnicos</h1>
+                        <p className="text-sm text-surface-500">Visao semanal de chamados agendados</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     {stats.urgent > 0 && (
-                        <div className="hidden items-center gap-1 rounded-lg bg-red-50 px-2 py-1 text-[11px] font-medium text-red-600 dark:bg-red-900/20 md:flex">
+                        <div className="hidden items-center gap-1 rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-600 md:flex">
                             <Zap className="w-3 h-3" /> {stats.urgent} urgente{stats.urgent > 1 ? 's' : ''}
                         </div>
                     )}
                     <select
                         value={selectedTech}
                         onChange={(event) => setSelectedTech(event.target.value)}
-                        className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-surface-600 dark:bg-surface-800"
+                        className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                     >
                         <option value="">Todos os tecnicos</option>
                         {technicians.map((technician: any) => (
@@ -159,12 +158,12 @@ export function TechnicianAgendaPage() {
                 </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-surface-200 bg-surface-0 px-4 py-3 shadow-card dark:border-surface-700 dark:bg-surface-900">
+            <div className="flex items-center justify-between rounded-xl border border-default bg-surface-0 px-4 py-3 shadow-card">
                 <Button variant="ghost" size="sm" onClick={() => { setWeekOffset((week) => week - 1); setSelectedDay(null) }}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div className="text-center">
-                    <p className="text-sm font-semibold text-surface-900 dark:text-white">
+                    <p className="text-sm font-semibold text-surface-900">
                         {weekDays[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                     {weekOffset !== 0 && (
@@ -180,14 +179,14 @@ export function TechnicianAgendaPage() {
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {[
-                    { label: 'Total na Semana', value: stats.total, color: 'text-brand-600', bg: 'bg-brand-50 dark:bg-brand-900/20' },
-                    { label: 'Pendentes', value: stats.pending, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                    { label: 'Concluidos', value: stats.completed, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                    { label: 'Urgentes', value: stats.urgent, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
+                    { label: 'Total na Semana', value: stats.total, color: 'text-brand-600', bg: 'bg-brand-50' },
+                    { label: 'Pendentes', value: stats.pending, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Concluidos', value: stats.completed, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Urgentes', value: stats.urgent, color: 'text-red-600', bg: 'bg-red-50' },
                 ].map((item) => (
-                    <div key={item.label} className={`rounded-xl border border-surface-200 px-4 py-3 shadow-card dark:border-surface-700 ${item.bg}`}>
+                    <div key={item.label} className={`rounded-xl border border-default px-4 py-3 shadow-card ${item.bg}`}>
                         <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
-                        <p className="text-[11px] text-surface-500">{item.label}</p>
+                        <p className="text-xs text-surface-500">{item.label}</p>
                     </div>
                 ))}
             </div>
@@ -195,7 +194,7 @@ export function TechnicianAgendaPage() {
             {isLoading ? (
                 <div className="grid grid-cols-7 gap-2">
                     {Array.from({ length: 7 }).map((_, index) => (
-                        <div key={index} className="min-h-[160px] animate-pulse rounded-xl border border-surface-200 bg-surface-0 p-3 dark:border-surface-700 dark:bg-surface-900" />
+                        <div key={index} className="min-h-[160px] animate-pulse rounded-xl border border-default bg-surface-0 p-3" />
                     ))}
                 </div>
             ) : (
@@ -211,20 +210,20 @@ export function TechnicianAgendaPage() {
                                 key={index}
                                 onClick={() => setSelectedDay(isExpanded ? null : index)}
                                 className={`min-h-[160px] cursor-pointer rounded-xl border p-3 shadow-card transition-all ${isTodayDay
-                                        ? 'border-brand-400 bg-brand-50/30 ring-1 ring-brand-200 dark:bg-brand-900/10 dark:ring-brand-800'
+                                        ? 'border-brand-400 bg-brand-50/30 ring-1 ring-brand-200'
                                         : isExpanded
-                                            ? 'border-brand-300 bg-surface-0 ring-1 ring-brand-100 dark:bg-surface-900'
-                                            : 'border-surface-200 bg-surface-0 hover:border-surface-300 dark:border-surface-700 dark:bg-surface-900 dark:hover:border-surface-600'
+                                            ? 'border-brand-300 bg-surface-0 ring-1 ring-brand-100'
+                                            : 'border-surface-200 bg-surface-0 hover:border-surface-300'
                                     }`}
                             >
                                 <div className="mb-2 text-center">
-                                    <p className="text-[10px] font-medium uppercase tracking-wider text-surface-400">{WEEKDAYS[day.getDay()]}</p>
-                                    <p className={`text-[16px] font-bold tabular-nums ${isTodayDay ? 'text-brand-600' : 'text-surface-900 dark:text-white'}`}>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-surface-400">{WEEKDAYS[day.getDay()]}</p>
+                                    <p className={`text-base font-bold tabular-nums ${isTodayDay ? 'text-brand-600' : 'text-surface-900'}`}>
                                         {day.getDate()}
                                     </p>
                                     {dayCalls.length > 0 && (
                                         <div className="mt-0.5 flex items-center justify-center gap-1">
-                                            <span className="text-[10px] text-surface-500">{dayCalls.length} item{dayCalls.length > 1 ? 's' : ''}</span>
+                                            <span className="text-xs text-surface-500">{dayCalls.length} item{dayCalls.length > 1 ? 's' : ''}</span>
                                             {hasUrgent && <AlertTriangle className="h-2.5 w-2.5 text-red-500" />}
                                         </div>
                                     )}
@@ -232,7 +231,7 @@ export function TechnicianAgendaPage() {
 
                                 <div className="space-y-1.5">
                                     {dayCalls.length === 0 ? (
-                                        <p className="py-3 text-center text-[10px] text-surface-300 dark:text-surface-600">-</p>
+                                        <p className="py-3 text-center text-xs text-surface-300">-</p>
                                     ) : (
                                         dayCalls.map((call) => {
                                             const status = statusLabels[call.status] ?? statusLabels[SERVICE_CALL_STATUS.OPEN]
@@ -240,7 +239,7 @@ export function TechnicianAgendaPage() {
                                             return (
                                                 <div
                                                     key={call.id}
-                                                    className="group cursor-pointer rounded-lg border border-surface-100 bg-surface-50 p-1.5 transition-colors hover:bg-surface-100 dark:border-surface-700/50 dark:bg-surface-800/40 dark:hover:bg-surface-800"
+                                                    className="group cursor-pointer rounded-lg border border-surface-100 bg-surface-50 p-1.5 transition-colors hover:bg-surface-100"
                                                     onClick={(event) => {
                                                         event.stopPropagation()
                                                         navigate(`/chamados/${call.id}`)
@@ -249,23 +248,23 @@ export function TechnicianAgendaPage() {
                                                 >
                                                     <div className="mb-0.5 flex items-center gap-1">
                                                         <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: status.color }} />
-                                                        <Badge variant={status.variant} className="px-1 py-0 text-[7px] leading-tight">{status.label}</Badge>
+                                                        <Badge variant={status.variant} className="px-1 py-0 text-xs leading-tight">{status.label}</Badge>
                                                         {call.priority === 'urgent' && <AlertTriangle className="ml-auto h-2.5 w-2.5 flex-shrink-0 text-red-500" />}
                                                     </div>
 
-                                                    <p className="truncate text-[10px] font-medium text-surface-700 dark:text-surface-300">
+                                                    <p className="truncate text-xs font-medium text-surface-700">
                                                         {call.customer?.name ?? '-'}
                                                     </p>
 
                                                     {call.technician?.name && (
-                                                        <p className="mt-0.5 flex items-center gap-0.5 text-[8px] text-surface-400">
+                                                        <p className="mt-0.5 flex items-center gap-0.5 text-xs text-surface-400">
                                                             <User className="h-2 w-2 flex-shrink-0" />
                                                             <span className="truncate">{call.technician.name}</span>
                                                         </p>
                                                     )}
 
                                                     {call.scheduled_date && (
-                                                        <p className="flex items-center gap-0.5 text-[8px] text-surface-400">
+                                                        <p className="flex items-center gap-0.5 text-xs text-surface-400">
                                                             <Clock className="h-2 w-2 flex-shrink-0" />
                                                             {new Date(call.scheduled_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                         </p>
@@ -282,9 +281,9 @@ export function TechnicianAgendaPage() {
             )}
 
             {expandedDayIndex !== null && (
-                <div className="rounded-xl border border-brand-200 bg-surface-0 p-4 shadow-card dark:border-brand-800 dark:bg-surface-900">
+                <div className="rounded-xl border border-brand-200 bg-surface-0 p-4 shadow-card">
                     <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-sm font-semibold text-surface-900 dark:text-white">
+                        <h2 className="text-sm font-semibold text-surface-900">
                             <Calendar className="mr-1 inline h-4 w-4" />
                             {WEEKDAYS_FULL[weekDays[expandedDayIndex].getDay()]}, {weekDays[expandedDayIndex].toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
                         </h2>
@@ -296,7 +295,7 @@ export function TechnicianAgendaPage() {
                             return (
                                 <div className="flex flex-col items-center py-6 text-surface-400">
                                     <Filter className="mb-2 h-8 w-8 opacity-30" />
-                                    <p className="text-[12px]">Nenhum item neste dia</p>
+                                    <p className="text-xs">Nenhum item neste dia</p>
                                 </div>
                             )
                         }
@@ -308,17 +307,17 @@ export function TechnicianAgendaPage() {
                                     return (
                                         <div
                                             key={`detail-${call.id}`}
-                                            className="cursor-pointer rounded-lg border border-surface-200 p-3 transition-shadow hover:shadow-md dark:border-surface-700"
+                                            className="cursor-pointer rounded-lg border border-default p-3 transition-shadow hover:shadow-card"
                                             onClick={() => navigate(`/chamados/${call.id}`)}
                                         >
                                             <div className="mb-2 flex items-center justify-between">
-                                                <span className="text-[10px] font-mono text-surface-400">{call.call_number}</span>
-                                                <Badge variant={status.variant} className="text-[10px]">{status.label}</Badge>
+                                                <span className="text-xs font-mono text-surface-400">{call.call_number}</span>
+                                                <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
                                             </div>
-                                            <p className="truncate text-[13px] font-semibold text-surface-900 dark:text-white">
+                                            <p className="truncate text-sm font-semibold text-surface-900">
                                                 {call.customer?.name || '-'}
                                             </p>
-                                            <div className="mt-2 space-y-1 text-[11px] text-surface-500">
+                                            <div className="mt-2 space-y-1 text-xs text-surface-500">
                                                 {call.technician?.name && (
                                                     <p className="flex items-center gap-1"><User className="h-3 w-3" />{call.technician.name}</p>
                                                 )}

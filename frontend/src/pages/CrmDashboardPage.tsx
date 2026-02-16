@@ -25,7 +25,6 @@ export function CrmDashboardPage() {
     const [nowTs] = useState(() => Date.now())
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['crm', 'dashboard'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => crmApi.getDashboard().then(r => r.data),
         refetchInterval: 60_000,
         meta: { errorMessage: 'Erro ao carregar dashboard CRM' },
@@ -72,14 +71,14 @@ export function CrmDashboardPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">CRM</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">Pipeline de vendas e relacionamento com clientes</p>
+                    <p className="mt-0.5 text-sm text-surface-500">Pipeline de vendas e relacionamento com clientes</p>
                 </div>
                 <div className="flex gap-2">
                     {pipelines.map(p => (
                         <Link
                             key={p.id}
                             to={`/crm/pipeline/${p.id}`}
-                            className="flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-2 text-[13px] font-medium text-surface-700 hover:bg-surface-50 transition-colors duration-100 shadow-card"
+                            className="flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors duration-100 shadow-card"
                         >
                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color || '#94a3b8' }} />
                             {p.name}
@@ -107,7 +106,6 @@ export function CrmDashboardPage() {
                 ))}
             </div>
 
-            {/* KPI Row 2 */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {kpiCards2.map(card => (
                     <div key={card.label} className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -117,7 +115,7 @@ export function CrmDashboardPage() {
                             </div>
                             <div>
                                 <p className="text-xs text-surface-500">{card.label}</p>
-                                <p className="text-[15px] font-semibold tabular-nums text-surface-900">{isLoading ? '…' : card.value}</p>
+                                <p className="text-sm font-semibold tabular-nums text-surface-900">{isLoading ? '…' : card.value}</p>
                             </div>
                         </div>
                     </div>
@@ -150,7 +148,7 @@ export function CrmDashboardPage() {
                                                     title={`${stage.name}: ${count} deal(s) — ${fmtBRL(value)}`}>
                                                     <span className="relative z-10">{count > 0 ? count : ''}</span>
                                                 </div>
-                                                <p className="text-[10px] text-surface-400 mt-1 text-center truncate">{stage.name}</p>
+                                                <p className="text-xs text-surface-400 mt-1 text-center truncate">{stage.name}</p>
                                             </div>
                                         )
                                     })}
@@ -169,7 +167,7 @@ export function CrmDashboardPage() {
                         Templates <ArrowRight className="h-3 w-3" />
                     </Link>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 divide-x divide-surface-100">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 divide-x divide-subtle">
                     {[
                         { label: 'Enviadas', value: msgStats?.sent_month ?? 0, icon: Send, color: 'text-brand-600 bg-brand-50' },
                         { label: 'Recebidas', value: msgStats?.received_month ?? 0, icon: Mail, color: 'text-blue-600 bg-blue-50' },
@@ -184,8 +182,8 @@ export function CrmDashboardPage() {
                                 <stat.icon className="h-4 w-4" />
                             </div>
                             <div>
-                                <p className="text-[10px] text-surface-400 uppercase tracking-wider">{stat.label}</p>
-                                <p className="text-[15px] font-semibold tabular-nums text-surface-900">{isLoading ? '…' : stat.value}</p>
+                                <p className="text-xs text-surface-400 uppercase tracking-wider">{stat.label}</p>
+                                <p className="text-sm font-semibold tabular-nums text-surface-900">{isLoading ? '…' : stat.value}</p>
                             </div>
                         </div>
                     ))}
@@ -193,7 +191,6 @@ export function CrmDashboardPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">
-                {/* Recent Deals */}
                 <div className="lg:col-span-2 rounded-xl border border-default bg-surface-0 shadow-card">
                     <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Deals Recentes</h2>
@@ -224,7 +221,6 @@ export function CrmDashboardPage() {
                     </div>
                 </div>
 
-                {/* Upcoming Activities */}
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                     <div className="border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Próximas Atividades</h2>
@@ -251,7 +247,6 @@ export function CrmDashboardPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-                {/* Top Customers */}
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                     <div className="border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Top Clientes (receita ganha)</h2>
@@ -272,14 +267,13 @@ export function CrmDashboardPage() {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-bold text-surface-900">{fmtBRL(parseFloat(row.total_value))}</p>
-                                    <p className="text-[10px] text-surface-400">{row.deal_count} deal(s)</p>
+                                    <p className="text-xs text-surface-400">{row.deal_count} deal(s)</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Calibration Alerts */}
                 {calibrationAlerts.length > 0 && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50/50 shadow-card">
                         <div className="flex items-center gap-2 border-b border-amber-200 px-5 py-3">

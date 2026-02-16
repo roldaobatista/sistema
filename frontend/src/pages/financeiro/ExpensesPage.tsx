@@ -137,21 +137,18 @@ export function ExpensesPage() {
 
     const { data: summaryRes } = useQuery({
         queryKey: ['expense-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/expense-summary'),
     })
     const summary = summaryRes?.data ?? {}
 
     const { data: catsRes } = useQuery({
         queryKey: ['expense-categories'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/expense-categories'),
     })
     const categories = catsRes?.data ?? []
 
     const { data: chartRes } = useQuery({
         queryKey: ['chart-of-accounts-expenses'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/chart-of-accounts', { params: { is_active: 1, type: 'expense' } }),
         enabled: canViewChart && showForm,
     })
@@ -159,7 +156,6 @@ export function ExpensesPage() {
 
     const { data: analyticsRes } = useQuery({
         queryKey: ['expense-analytics'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/expense-analytics'),
         enabled: showAnalytics,
     })
@@ -167,7 +163,6 @@ export function ExpensesPage() {
 
     const { data: wosRes } = useQuery({
         queryKey: ['work-orders-expense'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
         enabled: showForm,
     })
@@ -320,7 +315,6 @@ export function ExpensesPage() {
 
     const { data: historyRes } = useQuery({
         queryKey: ['expense-history', showHistory],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/expenses/${showHistory}/history`),
         enabled: showHistory !== null,
     })
@@ -436,7 +430,6 @@ export function ExpensesPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <PageHeader
                 title="Despesas"
                 subtitle="Controle de despesas e aprovações"
@@ -448,7 +441,6 @@ export function ExpensesPage() {
                 ]}
             />
 
-            {/* Summary Cards */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
                     <div className="flex items-center gap-2 text-amber-600"><Clock className="h-4 w-4" /><span className="text-xs font-medium">Pendente Aprovação</span></div>
@@ -470,7 +462,6 @@ export function ExpensesPage() {
                 </div>
             </div>
 
-            {/* Analytics Toggle + Section */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                 <button onClick={() => setShowAnalytics(p => !p)}
                     className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-surface-50 transition-colors">
@@ -511,7 +502,6 @@ export function ExpensesPage() {
                                 </div>
                             </div>
 
-                            {/* By Month */}
                             <div>
                                 <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Evolução Mensal (6 meses)</h3>
                                 <div className="space-y-2">
@@ -537,7 +527,6 @@ export function ExpensesPage() {
                                 </div>
                             </div>
 
-                            {/* Top Creators */}
                             <div>
                                 <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Top Responsáveis</h3>
                                 <div className="space-y-2">
@@ -555,7 +544,7 @@ export function ExpensesPage() {
                             </div>
                         </div>
 
-                        <p className="mt-3 text-[11px] text-surface-400">
+                        <p className="mt-3 text-xs text-surface-400">
                             Período: {analytics.period?.from} a {analytics.period?.to} · Exclui despesas rejeitadas
                         </p>
                     </div>
@@ -568,7 +557,6 @@ export function ExpensesPage() {
                 )}
             </div>
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -593,7 +581,6 @@ export function ExpensesPage() {
                     </select>
                 )}
             </div>
-            {/* Filters Row 2 */}
             <div className="flex flex-wrap gap-3">
                 <Input type="date" value={dateFrom} onChange={(e: any) => setDateFrom(e.target.value)} className="w-40" placeholder="De" />
                 <Input type="date" value={dateTo} onChange={(e: any) => setDateTo(e.target.value)} className="w-40" placeholder="Até" />
@@ -604,7 +591,6 @@ export function ExpensesPage() {
                 )}
             </div>
 
-            {/* Batch Actions */}
             {selectedIds.size > 0 && canApprove && (
                 <div className="flex items-center gap-3 rounded-lg border border-brand-200 bg-brand-50/50 px-4 py-2.5">
                     <span className="text-sm font-medium text-brand-700">{selectedIds.size} selecionada(s)</span>
@@ -623,7 +609,6 @@ export function ExpensesPage() {
                 </div>
             )}
 
-            {/* Table */}
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full">
                     <thead>
@@ -631,7 +616,7 @@ export function ExpensesPage() {
                             {canApprove && (
                                 <th className="w-10 px-3 py-2.5">
                                     <input type="checkbox" checked={allPendingSelected && pendingRecords.length > 0} onChange={toggleSelectAll}
-                                        className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500"
+                                        className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500"
                                         title="Selecionar todas pendentes" />
                                 </th>
                             )}
@@ -676,12 +661,12 @@ export function ExpensesPage() {
                                     <td className="px-3 py-3">
                                         {r.status === EXPENSE_STATUS.PENDING ? (
                                             <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)}
-                                                className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+                                                className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
                                         ) : <div className="h-4 w-4" />}
                                     </td>
                                 )}
                                 <td className="px-4 py-3">
-                                    <p className="text-[13px] font-medium text-surface-900">{r.description}</p>
+                                    <p className="text-sm font-medium text-surface-900">{r.description}</p>
                                     {r.work_order && <p className="text-xs text-brand-500">{woIdentifier(r.work_order)}</p>}
                                 </td>
                                 <td className="hidden px-4 py-3 sm:table-cell">
@@ -692,8 +677,8 @@ export function ExpensesPage() {
                                         </span>
                                     ) : '—'}
                                 </td>
-                                <td className="hidden px-4 py-3 text-[13px] text-surface-600 md:table-cell">{r.creator.name}</td>
-                                <td className="hidden px-4 py-3 text-[13px] text-surface-500 md:table-cell">{fmtDate(r.expense_date)}</td>
+                                <td className="hidden px-4 py-3 text-sm text-surface-600 md:table-cell">{r.creator.name}</td>
+                                <td className="hidden px-4 py-3 text-sm text-surface-500 md:table-cell">{fmtDate(r.expense_date)}</td>
                                 <td className="px-4 py-3"><Badge variant={statusConfig[r.status]?.variant}>{statusConfig[r.status]?.label}</Badge></td>
                                 <td className="px-3.5 py-2.5 text-right text-sm font-semibold text-surface-900">{fmtBRL(r.amount)}</td>
                                 <td className="px-4 py-3">
@@ -741,7 +726,6 @@ export function ExpensesPage() {
                 </div>
             )}
 
-            {/* Create Expense Modal */}
             <Modal open={showForm} onOpenChange={(v) => { setShowForm(v); if (!v) { setEditingId(null); setFieldErrors({}) } }} title={editingId ? 'Editar Despesa' : 'Nova Despesa'} size="lg">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div>
@@ -750,7 +734,7 @@ export function ExpensesPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Categoria</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Categoria</label>
                             <select value={form.expense_category_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('expense_category_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Sem categoria</option>
@@ -759,7 +743,7 @@ export function ExpensesPage() {
                             {fieldErrors.expense_category_id && <p className="mt-1 text-xs text-red-500">{fieldErrors.expense_category_id[0]}</p>}
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Vinculada à OS</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Vinculada à OS</label>
                             <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhuma</option>
@@ -769,7 +753,7 @@ export function ExpensesPage() {
                     </div>
                     {canViewChart && (
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Plano de Contas</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Plano de Contas</label>
                             <select value={form.chart_of_account_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('chart_of_account_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nao classificado</option>
@@ -787,7 +771,7 @@ export function ExpensesPage() {
                             {fieldErrors.expense_date && <p className="mt-1 text-xs text-red-500">{fieldErrors.expense_date[0]}</p>}
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Forma Pgto</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Forma Pgto</label>
                             <select value={form.payment_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('payment_method', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Não definido</option>
@@ -796,7 +780,7 @@ export function ExpensesPage() {
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observações</label>
                         <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
@@ -804,18 +788,18 @@ export function ExpensesPage() {
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="affects_cash" checked={form.affects_technician_cash}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('affects_technician_cash', e.target.checked as any)}
-                                className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
-                            <label htmlFor="affects_cash" className="text-[13px] font-medium text-surface-700">Impacta caixa do técnico</label>
+                                className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
+                            <label htmlFor="affects_cash" className="text-sm font-medium text-surface-700">Impacta caixa do técnico</label>
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="affects_net" checked={form.affects_net_value}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('affects_net_value', e.target.checked as any)}
-                                className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
-                            <label htmlFor="affects_net" className="text-[13px] font-medium text-surface-700">Deduz do valor líquido (comissões)</label>
+                                className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
+                            <label htmlFor="affects_net" className="text-sm font-medium text-surface-700">Deduz do valor líquido (comissões)</label>
                         </div>
                     </div>
                     {/* Km Tracking */}
-                    <div className="rounded-lg border border-surface-200 p-3 space-y-3 bg-surface-50/50">
+                    <div className="rounded-lg border border-default p-3 space-y-3 bg-surface-50/50">
                         <p className="text-xs font-semibold text-surface-600 uppercase tracking-wider">Km Rodados</p>
                         <div className="grid gap-3 sm:grid-cols-3">
                             <div>
@@ -842,14 +826,14 @@ export function ExpensesPage() {
                                 <div className="flex items-center gap-2">
                                     <input type="checkbox" id="km_billed" checked={form.km_billed_to_client}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('km_billed_to_client', e.target.checked as any)}
-                                        className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
-                                    <label htmlFor="km_billed" className="text-[13px] font-medium text-surface-700">Cobrar do cliente</label>
+                                        className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
+                                    <label htmlFor="km_billed" className="text-sm font-medium text-surface-700">Cobrar do cliente</label>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Comprovante</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Comprovante</label>
                         <input type="file" accept="image/*,.pdf" onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             if (e.target.files?.[0]) set('receipt', e.target.files[0])
                         }} className="w-full text-sm text-surface-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
@@ -865,7 +849,6 @@ export function ExpensesPage() {
                 </form>
             </Modal>
 
-            {/* Category Manager Modal */}
             <Modal open={showCatManager} onOpenChange={setShowCatManager} title="Gerenciar Categorias" size="lg">
                 <div className="space-y-4">
                     <div className="flex justify-end">
@@ -898,16 +881,15 @@ export function ExpensesPage() {
                 </div>
             </Modal>
 
-            {/* Category Create/Edit Modal */}
             <Modal open={showCatForm} onOpenChange={(v) => { setShowCatForm(v); if (!v) setEditingCatId(null) }} title={editingCatId ? 'Editar Categoria' : 'Nova Categoria de Despesa'}>
                 <form onSubmit={e => { e.preventDefault(); saveCatMut.mutate(catForm) }} className="space-y-4">
                     <Input label="Nome *" value={catForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, name: e.target.value }))} required />
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cor</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Cor</label>
                         <div className="flex items-center gap-3">
                             <input type="color" value={catForm.color} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, color: e.target.value }))}
-                                className="h-10 w-14 cursor-pointer rounded-lg border border-surface-300" />
-                            <span className="text-[13px] text-surface-500">{catForm.color}</span>
+                                className="h-10 w-14 cursor-pointer rounded-lg border border-default" />
+                            <span className="text-sm text-surface-500">{catForm.color}</span>
                         </div>
                     </div>
                     <div className="flex justify-end gap-2 border-t pt-4">
@@ -917,10 +899,9 @@ export function ExpensesPage() {
                 </form>
             </Modal>
 
-            {/* Delete Category Confirmation */}
             <Modal open={deleteCatTarget !== null} onOpenChange={() => setDeleteCatTarget(null)} title="Excluir Categoria">
                 <div className="space-y-4">
-                    <p className="text-[13px] text-surface-600">Tem certeza que deseja excluir esta categoria? Despesas vinculadas precisarão ser reclassificadas.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta categoria? Despesas vinculadas precisarão ser reclassificadas.</p>
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button variant="outline" onClick={() => setDeleteCatTarget(null)}>Cancelar</Button>
                         <Button className="bg-red-600 hover:bg-red-700" loading={delCatMut.isPending} disabled={delCatMut.isPending} onClick={() => delCatMut.mutate(deleteCatTarget!)}>Excluir</Button>
@@ -928,7 +909,6 @@ export function ExpensesPage() {
                 </div>
             </Modal>
 
-            {/* Detail Modal */}
             <Modal open={!!showDetail} onOpenChange={() => setShowDetail(null)} title="Detalhes da Despesa" size="lg">
                 {showDetail && (
                     <div className="space-y-4">
@@ -947,7 +927,7 @@ export function ExpensesPage() {
                                 <span className="text-xs text-surface-500">Plano de Contas</span>
                                 <p className="text-sm font-medium">{showDetail.chart_of_account ? `${showDetail.chart_of_account.code} - ${showDetail.chart_of_account.name}` : 'â€”'}</p>
                             </div>
-                            <div><span className="text-xs text-surface-500">Valor</span><p className="text-[15px] font-semibold tabular-nums">{fmtBRL(showDetail.amount)}</p></div>
+                            <div><span className="text-xs text-surface-500">Valor</span><p className="text-sm font-semibold tabular-nums">{fmtBRL(showDetail.amount)}</p></div>
                             <div><span className="text-xs text-surface-500">Status</span><Badge variant={statusConfig[showDetail.status]?.variant}>{statusConfig[showDetail.status]?.label}</Badge></div>
                             <div><span className="text-xs text-surface-500">Responsável</span><p className="text-sm">{showDetail.creator.name}</p></div>
                             <div><span className="text-xs text-surface-500">Data</span><p className="text-sm">{fmtDate(showDetail.expense_date)}</p></div>
@@ -959,17 +939,16 @@ export function ExpensesPage() {
                             {showDetail.affects_net_value && <div><span className="text-xs text-surface-500">Valor Líquido</span><Badge variant="warning">Deduz do líquido</Badge></div>}
                             {showDetail.receipt_path && <div><span className="text-xs text-surface-500">Comprovante</span><p className="text-sm text-brand-600 underline"><a href={`${api.defaults.baseURL?.replace('/api', '')}${showDetail.receipt_path}`} target="_blank" rel="noreferrer">Ver comprovante</a></p></div>}
                             {showDetail.rejection_reason && <div className="col-span-2"><span className="text-xs text-surface-500">Motivo da rejeição</span><p className="text-sm text-red-600">{showDetail.rejection_reason}</p></div>}
-                            {showDetail.notes && <div className="col-span-2"><span className="text-xs text-surface-500">Obs</span><p className="text-[13px] text-surface-600">{showDetail.notes}</p></div>}
+                            {showDetail.notes && <div className="col-span-2"><span className="text-xs text-surface-500">Obs</span><p className="text-sm text-surface-600">{showDetail.notes}</p></div>}
                         </div>
                     </div>
                 )}
             </Modal>
 
-            {/* Rejection Modal */}
             <Modal open={rejectTarget !== null} onOpenChange={() => setRejectTarget(null)} title="Rejeitar Despesa">
                 <form onSubmit={e => { e.preventDefault(); if (!rejectReason.trim()) return; statusMut.mutate({ id: rejectTarget!, status: EXPENSE_STATUS.REJECTED, rejection_reason: rejectReason.trim() }) }} className="space-y-4">
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Motivo da rejeição *</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Motivo da rejeição *</label>
                         <textarea value={rejectReason} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)} rows={3} required
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                             placeholder="Informe o motivo da rejeição..." />
@@ -981,10 +960,9 @@ export function ExpensesPage() {
                 </form>
             </Modal>
 
-            {/* Delete Confirmation Modal */}
             <Modal open={deleteTarget !== null} onOpenChange={() => setDeleteTarget(null)} title="Confirmar Exclusão">
                 <div className="space-y-4">
-                    <p className="text-[13px] text-surface-600">Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button className="bg-red-600 hover:bg-red-700" loading={delMut.isPending} disabled={delMut.isPending} onClick={() => { delMut.mutate(deleteTarget!) }}>Excluir</Button>
@@ -992,12 +970,11 @@ export function ExpensesPage() {
                 </div>
             </Modal>
 
-            {/* Batch Reject Modal */}
             <Modal open={showBatchReject} onOpenChange={setShowBatchReject} title="Rejeitar em Lote">
                 <form onSubmit={e => { e.preventDefault(); if (!batchRejectReason.trim()) return; batchMut.mutate({ expense_ids: Array.from(selectedIds), status: EXPENSE_STATUS.REJECTED, rejection_reason: batchRejectReason.trim() }) }} className="space-y-4">
                     <p className="text-sm text-surface-600">{selectedIds.size} despesa(s) selecionada(s) serão rejeitadas.</p>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Motivo da rejeição *</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Motivo da rejeição *</label>
                         <textarea value={batchRejectReason} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBatchRejectReason(e.target.value)} rows={3} required
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                             placeholder="Informe o motivo da rejeição..." />
@@ -1009,7 +986,6 @@ export function ExpensesPage() {
                 </form>
             </Modal>
 
-            {/* Status History Modal */}
             <Modal open={showHistory !== null} onOpenChange={() => setShowHistory(null)} title="Histórico de Status">
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                     {historyEntries.length === 0 ? (
@@ -1030,7 +1006,7 @@ export function ExpensesPage() {
                                     <Badge variant={statusConfig[h.to_status]?.variant}>{statusConfig[h.to_status]?.label}</Badge>
                                 </div>
                                 {h.reason && <p className="mt-1 text-xs text-surface-600">{h.reason}</p>}
-                                <p className="mt-1 text-[11px] text-surface-400">
+                                <p className="mt-1 text-xs text-surface-400">
                                     {h.changed_by} · {new Date(h.changed_at).toLocaleString('pt-BR')}
                                 </p>
                             </div>

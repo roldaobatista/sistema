@@ -38,7 +38,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
             const response = await api.get(`/work-orders/${workOrderId}/chats`)
             setMessages(response.data)
         } catch (error) {
-            console.error('Failed to fetch chat messages:', error)
+            // Erro ao buscar mensagens
         } finally {
             setLoading(false)
         }
@@ -100,7 +100,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
             })
             setMessages([...messages, response.data])
         } catch (error) {
-            console.error('Failed to upload file:', error)
+            // Erro ao fazer upload do arquivo
         } finally {
             setSending(false)
         }

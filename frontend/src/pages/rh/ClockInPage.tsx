@@ -38,7 +38,6 @@ export default function ClockInPage() {
     // Clock status
     const { data: statusData, isLoading: statusLoading } = useQuery<ClockStatus>({
         queryKey: ['clock-status'],
-        const { data } = useQuery({
         queryFn: () => api.get('/hr/advanced/clock/status').then(r => r.data?.data),
         refetchInterval: 60_000,
     })
@@ -206,7 +205,6 @@ export default function ClockInPage() {
         <div className="space-y-5">
             <PageHeader title="Ponto Digital" subtitle="Registre sua entrada e saída com selfie e GPS" />
 
-            {/* Status Card */}
             <div className={cn(
                 'rounded-xl border p-6 shadow-card transition-all',
                 isClockedIn
@@ -254,10 +252,8 @@ export default function ClockInPage() {
                 </div>
             </div>
 
-            {/* Clock-In Flow (only when NOT clocked in) */}
             {!isClockedIn && (
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
-                    {/* Step Indicators */}
                     <div className="flex border-b border-subtle">
                         {['Selfie', 'Confirmar', 'GPS & Enviar'].map((label, i) => {
                             const stepIdx = i
@@ -282,7 +278,6 @@ export default function ClockInPage() {
                     </div>
 
                     <div className="p-6">
-                        {/* Step 1: Camera */}
                         {step === 'camera' && (
                             <div className="flex flex-col items-center gap-4">
                                 {cameraError ? (
@@ -297,7 +292,6 @@ export default function ClockInPage() {
                                     <>
                                         <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-black">
                                             <video ref={videoRef} className="w-full" autoPlay muted playsInline />
-                                            {/* Oval face guide overlay */}
                                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                                 <div className="h-56 w-44 rounded-[50%] border-2 border-white/60 shadow-lg" />
                                             </div>
@@ -314,7 +308,6 @@ export default function ClockInPage() {
                             </div>
                         )}
 
-                        {/* Step 2: Preview */}
                         {step === 'preview' && selfieUrl && (
                             <div className="flex flex-col items-center gap-4">
                                 <div className="w-full max-w-sm overflow-hidden rounded-2xl">
@@ -335,7 +328,6 @@ export default function ClockInPage() {
                             </div>
                         )}
 
-                        {/* Step 3: GPS + Submit */}
                         {step === 'gps' && (
                             <div className="flex flex-col items-center gap-4">
                                 {gpsLoading ? (
@@ -375,7 +367,6 @@ export default function ClockInPage() {
                             </div>
                         )}
 
-                        {/* Done */}
                         {step === 'done' && (
                             <div className="flex flex-col items-center gap-4 py-8">
                                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
@@ -389,7 +380,6 @@ export default function ClockInPage() {
                 </div>
             )}
 
-            {/* Hidden canvas for photo capture */}
             <canvas ref={canvasRef} className="hidden" />
         </div>
     )

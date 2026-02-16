@@ -39,7 +39,6 @@ export function QuoteDetailPage() {
 
     const { data: quote, isLoading } = useQuery<Quote>({
         queryKey: ['quote', id],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,
     })
@@ -146,7 +145,6 @@ export function QuoteDetailPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/orcamentos')}>
@@ -213,7 +211,6 @@ export function QuoteDetailPage() {
                 </div>
             </div>
 
-            {/* Rejection reason banner */}
             {isRejected && quote.rejection_reason && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                     <p className="text-sm font-medium text-red-800">Motivo da rejeição:</p>
@@ -221,9 +218,7 @@ export function QuoteDetailPage() {
                 </div>
             )}
 
-            {/* Info cards */}
             <div className="grid gap-6 md:grid-cols-3">
-                {/* Cliente */}
                 <Card className="p-5">
                     <h3 className="text-sm font-semibold text-content-secondary mb-3">Cliente</h3>
                     <p className="font-medium text-content-primary">{quote.customer?.name ?? '—'}</p>
@@ -232,7 +227,6 @@ export function QuoteDetailPage() {
                     {quote.customer?.phone && <p className="text-sm text-content-secondary">{quote.customer.phone}</p>}
                 </Card>
 
-                {/* Resumo Financeiro */}
                 <Card className="p-5">
                     <h3 className="text-sm font-semibold text-content-secondary mb-3">Resumo Financeiro</h3>
                     <div className="space-y-2">
@@ -250,7 +244,6 @@ export function QuoteDetailPage() {
                     </div>
                 </Card>
 
-                {/* Informações */}
                 <Card className="p-5">
                     <h3 className="text-sm font-semibold text-content-secondary mb-3">Informações</h3>
                     <div className="space-y-2 text-sm">
@@ -264,7 +257,6 @@ export function QuoteDetailPage() {
                 </Card>
             </div>
 
-            {/* Equipamentos e Itens */}
             {quote.equipments && quote.equipments.length > 0 && (
                 <Card className="p-5">
                     <h3 className="text-sm font-semibold text-content-secondary mb-4">Equipamentos e Itens</h3>
@@ -329,7 +321,6 @@ export function QuoteDetailPage() {
                 </div>
             )}
 
-            {/* Reject modal */}
             {rejectOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setRejectOpen(false)}>
                     <div className="bg-surface-0 rounded-xl p-6 max-w-md mx-4 shadow-elevated w-full" onClick={(e) => e.stopPropagation()}>
@@ -351,7 +342,6 @@ export function QuoteDetailPage() {
                 </div>
             )}
 
-            {/* Delete confirmation */}
             {deleteOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setDeleteOpen(false)}>
                     <div className="bg-surface-0 rounded-xl p-6 max-w-sm mx-4 shadow-elevated" onClick={(e) => e.stopPropagation()}>

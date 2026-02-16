@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { crmApi } from '@/lib/crm-api'
@@ -21,16 +21,15 @@ const CHANNEL_META: Record<Channel, { icon: React.ElementType; color: string; la
 }
 
 export function MessageTemplatesPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const [editing, setEditing] = useState<CrmMessageTemplate | null>(null)
     const [creating, setCreating] = useState(false)
     const [filterChannel, setFilterChannel] = useState<Channel | ''>('')
 
-    const { data: templates = [], isLoading } = useQuery({
+    const { data: templates = [], isLoading, isError } = useQuery({
         queryKey: ['crm', 'message-templates'],
-        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getMessageTemplates().then(r => r.data),
     })
 
@@ -38,7 +37,7 @@ export function MessageTemplatesPage() {
         mutationFn: (id: number) => crmApi.deleteMessageTemplate(id),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
         },
     })
 
@@ -48,11 +47,10 @@ export function MessageTemplatesPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Templates de Mensagem</h1>
-                    <p className="text-[13px] text-surface-500 mt-1">Modelos reutilizáveis para WhatsApp e E-mail</p>
+                    <p className="text-sm text-surface-500 mt-1">Modelos reutilizáveis para WhatsApp e E-mail</p>
                 </div>
                 <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
                     <Plus className="h-4 w-4 mr-1" />
@@ -60,7 +58,6 @@ export function MessageTemplatesPage() {
                 </Button>
             </div>
 
-            {/* Filters */}
             <div className="flex gap-2">
                 <button
                     onClick={() => setFilterChannel('')}
@@ -90,17 +87,24 @@ export function MessageTemplatesPage() {
                 })}
             </div>
 
-            {/* Grid */}
             {isLoading ? (
                 <div className="flex items-center justify-center py-16">
                     <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
+                </div>
+            ) : isError ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="rounded-full bg-red-50 p-4 mb-3">
+                        <FileText className="h-6 w-6 text-red-400" />
+                    </div>
+                    <p className="text-sm font-medium text-red-600">Erro ao carregar templates</p>
+                    <p className="text-xs text-surface-400 mt-1">Tente novamente mais tarde</p>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="rounded-full bg-surface-100 p-4 mb-3">
                         <FileText className="h-6 w-6 text-surface-400" />
                     </div>
-                    <p className="text-[13px] text-surface-500">Nenhum template encontrado</p>
+                    <p className="text-sm text-surface-500">Nenhum template encontrado</p>
                     <p className="text-xs text-surface-400 mt-1">Crie um template para agilizar o envio de mensagens</p>
                 </div>
             ) : (
@@ -110,9 +114,8 @@ export function MessageTemplatesPage() {
                         return (
                             <div
                                 key={t.id}
-                                className="group rounded-xl border border-default bg-surface-0 p-5 shadow-card hover:shadow-elevated transition-all"
+                                className="group rounded-xl border border-default bg-surface-0 p-5 shadow-card transition-all"
                             >
-                                {/* Header */}
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center gap-2">
                                         <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', meta.color)}>
@@ -120,7 +123,7 @@ export function MessageTemplatesPage() {
                                         </div>
                                         <div>
                                             <h3 className="text-sm font-semibold text-surface-900">{t.name}</h3>
-                                            <p className="text-[10px] text-surface-400 font-mono">{t.slug}</p>
+                                            <p className="text-xs text-surface-400 font-mono">{t.slug}</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -139,17 +142,14 @@ export function MessageTemplatesPage() {
                                     </div>
                                 </div>
 
-                                {/* Subject */}
                                 {t.subject && (
                                     <p className="text-xs font-medium text-surface-600 mb-2">ðŸ“§ {t.subject}</p>
                                 )}
 
-                                {/* Body preview */}
                                 <p className="text-xs text-surface-500 line-clamp-3 whitespace-pre-wrap leading-relaxed">
                                     {t.body}
                                 </p>
 
-                                {/* Variables */}
                                 {t.variables && t.variables.length > 0 && (
                                     <div className="flex flex-wrap gap-1 mt-3">
                                         {t.variables.map((v, i) => (
@@ -160,7 +160,6 @@ export function MessageTemplatesPage() {
                                     </div>
                                 )}
 
-                                {/* Footer */}
                                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-surface-100">
                                     <Badge variant={t.is_active ? 'success' : 'default'}>
                                         {t.is_active ? 'Ativo' : 'Inativo'}
@@ -173,7 +172,6 @@ export function MessageTemplatesPage() {
                 </div>
             )}
 
-            {/* Create/Edit Modal */}
             {(creating || editing) && (
                 <TemplateFormModal
                     template={editing}
@@ -190,11 +188,17 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
     const qc = useQueryClient()
     const isEdit = !!template
 
+    const [name, setName] = useState(template?.name ?? '')
+    const [slug, setSlug] = useState(template?.slug ?? '')
+    const [body, setBody] = useState(template?.body ?? '')
+    const [channel, setChannel] = useState<Channel>(template?.channel ?? 'whatsapp')
+    const [subject, setSubject] = useState(template?.subject ?? '')
+
     const createMut = useMutation({
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.createMessageTemplate(data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
             onClose()
         },
     })
@@ -203,7 +207,7 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
         mutationFn: (data: Partial<CrmMessageTemplate>) => crmApi.updateMessageTemplate(template!.id, data),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
+            qc.invalidateQueries({ queryKey: ['crm', 'message-templates'] })
             onClose()
         },
     })
@@ -244,7 +248,6 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
                     </div>
 
                     <div className="p-5 space-y-4">
-                        {/* Channel */}
                         <div>
                             <label className="mb-1.5 block text-xs font-medium text-surface-500">Canal</label>
                             <div className="flex gap-2">
@@ -269,7 +272,6 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
                             </div>
                         </div>
 
-                        {/* Name + slug */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="mb-1.5 block text-xs font-medium text-surface-500">Nome</label>
@@ -291,7 +293,6 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
                             </div>
                         </div>
 
-                        {/* Subject (email only) */}
                         {channel === 'email' && (
                             <div>
                                 <label className="mb-1.5 block text-xs font-medium text-surface-500">Assunto</label>
@@ -304,11 +305,10 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
                             </div>
                         )}
 
-                        {/* Body */}
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <label className="text-xs font-medium text-surface-500">Corpo da mensagem</label>
-                                <span className="text-[10px] text-surface-400">Use {'{{nome}}'}, {'{{valor}}'} para variáveis</span>
+                                <span className="text-xs text-surface-400">Use {'{{nome}}'}, {'{{valor}}'} para variáveis</span>
                             </div>
                             <textarea
                                 value={body}
@@ -320,7 +320,6 @@ function TemplateFormModal({ template, onClose }: { template: CrmMessageTemplate
                         </div>
                     </div>
 
-                    {/* Footer */}
                     <div className="flex items-center justify-end gap-2 border-t border-subtle px-5 py-3">
                         <button
                             onClick={onClose}

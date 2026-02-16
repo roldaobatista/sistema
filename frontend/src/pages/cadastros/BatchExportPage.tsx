@@ -29,7 +29,6 @@ export function BatchExportPage() {
 
     const { data: entities, isLoading } = useQuery<ExportEntity[]>({
         queryKey: ['batch-export-entities'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: async () => {
             const res = await api.get('/batch-export/entities')
             return res.data.data

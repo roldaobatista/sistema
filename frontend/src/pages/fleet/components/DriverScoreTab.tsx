@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Award, TrendingUp, TrendingDown, Minus, Fuel, AlertTriangle, ClipboardCheck, Shield } from 'lucide-react'
@@ -23,7 +24,6 @@ export function DriverScoreTab() {
 
     const { data: ranking, isLoading } = useQuery({
         queryKey: ['fleet-driver-ranking'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/fleet/driver-ranking').then(r => r.data?.data)
     })
 
@@ -44,7 +44,7 @@ export function DriverScoreTab() {
                                 <div className={cn(
                                     "h-10 w-10 rounded-full flex items-center justify-center font-bold text-lg",
                                     idx === 0 ? "bg-yellow-100 text-yellow-700" :
-                                        idx === 1 ? "bg-gray-100 text-gray-600" :
+                                        idx === 1 ? "bg-surface-100 text-surface-600" :
                                             idx === 2 ? "bg-amber-100 text-amber-700" :
                                                 "bg-surface-100 text-surface-500"
                                 )}>

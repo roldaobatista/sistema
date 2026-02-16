@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef , useMemo } from 'react'
+import { useState, useEffect, useRef , useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -60,6 +60,7 @@ function FitBounds({ markers }: { markers: MapMarker[] }) {
 }
 
 export function InmetroMapPage() {
+    const { hasPermission } = useAuthStore()
 
     const canImport = hasPermission('inmetro.intelligence.import')
 
@@ -80,7 +81,6 @@ export function InmetroMapPage() {
 
     return (
         <div className="space-y-4">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Mapa de Instrumentos INMETRO</h1>
@@ -118,7 +118,6 @@ export function InmetroMapPage() {
                 </div>
             </div>
 
-            {/* Filter Tabs */}
             <div className="flex items-center gap-2">
                 {[
                     { key: 'all', label: 'Todos', count: mapData?.markers.length ?? 0 },
@@ -139,9 +138,7 @@ export function InmetroMapPage() {
                 ))}
             </div>
 
-            {/* Map + Sidebar */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                {/* Map */}
                 <div className="lg:col-span-3 rounded-xl border border-default bg-surface-0 overflow-hidden" style={{ height: '600px' }}>
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
@@ -210,7 +207,6 @@ export function InmetroMapPage() {
                     )}
                 </div>
 
-                {/* Sidebar: Top Cities */}
                 <div className="rounded-xl border border-default bg-surface-0 p-4 overflow-y-auto" style={{ maxHeight: '600px' }}>
                     <h3 className="text-sm font-semibold text-surface-900 mb-3">Top Cidades</h3>
                     {mapData?.by_city && Object.keys(mapData.by_city).length > 0 ? (
@@ -236,7 +232,6 @@ export function InmetroMapPage() {
                         <p className="text-xs text-surface-400">Nenhum dado de cidade</p>
                     )}
 
-                    {/* Legend */}
                     <div className="mt-4 pt-3 border-t border-subtle">
                         <p className="text-xs font-medium text-surface-600 mb-2">Legenda</p>
                         <div className="space-y-1.5 text-xs text-surface-600">

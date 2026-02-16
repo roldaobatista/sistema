@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { ArrowLeft, Save, Plus, Trash2, Package, Wrench } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
+import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 
 const formatCurrency = (v: number | string) => {
     const n = typeof v === 'string' ? parseFloat(v) : v
@@ -40,12 +41,12 @@ export function QuoteEditPage() {
     const [source, setSource] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
     const [discountAmount, setDiscountAmount] = useState(0)
+    const [displacementValue, setDisplacementValue] = useState(0)
     const [addItemEquipmentId, setAddItemEquipmentId] = useState<number | null>(null)
     const [newItem, setNewItem] = useState<ItemForm>({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
 
     const { data: quote, isLoading } = useQuery<Quote>({
         queryKey: ['quote', id],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,
     })
@@ -61,6 +62,7 @@ export function QuoteEditPage() {
             setSource(quote.source ?? '')
             setDiscountPercentage(parseFloat(String(quote.discount_percentage)) || 0)
             setDiscountAmount(parseFloat(String(quote.discount_amount)) || 0)
+            setDisplacementValue(parseFloat(String(quote.displacement_value)) || 0)
         }
     }, [quote])
 
@@ -107,6 +109,7 @@ export function QuoteEditPage() {
             internal_notes: internalNotes || null,
             discount_percentage: discountPercentage,
             discount_amount: discountAmount,
+            displacement_value: displacementValue,
         })
     }
 
@@ -163,6 +166,10 @@ export function QuoteEditPage() {
                     <div>
                         <label className="block text-sm font-medium text-content-secondary mb-1">Desconto (%)</label>
                         <Input type="number" min={0} max={100} step={0.01} value={discountPercentage} onChange={(e) => setDiscountPercentage(parseFloat(e.target.value) || 0)} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-content-secondary mb-1">Deslocamento (R$)</label>
+                        <Input type="number" min={0} step={0.01} value={displacementValue} onChange={(e) => setDisplacementValue(parseFloat(e.target.value) || 0)} />
                     </div>
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-content-secondary mb-1">Observações</label>
@@ -263,6 +270,16 @@ export function QuoteEditPage() {
                                     <Input value={newItem.custom_description} onChange={(e) => setNewItem({ ...newItem, custom_description: e.target.value })} />
                                 </div>
                             </div>
+                            {quote?.customer_id && (newItem.product_id || newItem.service_id) && (
+                                <div className="mt-3">
+                                    <PriceHistoryHint
+                                        customerId={quote.customer_id}
+                                        type={newItem.type}
+                                        referenceId={newItem.product_id || newItem.service_id || undefined}
+                                        onApplyPrice={(price) => setNewItem(prev => ({ ...prev, unit_price: price }))}
+                                    />
+                                </div>
+                            )}
                             <div className="flex gap-2 justify-end mt-3">
                                 <Button variant="outline" size="sm" onClick={() => setAddItemEquipmentId(null)}>Cancelar</Button>
                                 <Button size="sm" onClick={() => addItemMut.mutate({ equipId: eq.id, data: newItem })} disabled={addItemMut.isPending}>

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Truck, AlertTriangle, Loader2 } from 'lucide-react'
@@ -90,7 +90,6 @@ export function SuppliersPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['suppliers', debouncedSearch],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/suppliers', { params: { search: debouncedSearch, per_page: 50 } }),
     })
     const suppliers: Supplier[] = res?.data?.data ?? []
@@ -155,7 +154,7 @@ export function SuppliersPage() {
                 <div className="skeleton h-9 w-28" />
             </div>
             <div className="skeleton h-10 w-full max-w-md" />
-            <div className="rounded-xl border border-surface-200 bg-surface-0 h-96"></div>
+            <div className="rounded-xl border border-default bg-surface-0 h-96"></div>
         </div>
     )
 
@@ -181,12 +180,12 @@ export function SuppliersPage() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Fornecedor</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Documento</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Contato</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Cidade/UF</th>
-                            <th className="px-3.5 py-2.5 text-center text-[11px] font-medium uppercase tracking-wider text-surface-500">Status</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Ações</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Fornecedor</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 md:table-cell">Documento</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Contato</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Cidade/UF</th>
+                            <th className="px-3.5 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-surface-500">Status</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
@@ -207,19 +206,19 @@ export function SuppliersPage() {
                                             <Truck className="h-4 w-4 text-emerald-600" />
                                         </div>
                                         <div>
-                                            <p className="text-[13px] font-medium text-surface-900">{s.name}</p>
+                                            <p className="text-sm font-medium text-surface-900">{s.name}</p>
                                             {s.trade_name && <p className="text-xs text-surface-400">{s.trade_name}</p>}
                                         </div>
                                     </div>
                                 </td>
-                                <td className="hidden px-4 py-3 text-[13px] text-surface-600 md:table-cell">
+                                <td className="hidden px-4 py-3 text-sm text-surface-600 md:table-cell">
                                     {s.document || <span className="text-surface-400">â€”</span>}
                                 </td>
                                 <td className="hidden px-4 py-3 lg:table-cell">
-                                    <div className="text-[13px] text-surface-600">{s.email || 'â€”'}</div>
+                                    <div className="text-sm text-surface-600">{s.email || 'â€”'}</div>
                                     <div className="text-xs text-surface-400">{s.phone || ''}</div>
                                 </td>
-                                <td className="hidden px-4 py-3 text-[13px] text-surface-600 lg:table-cell">
+                                <td className="hidden px-4 py-3 text-sm text-surface-600 lg:table-cell">
                                     {s.address_city ? `${s.address_city}/${s.address_state}` : 'â€”'}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-center">
@@ -248,7 +247,7 @@ export function SuppliersPage() {
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tipo</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo</label>
                             <select value={form.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('type', e.target.value as 'PF' | 'PJ')}
                                 aria-label="Tipo de pessoa"
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
@@ -287,7 +286,7 @@ export function SuppliersPage() {
                         <Input label="Complemento" value={form.address_complement} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_complement', e.target.value)} />
                         <Input label="Bairro" value={form.address_neighborhood} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('address_neighborhood', e.target.value)} />
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Cidade</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Cidade</label>
                             <select value={form.address_city} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('address_city', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                                 disabled={!form.address_state}>
@@ -296,7 +295,7 @@ export function SuppliersPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">UF</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">UF</label>
                             <select value={form.address_state} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { set('address_state', e.target.value); set('address_city', ''); }}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecione</option>
@@ -305,13 +304,13 @@ export function SuppliersPage() {
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observações</label>
                         <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
                     <div className="flex items-center gap-2">
                         <input type="checkbox" id="sup-active" checked={form.is_active} onChange={e => set('is_active', e.target.checked)}
-                            className="h-4 w-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" />
+                            className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
                         <label htmlFor="sup-active" className="text-sm text-surface-700">Ativo</label>
                     </div>
                     <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
@@ -339,7 +338,7 @@ export function SuppliersPage() {
                                 <p className="text-sm font-medium">
                                     {[showDetail.address_street, showDetail.address_number, showDetail.address_complement].filter(Boolean).join(', ')}
                                 </p>
-                                <p className="text-[13px] text-surface-600">
+                                <p className="text-sm text-surface-600">
                                     {[showDetail.address_neighborhood, showDetail.address_city, showDetail.address_state].filter(Boolean).join(' â€” ')} {showDetail.address_zip && `â€¢ CEP ${showDetail.address_zip}`}
                                 </p>
                             </div>
@@ -381,7 +380,7 @@ export function SuppliersPage() {
                             <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(deleteDependencies).map(([key, count]) => (
-                                    <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
+                                    <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-default">
                                         <span className="text-surface-600 capitalize">{key.replace(/_/g, ' ')}</span>
                                         <Badge variant="neutral">{String(count)}</Badge>
                                     </div>

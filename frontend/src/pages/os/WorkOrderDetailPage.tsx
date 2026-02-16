@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -19,8 +19,11 @@ import { SignaturePad } from '@/components/signature/SignaturePad'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePriceGate } from '@/hooks/usePriceGate'
 import SLACountdown from '@/components/common/SLACountdown'
+import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 import AdminChatTab from '@/components/os/AdminChatTab'
 import AuditTrailTab from '@/components/os/AuditTrailTab'
+import GeoCheckinButton from '@/components/os/GeoCheckinButton'
+import SatisfactionTab from '@/components/os/SatisfactionTab'
 
 const MAX_ATTACHMENT_SIZE_MB = 10
 
@@ -71,8 +74,9 @@ export function WorkOrderDetailPage() {
     const [editForm, setEditForm] = useState({
         description: '', priority: '', technical_report: '', internal_notes: '',
         displacement_value: '0',
+        is_warranty: false,
     })
-    const [activeTab, setActiveTab] = useState<'details' | 'checklist' | 'chat' | 'audit'>('details')
+    const [activeTab, setActiveTab] = useState<'details' | 'checklist' | 'chat' | 'audit' | 'satisfaction'>('details')
 
     // Delete confirmation state
     const [deleteItemId, setDeleteItemId] = useState<number | null>(null)
@@ -81,25 +85,21 @@ export function WorkOrderDetailPage() {
     // Queries
     const { data: res, isLoading, isError, refetch: refetchOrder } = useQuery({
         queryKey: ['work-order', id],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/work-orders/${id}`),
     })
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-select'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: servicesRes } = useQuery({
         queryKey: ['services-select'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/services', { params: { per_page: 100, is_active: true } }),
     })
 
     const { data: checklistRes } = useQuery({
         queryKey: ['wo-checklist', id],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get(`/work-orders/${id}/checklist-responses`),
     })
     const checklistItems: any[] = checklistRes?.data?.data ?? []
@@ -355,6 +355,7 @@ export function WorkOrderDetailPage() {
             technical_report: order.technical_report ?? '',
             internal_notes: order.internal_notes ?? '',
             displacement_value: order.displacement_value ?? '0',
+            is_warranty: order.is_warranty ?? false,
         })
         setIsEditing(true)
     }
@@ -367,7 +368,6 @@ export function WorkOrderDetailPage() {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <IconButton label="Voltar" icon={<ArrowLeft className="h-5 w-5" />} onClick={() => navigate('/os')} />
@@ -380,10 +380,14 @@ export function WorkOrderDetailPage() {
                                     {priorityConfig[order.priority]?.label}
                                 </Badge>
                             )}
+                            {order.is_warranty && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-full border border-amber-200">
+                                    GARANTIA
+                                </span>
+                            )}
                             <SLACountdown dueAt={order.sla_due_at} status={order.status} />
                         </div>
-                        <p className="text-[13px] text-surface-500">Criada em {formatDate(order.created_at)}</p>
-                        {/* Rastreabilidade */}
+                        <p className="text-sm text-surface-500">Criada em {formatDate(order.created_at)}</p>
                         <div className="mt-1 flex items-center gap-2">
                             {order.quote_id && (
                                 <button onClick={() => navigate(`/orcamentos/${order.quote_id}`)}
@@ -429,6 +433,11 @@ export function WorkOrderDetailPage() {
                             Reabrir
                         </Button>
                     )}
+                    <GeoCheckinButton
+                        workOrderId={Number(id)}
+                        hasCheckin={!!order.checkin_at}
+                        hasCheckout={!!order.checkout_at}
+                    />
                     <Button variant="outline" icon={<Download className="h-4 w-4" />}
                         onClick={downloadPdf}>
                         Baixar PDF
@@ -468,7 +477,7 @@ export function WorkOrderDetailPage() {
                     )}
                 >
                     Chat Interno
-                    <Badge variant="brand" className="px-1.5 py-0 text-[10px]">Beta</Badge>
+                    <Badge variant="brand" className="px-1.5 py-0 text-xs">Beta</Badge>
                 </button>
                 <button
                     onClick={() => setActiveTab('audit')}
@@ -479,10 +488,20 @@ export function WorkOrderDetailPage() {
                 >
                     Auditoria
                 </button>
+                {(order.status === 'completed' || order.status === 'delivered' || order.status === 'invoiced') && (
+                    <button
+                        onClick={() => setActiveTab('satisfaction')}
+                        className={cn(
+                            "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+                            activeTab === 'satisfaction' ? "border-brand-500 text-brand-600" : "border-transparent text-surface-500 hover:text-surface-700"
+                        )}
+                    >
+                        Satisfação
+                    </button>
+                )}
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Main Content */}
                 <div className="lg:col-span-2 space-y-5">
                     {activeTab === 'chat' && (
                         <AdminChatTab workOrderId={Number(id)} />
@@ -492,9 +511,12 @@ export function WorkOrderDetailPage() {
                         <AuditTrailTab workOrderId={Number(id)} />
                     )}
 
+                    {activeTab === 'satisfaction' && (
+                        <SatisfactionTab workOrderId={Number(id)} />
+                    )}
+
                     {activeTab === 'details' && (
                         <>
-                            {/* Descrição */}
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                                 <h3 className="text-sm font-semibold text-surface-900 mb-2">Defeito Relatado</h3>
                                 {isEditing ? (
@@ -509,18 +531,32 @@ export function WorkOrderDetailPage() {
                                 )}
 
                                 {isEditing && (
-                                    <div className="mt-4 border-t border-subtle pt-4">
-                                        <h3 className="text-sm font-semibold text-surface-900 mb-2">Prioridade</h3>
-                                        <div className="flex gap-2">
-                                            {Object.entries(priorityConfig).map(([key, conf]) => (
-                                                <button key={key} type="button" onClick={() => setEditForm(p => ({ ...p, priority: key }))}
-                                                    className={cn('rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
-                                                        editForm.priority === key
-                                                            ? 'border-brand-500 bg-brand-50 text-brand-700'
-                                                            : 'border-surface-200 text-surface-600 hover:border-surface-300')}>
-                                                    {conf.label}
-                                                </button>
-                                            ))}
+                                    <div className="mt-4 border-t border-subtle pt-4 space-y-4">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-surface-900 mb-2">Prioridade</h3>
+                                            <div className="flex gap-2">
+                                                {Object.entries(priorityConfig).map(([key, conf]) => (
+                                                    <button key={key} type="button" onClick={() => setEditForm(p => ({ ...p, priority: key }))}
+                                                        className={cn('rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
+                                                            editForm.priority === key
+                                                                ? 'border-brand-500 bg-brand-50 text-brand-700'
+                                                                : 'border-default text-surface-600 hover:border-surface-400')}>
+                                                        {conf.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="flex items-center gap-2 text-sm text-surface-700 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editForm.is_warranty}
+                                                    onChange={e => setEditForm(p => ({ ...p, is_warranty: e.target.checked }))}
+                                                    className="rounded border-surface-400 text-brand-600 focus:ring-brand-500"
+                                                />
+                                                OS de Garantia
+                                                <span className="text-xs text-surface-400">(não gera comissão)</span>
+                                            </label>
                                         </div>
                                     </div>
                                 )}
@@ -577,7 +613,6 @@ export function WorkOrderDetailPage() {
                                 </div>
                             </div>
 
-                            {/* Itens List Section */}
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-semibold text-surface-900">Itens</h3>
@@ -593,7 +628,7 @@ export function WorkOrderDetailPage() {
                                 ) : (
                                     <div className="space-y-2">
                                         {order.items?.map((item: any) => (
-                                            <div key={item.id} className="flex items-center gap-3 rounded-lg border border-surface-100 p-3 hover:bg-surface-50">
+                                            <div key={item.id} className="flex items-center gap-3 rounded-lg border border-default p-3 hover:bg-surface-50">
                                                 <div className={cn('rounded-md p-1.5', item.type === 'product' ? 'bg-brand-50' : 'bg-emerald-50')}>
                                                     {item.type === 'product'
                                                         ? <Package className="h-4 w-4 text-brand-600" />
@@ -620,18 +655,18 @@ export function WorkOrderDetailPage() {
                                             <>
                                                 <div className="flex items-center justify-between border-t border-subtle pt-3 mt-3">
                                                     <span className="text-sm font-medium text-surface-600">Desconto fixo</span>
-                                                    <span className="text-[13px] text-surface-600">{formatBRL(order.discount ?? 0)}</span>
+                                                    <span className="text-sm text-surface-600">{formatBRL(order.discount ?? 0)}</span>
                                                 </div>
                                                 {parseFloat(order.discount_percentage ?? 0) > 0 && (
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-sm font-medium text-surface-600">Desconto (%)</span>
-                                                        <span className="text-[13px] text-surface-600">{order.discount_percentage}% ({formatBRL(order.discount_amount ?? 0)})</span>
+                                                        <span className="text-sm text-surface-600">{order.discount_percentage}% ({formatBRL(order.discount_amount ?? 0)})</span>
                                                     </div>
                                                 )}
                                                 {parseFloat(order.displacement_value ?? 0) > 0 && (
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-sm font-medium text-surface-600">Deslocamento</span>
-                                                        <span className="text-[13px] text-emerald-600">+ {formatBRL(order.displacement_value)}</span>
+                                                        <span className="text-sm text-emerald-600">+ {formatBRL(order.displacement_value)}</span>
                                                     </div>
                                                 )}
                                                 <div className="flex items-center justify-between">
@@ -644,7 +679,6 @@ export function WorkOrderDetailPage() {
                                 )}
                             </div>
 
-                            {/* Anexos / Fotos */}
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
@@ -681,7 +715,7 @@ export function WorkOrderDetailPage() {
                                 ) : (
                                     <div className="space-y-2">
                                         {order.attachments.map((att: any) => (
-                                            <div key={att.id} className="flex items-center gap-3 rounded-lg border border-surface-100 p-3 hover:bg-surface-50">
+                                            <div key={att.id} className="flex items-center gap-3 rounded-lg border border-default p-3 hover:bg-surface-50">
                                                 <div className="rounded-md bg-surface-100 p-1.5">
                                                     <Paperclip className="h-4 w-4 text-surface-500" />
                                                 </div>
@@ -709,7 +743,6 @@ export function WorkOrderDetailPage() {
                     )}
                 </div>
 
-                {/* Sidebar */}
                 <div className="space-y-6">
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-surface-900">
@@ -732,7 +765,6 @@ export function WorkOrderDetailPage() {
                                 </p>
                             </div>
 
-                            {/* Navigation Links */}
                             <div className="flex flex-col gap-2 pt-2 border-t border-subtle">
                                 {order.waze_link && (
                                     <Button
@@ -757,9 +789,7 @@ export function WorkOrderDetailPage() {
                             </div>
                         </div>
                     </div>
-                    {/* Placeholder for Timeline/Checklist if needed */}
 
-                    {/* Equipamentos */}
                     {
                         (order.equipment || order.equipments_list?.length > 0) && (
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
@@ -769,13 +799,13 @@ export function WorkOrderDetailPage() {
                                 </h3>
                                 <div className="space-y-2">
                                     {order.equipment && (
-                                        <div className="rounded-lg border border-surface-100 p-2.5">
+                                        <div className="rounded-lg border border-default p-2.5">
                                             <p className="text-sm font-medium text-surface-800">{order.equipment.type} {order.equipment.brand ?? ''} {order.equipment.model ?? ''}</p>
                                             {order.equipment.serial_number && <p className="text-xs text-surface-400">S/N: {order.equipment.serial_number}</p>}
                                         </div>
                                     )}
                                     {order.equipments_list?.map((eq: any) => (
-                                        <div key={eq.id} className="rounded-lg border border-surface-100 p-2.5">
+                                        <div key={eq.id} className="rounded-lg border border-default p-2.5">
                                             <p className="text-sm font-medium text-surface-800">{eq.type} {eq.brand ?? ''} {eq.model ?? ''}</p>
                                             {eq.serial_number && <p className="text-xs text-surface-400">S/N: {eq.serial_number}</p>}
                                         </div>
@@ -785,7 +815,6 @@ export function WorkOrderDetailPage() {
                         )
                     }
 
-                    {/* Técnicos */}
                     {
                         order.technicians?.length > 0 && (
                             <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
@@ -801,10 +830,8 @@ export function WorkOrderDetailPage() {
                                     ))}
                                 </div>
                             </div>
-                        )
-                    }
+                        )}
 
-                    {/* Autorização de Deslocamento */}
                     <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
                             <Navigation className="h-4 w-4 text-brand-500" />
@@ -927,7 +954,7 @@ export function WorkOrderDetailPage() {
                                     Assinatura Registrada
                                 </h3>
                                 <div className="space-y-2">
-                                    <img src={order.signature_path} alt="Assinatura" className="max-h-24 rounded-lg border border-surface-100" />
+                                    <img src={order.signature_path} alt="Assinatura" className="max-h-24 rounded-lg border border-default" />
                                     {order.signed_by_name && <p className="text-sm text-surface-600">{order.signed_by_name}</p>}
                                     {order.signature_at && <p className="text-xs text-surface-400">{formatDate(order.signature_at)}</p>}
                                 </div>
@@ -966,11 +993,10 @@ export function WorkOrderDetailPage() {
                         )
                     }
 
-                </div >
-            </div >
+                </div>
+            </div>
 
-            {/* Add/Edit Item Modal */}
-            < Modal open={showItemModal} onOpenChange={(open) => { setShowItemModal(open); if (!open) setEditingItem(null) }} title={editingItem ? "Editar Item" : "Adicionar Item"} >
+            <Modal open={showItemModal} onOpenChange={(open) => { setShowItemModal(open); if (!open) setEditingItem(null) }} title={editingItem ? "Editar Item" : "Adicionar Item"} >
                 <form onSubmit={e => {
                     e.preventDefault()
                     const payload = { ...itemForm, reference_id: itemForm.reference_id || null }
@@ -980,7 +1006,7 @@ export function WorkOrderDetailPage() {
                         addItemMut.mutate(payload)
                     }
                 }} className="space-y-4">
-                    <div className="flex rounded-lg border border-surface-200 overflow-hidden">
+                    <div className="flex rounded-lg border border-default overflow-hidden">
                         {(['product', 'service'] as const).map(t => (
                             <button key={t} type="button" onClick={() => setItemForm(p => ({ ...p, type: t, reference_id: '' }))}
                                 className={cn('flex-1 py-2 text-sm font-medium transition-colors',
@@ -990,7 +1016,7 @@ export function WorkOrderDetailPage() {
                         ))}
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">
                             {itemForm.type === 'product' ? 'Produto' : 'Serviço'}
                         </label>
                         <select value={itemForm.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRefChange(e.target.value)}
@@ -1001,6 +1027,14 @@ export function WorkOrderDetailPage() {
                             ))}
                         </select>
                     </div>
+                    {canViewPrices && itemForm.reference_id && order?.customer_id && (
+                        <PriceHistoryHint
+                            customerId={order.customer_id}
+                            type={itemForm.type}
+                            referenceId={itemForm.reference_id}
+                            onApplyPrice={(price) => setItemForm(p => ({ ...p, unit_price: String(price) }))}
+                        />
+                    )}
                     <Input label="Descrição" value={itemForm.description}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemForm(p => ({ ...p, description: e.target.value }))} required />
                     <div className={`grid gap-3 ${canViewPrices ? 'grid-cols-3' : 'grid-cols-1'}`}>
@@ -1022,10 +1056,9 @@ export function WorkOrderDetailPage() {
                         </Button>
                     </div>
                 </form>
-            </Modal >
+            </Modal>
 
-            {/* Status Modal */}
-            < Modal open={showStatusModal} onOpenChange={setShowStatusModal} title="Alterar Status" >
+            <Modal open={showStatusModal} onOpenChange={setShowStatusModal} title="Alterar Status" >
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-2">
                         {Object.entries(statusConfig)
@@ -1033,7 +1066,7 @@ export function WorkOrderDetailPage() {
                             .map(([k, v]) => (
                                 <button key={k} onClick={() => setNewStatus(k)}
                                     className={cn('flex items-center gap-2 rounded-lg border p-3 text-sm transition-all',
-                                        newStatus === k ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' : 'border-surface-200 hover:border-surface-300')}>
+                                        newStatus === k ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' : 'border-default hover:border-surface-400')}>
                                     <v.icon className={cn('h-4 w-4', newStatus === k ? 'text-brand-600' : 'text-surface-400')} />
                                     <span className={cn('font-medium', newStatus === k ? 'text-surface-900' : 'text-surface-600')}>{v.label}</span>
                                 </button>
@@ -1048,10 +1081,9 @@ export function WorkOrderDetailPage() {
                         <Button onClick={() => statusMut.mutate({ status: newStatus, notes: statusNotes })} disabled={!newStatus} loading={statusMut.isPending}>Confirmar</Button>
                     </div>
                 </div>
-            </Modal >
+            </Modal>
 
-            {/* Delete Item Confirmation Modal */}
-            < Modal open={deleteItemId !== null} onOpenChange={(open) => { if (!open) setDeleteItemId(null) }} title="Confirmar Remoção" >
+            <Modal open={deleteItemId !== null} onOpenChange={(open) => { if (!open) setDeleteItemId(null) }} title="Confirmar Remoção" >
                 <div className="space-y-4">
                     <p className="text-sm text-surface-600">Tem certeza que deseja remover este item? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2">
@@ -1065,10 +1097,9 @@ export function WorkOrderDetailPage() {
                         </Button>
                     </div>
                 </div>
-            </Modal >
+            </Modal>
 
-            {/* Delete Attachment Confirmation Modal */}
-            < Modal open={deleteAttachId !== null} onOpenChange={(open) => { if (!open) setDeleteAttachId(null) }} title="Confirmar Remoção" >
+            <Modal open={deleteAttachId !== null} onOpenChange={(open) => { if (!open) setDeleteAttachId(null) }} title="Confirmar Remoção" >
                 <div className="space-y-4">
                     <p className="text-sm text-surface-600">Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2">
@@ -1082,8 +1113,8 @@ export function WorkOrderDetailPage() {
                         </Button>
                     </div>
                 </div>
-            </Modal >
+            </Modal>
 
-        </div >
+        </div>
     )
 }

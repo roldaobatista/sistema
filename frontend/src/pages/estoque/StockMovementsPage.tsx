@@ -60,7 +60,6 @@ export function StockMovementsPage() {
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['stock-movements', search, typeFilter, page],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/stock/movements', { params: { search, type: typeFilter || undefined, page, per_page: 25 } }),
     })
     const movements: StockMovement[] = res?.data?.data ?? []
@@ -68,14 +67,12 @@ export function StockMovementsPage() {
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-select'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/products', { params: { per_page: 200 } }),
     })
     const products = productsRes?.data?.data ?? []
 
     const { data: warehousesRes } = useQuery({
         queryKey: ['warehouses-select'],
-        const { data, isLoading, isError } = useQuery({
         queryFn: () => api.get('/warehouses'),
     })
     const warehouses = warehousesRes?.data?.data ?? []
@@ -151,7 +148,6 @@ export function StockMovementsPage() {
                 ]}
             />
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative max-w-sm flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -176,26 +172,25 @@ export function StockMovementsPage() {
                 </select>
             </div>
 
-            {/* Table */}
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Data</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Produto</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Local</th>
-                            <th className="px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500">Tipo</th>
-                            <th className="px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500">Quantidade</th>
-                            <th className="hidden px-3.5 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-surface-500 md:table-cell">Custo Unit.</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Referência</th>
-                            <th className="hidden px-3.5 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Usuário</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Data</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Produto</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Local</th>
+                            <th className="px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500">Tipo</th>
+                            <th className="px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500">Quantidade</th>
+                            <th className="hidden px-3.5 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-surface-500 md:table-cell">Custo Unit.</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Referência</th>
+                            <th className="hidden px-3.5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-surface-500 lg:table-cell">Usuário</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {isLoading ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">Carregando...</td></tr>
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
                         ) : movements.length === 0 ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-surface-500">
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-surface-500">
                                 <div className="flex flex-col items-center gap-2">
                                     <Package className="h-8 w-8 text-surface-300" />
                                     Nenhuma movimentação encontrada
@@ -206,14 +201,14 @@ export function StockMovementsPage() {
                             const Icon = conf.icon
                             return (
                                 <tr key={m.id} className="hover:bg-surface-50 transition-colors duration-100">
-                                    <td className="px-4 py-3 text-[13px] text-surface-600 whitespace-nowrap">{formatDate(m.created_at)}</td>
+                                    <td className="px-4 py-3 text-sm text-surface-600 whitespace-nowrap">{formatDate(m.created_at)}</td>
                                     <td className="px-4 py-3">
                                         <div>
-                                            <p className="text-[13px] font-medium text-surface-900">{m.product?.name}</p>
+                                            <p className="text-sm font-medium text-surface-900">{m.product?.name}</p>
                                             {m.product?.code && <p className="text-xs text-surface-400">#{m.product.code}</p>}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-[13px] text-surface-600 whitespace-nowrap">
+                                    <td className="px-4 py-3 text-sm text-surface-600 whitespace-nowrap">
                                         <div className="flex items-center gap-1.5">
                                             <MapPin className="h-3 w-3 text-surface-400" />
                                             {m.warehouse?.name ?? '—'}
@@ -227,14 +222,14 @@ export function StockMovementsPage() {
                                             <Badge variant={conf.badgeVariant}>{conf.label}</Badge>
                                         </div>
                                     </td>
-                                    <td className="px-3.5 py-2.5 text-right text-[13px] font-medium text-surface-900">
+                                    <td className="px-3.5 py-2.5 text-right text-sm font-medium text-surface-900">
                                         {m.type === 'entry' || m.type === 'return' ? '+' : m.type === 'exit' || m.type === 'reserve' ? '-' : ''}
                                         {parseFloat(m.quantity)}
                                     </td>
-                                    <td className="hidden px-3.5 py-2.5 text-right text-[13px] text-surface-600 md:table-cell">
+                                    <td className="hidden px-3.5 py-2.5 text-right text-sm text-surface-600 md:table-cell">
                                         {parseFloat(m.unit_cost) > 0 ? formatBRL(m.unit_cost) : '—'}
                                     </td>
-                                    <td className="hidden px-4 py-3 text-[13px] text-surface-600 lg:table-cell">
+                                    <td className="hidden px-4 py-3 text-sm text-surface-600 lg:table-cell">
                                         {(m.reference || m.work_order) ? (
                                             <span className="flex items-center gap-1">
                                                 <Wrench className="h-3 w-3" />
@@ -242,7 +237,7 @@ export function StockMovementsPage() {
                                             </span>
                                         ) : '—'}
                                     </td>
-                                    <td className="hidden px-4 py-3 text-[13px] text-surface-500 lg:table-cell">
+                                    <td className="hidden px-4 py-3 text-sm text-surface-500 lg:table-cell">
                                         {m.created_by_user?.name ?? '—'}
                                     </td>
                                 </tr>
@@ -251,7 +246,6 @@ export function StockMovementsPage() {
                     </tbody>
                 </table>
 
-                {/* Pagination */}
                 {pagination.last_page > 1 && (
                     <div className="flex items-center justify-between border-t border-subtle px-4 py-3">
                         <p className="text-xs text-surface-500">Página {pagination.current_page} de {pagination.last_page}</p>
@@ -263,11 +257,10 @@ export function StockMovementsPage() {
                 )}
             </div>
 
-            {/* New Movement Modal */}
             <Modal open={showForm} onOpenChange={setShowForm} title="Nova Movimentação" size="md">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Produto</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Produto</label>
                         <select
                             value={form.product_id}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('product_id', e.target.value)}
@@ -279,7 +272,7 @@ export function StockMovementsPage() {
                         </select>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Depósito / Veículo</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Depósito / Veículo</label>
                         <select
                             value={form.warehouse_id}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('warehouse_id', e.target.value)}
@@ -292,7 +285,7 @@ export function StockMovementsPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Tipo</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo</label>
                             <select
                                 value={form.type}
                                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('type', e.target.value as 'entry' | 'adjustment')}
@@ -306,7 +299,7 @@ export function StockMovementsPage() {
                     </div>
                     <Input label="Custo Unitário (R$)" type="number" step="0.01" value={form.unit_cost} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('unit_cost', e.target.value)} />
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Observações</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observações</label>
                         <textarea
                             value={form.notes}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)}
@@ -327,11 +320,10 @@ export function StockMovementsPage() {
                 </form>
             </Modal>
 
-            {/* XML Import Modal */}
             <Modal open={showXmlModal} onOpenChange={setShowXmlModal} title="Importação de NF-e (XML)" size="md">
                 <form onSubmit={handleXmlSubmit} className="space-y-4">
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Arquivo XML da NF-e</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Arquivo XML da NF-e</label>
                         <input
                             type="file"
                             accept=".xml"
@@ -341,7 +333,7 @@ export function StockMovementsPage() {
                         />
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[13px] font-medium text-surface-700">Depósito para entrada</label>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Depósito para entrada</label>
                         <select
                             value={xmlWarehouseId}
                             onChange={(e) => setXmlWarehouseId(e.target.value)}

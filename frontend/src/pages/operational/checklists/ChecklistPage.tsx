@@ -36,7 +36,6 @@ export function ChecklistPage() {
 
     const { data: checklists, isLoading, refetch } = useQuery<Checklist[]>({
         queryKey: ['checklists'],
-        const { data, isLoading, refetch } = useQuery({
         queryFn: async () => {
             const response = await api.get('/checklists')
             return response.data

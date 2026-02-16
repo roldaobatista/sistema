@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Building2, Plus, Pencil, Trash2, Phone, Mail, MapPin, X, Check,
@@ -69,7 +69,6 @@ export function BranchesPage() {
 
     const { data: res, isLoading, isError, refetch } = useQuery({
         queryKey: ['branches'],
-        const { data, isLoading, isError, refetch } = useQuery({
         queryFn: () => api.get('/branches'),
     })
     const allBranches: Branch[] = res?.data ?? []
@@ -177,7 +176,7 @@ export function BranchesPage() {
                             placeholder="Buscar filial..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="h-9 w-56 rounded-lg border border-surface-200 bg-surface-0 pl-9 pr-3 text-sm text-surface-700 placeholder:text-surface-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            className="h-9 w-56 rounded-lg border border-default bg-surface-0 pl-9 pr-3 text-sm text-surface-700 placeholder:text-surface-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                         />
                     </div>
                     {canCreate && <Button icon={<Plus className="h-4 w-4" />} onClick={openNew}>Nova Filial</Button>}
@@ -185,7 +184,7 @@ export function BranchesPage() {
             </div>
 
             {branches.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-surface-300 bg-surface-50 py-16 text-center">
+                <div className="rounded-xl border border-dashed border-default bg-surface-50 py-16 text-center">
                     <Building2 className="mx-auto mb-3 h-10 w-10 text-surface-300" />
                     <p className="text-sm font-medium text-surface-500">Nenhuma filial cadastrada</p>
                     <p className="mt-1 text-xs text-surface-400">Crie sua primeira filial para começar</p>
@@ -261,7 +260,7 @@ export function BranchesPage() {
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Cidade</label>
                             <select value={form.address_city} onChange={e => setForm(f => ({ ...f, address_city: e.target.value }))}
-                                className="w-full rounded-md border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                                 disabled={!form.address_state}>
                                 <option value="">{form.address_state ? 'Selecione' : 'Selecione o UF primeiro'}</option>
                                 {ibgeCities.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -270,7 +269,7 @@ export function BranchesPage() {
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">UF</label>
                             <select value={form.address_state} onChange={e => setForm(f => ({ ...f, address_state: e.target.value, address_city: '' }))}
-                                className="w-full rounded-md border border-surface-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
+                                className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
                                 <option value="">Selecione</option>
                                 {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} â€” {s.name}</option>)}
                             </select>
@@ -313,7 +312,7 @@ export function BranchesPage() {
                                 <p className="text-xs font-medium text-surface-600 uppercase tracking-wide">Vínculos encontrados:</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     {Object.entries(deleteDependencies).map(([key, count]) => (
-                                        <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-surface-100">
+                                        <div key={key} className="flex items-center justify-between rounded bg-surface-50 px-3 py-2 text-sm border border-default">
                                             <span className="text-surface-600 capitalize">{key.replace('_', ' ')}</span>
                                             <Badge variant="neutral">{String(count)}</Badge>
                                         </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -12,18 +12,20 @@ import {
     Clock,
     AlertCircle,
     Wrench,
-    WifiOff
+    WifiOff,
+    PhoneCall,
+    X,
+    Maximize2,
 } from 'lucide-react';
 import WebRTCPlayer from '@/components/WebRTCPlayer';
 import getEcho from '@/lib/echo';
-
 import TvMapWidget from '@/components/TvMapWidget';
-import { useAuthStore } from '@/stores/auth-store'
 
 interface Camera {
     id: number;
     name: string;
     stream_url: string;
+    location?: string;
 }
 
 interface Technician {
@@ -42,35 +44,25 @@ interface DashboardData {
     operational: {
         technicians: Technician[];
         service_calls: any[];
-        work_orders: any[]; // Active
-        latest_work_orders: any[]; // Ticker
+        work_orders: any[];
+        latest_work_orders: any[];
         kpis: {
             chamados_hoje: number;
             os_hoje: number;
             os_em_execucao: number;
+            os_finalizadas: number;
             tecnicos_online: number;
             tecnicos_em_campo: number;
+            tecnicos_total: number;
         };
     };
 }
 
 const TvDashboard = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [searchTerm, setSearchTerm] = useState('');
+    const [expandedCamera, setExpandedCamera] = useState<Camera | null>(null);
     const queryClient = useQueryClient();
-    const { user } = useAuthStore()
-    const hasPermission = (p: string) => user?.all_permissions?.includes(p) ?? false
 
-    // MVP: Mutation para ações administrativas do dashboard
-    const actionMutation = useMutation({
-        mutationFn: (data: { action: string }) => api.post('/tv/actions', data),
-        onSuccess: () => { toast.success('Ação realizada com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['tv-dashboard'] }) },
-        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro na operação') },
-    })
-    const handleAction = (action: string) => { if (window.confirm('Confirmar ação?')) actionMutation.mutate({ action }) }
-
-    // Timer para relógio
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
@@ -82,50 +74,30 @@ const TvDashboard = () => {
             const res = await api.get('/tv/dashboard');
             return res.data;
         },
-        refetchInterval: 60000, // Fallback polling (menos frequente agora que temos WS)
+        refetchInterval: 90000,
     });
 
-    // Configuração de WebSocket
+    // WebSocket
     useEffect(() => {
         if (!dashboardData?.tenant_id) return;
-
         const echoInstance = getEcho();
-        if (!echoInstance) return; // WebSocket não configurado
+        if (!echoInstance) return;
 
         const channel = echoInstance.channel(`dashboard.${dashboardData.tenant_id}`);
-
-        console.log(`📡 Conectado ao canal dashboard.${dashboardData.tenant_id}`);
-
         channel.listen('.technician.location.updated', (e: { technician: Technician }) => {
-            console.log('📍 Atualização de técnico recebida:', e.technician);
-
-            // Atualizar cache do React Query instantaneamente
             queryClient.setQueryData(['tv-dashboard'], (oldData: DashboardData | undefined) => {
                 if (!oldData) return oldData;
-
                 const updatedTechnicians = oldData.operational.technicians.map(tech =>
                     tech.id === e.technician.id ? { ...tech, ...e.technician } : tech
                 );
-
-                // Se o técnico não estava na lista (ex: acabou de logar), adiciona
                 if (!oldData.operational.technicians.find(t => t.id === e.technician.id)) {
                     updatedTechnicians.push(e.technician);
                 }
-
-                return {
-                    ...oldData,
-                    operational: {
-                        ...oldData.operational,
-                        technicians: updatedTechnicians
-                    }
-                };
+                return { ...oldData, operational: { ...oldData.operational, technicians: updatedTechnicians } };
             });
         });
 
-        return () => {
-            console.log('🔌 Desconectando do canal...');
-            echoInstance.leave(`dashboard.${dashboardData.tenant_id}`);
-        };
+        return () => { echoInstance.leave(`dashboard.${dashboardData.tenant_id}`); };
     }, [dashboardData?.tenant_id, queryClient]);
 
     if (isLoading) {
@@ -138,130 +110,113 @@ const TvDashboard = () => {
 
     const { kpis, technicians, work_orders, latest_work_orders } = dashboardData?.operational || {};
 
-    // Função para calcular status real (considerando offline time)
     const getRealStatus = (tech: Technician) => {
         if (!tech.location_updated_at) return tech.status;
-
-        const lastUpdate = new Date(tech.location_updated_at);
-        const diffInMinutes = (new Date().getTime() - lastUpdate.getTime()) / 60000;
-
-        if (diffInMinutes > 10) return 'offline'; // Override status se > 10 min sem sinal
+        const diffMin = (Date.now() - new Date(tech.location_updated_at).getTime()) / 60000;
+        if (diffMin > 10) return 'offline';
         return tech.status;
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'working': return 'bg-orange-500 animate-pulse';
-            case 'in_transit': return 'bg-blue-500';
-            case 'available': return 'bg-green-500';
-            case 'offline': return 'bg-neutral-600';
-            default: return 'bg-neutral-600';
-        }
+    const getStatusColor = (s: string) => {
+        if (s === 'working') return 'bg-orange-500 animate-pulse';
+        if (s === 'in_transit') return 'bg-blue-500';
+        if (s === 'available') return 'bg-green-500';
+        return 'bg-neutral-600';
     };
 
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'working': return <><Wrench className="h-3 w-3" /> EM ATENDIMENTO</>;
-            case 'in_transit': return <><Truck className="h-3 w-3" /> EM DESLOCAMENTO</>;
-            case 'available': return <><CheckCircle className="h-3 w-3" /> DISPONÍVEL</>;
-            case 'offline': return <><WifiOff className="h-3 w-3" /> SEM SINAL</>;
-            default: return 'DESCONHECIDO';
-        }
+    const getStatusLabel = (s: string) => {
+        if (s === 'working') return <><Wrench className="h-3 w-3" /> EM ATENDIMENTO</>;
+        if (s === 'in_transit') return <><Truck className="h-3 w-3" /> EM DESLOCAMENTO</>;
+        if (s === 'available') return <><CheckCircle className="h-3 w-3" /> DISPONÍVEL</>;
+        return <><WifiOff className="h-3 w-3" /> SEM SINAL</>;
     };
+
+    const cameras = dashboardData?.cameras ?? [];
 
     return (
-        <div className="min-h-screen bg-neutral-950 text-neutral-50 p-4 flex flex-col overflow-hidden font-sans">
+        <div className="h-screen bg-neutral-950 text-neutral-50 flex flex-col overflow-hidden font-sans">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6 border-b border-neutral-800 pb-2 shrink-0">
+            <div className="flex justify-between items-center px-5 py-3 border-b border-neutral-800 shrink-0">
                 <div className="flex items-center gap-4">
-                    <img src="/logo-white.png" alt="Logo" className="h-10 opacity-80" onError={(e) => e.currentTarget.style.display = 'none'} />
+                    <img src="/logo-white.png" alt="Logo" className="h-9 opacity-80" onError={(e) => (e.currentTarget.style.display = 'none')} />
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-blue-500 uppercase">War Room</h1>
-                        <span className="text-xs text-neutral-500 tracking-widest uppercase">Central de Monitoramento Integrado</span>
+                        <h1 className="text-2xl font-bold tracking-tight text-blue-500 uppercase leading-none">War Room</h1>
+                        <span className="text-[10px] text-neutral-500 tracking-widest uppercase">Central de Monitoramento</span>
                     </div>
                 </div>
-                <div className="text-right">
-                    <div className="text-4xl font-mono font-bold text-yellow-400 leading-none">
-                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <div className="flex items-center gap-6">
+                    {/* Mini KPIs no header */}
+                    <div className="hidden xl:flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-xs">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-neutral-400">Online:</span>
+                            <span className="font-bold text-white">{kpis?.tecnicos_online ?? 0}/{kpis?.tecnicos_total ?? 0}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                            <PhoneCall className="h-3 w-3 text-red-400" />
+                            <span className="text-neutral-400">Chamados:</span>
+                            <span className="font-bold text-white">{kpis?.chamados_hoje ?? 0}</span>
+                        </div>
                     </div>
-                    <div className="text-sm text-neutral-400 uppercase font-medium mt-1">
-                        {currentTime.toLocaleDateString([], { weekday: 'long', day: '2-digit', month: 'long' }).toUpperCase()}
+                    <div className="text-right">
+                        <div className="text-3xl font-mono font-bold text-yellow-400 leading-none">
+                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <div className="text-[10px] text-neutral-500 uppercase font-medium">
+                            {currentTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase()}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 grid grid-cols-12 gap-4 h-full overflow-hidden pb-16">
+            <div className="flex-1 grid grid-cols-12 gap-3 p-3 pb-14 overflow-hidden">
 
-                {/* Left Column: Staff & Stats (3 Cols) */}
-                <div className="col-span-3 flex flex-col gap-4 h-full">
-                    {/* KPI Cards */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <Card className="bg-neutral-900 border-neutral-800">
-                            <CardContent className="p-4 flex flex-col items-center justify-center">
-                                <span className="text-neutral-500 text-[10px] uppercase font-bold tracking-wider">OS HOJE</span>
-                                <span className="text-3xl font-bold text-white">{kpis?.os_hoje}</span>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-neutral-900 border-neutral-800">
-                            <CardContent className="p-4 flex flex-col items-center justify-center">
-                                <span className="text-neutral-500 text-[10px] uppercase font-bold tracking-wider">EM EXECUÇÃO</span>
-                                <span className="text-3xl font-bold text-green-500 animate-pulse">{kpis?.os_em_execucao}</span>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Technicians List */}
-                    <Card className="bg-neutral-900 border-neutral-800 flex-1 flex flex-col overflow-hidden">
-                        <CardHeader className="bg-neutral-800/40 py-2 px-4 border-b border-neutral-800">
-                            <CardTitle className="text-sm uppercase tracking-wider flex items-center gap-2 text-blue-400">
-                                <Users className="h-4 w-4" />
-                                Equipe em Campo
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0 overflow-y-auto flex-1 scrollbar-hide">
-                            <div className="divide-y divide-neutral-800">
-                                {technicians?.map((tech: Technician) => {
-                                    const realStatus = getRealStatus(tech);
-                                    return (
-                                        <div key={tech.id} className="p-3 flex items-center justify-between hover:bg-neutral-800/30 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-2 h-2 rounded-full ${getStatusColor(realStatus)}`} />
-                                                <div>
-                                                    <div className={`font-bold text-sm ${realStatus === 'offline' ? 'text-neutral-500' : 'text-neutral-200'}`}>
-                                                        {tech.name}
-                                                    </div>
-                                                    <div className="text-[10px] text-neutral-500 uppercase flex items-center gap-1">
-                                                        {getStatusLabel(realStatus)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {tech.location_updated_at && (
-                                                <div className="text-[10px] text-neutral-600 flex flex-col items-end">
-                                                    <MapPin className="h-3 w-3 mb-0.5" />
-                                                    {realStatus === 'offline' ? (
-                                                        <span className="text-red-900/50">sinal perdido</span>
-                                                    ) : (
-                                                        <span>{new Date(tech.location_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                                {technicians?.length === 0 && (
-                                    <div className="p-4 text-center text-neutral-600 text-xs uppercase">Nenhum técnico encontrado</div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                {/* LEFT: 6 Cameras Grid (5 cols) */}
+                <div className="col-span-5 grid grid-cols-3 grid-rows-2 gap-2 h-full">
+                    {[0, 1, 2, 3, 4, 5].map(i => (
+                        <div
+                            key={i}
+                            className="relative cursor-pointer group"
+                            onClick={() => cameras[i] && setExpandedCamera(cameras[i])}
+                        >
+                            <WebRTCPlayer
+                                url={cameras[i]?.stream_url}
+                                label={cameras[i]?.name || `CAM 0${i + 1}`}
+                                className="h-full"
+                            />
+                            {cameras[i] && (
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded p-1">
+                                    <Maximize2 className="h-3 w-3 text-white" />
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
 
-                {/* Middle Column: Map & Active Work Orders (5 Cols) */}
-                <div className="col-span-5 flex flex-col gap-4 h-full">
+                {/* RIGHT: Map + KPIs + Lists (7 cols) */}
+                <div className="col-span-7 flex flex-col gap-3 h-full overflow-hidden">
 
-                    {/* Map Widget (Top 55%) */}
-                    <div className="basis-[55%] relative">
+                    {/* KPI Cards Row */}
+                    <div className="grid grid-cols-5 gap-2 shrink-0">
+                        {[
+                            { label: 'OS HOJE', value: kpis?.os_hoje, color: 'text-white' },
+                            { label: 'EM EXECUÇÃO', value: kpis?.os_em_execucao, color: 'text-orange-400 animate-pulse' },
+                            { label: 'FINALIZADAS', value: kpis?.os_finalizadas, color: 'text-green-400' },
+                            { label: 'CHAMADOS', value: kpis?.chamados_hoje, color: 'text-red-400' },
+                            { label: 'EM CAMPO', value: kpis?.tecnicos_em_campo, color: 'text-blue-400' },
+                        ].map(k => (
+                            <Card key={k.label} className="bg-neutral-900 border-neutral-800">
+                                <CardContent className="p-3 flex flex-col items-center justify-center">
+                                    <span className="text-neutral-500 text-[9px] uppercase font-bold tracking-wider">{k.label}</span>
+                                    <span className={`text-2xl font-bold ${k.color}`}>{k.value ?? 0}</span>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* Map */}
+                    <div className="flex-1 min-h-0">
                         <TvMapWidget
                             technicians={technicians || []}
                             workOrders={work_orders || []}
@@ -270,102 +225,133 @@ const TvDashboard = () => {
                         />
                     </div>
 
-                    {/* Active Work Orders List (Bottom 45%) */}
-                    <Card className="bg-neutral-900 border-neutral-800 flex-1 flex flex-col overflow-hidden basis-[45%]">
-                        <CardHeader className="bg-neutral-800/40 py-2 px-4 border-b border-neutral-800 shrink-0">
-                            <CardTitle className="text-sm uppercase tracking-wider flex items-center gap-2 text-orange-400">
-                                <Activity className="h-4 w-4" />
-                                Ordens em Execução
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0 overflow-y-auto flex-1 scrollbar-hide">
-                            <div className="divide-y divide-neutral-800">
-                                {work_orders?.map((os: any) => (
-                                    <div key={os.id} className="p-4 hover:bg-neutral-800/30 transition-colors border-l-2 border-transparent hover:border-orange-500">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex flex-col">
-                                                <span className="text-orange-400 font-mono font-bold text-sm">#{os.os_number || os.id}</span>
-                                                <span className="font-bold text-white text-lg leading-tight">{os.customer?.name}</span>
+                    {/* Bottom: Technicians + Active OS side by side */}
+                    <div className="grid grid-cols-2 gap-2 shrink-0" style={{ maxHeight: '30%' }}>
+                        {/* Technicians */}
+                        <Card className="bg-neutral-900 border-neutral-800 flex flex-col overflow-hidden">
+                            <CardHeader className="bg-neutral-800/40 py-1.5 px-3 border-b border-neutral-800 shrink-0">
+                                <CardTitle className="text-xs uppercase tracking-wider flex items-center gap-2 text-blue-400">
+                                    <Users className="h-3 w-3" /> Equipe ({technicians?.length ?? 0})
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0 overflow-y-auto flex-1 tv-scrollbar-hide">
+                                <div className="divide-y divide-neutral-800/50">
+                                    {technicians?.map((tech: Technician) => {
+                                        const rs = getRealStatus(tech);
+                                        return (
+                                            <div key={tech.id} className="px-3 py-2 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor(rs)}`} />
+                                                    <div>
+                                                        <div className={`font-semibold text-xs ${rs === 'offline' ? 'text-neutral-500' : 'text-neutral-200'}`}>
+                                                            {tech.name}
+                                                        </div>
+                                                        <div className="text-[9px] text-neutral-500 uppercase flex items-center gap-1">
+                                                            {getStatusLabel(rs)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {tech.location_updated_at && rs !== 'offline' && (
+                                                    <span className="text-[9px] text-neutral-600 font-mono">
+                                                        {new Date(tech.location_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="px-2 py-1 bg-neutral-950 rounded text-xs font-mono text-neutral-300 border border-neutral-800">
-                                                {os.started_at ? new Date(os.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                        );
+                                    })}
+                                    {(!technicians || technicians.length === 0) && (
+                                        <div className="p-3 text-center text-neutral-600 text-[10px]">Nenhum técnico</div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Active Work Orders */}
+                        <Card className="bg-neutral-900 border-neutral-800 flex flex-col overflow-hidden">
+                            <CardHeader className="bg-neutral-800/40 py-1.5 px-3 border-b border-neutral-800 shrink-0">
+                                <CardTitle className="text-xs uppercase tracking-wider flex items-center gap-2 text-orange-400">
+                                    <Activity className="h-3 w-3" /> OS em Execução ({work_orders?.length ?? 0})
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0 overflow-y-auto flex-1 tv-scrollbar-hide">
+                                <div className="divide-y divide-neutral-800/50">
+                                    {work_orders?.map((os: any) => (
+                                        <div key={os.id} className="px-3 py-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-orange-400 font-mono font-bold text-xs">#{os.os_number || os.id}</span>
+                                                <span className="text-[9px] font-mono text-neutral-500">
+                                                    {os.started_at ? new Date(os.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                </span>
+                                            </div>
+                                            <div className="text-xs font-semibold text-white truncate">{os.customer?.name}</div>
+                                            <div className="text-[9px] text-neutral-500 flex items-center gap-1">
+                                                <Users className="h-2.5 w-2.5" /> {os.technician?.name || '—'}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-xs text-neutral-400 mt-2">
-                                            <div className="flex items-center gap-1">
-                                                <Users className="h-3 w-3" />
-                                                {os.technician?.name || 'Não atribuído'}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {os.service_call ? 'Chamado' : 'Preventiva'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {work_orders?.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center h-full text-neutral-600 gap-2">
-                                        <CheckCircle className="h-8 w-8 opacity-20" />
-                                        <span className="text-xs uppercase">Nenhuma OS em execução no momento</span>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Right Column: Cameras (4 Cols) */}
-                <div className="col-span-4 flex flex-col gap-4 h-full">
-                    <div className="grid grid-cols-1 grid-rows-3 gap-4 h-full">
-                        {/* Main Camera */}
-                        <WebRTCPlayer
-                            url={dashboardData?.cameras?.[0]?.stream_url}
-                            label={dashboardData?.cameras?.[0]?.name || "CÂMERA PRINCIPAL"}
-                            className="row-span-1"
-                        />
-
-                        {/* Smaller Cameras */}
-                        <div className="row-span-2 grid grid-cols-1 gap-4">
-                            {[1, 2].map((i) => (
-                                <WebRTCPlayer
-                                    key={i}
-                                    url={dashboardData?.cameras?.[i]?.stream_url}
-                                    label={dashboardData?.cameras?.[i]?.name || `CAM 0${i + 1}`}
-                                />
-                            ))}
-                        </div>
+                                    ))}
+                                    {(!work_orders || work_orders.length === 0) && (
+                                        <div className="p-3 text-center text-neutral-600 text-[10px]">Nenhuma OS em execução</div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>
 
             {/* Footer Ticker */}
-            <div className="fixed bottom-0 left-0 right-0 h-12 bg-neutral-900 border-t border-neutral-800 flex items-center px-4 overflow-hidden">
-                <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded mr-4 shrink-0 uppercase tracking-widest">
-                    ÚLTIMAS ATIVIDADES
+            <div className="fixed bottom-0 left-0 right-0 h-10 bg-neutral-900 border-t border-neutral-800 flex items-center px-4 overflow-hidden z-10">
+                <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded mr-4 shrink-0 uppercase tracking-widest">
+                    ATIVIDADES
                 </div>
-                <div className="flex items-center gap-8 animate-marquee whitespace-nowrap">
-                    {latest_work_orders?.map((os: any, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-neutral-300 opacity-80">
-                            <Clock className="h-3 w-3 text-neutral-500" />
+                <div className="flex items-center gap-8 tv-ticker whitespace-nowrap">
+                    {latest_work_orders?.map((os: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs text-neutral-400">
+                            <Clock className="h-3 w-3 text-neutral-600" />
                             <span className="font-mono text-blue-400">#{os.os_number || os.id}</span>
-                            <span className="font-bold">{os.customer?.name}</span>
-                            <span className="text-neutral-500 text-xs">({new Date(os.updated_at).toLocaleTimeString()})</span>
-                            <span className="w-1 h-1 bg-neutral-600 rounded-full mx-2"></span>
+                            <span className="font-semibold text-neutral-300">{os.customer?.name}</span>
+                            <span className="text-neutral-600 text-[10px]">({new Date(os.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>
+                            <span className="w-1 h-1 bg-neutral-700 rounded-full mx-1" />
                         </div>
                     ))}
-                    <div className="flex items-center gap-2 text-sm text-neutral-300 opacity-80">
-                        <span>Sistema Operacional Normal - Monitoramento Ativo</span>
-                    </div>
+                    <span className="text-[10px] text-neutral-600">Sistema Operacional Normal</span>
                 </div>
             </div>
 
+            {/* Expanded Camera Modal */}
+            {expandedCamera && (
+                <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-8" onClick={() => setExpandedCamera(null)}>
+                    <div className="relative w-full h-full max-w-5xl max-h-[80vh]" onClick={e => e.stopPropagation()}>
+                        <WebRTCPlayer
+                            url={expandedCamera.stream_url}
+                            label={expandedCamera.name}
+                            className="h-full w-full"
+                        />
+                        <button
+                            onClick={() => setExpandedCamera(null)}
+                            className="absolute top-3 right-3 bg-black/70 hover:bg-black rounded-full p-2 text-white transition-colors"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                        <div className="absolute bottom-3 left-3 bg-black/70 rounded px-3 py-1.5 text-sm font-mono text-white">
+                            {expandedCamera.name} {expandedCamera.location ? `— ${expandedCamera.location}` : ''}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
-                .scrollbar-hide::-webkit-scrollbar {
-                    display: none;
+                .tv-scrollbar-hide::-webkit-scrollbar { display: none; }
+                .tv-scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+                @keyframes tv-scroll {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
                 }
-                .scrollbar-hide {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
+                .tv-ticker {
+                    animation: tv-scroll 30s linear infinite;
+                }
+                .tv-ticker:hover {
+                    animation-play-state: paused;
                 }
             `}</style>
         </div>

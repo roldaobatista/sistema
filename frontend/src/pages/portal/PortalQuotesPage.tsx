@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DollarSign, Check, X, FileText, Clock, CheckCircle, XCircle } from 'lucide-react'
@@ -28,7 +28,6 @@ export function PortalQuotesPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['portal-quotes'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/portal/quotes').then(res => res.data),
     })
 
@@ -57,7 +56,7 @@ export function PortalQuotesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Orçamentos</h1>
-                    <p className="mt-0.5 text-[13px] text-surface-500">
+                    <p className="mt-0.5 text-sm text-surface-500">
                         {pendingCount > 0 ? `${pendingCount} orçamento(s) aguardando aprovação` : 'Todos os orçamentos'}
                     </p>
                 </div>
@@ -79,7 +78,7 @@ export function PortalQuotesPage() {
                         const isAnyMutating = approveMut.isPending || rejectMut.isPending
                         return (
                             <div key={q.id} className={cn(
-                                'rounded-xl border bg-white shadow-card overflow-hidden transition-all hover:shadow-elevated',
+                                'rounded-xl border bg-surface-0 shadow-card overflow-hidden transition-all',
                                 isPending ? 'border-brand-200' : 'border-surface-200'
                             )}>
                                 <div className="p-5">
@@ -109,7 +108,7 @@ export function PortalQuotesPage() {
                                                     </div>
                                                 ))}
                                                 {allItems.length > 3 && (
-                                                    <p className="text-[10px] text-surface-400 italic">+{allItems.length - 3} item(ns)</p>
+                                                    <p className="text-xs text-surface-400 italic">+{allItems.length - 3} item(ns)</p>
                                                 )}
                                             </div>
                                         )
@@ -117,7 +116,7 @@ export function PortalQuotesPage() {
 
                                     <div className="border-t border-subtle pt-3 flex items-center justify-between">
                                         <span className="text-xs text-surface-500">Total</span>
-                                        <span className="text-[15px] font-semibold tabular-nums text-surface-900">{fmtBRL(q.total_amount ?? q.total ?? 0)}</span>
+                                        <span className="text-sm font-semibold tabular-nums text-surface-900">{fmtBRL(q.total_amount ?? q.total ?? 0)}</span>
                                     </div>
                                 </div>
 
@@ -151,10 +150,9 @@ export function PortalQuotesPage() {
         <>
             {content}
 
-            {/* Modal de Rejeição */}
             {rejectingId !== null && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+                    <div className="bg-surface-0 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
                         <h3 className="text-lg font-semibold text-surface-900 mb-3">Rejeitar Orçamento</h3>
                         <textarea
                             value={rejectReason}

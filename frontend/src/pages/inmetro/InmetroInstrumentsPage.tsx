@@ -15,6 +15,7 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; lab
 }
 
 export function InmetroInstrumentsPage() {
+    const { hasPermission } = useAuthStore()
 
     const [searchParams] = useSearchParams()
 
@@ -73,7 +74,6 @@ export function InmetroInstrumentsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">
@@ -105,7 +105,6 @@ export function InmetroInstrumentsPage() {
                 </div>
             </div>
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
@@ -155,7 +154,7 @@ export function InmetroInstrumentsPage() {
                         type="checkbox"
                         checked={filters.overdue}
                         onChange={e => setFilters({ ...filters, overdue: e.target.checked, days_until_due: '', page: 1 })}
-                        className="rounded border-surface-300"
+                        className="rounded border-default"
                     />
                     <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
                     Somente vencidos
@@ -173,7 +172,6 @@ export function InmetroInstrumentsPage() {
                 </select>
             </div>
 
-            {/* Sync Banner */}
             {isSyncing && (
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex items-center gap-3 animate-pulse">
                     <Loader2 className="h-5 w-5 text-blue-600 animate-spin shrink-0" />
@@ -184,7 +182,6 @@ export function InmetroInstrumentsPage() {
                 </div>
             )}
 
-            {/* Content */}
             {isLoading ? (
                 <div className="space-y-3 animate-pulse">
                     {Array.from({ length: 8 }).map((_, i) => (
@@ -226,10 +223,10 @@ export function InmetroInstrumentsPage() {
                                     const StatusIcon = si.icon
                                     const isOverdue = inst.next_verification_at && new Date(inst.next_verification_at) < new Date()
                                     return (
-                                        <tr key={inst.id} className="border-b border-subtle hover:bg-surface-25 transition-colors">
+                                        <tr key={inst.id} className="border-b border-subtle hover:bg-surface-50 transition-colors">
                                             <td className="px-3 py-2.5 font-mono text-xs font-medium text-surface-800">{inst.inmetro_number}</td>
                                             <td className="px-3 py-2.5 text-xs text-surface-600">
-                                                <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-surface-100 text-surface-700 border border-surface-200">
+                                                <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-surface-100 text-surface-700 border border-default">
                                                     {inst.instrument_type || '—'}
                                                 </span>
                                             </td>

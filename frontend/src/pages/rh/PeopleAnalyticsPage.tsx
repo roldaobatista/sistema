@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -24,7 +25,6 @@ export default function PeopleAnalyticsPage() {
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['hr-analytics'],
-        const { data, isLoading } = useQuery({
         queryFn: async () => {
             const response = await api.get('/hr/analytics/dashboard')
             return response.data
@@ -39,48 +39,48 @@ export default function PeopleAnalyticsPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">People Analytics</h1>
-                <p className="text-muted-foreground">Indicadores estratégicos de RH.</p>
+                <p className="text-surface-500">Indicadores estratégicos de RH.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Headcount Total</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <Users className="h-4 w-4 text-surface-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.total_employees}</div>
-                        <p className="text-xs text-muted-foreground">Colaboradores ativos</p>
+                        <p className="text-xs text-surface-500">Colaboradores ativos</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Turnover (Simulado)</CardTitle>
-                        <UserMinus className="h-4 w-4 text-muted-foreground" />
+                        <UserMinus className="h-4 w-4 text-surface-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.turnover_rate}%</div>
-                        <p className="text-xs text-muted-foreground">Taxa de rotatividade mensal</p>
+                        <p className="text-xs text-surface-500">Taxa de rotatividade mensal</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Vagas Abertas</CardTitle>
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <Briefcase className="h-4 w-4 text-surface-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.open_jobs}</div>
-                        <p className="text-xs text-muted-foreground">Processos seletivos em andamento</p>
+                        <p className="text-xs text-surface-500">Processos seletivos em andamento</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Candidatos</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <TrendingUp className="h-4 w-4 text-surface-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.total_candidates}</div>
-                        <p className="text-xs text-muted-foreground">Total no banco de talentos</p>
+                        <p className="text-xs text-surface-500">Total no banco de talentos</p>
                     </CardContent>
                 </Card>
             </div>

@@ -78,13 +78,12 @@ export function Customer360Page() {
 
     const { data: dashboardData, isLoading, refetch } = useQuery({
         queryKey: ['customer-360', id],
-        const { data, isLoading } = useQuery({
         queryFn: () => crmApi.getCustomer360(customerId).then(r => r.data),
         enabled: !!id && isOnline,
     })
 
     const handleExportPdf = () => {
-        const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/crm/customer-360/${id}/pdf`;
+        const url = `${import.meta.env.VITE_API_URL}/crm/customer-360/${id}/pdf`;
         window.open(url, '_blank');
         toast.success('Relatório PDF está sendo gerado...');
     }

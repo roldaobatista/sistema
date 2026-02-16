@@ -43,8 +43,8 @@ const badgeVariants = cva(
           'border-zinc-200 bg-zinc-50 text-zinc-700',
       },
       size: {
-        xs: 'px-1.5 py-0 text-[10px]',
-        sm: 'px-2 py-0.5 text-[11px]',
+        xs: 'px-1.5 py-0 text-[0.625rem]',
+        sm: 'px-2 py-0.5 text-xs',
         md: 'px-2.5 py-1 text-xs',
       },
     },

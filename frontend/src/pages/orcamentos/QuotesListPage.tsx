@@ -70,13 +70,11 @@ export function QuotesListPage() {
 
     const { data: summary } = useQuery<QuoteSummary>({
         queryKey: ['quotes-summary'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/quotes-summary').then(r => r.data),
     })
 
     const { data: listData, isLoading } = useQuery({
         queryKey: ['quotes', debouncedSearch, status, page],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/quotes', { params: { search: debouncedSearch || undefined, status: status || undefined, page } }).then(r => r.data),
     })
     const quotes: Quote[] = listData?.data ?? []
@@ -156,7 +154,6 @@ export function QuotesListPage() {
                 </div>
             </div>
 
-            {/* Summary cards */}
             {summaryCards.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {summaryCards.map((c) => (
@@ -168,7 +165,6 @@ export function QuotesListPage() {
                 </div>
             )}
 
-            {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-tertiary" />
@@ -195,10 +191,9 @@ export function QuotesListPage() {
                 </div>
             </div>
 
-            {/* Table */}
             <div className="bg-surface-0 rounded-xl border border-default shadow-card overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-default">
+                    <table className="min-w-full divide-y divide-subtle">
                         <thead className="bg-surface-50">
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase">Número</th>
@@ -209,7 +204,7 @@ export function QuotesListPage() {
                                 <th className="px-4 py-3 text-right text-xs font-semibold text-content-secondary uppercase">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-default">
+                        <tbody className="divide-y divide-subtle">
                             {isLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i}>
@@ -306,7 +301,6 @@ export function QuotesListPage() {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {pagination && pagination.last_page > 1 && (
                     <div className="flex items-center justify-between px-4 py-3 border-t border-default">
                         <span className="text-sm text-content-secondary">
@@ -329,7 +323,6 @@ export function QuotesListPage() {
                 )}
             </div>
 
-            {/* Delete confirmation dialog */}
             {deleteTarget && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setDeleteTarget(null)}>
                     <div className="bg-surface-0 rounded-xl p-6 max-w-sm mx-4 shadow-elevated" onClick={(e) => e.stopPropagation()}>

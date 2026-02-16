@@ -82,13 +82,11 @@ export default function StandardWeightsPage() {
 
     const { data: constants } = useQuery<Constants>({
         queryKey: ['standard-weights-constants'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/standard-weights/constants').then(r => r.data),
     })
 
     const { data, isLoading } = useQuery({
         queryKey: ['standard-weights', search, statusFilter, page],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/standard-weights', {
             params: { search, status: statusFilter || undefined, page, per_page: 20 }
         }).then(r => r.data),
@@ -96,7 +94,6 @@ export default function StandardWeightsPage() {
 
     const { data: expiringData } = useQuery({
         queryKey: ['standard-weights-expiring'],
-        const { data, isLoading } = useQuery({
         queryFn: () => api.get('/standard-weights/expiring', { params: { days: 30 } }).then(r => r.data),
     })
 

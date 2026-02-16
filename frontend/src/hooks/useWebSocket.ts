@@ -41,7 +41,6 @@ export function useWebSocket(config: WebSocketConfig) {
             ws.onopen = () => {
                 setIsConnected(true)
                 reconnectAttempts.current = 0
-                console.log('[WS] connected to', url)
 
                 // Subscribe to channels
                 if (tenantId) {

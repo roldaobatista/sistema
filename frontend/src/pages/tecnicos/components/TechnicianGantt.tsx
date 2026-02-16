@@ -55,12 +55,12 @@ export function TechnicianGantt({ date, technicians, items, onItemClick }: Techn
             case 'confirmed': return 'bg-indigo-100 border-indigo-300 text-indigo-700'
             case 'completed': return 'bg-green-100 border-green-300 text-green-700'
             case 'cancelled': return 'bg-red-100 border-red-300 text-red-700'
-            default: return 'bg-gray-100 border-gray-300 text-gray-700'
+            default: return 'bg-surface-100 border-default text-surface-700'
         }
     }
 
     return (
-        <div className="overflow-x-auto rounded-lg border border-border bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-border bg-surface-0 shadow-sm">
             <div className="min-w-[800px]">
                 {/* Header: Hours */}
                 <div className="flex border-b border-border bg-muted/50">

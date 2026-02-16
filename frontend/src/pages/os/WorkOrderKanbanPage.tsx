@@ -112,25 +112,25 @@ function SortableItem({ id, workOrder, onClick }: { id: number; workOrder: WorkO
             {...listeners}
             onClick={onClick}
             className={cn(
-                "bg-white p-3 rounded-lg border border-surface-200 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing mb-2",
+                "bg-surface-0 p-3 rounded-lg border border-default shadow-card transition-all cursor-grab active:cursor-grabbing mb-2",
                 isDragging && "ring-2 ring-brand-500 ring-opacity-50 z-50"
             )}
         >
             <div className="flex justify-between items-start mb-2">
                 <span className="text-xs font-bold text-brand-600">{woIdentifier(workOrder)}</span>
                 {workOrder.priority !== 'normal' && (
-                    <Badge variant={priorityConfig[workOrder.priority]?.variant ?? 'default'} className="px-1.5 py-0 text-[10px]">
+                    <Badge variant={priorityConfig[workOrder.priority]?.variant ?? 'default'} className="px-1.5 py-0 text-xs">
                         {workOrder.priority === 'urgent' && <AlertTriangle className="h-3 w-3 mr-0.5 inline" />}
                         {priorityConfig[workOrder.priority]?.label}
                     </Badge>
                 )}
             </div>
-            <p className="text-[13px] font-medium text-surface-900 mb-2 line-clamp-2">{workOrder.description}</p>
+            <p className="text-sm font-medium text-surface-900 mb-2 line-clamp-2">{workOrder.description}</p>
             <div className="flex items-center gap-1.5 text-xs text-surface-500 mb-2">
                 <User className="h-3 w-3" />
                 <span className="truncate">{workOrder.customer.name}</span>
             </div>
-            <div className="flex justify-between items-center text-xs pt-2 border-t border-surface-100">
+            <div className="flex justify-between items-center text-xs pt-2 border-t border-subtle">
                 <span className="font-semibold text-surface-700">{formatBRL(workOrder.total)}</span>
                 {workOrder.assignee && (
                     <span className="bg-surface-100 px-1.5 py-0.5 rounded text-surface-600 truncate max-w-[80px]">
@@ -154,7 +154,6 @@ export function WorkOrderKanbanPage() {
     // Fetch Data
     const { data: res, isLoading, isError, refetch } = useQuery({
         queryKey: ['work-orders', 'kanban', search],
-        const { data, isLoading, isError, refetch } = useQuery({
             queryFn: () => api.get('/work-orders', {
                 params: { search, per_page: 100, status: columns.join(',') }, // Fetch mostly everything
             }),
@@ -270,8 +269,7 @@ export function WorkOrderKanbanPage() {
 
     return(
         <div className = "h-full flex flex-col overflow-hidden" >
-                {/* Header */ }
-                < div className = "flex-none px-6 py-4 border-b border-default bg-surface-0 space-y-3" >
+                <div className="flex-none px-6 py-4 border-b border-default bg-surface-0 space-y-3">
                 <PageHeader
                     title="Kanban de OS"
                     subtitle="Visualize e gerencie o fluxo de trabalho"
@@ -291,7 +289,7 @@ export function WorkOrderKanbanPage() {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Buscar..."
-                            className="w-full rounded-lg border border-surface-300 pl-9 pr-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            className="w-full rounded-lg border border-default pl-9 pr-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                         />
                     </div>
                     <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}
@@ -303,10 +301,9 @@ export function WorkOrderKanbanPage() {
                         <option value="urgent">Urgente</option>
                     </select>
                 </div>
-            </div >
+            </div>
 
-        {/* Kanban Board */ }
-        < div className = "flex-1 overflow-x-auto overflow-y-hidden bg-surface-50 p-6" >
+        <div className="flex-1 overflow-x-auto overflow-y-hidden bg-surface-50 p-6">
         {
             isError?(
                     <div className = "flex flex-col items-center justify-center h-full" >
@@ -324,8 +321,7 @@ export function WorkOrderKanbanPage() {
         >
             <div className="flex h-full gap-4 min-w-max">
                 {columns.map(colId => (
-                    <div key={colId} className="w-72 flex flex-col rounded-xl bg-surface-100 border border-surface-200 h-full max-h-full">
-                        {/* Column Header */}
+                    <div key={colId} className="w-72 flex flex-col rounded-xl bg-surface-100 border border-default h-full max-h-full">
                         <div className={cn(
                             "p-3 rounded-t-xl border-b border-default bg-surface-0 sticky top-0 z-10",
                             statusConfig[colId].variant === 'success' && "border-t-4 border-t-green-500",
@@ -336,18 +332,17 @@ export function WorkOrderKanbanPage() {
                         )}>
                             <div className="flex justify-between items-center">
                                 <h3 className="font-semibold text-surface-700 text-sm">{statusConfig[colId].label}</h3>
-                                <Badge variant="outline" className="bg-surface-50 text-surface-600 border-surface-200">
+                                <Badge variant="outline" className="bg-surface-50 text-surface-600 border-default">
                                     {items[colId]?.length ?? 0}
                                 </Badge>
                             </div>
                             {(totalByCol[colId] ?? 0) > 0 && (
-                                <p className="text-[10px] text-surface-400 mt-1 font-medium">
+                                <p className="text-xs text-surface-400 mt-1 font-medium">
                                     {Number(totalByCol[colId]).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                 </p>
                             )}
                         </div>
 
-                        {/* Droppable Area */}
                         <SortableContext
                             id={colId} // Column ID acts as droppable container
                             items={items[colId]?.map(i => i.id) ?? []}
@@ -357,7 +352,7 @@ export function WorkOrderKanbanPage() {
                                 {isLoading ? (
                                     <div className="space-y-2 p-2">
                                         {[1, 2, 3].map(i => (
-                                            <div key={i} className="animate-pulse rounded-lg bg-white p-3 border border-surface-200">
+                                            <div key={i} className="animate-pulse rounded-lg bg-surface-0 p-3 border border-default">
                                                 <div className="flex justify-between mb-2">
                                                     <div className="h-3 w-16 rounded bg-surface-200" />
                                                     <div className="h-3 w-12 rounded bg-surface-100" />
@@ -368,7 +363,7 @@ export function WorkOrderKanbanPage() {
                                         ))}
                                     </div>
                                 ) : items[colId]?.length === 0 ? (
-                                    <div className="p-4 text-center text-xs text-surface-400 border-2 border-dashed border-surface-200 rounded-lg m-2">
+                                    <div className="p-4 text-center text-xs text-surface-400 border-2 border-dashed border-default rounded-lg m-2">
                                         Vazio
                                     </div>
                                 ) : (
@@ -392,13 +387,13 @@ export function WorkOrderKanbanPage() {
                 {activeId ? (() => {
                     const activeWo = Object.values(items).flat().find(wo => wo.id === activeId)
                     return (
-                        <div className="bg-white p-3 rounded-lg border border-brand-200 shadow-xl w-72 rotate-1 cursor-grabbing ring-2 ring-brand-500">
+                        <div className="bg-surface-0 p-3 rounded-lg border border-brand-200 shadow-card w-72 rotate-1 cursor-grabbing ring-2 ring-brand-500">
                             <div className="flex justify-between items-start mb-2">
                                 <span className="text-xs font-bold text-brand-600">{activeWo ? woIdentifier(activeWo) : `#${activeId}`}</span>
                             </div>
                             {activeWo ? (
                                 <>
-                                    <p className="text-[13px] font-medium text-surface-900 mb-2 line-clamp-2">{activeWo.description}</p>
+                                    <p className="text-sm font-medium text-surface-900 mb-2 line-clamp-2">{activeWo.description}</p>
                                     <div className="flex items-center gap-1.5 text-xs text-surface-500">
                                         <User className="h-3 w-3" />
                                         <span className="truncate">{activeWo.customer.name}</span>
@@ -417,7 +412,7 @@ export function WorkOrderKanbanPage() {
         </DndContext>
     )
 }
-            </div >
-        </div >
+            </div>
+        </div>
     )
 }

@@ -38,7 +38,7 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
             const response = await api.get(`/work-orders/${workOrderId}/chats`)
             setMessages(response.data)
         } catch (error) {
-            console.error('Failed to fetch chat messages:', error)
+            // Erro ao buscar mensagens
         } finally {
             setLoading(false)
         }
@@ -71,7 +71,7 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
             setMessages([...messages, response.data])
             setNewMessage('')
         } catch (error) {
-            console.error('Failed to send message:', error)
+            // Erro ao enviar mensagem
         } finally {
             setSending(false)
         }
