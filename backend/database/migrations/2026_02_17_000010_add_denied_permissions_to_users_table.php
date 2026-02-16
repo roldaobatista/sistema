@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasColumn('users', 'denied_permissions')) {
             Schema::table('users', function (Blueprint $table) {
-                $table->json('denied_permissions')->nullable()->after('status');
+                $table->json('denied_permissions')->nullable();
             });
         }
     }

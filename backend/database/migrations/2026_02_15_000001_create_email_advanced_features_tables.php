@@ -44,9 +44,9 @@ return new class extends Migration
 
         // 4. Assignments & Tracking (Colunas na tabela emails)
         Schema::table('emails', function (Blueprint $table) {
-            $table->timestamp('scheduled_at')->nullable()->after('date');
-            $table->timestamp('sent_at')->nullable()->after('scheduled_at');
-            $table->string('tracking_id')->nullable()->index()->after('message_id');
+            $table->timestamp('scheduled_at')->nullable();
+            $table->timestamp('sent_at')->nullable();
+            $table->string('tracking_id')->nullable()->index();
             $table->integer('read_count')->default(0);
             $table->timestamp('last_read_at')->nullable();
             $table->timestamp('snoozed_until')->nullable();

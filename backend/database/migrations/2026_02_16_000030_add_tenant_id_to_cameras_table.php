@@ -14,14 +14,14 @@ return new class extends Migration
 
         Schema::table('cameras', function (Blueprint $table) {
             if (!Schema::hasColumn('cameras', 'tenant_id')) {
-                $table->foreignId('tenant_id')->nullable()->after('id')->constrained()->nullOnDelete();
+                $table->foreignId('tenant_id')->nullable()->constrained()->nullOnDelete();
                 $table->index('tenant_id');
             }
             if (!Schema::hasColumn('cameras', 'location')) {
-                $table->string('location')->nullable()->after('stream_url');
+                $table->string('location')->nullable();
             }
             if (!Schema::hasColumn('cameras', 'type')) {
-                $table->string('type')->default('ip')->after('location');
+                $table->string('type')->default('ip');
             }
         });
     }

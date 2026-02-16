@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::table('expense_categories', function (Blueprint $table) {
             if (!Schema::hasColumn('expense_categories', 'default_affects_net_value')) {
-                $table->boolean('default_affects_net_value')->default(false)->after('budget_limit');
+                $table->boolean('default_affects_net_value')->default(false);
             }
             if (!Schema::hasColumn('expense_categories', 'default_affects_technician_cash')) {
-                $table->boolean('default_affects_technician_cash')->default(true)->after('default_affects_net_value');
+                $table->boolean('default_affects_technician_cash')->default(true);
             }
         });
     }

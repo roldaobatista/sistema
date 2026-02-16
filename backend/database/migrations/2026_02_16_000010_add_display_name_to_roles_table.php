@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasColumn('roles', 'display_name')) {
             Schema::table('roles', function (Blueprint $table) {
-                $table->string('display_name', 150)->nullable()->after('name');
+                $table->string('display_name', 150)->nullable();
             });
         }
     }

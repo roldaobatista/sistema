@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasColumn('work_orders', 'is_warranty')) {
             Schema::table('work_orders', function (Blueprint $table) {
-                $table->boolean('is_warranty')->default(false)->after('is_master');
+                $table->boolean('is_warranty')->default(false);
             });
         }
     }

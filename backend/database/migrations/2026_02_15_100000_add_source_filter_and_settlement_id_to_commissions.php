@@ -16,14 +16,14 @@ return new class extends Migration
         // para filtrar regras por origem do orçamento (prospecção, retorno, etc.)
         Schema::table('commission_rules', function (Blueprint $table) {
             if (!Schema::hasColumn('commission_rules', 'source_filter')) {
-                $table->string('source_filter', 50)->nullable()->after('applies_to_role');
+                $table->string('source_filter', 50)->nullable();
             }
         });
 
         // BUG-02: settlement_id — FK para vincular eventos ao fechamento mensal
         Schema::table('commission_events', function (Blueprint $table) {
             if (!Schema::hasColumn('commission_events', 'settlement_id')) {
-                $table->unsignedBigInteger('settlement_id')->nullable()->after('user_id');
+                $table->unsignedBigInteger('settlement_id')->nullable();
                 $table->foreign('settlement_id')->references('id')->on('commission_settlements')->nullOnDelete();
                 $table->index(['settlement_id']);
             }

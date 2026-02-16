@@ -94,12 +94,12 @@ return new class extends Migration
         // Colunas extras no EquipmentCalibration
         if (!Schema::hasColumn('equipment_calibrations', 'certificate_template_id')) {
             Schema::table('equipment_calibrations', function (Blueprint $table) {
-                $table->foreignId('certificate_template_id')->nullable()->after('work_order_id');
-                $table->string('conformity_declaration')->nullable()->after('eccentricity_data');
-                $table->decimal('max_permissible_error', 12, 4)->nullable()->after('conformity_declaration');
-                $table->decimal('max_error_found', 12, 4)->nullable()->after('max_permissible_error');
-                $table->string('mass_unit', 10)->default('kg')->after('max_error_found');
-                $table->string('calibration_method')->nullable()->after('mass_unit');
+                $table->foreignId('certificate_template_id')->nullable();
+                $table->string('conformity_declaration')->nullable();
+                $table->decimal('max_permissible_error', 12, 4)->nullable();
+                $table->decimal('max_error_found', 12, 4)->nullable();
+                $table->string('mass_unit', 10)->default('kg');
+                $table->string('calibration_method')->nullable();
             });
         }
 
@@ -176,14 +176,14 @@ return new class extends Migration
 
         if (!Schema::hasColumn('work_orders', 'checkin_at')) {
             Schema::table('work_orders', function (Blueprint $table) {
-                $table->timestamp('checkin_at')->nullable()->after('dispatch_authorized_at');
-                $table->decimal('checkin_lat', 10, 7)->nullable()->after('checkin_at');
-                $table->decimal('checkin_lng', 10, 7)->nullable()->after('checkin_lat');
-                $table->timestamp('checkout_at')->nullable()->after('checkin_lng');
-                $table->decimal('checkout_lat', 10, 7)->nullable()->after('checkout_at');
-                $table->decimal('checkout_lng', 10, 7)->nullable()->after('checkout_lat');
-                $table->integer('eta_minutes')->nullable()->after('checkout_lng');
-                $table->decimal('auto_km_calculated', 10, 2)->nullable()->after('eta_minutes');
+                $table->timestamp('checkin_at')->nullable();
+                $table->decimal('checkin_lat', 10, 7)->nullable();
+                $table->decimal('checkin_lng', 10, 7)->nullable();
+                $table->timestamp('checkout_at')->nullable();
+                $table->decimal('checkout_lat', 10, 7)->nullable();
+                $table->decimal('checkout_lng', 10, 7)->nullable();
+                $table->integer('eta_minutes')->nullable();
+                $table->decimal('auto_km_calculated', 10, 2)->nullable();
             });
         }
 
@@ -193,7 +193,7 @@ return new class extends Migration
 
         if (!Schema::hasColumn('equipments', 'qr_token')) {
             Schema::table('equipments', function (Blueprint $table) {
-                $table->string('qr_token', 64)->nullable()->unique()->after('status');
+                $table->string('qr_token', 64)->nullable()->unique();
             });
         }
 
@@ -220,9 +220,9 @@ return new class extends Migration
 
         if (!Schema::hasColumn('standard_weights', 'assigned_to_vehicle_id')) {
             Schema::table('standard_weights', function (Blueprint $table) {
-                $table->foreignId('assigned_to_vehicle_id')->nullable()->after('notes');
-                $table->foreignId('assigned_to_user_id')->nullable()->after('assigned_to_vehicle_id');
-                $table->string('current_location')->nullable()->after('assigned_to_user_id');
+                $table->foreignId('assigned_to_vehicle_id')->nullable();
+                $table->foreignId('assigned_to_user_id')->nullable();
+                $table->string('current_location')->nullable();
             });
         }
 
@@ -348,8 +348,8 @@ return new class extends Migration
 
         if (!Schema::hasColumn('customers', 'satisfaction_score')) {
             Schema::table('customers', function (Blueprint $table) {
-                $table->decimal('satisfaction_score', 3, 1)->nullable()->after('status');
-                $table->timestamp('last_survey_at')->nullable()->after('satisfaction_score');
+                $table->decimal('satisfaction_score', 3, 1)->nullable();
+                $table->timestamp('last_survey_at')->nullable();
             });
         }
     }

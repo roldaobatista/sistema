@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (!Schema::hasColumn('quotes', 'displacement_value')) {
             Schema::table('quotes', function (Blueprint $table) {
-                $table->decimal('displacement_value', 10, 2)->default(0)->after('discount_amount');
+                $table->decimal('displacement_value', 10, 2)->default(0);
             });
         }
     }
