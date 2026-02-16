@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -73,11 +74,13 @@ class DashboardController extends Controller
             ->where('won_at', '>=', $from)->count();
         $crmRevenueMonth = CrmDeal::where('status', CrmDeal::STATUS_WON)
             ->where('won_at', '>=', $from)->sum('value');
+        // crm_activities usa completed_at (não is_done): pendente = não concluído
         $pendingFollowUps = CrmActivity::where('type', 'tarefa')
-            ->where('is_done', false)
+            ->whereNull('completed_at')
             ->where('scheduled_at', '<=', now())->count();
-        $avgHealthScore = (int) Customer::where('is_active', true)
-            ->whereNotNull('health_score')->avg('health_score');
+        $avgHealthScore = Schema::hasColumn('customers', 'health_score')
+            ? (int) Customer::where('is_active', true)->whereNotNull('health_score')->avg('health_score')
+            : 0;
 
         // Financeiro
         $receivablesPending = AccountReceivable::whereIn('status', [AccountReceivable::STATUS_PENDING, AccountReceivable::STATUS_PARTIAL])
@@ -90,13 +93,16 @@ class DashboardController extends Controller
             ->where('due_date', '<', now())->sum('amount');
         $netRevenue = (float) $revenueMonth - (float) $expensesMonth;
 
-        // SLA — contagens
-        $slaResponseBreached = WorkOrder::where('sla_response_breached', true)
-            ->where('created_at', '>=', $from)->count();
-        $slaResolutionBreached = WorkOrder::where('sla_resolution_breached', true)
-            ->where('created_at', '>=', $from)->count();
-        $slaTotal = WorkOrder::whereNotNull('sla_policy_id')
-            ->where('created_at', '>=', $from)->count();
+        // SLA — contagens (colunas de migration opcional)
+        $slaResponseBreached = Schema::hasColumn('work_orders', 'sla_response_breached')
+            ? WorkOrder::where('sla_response_breached', true)->where('created_at', '>=', $from)->count()
+            : 0;
+        $slaResolutionBreached = Schema::hasColumn('work_orders', 'sla_resolution_breached')
+            ? WorkOrder::where('sla_resolution_breached', true)->where('created_at', '>=', $from)->count()
+            : 0;
+        $slaTotal = Schema::hasColumn('work_orders', 'sla_policy_id')
+            ? WorkOrder::whereNotNull('sla_policy_id')->where('created_at', '>=', $from)->count()
+            : 0;
 
         // Monthly Revenue (last 6 months)
         $monthlyRevenue = [];
@@ -143,12 +149,13 @@ class DashboardController extends Controller
             'crm_revenue_month' => (float) $crmRevenueMonth,
             'crm_pending_followups' => $pendingFollowUps,
             'crm_avg_health' => $avgHealthScore,
-            // Estoque
-            'stock_low' => Product::where('is_active', true)
-                ->whereColumn('stock_qty', '<=', 'stock_min')
-                ->where('stock_qty', '>', 0)->count(),
-            'stock_out' => Product::where('is_active', true)
-                ->where('stock_qty', '<=', 0)->count(),
+            // Estoque (stock_qty/stock_min podem não existir em schemas antigos)
+            'stock_low' => (Schema::hasColumn('products', 'stock_qty') && Schema::hasColumn('products', 'stock_min'))
+                ? Product::where('is_active', true)->whereColumn('stock_qty', '<=', 'stock_min')->where('stock_qty', '>', 0)->count()
+                : 0,
+            'stock_out' => Schema::hasColumn('products', 'stock_qty')
+                ? Product::where('is_active', true)->where('stock_qty', '<=', 0)->count()
+                : 0,
             // Financeiro
             'receivables_pending' => (float) $receivablesPending,
             'receivables_overdue' => (float) $receivablesOverdue,
