@@ -1,0 +1,19 @@
+# Auto detect text files and normalize line endings
+* text=auto
+
+# Shell scripts must use LF (Linux line endings)
+*.sh text eol=lf
+deploy.sh text eol=lf
+
+# PowerShell can use CRLF
+*.ps1 text eol=crlf
+
+# Keep these as-is
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
