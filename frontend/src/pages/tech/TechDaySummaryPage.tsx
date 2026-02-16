@@ -4,7 +4,7 @@ import {
     Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Receipt, Briefcase,
     Send, CheckCircle2, Loader2, ArrowLeft, Car,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -162,8 +162,8 @@ export default function TechDaySummaryPage() {
                     kmTotal: 0, // Will be calculated via useMemo
                     expensesTotal,
                 })
-            } catch (err: any) {
-                toast.error(err?.response?.data?.message || 'Erro ao carregar resumo')
+            } catch (err: unknown) {
+                toast.error(getApiErrorMessage(err, 'Erro ao carregar resumo'))
             } finally {
                 setLoading(false)
             }
@@ -197,7 +197,7 @@ export default function TechDaySummaryPage() {
             })
             toast.success('Resumo enviado ao gestor!')
         } catch {
-            toast.success('Resumo enviado ao gestor!')
+            toast.error('Erro ao enviar resumo. Tente novamente.')
         }
     }
 

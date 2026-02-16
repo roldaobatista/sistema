@@ -31,6 +31,7 @@ import {
     Scale,
     FileText,
     Timer,
+    MapPin,
 } from 'lucide-react'
 import { useSyncStatus } from '@/hooks/useSyncStatus'
 import { useAuthStore } from '@/stores/auth-store'
@@ -38,6 +39,7 @@ import { ModeSwitcher } from '@/components/pwa/ModeSwitcher'
 import { InstallBanner } from '@/components/pwa/InstallBanner'
 import { TechAlertBanner } from '@/components/tech/TechAlertBanner'
 import { TechErrorBoundary } from '@/components/tech/TechErrorBoundary'
+import { FloatingTimer } from '@/components/tech/FloatingTimer'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -52,6 +54,7 @@ const MORE_ITEMS = [
     { path: '/tech/nova-os', icon: Plus, label: 'Nova OS' },
     { path: '/tech/chamados', icon: PhoneCall, label: 'Chamados' },
     { path: '/tech/rota', icon: Navigation, label: 'Rota do Dia' },
+    { path: '/tech/mapa', icon: MapPin, label: 'Mapa OS' },
     { path: '/tech/orcamento-rapido', icon: FileText, label: 'Orçamento' },
     { path: '/tech/comissoes', icon: DollarSign, label: 'Comissões' },
     { path: '/tech/metas', icon: Target, label: 'Metas' },
@@ -242,6 +245,7 @@ export default function TechShell() {
                 </button>
             </nav>
 
+            <FloatingTimer />
             <InstallBanner />
         </div>
     )

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { X, Send, User, Clock, Paperclip, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -37,8 +38,8 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
         try {
             const response = await api.get(`/work-orders/${workOrderId}/chats`)
             setMessages(response.data)
-        } catch (error) {
-            // Erro ao buscar mensagens
+        } catch {
+            toast.error('Erro ao carregar mensagens')
         } finally {
             setLoading(false)
         }
@@ -70,8 +71,8 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
             })
             setMessages([...messages, response.data])
             setNewMessage('')
-        } catch (error) {
-            // Erro ao enviar mensagem
+        } catch {
+            toast.error('Erro ao enviar mensagem. Tente novamente.')
         } finally {
             setSending(false)
         }

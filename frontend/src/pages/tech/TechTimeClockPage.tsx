@@ -4,7 +4,7 @@ import {
     Clock, MapPin, Play, Pause, Square, Coffee, Sun, Moon, Calendar, CheckCircle2,
     Loader2, ArrowLeft, Timer, Edit,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -155,8 +155,8 @@ export default function TechTimeClockPage() {
             toast.success('Entrada registrada')
             await fetchStatus()
             await fetchTodayEntries()
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? 'Erro ao registrar entrada')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar entrada'))
         } finally {
             setActionLoading(null)
         }

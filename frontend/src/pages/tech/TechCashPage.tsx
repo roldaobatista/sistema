@@ -4,7 +4,7 @@ import {
     ArrowLeft, Wallet, ArrowUpCircle, ArrowDownCircle, Loader2,
     Send, Clock, CheckCircle2, XCircle, DollarSign, TrendingUp, TrendingDown,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -83,8 +83,8 @@ export default function TechCashPage() {
             setRequestAmount('')
             setRequestReason('')
             fetchData()
-        } catch (err: any) {
-            toast.error(err.response?.data?.message ?? 'Erro ao solicitar fundos')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao solicitar fundos'))
         } finally {
             setSubmitting(false)
         }

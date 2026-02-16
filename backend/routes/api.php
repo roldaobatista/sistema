@@ -63,7 +63,23 @@ Route::prefix('v1')->group(function () {
         Route::get('/my-tenants', [AuthController::class, 'myTenants']);
         Route::post('/switch-tenant', [AuthController::class, 'switchTenant']);
         Route::middleware('check.permission:platform.dashboard.view')->get('/dashboard-stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
-        Route::middleware('check.permission:tv.dashboard.view')->get('/tv/dashboard', [\App\Http\Controllers\TvDashboardController::class, 'index']);
+        // TV Dashboard
+        Route::middleware('check.permission:tv.dashboard.view')->group(function () {
+            Route::get('/tv/dashboard', [\App\Http\Controllers\TvDashboardController::class, 'index']);
+            Route::get('/tv/kpis', [\App\Http\Controllers\TvDashboardController::class, 'kpis']);
+            Route::get('/tv/map-data', [\App\Http\Controllers\TvDashboardController::class, 'mapData']);
+            Route::get('/tv/alerts', [\App\Http\Controllers\TvDashboardController::class, 'alerts']);
+        });
+
+        // TV Camera Management
+        Route::middleware('check.permission:tv.camera.manage')->group(function () {
+            Route::get('/tv/cameras', [\App\Http\Controllers\CameraController::class, 'index']);
+            Route::post('/tv/cameras', [\App\Http\Controllers\CameraController::class, 'store']);
+            Route::put('/tv/cameras/{camera}', [\App\Http\Controllers\CameraController::class, 'update']);
+            Route::delete('/tv/cameras/{camera}', [\App\Http\Controllers\CameraController::class, 'destroy']);
+            Route::post('/tv/cameras/reorder', [\App\Http\Controllers\CameraController::class, 'reorder']);
+            Route::post('/tv/cameras/test-connection', [\App\Http\Controllers\CameraController::class, 'testConnection']);
+        });
         Route::middleware('check.permission:finance.cashflow.view')->get('/cash-flow', [\App\Http\Controllers\Api\V1\CashFlowController::class, 'cashFlow']);
         Route::middleware('check.permission:finance.dre.view')->get('/dre', [\App\Http\Controllers\Api\V1\CashFlowController::class, 'dre']);
 
@@ -1288,6 +1304,116 @@ Route::prefix('v1')->group(function () {
                 Route::put('competitors/{competitor}', [$cf, 'updateDealCompetitor']);
             });
         });
+
+        // ─── CRM Field Management (20 novas funcionalidades de gestão) ─────
+        $fm = \App\Http\Controllers\Api\V1\CrmFieldManagementController::class;
+        Route::prefix('crm-field')->group(function () use ($fm) {
+            Route::get('constants', [$fm, 'constants']);
+
+            // Visit Checkins
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('checkins', [$fm, 'checkinsIndex']);
+                Route::post('checkins', [$fm, 'checkin']);
+                Route::put('checkins/{checkin}/checkout', [$fm, 'checkout']);
+            });
+
+            // Visit Routes
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('routes', [$fm, 'routesIndex']);
+                Route::post('routes', [$fm, 'routesStore']);
+                Route::put('routes/{route}', [$fm, 'routesUpdate']);
+            });
+
+            // Visit Reports
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('reports', [$fm, 'reportsIndex']);
+                Route::post('reports', [$fm, 'reportsStore']);
+            });
+
+            // Portfolio Map
+            Route::middleware('check.permission:crm.deal.view')->get('portfolio-map', [$fm, 'portfolioMap']);
+
+            // Forgotten Clients
+            Route::middleware('check.permission:crm.deal.view')->get('forgotten-clients', [$fm, 'forgottenClients']);
+
+            // Contact Policies
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('policies', [$fm, 'policiesIndex']);
+                Route::post('policies', [$fm, 'policiesStore']);
+                Route::put('policies/{policy}', [$fm, 'policiesUpdate']);
+                Route::delete('policies/{policy}', [$fm, 'policiesDestroy']);
+            });
+
+            // Smart Agenda
+            Route::middleware('check.permission:crm.deal.view')->get('smart-agenda', [$fm, 'smartAgenda']);
+
+            // Quick Notes
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('quick-notes', [$fm, 'quickNotesIndex']);
+                Route::post('quick-notes', [$fm, 'quickNotesStore']);
+                Route::put('quick-notes/{note}', [$fm, 'quickNotesUpdate']);
+                Route::delete('quick-notes/{note}', [$fm, 'quickNotesDestroy']);
+            });
+
+            // Commitments
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('commitments', [$fm, 'commitmentsIndex']);
+                Route::post('commitments', [$fm, 'commitmentsStore']);
+                Route::put('commitments/{commitment}', [$fm, 'commitmentsUpdate']);
+            });
+
+            // Negotiation History
+            Route::middleware('check.permission:crm.deal.view')->get('customers/{customer}/negotiation-history', [$fm, 'negotiationHistory']);
+
+            // Client Summary
+            Route::middleware('check.permission:crm.deal.view')->get('customers/{customer}/summary', [$fm, 'clientSummary']);
+
+            // RFM
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('rfm', [$fm, 'rfmIndex']);
+                Route::post('rfm/recalculate', [$fm, 'rfmRecalculate']);
+            });
+
+            // Portfolio Coverage
+            Route::middleware('check.permission:crm.deal.view')->get('coverage', [$fm, 'portfolioCoverage']);
+
+            // Commercial Productivity
+            Route::middleware('check.permission:crm.deal.view')->get('productivity', [$fm, 'commercialProductivity']);
+
+            // Latent Opportunities
+            Route::middleware('check.permission:crm.deal.view')->get('opportunities', [$fm, 'latentOpportunities']);
+
+            // Important Dates
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('important-dates', [$fm, 'importantDatesIndex']);
+                Route::post('important-dates', [$fm, 'importantDatesStore']);
+                Route::put('important-dates/{date}', [$fm, 'importantDatesUpdate']);
+                Route::delete('important-dates/{date}', [$fm, 'importantDatesDestroy']);
+            });
+
+            // Visit Surveys
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('surveys', [$fm, 'surveysIndex']);
+                Route::post('surveys', [$fm, 'surveysSend']);
+            });
+
+            // Account Plans
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('account-plans', [$fm, 'accountPlansIndex']);
+                Route::post('account-plans', [$fm, 'accountPlansStore']);
+                Route::put('account-plans/{plan}', [$fm, 'accountPlansUpdate']);
+                Route::put('account-plan-actions/{action}', [$fm, 'accountPlanActionsUpdate']);
+            });
+
+            // Gamification
+            Route::middleware('check.permission:crm.deal.view')->group(function () use ($fm) {
+                Route::get('gamification', [$fm, 'gamificationDashboard']);
+                Route::post('gamification/recalculate', [$fm, 'gamificationRecalculate']);
+            });
+        });
+
+        // Public: Visit Survey Answer (no auth)
+        Route::middleware('throttle:30,1')->post('crm-field/surveys/{token}/answer', [$fm, 'surveysAnswer']);
 
         // Public: Interactive Proposal (no auth for client view)
         Route::prefix('proposals')->middleware('throttle:60,1')->group(function () use ($cf) {

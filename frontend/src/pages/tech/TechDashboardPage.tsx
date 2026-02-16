@@ -4,7 +4,7 @@ import {
     BarChart3, Trophy, Clock, Target, TrendingUp, CheckCircle2,
     ArrowLeft, Wrench, Star, Award, Flame, DollarSign, Calendar, Navigation,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import { DashboardSkeleton } from '@/components/tech/TechSkeleton'
@@ -44,8 +44,8 @@ export default function TechDashboardPage() {
 
                 setProductivityData(productivityRes.data || {})
                 setRankingData(rankingRes.data || {})
-            } catch (error: any) {
-                toast.error(error?.response?.data?.message || 'Erro ao carregar dados')
+            } catch (err: unknown) {
+                toast.error(getApiErrorMessage(err, 'Erro ao carregar dados'))
             } finally {
                 setLoading(false)
             }

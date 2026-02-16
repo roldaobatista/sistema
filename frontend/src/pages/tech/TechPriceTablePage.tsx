@@ -4,10 +4,9 @@ import {
     DollarSign, Search, Package, ShoppingBag, Loader2, ArrowLeft,
     Layers, BarChart, ChevronDown,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
-import { formatCurrency } from '@/lib/utils'
 
 interface PriceTable {
     id: number

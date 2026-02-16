@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
     DollarSign, Clock, CheckCircle2, Plus, Loader2, ArrowLeft,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -102,10 +102,41 @@ export default function TechCommissionsPage() {
     useEffect(() => {
         if (!userId) return
 
+        const period = getPeriod()
+        const cacheKey = (suffix: string) => `cache:commission-${suffix}-${userId}-${period}`
+
+        try {
+            const evCached = localStorage.getItem(cacheKey('events'))
+            if (evCached) {
+                const { data, timestamp } = JSON.parse(evCached)
+                if (Date.now() - timestamp < 30 * 60 * 1000) {
+                    const ev = data || []
+                    setEvents(ev)
+                    const pending = ev.filter((e: CommissionEvent) => e.status === 'pending' || e.status === 'approved')
+                        .reduce((s: number, e: CommissionEvent) => s + Number(e.commission_amount || 0), 0)
+                    const paid = ev.filter((e: CommissionEvent) => e.status === 'paid')
+                        .reduce((s: number, e: CommissionEvent) => s + Number(e.commission_amount || 0), 0)
+                    const total = ev.reduce((s: number, e: CommissionEvent) => s + Number(e.commission_amount || 0), 0)
+                    setSummary({ total_month: total, pending, paid })
+                }
+            }
+            const setCached = localStorage.getItem(cacheKey('settlements'))
+            if (setCached) {
+                const { data, timestamp } = JSON.parse(setCached)
+                if (Date.now() - timestamp < 30 * 60 * 1000) setSettlements(data || [])
+            }
+            const dispCached = localStorage.getItem(`cache:commission-disputes-${userId}`)
+            if (dispCached) {
+                const { data, timestamp } = JSON.parse(dispCached)
+                if (Date.now() - timestamp < 30 * 60 * 1000) setDisputes(data || [])
+            }
+        } catch {
+            toast.error('Erro ao carregar dados em cache.')
+        }
+
         async function fetchData() {
             try {
                 setLoading(true)
-                const period = getPeriod()
                 const params: Record<string, string | number> = { my: 1 }
                 if (period) params.period = period
 
@@ -116,7 +147,8 @@ export default function TechCommissionsPage() {
                 ])
 
                 const evData = eventsRes.data?.data ?? eventsRes.data ?? []
-                setEvents(Array.isArray(evData) ? evData : evData.data ?? [])
+                const eventsArr = Array.isArray(evData) ? evData : evData.data ?? []
+                setEvents(eventsArr)
 
                 const setData = Array.isArray(settlementsRes.data) ? settlementsRes.data : settlementsRes.data?.data ?? []
                 setSettlements(setData)
@@ -124,13 +156,17 @@ export default function TechCommissionsPage() {
                 const dispData = Array.isArray(disputesRes.data) ? disputesRes.data : disputesRes.data?.data ?? []
                 setDisputes(dispData)
 
-                const pending = (Array.isArray(evData) ? evData : evData.data ?? [])
+                localStorage.setItem(cacheKey('events'), JSON.stringify({ data: eventsArr, timestamp: Date.now() }))
+                localStorage.setItem(cacheKey('settlements'), JSON.stringify({ data: setData, timestamp: Date.now() }))
+                localStorage.setItem(`cache:commission-disputes-${userId}`, JSON.stringify({ data: dispData, timestamp: Date.now() }))
+
+                const pending = eventsArr
                     .filter((e: CommissionEvent) => e.status === 'pending' || e.status === 'approved')
                     .reduce((s: number, e: CommissionEvent) => s + Number(e.commission_amount || 0), 0)
-                const paid = (Array.isArray(evData) ? evData : evData.data ?? [])
+                const paid = eventsArr
                     .filter((e: CommissionEvent) => e.status === 'paid')
                     .reduce((s: number, e: CommissionEvent) => s + Number(e.commission_amount || 0), 0)
-                const total = (Array.isArray(evData) ? evData : evData.data ?? [])
+                const total = eventsArr
                     .reduce((s: number, e: CommissionEvent) => s + Number(e.commission_amount || 0), 0)
 
                 setSummary({
@@ -138,8 +174,9 @@ export default function TechCommissionsPage() {
                     pending,
                     paid,
                 })
-            } catch (err: any) {
-                toast.error(err?.response?.data?.message || 'Erro ao carregar comissões')
+            } catch (err: unknown) {
+                const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+                toast.error(msg || 'Erro ao carregar comissões')
             } finally {
                 setLoading(false)
             }
@@ -170,9 +207,11 @@ export default function TechCommissionsPage() {
             setDisputeAmount('')
             setDisputeEventId(null)
             const { data } = await api.get('/commission-disputes', { params: { user_id: userId } })
-            setDisputes(Array.isArray(data) ? data : data?.data ?? [])
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao registrar contestação')
+            const dispArr = Array.isArray(data) ? data : data?.data ?? []
+            setDisputes(dispArr)
+            localStorage.setItem(`cache:commission-disputes-${userId}`, JSON.stringify({ data: dispArr, timestamp: Date.now() }))
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao registrar contestação'))
         } finally {
             setSubmitting(false)
         }

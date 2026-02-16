@@ -423,6 +423,8 @@ class WorkOrderController extends Controller
                 default => null,
             };
 
+            event(new \App\Events\WorkOrderStatusChanged($workOrder));
+
             return response()->json($workOrder->fresh()->load(['customer:id,name,latitude,longitude', 'statusHistory.user:id,name']));
         } catch (\Exception $e) {
             DB::rollBack();

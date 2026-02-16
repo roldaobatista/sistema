@@ -15,7 +15,6 @@ export function useLocationSharing() {
         lastUpdate: null,
         error: null,
     })
-    const watchIdRef = useRef<number | null>(null)
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const sendLocation = useCallback(async (lat: number, lng: number) => {
@@ -61,10 +60,6 @@ export function useLocationSharing() {
     }, [sendLocation])
 
     const stopSharing = useCallback(() => {
-        if (watchIdRef.current !== null) {
-            navigator.geolocation.clearWatch(watchIdRef.current)
-            watchIdRef.current = null
-        }
         if (intervalRef.current) {
             clearInterval(intervalRef.current)
             intervalRef.current = null
@@ -80,7 +75,6 @@ export function useLocationSharing() {
         }
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current)
-            if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
         }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

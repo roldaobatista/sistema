@@ -11,7 +11,9 @@ import {
     CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
     MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
     Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy,
-    GitBranch, PieChart, Swords, Globe, Eye,
+    GitBranch, PieChart, Swords, Globe, Eye, Video,
+    MapPin, StickyNote, Handshake, Lightbulb, ShieldCheck, CalendarHeart, Route,
+    UserX, Medal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -86,6 +88,31 @@ const navigationSections: NavSection[] = [
                     { label: 'Coorte', icon: BarChart, path: '/crm/cohort', permission: 'crm.forecast.view' },
                     { label: 'Receita', icon: DollarSign, path: '/crm/revenue', permission: 'crm.forecast.view' },
                     { label: 'Templates', icon: FileText, path: '/crm/templates' },
+                    // ── Gestão em Campo ──
+                    { label: 'Check-in Visitas', icon: MapPin, path: '/crm/visit-checkins' },
+                    { label: 'Roteiro Visitas', icon: Route, path: '/crm/visit-routes' },
+                    { label: 'Atas de Visita', icon: FileText, path: '/crm/visit-reports' },
+                    { label: 'Mapa Carteira', icon: MapPinned, path: '/crm/portfolio-map' },
+                    // ── Nenhum Cliente Esquecido ──
+                    { label: 'Clientes Esquecidos', icon: UserX, path: '/crm/forgotten-clients' },
+                    { label: 'Políticas Contato', icon: ShieldCheck, path: '/crm/contact-policies' },
+                    { label: 'Agenda Inteligente', icon: Lightbulb, path: '/crm/smart-agenda' },
+                    { label: 'Workflow Pós-Visita', icon: CheckSquare, path: '/crm/post-visit-workflow' },
+                    // ── Conversas e Histórico ──
+                    { label: 'Notas Rápidas', icon: StickyNote, path: '/crm/quick-notes' },
+                    { label: 'Compromissos', icon: Handshake, path: '/crm/commitments' },
+                    { label: 'Histórico Negociação', icon: History, path: '/crm/negotiation-history' },
+                    { label: 'Ficha Cliente', icon: User, path: '/crm/client-summary' },
+                    // ── Inteligência Comercial ──
+                    { label: 'RFM', icon: BarChart, path: '/crm/rfm' },
+                    { label: 'Cobertura Carteira', icon: Target, path: '/crm/coverage' },
+                    { label: 'Produtividade', icon: TrendingUp, path: '/crm/productivity' },
+                    { label: 'Oportunidades', icon: Lightbulb, path: '/crm/opportunities' },
+                    // ── Engajamento ──
+                    { label: 'Datas Importantes', icon: CalendarHeart, path: '/crm/important-dates' },
+                    { label: 'Pesq. Pós-Visita', icon: Star, path: '/crm/visit-surveys' },
+                    { label: 'Planos de Ação', icon: Target, path: '/crm/account-plans' },
+                    { label: 'Gamificação', icon: Medal, path: '/crm/gamification' },
                 ],
             },
             { label: 'Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
@@ -120,7 +147,13 @@ const navigationSections: NavSection[] = [
                     { label: 'Caixa', icon: DollarSign, path: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
                 ],
             },
-            { label: 'TV Dashboard', icon: Monitor, path: '/tv/dashboard', permission: 'tv.dashboard.view' },
+            {
+                label: 'TV Dashboard', icon: Monitor, path: '/tv/dashboard', permission: 'tv.dashboard.view',
+                children: [
+                    { label: 'War Room', icon: Monitor, path: '/tv/dashboard' },
+                    { label: 'Câmeras', icon: Video, path: '/tv/cameras', permission: 'tv.camera.manage' },
+                ],
+            },
             {
                 label: 'Equipamentos', icon: Scale, path: '/equipamentos', permission: 'equipments.equipment.view',
                 children: [

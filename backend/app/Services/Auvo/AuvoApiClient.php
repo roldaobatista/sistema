@@ -118,12 +118,13 @@ class AuvoApiClient
 
     /**
      * Perform authenticated GET request with retry logic.
+     * @param int|null $timeoutSeconds Override default timeout (avoids gateway 504 when fetching counts).
      */
-    public function get(string $endpoint, array $params = []): ?array
+    public function get(string $endpoint, array $params = [], ?int $timeoutSeconds = null): ?array
     {
         $url = self::BASE_URL . '/' . ltrim($endpoint, '/');
 
-        $response = $this->authenticatedRequest('get', $url, $params);
+        $response = $this->authenticatedRequest('get', $url, $params, $timeoutSeconds);
 
         if (!$response || $response->failed()) {
             Log::warning('Auvo: GET failed', [
@@ -182,11 +183,12 @@ class AuvoApiClient
 
     /**
      * Count total available records for an entity.
+     * @param int|null $timeoutSeconds Shorter timeout for status/counts (e.g. 6) to avoid gateway 504.
      */
-    public function count(string $endpoint, array $filters = []): int
+    public function count(string $endpoint, array $filters = [], ?int $timeoutSeconds = null): int
     {
         $params = array_merge($filters, ['page' => 1, 'pageSize' => 1]);
-        $response = $this->get($endpoint, $params);
+        $response = $this->get($endpoint, $params, $timeoutSeconds);
 
         if (!$response) {
             return 0;
@@ -226,8 +228,12 @@ class AuvoApiClient
         }
     }
 
+    /** Timeout per entity when fetching counts (avoids gateway 504). */
+    private const COUNTS_TIMEOUT_SECONDS = 6;
+
     /**
      * Get available entity counts for dashboard.
+     * Uses a short timeout per entity so the status endpoint does not trigger gateway timeout (504).
      */
     public function getEntityCounts(): array
     {
@@ -242,7 +248,7 @@ class AuvoApiClient
         $counts = [];
         foreach ($entities as $key => $endpoint) {
             try {
-                $counts[$key] = $this->count($endpoint);
+                $counts[$key] = $this->count($endpoint, [], self::COUNTS_TIMEOUT_SECONDS);
             } catch (\Exception $e) {
                 $counts[$key] = -1;
                 Log::warning("Auvo: count failed for {$key}", ['error' => $e->getMessage()]);
@@ -306,14 +312,16 @@ class AuvoApiClient
 
     /**
      * Perform an authenticated HTTP request with retry on 401 (token expired).
+     * @param int|null $timeoutSeconds Override default timeout.
      */
-    private function authenticatedRequest(string $method, string $url, array $params = []): ?Response
+    private function authenticatedRequest(string $method, string $url, array $params = [], ?int $timeoutSeconds = null): ?Response
     {
         $token = $this->authenticate();
+        $timeout = $timeoutSeconds ?? self::TIMEOUT_SECONDS;
 
         try {
             /** @var Response $response */
-            $response = Http::timeout(self::TIMEOUT_SECONDS)
+            $response = Http::timeout($timeout)
                 ->retry(self::MAX_RETRIES, self::RETRY_DELAY_MS, function (\Exception $exception) {
                     if ($exception instanceof \Illuminate\Http\Client\RequestException) {
                         $status = $exception->response?->status();

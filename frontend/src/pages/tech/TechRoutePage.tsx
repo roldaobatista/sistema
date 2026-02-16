@@ -70,9 +70,8 @@ export default function TechRoutePage() {
             const orders = data.data ?? data ?? []
             setWorkOrders(orders)
             setOptimizedOrder([])
-        } catch (error: any) {
+        } catch {
             toast.error('Erro ao carregar ordens de serviço')
-            console.error(error)
         } finally {
             setLoading(false)
         }
@@ -91,9 +90,11 @@ export default function TechRoutePage() {
             })
             setOptimizedOrder(data ?? [])
             toast.success('Rota otimizada com sucesso!')
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Erro ao otimizar rota')
-            console.error(error)
+        } catch (err: unknown) {
+            const msg = err && typeof err === 'object' && 'response' in err
+                ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+                : undefined
+            toast.error(msg || 'Erro ao otimizar rota')
         } finally {
             setOptimizing(false)
         }

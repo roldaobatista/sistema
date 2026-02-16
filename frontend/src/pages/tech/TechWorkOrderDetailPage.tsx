@@ -8,6 +8,7 @@ import {
     FlaskConical, Award, Flag, FileCheck, X, Star, MessageCircle,
 } from 'lucide-react'
 import { useOfflineStore } from '@/hooks/useOfflineStore'
+import { useTechTimerStore } from '@/stores/tech-timer-store'
 import { cn } from '@/lib/utils'
 import { offlinePut } from '@/lib/syncEngine'
 import api from '@/lib/api'
@@ -15,7 +16,6 @@ import { useToast } from '@/components/ui/use-toast'
 import SLACountdown from '@/components/common/SLACountdown'
 import TechChatDrawer from '@/components/tech/TechChatDrawer'
 import type { OfflineWorkOrder } from '@/lib/offlineDb'
-import { toast } from 'sonner'
 
 const STATUS_MAP: Record<string, { label: string; color: string; next?: string; nextLabel?: string }> = {
     pending: { label: 'Pendente', color: 'bg-amber-500', next: 'in_progress', nextLabel: 'Iniciar Atendimento' },
@@ -42,8 +42,8 @@ const ACTION_CARDS = [
 ];
 
 export default function TechWorkOrderDetailPage() {
-
     const { id } = useParams<{ id: string }>()
+    const timer = useTechTimerStore()
     const navigate = useNavigate()
     const { toast } = useToast()
     const { getById, put } = useOfflineStore('work-orders')
@@ -59,8 +59,11 @@ export default function TechWorkOrderDetailPage() {
         signature: false,
         nps: false,
     })
+    const [quickNote, setQuickNote] = useState('')
+    const [sendingNote, setSendingNote] = useState(false)
+    const [notes, setNotes] = useState<{ content?: string; message?: string; body?: string; created_at?: string }[]>([])
 
-  const [searchTerm, setSearchTerm] = useState('')
+
     useEffect(() => {
         if (!id) return
         getById(Number(id)).then((data) => {
@@ -68,6 +71,28 @@ export default function TechWorkOrderDetailPage() {
             setLoading(false)
         })
     }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (!id) return
+        api.get(`/work-orders/${id}/chats`).then(res => {
+            setNotes(res.data?.data || res.data || [])
+        }).catch(() => {})
+    }, [id])
+
+    const handleSendNote = async () => {
+        if (!quickNote.trim() || !wo) return
+        setSendingNote(true)
+        try {
+            await api.post(`/work-orders/${wo.id}/chats`, { message: quickNote.trim() })
+            setNotes(prev => [...prev, { content: quickNote.trim(), created_at: new Date().toISOString() }])
+            setQuickNote('')
+            toast({ title: 'Nota adicionada' })
+        } catch {
+            toast({ title: 'Erro', description: 'Falha ao enviar nota', variant: 'destructive' })
+        } finally {
+            setSendingNote(false)
+        }
+    }
 
     const handleUpdateLocation = async () => {
         if (!wo?.customer_id) return
@@ -96,8 +121,7 @@ export default function TechWorkOrderDetailPage() {
                         description: "Localização do cliente atualizada!",
                         className: "bg-green-600 text-white border-none"
                     })
-                } catch (error) {
-                    console.error(error)
+                } catch {
                     toast({
                         title: "Erro",
                         description: "Falha ao enviar localização. Verifique sua conexão.",
@@ -108,7 +132,6 @@ export default function TechWorkOrderDetailPage() {
                 }
             },
             (error) => {
-                console.error(error)
                 let msg = "Não foi possível obter sua localização."
                 if (error.code === 1) msg = "Permissão de localização negada."
                 if (error.code === 2) msg = "Sinal de GPS indisponível."
@@ -339,6 +362,41 @@ export default function TechWorkOrderDetailPage() {
                     </div>
                 )}
 
+                {/* Timer */}
+                {wo.status === 'in_progress' && (
+                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-brand-500" />
+                                <div>
+                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">Cronômetro</p>
+                                    <p className="text-xs text-surface-500">Registre o tempo nesta OS</p>
+                                </div>
+                            </div>
+                            {timer.workOrderId === wo.id ? (
+                                <button
+                                    onClick={() => timer.isRunning ? timer.pause() : timer.resume()}
+                                    className={cn(
+                                        'px-3 py-1.5 rounded-lg text-xs font-medium',
+                                        timer.isRunning
+                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                            : 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
+                                    )}
+                                >
+                                    {timer.isRunning ? 'Pausar' : 'Continuar'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => timer.start(wo.id, wo.os_number || wo.number || String(wo.id))}
+                                    className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-medium active:bg-brand-700"
+                                >
+                                    Iniciar Timer
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Description */}
                 {wo.description && (
                     <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
@@ -348,6 +406,47 @@ export default function TechWorkOrderDetailPage() {
                         </p>
                     </div>
                 )}
+
+                {/* Quick Note */}
+                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide">Nota Rápida</h3>
+                    </div>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={quickNote}
+                            onChange={(e) => setQuickNote(e.target.value)}
+                            placeholder="Adicionar observação..."
+                            className="flex-1 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                            onKeyDown={(e) => e.key === 'Enter' && quickNote.trim() && handleSendNote()}
+                        />
+                        <button
+                            onClick={handleSendNote}
+                            disabled={!quickNote.trim() || sendingNote}
+                            className={cn(
+                                'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                                quickNote.trim()
+                                    ? 'bg-brand-600 text-white active:bg-brand-700'
+                                    : 'bg-surface-200 dark:bg-surface-700 text-surface-400'
+                            )}
+                        >
+                            {sendingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        </button>
+                    </div>
+                    {notes.length > 0 && (
+                        <div className="mt-3 space-y-2 max-h-32 overflow-y-auto">
+                            {notes.slice(-3).map((note, i) => (
+                                <div key={i} className="flex gap-2 text-xs">
+                                    <span className="text-surface-400 flex-shrink-0">
+                                        {new Date(note.created_at || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    <span className="text-surface-600 dark:text-surface-300">{note.content || note.message || note.body}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 {/* Action cards */}
                 <div className="grid grid-cols-2 gap-3 pb-8">

@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     ClipboardList, MapPin, Clock, ChevronRight, Search,
     AlertCircle, Wrench, CheckCircle2, WifiOff,
-    PlayCircle, Navigation2, Phone, Timer,
+    PlayCircle, Navigation2, Phone, Timer, Pin,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useOfflineStore } from '@/hooks/useOfflineStore'
@@ -45,10 +45,19 @@ export default function TechWorkOrdersPage() {
 
     const navigate = useNavigate()
     const { items: offlineOrders, putMany, isLoading: offlineLoading } = useOfflineStore('work-orders')
+    const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => {
+        try {
+            const saved = localStorage.getItem('tech-pinned-os')
+            return new Set(saved ? JSON.parse(saved) : [])
+        } catch { return new Set() }
+    })
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('active')
     const [isOnline] = useState(() => navigator.onLine)
     const [isFetching, setIsFetching] = useState(false)
+    const [selectionMode, setSelectionMode] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+    const [batchLoading, setBatchLoading] = useState(false)
 
     const handleRefresh = useCallback(async () => {
         if (!navigator.onLine) return
@@ -58,7 +67,9 @@ export default function TechWorkOrdersPage() {
             if (data.work_orders?.length > 0) {
                 await putMany(data.work_orders as OfflineWorkOrder[])
             }
-        } catch {} finally { setIsFetching(false) }
+        } catch {
+            toast.error('Não foi possível atualizar a lista. Verifique a conexão.')
+        } finally { setIsFetching(false) }
     }, [putMany])
 
     const { containerRef, isRefreshing, pullDistance } = usePullToRefresh({ onRefresh: handleRefresh })
@@ -75,7 +86,7 @@ export default function TechWorkOrdersPage() {
                     await putMany(data.work_orders as OfflineWorkOrder[])
                 }
             } catch {
-                // Use cached data
+                toast.error('Não foi possível atualizar. Exibindo dados em cache.')
             } finally {
                 setIsFetching(false)
             }
@@ -95,6 +106,25 @@ export default function TechWorkOrdersPage() {
         return matchesSearch && matchesStatus
     })
 
+    const sorted = useMemo(() => {
+        return [...filtered].sort((a, b) => {
+            const aPinned = pinnedIds.has(a.id) ? 1 : 0
+            const bPinned = pinnedIds.has(b.id) ? 1 : 0
+            return bPinned - aPinned
+        })
+    }, [filtered, pinnedIds])
+
+    const togglePin = (id: number, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setPinnedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            localStorage.setItem('tech-pinned-os', JSON.stringify([...next]))
+            return next
+        })
+    }
+
     const statusFilters = [
         { key: 'active', label: 'Ativas' },
         { key: 'pending', label: 'Pendentes' },
@@ -113,21 +143,77 @@ export default function TechWorkOrdersPage() {
         }
     }
 
+    const toggleSelection = (id: number) => {
+        setSelectedIds((prev: Set<number>) => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+
+    const handleBatchStart = async () => {
+        setBatchLoading(true)
+        try {
+            const updates = offlineOrders
+                .filter(wo => selectedIds.has(wo.id) && wo.status === 'pending')
+                .map(wo => ({ ...wo, status: 'in_progress', updated_at: new Date().toISOString() }))
+            if (updates.length > 0) await putMany(updates as OfflineWorkOrder[])
+            toast.success(`${updates.length} OS iniciadas!`)
+            setSelectionMode(false)
+            setSelectedIds(new Set())
+        } catch {
+            toast.error('Erro ao iniciar OS')
+        } finally {
+            setBatchLoading(false)
+        }
+    }
+
+    const handleBatchComplete = async () => {
+        setBatchLoading(true)
+        try {
+            const updates = offlineOrders
+                .filter(wo => selectedIds.has(wo.id) && wo.status === 'in_progress')
+                .map(wo => ({ ...wo, status: 'completed', updated_at: new Date().toISOString() }))
+            if (updates.length > 0) await putMany(updates as OfflineWorkOrder[])
+            toast.success(`${updates.length} OS concluídas!`)
+            setSelectionMode(false)
+            setSelectedIds(new Set())
+        } catch {
+            toast.error('Erro ao concluir OS')
+        } finally {
+            setBatchLoading(false)
+        }
+    }
+
     const loading = offlineLoading || isFetching
 
     return (
         <div className="flex flex-col h-full">
             {/* Search */}
             <div className="sticky top-0 z-10 bg-white dark:bg-surface-900 px-4 pt-4 pb-2 space-y-3">
-                <div className="flex items-center gap-2">
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
-                        Ordens de Serviço
-                    </h1>
-                    {!isOnline && (
-                        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <WifiOff className="w-3 h-3" />offline
-                        </span>
-                    )}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                            Ordens de Serviço
+                        </h1>
+                        {!isOnline && (
+                            <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                                <WifiOff className="w-3 h-3" />offline
+                            </span>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => { setSelectionMode(!selectionMode); setSelectedIds(new Set()) }}
+                        className={cn(
+                            'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
+                            selectionMode
+                                ? 'bg-brand-600 text-white'
+                                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                        )}
+                    >
+                        {selectionMode ? `${selectedIds.size} selecionadas` : 'Selecionar'}
+                    </button>
                 </div>
 
                 <div className="relative">
@@ -163,9 +249,9 @@ export default function TechWorkOrdersPage() {
             {/* Content */}
             <div ref={containerRef} className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
                 <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
-                {loading && filtered.length === 0 ? (
+                {loading && sorted.length === 0 ? (
                     <ListSkeleton count={4} />
-                ) : filtered.length === 0 ? (
+                ) : sorted.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-3">
                         <ClipboardList className="w-12 h-12 text-surface-300" />
                         <p className="text-sm text-surface-500">
@@ -173,7 +259,7 @@ export default function TechWorkOrdersPage() {
                         </p>
                     </div>
                 ) : (
-                    filtered.map((wo) => {
+                    sorted.map((wo) => {
                         const status = STATUS_MAP[wo.status] || STATUS_MAP.pending
                         const StatusIcon = status.icon
                         const priorityKey = wo.priority ?? 'normal'
@@ -184,8 +270,8 @@ export default function TechWorkOrdersPage() {
                                 key={wo.id}
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => navigate(`/tech/os/${wo.id}`)}
-                                onKeyDown={(e) => e.key === 'Enter' && navigate(`/tech/os/${wo.id}`)}
+                                onClick={() => selectionMode ? toggleSelection(wo.id) : navigate(`/tech/os/${wo.id}`)}
+                                onKeyDown={(e) => e.key === 'Enter' && (selectionMode ? toggleSelection(wo.id) : navigate(`/tech/os/${wo.id}`))}
                                 className={cn(
                                     'w-full text-left bg-white dark:bg-surface-800/80 rounded-xl p-4 border-l-4 shadow-sm cursor-pointer',
                                     'active:scale-[0.98] transition-transform',
@@ -193,6 +279,18 @@ export default function TechWorkOrdersPage() {
                                 )}
                             >
                                 <div className="flex items-start justify-between gap-2">
+                                    {selectionMode && (
+                                        <div
+                                            className={cn(
+                                                'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
+                                                selectedIds.has(wo.id)
+                                                    ? 'bg-brand-600 border-brand-600'
+                                                    : 'border-surface-300 dark:border-surface-600'
+                                            )}
+                                        >
+                                            {selectedIds.has(wo.id) && <CheckCircle2 className="w-3 h-3 text-white" />}
+                                        </div>
+                                    )}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                                             <span className="font-semibold text-sm text-surface-900 dark:text-surface-50">
@@ -268,13 +366,40 @@ export default function TechWorkOrdersPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-surface-300 dark:text-surface-600 mt-1 flex-shrink-0" />
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <button
+                                            onClick={(e) => togglePin(wo.id, e)}
+                                            className="p-1 rounded-lg"
+                                        >
+                                            <Pin className={cn('w-3.5 h-3.5', pinnedIds.has(wo.id) ? 'text-brand-600 fill-brand-600' : 'text-surface-300')} />
+                                        </button>
+                                        <ChevronRight className="w-5 h-5 text-surface-300 dark:text-surface-600 mt-1" />
+                                    </div>
                                 </div>
                             </div>
                         )
                     })
                 )}
             </div>
+
+            {selectionMode && selectedIds.size > 0 && (
+                <div className="sticky bottom-0 p-3 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 flex gap-2 safe-area-bottom">
+                    <button
+                        onClick={handleBatchStart}
+                        disabled={batchLoading}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-medium"
+                    >
+                        <PlayCircle className="w-4 h-4" /> Iniciar Todas
+                    </button>
+                    <button
+                        onClick={handleBatchComplete}
+                        disabled={batchLoading}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-medium"
+                    >
+                        <CheckCircle2 className="w-4 h-4" /> Concluir Todas
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

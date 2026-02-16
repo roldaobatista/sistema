@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useOfflineStore } from './useOfflineStore'
+import { useOfflineStore } from '@/hooks/useOfflineStore'
 
 export interface TechAlert {
     id: string

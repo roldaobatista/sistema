@@ -297,9 +297,14 @@ export function AuvoImportPage() {
                                     <Database className="h-4 w-4 text-brand-500" />
                                     <h3 className="text-sm font-semibold text-surface-900">{label}</h3>
                                 </div>
-                                {available !== undefined && (
+                                {(available !== undefined && available >= 0) && (
                                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
                                         {available} no Auvo
+                                    </span>
+                                )}
+                                {available === -1 && (
+                                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Falha ao buscar quantidade na API Auvo">
+                                        — no Auvo
                                     </span>
                                 )}
                             </div>

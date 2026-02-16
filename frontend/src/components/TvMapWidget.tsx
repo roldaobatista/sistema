@@ -117,10 +117,12 @@ const osIcon = new L.DivIcon({
 
 // --- Components ---
 
+import type { Technician, TvWorkOrder, TvServiceCall } from '@/types/tv';
+
 interface TvMapWidgetProps {
-    technicians: any[];
-    workOrders: any[];
-    serviceCalls: any[];
+    technicians: Technician[];
+    workOrders: TvWorkOrder[];
+    serviceCalls: TvServiceCall[];
     className?: string;
 }
 
@@ -244,7 +246,7 @@ const TvMapWidget: React.FC<TvMapWidgetProps> = ({ technicians, workOrders, serv
                                     </div>
                                     <div className="font-bold text-[11px]">{os.customer.name}</div>
                                     <div className="text-[10px] text-neutral-400 border-t border-neutral-700 pt-1 mt-1">
-                                        Técnico: {os.technician?.name || '...'}
+                                        Técnico: {(os.technician ?? os.assignee)?.name || '...'}
                                     </div>
                                 </div>
                             </Popup>

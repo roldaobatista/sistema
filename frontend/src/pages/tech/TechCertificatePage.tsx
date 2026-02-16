@@ -4,7 +4,7 @@ import {
     FileText, Download, Mail, Printer, CheckCircle2, Loader2, ArrowLeft,
     Award, Send, Eye,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
@@ -130,23 +130,22 @@ export default function TechCertificatePage() {
                 url: data.url,
             })
             toast.success('Certificado gerado com sucesso')
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao gerar certificado')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao gerar certificado'))
         } finally {
             setGenerating(false)
         }
     }
 
     const handleViewPdf = () => {
-        if (!certificate?.path && !certificate?.url) {
+        if (certificate?.url) {
+            window.open(certificate.url, '_blank')
+        } else if (certificate?.path) {
             const base = import.meta.env.VITE_API_URL || ''
-            const url = `${base}/storage/${certificate?.path || ''}`
-            window.open(url, '_blank')
-            return
+            window.open(`${base}/storage/${certificate.path}`, '_blank')
+        } else {
+            toast.error('URL do PDF não disponível')
         }
-        const url = certificate?.url || certificate?.path
-        if (url) window.open(url, '_blank')
-        else toast.error('URL do PDF não disponível')
     }
 
     const handleSendEmail = async () => {
@@ -162,8 +161,8 @@ export default function TechCertificatePage() {
             })
             toast.success('E-mail enviado com sucesso')
             setEmailForm({ email: '', sending: false })
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Erro ao enviar e-mail')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao enviar e-mail'))
             setEmailForm((p) => ({ ...p, sending: false }))
         }
     }

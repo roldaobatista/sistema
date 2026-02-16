@@ -19,6 +19,7 @@ interface Equipment {
     customer_name?: string
     equipment_class?: string
     precision?: string
+    next_calibration_at?: string
 }
 
 interface Calibration {
@@ -93,8 +94,8 @@ export default function TechEquipmentHistoryPage() {
     const trendLabel = allPassed ? 'Tendência estável' : last3Cal.some((c) => c.result === 'reprovado' || c.result === 'rejected') ? 'Atenção' : null
     const trendColor = allPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
 
-    const nextCalDate = equipment && (equipment as any).next_calibration_at
-        ? new Date((equipment as any).next_calibration_at)
+    const nextCalDate = equipment?.next_calibration_at
+        ? new Date(equipment.next_calibration_at)
         : null
 
     const certificates = calibrations
@@ -122,7 +123,7 @@ export default function TechEquipmentHistoryPage() {
         return (
             <div className="flex flex-col h-full">
                 <header className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
-                    <button onClick={() => navigate('/tech/equipamentos')} className="p-1">
+                    <button onClick={() => navigate(-1)} className="p-1">
                         <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
                     </button>
                     <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Histórico do Equipamento</h1>
@@ -138,7 +139,7 @@ export default function TechEquipmentHistoryPage() {
         return (
             <div className="flex flex-col h-full">
                 <header className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
-                    <button onClick={() => navigate('/tech/equipamentos')} className="p-1">
+                    <button onClick={() => navigate(-1)} className="p-1">
                         <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
                     </button>
                     <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Equipamento não encontrado</h1>
@@ -153,7 +154,7 @@ export default function TechEquipmentHistoryPage() {
     return (
         <div className="flex flex-col h-full">
             <header className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate('/tech/equipamentos')} className="p-1">
+                <button onClick={() => navigate(-1)} className="p-1">
                     <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
                 </button>
                 <History className="w-5 h-5 text-brand-600 dark:text-brand-400" />

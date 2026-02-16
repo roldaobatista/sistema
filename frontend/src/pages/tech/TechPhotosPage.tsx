@@ -236,11 +236,11 @@ export default function TechPhotosPage() {
                             <div key={i} className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-medium text-surface-500 uppercase">Antes</p>
-                                    <PhotoCard photo={beforePhotos[i]} onRemove={remove} />
+                                    {beforePhotos[i] ? <PhotoCard photo={beforePhotos[i]} onRemove={remove} /> : <div className="aspect-square rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs text-surface-400">—</div>}
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-medium text-surface-500 uppercase">Depois</p>
-                                    <PhotoCard photo={afterPhotos[i]} onRemove={remove} />
+                                    {afterPhotos[i] ? <PhotoCard photo={afterPhotos[i]} onRemove={remove} /> : <div className="aspect-square rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs text-surface-400">—</div>}
                                 </div>
                             </div>
                         ))}

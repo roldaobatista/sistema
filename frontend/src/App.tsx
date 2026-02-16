@@ -110,6 +110,27 @@ const CrmCompetitorsPage = lazy(() => import('@/pages/crm/CrmCompetitorsPage').t
 const CrmVelocityPage = lazy(() => import('@/pages/crm/CrmVelocityPage').then(m => ({ default: m.CrmVelocityPage })))
 const CrmCohortPage = lazy(() => import('@/pages/crm/CrmCohortPage').then(m => ({ default: m.CrmCohortPage })))
 const CrmProposalsPage = lazy(() => import('@/pages/crm/CrmProposalsPage').then(m => ({ default: m.CrmProposalsPage })))
+// CRM Field Management (20 novas funcionalidades)
+const CrmVisitCheckinsPage = lazy(() => import('@/pages/crm/CrmVisitCheckinsPage').then(m => ({ default: m.CrmVisitCheckinsPage })))
+const CrmVisitRoutesPage = lazy(() => import('@/pages/crm/CrmVisitRoutesPage').then(m => ({ default: m.CrmVisitRoutesPage })))
+const CrmVisitReportsPage = lazy(() => import('@/pages/crm/CrmVisitReportsPage').then(m => ({ default: m.CrmVisitReportsPage })))
+const CrmPortfolioMapPage = lazy(() => import('@/pages/crm/CrmPortfolioMapPage').then(m => ({ default: m.CrmPortfolioMapPage })))
+const CrmForgottenClientsPage = lazy(() => import('@/pages/crm/CrmForgottenClientsPage').then(m => ({ default: m.CrmForgottenClientsPage })))
+const CrmContactPoliciesPage = lazy(() => import('@/pages/crm/CrmContactPoliciesPage').then(m => ({ default: m.CrmContactPoliciesPage })))
+const CrmSmartAgendaPage = lazy(() => import('@/pages/crm/CrmSmartAgendaPage').then(m => ({ default: m.CrmSmartAgendaPage })))
+const CrmPostVisitWorkflowPage = lazy(() => import('@/pages/crm/CrmPostVisitWorkflowPage').then(m => ({ default: m.CrmPostVisitWorkflowPage })))
+const CrmQuickNotesPage = lazy(() => import('@/pages/crm/CrmQuickNotesPage').then(m => ({ default: m.CrmQuickNotesPage })))
+const CrmCommitmentsPage = lazy(() => import('@/pages/crm/CrmCommitmentsPage').then(m => ({ default: m.CrmCommitmentsPage })))
+const CrmNegotiationHistoryPage = lazy(() => import('@/pages/crm/CrmNegotiationHistoryPage').then(m => ({ default: m.CrmNegotiationHistoryPage })))
+const CrmClientSummaryPage = lazy(() => import('@/pages/crm/CrmClientSummaryPage').then(m => ({ default: m.CrmClientSummaryPage })))
+const CrmRfmPage = lazy(() => import('@/pages/crm/CrmRfmPage').then(m => ({ default: m.CrmRfmPage })))
+const CrmCoveragePage = lazy(() => import('@/pages/crm/CrmCoveragePage').then(m => ({ default: m.CrmCoveragePage })))
+const CrmProductivityPage = lazy(() => import('@/pages/crm/CrmProductivityPage').then(m => ({ default: m.CrmProductivityPage })))
+const CrmOpportunitiesPage = lazy(() => import('@/pages/crm/CrmOpportunitiesPage').then(m => ({ default: m.CrmOpportunitiesPage })))
+const CrmImportantDatesPage = lazy(() => import('@/pages/crm/CrmImportantDatesPage').then(m => ({ default: m.CrmImportantDatesPage })))
+const CrmVisitSurveysPage = lazy(() => import('@/pages/crm/CrmVisitSurveysPage').then(m => ({ default: m.CrmVisitSurveysPage })))
+const CrmAccountPlansPage = lazy(() => import('@/pages/crm/CrmAccountPlansPage').then(m => ({ default: m.CrmAccountPlansPage })))
+const CrmGamificationPage = lazy(() => import('@/pages/crm/CrmGamificationPage').then(m => ({ default: m.CrmGamificationPage })))
 const StockDashboardPage = lazy(() => import('@/pages/estoque/StockDashboardPage').then(m => ({ default: m.StockDashboardPage })))
 const StockMovementsPage = lazy(() => import('@/pages/estoque/StockMovementsPage').then(m => ({ default: m.StockMovementsPage })))
 const WarehousesPage = lazy(() => import('@/pages/estoque/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
@@ -175,6 +196,7 @@ const RecruitmentPage = lazy(() => import('@/pages/rh/RecruitmentPage'))
 const RecruitmentKanbanPage = lazy(() => import('@/pages/rh/RecruitmentKanbanPage'))
 const PerformanceReviewDetailPage = lazy(() => import('@/pages/rh/PerformanceReviewDetailPage'))
 const TvDashboard = lazy(() => import('@/pages/tv/TvDashboard'))
+const TvCamerasPage = lazy(() => import('@/pages/tv/TvCamerasPage'))
 const AIAnalyticsPage = lazy(() => import('@/pages/ia/AIAnalyticsPage'))
 const PeopleAnalyticsPage = lazy(() => import('@/pages/rh/PeopleAnalyticsPage'))
 const AccountingReportsPage = lazy(() => import('@/pages/rh/AccountingReportsPage'))
@@ -223,6 +245,7 @@ const TechDashboardPage = lazy(() => import('@/pages/tech/TechDashboardPage'))
 const TechGoalsPage = lazy(() => import('@/pages/tech/TechGoalsPage'))
 const TechServiceCallsPage = lazy(() => import('@/pages/tech/TechServiceCallsPage'))
 const TechMaterialRequestPage = lazy(() => import('@/pages/tech/TechMaterialRequestPage'))
+const TechMapViewPage = lazy(() => import('@/pages/tech/TechMapViewPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -649,6 +672,28 @@ export default function App() {
             <Route path="/crm/cohort" element={<ProtectedRoute><CrmCohortPage /></ProtectedRoute>} />
             <Route path="/crm/proposals" element={<ProtectedRoute><CrmProposalsPage /></ProtectedRoute>} />
 
+            {/* CRM Field Management (20 novas funcionalidades) */}
+            <Route path="/crm/visit-checkins" element={<ProtectedRoute><CrmVisitCheckinsPage /></ProtectedRoute>} />
+            <Route path="/crm/visit-routes" element={<ProtectedRoute><CrmVisitRoutesPage /></ProtectedRoute>} />
+            <Route path="/crm/visit-reports" element={<ProtectedRoute><CrmVisitReportsPage /></ProtectedRoute>} />
+            <Route path="/crm/portfolio-map" element={<ProtectedRoute><CrmPortfolioMapPage /></ProtectedRoute>} />
+            <Route path="/crm/forgotten-clients" element={<ProtectedRoute><CrmForgottenClientsPage /></ProtectedRoute>} />
+            <Route path="/crm/contact-policies" element={<ProtectedRoute><CrmContactPoliciesPage /></ProtectedRoute>} />
+            <Route path="/crm/smart-agenda" element={<ProtectedRoute><CrmSmartAgendaPage /></ProtectedRoute>} />
+            <Route path="/crm/post-visit-workflow" element={<ProtectedRoute><CrmPostVisitWorkflowPage /></ProtectedRoute>} />
+            <Route path="/crm/quick-notes" element={<ProtectedRoute><CrmQuickNotesPage /></ProtectedRoute>} />
+            <Route path="/crm/commitments" element={<ProtectedRoute><CrmCommitmentsPage /></ProtectedRoute>} />
+            <Route path="/crm/negotiation-history" element={<ProtectedRoute><CrmNegotiationHistoryPage /></ProtectedRoute>} />
+            <Route path="/crm/client-summary" element={<ProtectedRoute><CrmClientSummaryPage /></ProtectedRoute>} />
+            <Route path="/crm/rfm" element={<ProtectedRoute><CrmRfmPage /></ProtectedRoute>} />
+            <Route path="/crm/coverage" element={<ProtectedRoute><CrmCoveragePage /></ProtectedRoute>} />
+            <Route path="/crm/productivity" element={<ProtectedRoute><CrmProductivityPage /></ProtectedRoute>} />
+            <Route path="/crm/opportunities" element={<ProtectedRoute><CrmOpportunitiesPage /></ProtectedRoute>} />
+            <Route path="/crm/important-dates" element={<ProtectedRoute><CrmImportantDatesPage /></ProtectedRoute>} />
+            <Route path="/crm/visit-surveys" element={<ProtectedRoute><CrmVisitSurveysPage /></ProtectedRoute>} />
+            <Route path="/crm/account-plans" element={<ProtectedRoute><CrmAccountPlansPage /></ProtectedRoute>} />
+            <Route path="/crm/gamification" element={<ProtectedRoute><CrmGamificationPage /></ProtectedRoute>} />
+
             {/* Frota */}
             <Route path="/frota" element={<ProtectedRoute><FleetPage /></ProtectedRoute>} />
 
@@ -708,6 +753,7 @@ export default function App() {
 
             {/* TV Dashboard (Wallboard) */}
             <Route path="/tv/dashboard" element={<ProtectedRoute><TvDashboard /></ProtectedRoute>} />
+            <Route path="/tv/cameras" element={<ProtectedRoute><TvCamerasPage /></ProtectedRoute>} />
 
             {/* Tech PWA (Mobile Offline) */}
             <Route path="/tech" element={<TechShell />}>
@@ -724,7 +770,7 @@ export default function App() {
               <Route path="os/:id/ocorrencia" element={<TechComplaintPage />} />
               <Route path="os/:id/contrato" element={<TechContractInfoPage />} />
               <Route path="perfil" element={<TechProfilePage />} />
-              <Route path="configurações" element={<TechSettingsPage />} />
+              <Route path="configuracoes" element={<TechSettingsPage />} />
               <Route path="barcode" element={<TechBarcodePage />} />
               <Route path="os/:id/chat" element={<TechChatPage />} />
               <Route path="os/:id/annotate" element={<TechPhotoAnnotationPage />} />
@@ -738,10 +784,11 @@ export default function App() {
               <Route path="nova-os" element={<TechCreateWorkOrderPage />} />
               <Route path="agenda" element={<TechSchedulePage />} />
               <Route path="rota" element={<TechRoutePage />} />
+              <Route path="mapa" element={<TechMapViewPage />} />
               <Route path="comissoes" element={<TechCommissionsPage />} />
               <Route path="resumo-diario" element={<TechDaySummaryPage />} />
               <Route path="apontamentos" element={<TechTimeEntriesPage />} />
-              <Route path="notificações" element={<TechNotificationsPage />} />
+              <Route path="notificacoes" element={<TechNotificationsPage />} />
               <Route path="equipamentos" element={<TechEquipmentSearchPage />} />
               <Route path="equipamento/:id" element={<TechEquipmentHistoryPage />} />
               <Route path="feedback" element={<TechFeedbackPage />} />

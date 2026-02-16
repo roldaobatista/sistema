@@ -4,7 +4,7 @@ import {
     Package, Search, Plus, Minus, Trash2, Send, Loader2, ArrowLeft,
     ShoppingCart, CheckCircle2, Clock, Truck,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
@@ -84,8 +84,8 @@ export default function TechMaterialRequestPage() {
                 ? allRequests.filter((req: MaterialRequest) => req.requester_id === user.id)
                 : allRequests
             setRequests(filtered)
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Erro ao carregar solicitações')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao carregar solicitações'))
         } finally {
             setLoading(false)
         }
@@ -101,8 +101,8 @@ export default function TechMaterialRequestPage() {
                 },
             })
             setSearchResults(data.data || [])
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Erro ao buscar produtos')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao buscar produtos'))
         } finally {
             setSearching(false)
         }
@@ -170,8 +170,8 @@ export default function TechMaterialRequestPage() {
             setSelectedItems([])
             setNotes('')
             fetchRequests()
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Erro ao criar solicitação')
+        } catch (err: unknown) {
+            toast.error(getApiErrorMessage(err, 'Erro ao criar solicitação'))
         } finally {
             setSubmitting(false)
         }

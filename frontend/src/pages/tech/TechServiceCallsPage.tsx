@@ -1,12 +1,13 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-    Phone, MapPin, Clock, ChevronRight, Search, AlertCircle, Wrench,
+    Phone, MapPin, Clock, ChevronRight, Search, AlertCircle,
     CheckCircle2, Loader2, ArrowLeft, ArrowRightCircle, Navigation,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import { useOfflineCache } from '@/hooks/useOfflineCache'
 
 interface ServiceCall {
     id: number
@@ -48,32 +49,22 @@ const PRIORITY_LABELS: Record<string, string> = {
 
 export default function TechServiceCallsPage() {
     const navigate = useNavigate()
-    const [calls, setCalls] = useState<ServiceCall[]>([])
-    const [loading, setLoading] = useState(true)
+    const fetchCalls = useCallback(async () => {
+        const { data } = await api.get('/service-calls', {
+            params: { my: '1', per_page: 50 },
+        })
+        return (data.data || []) as ServiceCall[]
+    }, [])
+    const { data: callsData, loading, error, refresh } = useOfflineCache(fetchCalls, { key: 'tech-service-calls' })
+    const calls = callsData ?? []
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('all')
     const [expandedId, setExpandedId] = useState<number | null>(null)
     const [updatingStatus, setUpdatingStatus] = useState<number | null>(null)
 
     useEffect(() => {
-        async function fetchCalls() {
-            try {
-                setLoading(true)
-                const { data } = await api.get('/service-calls', {
-                    params: {
-                        my: '1',
-                        per_page: 50,
-                    },
-                })
-                setCalls(data.data || [])
-            } catch (error: any) {
-                toast.error(error?.response?.data?.message || 'Erro ao carregar chamados')
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchCalls()
-    }, [])
+        if (error) toast.error(error)
+    }, [error])
 
     const filteredCalls = useMemo(() => {
         return calls.filter((call) => {
@@ -98,14 +89,11 @@ export default function TechServiceCallsPage() {
         try {
             setUpdatingStatus(id)
             await api.put(`/service-calls/${id}/status`, { status: 'in_progress' })
-            setCalls((prev) =>
-                prev.map((call) =>
-                    call.id === id ? { ...call, status: 'in_progress' } : call
-                )
-            )
             toast.success('Chamado aceito com sucesso')
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Erro ao aceitar chamado')
+            refresh()
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            toast.error(msg || 'Erro ao aceitar chamado')
         } finally {
             setUpdatingStatus(null)
         }
@@ -117,8 +105,9 @@ export default function TechServiceCallsPage() {
             await api.post(`/service-calls/${id}/convert-to-os`)
             toast.success('Chamado convertido em OS com sucesso')
             navigate('/tech/os')
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Erro ao converter chamado')
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            toast.error(msg || 'Erro ao converter chamado')
         } finally {
             setUpdatingStatus(null)
         }
