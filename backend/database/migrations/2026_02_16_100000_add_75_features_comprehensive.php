@@ -333,7 +333,7 @@ return new class extends Migration
                 $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
                 $table->string('alert_type');
                 $table->boolean('is_enabled')->default(true);
-                $table->json('channels')->default('["system"]');
+                $table->json('channels')->nullable();
                 $table->integer('days_before')->nullable();
                 $table->string('cron_expression')->nullable();
                 $table->json('recipients')->nullable();
