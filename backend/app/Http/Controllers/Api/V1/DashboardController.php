@@ -67,12 +67,12 @@ class DashboardController extends Controller
             ->take(5)
             ->get(['id', 'code', 'brand', 'model', 'customer_id', 'next_calibration_at']);
 
-        // CRM KPIs
+        // CRM KPIs (crm_deals usa won_at, não closed_at)
         $openDeals = CrmDeal::where('status', CrmDeal::STATUS_OPEN)->count();
         $wonDealsMonth = CrmDeal::where('status', CrmDeal::STATUS_WON)
-            ->where('closed_at', '>=', $from)->count();
+            ->where('won_at', '>=', $from)->count();
         $crmRevenueMonth = CrmDeal::where('status', CrmDeal::STATUS_WON)
-            ->where('closed_at', '>=', $from)->sum('value');
+            ->where('won_at', '>=', $from)->sum('value');
         $pendingFollowUps = CrmActivity::where('type', 'tarefa')
             ->where('is_done', false)
             ->where('scheduled_at', '<=', now())->count();
