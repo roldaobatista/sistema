@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Notification;
 use App\Models\RecurringContract;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
 
@@ -31,7 +32,7 @@ class CheckExpiringContracts extends Command
 
             $admins = User::withoutGlobalScopes()
                 ->where('tenant_id', $contract->tenant_id)
-                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['super_admin', 'admin', 'financeiro']))
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', [Role::SUPER_ADMIN, Role::ADMIN, Role::FINANCEIRO]))
                 ->get();
 
             foreach ($admins as $admin) {

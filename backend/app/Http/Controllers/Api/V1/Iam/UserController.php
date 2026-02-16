@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Iam;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Traits\AppliesTenantScope;
 use App\Models\AuditLog;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +40,7 @@ class UserController extends Controller
         $tenantId = $this->tenantId($request);
 
         $query = User::whereHas('tenants', fn ($q) => $q->where('tenants.id', $tenantId))
-            ->with('roles:id,name');
+            ->with('roles:id,name,display_name');
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -103,7 +104,7 @@ class UserController extends Controller
                 return $user;
             });
 
-            $user->load('roles:id,name');
+            $user->load('roles:id,name,display_name');
 
             AuditLog::log('created', "Usuário {$user->name} criado", $user);
 
@@ -118,7 +119,7 @@ class UserController extends Controller
     {
         $this->resolveTenantUser($user, $this->tenantId($request));
 
-        $user->load(['roles:id,name', 'roles.permissions:id,name']);
+        $user->load(['roles:id,name,display_name', 'roles.permissions:id,name']);
 
         return response()->json($user);
     }
@@ -156,7 +157,7 @@ class UserController extends Controller
                 }
             });
 
-            $user->load('roles:id,name');
+            $user->load('roles:id,name,display_name');
 
             AuditLog::log('updated', "Usuário {$user->name} atualizado", $user);
 
@@ -304,7 +305,7 @@ class UserController extends Controller
     public function techniciansOptions(Request $request): JsonResponse
     {
         $tenantId = $this->tenantId($request);
-        $users = $this->tenantUsersByRoles($tenantId, ['tecnico']);
+        $users = $this->tenantUsersByRoles($tenantId, [Role::TECNICO]);
 
         return response()->json($users);
     }
@@ -320,7 +321,7 @@ class UserController extends Controller
                     ->orWhereHas('tenants', fn ($tenantQuery) => $tenantQuery->where('tenants.id', $tenantId));
             })
             ->whereHas('roles', fn ($query) => $query->whereIn('name', $roles))
-            ->with('roles:id,name')
+            ->with('roles:id,name,display_name')
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
     }
@@ -450,7 +451,7 @@ class UserController extends Controller
         $tenantId = $this->tenantId($request);
 
         $users = User::whereHas('tenants', fn ($q) => $q->where('tenants.id', $tenantId))
-            ->with('roles:id,name')
+            ->with('roles:id,name,display_name')
             ->orderBy('name')
             ->get();
 
@@ -466,7 +467,7 @@ class UserController extends Controller
                     $user->name,
                     $user->email,
                     $user->phone ?? '-',
-                    $user->roles->pluck('name')->implode(', '),
+                    $user->roles->map(fn ($r) => $r->display_name ?: $r->name)->implode(', '),
                     $user->is_active ? 'Ativo' : 'Inativo',
                     $user->last_login_at?->format('d/m/Y H:i') ?? 'Nunca',
                     $user->created_at?->format('d/m/Y H:i'),
@@ -518,6 +519,148 @@ class UserController extends Controller
             'by_role' => $byRole,
             'recent_users' => $recentUsers,
         ]);
+    }
+
+    /**
+     * GET /users/{user}/permissions — lista permissões diretas do usuário.
+     */
+    public function directPermissions(Request $request, User $user): JsonResponse
+    {
+        $this->resolveTenantUser($user, $this->tenantId($request));
+
+        return response()->json([
+            'direct_permissions' => $user->getDirectPermissions()->pluck('name'),
+            'role_permissions' => $user->getPermissionsViaRoles()->pluck('name'),
+            'all_permissions' => $user->getAllPermissions()->pluck('name'),
+            'denied_permissions' => $user->getDeniedPermissionsList(),
+            'effective_permissions' => $user->getEffectivePermissions()->pluck('name')->values(),
+        ]);
+    }
+
+    /**
+     * POST /users/{user}/permissions — atribui permissões diretas ao usuário.
+     */
+    public function grantPermissions(Request $request, User $user): JsonResponse
+    {
+        $this->resolveTenantUser($user, $this->tenantId($request));
+
+        $validated = $request->validate([
+            'permissions' => 'required|array|min:1',
+            'permissions.*' => 'string|exists:permissions,name',
+        ]);
+
+        try {
+            $user->givePermissionTo($validated['permissions']);
+
+            AuditLog::log('updated', "Permissões diretas concedidas ao usuário {$user->name}: " . implode(', ', $validated['permissions']), $user);
+
+            return response()->json([
+                'message' => 'Permissões concedidas.',
+                'direct_permissions' => $user->getDirectPermissions()->pluck('name'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Grant permissions failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao conceder permissões.'], 500);
+        }
+    }
+
+    /**
+     * DELETE /users/{user}/permissions — revoga permissões diretas do usuário.
+     */
+    public function revokePermissions(Request $request, User $user): JsonResponse
+    {
+        $this->resolveTenantUser($user, $this->tenantId($request));
+
+        $validated = $request->validate([
+            'permissions' => 'required|array|min:1',
+            'permissions.*' => 'string|exists:permissions,name',
+        ]);
+
+        try {
+            foreach ($validated['permissions'] as $perm) {
+                $user->revokePermissionTo($perm);
+            }
+
+            AuditLog::log('updated', "Permissões diretas revogadas do usuário {$user->name}: " . implode(', ', $validated['permissions']), $user);
+
+            return response()->json([
+                'message' => 'Permissões revogadas.',
+                'direct_permissions' => $user->getDirectPermissions()->pluck('name'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Revoke permissions failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao revogar permissões.'], 500);
+        }
+    }
+
+    /**
+     * PUT /users/{user}/permissions — sincroniza permissões diretas (substitui todas).
+     */
+    public function syncDirectPermissions(Request $request, User $user): JsonResponse
+    {
+        $this->resolveTenantUser($user, $this->tenantId($request));
+
+        $validated = $request->validate([
+            'permissions' => 'present|array',
+            'permissions.*' => 'string|exists:permissions,name',
+        ]);
+
+        try {
+            $user->syncPermissions($validated['permissions']);
+
+            AuditLog::log('updated', "Permissões diretas do usuário {$user->name} sincronizadas", $user);
+
+            return response()->json([
+                'message' => 'Permissões sincronizadas.',
+                'direct_permissions' => $user->getDirectPermissions()->pluck('name'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Sync permissions failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao sincronizar permissões.'], 500);
+        }
+    }
+
+    /**
+     * GET /users/{user}/denied-permissions — lista permissões negadas do usuário.
+     */
+    public function deniedPermissions(Request $request, User $user): JsonResponse
+    {
+        $this->resolveTenantUser($user, $this->tenantId($request));
+
+        return response()->json([
+            'denied_permissions' => $user->getDeniedPermissionsList(),
+        ]);
+    }
+
+    /**
+     * PUT /users/{user}/denied-permissions — sincroniza permissões negadas.
+     */
+    public function syncDeniedPermissions(Request $request, User $user): JsonResponse
+    {
+        $this->resolveTenantUser($user, $this->tenantId($request));
+
+        $validated = $request->validate([
+            'denied_permissions' => 'present|array',
+            'denied_permissions.*' => 'string|exists:permissions,name',
+        ]);
+
+        try {
+            $user->update(['denied_permissions' => $validated['denied_permissions']]);
+
+            AuditLog::log(
+                'updated',
+                "Permissões negadas do usuário {$user->name} atualizadas: " . (empty($validated['denied_permissions']) ? 'nenhuma' : implode(', ', $validated['denied_permissions'])),
+                $user
+            );
+
+            return response()->json([
+                'message' => 'Permissões negadas atualizadas.',
+                'denied_permissions' => $user->getDeniedPermissionsList(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Sync denied permissions failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar permissões negadas.'], 500);
+        }
     }
 
     /**

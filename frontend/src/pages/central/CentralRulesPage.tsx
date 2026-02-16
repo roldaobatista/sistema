@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -170,10 +170,10 @@ export function CentralRulesPage() {
                                         </div>
                                         <p className="text-xs text-surface-500 mt-0.5">
                                             {acao.label}
-                                            {rule.tipo_item && <> â€¢ Tipo: <span className="font-medium">{rule.tipo_item}</span></>}
-                                            {rule.prioridade_minima && <> â€¢ Prioridade mín: <span className="font-medium">{rule.prioridade_minima}</span></>}
-                                            {rule.responsavel?.name && <> â†’ <span className="font-medium">{rule.responsavel.name}</span></>}
-                                            {rule.role_alvo && <> â†’ Role: <span className="font-medium">{rule.role_alvo}</span></>}
+                                            {rule.tipo_item && <> • Tipo: <span className="font-medium">{rule.tipo_item}</span></>}
+                                            {rule.prioridade_minima && <> • Prioridade mín: <span className="font-medium">{rule.prioridade_minima}</span></>}
+                                            {rule.responsavel?.name && <> → <span className="font-medium">{rule.responsavel.name}</span></>}
+                                            {rule.role_alvo && <> → Role: <span className="font-medium">{rule.role_alvo}</span></>}
                                         </p>
                                     </div>
 
@@ -223,9 +223,9 @@ export function CentralRulesPage() {
                                 <option value="">Qualquer</option>
                                 <option value="os">OS</option>
                                 <option value="chamado">Chamado</option>
-                                <option value="orcamento">Orçamento</option>
+                                <option value="orçamento">Orçamento</option>
                                 <option value="financeiro">Financeiro</option>
-                                <option value="calibracao">Calibração</option>
+                                <option value="calibração">Calibração</option>
                                 <option value="tarefa">Tarefa</option>
                             </select>
                         </div>
@@ -261,7 +261,7 @@ export function CentralRulesPage() {
                             </div>
                             <Input label="Role Alvo" value={form.role_alvo}
                                 onChange={(e: any) => setF('role_alvo', e.target.value)}
-                                placeholder="Ex: tecnico" />
+                                placeholder="Ex: técnico" />
                         </div>
                     )}
 

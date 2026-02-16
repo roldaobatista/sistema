@@ -52,7 +52,7 @@ export default function InmetroSealReportPage() {
             const url = window.URL.createObjectURL(new Blob([res.data]))
             const link = document.createElement('a')
             link.href = url
-            link.setAttribute('download', `relatorio_selos_${format(new Date(), 'yyyyMMdd')}.csv`)
+            link.setAttribute('download', `relatório_selos_${format(new Date(), 'yyyyMMdd')}.csv`)
             document.body.appendChild(link)
             link.click()
             link.remove()

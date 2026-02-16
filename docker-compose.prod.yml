@@ -1,0 +1,166 @@
+services:
+  # Nginx reverse proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: kalibrium_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - kalibrium
+
+  # SSL Certificate auto-renewal
+  certbot:
+    image: certbot/certbot
+    container_name: kalibrium_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - kalibrium
+
+  # Laravel Backend (PHP-FPM + Nginx via Supervisor)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kalibrium_backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    volumes:
+      - backend_storage:/var/www/storage/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kalibrium
+
+  # Queue Worker
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kalibrium_queue
+    restart: unless-stopped
+    env_file: ./backend/.env
+    command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kalibrium
+
+  # Laravel Scheduler
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kalibrium_scheduler
+    restart: unless-stopped
+    env_file: ./backend/.env
+    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - kalibrium
+
+  # WebSocket Server (Reverb)
+  reverb:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kalibrium_reverb
+    restart: unless-stopped
+    env_file: ./backend/.env
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    expose:
+      - "8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - kalibrium
+
+  # Frontend (React SPA)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://${DOMAIN}/api/v1}
+        VITE_WS_URL: ${VITE_WS_URL:-wss://${DOMAIN}/ws}
+        VITE_REVERB_APP_KEY: ${REVERB_APP_KEY}
+        VITE_REVERB_HOST: ${VITE_REVERB_HOST:-${DOMAIN}}
+        VITE_REVERB_PORT: ${VITE_REVERB_PORT:-443}
+        VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
+    container_name: kalibrium_frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - kalibrium
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: kalibrium_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE:-kalibrium}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=256M
+      --max-connections=200
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kalibrium
+
+  # Redis (Cache + Queue + Sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: kalibrium_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kalibrium
+
+volumes:
+  mysql_data:
+  redis_data:
+  backend_storage:
+
+networks:
+  kalibrium:
+    driver: bridge

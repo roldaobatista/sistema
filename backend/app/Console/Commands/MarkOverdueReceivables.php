@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AccountReceivable;
+use App\Models\Role;
 use App\Models\User;
 use App\Notifications\PaymentOverdue;
 use Illuminate\Console\Command;
@@ -32,7 +33,7 @@ class MarkOverdueReceivables extends Command
         $byTenant = $overdue->groupBy('tenant_id');
         foreach ($byTenant as $tenantId => $receivables) {
             $managers = User::whereHas('tenants', fn($q) => $q->where('tenants.id', $tenantId))
-                ->whereHas('roles', fn($q) => $q->whereIn('name', ['admin', 'financeiro', 'gerente']))
+                ->whereHas('roles', fn($q) => $q->whereIn('name', [Role::ADMIN, Role::FINANCEIRO, Role::GERENTE]))
                 ->get();
 
             foreach ($receivables as $receivable) {

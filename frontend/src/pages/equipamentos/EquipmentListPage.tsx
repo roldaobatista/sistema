@@ -311,10 +311,10 @@ export default function EquipmentListPage() {
                                         <div className="text-xs text-surface-500">{eq.type}</div>
                                     </td>
                                     <td className="px-4 py-3 font-mono text-xs text-surface-600">
-                                        {eq.serial_number || 'â€”'}
+                                        {eq.serial_number || '—'}
                                     </td>
                                     <td className="max-w-[150px] truncate px-4 py-3 text-surface-700">
-                                        {eq.customer?.name || 'â€”'}
+                                        {eq.customer?.name || '—'}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-surface-600">
                                         {categories[eq.category] as string || eq.category}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\CrmActivity;
+use App\Models\Role;
 use App\Models\CrmDeal;
 use App\Models\CrmMessage;
 use App\Models\CrmPipeline;
@@ -655,7 +656,7 @@ class CrmController extends Controller
 
         // Filtro por técnico (Regra de Negócio: Técnico só vê o que é dele)
         $user = $request->user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('super_admin') || $user->hasPermission('platform.dashboard.view');
+        $isAdmin = $user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN) || $user->hasPermission('platform.dashboard.view');
 
         // Timeline (Atividades CRM)
         $timeline = CrmActivity::where('customer_id', $customer->id)

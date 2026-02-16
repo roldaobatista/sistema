@@ -121,7 +121,7 @@ export function PaymentsPage() {
         },
         onError: (error: ApiErrorLike) => {
             if (error?.response?.status === 403) {
-                toast.error('Sem permissao para estornar este pagamento')
+                toast.error('Sem permissão para estornar este pagamento')
                 return
             }
             toast.error(error?.response?.data?.message ?? 'Erro ao estornar pagamento')
@@ -148,7 +148,7 @@ export function PaymentsPage() {
 
     const handleReverse = (payment: Payment) => {
         if (!canReversePayment(payment)) {
-            toast.error('Sem permissao para estornar este pagamento')
+            toast.error('Sem permissão para estornar este pagamento')
             return
         }
         setReverseTarget(payment)
@@ -172,7 +172,7 @@ export function PaymentsPage() {
         <div className="space-y-5">
             <PageHeader
                 title="Pagamentos"
-                subtitle="Historico consolidado de recebimentos e pagamentos"
+                subtitle="Histórico consolidado de recebimentos e pagamentos"
                 count={total}
             />
 

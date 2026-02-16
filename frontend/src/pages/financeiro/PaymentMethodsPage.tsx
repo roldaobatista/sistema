@@ -78,7 +78,7 @@ export function PaymentMethodsPage() {
 
     const openCreate = () => {
         if (!canCreate) {
-            toast.error('Sem permissao para criar forma de pagamento.')
+            toast.error('Sem permissão para criar forma de pagamento.')
             return
         }
         setEditing(null)
@@ -88,7 +88,7 @@ export function PaymentMethodsPage() {
 
     const openEdit = (method: PaymentMethod) => {
         if (!canUpdate) {
-            toast.error('Sem permissao para editar forma de pagamento.')
+            toast.error('Sem permissão para editar forma de pagamento.')
             return
         }
         setEditing(method)
@@ -98,7 +98,7 @@ export function PaymentMethodsPage() {
 
     const openDelete = (method: PaymentMethod) => {
         if (!canDelete) {
-            toast.error('Sem permissao para excluir forma de pagamento.')
+            toast.error('Sem permissão para excluir forma de pagamento.')
             return
         }
         setDeleteTarget(method)
@@ -121,7 +121,7 @@ export function PaymentMethodsPage() {
                 {isLoading ? (
                     <p className="col-span-full py-12 text-center text-sm text-surface-500">Carregando...</p>
                 ) : isError ? (
-                    <p className="col-span-full py-12 text-center text-sm text-red-600">Nao foi possivel carregar as formas de pagamento.</p>
+                    <p className="col-span-full py-12 text-center text-sm text-red-600">Não foi possível carregar as formas de pagamento.</p>
                 ) : methods.length === 0 ? (
                     <div className="col-span-full"><EmptyState icon={<CreditCard className="h-5 w-5 text-surface-300" />} message="Nenhuma forma cadastrada" action={canCreate ? { label: 'Nova Forma', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} /></div>
                 ) : methods.map(method => (
@@ -132,7 +132,7 @@ export function PaymentMethodsPage() {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-surface-900">{method.name}</p>
-                                {method.code && <p className="text-xs text-surface-400">Codigo: {method.code}</p>}
+                                {method.code && <p className="text-xs text-surface-400">Código: {method.code}</p>}
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export function PaymentMethodsPage() {
             <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Forma de Pagamento' : 'Nova Forma de Pagamento'}>
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <Input label="Nome" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} required placeholder="Ex: PIX, Boleto, Cartao..." />
-                    <Input label="Codigo" value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('code', e.target.value)} placeholder="Codigo interno (opcional)" />
+                    <Input label="Código" value={form.code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('code', e.target.value)} placeholder="Código interno (opcional)" />
                     <div className="flex items-center gap-2">
                         <input type="checkbox" id="pm-active" checked={form.is_active}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('is_active', e.target.checked)}

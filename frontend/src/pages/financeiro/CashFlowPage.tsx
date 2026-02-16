@@ -200,7 +200,7 @@ export function CashFlowPage() {
 
             {!canViewDre ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    Sem permissao para visualizar DRE. O fluxo de caixa mensal permanece disponivel.
+                    Sem permissão para visualizar DRE. O fluxo de caixa mensal permanece disponível.
                 </div>
             ) : null}
 
@@ -252,7 +252,7 @@ export function CashFlowPage() {
                     <div className="border-b border-subtle px-5 py-4">
                         <h2 className="flex items-center gap-2 font-semibold text-surface-900">
                             <ArrowRight className="h-5 w-5 text-brand-600" />
-                            DRE comparativo: periodo atual vs anterior
+                            DRE comparativo: período atual vs anterior
                         </h2>
                     </div>
                     <div className="grid divide-y divide-surface-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">

@@ -6,6 +6,7 @@ use App\Mail\QuoteReadyMail;
 use App\Mail\WorkOrderStatusMail;
 use App\Models\Customer;
 use App\Models\Quote;
+use App\Models\Role;
 use App\Models\SystemSetting;
 use App\Models\WorkOrder;
 use Illuminate\Support\Facades\Http;
@@ -223,7 +224,7 @@ class ClientNotificationService
     {
         try {
             $pushService = app(WebPushService::class);
-            $pushService->sendToRole($tenantId, 'gerente', $title, $body, $data);
+            $pushService->sendToRole($tenantId, Role::GERENTE, $title, $body, $data);
         } catch (\Throwable $e) {
             Log::warning('ClientNotification: Push send failed', ['error' => $e->getMessage()]);
         }

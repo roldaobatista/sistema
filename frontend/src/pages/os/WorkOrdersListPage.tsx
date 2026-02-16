@@ -43,7 +43,7 @@ interface WorkOrder {
     equipment: { id: number; type: string; brand: string | null; model: string | null } | null
 }
 const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
-    wo?.business_number ?? wo?.os_number ?? wo?.number ?? 'â€”'
+    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
 export function WorkOrdersListPage() {
     const navigate = useNavigate()
@@ -77,7 +77,7 @@ export function WorkOrdersListPage() {
 
     const formatBRL = (v: string) => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
-    // Status stats â€” from backend status_counts (global, not paginated)
+    // Status stats — from backend status_counts (global, not paginated)
     const statusCounts: Record<string, number> = res?.data?.status_counts ?? {}
     const totalRecords = res?.data?.total ?? 0
     const openCount = statusCounts['open'] ?? 0
@@ -155,7 +155,7 @@ export function WorkOrdersListPage() {
                 ))}
             </div>
 
-            {/* Status flow bar â€” uses global status_counts */}
+            {/* Status flow bar — uses global status_counts */}
             {Object.keys(statusCounts).length > 0 && (() => {
                 const groups = Object.entries(statusConfig).map(([k, v]) => ({
                     key: k, label: v.label, count: statusCounts[k] ?? 0,
@@ -287,7 +287,7 @@ export function WorkOrdersListPage() {
                                     )}
                                     {order.assignee && (
                                         <span className="flex items-center gap-1">
-                                            â†’ {order.assignee.name}
+                                            → {order.assignee.name}
                                         </span>
                                     )}
                                 </div>
@@ -318,7 +318,7 @@ export function WorkOrdersListPage() {
             {!isLoading && !isError && totalPages > 1 && (
                 <div className="flex items-center justify-between rounded-xl border border-default bg-surface-0 px-4 py-3 shadow-card">
                     <p className="text-xs text-surface-500">
-                        Página {page} de {totalPages} â€” {res?.data?.total ?? 0} registros
+                        Página {page} de {totalPages} — {res?.data?.total ?? 0} registros
                     </p>
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}

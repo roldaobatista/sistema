@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Financial;
 
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
+use App\Models\Role;
 use App\Models\ExpenseCategory;
 use App\Models\ExpenseStatusHistory;
 use App\Models\TechnicianCashFund;
@@ -87,6 +88,19 @@ class ExpenseController extends Controller
                     $data['receipt_path'] = $receiptPath;
                 }
                 unset($data['receipt'], $data['status']);
+
+                // Apply category defaults when not explicitly provided
+                if (!empty($data['expense_category_id'])) {
+                    $category = ExpenseCategory::find($data['expense_category_id']);
+                    if ($category) {
+                        if (!array_key_exists('affects_net_value', $data) || $data['affects_net_value'] === null) {
+                            $data['affects_net_value'] = $category->default_affects_net_value ?? false;
+                        }
+                        if (!array_key_exists('affects_technician_cash', $data) || $data['affects_technician_cash'] === null) {
+                            $data['affects_technician_cash'] = $category->default_affects_technician_cash ?? false;
+                        }
+                    }
+                }
 
                 $expense = new Expense([
                     ...$data,
@@ -257,7 +271,7 @@ class ExpenseController extends Controller
             }
 
             if (in_array($newStatus, [Expense::STATUS_APPROVED, Expense::STATUS_REJECTED], true) && $expense->created_by === $request->user()->id) {
-                if (!$request->user()->hasRole('super_admin')) {
+                if (!$request->user()->hasRole(Role::SUPER_ADMIN)) {
                     return response()->json([
                         'message' => 'Nao e permitido aprovar/rejeitar sua propria despesa',
                     ], 403);
@@ -303,6 +317,7 @@ class ExpenseController extends Controller
 
                 if ($newStatus === Expense::STATUS_APPROVED && $expense->affects_technician_cash && $expense->created_by) {
                     $fund = TechnicianCashFund::getOrCreate($expense->created_by, $this->tenantId($request));
+                    $expensePaymentMethod = $expense->payment_method === 'corporate_card' ? 'corporate_card' : 'cash';
                     $fund->addDebit(
                         (float) $expense->amount,
                         "Despesa #{$expense->id}: {$expense->description}",
@@ -310,16 +325,19 @@ class ExpenseController extends Controller
                         $request->user()->id,
                         $expense->work_order_id,
                         allowNegative: true,
+                        paymentMethod: $expensePaymentMethod,
                     );
                 }
 
                 if ($newStatus === Expense::STATUS_REIMBURSED && $expense->affects_technician_cash && $expense->created_by) {
                     $fund = TechnicianCashFund::getOrCreate($expense->created_by, $this->tenantId($request));
+                    $expensePaymentMethod = $expense->payment_method === 'corporate_card' ? 'corporate_card' : 'cash';
                     $fund->addCredit(
                         (float) $expense->amount,
                         "Reembolso da despesa #{$expense->id}: {$expense->description}",
                         $request->user()->id,
-                        $expense->work_order_id
+                        $expense->work_order_id,
+                        paymentMethod: $expensePaymentMethod,
                     );
                 }
 
@@ -679,7 +697,7 @@ class ExpenseController extends Controller
             DB::transaction(function () use ($expenses, $newStatus, $rejectionReason, $request, $tenantId, &$processed, &$skipped) {
                 foreach ($expenses as $expense) {
                     if (in_array($newStatus, [Expense::STATUS_APPROVED, Expense::STATUS_REJECTED], true) && $expense->created_by === $request->user()->id) {
-                        if (!$request->user()->hasRole('super_admin')) {
+                        if (!$request->user()->hasRole(Role::SUPER_ADMIN)) {
                             $skipped++;
                             continue;
                         }
@@ -706,6 +724,7 @@ class ExpenseController extends Controller
 
                     if ($newStatus === Expense::STATUS_APPROVED && $expense->affects_technician_cash && $expense->created_by) {
                         $fund = TechnicianCashFund::getOrCreate($expense->created_by, $tenantId);
+                        $batchPaymentMethod = $expense->payment_method === 'corporate_card' ? 'corporate_card' : 'cash';
                         $fund->addDebit(
                             (float) $expense->amount,
                             "Despesa #{$expense->id}: {$expense->description}",
@@ -713,6 +732,7 @@ class ExpenseController extends Controller
                             $request->user()->id,
                             $expense->work_order_id,
                             allowNegative: true,
+                            paymentMethod: $batchPaymentMethod,
                         );
                     }
 
@@ -822,7 +842,7 @@ class ExpenseController extends Controller
             }
 
             // Não permitir conferir própria despesa (exceto super_admin)
-            if ($expense->created_by === $request->user()->id && !$request->user()->hasRole('super_admin')) {
+            if ($expense->created_by === $request->user()->id && !$request->user()->hasRole(Role::SUPER_ADMIN)) {
                 return response()->json([
                     'message' => 'Não é permitido conferir sua própria despesa',
                 ], 403);

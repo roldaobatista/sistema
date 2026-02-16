@@ -80,7 +80,7 @@ interface WorkOrderOption {
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')
 const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
-    wo?.business_number ?? wo?.os_number ?? wo?.number ?? 'â€”'
+    wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
 export function AccountsReceivablePage() {
     const qc = useQueryClient()
@@ -194,7 +194,7 @@ export function AccountsReceivablePage() {
             setEditingId(null)
             setFormErrors({})
             setForm(emptyForm)
-            toast.success(editingId ? 'Titulo atualizado com sucesso' : 'Titulo criado com sucesso')
+            toast.success(editingId ? 'Título atualizado com sucesso' : 'Título criado com sucesso')
         },
         onError: (error: unknown) => {
             const status = (error as ApiErrorLike | undefined)?.response?.status
@@ -205,10 +205,10 @@ export function AccountsReceivablePage() {
                 return
             }
             if (status === 403) {
-                toast.error('Voce nao tem permissao para esta acao')
+                toast.error('Voce não tem permissão para esta ação')
                 return
             }
-            toast.error(extractMessage(error, 'Erro ao salvar titulo'))
+            toast.error(extractMessage(error, 'Erro ao salvar título'))
         },
     })
 
@@ -231,7 +231,7 @@ export function AccountsReceivablePage() {
                 return
             }
             if (status === 403) {
-                toast.error('Voce nao tem permissao para registrar recebimento')
+                toast.error('Voce não tem permissão para registrar recebimento')
                 return
             }
             toast.error(extractMessage(error, 'Erro ao registrar recebimento'))
@@ -244,10 +244,10 @@ export function AccountsReceivablePage() {
             qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
             qc.invalidateQueries({ queryKey: ['ar-summary'] })
             setShowGenOS(false)
-            toast.success('Titulo gerado a partir da OS')
+            toast.success('Título gerado a partir da OS')
         },
         onError: (error: unknown) => {
-            toast.error(extractMessage(error, 'Erro ao gerar titulo'))
+            toast.error(extractMessage(error, 'Erro ao gerar título'))
         },
     })
 
@@ -257,15 +257,15 @@ export function AccountsReceivablePage() {
             qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
             qc.invalidateQueries({ queryKey: ['ar-summary'] })
             setDeleteTarget(null)
-            toast.success('Titulo excluido com sucesso')
+            toast.success('Título excluido com sucesso')
         },
         onError: (error: unknown) => {
             const status = (error as ApiErrorLike | undefined)?.response?.status
             if (status === 403) {
-                toast.error('Voce nao tem permissao para excluir titulo')
+                toast.error('Voce não tem permissão para excluir título')
                 return
             }
-            toast.error(extractMessage(error, 'Erro ao excluir titulo'))
+            toast.error(extractMessage(error, 'Erro ao excluir título'))
         },
     })
 
@@ -282,7 +282,7 @@ export function AccountsReceivablePage() {
 
     const openCreate = () => {
         if (!canCreate) {
-            toast.error('Voce nao tem permissao para criar titulo')
+            toast.error('Voce não tem permissão para criar título')
             return
         }
         setEditingId(null)
@@ -293,11 +293,11 @@ export function AccountsReceivablePage() {
 
     const openEdit = (record: AR) => {
         if (!canUpdate) {
-            toast.error('Voce nao tem permissao para editar titulo')
+            toast.error('Voce não tem permissão para editar título')
             return
         }
         if (record.status === FINANCIAL_STATUS.PAID || record.status === FINANCIAL_STATUS.CANCELLED) {
-            toast.error('Titulo pago ou cancelado nao pode ser editado')
+            toast.error('Título pago ou cancelado não pode ser editado')
             return
         }
         setEditingId(record.id)
@@ -332,7 +332,7 @@ export function AccountsReceivablePage() {
                 count={pagination.total}
                 actions={[
                     ...(canCreate ? [{ label: 'Gerar da OS', onClick: () => { setGenForm({ work_order_id: '', due_date: '', payment_method: '' }); setShowGenOS(true) }, icon: <FileText className="h-4 w-4" />, variant: 'outline' as const }] : []),
-                    ...(canCreate ? [{ label: 'Novo Titulo', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []),
+                    ...(canCreate ? [{ label: 'Novo Título', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []),
                 ]}
             />
             <FinancialExportButtons type="receivable" />
@@ -420,7 +420,7 @@ export function AccountsReceivablePage() {
                         ) : isError ? (
                             <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-red-600">Erro ao carregar titulos. <button className="underline" onClick={() => refetch()}>Tentar novamente</button></td></tr>
                         ) : records.length === 0 ? (
-                            <tr><td colSpan={7} className="px-4 py-2"><EmptyState icon={<DollarSign className="h-5 w-5 text-surface-300" />} message="Nenhum titulo encontrado" action={canCreate ? { label: 'Novo Titulo', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} compact /></td></tr>
+                            <tr><td colSpan={7} className="px-4 py-2"><EmptyState icon={<DollarSign className="h-5 w-5 text-surface-300" />} message="Nenhum título encontrado" action={canCreate ? { label: 'Novo Título', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined} compact /></td></tr>
                         ) : records.map(r => (
                             <tr key={r.id} className="hover:bg-surface-50 transition-colors duration-100">
                                 <td className="px-4 py-3">
@@ -469,7 +469,7 @@ export function AccountsReceivablePage() {
                 </div>
             )}
 
-            <Modal open={showForm} onOpenChange={setShowForm} title={editingId ? 'Editar Titulo a Receber' : 'Novo Titulo a Receber'} size="lg">
+            <Modal open={showForm} onOpenChange={setShowForm} title={editingId ? 'Editar Título a Receber' : 'Novo Título a Receber'} size="lg">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
@@ -506,7 +506,7 @@ export function AccountsReceivablePage() {
                         </div>
                     )}
 
-                    <Input label="Descricao" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} required />
+                    <Input label="Descrição" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} required />
                     <div className="grid gap-4 sm:grid-cols-3">
                         <Input label="Valor (R$)" type="number" step="0.01" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('amount', e.target.value)} error={formErrors.amount?.[0]} required />
                         <Input label="Vencimento" type="date" value={form.due_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('due_date', e.target.value)} error={formErrors.due_date?.[0]} required />
@@ -568,7 +568,7 @@ export function AccountsReceivablePage() {
                 )}
             </Modal>
 
-            <Modal open={showGenOS} onOpenChange={setShowGenOS} title="Gerar Titulo da OS">
+            <Modal open={showGenOS} onOpenChange={setShowGenOS} title="Gerar Título da OS">
                 <form onSubmit={e => { e.preventDefault(); genMut.mutate(genForm) }} className="space-y-4">
                     <div>
                         <label className="mb-1.5 block text-sm font-medium text-surface-700">OS *</label>
@@ -591,16 +591,16 @@ export function AccountsReceivablePage() {
                     </div>
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button variant="outline" type="button" onClick={() => setShowGenOS(false)}>Cancelar</Button>
-                        <Button type="submit" loading={genMut.isPending}>Gerar Titulo</Button>
+                        <Button type="submit" loading={genMut.isPending}>Gerar Título</Button>
                     </div>
                 </form>
             </Modal>
 
-            <Modal open={!!showDetail} onOpenChange={() => setShowDetail(null)} title="Detalhes do Titulo" size="lg">
+            <Modal open={!!showDetail} onOpenChange={() => setShowDetail(null)} title="Detalhes do Título" size="lg">
                 {showDetail && (
                     <div className="space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <div><span className="text-xs text-surface-500">Descricao</span><p className="text-sm font-medium">{showDetail.description}</p></div>
+                            <div><span className="text-xs text-surface-500">Descrição</span><p className="text-sm font-medium">{showDetail.description}</p></div>
                             <div><span className="text-xs text-surface-500">Cliente</span><p className="text-sm font-medium">{showDetail.customer.name}</p></div>
                             <div><span className="text-xs text-surface-500">Plano de Contas</span><p className="text-sm font-medium">{showDetail.chart_of_account ? `${showDetail.chart_of_account.code} - ${showDetail.chart_of_account.name}` : '-'}</p></div>
                             <div><span className="text-xs text-surface-500">Valor</span><p className="text-sm font-semibold tabular-nums">{fmtBRL(showDetail.amount)}</p></div>
@@ -627,9 +627,9 @@ export function AccountsReceivablePage() {
                 )}
             </Modal>
 
-            <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Titulo">
+            <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Título">
                 <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir este titulo? Esta acao nao pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir este título? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button variant="danger" loading={delMut.isPending} onClick={() => { if (deleteTarget) delMut.mutate(deleteTarget.id) }}>Excluir</Button>

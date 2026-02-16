@@ -48,6 +48,7 @@ class CommissionRule extends Model
     public const CALC_PERCENT_PROFIT = 'percent_profit';
     public const CALC_PERCENT_GROSS_MINUS_EXPENSES = 'percent_gross_minus_expenses';
     public const CALC_TIERED_GROSS = 'tiered_gross';
+    public const CALC_FIXED_PER_ITEM = 'fixed_per_item';
     public const CALC_CUSTOM_FORMULA = 'custom_formula';
 
     public const CALCULATION_TYPES = [
@@ -60,13 +61,14 @@ class CommissionRule extends Model
         self::CALC_PERCENT_PROFIT => '% do Lucro',
         self::CALC_PERCENT_GROSS_MINUS_EXPENSES => '% (Bruto − Despesas OS)',
         self::CALC_TIERED_GROSS => '% Escalonado por faixa',
+        self::CALC_FIXED_PER_ITEM => 'Fixo por Item',
         self::CALC_CUSTOM_FORMULA => 'Fórmula Personalizada',
     ];
 
     // ── Roles ──
-    public const ROLE_TECHNICIAN = 'technician';
-    public const ROLE_SELLER = 'seller';
-    public const ROLE_DRIVER = 'driver';
+    public const ROLE_TECHNICIAN = 'tecnico';
+    public const ROLE_SELLER = 'vendedor';
+    public const ROLE_DRIVER = 'motorista';
 
     // ── When to trigger ──
     public const WHEN_OS_COMPLETED = 'os_completed';
@@ -115,6 +117,12 @@ class CommissionRule extends Model
             ),
 
             self::CALC_FIXED_PER_OS => (string) $this->value,
+
+            self::CALC_FIXED_PER_ITEM => bcmul(
+                (string) $this->value,
+                (string) ($context['items_count'] ?? 1),
+                2
+            ),
 
             self::CALC_PERCENT_PROFIT => bcmul(
                 bcsub($base, (string) ($context['cost'] ?? 0), 2),
@@ -291,6 +299,7 @@ class CommissionRule extends Model
             'expenses'       => (float) $expenses,
             'displacement'   => (float) ($wo->displacement_value ?? 0),
             'cost'           => 0,
+            'items_count'    => (int) $wo->items()->count(),
         ]);
     }
 }

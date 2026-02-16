@@ -10,6 +10,7 @@ import {
     Weight, RotateCcw, TrendingUp, History, Warehouse, ArrowLeftRight, Bell,
     CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
     MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
+    Monitor,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -99,6 +100,7 @@ const navigationSections: NavSection[] = [
                     { label: 'Caixa', icon: DollarSign, path: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
                 ],
             },
+            { label: 'TV Dashboard', icon: Monitor, path: '/tv/dashboard', permission: 'tv.dashboard.view' },
             {
                 label: 'Equipamentos', icon: Scale, path: '/equipamentos', permission: 'equipments.equipment.view',
                 children: [

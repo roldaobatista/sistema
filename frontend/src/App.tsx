@@ -180,6 +180,13 @@ const TechVoiceReportPage = lazy(() => import('@/pages/tech/TechVoiceReportPage'
 const TechBluetoothPrintPage = lazy(() => import('@/pages/tech/TechBluetoothPrintPage'))
 const TechThermalCameraPage = lazy(() => import('@/pages/tech/TechThermalCameraPage'))
 const TechWidgetPage = lazy(() => import('@/pages/tech/TechWidgetPage'))
+const TechExpensesOverviewPage = lazy(() => import('@/pages/tech/TechExpensesOverviewPage'))
+const TechCashManagementPage = lazy(() => import('@/pages/tech/TechCashPage'))
+const TechCreateWorkOrderPage = lazy(() => import('@/pages/tech/TechCreateWorkOrderPage'))
+const TechSchedulePage = lazy(() => import('@/pages/tech/TechSchedulePage'))
+const TechTimeEntriesPage = lazy(() => import('@/pages/tech/TechTimeEntriesPage'))
+const TechNotificationsPage = lazy(() => import('@/pages/tech/TechNotificationsPage'))
+const TechEquipmentSearchPage = lazy(() => import('@/pages/tech/TechEquipmentSearchPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -202,32 +209,32 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/cadastros/clientes/fusao', permission: 'cadastros.customer.update' },
   { match: '/cadastros/clientes', permission: 'cadastros.customer.view' },
   { match: '/cadastros/produtos', permission: 'cadastros.product.view' },
-  { match: '/cadastros/servicos', permission: 'cadastros.service.view' },
-  { match: '/cadastros/historico-precos', permission: 'cadastros.product.view' },
-  { match: '/cadastros/exportacao-lote', permission: 'cadastros.customer.view' },
+  { match: '/cadastros/serviços', permission: 'cadastros.service.view' },
+  { match: '/cadastros/histórico-precos', permission: 'cadastros.product.view' },
+  { match: '/cadastros/exportação-lote', permission: 'cadastros.customer.view' },
   { match: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
-  { match: '/orcamentos/novo', permission: 'quotes.quote.create' },
+  { match: '/orçamentos/novo', permission: 'quotes.quote.create' },
   { match: '/chamados/novo', permission: 'service_calls.service_call.create' },
   { match: '/equipamentos/novo', permission: 'equipments.equipment.create' },
   { match: '/inmetro/instrumentos', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/mapa', permission: 'inmetro.intelligence.view' },
-  { match: '/inmetro/importacao', permission: 'inmetro.intelligence.import' },
+  { match: '/inmetro/importação', permission: 'inmetro.intelligence.import' },
   { match: '/inmetro/prospeccao', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/executivo', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/compliance', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/webhooks', permission: 'inmetro.intelligence.view' },
-  { match: '/orcamentos/', permission: 'quotes.quote.view' },
-  { match: '/orcamentos', permission: 'quotes.quote.view' },
+  { match: '/orçamentos/', permission: 'quotes.quote.view' },
+  { match: '/orçamentos', permission: 'quotes.quote.view' },
   { match: '/chamados', permission: 'service_calls.service_call.view' },
   { match: '/os/nova', permission: 'os.work_order.create' },
   { match: '/os', permission: 'os.work_order.view' },
-  { match: '/tecnicos/agenda', permission: 'technicians.schedule.view' },
-  { match: '/tecnicos/apontamentos', permission: 'technicians.time_entry.view' },
-  { match: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
+  { match: '/técnicos/agenda', permission: 'technicians.schedule.view' },
+  { match: '/técnicos/apontamentos', permission: 'technicians.time_entry.view' },
+  { match: '/técnicos/caixa', permission: 'technicians.cashbox.view' },
   { match: '/financeiro/receber', permission: 'finance.receivable.view' },
   { match: '/financeiro/pagar', permission: 'finance.payable.view' },
-  { match: '/financeiro/comissoes/dashboard', permission: 'commissions.rule.view' },
-  { match: '/financeiro/comissoes', permission: 'commissions.rule.view' },
+  { match: '/financeiro/comissões/dashboard', permission: 'commissions.rule.view' },
+  { match: '/financeiro/comissões', permission: 'commissions.rule.view' },
   { match: '/financeiro/despesas', permission: 'expenses.expense.view' },
   { match: '/financeiro/pagamentos', permission: 'finance.receivable.view|finance.payable.view' },
   { match: '/financeiro/formas-pagamento', permission: 'finance.payable.view' },
@@ -240,31 +247,31 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/financeiro/plano-contas', permission: 'finance.chart.view' },
   { match: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
   { match: '/financeiro/contas-bancarias', permission: 'financial.bank_account.view' },
-  { match: '/financeiro/transferencias-tecnicos', permission: 'financial.fund_transfer.view' },
+  { match: '/financeiro/transferencias-técnicos', permission: 'financial.fund_transfer.view' },
   { match: '/fiscal/notas', permission: 'fiscal.note.view' },
   { match: '/estoque/movimentacoes', permission: 'estoque.movement.view' },
   { match: '/estoque/armazens', permission: 'estoque.warehouse.view' },
   { match: '/estoque', permission: 'estoque.movement.view' },
-  { match: '/relatorios', permission: 'reports.os_report.view' },
-  { match: '/notificacoes', permission: 'notifications.notification.view' },
-  { match: '/importacao', permission: 'import.data.view' },
-  { match: '/integracao/auvo', permission: 'auvo.import.view' },
-  { match: '/emails/configuracoes', permission: 'email.account.view' },
+  { match: '/relatórios', permission: 'reports.os_report.view' },
+  { match: '/notificações', permission: 'notifications.notification.view' },
+  { match: '/importação', permission: 'import.data.view' },
+  { match: '/integração/auvo', permission: 'auvo.import.view' },
+  { match: '/emails/configurações', permission: 'email.account.view' },
   { match: '/emails/compose', permission: 'email.inbox.send' },
   { match: '/emails', permission: 'email.inbox.view' },
   { match: '/inmetro/selos', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro', permission: 'inmetro.intelligence.view' },
-  { match: '/equipamentos/pesos-padrao', permission: 'equipments.standard_weight.view' },
+  { match: '/equipamentos/pesos-padrão', permission: 'equipments.standard_weight.view' },
   { match: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
   { match: '/equipamentos', permission: 'equipments.equipment.view' },
   { match: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
-  { match: '/calibracao/leituras', permission: 'calibration.reading.view' },
+  { match: '/calibração/leituras', permission: 'calibration.reading.view' },
   { match: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
-  { match: '/configuracoes/filiais', permission: 'platform.branch.view' },
-  { match: '/configuracoes/empresas', permission: 'platform.tenant.view' },
-  { match: '/configuracoes/whatsapp', permission: 'whatsapp.config.view' },
-  { match: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
-  { match: '/configuracoes', permission: 'platform.settings.view' },
+  { match: '/configurações/filiais', permission: 'platform.branch.view' },
+  { match: '/configurações/empresas', permission: 'platform.tenant.view' },
+  { match: '/configurações/whatsapp', permission: 'whatsapp.config.view' },
+  { match: '/configurações/auditoria', permission: 'iam.audit_log.view' },
+  { match: '/configurações', permission: 'platform.settings.view' },
   { match: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
   { match: '/alertas', permission: 'alerts.alert.view' },
   { match: '/qualidade/auditorias', permission: 'quality.audit.view' },
@@ -295,7 +302,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/automacao', permission: 'automation.rule.view' },
   { match: '/avancado', permission: 'advanced.follow_up.view' },
   { match: '/ia', permission: 'ai.analytics.view' },
-  // Dashboard e TV Dashboard: acessíveis a qualquer usuário autenticado (sem permissão específica)
+  { match: '/tv/dashboard', permission: 'tv.dashboard.view' },
 ]
 
 function resolveRequiredPermission(pathname: string): string | null {
@@ -644,7 +651,7 @@ export default function App() {
               <Route path="os/:id/seals" element={<TechSealsPage />} />
               <Route path="os/:id/signature" element={<TechSignaturePage />} />
               <Route path="perfil" element={<TechProfilePage />} />
-              <Route path="configuracoes" element={<TechSettingsPage />} />
+              <Route path="configurações" element={<TechSettingsPage />} />
               <Route path="barcode" element={<TechBarcodePage />} />
               <Route path="os/:id/chat" element={<TechChatPage />} />
               <Route path="os/:id/annotate" element={<TechPhotoAnnotationPage />} />
@@ -653,6 +660,13 @@ export default function App() {
               <Route path="thermal-camera" element={<TechThermalCameraPage />} />
               <Route path="thermal-camera/:id" element={<TechThermalCameraPage />} />
               <Route path="widget" element={<TechWidgetPage />} />
+              <Route path="despesas" element={<TechExpensesOverviewPage />} />
+              <Route path="caixa" element={<TechCashManagementPage />} />
+              <Route path="nova-os" element={<TechCreateWorkOrderPage />} />
+              <Route path="agenda" element={<TechSchedulePage />} />
+              <Route path="apontamentos" element={<TechTimeEntriesPage />} />
+              <Route path="notificações" element={<TechNotificationsPage />} />
+              <Route path="equipamentos" element={<TechEquipmentSearchPage />} />
             </Route>
 
             {/* Rotas do Portal do Cliente */}

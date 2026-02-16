@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Models\WorkOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -260,6 +261,13 @@ class AuvoImportService
         return $this->importWithMapping($import, $strategy, function (array $mapped) use ($import) {
             $data = AuvoFieldMapper::stripMetadata($mapped);
 
+            // Equipment model has no 'name' field — use it in notes if present
+            if (!empty($data['name'])) {
+                $equipName = $data['name'];
+                $data['notes'] = trim(($data['notes'] ?? '') . "\nNome Auvo: {$equipName}");
+                unset($data['name']);
+            }
+
             // Resolve customer via ID mapping
             $customerAuvoId = $mapped['_customer_auvo_id'] ?? null;
             if ($customerAuvoId) {
@@ -269,8 +277,9 @@ class AuvoImportService
                 }
             }
 
-            // Resolve category
+            // Resolve category — store in 'category' field (string)
             if (!empty($mapped['_category_name'])) {
+                $data['category'] = $mapped['_category_name'];
                 $data['type'] = strtolower($mapped['_category_name']);
             }
 
@@ -279,11 +288,22 @@ class AuvoImportService
                 $data['code'] = Equipment::generateCode($import->tenant_id);
             }
 
+            // Default status
+            if (empty($data['status'])) {
+                $data['status'] = 'active';
+            }
+
             return $data;
         }, function (array $data, int $tenantId) {
             if (!empty($data['serial_number'])) {
                 return Equipment::where('tenant_id', $tenantId)
                     ->where('serial_number', $data['serial_number'])
+                    ->first();
+            }
+            // Fallback: by code
+            if (!empty($data['code'])) {
+                return Equipment::where('tenant_id', $tenantId)
+                    ->where('code', $data['code'])
                     ->first();
             }
             return null;
@@ -346,9 +366,75 @@ class AuvoImportService
 
     private function importTasks(AuvoImport $import, string $strategy): array
     {
-        // Tasks are complex — import header first, then we store the mapping
-        // Items (products/services/costs) would require sub-queries to /tasks/{id}/products etc.
-        return $this->importGeneric($import, 'tasks');
+        return $this->importWithMapping($import, $strategy, function (array $mapped) use ($import) {
+            $data = AuvoFieldMapper::stripMetadata($mapped);
+
+            // Map Auvo task fields to WorkOrder fields
+            $woData = [
+                'description' => $data['title'] ?? $data['description'] ?? 'Importado do Auvo',
+                'internal_notes' => $data['notes'] ?? null,
+                'priority' => $this->mapTaskPriority($data['priority'] ?? null),
+                'status' => $this->mapTaskStatus($data['status'] ?? null),
+                'received_at' => $data['scheduled_start'] ?? now(),
+                'created_by' => $import->user_id,
+            ];
+
+            // Resolve customer via ID mapping
+            $customerAuvoId = $mapped['_customer_auvo_id'] ?? null;
+            if ($customerAuvoId) {
+                $localCustomerId = AuvoIdMapping::findLocal('customers', (int) $customerAuvoId, $import->tenant_id);
+                if ($localCustomerId) {
+                    $woData['customer_id'] = $localCustomerId;
+                }
+            }
+
+            // Resolve technician via ID mapping
+            $techAuvoId = $mapped['_technician_auvo_id'] ?? null;
+            if ($techAuvoId) {
+                $localTechId = AuvoIdMapping::findLocal('users', (int) $techAuvoId, $import->tenant_id);
+                if ($localTechId) {
+                    $woData['assigned_to'] = $localTechId;
+                }
+            }
+
+            // Dates
+            if (!empty($data['scheduled_start'])) {
+                $woData['received_at'] = $data['scheduled_start'];
+            }
+            if (!empty($data['completed_at'])) {
+                $woData['completed_at'] = $data['completed_at'];
+            }
+
+            return $woData;
+        }, function (array $data, int $tenantId) {
+            // No natural unique key for tasks — rely on AuvoIdMapping
+            return null;
+        }, WorkOrder::class);
+    }
+
+    private function mapTaskStatus(?string $auvoStatus): string
+    {
+        // Auvo V2 task statuses: 1=Open, 2=InTransit, 3=CheckIn, 4=CheckOut, 5=Finished, 6=Paused
+        return match ($auvoStatus) {
+            '1', 'Open' => 'open',
+            '2', 'InTransit' => 'in_progress',
+            '3', 'CheckIn' => 'in_progress',
+            '4', 'CheckOut' => 'in_progress',
+            '5', 'Finished' => 'completed',
+            '6', 'Paused' => 'on_hold',
+            default => 'open',
+        };
+    }
+
+    private function mapTaskPriority(?string $auvoPriority): string
+    {
+        return match ($auvoPriority) {
+            '1', 'low', 'Low' => 'low',
+            '2', 'normal', 'Normal' => 'normal',
+            '3', 'high', 'High' => 'high',
+            '4', 'urgent', 'Urgent' => 'urgent',
+            default => 'normal',
+        };
     }
 
     private function importExpenses(AuvoImport $import, string $strategy): array
@@ -356,12 +442,15 @@ class AuvoImportService
         return $this->importWithMapping($import, $strategy, function (array $mapped) use ($import) {
             $data = AuvoFieldMapper::stripMetadata($mapped);
 
+            // Set created_by from import user (required field)
+            $data['created_by'] = $import->user_id;
+
             // Resolve user via mapping
             $userAuvoId = $mapped['_user_auvo_id'] ?? null;
             if ($userAuvoId) {
                 $localUserId = AuvoIdMapping::findLocal('users', (int) $userAuvoId, $import->tenant_id);
                 if ($localUserId) {
-                    $data['user_id'] = $localUserId;
+                    $data['created_by'] = $localUserId;
                 }
             }
 
@@ -374,18 +463,23 @@ class AuvoImportService
                 }
             }
 
-            // Resolve expense category
+            // Resolve expense category — model uses expense_category_id
             if (!empty($mapped['_type_name'])) {
                 $cat = ExpenseCategory::firstOrCreate(
                     ['tenant_id' => $import->tenant_id, 'name' => $mapped['_type_name']],
                     ['tenant_id' => $import->tenant_id, 'name' => $mapped['_type_name']]
                 );
-                $data['category_id'] = $cat->id;
+                $data['expense_category_id'] = $cat->id;
             }
 
             // Normalize amount
             if (isset($data['amount']) && is_string($data['amount'])) {
                 $data['amount'] = bcadd(str_replace(',', '.', $data['amount']), '0', 2);
+            }
+
+            // Default status
+            if (empty($data['status'])) {
+                $data['status'] = 'approved';
             }
 
             return $data;
@@ -596,6 +690,7 @@ class AuvoImportService
             'equipments' => Equipment::class,
             'products' => Product::class,
             'services' => Service::class,
+            'tasks' => WorkOrder::class,
             'expenses' => Expense::class,
             default => null,
         };

@@ -28,6 +28,7 @@ class QuoteService
                 'valid_until' => $data['valid_until'] ?? null,
                 'discount_percentage' => $data['discount_percentage'] ?? 0,
                 'discount_amount' => $data['discount_amount'] ?? 0,
+                'displacement_value' => $data['displacement_value'] ?? 0,
                 'observations' => $data['observations'] ?? null,
                 'internal_notes' => $data['internal_notes'] ?? null,
             ]);

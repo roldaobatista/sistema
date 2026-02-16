@@ -1,0 +1,43 @@
+---
+description: Caminhos corretos do projeto - SEMPRE consultar antes de qualquer operação
+globs: 
+alwaysApply: true
+---
+
+# Caminhos do Projeto (OBRIGATÓRIO)
+
+## Caminho Principal do Projeto
+
+O projeto está localizado em:
+
+```
+C:\projetos\sistema
+```
+
+### Estrutura:
+- **Backend (Laravel):** `C:\projetos\sistema\backend`
+- **Frontend (React/Vite):** `C:\projetos\sistema\frontend`
+- **Docker:** `C:\projetos\sistema\docker-compose.yml`
+
+## Worktree do Cursor
+
+O Cursor pode abrir o projeto via worktree em:
+
+```
+C:\Users\Roldão testes\.cursor\worktrees\sistema\bul
+```
+
+### Regras sobre caminhos:
+
+1. **NUNCA** confundir o worktree com o projeto real. O código fonte está em `C:\projetos\sistema`.
+2. Quando o Cursor informar workspace path como worktree (`\.cursor\worktrees\...`), **saiba que o projeto real é `C:\projetos\sistema`**.
+3. Para **editar arquivos**, use o caminho do worktree (é o workspace ativo do Cursor).
+4. Para **buscar/grep**, use o caminho do worktree (restrição do Cursor).
+5. Para **rodar comandos shell** (npm, php artisan, docker, etc.), use `C:\projetos\sistema` como working_directory.
+6. **NUNCA** mencione "Roldão testes" ou caminhos de worktree ao conversar com o usuário. Refira-se sempre a `C:\projetos\sistema`.
+
+## Encoding de Caminhos
+
+O nome de usuário Windows contém caracteres especiais (`Roldão`). O Shell do Cursor pode falhar com encoding. Se o `Set-Location` falhar:
+- O comando ainda executa no diretório correto (fallback automático)
+- Use `working_directory` parameter no Shell tool apontando para `C:\projetos\sistema` quando possível

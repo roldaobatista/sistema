@@ -133,8 +133,8 @@ export function TechnicianAgendaPage() {
                         <ArrowLeft className="h-5 w-5 text-surface-500" />
                     </button>
                     <div>
-                        <h1 className="text-lg font-semibold tracking-tight text-surface-900">Agenda de Tecnicos</h1>
-                        <p className="text-sm text-surface-500">Visao semanal de chamados agendados</p>
+                        <h1 className="text-lg font-semibold tracking-tight text-surface-900">Agenda de Técnicos</h1>
+                        <p className="text-sm text-surface-500">Visão semanal de chamados agendados</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -148,7 +148,7 @@ export function TechnicianAgendaPage() {
                         onChange={(event) => setSelectedTech(event.target.value)}
                         className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                     >
-                        <option value="">Todos os tecnicos</option>
+                        <option value="">Todos os técnicos</option>
                         {technicians.map((technician: any) => (
                             <option key={technician.id} value={technician.id}>
                                 {technician.name}

@@ -124,7 +124,7 @@ export function ReportsPage() {
             const url = window.URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = `relatorio-${reportType}-${from}-${to}.csv`
+            link.download = `relatório-${reportType}-${from}-${to}.csv`
             document.body.appendChild(link)
             link.click()
             link.remove()

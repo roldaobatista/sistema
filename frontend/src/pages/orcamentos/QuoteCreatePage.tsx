@@ -246,7 +246,7 @@ export function QuoteCreatePage() {
                                         <button key={c.id} type="button"
                                             onClick={() => { setCustomerId(c.id); setCustomerSearch(c.name) }}
                                             className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-50 ${customerId === c.id ? 'bg-brand-50 text-brand-700' : 'text-surface-700'}`}>
-                                            {c.name} {c.document && <span className="text-surface-400">â€” {c.document}</span>}
+                                            {c.name} {c.document && <span className="text-surface-400">— {c.document}</span>}
                                         </button>
                                     ))}
                                 </div>
@@ -392,7 +392,7 @@ export function QuoteCreatePage() {
                                 {block.description && <p className="text-xs text-surface-500 mb-2">{block.description}</p>}
                                 {block.items.map((it, i) => (
                                     <div key={i} className="flex justify-between text-sm py-1">
-                                        <span className="text-surface-700">{it.name} Ã— {it.quantity}</span>
+                                        <span className="text-surface-700">{it.name} × {it.quantity}</span>
                                         <span className="font-medium text-surface-900">
                                             {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
                                         </span>

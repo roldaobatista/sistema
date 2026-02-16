@@ -134,7 +134,7 @@ export default function InmetroProspectionPage() {
                 <TabsContent value="queue">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Fila de Contatos â€” {queue?.date}</CardTitle>
+                            <CardTitle>Fila de Contatos — {queue?.date}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {loadingQueue ? (
@@ -269,7 +269,7 @@ export default function InmetroProspectionPage() {
                                             <TableHead>Lead</TableHead>
                                             <TableHead>Data Agendada</TableHead>
                                             <TableHead>Canal</TableHead>
-                                            <TableHead>Ãšltimo Resultado</TableHead>
+                                            <TableHead>Último Resultado</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -290,7 +290,7 @@ export default function InmetroProspectionPage() {
 
                 <TabsContent value="rejected">
                     <Card>
-                        <CardHeader><CardTitle>Instrumentos Reprovados â€” Ação Imediata</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Instrumentos Reprovados — Ação Imediata</CardTitle></CardHeader>
                         <CardContent>
                             {!rejectAlerts?.alerts?.length ? (
                                 <p className="text-center py-8 text-muted-foreground">Nenhum instrumento reprovado recente</p>
@@ -298,7 +298,7 @@ export default function InmetroProspectionPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>NÂº INMETRO</TableHead>
+                                            <TableHead>Nº INMETRO</TableHead>
                                             <TableHead>Proprietário</TableHead>
                                             <TableHead>Tipo</TableHead>
                                             <TableHead>Data Reprovação</TableHead>
@@ -331,7 +331,7 @@ export default function InmetroProspectionPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Cliente</TableHead>
-                                            <TableHead>Ãšltima Calibração</TableHead>
+                                            <TableHead>Última Calibração</TableHead>
                                             <TableHead>Instrumentos</TableHead>
                                             <TableHead>Risco</TableHead>
                                         </TableRow>

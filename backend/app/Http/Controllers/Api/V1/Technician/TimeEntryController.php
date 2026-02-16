@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Technician;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\TimeEntry;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -182,7 +183,7 @@ class TimeEntryController extends Controller
 
         // Verifica ownership — só o próprio técnico ou admin pode parar
         $user = $request->user();
-        $canManageOthers = $user->hasRole('super_admin') || $user->can('technicians.time_entry.update');
+        $canManageOthers = $user->hasRole(Role::SUPER_ADMIN) || $user->can('technicians.time_entry.update');
         if ($timeEntry->technician_id !== $user->id && !$canManageOthers) {
             return response()->json(['message' => 'Sem permissão para finalizar este apontamento'], 403);
         }

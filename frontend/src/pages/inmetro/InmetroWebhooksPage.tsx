@@ -71,7 +71,7 @@ export default function InmetroWebhooksPage() {
                                     <TableHead>URL</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Falhas</TableHead>
-                                    <TableHead>Ãšltimo Disparo</TableHead>
+                                    <TableHead>Último Disparo</TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>

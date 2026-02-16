@@ -42,7 +42,7 @@ const statusColors: Record<string, string> = {
     ativo: 'bg-emerald-100 text-emerald-700',
     inativo: 'bg-surface-200 text-surface-600',
     em_calibracao: 'bg-blue-100 text-blue-700',
-    fora_de_servico: 'bg-red-100 text-red-700',
+    fora_de_serviço: 'bg-red-100 text-red-700',
 }
 
 function fmtDate(d: string | null) {
@@ -173,7 +173,7 @@ export default function StandardWeightsPage() {
             const url = URL.createObjectURL(res.data)
             const a = document.createElement('a')
             a.href = url
-            a.download = `pesos-padrao-${new Date().toISOString().split('T')[0]}.csv`
+            a.download = `pesos-padrão-${new Date().toISOString().split('T')[0]}.csv`
             a.click()
             URL.revokeObjectURL(url)
             toast.success('Exportação concluída!')

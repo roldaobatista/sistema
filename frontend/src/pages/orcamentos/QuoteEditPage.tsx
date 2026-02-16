@@ -118,7 +118,7 @@ export function QuoteEditPage() {
     useEffect(() => {
         if (quote && !isMutable) {
             toast.error('Orçamento não pode ser editado neste status')
-            navigate(`/orcamentos/${id}`)
+            navigate(`/orçamentos/${id}`)
         }
     }, [quote, isMutable, navigate, id])
 
@@ -147,7 +147,7 @@ export function QuoteEditPage() {
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={() => navigate(`/orcamentos/${id}`)}>
+                <Button variant="ghost" size="icon" onClick={() => navigate(`/orçamentos/${id}`)}>
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <h1 className="text-2xl font-bold text-content-primary">

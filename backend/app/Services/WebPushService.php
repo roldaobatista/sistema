@@ -68,8 +68,8 @@ class WebPushService
         $payload = json_encode([
             'title' => $title,
             'body' => $body,
-            'icon' => '/icons/icon-192x192.png',
-            'badge' => '/icons/badge-72x72.png',
+            'icon' => '/icons/icon-192.png',
+            'badge' => '/icons/icon-192.png',
             'data' => array_merge($data, ['timestamp' => now()->toIso8601String()]),
         ]);
 

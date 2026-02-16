@@ -9,6 +9,9 @@ use App\Models\WorkOrder;
 use App\Observers\CrmObserver;
 use App\Observers\PriceTrackingObserver;
 use App\Observers\WorkOrderObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -18,7 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if ($this->app->runningUnitTests() || env('TESTING_SQLITE_PROVIDER')) {
+            $this->app->register(\App\Providers\TestingSqliteServiceProvider::class);
+        }
     }
 
     /**
@@ -26,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
         $observer = CrmObserver::class;
         WorkOrder::updated(fn (WorkOrder $wo) => app($observer)->workOrderUpdated($wo));
         Quote::updated(fn (Quote $q) => app($observer)->quoteUpdated($q));

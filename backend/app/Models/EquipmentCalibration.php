@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Concerns\BelongsToTenant;
 
 class EquipmentCalibration extends Model
@@ -19,6 +20,8 @@ class EquipmentCalibration extends Model
         'temperature', 'humidity', 'pressure',
         'corrections_applied', 'performed_by', 'approved_by',
         'cost', 'work_order_id', 'notes', 'eccentricity_data',
+        'certificate_template_id', 'conformity_declaration',
+        'max_permissible_error', 'max_error_found', 'mass_unit', 'calibration_method',
     ];
 
     protected function casts(): array
@@ -50,5 +53,20 @@ class EquipmentCalibration extends Model
             'equipment_calibration_id',
             'standard_weight_id'
         )->withTimestamps();
+    }
+
+    public function readings(): HasMany
+    {
+        return $this->hasMany(CalibrationReading::class);
+    }
+
+    public function excentricityTests(): HasMany
+    {
+        return $this->hasMany(ExcentricityTest::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(CertificateTemplate::class, 'certificate_template_id');
     }
 }

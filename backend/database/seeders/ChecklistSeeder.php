@@ -28,7 +28,7 @@ class ChecklistSeeder extends Seeder
         $adminRole->givePermissionTo($permissions);
 
         // Assign to Technician (view and create submissions only)
-        $techRole = Role::firstOrCreate(['name' => 'technician', 'guard_name' => 'web']);
+        $techRole = Role::firstOrCreate(['name' => 'tecnico', 'guard_name' => 'web']);
         $techRole->givePermissionTo([
             'technicians.checklist.view',
             'technicians.checklist.create',

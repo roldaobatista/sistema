@@ -95,7 +95,7 @@ export function AccountPayableCategoriesPage() {
             }
 
             if (status === 403) {
-                toast.error('Sem permissao para esta acao')
+                toast.error('Sem permissão para esta ação')
                 return
             }
 
@@ -116,7 +116,7 @@ export function AccountPayableCategoriesPage() {
             const status = (error as ApiErrorLike | undefined)?.response?.status
             const message = (error as ApiErrorLike | undefined)?.response?.data?.message
             if (status === 403) {
-                toast.error('Sem permissao para excluir categoria')
+                toast.error('Sem permissão para excluir categoria')
                 return
             }
             toast.error(message ?? 'Erro ao excluir categoria')
@@ -143,7 +143,7 @@ export function AccountPayableCategoriesPage() {
 
     const openCreate = () => {
         if (!canCreate) {
-            toast.error('Sem permissao para criar categoria')
+            toast.error('Sem permissão para criar categoria')
             return
         }
         setEditing(null)
@@ -154,7 +154,7 @@ export function AccountPayableCategoriesPage() {
 
     const openEdit = (category: Category) => {
         if (!canUpdate) {
-            toast.error('Sem permissao para editar categoria')
+            toast.error('Sem permissão para editar categoria')
             return
         }
         setEditing(category)
@@ -169,7 +169,7 @@ export function AccountPayableCategoriesPage() {
 
     const openDelete = (category: Category) => {
         if (!canDelete) {
-            toast.error('Sem permissao para excluir categoria')
+            toast.error('Sem permissão para excluir categoria')
             return
         }
         setDeleteTarget(category)
@@ -217,7 +217,7 @@ export function AccountPayableCategoriesPage() {
             <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Categoria' : 'Nova Categoria'}>
                 <form onSubmit={(event) => { event.preventDefault(); saveMut.mutate() }} className="space-y-4">
                     <Input label="Nome *" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)} error={formErrors.name?.[0]} required />
-                    <Input label="Descricao" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} />
+                    <Input label="Descrição" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} />
 
                     <div>
                         <label className="mb-2 block text-sm font-medium text-surface-700">Cor</label>

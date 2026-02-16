@@ -33,6 +33,10 @@ class ExternalApiController extends Controller
         }
     }
 
+    /**
+     * Consulta enriquecida de CNPJ — retorna dados completos da empresa
+     * incluindo sócios, CNAE, Simples Nacional, capital social, etc.
+     */
     public function cnpj(string $cnpj): JsonResponse
     {
         try {
@@ -47,6 +51,58 @@ class ExternalApiController extends Controller
             Log::error('ExternalApi cnpj failed', ['error' => $e->getMessage(), 'cnpj' => $cnpj]);
             return response()->json(['message' => 'Erro ao consultar CNPJ'], 500);
         }
+    }
+
+    /**
+     * Endpoint unificado: auto-detecta CPF ou CNPJ pelo tamanho do documento.
+     */
+    public function document(string $document): JsonResponse
+    {
+        $digits = preg_replace('/\D/', '', $document);
+
+        if (strlen($digits) === 14) {
+            return $this->cnpj($digits);
+        }
+
+        if (strlen($digits) === 11) {
+            return $this->cpfLookup($digits);
+        }
+
+        return response()->json(['message' => 'Documento inválido. Informe um CPF (11 dígitos) ou CNPJ (14 dígitos).'], 422);
+    }
+
+    private function cpfLookup(string $cpf): JsonResponse
+    {
+        if (!$this->validateCpf($cpf)) {
+            return response()->json(['message' => 'CPF inválido'], 422);
+        }
+
+        return response()->json([
+            'source' => 'cpf_validation',
+            'cpf' => $cpf,
+            'document_valid' => true,
+            'formatted' => substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9, 2),
+        ]);
+    }
+
+    private function validateCpf(string $cpf): bool
+    {
+        if (strlen($cpf) !== 11 || preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+
+        for ($t = 9; $t < 11; $t++) {
+            $d = 0;
+            for ($c = 0; $c < $t; $c++) {
+                $d += (int) $cpf[$c] * (($t + 1) - $c);
+            }
+            $d = ((10 * $d) % 11) % 10;
+            if ((int) $cpf[$c] !== $d) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function holidays(int $year): JsonResponse

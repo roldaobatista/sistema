@@ -339,7 +339,7 @@ export default function ImportPage() {
             const url = window.URL.createObjectURL(new Blob([response.data]))
             const link = document.createElement('a')
             link.href = url
-            link.download = `modelo_importacao_${entity}.csv`
+            link.download = `modelo_importação_${entity}.csv`
             link.click()
             window.URL.revokeObjectURL(url)
         } catch {
@@ -356,7 +356,7 @@ export default function ImportPage() {
             const url = window.URL.createObjectURL(new Blob([response.data]))
             const link = document.createElement('a')
             link.href = url
-            link.download = `exportacao_${entity}_${new Date().toISOString().slice(0, 10)}.csv`
+            link.download = `exportação_${entity}_${new Date().toISOString().slice(0, 10)}.csv`
             link.click()
             window.URL.revokeObjectURL(url)
             setSuccessMessage('Dados exportados com sucesso!')
@@ -378,7 +378,7 @@ export default function ImportPage() {
             const url = window.URL.createObjectURL(new Blob([response.data]))
             const link = document.createElement('a')
             link.href = url
-            link.download = `erros_importacao_${importId}.csv`
+            link.download = `erros_importação_${importId}.csv`
             link.click()
             window.URL.revokeObjectURL(url)
         } catch {
@@ -613,7 +613,7 @@ export default function ImportPage() {
                                         <div className="flex items-center gap-3">
                                             <span className="text-surface-400 text-xs" title="Total de linhas">{h.total_rows} linhas</span>
                                             <span className="text-emerald-600">+{h.inserted}</span>
-                                            <span className="text-blue-600">â†»{h.updated}</span>
+                                            <span className="text-blue-600">↻{h.updated}</span>
                                             <span className="text-surface-400">âŠ˜{h.skipped}</span>
                                             {h.errors > 0 && <span className="text-red-600">âœ•{h.errors}</span>}
                                             <span className="text-surface-400 text-xs">
@@ -687,9 +687,9 @@ export default function ImportPage() {
                                     {expandedImportId === h.id && (
                                         <div className="mt-2 rounded-lg bg-surface-100 p-3 text-xs space-y-2">
                                             <div className="flex gap-4">
-                                                <span><strong>Usuário:</strong> {(h as any).user?.name ?? 'â€”'}</span>
-                                                <span><strong>Estratégia:</strong> {(h as any).duplicate_strategy ?? 'â€”'}</span>
-                                                <span><strong>Separador:</strong> {(h as any).separator ?? 'â€”'}</span>
+                                                <span><strong>Usuário:</strong> {(h as any).user?.name ?? '—'}</span>
+                                                <span><strong>Estratégia:</strong> {(h as any).duplicate_strategy ?? '—'}</span>
+                                                <span><strong>Separador:</strong> {(h as any).separator ?? '—'}</span>
                                             </div>
                                             {(h as any).mapping && (
                                                 <div>
@@ -697,7 +697,7 @@ export default function ImportPage() {
                                                     <div className="mt-1 flex flex-wrap gap-1">
                                                         {Object.entries((h as any).mapping).map(([field, header]) => (
                                                             <span key={field} className="rounded bg-surface-200 px-2 py-0.5">
-                                                                {String(field)} â†’ {String(header)}
+                                                                {String(field)} → {String(header)}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -802,7 +802,7 @@ export default function ImportPage() {
                                                 </div>
                                                 {s.last_import_at && (
                                                     <div className="flex justify-between">
-                                                        <span>Ãšltima</span>
+                                                        <span>Última</span>
                                                         <span className="font-medium text-surface-600">
                                                             {new Date(s.last_import_at).toLocaleDateString('pt-BR')}
                                                         </span>
@@ -943,7 +943,7 @@ export default function ImportPage() {
                                         {uploadData.file_name}
                                     </h3>
                                     <p className="text-[13px] text-surface-500">
-                                        {uploadData.total_rows} linhas â€¢ Encoding: {uploadData.encoding} â€¢ Separador: {uploadData.separator === 'tab' ? 'TAB' : uploadData.separator}
+                                        {uploadData.total_rows} linhas • Encoding: {uploadData.encoding} • Separador: {uploadData.separator === 'tab' ? 'TAB' : uploadData.separator}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -1019,7 +1019,7 @@ export default function ImportPage() {
                                                     : 'border-default bg-surface-0'
                                             )}
                                         >
-                                            <option value="">â€” Não importar â€”</option>
+                                            <option value="">— Não importar —</option>
                                             {uploadData.headers.map(h => (
                                                 <option key={h} value={h}>{h}</option>
                                             ))}
@@ -1113,7 +1113,7 @@ export default function ImportPage() {
 
                         <div className="flex justify-between">
                             <button onClick={reset} className="rounded-lg border border-surface-200 px-4 py-2 text-sm hover:bg-surface-50">
-                                â† Voltar
+                                ← Voltar
                             </button>
                             <button
                                 onClick={() => previewMutation.mutate()}
@@ -1177,7 +1177,7 @@ export default function ImportPage() {
                                             </td>
                                             {Object.keys(mapping).filter(k => mapping[k]).map(k => (
                                                 <td key={k} className="max-w-[200px] truncate px-3 py-2">
-                                                    {row.data[k] || 'â€”'}
+                                                    {row.data[k] || '—'}
                                                 </td>
                                             ))}
                                             <td className="px-3 py-2 text-xs text-surface-500">
@@ -1191,7 +1191,7 @@ export default function ImportPage() {
 
                         <div className="flex justify-between">
                             <button onClick={() => setStep(1)} className="rounded-lg border border-surface-200 px-4 py-2 text-sm hover:bg-surface-50">
-                                â† Ajustar Mapeamento
+                                ← Ajustar Mapeamento
                             </button>
                             <button
                                 onClick={() => {

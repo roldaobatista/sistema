@@ -112,7 +112,7 @@ export function ServicesPage() {
 
     const formatBRL = (v: string) => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     const formatTime = (m: number | null) => {
-        if (!m) return 'â€”'
+        if (!m) return '—'
         const h = Math.floor(m / 60)
         const min = m % 60
         return h > 0 ? `${h}h${min > 0 ? min.toString().padStart(2, '0') : ''}` : `${min}min`
@@ -185,7 +185,7 @@ export function ServicesPage() {
                                     </div>
                                 </td>
                                 <td className="hidden px-4 py-3 md:table-cell">
-                                    {s.category ? <Badge variant="success">{s.category.name}</Badge> : <span className="text-xs text-surface-400">â€”</span>}
+                                    {s.category ? <Badge variant="success">{s.category.name}</Badge> : <span className="text-xs text-surface-400">—</span>}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-right text-sm font-medium text-surface-900">{formatBRL(s.default_price)}</td>
                                 <td className="hidden px-3.5 py-2.5 text-right lg:table-cell">

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AccountReceivable;
+use App\Models\CommissionCampaign;
 use App\Models\CommissionEvent;
 use App\Models\CommissionRule;
 use App\Models\WorkOrder;
@@ -25,6 +26,11 @@ class CommissionService
 
         if ($existing) {
             throw new \Exception('Comissões já geradas para esta OS.');
+        }
+
+        // 1b. Não gera comissão para OS de garantia ou valor zero
+        if ($wo->is_warranty || bccomp((string) ($wo->total ?? 0), '0', 2) <= 0) {
+            return [];
         }
 
         // 2. Carregar dependências
@@ -113,6 +119,10 @@ class CommissionService
     public function simulate(\App\Models\WorkOrder $wo): array
     {
         $wo->loadMissing(['items', 'technicians', 'customer']);
+
+        if ($wo->is_warranty || bccomp((string) ($wo->total ?? 0), '0', 2) <= 0) {
+            return [];
+        }
 
         $context = $this->buildCalculationContext($wo);
         $beneficiaries = $this->identifyBeneficiaries($wo);
@@ -340,6 +350,7 @@ class CommissionService
             'products_total' => (float) $productsTotal,
             'services_total' => (float) $servicesTotal,
             'cost' => (float) $itemsCost,
+            'items_count' => $wo->items->count(),
         ];
     }
 
@@ -348,11 +359,9 @@ class CommissionService
      */
     private function loadActiveCampaigns(int $tenantId): Collection
     {
-        return DB::table('commission_campaigns')
+        return CommissionCampaign::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
-            ->where('active', true)
-            ->where('starts_at', '<=', now()->toDateString())
-            ->where('ends_at', '>=', now()->toDateString())
+            ->active()
             ->get();
     }
 

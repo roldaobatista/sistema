@@ -35,7 +35,7 @@ export default function InmetroCompetitorPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card><CardContent className="pt-6 flex items-center gap-3">
                     <TrendingUp className="w-8 h-8 text-blue-500" />
-                    <div><p className="text-2xl font-bold">{timeline?.current_share ?? 'â€”'}%</p><p className="text-sm text-muted-foreground">Market Share Atual</p></div>
+                    <div><p className="text-2xl font-bold">{timeline?.current_share ?? '—'}%</p><p className="text-sm text-muted-foreground">Market Share Atual</p></div>
                 </CardContent></Card>
                 <Card><CardContent className="pt-6 flex items-center gap-3">
                     <Activity className="w-8 h-8 text-amber-500" />
@@ -67,7 +67,7 @@ export default function InmetroCompetitorPage() {
                             <TableBody>{timeline.snapshots.map((s: any, i: number) => (
                                 <TableRow key={i}><TableCell>{s.period}</TableCell><TableCell>{s.data?.total_instruments ?? 0}</TableCell>
                                     <TableCell><Badge>{s.data?.our_share ?? 0}%</Badge></TableCell>
-                                    <TableCell>{i > 0 ? `${s.data?.our_share - timeline.snapshots[i - 1].data?.our_share > 0 ? '+' : ''}${(s.data?.our_share - timeline.snapshots[i - 1].data?.our_share).toFixed(1)}%` : 'â€”'}</TableCell></TableRow>
+                                    <TableCell>{i > 0 ? `${s.data?.our_share - timeline.snapshots[i - 1].data?.our_share > 0 ? '+' : ''}${(s.data?.our_share - timeline.snapshots[i - 1].data?.our_share).toFixed(1)}%` : '—'}</TableCell></TableRow>
                             ))}</TableBody></Table>
                     )}
                 </CardContent></Card></TabsContent>
@@ -103,7 +103,7 @@ export default function InmetroCompetitorPage() {
                             <Table><TableHeader><TableRow><TableHead>Resultado</TableHead><TableHead>Motivo</TableHead><TableHead>Valor</TableHead><TableHead>Notas</TableHead></TableRow></TableHeader>
                                 <TableBody>{winLoss.records.map((r: any) => (
                                     <TableRow key={r.id}><TableCell><Badge variant={r.outcome === 'win' ? 'default' : 'destructive'}>{r.outcome === 'win' ? 'Vitória' : 'Derrota'}</Badge></TableCell>
-                                        <TableCell>{r.reason}</TableCell><TableCell>R$ {(r.estimated_value ?? 0).toLocaleString('pt-BR')}</TableCell><TableCell className="text-sm">{r.notes || 'â€”'}</TableCell></TableRow>
+                                        <TableCell>{r.reason}</TableCell><TableCell>R$ {(r.estimated_value ?? 0).toLocaleString('pt-BR')}</TableCell><TableCell className="text-sm">{r.notes || '—'}</TableCell></TableRow>
                                 ))}</TableBody></Table>
                         </>
                     )}

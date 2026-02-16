@@ -33,6 +33,7 @@ class User extends Authenticatable
         'location_lng',
         'location_updated_at',
         'status',
+        'denied_permissions',
     ];
 
     protected $hidden = [
@@ -50,7 +51,35 @@ class User extends Authenticatable
             'location_lat' => 'float',
             'location_lng' => 'float',
             'location_updated_at' => 'datetime',
+            'denied_permissions' => 'array',
         ];
+    }
+
+    /**
+     * Returns the list of explicitly denied permissions for this user.
+     */
+    public function getDeniedPermissionsList(): array
+    {
+        return $this->denied_permissions ?? [];
+    }
+
+    /**
+     * Check if a specific permission is denied for this user.
+     */
+    public function isPermissionDenied(string $permission): bool
+    {
+        return in_array($permission, $this->getDeniedPermissionsList(), true);
+    }
+
+    /**
+     * Get effective permissions: all granted minus denied.
+     */
+    public function getEffectivePermissions(): \Illuminate\Support\Collection
+    {
+        $denied = $this->getDeniedPermissionsList();
+
+        return $this->getAllPermissions()
+            ->filter(fn ($perm) => !in_array($perm->name, $denied, true));
     }
 
     // Relacionamentos

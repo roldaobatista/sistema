@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
+use App\Models\Role;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -13,8 +14,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class CheckPermission
 {
-    /** Role que bypassa todas as permissoes */
-    private const ROLE_SUPER_ADMIN = 'super_admin';
 
     public function handle(Request $request, Closure $next, string $permissionExpression): Response
     {
@@ -25,7 +24,7 @@ class CheckPermission
         }
 
         // super_admin bypasses all permission checks
-        if ($user->hasRole(self::ROLE_SUPER_ADMIN)) {
+        if ($user->hasRole(Role::SUPER_ADMIN)) {
             return $next($request);
         }
 
@@ -42,9 +41,14 @@ class CheckPermission
 
         $hasAnyPermission = false;
         $hasKnownPermission = false;
+        $deniedList = $user->getDeniedPermissionsList();
 
         foreach ($permissions as $permission) {
             try {
+                if (in_array($permission, $deniedList, true)) {
+                    $hasKnownPermission = true;
+                    continue;
+                }
                 if ($user->hasPermissionTo($permission)) {
                     $hasAnyPermission = true;
                     break;

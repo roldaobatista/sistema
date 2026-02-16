@@ -229,7 +229,7 @@ export function ChartOfAccountsPage() {
 
     const openCreate = (parentId?: number) => {
         if (!canCreate) {
-            toast.error('Sem permissao para criar conta')
+            toast.error('Sem permissão para criar conta')
             return
         }
 
@@ -245,7 +245,7 @@ export function ChartOfAccountsPage() {
 
     const openEdit = (account: Account) => {
         if (!canUpdate) {
-            toast.error('Sem permissao para editar conta')
+            toast.error('Sem permissão para editar conta')
             return
         }
 
@@ -284,7 +284,7 @@ export function ChartOfAccountsPage() {
         event.preventDefault()
 
         if (!form.code.trim() || !form.name.trim()) {
-            toast.error('Informe codigo e nome da conta')
+            toast.error('Informe código e nome da conta')
             return
         }
 
@@ -374,7 +374,7 @@ export function ChartOfAccountsPage() {
                     <input
                         value={search}
                         onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
-                        placeholder="Buscar por codigo ou nome"
+                        placeholder="Buscar por código ou nome"
                         className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-3 text-sm focus:border-brand-500 focus:bg-surface-0 focus:outline-none"
                     />
                 </div>
@@ -430,12 +430,12 @@ export function ChartOfAccountsPage() {
                 open={modal !== null}
                 onOpenChange={(open) => !open && closeModal()}
                 title={modal?.mode === 'edit' ? 'Editar Conta' : 'Nova Conta'}
-                description="Defina codigo, tipo e hierarquia da conta"
+                description="Defina código, tipo e hierarquia da conta"
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Input
-                            label="Codigo"
+                            label="Código"
                             value={form.code}
                             onChange={(event: ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, code: event.target.value }))}
                             placeholder="1.01.001"
@@ -509,7 +509,7 @@ export function ChartOfAccountsPage() {
                 size="sm"
             >
                 <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Esta acao nao pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Esta ação não pode ser desfeita.</p>
                     <div className="flex items-center justify-end gap-2">
                         <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteMut.isPending}>Cancelar</Button>
                         <Button

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->text('google_maps_link')->nullable()->after('longitude');
+            $table->text('google_maps_link')->nullable();
         });
     }
 

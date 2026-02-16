@@ -125,7 +125,7 @@ export function QuotesListPage() {
         try {
             const res = await api.get('/quotes-export', { params: { status: status || undefined }, responseType: 'blob' })
             const url = URL.createObjectURL(new Blob([res.data]))
-            const a = document.createElement('a'); a.href = url; a.download = `orcamentos_${new Date().toISOString().slice(0, 10)}.csv`; a.click()
+            const a = document.createElement('a'); a.href = url; a.download = `orçamentos_${new Date().toISOString().slice(0, 10)}.csv`; a.click()
             URL.revokeObjectURL(url)
             toast.success('Exportação concluída!')
         } catch {
@@ -240,7 +240,7 @@ export function QuotesListPage() {
                                     const isMutable = isDraft || isRejected
 
                                     return (
-                                        <tr key={q.id} className="hover:bg-surface-50 transition-colors duration-100 cursor-pointer" onClick={() => navigate(`/orcamentos/${q.id}`)}>
+                                        <tr key={q.id} className="hover:bg-surface-50 transition-colors duration-100 cursor-pointer" onClick={() => navigate(`/orçamentos/${q.id}`)}>
                                             <td className="px-4 py-3">
                                                 <span className="font-medium text-brand-600">{q.quote_number}</span>
                                                 {q.revision > 1 && <span className="text-xs text-content-tertiary ml-1">rev.{q.revision}</span>}

@@ -3,7 +3,7 @@ import api from '@/lib/api';
 import { PageHeader } from '@/components/ui/pageheader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Bell, Check, Eye, X, RefreshCw, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 

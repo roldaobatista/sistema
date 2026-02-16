@@ -52,6 +52,7 @@ class Quote extends Model
     protected $fillable = [
         'tenant_id', 'quote_number', 'revision', 'customer_id', 'seller_id', 'status',
         'source', 'valid_until', 'discount_percentage', 'discount_amount',
+        'displacement_value',
         'subtotal', 'total', 'observations', 'internal_notes',
         'internal_approved_by', 'internal_approved_at',
         'sent_at', 'approved_at', 'rejected_at', 'rejection_reason',
@@ -63,6 +64,7 @@ class Quote extends Model
             'valid_until' => 'date',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
+            'displacement_value' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'total' => 'decimal:2',
             'internal_approved_at' => 'datetime',
@@ -121,7 +123,9 @@ class Quote extends Model
             $discountAmount = (string) ($this->discount_amount ?? '0.00');
         }
 
+        $displacement = (string) ($this->displacement_value ?? '0.00');
         $total = bcsub($subtotal, $discountAmount, 2);
+        $total = bcadd($total, $displacement, 2);
         $this->total = bccomp($total, '0', 2) < 0 ? '0.00' : $total;
         $this->saveQuietly();
     }

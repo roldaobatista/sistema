@@ -25,7 +25,7 @@ const initialFormData = {
   fleet_vehicle_id: '',
   inspection_date: new Date().toISOString().slice(0, 10),
   odometer_km: '',
-  status: 'ok' as const,
+  status: 'ok' as 'ok' | 'issues_found' | 'critical',
   checklist_data: { ...initialChecklist },
   observations: '',
 }

@@ -61,7 +61,7 @@ export function PortalDashboardPage() {
     const cards = [
         { label: 'OS Abertas', value: openOS, icon: FileText, color: 'text-brand-600 bg-brand-50', link: '/portal/os' },
         { label: 'OS Concluídas', value: completedOS, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50', link: '/portal/os' },
-        { label: 'Orçamentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orcamentos' },
+        { label: 'Orçamentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orçamentos' },
         { label: 'Faturas', value: fmtBRL(totalPending), icon: DollarSign, color: 'text-red-600 bg-red-50', link: '/portal/financeiro' },
     ]
 
@@ -105,9 +105,9 @@ export function PortalDashboardPage() {
 
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                 <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
-                    <h2 className="text-sm font-semibold text-surface-900">Ãšltimas Ordens de Serviço</h2>
+                    <h2 className="text-sm font-semibold text-surface-900">Últimas Ordens de Serviço</h2>
                     <button onClick={() => navigate('/portal/os')} className="text-xs text-brand-600 font-medium hover:underline">
-                        Ver todas â†’
+                        Ver todas →
                     </button>
                 </div>
                 {recentOS.length === 0 ? (

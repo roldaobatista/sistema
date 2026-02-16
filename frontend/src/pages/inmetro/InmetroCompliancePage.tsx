@@ -87,7 +87,7 @@ export default function InmetroCompliancePage() {
                             ) : (
                                 <Table><TableHeader><TableRow><TableHead>Título</TableHead><TableHead>Tipo</TableHead><TableHead>Regulação</TableHead><TableHead>Itens</TableHead></TableRow></TableHeader>
                                     <TableBody>{checklists.map((cl: any) => (
-                                        <TableRow key={cl.id}><TableCell className="font-medium">{cl.title}</TableCell><TableCell><Badge variant="outline">{cl.instrument_type}</Badge></TableCell><TableCell>{cl.regulation_reference || 'â€”'}</TableCell><TableCell>{Array.isArray(cl.items) ? cl.items.length : 0}</TableCell></TableRow>
+                                        <TableRow key={cl.id}><TableCell className="font-medium">{cl.title}</TableCell><TableCell><Badge variant="outline">{cl.instrument_type}</Badge></TableCell><TableCell>{cl.regulation_reference || '—'}</TableCell><TableCell>{Array.isArray(cl.items) ? cl.items.length : 0}</TableCell></TableRow>
                                     ))}</TableBody></Table>
                             )}
                         </CardContent>

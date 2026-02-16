@@ -31,17 +31,16 @@ class AuvoExportService
             'name' => $customer->name,
             'description' => $customer->trade_name ?? $customer->name,
             'cpfCnpj' => $customer->document,
-            'address' => $customer->address,
+            'address' => $customer->address_street,
             'addressNumber' => $customer->address_number,
             'complement' => $customer->address_complement,
-            'neighborhood' => $customer->neighborhood,
-            'city' => $customer->city,
-            'state' => $customer->state,
-            'zipCode' => $customer->zip_code,
+            'neighborhood' => $customer->address_neighborhood,
+            'city' => $customer->address_city,
+            'state' => $customer->address_state,
+            'zipCode' => $customer->address_zip,
             'email' => $customer->email ? [$customer->email] : [],
             'phoneNumber' => $customer->phone ? [$customer->phone] : [],
             'isActive' => $customer->is_active,
-            // 'tags' => ['Integração'], 
         ];
 
         // PUT /customers/ performs an Upsert based on externalId (if provided) or ID
@@ -145,6 +144,8 @@ class AuvoExportService
      */
     public function exportQuote(Quote $quote): array
     {
+        $quote->loadMissing('customer', 'items');
+
         // Resolve Customer Auvo ID
         $customerMapping = AuvoIdMapping::where('entity_type', 'customers')
             ->where('local_id', $quote->customer_id)
@@ -152,33 +153,29 @@ class AuvoExportService
             ->first();
 
         if (!$customerMapping) {
-            // Auto-export customer if missing
             $customer = $quote->customer;
+            if (!$customer) {
+                throw new \RuntimeException('Orçamento sem cliente associado.');
+            }
             $auvoCustomer = $this->exportCustomer($customer);
-            $customerAuvoId = $auvoCustomer['id'];
+            $customerAuvoId = $auvoCustomer['id'] ?? null;
+            if (!$customerAuvoId) {
+                throw new \RuntimeException('Falha ao exportar cliente para o Auvo.');
+            }
         } else {
             $customerAuvoId = $customerMapping->auvo_id;
         }
 
-        // Build Payload
-        // Auvo Quotations usually require valid customerID, date, and items.
-        
         $payload = [
             'customerId' => (int) $customerAuvoId,
-            'title' => "Orçamento #{$quote->id} - {$quote->customer->name}",
-            'status' => 'Pending', // Or map statuses
+            'title' => "Orçamento #{$quote->quote_number} - {$quote->customer->name}",
+            'status' => 'Pending',
             'date' => $quote->created_at->format('Y-m-d'),
-            'expirationDate' => $quote->expiration_date?->format('Y-m-d'),
-            'observation' => $quote->notes,
+            'expirationDate' => $quote->valid_until?->format('Y-m-d'),
+            'observation' => $quote->observations ?? $quote->internal_notes,
+            'totalValue' => (float) $quote->total,
         ];
 
-        // Items logic would go here if Auvo allows sending items in the same payload
-        // Documentation check needed for structure of 'items' in Quotation POST.
-        // Assuming array of {name, value, quantity}
-        
-        // For MVP of export, let's send basic header first.
-        // If items are required, we loop them.
-        
         $response = $this->client->post('quotations', $payload);
         $auvoData = $response['result'] ?? $response;
         $auvoId = $auvoData['id'] ?? null;

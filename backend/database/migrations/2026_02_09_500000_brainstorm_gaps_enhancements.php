@@ -66,6 +66,18 @@ return new class extends Migration
 
     public function down(): void
     {
-        // SQLite não suporta dropColumn facilmente, skip gracefully
+        Schema::table('recurring_contracts', function (Blueprint $table) {
+            if (Schema::hasColumn('recurring_contracts', 'billing_type')) $table->dropColumn('billing_type');
+            if (Schema::hasColumn('recurring_contracts', 'monthly_value')) $table->dropColumn('monthly_value');
+        });
+        Schema::table('equipment_calibrations', function (Blueprint $table) {
+            foreach (['status', 'nominal_mass', 'error_after_adjustment', 'traceability'] as $col) {
+                if (Schema::hasColumn('equipment_calibrations', $col)) $table->dropColumn($col);
+            }
+        });
+        Schema::table('work_orders', function (Blueprint $table) {
+            if (Schema::hasColumn('work_orders', 'sla_response_breached')) $table->dropColumn('sla_response_breached');
+            if (Schema::hasColumn('work_orders', 'sla_resolution_breached')) $table->dropColumn('sla_resolution_breached');
+        });
     }
 };

@@ -14,8 +14,11 @@ class TechnicianCashTransaction extends Model
     public const TYPE_CREDIT = 'credit';
     public const TYPE_DEBIT = 'debit';
 
+    public const METHOD_CASH = 'cash';
+    public const METHOD_CORPORATE_CARD = 'corporate_card';
+
     protected $fillable = [
-        'tenant_id', 'fund_id', 'type', 'amount', 'balance_after',
+        'tenant_id', 'fund_id', 'type', 'payment_method', 'amount', 'balance_after',
         'expense_id', 'work_order_id', 'created_by',
         'description', 'transaction_date',
     ];

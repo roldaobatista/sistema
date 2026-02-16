@@ -137,12 +137,12 @@ export default function HRPage() {
                             {!loadingSchedules && schedules.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-surface-400">Nenhuma escala</td></tr>}
                             {schedules.map((s: any) => (
                                 <tr key={s.id} className="transition-colors hover:bg-surface-50/50">
-                                    <td className="px-4 py-3 font-medium text-surface-900">{s.user?.name ?? 'â€”'}</td>
-                                    <td className="px-4 py-3 text-surface-600">{s.schedule_date ? new Date(s.schedule_date).toLocaleDateString('pt-BR') : 'â€”'}</td>
+                                    <td className="px-4 py-3 font-medium text-surface-900">{s.user?.name ?? '—'}</td>
+                                    <td className="px-4 py-3 text-surface-600">{s.schedule_date ? new Date(s.schedule_date).toLocaleDateString('pt-BR') : '—'}</td>
                                     <td className="px-4 py-3"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                                         s.type === 'work' ? 'bg-emerald-100 text-emerald-700' : s.type === 'off' ? 'bg-surface-100 text-surface-600' : 'bg-amber-100 text-amber-700'
                                     )}>{s.type === 'work' ? 'Trabalho' : s.type === 'off' ? 'Folga' : s.type === 'vacation' ? 'Férias' : s.type}</span></td>
-                                    <td className="px-4 py-3 text-surface-600">{s.shift ?? 'â€”'}</td>
+                                    <td className="px-4 py-3 text-surface-600">{s.shift ?? '—'}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -165,11 +165,11 @@ export default function HRPage() {
                             {!loadingClock && clockEntries.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-surface-400">Nenhum registro</td></tr>}
                             {clockEntries.map((c: any) => (
                                 <tr key={c.id} className="transition-colors hover:bg-surface-50/50">
-                                    <td className="px-4 py-3 font-medium text-surface-900">{c.user?.name ?? 'â€”'}</td>
-                                    <td className="px-4 py-3 text-surface-600">{c.clock_in ? new Date(c.clock_in).toLocaleString('pt-BR') : 'â€”'}</td>
-                                    <td className="px-4 py-3 text-surface-600">{c.clock_out ? new Date(c.clock_out).toLocaleString('pt-BR') : 'â€”'}</td>
-                                    <td className="px-4 py-3 font-mono text-surface-700">{c.total_hours ? `${c.total_hours}h` : 'â€”'}</td>
-                                    <td className="px-4 py-3">{c.clock_in_latitude ? <MapPin size={14} className="text-emerald-500" /> : <span className="text-surface-300">â€”</span>}</td>
+                                    <td className="px-4 py-3 font-medium text-surface-900">{c.user?.name ?? '—'}</td>
+                                    <td className="px-4 py-3 text-surface-600">{c.clock_in ? new Date(c.clock_in).toLocaleString('pt-BR') : '—'}</td>
+                                    <td className="px-4 py-3 text-surface-600">{c.clock_out ? new Date(c.clock_out).toLocaleString('pt-BR') : '—'}</td>
+                                    <td className="px-4 py-3 font-mono text-surface-700">{c.total_hours ? `${c.total_hours}h` : '—'}</td>
+                                    <td className="px-4 py-3">{c.clock_in_latitude ? <MapPin size={14} className="text-emerald-500" /> : <span className="text-surface-300">—</span>}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -193,9 +193,9 @@ export default function HRPage() {
                             {trainings.map((t: any) => (
                                 <tr key={t.id} className="transition-colors hover:bg-surface-50/50">
                                     <td className="px-4 py-3 font-medium text-surface-900">{t.title}</td>
-                                    <td className="px-4 py-3 text-surface-600">{t.user?.name ?? 'â€”'}</td>
+                                    <td className="px-4 py-3 text-surface-600">{t.user?.name ?? '—'}</td>
                                     <td className="px-4 py-3 text-xs text-surface-500">{t.type}</td>
-                                    <td className="px-4 py-3 text-surface-600">{t.completed_at ? new Date(t.completed_at).toLocaleDateString('pt-BR') : 'â€”'}</td>
+                                    <td className="px-4 py-3 text-surface-600">{t.completed_at ? new Date(t.completed_at).toLocaleDateString('pt-BR') : '—'}</td>
                                     <td className="px-4 py-3"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                                         t.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
                                     )}>{t.status === 'completed' ? 'Concluído' : 'Pendente'}</span></td>

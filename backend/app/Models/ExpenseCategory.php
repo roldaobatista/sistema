@@ -13,13 +13,23 @@ class ExpenseCategory extends Model
 {
     use BelongsToTenant, HasFactory, SoftDeletes, Auditable;
 
-    protected $fillable = ['tenant_id', 'name', 'color', 'active', 'budget_limit'];
+    protected $fillable = [
+        'tenant_id',
+        'name',
+        'color',
+        'active',
+        'budget_limit',
+        'default_affects_net_value',
+        'default_affects_technician_cash',
+    ];
 
     protected function casts(): array
     {
         return [
             'active' => 'boolean',
             'budget_limit' => 'decimal:2',
+            'default_affects_net_value' => 'boolean',
+            'default_affects_technician_cash' => 'boolean',
         ];
     }
 

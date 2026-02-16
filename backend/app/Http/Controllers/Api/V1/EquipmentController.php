@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Equipment\StoreEquipmentRequest;
+use App\Http\Requests\Equipment\UpdateEquipmentRequest;
 use App\Models\Equipment;
 use App\Models\EquipmentCalibration;
 use App\Models\EquipmentMaintenance;
@@ -80,36 +82,11 @@ class EquipmentController extends Controller
     /**
      * Criar equipamento.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreEquipmentRequest $request): JsonResponse
     {
         $tenantId = $this->tenantId($request);
 
-        $data = $request->validate([
-            'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'type' => 'required|string|max:100',
-            'category' => 'nullable|string|max:40',
-            'brand' => 'nullable|string|max:100',
-            'manufacturer' => 'nullable|string|max:100',
-            'model' => 'nullable|string|max:100',
-            'serial_number' => 'nullable|string',
-            'capacity' => 'nullable|numeric',
-            'capacity_unit' => 'nullable|string|max:10',
-            'resolution' => 'nullable|numeric',
-            'precision_class' => 'nullable|in:I,II,III,IIII',
-            'status' => ['nullable', Rule::in(array_keys(Equipment::STATUSES))],
-            'location' => 'nullable|string|max:150',
-            'responsible_user_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'purchase_date' => 'nullable|date',
-            'purchase_value' => 'nullable|numeric',
-            'warranty_expires_at' => 'nullable|date',
-            'last_calibration_at' => 'nullable|date',
-            'next_calibration_at' => 'nullable|date',
-            'calibration_interval_months' => 'nullable|integer|min:1',
-            'inmetro_number' => 'nullable|string|max:50',
-            'tag' => 'nullable|string|max:50',
-            'is_critical' => 'nullable|boolean',
-            'notes' => 'nullable|string',
-        ]);
+        $data = $request->validated();
 
         // Calcular vencimento automaticamente se não informado e tiver base
         if (empty($data['next_calibration_at']) && !empty($data['last_calibration_at']) && !empty($data['calibration_interval_months'])) {
@@ -133,39 +110,13 @@ class EquipmentController extends Controller
     /**
      * Atualizar equipamento.
      */
-    public function update(Request $request, Equipment $equipment): JsonResponse
+    public function update(UpdateEquipmentRequest $request, Equipment $equipment): JsonResponse
     {
         $this->checkTenantAccess($request, $equipment);
 
         $tenantId = $this->tenantId($request);
 
-        $data = $request->validate([
-            'customer_id' => ['nullable', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'type' => 'nullable|string|max:100',
-            'category' => 'nullable|string|max:40',
-            'brand' => 'nullable|string|max:100',
-            'manufacturer' => 'nullable|string|max:100',
-            'model' => 'nullable|string|max:100',
-            'serial_number' => 'nullable|string',
-            'capacity' => 'nullable|numeric',
-            'capacity_unit' => 'nullable|string|max:10',
-            'resolution' => 'nullable|numeric',
-            'precision_class' => 'nullable|in:I,II,III,IIII',
-            'status' => ['nullable', Rule::in(array_keys(Equipment::STATUSES))],
-            'location' => 'nullable|string|max:150',
-            'responsible_user_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'purchase_date' => 'nullable|date',
-            'purchase_value' => 'nullable|numeric',
-            'warranty_expires_at' => 'nullable|date',
-            'last_calibration_at' => 'nullable|date',
-            'next_calibration_at' => 'nullable|date',
-            'calibration_interval_months' => 'nullable|integer|min:1',
-            'inmetro_number' => 'nullable|string|max:50',
-            'tag' => 'nullable|string|max:50',
-            'is_critical' => 'nullable|boolean',
-            'is_active' => 'nullable|boolean',
-            'notes' => 'nullable|string',
-        ]);
+        $data = $request->validated();
 
         // Calcular vencimento automaticamente se parâmetros mudaram
         if (

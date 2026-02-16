@@ -148,7 +148,7 @@ export function ServiceCallDetailPage() {
             })
         },
         onError: (err: AxiosError<any>) => {
-            toast.error(err.response?.data?.message || 'Erro ao atribuir tecnico')
+            toast.error(err.response?.data?.message || 'Erro ao atribuir técnico')
         },
     })
 
@@ -214,7 +214,7 @@ export function ServiceCallDetailPage() {
 
     const handleAssign = () => {
         if (!assignment.technician_id) {
-            toast.error('Selecione um tecnico')
+            toast.error('Selecione um técnico')
             return
         }
 
@@ -406,7 +406,7 @@ export function ServiceCallDetailPage() {
                                 <div className="flex justify-between">
                                     <span className="text-surface-500">Orçamento</span>
                                     <button
-                                        onClick={() => navigate(`/orcamentos/${call.quote.id}`)}
+                                        onClick={() => navigate(`/orçamentos/${call.quote.id}`)}
                                         className="font-medium text-primary-600 hover:underline"
                                     >
                                         {call.quote.quote_number || `#${call.quote.id}`}
@@ -421,7 +421,7 @@ export function ServiceCallDetailPage() {
                                 </p>
 
                                 <div>
-                                    <label htmlFor="assign-technician" className="mb-1 block text-xs text-surface-500">Tecnico</label>
+                                    <label htmlFor="assign-technician" className="mb-1 block text-xs text-surface-500">Técnico</label>
                                     <select
                                         id="assign-technician"
                                         value={assignment.technician_id}

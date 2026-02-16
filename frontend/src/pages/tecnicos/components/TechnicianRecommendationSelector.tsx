@@ -40,7 +40,7 @@ export function TechnicianRecommendationSelector({
 
     const fetchRecommendations = async () => {
         if (!start || !end) {
-            toast.error('Selecione data e hora de inicio e fim primeiro.')
+            toast.error('Selecione data e hora de início e fim primeiro.')
             return
         }
 

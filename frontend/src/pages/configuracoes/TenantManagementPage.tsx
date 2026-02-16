@@ -331,9 +331,9 @@ export function TenantManagementPage() {
                                 <h3 className="text-sm font-semibold text-surface-700">Informações</h3>
                                 {detail && (
                                     <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div><span className="text-surface-500">CNPJ:</span> <span className="font-medium">{detail.document || 'â€”'}</span></div>
-                                        <div><span className="text-surface-500">E-mail:</span> <span className="font-medium">{detail.email || 'â€”'}</span></div>
-                                        <div><span className="text-surface-500">Telefone:</span> <span className="font-medium">{detail.phone || 'â€”'}</span></div>
+                                        <div><span className="text-surface-500">CNPJ:</span> <span className="font-medium">{detail.document || '—'}</span></div>
+                                        <div><span className="text-surface-500">E-mail:</span> <span className="font-medium">{detail.email || '—'}</span></div>
+                                        <div><span className="text-surface-500">Telefone:</span> <span className="font-medium">{detail.phone || '—'}</span></div>
                                         <div><span className="text-surface-500">Status:</span> <Badge variant={statusConfig[detail.status]?.variant}>{statusConfig[detail.status]?.label}</Badge></div>
                                     </div>
                                 )}
@@ -402,7 +402,7 @@ export function TenantManagementPage() {
                         <div className="space-y-4">
                             <Input label="Nome *" value={inviteForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, name: e.target.value }))} />
                             <Input label="E-mail *" type="email" value={inviteForm.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, email: e.target.value }))} />
-                            <Input label="Papel (role)" value={inviteForm.role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, role: e.target.value }))} placeholder="admin, tecnico, gerente..." />
+                            <Input label="Papel (role)" value={inviteForm.role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteForm(f => ({ ...f, role: e.target.value }))} placeholder="admin, técnico, gerente..." />
                         </div>
                         <div className="mt-5 flex justify-end gap-2">
                             <Button variant="outline" onClick={() => setShowInviteModal(false)}>Cancelar</Button>

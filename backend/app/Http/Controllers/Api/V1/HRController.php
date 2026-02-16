@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\WorkSchedule;
 use App\Models\TimeClockEntry;
 use App\Models\Training;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\PerformanceReview;
 use Illuminate\Http\JsonResponse;
@@ -284,7 +285,7 @@ class HRController extends Controller
 
         $totalTechnicians = User::where('tenant_id', $tenantId)
             ->whereHas('roles', function($q) {
-                $q->where('name', 'tecnico');
+                $q->where('name', Role::TECNICO);
             })
             ->count();
 

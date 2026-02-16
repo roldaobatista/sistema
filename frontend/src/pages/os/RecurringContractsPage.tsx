@@ -290,7 +290,7 @@ export function RecurringContractsPage() {
                                                 {c.name}
                                             </button>
                                         </td>
-                                        <td className="px-4 py-3 text-zinc-300">{c.customer?.name ?? 'â€”'}</td>
+                                        <td className="px-4 py-3 text-zinc-300">{c.customer?.name ?? '—'}</td>
                                         <td className="px-4 py-3">
                                             <Badge variant="info">{freqLabels[c.frequency] ?? c.frequency}</Badge>
                                         </td>

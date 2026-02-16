@@ -58,6 +58,7 @@ export interface Quote {
     valid_until: string | null;
     discount_percentage: number;
     discount_amount: number;
+    displacement_value: number;
     subtotal: number;
     total: number;
     observations: string | null;

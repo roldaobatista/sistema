@@ -109,6 +109,7 @@ class TechnicianCashController extends Controller
                 'user_id' => ['required', Rule::exists('users', 'id')],
                 'amount' => 'required|numeric|min:0.01',
                 'description' => 'required|string|max:255',
+                'payment_method' => ['sometimes', Rule::in(['cash', 'corporate_card'])],
             ]);
             $this->ensureTenantUser((int) $validated['user_id'], $tenantId);
 
@@ -117,7 +118,9 @@ class TechnicianCashController extends Controller
             $tx = $fund->addCredit(
                 $validated['amount'],
                 $validated['description'],
-                $request->user()->id
+                $request->user()->id,
+                null,
+                $validated['payment_method'] ?? 'cash'
             );
             DB::commit();
 
@@ -143,6 +146,7 @@ class TechnicianCashController extends Controller
                 'amount' => 'required|numeric|min:0.01',
                 'description' => 'required|string|max:255',
                 'work_order_id' => ['nullable', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+                'payment_method' => ['sometimes', Rule::in(['cash', 'corporate_card'])],
             ]);
             $this->ensureTenantUser((int) $validated['user_id'], $tenantId);
 
@@ -154,7 +158,9 @@ class TechnicianCashController extends Controller
                 $validated['description'],
                 null,
                 $request->user()->id,
-                $validated['work_order_id'] ?? null
+                $validated['work_order_id'] ?? null,
+                false,
+                $validated['payment_method'] ?? 'cash'
             );
             DB::commit();
 
@@ -180,6 +186,7 @@ class TechnicianCashController extends Controller
                 ->get();
 
             $totalBalance = $funds->sum('balance');
+            $totalCardBalance = $funds->sum('card_balance');
 
             $monthCredits = TechnicianCashTransaction::where('tenant_id', $tenantId)
                 ->where('type', TechnicianCashTransaction::TYPE_CREDIT)
@@ -195,6 +202,7 @@ class TechnicianCashController extends Controller
 
             return response()->json([
                 'total_balance' => round((float) $totalBalance, 2),
+                'total_card_balance' => round((float) $totalCardBalance, 2),
                 'month_credits' => round((float) $monthCredits, 2),
                 'month_debits' => round((float) $monthDebits, 2),
                 'funds_count' => $funds->count(),

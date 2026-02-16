@@ -5,20 +5,18 @@ namespace Database\Seeders;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use App\Models\Branch;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Criar permissões agrupadas
-        $this->createPermissions();
-
-        // Seeders de Câmeras
+        // 1. Criar permissões, roles e dados base do sistema
         $this->call([
+            PermissionsSeeder::class,
             CameraSeeder::class,
+            ExpenseCategorySeeder::class,
         ]);
 
         // ─── TENANT 1 ─── Calibrações Brasil ──────────────────
@@ -52,165 +50,29 @@ class DatabaseSeeder extends Seeder
         ]);
         Branch::create(['tenant_id' => $t3->id, 'name' => 'Laboratório BH', 'code' => 'LBH', 'address_city' => 'Belo Horizonte', 'address_state' => 'MG']);
 
-        // 4. Criar 8 roles
-        $superAdmin = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
-        $admin = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $manager = Role::create(['name' => 'gerente', 'guard_name' => 'web']);
-        $technician = Role::create(['name' => 'tecnico', 'guard_name' => 'web']);
-        $receptionist = Role::create(['name' => 'atendente', 'guard_name' => 'web']);
-        $seller = Role::create(['name' => 'vendedor', 'guard_name' => 'web']);
-        $driver = Role::create(['name' => 'motorista', 'guard_name' => 'web']);
-        $financeiro = Role::create(['name' => 'financeiro', 'guard_name' => 'web']);
-        $tecnicoVendedor = Role::create(['name' => 'tecnico_vendedor', 'guard_name' => 'web']);
-        $inmetroManager = Role::create(['name' => 'inmetro_manager', 'guard_name' => 'web']);
+        // 4. Buscar roles criados pelo PermissionsSeeder
+        $superAdmin = Role::where('name', 'super_admin')->first();
+        $admin = Role::where('name', 'admin')->first();
+        $manager = Role::where('name', 'gerente')->first();
+        $technician = Role::where('name', 'tecnico')->first();
+        $receptionist = Role::where('name', 'atendimento')->first();
+        $seller = Role::where('name', 'comercial')->first();
+        $driver = Role::firstOrCreate(['name' => 'motorista', 'guard_name' => 'web'], ['display_name' => 'Motorista']);
+        $financeiro = Role::where('name', 'financeiro')->first();
+        $coordenador = Role::where('name', 'coordenador')->first();
+        $estoquista = Role::where('name', 'estoquista')->first();
 
-        // Permissões por role
-        $superAdmin->givePermissionTo(Permission::all());
-        $admin->givePermissionTo(Permission::whereNot('name', 'LIKE', 'platform.%')->get());
-        $manager->givePermissionTo([
-            'iam.user.view',
-            'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
-            'cadastros.product.view', 'cadastros.service.view',
-            'os.work_order.view', 'os.work_order.create', 'os.work_order.update', 'os.work_order.delete',
-            'os.work_order.assign', 'os.work_order.change_status', 'os.work_order.apply_discount',
-            'technicians.technician.view', 'technicians.schedule.view', 'technicians.schedule.manage',
-            'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
-            'finance.receivable.update', 'finance.receivable.delete',
-            'finance.payable.view', 'finance.payable.create', 'finance.payable.settle',
-            'finance.payable.update', 'finance.payable.delete',
-            'finance.cashflow.view', 'finance.dre.view', 'platform.dashboard.view',
-            'commissions.rule.view', 'commissions.settlement.view',
-            'expenses.expense.view', 'expenses.expense.approve',
-            'reports.os_report.view', 'reports.os_report.export',
-            'reports.financial_report.view', 'reports.financial_report.export',
-            'reports.productivity_report.view', 'reports.productivity_report.export',
-            'reports.commission_report.view', 'reports.commission_report.export',
-            'reports.margin_report.view', 'reports.margin_report.export',
-            'reports.technician_cash_report.view', 'reports.technician_cash_report.export',
-            'reports.quotes_report.view', 'reports.quotes_report.export',
-            'reports.service_calls_report.view', 'reports.service_calls_report.export',
-            'reports.crm_report.view', 'reports.crm_report.export',
-            'reports.equipments_report.view', 'reports.equipments_report.export',
-            'reports.suppliers_report.view', 'reports.suppliers_report.export',
-            'reports.stock_report.view', 'reports.stock_report.export',
-            'reports.customers_report.view', 'reports.customers_report.export',
-            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.delete', 'quotes.quote.approve', 'quotes.quote.send', 'quotes.quote.convert',
-            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update', 'service_calls.service_call.delete', 'service_calls.service_call.assign',
-            'central.item.view', 'central.create.task', 'central.assign', 'central.close.self', 'central.manage.kpis', 'central.manage.rules',
-            'notifications.notification.view', 'notifications.notification.update',
-            'fiscal.note.view', 'fiscal.note.create', 'fiscal.note.cancel', 'fiscal.note.export',
-            'inmetro.intelligence.view',
-            'email.inbox.view', 'email.inbox.send', 'email.inbox.create_task',
-            'email.account.view', 'email.rule.view',
-            'hr.performance.view', 'hr.performance.create', 'hr.performance.update', 'hr.performance.delete', 'hr.performance.view_all', 'hr.performance.manage',
-            'hr.feedback.view', 'hr.feedback.create', 'hr.feedback.update', 'hr.feedback.delete', 'hr.feedback.view_all',
-        ]);
-        $technician->givePermissionTo([
-            'cadastros.customer.view', 'cadastros.product.view', 'cadastros.service.view',
-            'os.work_order.view', 'os.work_order.update', 'os.work_order.change_status',
-            'technicians.time_entry.create', 'technicians.time_entry.view',
-            'technicians.cashbox.view', 'technicians.cashbox.manage',
-            'expenses.expense.create', 'expenses.expense.view', 'expenses.expense.update',
-            'service_calls.service_call.view', 'service_calls.service_call.update',
-            'central.item.view', 'central.create.task', 'central.close.self',
-            'notifications.notification.view', 'notifications.notification.update',
-        ]);
-        $receptionist->givePermissionTo([
-            'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
-            'cadastros.product.view', 'cadastros.service.view',
-            'os.work_order.view', 'os.work_order.create', 'os.work_order.update',
-            'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
-            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update',
-            'central.item.view', 'central.create.task', 'central.close.self',
-            'notifications.notification.view', 'notifications.notification.update',
-            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
-            'hr.feedback.view', 'hr.feedback.create',
-        ]);
-        $seller->givePermissionTo([
-            'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
-            'cadastros.product.view', 'cadastros.service.view',
-            'os.work_order.view', 'os.work_order.create',
-            'commissions.rule.view', 'commissions.settlement.view',
-            'reports.os_report.view', 'reports.quotes_report.view',
-            'reports.customers_report.view',
-            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.send', 'quotes.quote.convert',
-            'service_calls.service_call.view', 'service_calls.service_call.create',
-            'central.item.view', 'central.create.task', 'central.close.self',
-            'notifications.notification.view', 'notifications.notification.update',
-            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
-            'hr.feedback.view', 'hr.feedback.create',
-        ]);
-        $driver->givePermissionTo([
-            'os.work_order.view',
-            'technicians.time_entry.create', 'technicians.time_entry.view',
-            'expenses.expense.create', 'expenses.expense.view',
-            'expenses.fueling_log.view', 'expenses.fueling_log.create',
-            'notifications.notification.view', 'notifications.notification.update',
-            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
-            'hr.feedback.view', 'hr.feedback.create',
-        ]);
-        $financeiro->givePermissionTo([
-            'finance.receivable.view', 'finance.receivable.create', 'finance.receivable.settle',
-            'finance.receivable.update', 'finance.receivable.delete',
-            'finance.payable.view', 'finance.payable.create', 'finance.payable.settle',
-            'finance.payable.update', 'finance.payable.delete',
-            'finance.chart.view', 'finance.chart.create', 'finance.chart.update', 'finance.chart.delete',
-            'finance.cashflow.view', 'finance.dre.view', 'platform.dashboard.view',
-            'commissions.rule.view', 'commissions.rule.create', 'commissions.rule.update',
-            'commissions.settlement.view', 'commissions.settlement.create',
-            'commissions.dispute.view', 'commissions.dispute.create', 'commissions.dispute.resolve',
-            'commissions.goal.view', 'commissions.goal.create', 'commissions.goal.update', 'commissions.goal.delete',
-            'commissions.campaign.view', 'commissions.campaign.create', 'commissions.campaign.update', 'commissions.campaign.delete',
-            'commissions.recurring.view', 'commissions.recurring.create', 'commissions.recurring.update', 'commissions.recurring.delete',
-            'expenses.expense.view', 'expenses.expense.approve',
-            'reports.financial_report.view', 'reports.financial_report.export',
-            'reports.commission_report.view', 'reports.commission_report.export',
-            'reports.margin_report.view', 'reports.margin_report.export',
-            'central.item.view', 'central.create.task', 'central.close.self', 'central.manage.kpis', 'central.manage.rules',
-            'notifications.notification.view', 'notifications.notification.update',
-            'fiscal.note.view', 'fiscal.note.create', 'fiscal.note.cancel', 'fiscal.note.export',
-            'email.inbox.view', 'email.inbox.send', 'email.inbox.create_task',
-            'email.account.view', 'email.rule.view',
-            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
-            'hr.feedback.view', 'hr.feedback.create',
-        ]);
-
-        // GAP-16: tecnico_vendedor — combina permissões de técnico + vendedor
-        $tecnicoVendedor->givePermissionTo([
-            // Cadastros
-            'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
-            'cadastros.product.view', 'cadastros.service.view',
-            // OS
-            'os.work_order.view', 'os.work_order.create', 'os.work_order.update', 'os.work_order.change_status',
-            // Técnico
-            'technicians.time_entry.create', 'technicians.time_entry.view',
-            'technicians.cashbox.view', 'technicians.cashbox.manage',
-            // Despesas
-            'expenses.expense.create', 'expenses.expense.view', 'expenses.expense.update',
-            // Comissões (somente visualização)
-            'commissions.rule.view', 'commissions.settlement.view',
-            // Orçamentos
-            'quotes.quote.view', 'quotes.quote.create', 'quotes.quote.update', 'quotes.quote.send', 'quotes.quote.convert',
-            // Relatórios
-            'reports.os_report.view', 'reports.quotes_report.view', 'reports.customers_report.view',
-            // Chamados
-            'service_calls.service_call.view', 'service_calls.service_call.create', 'service_calls.service_call.update',
-            // Sistema
-            'notifications.notification.view', 'notifications.notification.update',
-            'hr.performance.view', 'hr.performance.create', 'hr.performance.update',
-            'hr.feedback.view', 'hr.feedback.create',
-        ]);
-
-        // inmetro_manager — full INMETRO intelligence + customer view
-        $inmetroManager->givePermissionTo([
-            'inmetro.intelligence.view', 'inmetro.intelligence.import',
-            'inmetro.intelligence.enrich', 'inmetro.intelligence.convert',
-            'cadastros.customer.view', 'cadastros.customer.create', 'cadastros.customer.update',
-            'cadastros.product.view', 'cadastros.service.view',
-            'reports.customers_report.view', 'reports.customers_report.export',
-            'notifications.notification.view', 'notifications.notification.update',
-            'platform.dashboard.view',
-        ]);
+        // Permissões já foram atribuídas pelo PermissionsSeeder.
+        // Aqui apenas atribuímos permissões extras para o motorista (role adicional não coberto pelo seeder).
+        if ($driver && !$driver->permissions()->exists()) {
+            $driver->givePermissionTo([
+                'os.work_order.view',
+                'technicians.time_entry.create', 'technicians.time_entry.view',
+                'expenses.expense.create', 'expenses.expense.view',
+                'expenses.fueling_log.view', 'expenses.fueling_log.create',
+                'notifications.notification.view', 'notifications.notification.update',
+            ]);
+        }
 
         // ── Usuários ──────────────────
 
@@ -223,10 +85,10 @@ class DatabaseSeeder extends Seeder
         $this->createUser('Roberto Silva', 'roberto@calibracoes.com.br', $t1, $technician);
         $this->createUser('Anderson Costa', 'anderson@calibracoes.com.br', $t1, $technician);
         $this->createUser('Fernando Lima', 'fernando@calibracoes.com.br', $t1, $technician);
-        $this->createUser('Juliana Souza', 'juliana@calibracoes.com.br', $t1, $receptionist);
-        $this->createUser('Marcos Vendas', 'marcos@calibracoes.com.br', $t1, $seller);
-        $this->createUser('José Motorista', 'jose@calibracoes.com.br', $t1, $driver);
-        $this->createUser('Ana Financeiro', 'ana@calibracoes.com.br', $t1, $financeiro);
+        $this->createUser('Juliana Souza', 'juliana@calibracoes.com.br', $t1, $receptionist ?? $admin);
+        $this->createUser('Marcos Vendas', 'marcos@calibracoes.com.br', $t1, $seller ?? $admin);
+        $this->createUser('José Motorista', 'jose@calibracoes.com.br', $t1, $driver ?? $admin);
+        $this->createUser('Ana Financeiro', 'ana@calibracoes.com.br', $t1, $financeiro ?? $admin);
 
         // Tenant 2 — TechAssist
         $this->createUser('Paulo Admin', 'paulo@techassist.com.br', $t2, $admin);
@@ -278,150 +140,4 @@ class DatabaseSeeder extends Seeder
         return $user;
     }
 
-    private function createPermissions(): void
-    {
-        $modules = [
-            'iam' => [
-                'user' => ['view', 'create', 'update', 'delete'],
-                'role' => ['view', 'create', 'update', 'delete'],
-                'permission' => ['view', 'manage'],
-                'audit_log' => ['view'],
-            ],
-            'platform' => [
-                'tenant' => ['view', 'create', 'update', 'delete'],
-                'branch' => ['view', 'create', 'update', 'delete'],
-                'settings' => ['view', 'manage'],
-                'dashboard' => ['view'],
-            ],
-            'cadastros' => [
-                'customer' => ['view', 'create', 'update', 'delete'],
-                'product' => ['view', 'create', 'update', 'delete'],
-                'service' => ['view', 'create', 'update', 'delete'],
-                'supplier' => ['view', 'create', 'update', 'delete'],
-            ],
-            'os' => [
-                'work_order' => ['view', 'create', 'update', 'delete', 'assign', 'change_status', 'print', 'export', 'authorize_dispatch', 'apply_discount'],
-            ],
-            'technicians' => [
-                'technician' => ['view', 'create', 'update', 'delete'],
-                'schedule' => ['view', 'manage'],
-                'time_entry' => ['view', 'create', 'update', 'delete'],
-                'cashbox' => ['view', 'manage'],
-            ],
-            'finance' => [
-                'receivable' => ['view', 'create', 'update', 'delete', 'settle'],
-                'payable' => ['view', 'create', 'update', 'delete', 'settle'],
-                'cashflow' => ['view'],
-                'dre' => ['view'],
-                'chart' => ['view', 'create', 'update', 'delete'],
-            ],
-            'commissions' => [
-                'rule' => ['view', 'create', 'update', 'delete'],
-                'settlement' => ['view', 'create', 'approve', 'reject'],
-                'dispute' => ['view', 'create', 'resolve'],
-                'goal' => ['view', 'create', 'update', 'delete'],
-                'campaign' => ['view', 'create', 'update', 'delete'],
-                'recurring' => ['view', 'create', 'update', 'delete'],
-            ],
-            'expenses' => [
-                'expense' => ['view', 'create', 'update', 'delete', 'review', 'approve'],
-                'fueling_log' => ['view', 'create', 'update', 'delete', 'approve'],
-            ],
-            'settings' => [
-                'general' => ['view', 'manage'],
-                'status_flow' => ['view', 'manage'],
-                'template' => ['view', 'manage'],
-            ],
-            'quotes' => [
-                'quote' => ['view', 'create', 'update', 'delete', 'internal_approve', 'approve', 'send', 'convert'],
-            ],
-            'service_calls' => [
-                'service_call' => ['view', 'create', 'update', 'delete', 'assign'],
-            ],
-            'equipments' => [
-                'equipment' => ['view', 'create', 'update', 'delete'],
-            ],
-            'estoque' => [
-                'movement' => ['view', 'create'],
-            ],
-            'import' => [
-                'data' => ['view', 'execute', 'delete'],
-            ],
-            'crm' => [
-                'deal' => ['view', 'create', 'update', 'delete'],
-                'pipeline' => ['view', 'create', 'update', 'delete'],
-                'message' => ['view', 'send'],
-            ],
-            'notifications' => [
-                'notification' => ['view', 'update'],
-            ],
-            'reports' => [
-                'os_report' => ['view', 'export'],
-                'quotes_report' => ['view', 'export'],
-                'productivity_report' => ['view', 'export'],
-                'customers_report' => ['view', 'export'],
-                'financial_report' => ['view', 'export'],
-                'commission_report' => ['view', 'export'],
-                'margin_report' => ['view', 'export'],
-                'service_calls_report' => ['view', 'export'],
-                'crm_report' => ['view', 'export'],
-                'equipments_report' => ['view', 'export'],
-                'suppliers_report' => ['view', 'export'],
-                'stock_report' => ['view', 'export'],
-                'technician_cash_report' => ['view', 'export'],
-            ],
-            'inmetro' => [
-                'intelligence' => ['view', 'import', 'enrich', 'convert'],
-            ],
-            'fiscal' => [
-                'note' => ['view', 'create', 'cancel', 'export'],
-            ],
-            'email' => [
-                'inbox' => ['view', 'send', 'create_task'],
-                'account' => ['view', 'create', 'update', 'delete', 'sync'],
-                'rule' => ['view', 'create', 'update', 'delete'],
-            ],
-            'hr' => [
-                'performance' => ['view', 'create', 'update', 'delete', 'view_all', 'manage'],
-                'feedback' => ['view', 'create', 'update', 'delete', 'view_all'],
-            ],
-            'ai' => [
-                'analytics' => ['view'],
-            ],
-        ];
-
-        $order = 0;
-        foreach ($modules as $module => $resources) {
-            $group = \App\Models\PermissionGroup::firstOrCreate(
-                ['name' => ucfirst(str_replace('_', ' ', $module))],
-                ['order' => $order]
-            );
-            $order++;
-
-            foreach ($resources as $resource => $actions) {
-                foreach ($actions as $action) {
-                    $criticality = in_array($action, ['delete', 'manage', 'approve']) ? 'HIGH' :
-                        (in_array($action, ['create', 'update']) ? 'MED' : 'LOW');
-
-                    $permission = Permission::firstOrCreate(
-                        [
-                            'name' => "{$module}.{$resource}.{$action}",
-                            'guard_name' => 'web',
-                        ],
-                        [
-                            'group_id' => $group->id,
-                            'criticality' => $criticality,
-                        ]
-                    );
-
-                    if (!$permission->group_id || !$permission->criticality) {
-                        $permission->update([
-                            'group_id' => $group->id,
-                            'criticality' => $permission->criticality ?: $criticality,
-                        ]);
-                    }
-                }
-            }
-        }
-    }
 }

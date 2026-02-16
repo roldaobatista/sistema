@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Equipment;
 use App\Models\Notification;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
 
@@ -38,7 +39,7 @@ class GenerateCalibrationAlerts extends Command
             // Notificar admins e gerentes do tenant
             $users = User::where('tenant_id', $eq->tenant_id)
                 ->where('is_active', true)
-                ->whereHas('roles', fn($q) => $q->whereIn('name', ['super_admin', 'admin', 'gerente']))
+                ->whereHas('roles', fn($q) => $q->whereIn('name', [Role::SUPER_ADMIN, Role::ADMIN, Role::GERENTE]))
                 ->get();
 
             foreach ($users as $user) {

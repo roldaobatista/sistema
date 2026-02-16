@@ -326,7 +326,7 @@ export function AuvoImportPage() {
                                 <div className="flex items-center justify-between">
                                     <span className="flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
-                                        Ãšltimo sync
+                                        Último sync
                                     </span>
                                     <span className="font-medium text-surface-600">
                                         {entitySync?.last_import_at
@@ -408,7 +408,7 @@ export function AuvoImportPage() {
                                                     day: '2-digit', month: '2-digit', year: '2-digit',
                                                     hour: '2-digit', minute: '2-digit',
                                                 })
-                                                : 'â€”'}
+                                                : '—'}
                                         </td>
                                         <td className="px-4 py-2.5 text-surface-600">{item.user_name}</td>
                                         <td className="px-4 py-2.5 text-right">

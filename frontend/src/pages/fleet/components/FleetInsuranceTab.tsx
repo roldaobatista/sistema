@@ -134,9 +134,9 @@ export function FleetInsuranceTab() {
         }
         if (editingInsurance) {
             const { fleet_vehicle_id: _, ...updatePayload } = payload
-            updateMutation.mutate({ id: editingInsurance.id, payload: updatePayload })
+            updateMutation.mutate({ id: editingInsurance.id, payload: updatePayload as any })
         } else {
-            createMutation.mutate(payload as typeof initialFormData)
+            createMutation.mutate(payload as any)
         }
     }
 

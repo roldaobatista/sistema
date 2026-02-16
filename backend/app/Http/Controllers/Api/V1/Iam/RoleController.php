@@ -20,9 +20,7 @@ class RoleController extends Controller
     /**
      * Roles de sistema protegidas contra edição/exclusão.
      */
-    private const PROTECTED_ROLES = ['super_admin', 'admin'];
-    private const ROLE_SUPER_ADMIN = 'super_admin';
-    private const ROLE_ADMIN = 'admin';
+    private const PROTECTED_ROLES = [Role::SUPER_ADMIN, Role::ADMIN];
     private const GUARD_NAME = 'web';
 
     public function index(Request $request): JsonResponse
@@ -37,7 +35,11 @@ class RoleController extends Controller
                       ->orWhereNull('tenant_id');
             })
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(function ($role) {
+                $role->label = $role->display_name ?: $role->name;
+                return $role;
+            });
 
         return response()->json($roles);
     }
@@ -53,11 +55,12 @@ class RoleController extends Controller
                 'required',
                 'string',
                 'max:100',
-                Rule::notIn([self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN]),
+                Rule::notIn([Role::SUPER_ADMIN, Role::ADMIN]),
                 Rule::unique('roles')->where(function ($query) use ($tenantId) {
                     return $query->where('tenant_id', $tenantId);
                 }),
             ],
+            'display_name' => 'nullable|string|max:150',
             'description' => 'nullable|string|max:500',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
@@ -67,6 +70,7 @@ class RoleController extends Controller
             $role = DB::transaction(function () use ($validated, $tenantId) {
                 $role = Role::create([
                     'name' => $validated['name'],
+                    'display_name' => $validated['display_name'] ?? null,
                     'description' => $validated['description'] ?? null,
                     'guard_name' => self::GUARD_NAME,
                     'tenant_id' => $tenantId,
@@ -105,7 +109,7 @@ class RoleController extends Controller
     {
         $this->applyTenantScope($request);
 
-        if ($role->name === self::ROLE_SUPER_ADMIN) {
+        if ($role->name === Role::SUPER_ADMIN) {
             return response()->json(['message' => 'A role super_admin não pode ser editada.'], 422);
         }
 
@@ -125,6 +129,7 @@ class RoleController extends Controller
                     return $query->where('tenant_id', $tenantId);
                 }),
             ],
+            'display_name' => 'nullable|string|max:150',
             'description' => 'nullable|string|max:500',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
@@ -140,6 +145,9 @@ class RoleController extends Controller
                 $updateData = [];
                 if (isset($validated['name'])) {
                     $updateData['name'] = $validated['name'];
+                }
+                if (array_key_exists('display_name', $validated)) {
+                    $updateData['display_name'] = $validated['display_name'];
                 }
                 if (array_key_exists('description', $validated)) {
                     $updateData['description'] = $validated['description'];
@@ -235,17 +243,20 @@ class RoleController extends Controller
                 'required',
                 'string',
                 'max:100',
-                Rule::notIn([self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN]),
+                Rule::notIn([Role::SUPER_ADMIN, Role::ADMIN]),
                 Rule::unique('roles')->where(function ($query) use ($tenantId) {
                     return $query->where('tenant_id', $tenantId);
                 }),
             ],
+            'display_name' => 'nullable|string|max:150',
         ]);
 
         try {
             $newRole = DB::transaction(function () use ($role, $validated, $tenantId) {
                 $newRole = Role::create([
                     'name' => $validated['name'],
+                    'display_name' => $validated['display_name'] ?? $role->display_name,
+                    'description' => $role->description,
                     'guard_name' => self::GUARD_NAME,
                     'tenant_id' => $tenantId,
                 ]);

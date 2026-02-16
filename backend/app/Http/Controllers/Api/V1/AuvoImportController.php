@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AuvoIdMapping;
 use App\Models\AuvoImport;
+use App\Models\TenantSetting;
 use App\Services\Auvo\AuvoApiClient;
 use App\Services\Auvo\AuvoImportService;
 use Illuminate\Http\JsonResponse;
@@ -14,28 +15,26 @@ use Illuminate\Support\Facades\Log;
 
 class AuvoImportController extends Controller
 {
+    private function client(Request $request): AuvoApiClient
+    {
+        return AuvoApiClient::forTenant($request->user()->current_tenant_id);
+    }
+
     /**
      * Test connection to Auvo API and return entity counts.
      */
-    public function testConnection(): JsonResponse
+    public function testConnection(Request $request): JsonResponse
     {
-        $client = new AuvoApiClient();
-
-        if (!$client->hasCredentials()) {
-            return response()->json([
-                'connected' => false,
-                'message' => 'Credenciais da API Auvo não configuradas. Defina AUVO_API_KEY e AUVO_API_TOKEN no .env',
-            ], 200);
-        }
+        $client = $this->client($request);
 
         $connectionResult = $client->testConnection();
 
         if ($connectionResult['connected']) {
             try {
                 $counts = $client->getEntityCounts();
-                $connectionResult['entity_counts'] = $counts;
+                $connectionResult['available_entities'] = $counts;
             } catch (\Exception $e) {
-                $connectionResult['entity_counts'] = [];
+                $connectionResult['available_entities'] = [];
                 $connectionResult['counts_error'] = $e->getMessage();
             }
         }
@@ -49,14 +48,20 @@ class AuvoImportController extends Controller
     public function preview(Request $request, string $entity): JsonResponse
     {
         if (!isset(AuvoImport::ENTITY_TYPES[$entity])) {
-            return response()->json(['message' => 'Tipo de entidade inválido'], 422);
+            return response()->json(['message' => "Tipo de entidade inválido: {$entity}"], 422);
         }
 
         try {
-            $client = new AuvoApiClient();
+            $client = $this->client($request);
+
+            if (!$client->hasCredentials()) {
+                return response()->json([
+                    'message' => 'Credenciais Auvo não configuradas. Configure em Credenciais.',
+                ], 422);
+            }
+
             $service = new AuvoImportService($client);
             $limit = min((int) $request->get('limit', 10), 50);
-
             $result = $service->preview($entity, $limit);
 
             return response()->json([
@@ -67,7 +72,7 @@ class AuvoImportController extends Controller
                 'mapped_fields' => $result['mapped_fields'],
             ]);
         } catch (\Exception $e) {
-            Log::error('Auvo preview failed', ['entity' => $entity, 'error' => $e->getMessage()]);
+            Log::error('Auvo: preview failed', ['entity' => $entity, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao buscar dados: ' . $e->getMessage()], 500);
         }
     }
@@ -78,18 +83,24 @@ class AuvoImportController extends Controller
     public function import(Request $request, string $entity): JsonResponse
     {
         if (!isset(AuvoImport::ENTITY_TYPES[$entity])) {
-            return response()->json(['message' => 'Tipo de entidade inválido'], 422);
+            return response()->json(['message' => "Tipo de entidade inválido: {$entity}"], 422);
         }
 
         $strategy = $request->get('strategy', 'skip');
         if (!in_array($strategy, ['skip', 'update'])) {
-            return response()->json(['message' => 'Estratégia inválida. Use "skip" ou "update"'], 422);
+            return response()->json(['message' => 'Estratégia inválida. Use "skip" ou "update".'], 422);
         }
 
         try {
-            $client = new AuvoApiClient();
-            $service = new AuvoImportService($client);
+            $client = $this->client($request);
 
+            if (!$client->hasCredentials()) {
+                return response()->json([
+                    'message' => 'Credenciais Auvo não configuradas. Configure em Credenciais.',
+                ], 422);
+            }
+
+            $service = new AuvoImportService($client);
             $tenantId = $request->user()->current_tenant_id;
             $userId = $request->user()->id;
 
@@ -100,7 +111,7 @@ class AuvoImportController extends Controller
                 'entity_label' => AuvoImport::ENTITY_TYPES[$entity],
             ], $result));
         } catch (\Exception $e) {
-            Log::error('Auvo import failed', ['entity' => $entity, 'error' => $e->getMessage()]);
+            Log::error('Auvo: import failed', ['entity' => $entity, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Erro na importação: ' . $e->getMessage()], 500);
         }
     }
@@ -113,9 +124,15 @@ class AuvoImportController extends Controller
         $strategy = $request->get('strategy', 'skip');
 
         try {
-            $client = new AuvoApiClient();
-            $service = new AuvoImportService($client);
+            $client = $this->client($request);
 
+            if (!$client->hasCredentials()) {
+                return response()->json([
+                    'message' => 'Credenciais Auvo não configuradas. Configure em Credenciais.',
+                ], 422);
+            }
+
+            $service = new AuvoImportService($client);
             $tenantId = $request->user()->current_tenant_id;
             $userId = $request->user()->id;
 
@@ -138,7 +155,7 @@ class AuvoImportController extends Controller
                 'details' => $results,
             ]);
         } catch (\Exception $e) {
-            Log::error('Auvo full import failed', ['error' => $e->getMessage()]);
+            Log::error('Auvo: full import failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro na importação: ' . $e->getMessage()], 500);
         }
     }
@@ -179,15 +196,15 @@ class AuvoImportController extends Controller
             ->firstOrFail();
 
         if ($import->status === AuvoImport::STATUS_ROLLED_BACK) {
-            return response()->json(['message' => 'Esta importação já foi desfeita'], 422);
+            return response()->json(['message' => 'Esta importação já foi desfeita.'], 422);
         }
 
         if ($import->status !== AuvoImport::STATUS_DONE) {
-            return response()->json(['message' => 'Só é possível desfazer importações concluídas'], 422);
+            return response()->json(['message' => 'Só é possível desfazer importações concluídas.'], 422);
         }
 
         try {
-            $client = new AuvoApiClient();
+            $client = $this->client($request);
             $service = new AuvoImportService($client);
             $result = $service->rollback($import);
 
@@ -196,7 +213,7 @@ class AuvoImportController extends Controller
                 'result' => $result,
             ]);
         } catch (\Exception $e) {
-            Log::error('Auvo rollback failed', ['import_id' => $id, 'error' => $e->getMessage()]);
+            Log::error('Auvo: rollback failed', ['import_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao desfazer: ' . $e->getMessage()], 500);
         }
     }
@@ -221,7 +238,7 @@ class AuvoImportController extends Controller
     }
 
     /**
-     * Save Auvo API credentials.
+     * Save Auvo API credentials (persisted in tenant_settings DB table).
      */
     public function config(Request $request): JsonResponse
     {
@@ -230,65 +247,43 @@ class AuvoImportController extends Controller
             'api_token' => 'required|string|min:5',
         ]);
 
-        // Always save credentials first
-        config([
-            'services.auvo.api_key' => $request->api_key,
-            'services.auvo.api_token' => $request->api_token,
+        $tenantId = $request->user()->current_tenant_id;
+
+        // Save to database (persistent, per-tenant)
+        TenantSetting::setValue($tenantId, 'auvo_credentials', [
+            'api_key' => $request->api_key,
+            'api_token' => $request->api_token,
         ]);
 
-        $this->updateEnvFile('AUVO_API_KEY', $request->api_key);
-        $this->updateEnvFile('AUVO_API_TOKEN', $request->api_token);
-
-        // Test connection after saving (non-blocking)
-        $client = new AuvoApiClient($request->api_key, $request->api_token);
+        // Test connection with the provided credentials
+        $client = new AuvoApiClient($request->api_key, $request->api_token, $tenantId);
         $result = $client->testConnection();
 
-        $message = $result['connected']
-            ? 'Credenciais Auvo salvas e conexão verificada com sucesso'
-            : 'Credenciais salvas, mas a conexão falhou: ' . $result['message'];
-
         return response()->json([
-            'message' => $message,
+            'message' => $result['connected']
+                ? 'Credenciais salvas e conexão verificada com sucesso!'
+                : 'Credenciais salvas, mas a conexão falhou: ' . $result['message'],
             'saved' => true,
             'connected' => $result['connected'],
         ]);
     }
 
     /**
-     * Get current Auvo API credentials.
+     * Get current Auvo API credentials (masked for security).
      */
-    public function getConfig(): JsonResponse
+    public function getConfig(Request $request): JsonResponse
     {
-        $apiKey = config('services.auvo.api_key', '');
-        $apiToken = config('services.auvo.api_token', '');
+        $tenantId = $request->user()->current_tenant_id;
+        $credentials = TenantSetting::getValue($tenantId, 'auvo_credentials');
+
+        $apiKey = $credentials['api_key'] ?? config('services.auvo.api_key', '');
+        $apiToken = $credentials['api_token'] ?? config('services.auvo.api_token', '');
 
         return response()->json([
             'has_credentials' => !empty($apiKey) && !empty($apiToken),
-            'api_key' => $apiKey ?: '',
-            'api_token' => $apiToken ?: '',
+            'api_key' => $apiKey,
+            'api_token' => $apiToken,
         ]);
-    }
-
-    /**
-     * Update a single key in the .env file.
-     */
-    private function updateEnvFile(string $key, string $value): void
-    {
-        $envPath = base_path('.env');
-        if (!file_exists($envPath)) {
-            return;
-        }
-
-        $content = file_get_contents($envPath);
-        $escapedValue = str_contains($value, ' ') ? '"' . $value . '"' : $value;
-
-        if (preg_match("/^{$key}=.*/m", $content)) {
-            $content = preg_replace("/^{$key}=.*/m", "{$key}={$escapedValue}", $content);
-        } else {
-            $content .= "\n{$key}={$escapedValue}";
-        }
-
-        file_put_contents($envPath, $content);
     }
 
     /**
@@ -312,11 +307,12 @@ class AuvoImportController extends Controller
 
             $statuses[$entity] = [
                 'label' => $label,
-                'last_synced_at' => $lastImport?->last_synced_at,
-                'last_inserted' => $lastImport?->total_imported ?? 0,
-                'last_updated' => $lastImport?->total_updated ?? 0,
-                'last_errors' => $lastImport?->total_errors ?? 0,
+                'last_import_at' => $lastImport?->completed_at ?? $lastImport?->last_synced_at,
+                'total_imported' => $lastImport?->total_imported ?? 0,
+                'total_updated' => $lastImport?->total_updated ?? 0,
+                'total_errors' => $lastImport?->total_errors ?? 0,
                 'total_mapped' => $mappingCount,
+                'status' => $lastImport?->status ?? 'never',
             ];
         }
 
@@ -331,33 +327,29 @@ class AuvoImportController extends Controller
     /**
      * Delete a specific import history record.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $tenantId = request()->user()->current_tenant_id;
+        $tenantId = $request->user()->current_tenant_id;
 
         $import = AuvoImport::where('id', $id)
             ->where('tenant_id', $tenantId)
             ->first();
 
         if (!$import) {
-            return response()->json(['message' => 'Registro de importação não encontrado'], 404);
+            return response()->json(['message' => 'Registro de importação não encontrado.'], 404);
         }
 
         try {
             DB::beginTransaction();
-
-            // Remove associated mappings
             AuvoIdMapping::where('import_id', $import->id)->delete();
-
             $import->delete();
-
             DB::commit();
 
-            return response()->json(['message' => 'Registro de importação removido com sucesso']);
+            return response()->json(['message' => 'Registro de importação removido com sucesso.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to delete auvo import', ['id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao remover registro'], 500);
+            Log::error('Auvo: delete import failed', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover registro.'], 500);
         }
     }
 }

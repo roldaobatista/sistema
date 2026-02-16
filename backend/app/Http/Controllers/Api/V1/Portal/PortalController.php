@@ -36,7 +36,7 @@ class PortalController extends Controller
 
         $workOrders = \App\Models\WorkOrder::where('tenant_id', $user->tenant_id)
             ->where('customer_id', $user->customer_id)
-            ->with(['equipment', 'items', 'statusHistory'])
+            ->with(['customer:id,name,latitude,longitude', 'equipment', 'items', 'statusHistory'])
             ->orderByDesc('created_at')
             ->paginate(20);
 

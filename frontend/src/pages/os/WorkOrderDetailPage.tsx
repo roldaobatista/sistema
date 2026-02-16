@@ -314,7 +314,7 @@ export function WorkOrderDetailPage() {
     const formatDate = (d: string | null) =>
         d ? new Date(d).toLocaleDateString('pt-BR', {
             day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',
-        }) : 'â€”'
+        }) : '—'
 
     const sc = statusConfig[order.status] ?? statusConfig.open
     const StatusIcon = sc.icon
@@ -390,7 +390,7 @@ export function WorkOrderDetailPage() {
                         <p className="text-sm text-surface-500">Criada em {formatDate(order.created_at)}</p>
                         <div className="mt-1 flex items-center gap-2">
                             {order.quote_id && (
-                                <button onClick={() => navigate(`/orcamentos/${order.quote_id}`)}
+                                <button onClick={() => navigate(`/orçamentos/${order.quote_id}`)}
                                     className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors">
                                     <LinkIcon className="h-3 w-3" /> Orçamento #{order.quote?.number ?? order.quote_id}
                                 </button>
@@ -637,7 +637,7 @@ export function WorkOrderDetailPage() {
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium text-surface-800">{item.description}</p>
                                                     <p className="text-xs text-surface-400">
-                                                        {item.quantity}{canViewPrices ? ` Ã— ${formatBRL(item.unit_price)}` : ` un.`}
+                                                        {item.quantity}{canViewPrices ? ` × ${formatBRL(item.unit_price)}` : ` un.`}
                                                     </p>
                                                 </div>
                                                 {canViewPrices && (
@@ -722,7 +722,7 @@ export function WorkOrderDetailPage() {
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium text-surface-800 truncate">{att.file_name}</p>
                                                     <p className="text-xs text-surface-400">
-                                                        {att.uploader?.name ?? 'Sistema'} Â· {(att.file_size / 1024).toFixed(0)}KB
+                                                        {att.uploader?.name ?? 'Sistema'} · {(att.file_size / 1024).toFixed(0)}KB
                                                     </p>
                                                 </div>
                                                 <div className="flex gap-1">
@@ -756,12 +756,12 @@ export function WorkOrderDetailPage() {
                             </div>
                             <div>
                                 <p className="text-xs text-surface-500">Documento</p>
-                                <p className="font-medium text-surface-900">{order.customer?.document || 'â€”'}</p>
+                                <p className="font-medium text-surface-900">{order.customer?.document || '—'}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-surface-500">Contato</p>
                                 <p className="font-medium text-surface-900">
-                                    {order.customer?.contacts?.[0]?.phone || order.customer?.email || 'â€”'}
+                                    {order.customer?.contacts?.[0]?.phone || order.customer?.email || '—'}
                                 </p>
                             </div>
 
@@ -982,7 +982,7 @@ export function WorkOrderDetailPage() {
                                                     <p className="text-sm font-medium text-surface-800">{cfg?.label ?? h.to_status}</p>
                                                     {h.notes && <p className="text-xs text-surface-500 mt-0.5">{h.notes}</p>}
                                                     <p className="text-xs text-surface-400 mt-0.5">
-                                                        {h.user?.name ?? 'Sistema'} Â· {formatDate(h.created_at)}
+                                                        {h.user?.name ?? 'Sistema'} · {formatDate(h.created_at)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1021,7 +1021,7 @@ export function WorkOrderDetailPage() {
                         </label>
                         <select value={itemForm.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRefChange(e.target.value)}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                            <option value="">â€” Selecionar â€”</option>
+                            <option value="">— Selecionar —</option>
                             {(itemForm.type === 'product' ? products : services).map((r: any) => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
                             ))}

@@ -84,7 +84,10 @@ class PermissionController extends Controller
         });
 
         return response()->json([
-            'roles' => $roles->pluck('name'),
+            'roles' => $roles->map(fn ($r) => [
+                'name' => $r->name,
+                'display_name' => $r->display_name ?: $r->name,
+            ])->values(),
             'matrix' => $matrix,
         ]);
     }
@@ -106,7 +109,7 @@ class PermissionController extends Controller
             $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id');
         })->findOrFail($validated['role_id']);
 
-        if ($role->name === 'super_admin') {
+        if ($role->name === Role::SUPER_ADMIN) {
             return response()->json(['message' => 'Permissões do super_admin não podem ser alteradas.'], 422);
         }
 

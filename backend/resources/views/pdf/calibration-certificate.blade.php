@@ -152,17 +152,57 @@
         </table>
     @endif
 
-    {{-- Erros Encontrados --}}
-    @if($calibration->errors_found && count($calibration->errors_found))
+    {{-- 5. Resultados da Calibração (dados estruturados da tabela calibration_readings) --}}
+    @php $readings = $calibration->readings ?? collect(); @endphp
+    @if($readings->count())
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th colspan="7" style="background: #0284c7; color: #fff; text-align: left; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;">
+                        5. Resultados da Calibração
+                    </th>
+                </tr>
+                <tr>
+                    <th style="text-align: center">#</th>
+                    <th style="text-align: center">Valor de Referência ({{ $calibration->mass_unit ?? 'kg' }})</th>
+                    <th style="text-align: center">Indicação Crescente</th>
+                    <th style="text-align: center">Indicação Decrescente</th>
+                    <th style="text-align: center">Erro</th>
+                    <th style="text-align: center">Incerteza Expandida</th>
+                    <th style="text-align: right">Fator k</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($readings->sortBy('reading_order') as $reading)
+                    <tr>
+                        <td style="text-align: center">{{ $reading->reading_order + 1 }}</td>
+                        <td style="text-align: center">{{ number_format($reading->reference_value, 4, ',', '.') }}</td>
+                        <td style="text-align: center">{{ $reading->indication_increasing !== null ? number_format($reading->indication_increasing, 4, ',', '.') : '—' }}</td>
+                        <td style="text-align: center">{{ $reading->indication_decreasing !== null ? number_format($reading->indication_decreasing, 4, ',', '.') : '—' }}</td>
+                        <td style="text-align: center">
+                            @if($reading->error !== null)
+                                <span style="color: {{ abs((float)$reading->error) > 0.001 ? '#dc2626' : '#059669' }}">
+                                    {{ number_format($reading->error, 4, ',', '.') }}
+                                </span>
+                            @else — @endif
+                        </td>
+                        <td style="text-align: center">{{ $reading->expanded_uncertainty !== null ? number_format($reading->expanded_uncertainty, 4, ',', '.') : '—' }}</td>
+                        <td style="text-align: right">{{ number_format($reading->k_factor, 2, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @elseif($calibration->errors_found && count($calibration->errors_found))
+        {{-- Fallback: dados antigos no formato JSON --}}
         <table class="data-table">
             <thead>
                 <tr>
                     <th colspan="5" style="background: #0284c7; color: #fff; text-align: left; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;">
-                        Resultados das Medições
+                        5. Resultados das Medições
                     </th>
                 </tr>
                 <tr>
-                    <th>Ponto de Verificação</th>
+                    <th>Ponto</th>
                     <th style="text-align: center">Valor Nominal</th>
                     <th style="text-align: center">Valor Encontrado</th>
                     <th style="text-align: center">Erro</th>
@@ -183,6 +223,42 @@
         </table>
     @endif
 
+    {{-- 6. Declaração de Conformidade (ISO 17025) --}}
+    @if($calibration->max_error_found !== null || $calibration->max_permissible_error !== null || $calibration->conformity_declaration)
+        <div class="info-box" style="margin-top: 12px; border-color: #0284c7;">
+            <div class="info-box-title" style="color: #0284c7;">6. Declaração de Conformidade</div>
+            @if($calibration->conformity_declaration)
+                <div style="font-size: 10px; color: #334155; line-height: 1.7;">{{ $calibration->conformity_declaration }}</div>
+            @else
+                <div style="display: table; width: 100%;">
+                    <div style="display: table-cell; width: 50%; padding: 8px; text-align: center; border-right: 1px solid #e2e8f0;">
+                        <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">Maior Erro Encontrado</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #0f172a;">
+                            {{ $calibration->max_error_found !== null ? number_format($calibration->max_error_found, 4, ',', '.') : '—' }} {{ $calibration->mass_unit ?? 'kg' }}
+                        </div>
+                    </div>
+                    <div style="display: table-cell; width: 50%; padding: 8px; text-align: center;">
+                        <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">Erro Máximo Permissível</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #0f172a;">
+                            {{ $calibration->max_permissible_error !== null ? number_format($calibration->max_permissible_error, 4, ',', '.') : '—' }} {{ $calibration->mass_unit ?? 'kg' }}
+                        </div>
+                    </div>
+                </div>
+                @php
+                    $conforms = $calibration->max_error_found !== null && $calibration->max_permissible_error !== null
+                        ? abs((float)$calibration->max_error_found) <= abs((float)$calibration->max_permissible_error) : null;
+                @endphp
+                @if($conforms !== null)
+                    <div style="text-align: center; padding: 10px 0; margin-top: 8px; border-top: 1px solid #e2e8f0;">
+                        <span style="font-size: 12px; font-weight: 700; color: {{ $conforms ? '#059669' : '#dc2626' }}; text-transform: uppercase; letter-spacing: 2px;">
+                            {{ $conforms ? '✓ CONFORME' : '✗ NÃO CONFORME' }}
+                        </span>
+                    </div>
+                @endif
+            @endif
+        </div>
+    @endif
+
     {{-- Correções --}}
     @if($calibration->corrections_applied)
         <div class="notes-section" style="background: #f0fdf4; border-color: #bbf7d0;">
@@ -191,28 +267,63 @@
         </div>
     @endif
 
-    {{-- Ensaio de Excentricidade (ISO 17025 - Anexo) --}}
-    @if($calibration->eccentricity_data && is_array($calibration->eccentricity_data) && count($calibration->eccentricity_data))
+    {{-- 7. Ensaio de Excentricidade (dados estruturados da tabela excentricity_tests) --}}
+    @php $eccTests = $calibration->excentricityTests ?? collect(); @endphp
+    @if($eccTests->count())
+        <table class="data-table" style="margin-top: 12px;">
+            <thead>
+                <tr>
+                    <th colspan="5" style="background: #7c3aed; color: #fff; text-align: left; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;">
+                        7. Ensaio de Excentricidade
+                        @php $firstEcc = $eccTests->first(); @endphp
+                        @if($firstEcc && $firstEcc->applied_load)
+                            — Carga de Teste: {{ number_format($firstEcc->applied_load, 4, ',', '.') }} {{ $calibration->mass_unit ?? 'kg' }}
+                        @endif
+                    </th>
+                </tr>
+                <tr>
+                    <th style="text-align: center">Posição</th>
+                    <th style="text-align: center">Carga Aplicada ({{ $calibration->mass_unit ?? 'kg' }})</th>
+                    <th style="text-align: center">Indicação</th>
+                    <th style="text-align: center">Erro</th>
+                    <th style="text-align: right">Tolerância</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($eccTests->sortBy('position_label') as $ecc)
+                    <tr>
+                        <td style="text-align: center">{{ $ecc->position_label }}</td>
+                        <td style="text-align: center">{{ number_format($ecc->applied_load, 4, ',', '.') }}</td>
+                        <td style="text-align: center">{{ number_format($ecc->indication, 4, ',', '.') }}</td>
+                        <td style="text-align: center">
+                            @php $eccError = $ecc->error; @endphp
+                            <span style="color: {{ abs((float)$eccError) > 0.001 ? '#dc2626' : '#059669' }}">
+                                {{ number_format($eccError, 4, ',', '.') }}
+                            </span>
+                        </td>
+                        <td style="text-align: right">{{ $ecc->tolerance !== null ? number_format($ecc->tolerance, 4, ',', '.') : '—' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @elseif($calibration->eccentricity_data && is_array($calibration->eccentricity_data) && count($calibration->eccentricity_data))
+        {{-- Fallback: dados antigos no formato JSON --}}
         @php
             $eccData = $calibration->eccentricity_data;
             $eccPoints = $eccData['points'] ?? $eccData;
             $eccLoad = $eccData['test_load'] ?? null;
             $eccUnit = $eccData['unit'] ?? 'kg';
-            $eccNotes = $eccData['notes'] ?? null;
         @endphp
         <table class="data-table" style="margin-top: 12px;">
             <thead>
                 <tr>
                     <th colspan="4" style="background: #7c3aed; color: #fff; text-align: left; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;">
-                        Ensaio de Excentricidade
-                        @if($eccLoad)
-                            — Carga de Teste: {{ $eccLoad }} {{ $eccUnit }}
-                        @endif
+                        7. Ensaio de Excentricidade @if($eccLoad)— Carga: {{ $eccLoad }} {{ $eccUnit }}@endif
                     </th>
                 </tr>
                 <tr>
                     <th>Posição</th>
-                    <th style="text-align: center">Carga Aplicada ({{ $eccUnit }})</th>
+                    <th style="text-align: center">Carga ({{ $eccUnit }})</th>
                     <th style="text-align: center">Indicação</th>
                     <th style="text-align: center">Erro</th>
                 </tr>
@@ -226,20 +337,13 @@
                         <td style="text-align: center">
                             @php $eccError = $point['error'] ?? null; @endphp
                             @if($eccError !== null)
-                                <span style="color: {{ abs((float) $eccError) > 0 ? '#dc2626' : '#059669' }}">{{ $eccError }}</span>
-                            @else
-                                —
-                            @endif
+                                <span style="color: {{ abs((float)$eccError) > 0 ? '#dc2626' : '#059669' }}">{{ $eccError }}</span>
+                            @else — @endif
                         </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
-        @if($eccNotes)
-            <div style="font-size: 8px; color: #64748b; margin-top: 4px; font-style: italic;">
-                Obs. Excentricidade: {{ $eccNotes }}
-            </div>
-        @endif
     @endif
 
     {{-- Observações --}}

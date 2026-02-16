@@ -85,7 +85,7 @@ export function InmetroMapPage() {
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Mapa de Instrumentos INMETRO</h1>
                     <p className="text-sm text-surface-500">
-                        {mapData ? `${mapData.total_geolocated} locais no mapa â€¢ ${mapData.total_without_geo} sem coordenadas` : 'Carregando...'}
+                        {mapData ? `${mapData.total_geolocated} locais no mapa • ${mapData.total_without_geo} sem coordenadas` : 'Carregando...'}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -216,11 +216,11 @@ export function InmetroMapPage() {
                                     <p className="text-sm font-medium text-surface-800">{city}</p>
                                     <div className="flex items-center gap-2 mt-1 text-xs text-surface-500">
                                         <span>{stats.count} locais</span>
-                                        <span>â€¢</span>
+                                        <span>•</span>
                                         <span>{stats.instruments} equip.</span>
                                         {stats.overdue > 0 && (
                                             <>
-                                                <span>â€¢</span>
+                                                <span>•</span>
                                                 <span className="text-red-600">{stats.overdue} venc.</span>
                                             </>
                                         )}

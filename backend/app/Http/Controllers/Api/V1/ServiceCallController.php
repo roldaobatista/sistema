@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ServiceCall\StoreServiceCallRequest;
+use App\Http\Requests\ServiceCall\UpdateServiceCallRequest;
 use App\Models\AuditLog;
 use App\Models\ServiceCall;
 use App\Models\ServiceCallComment;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\WorkOrder;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +33,7 @@ class ServiceCallController extends Controller
             return false;
         }
 
-        return $user->hasRole('super_admin') || $user->can('service_calls.service_call.assign');
+        return $user->hasRole(Role::SUPER_ADMIN) || $user->can('service_calls.service_call.assign');
     }
 
     private function requestTouchesAssignmentFields(Request $request): bool
@@ -60,7 +63,7 @@ class ServiceCallController extends Controller
         return response()->json($query->orderByDesc('created_at')->paginate($request->get('per_page', 30)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreServiceCallRequest $request): JsonResponse
     {
         $tenantId = $this->currentTenantId();
         if ($this->requestTouchesAssignmentFields($request) && !$this->canAssignTechnician()) {
@@ -69,22 +72,7 @@ class ServiceCallController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'quote_id' => ['nullable', Rule::exists('quotes', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'technician_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'priority' => ['nullable', Rule::in(array_keys(ServiceCall::PRIORITIES))],
-            'scheduled_date' => 'nullable|date',
-            'address' => 'nullable|string',
-            'city' => 'nullable|string',
-            'state' => 'nullable|string|max:2',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'observations' => 'nullable|string',
-            'equipment_ids' => 'nullable|array',
-            'equipment_ids.*' => [Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-        ]);
+        $validated = $request->validated();
 
         $equipmentIds = $validated['equipment_ids'] ?? [];
         unset($validated['equipment_ids']);
@@ -131,7 +119,7 @@ class ServiceCallController extends Controller
         ]));
     }
 
-    public function update(Request $request, ServiceCall $serviceCall): JsonResponse
+    public function update(UpdateServiceCallRequest $request, ServiceCall $serviceCall): JsonResponse
     {
         $tenantId = $this->currentTenantId();
 
@@ -145,22 +133,7 @@ class ServiceCallController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'customer_id' => ['sometimes', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'technician_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'priority' => ['nullable', Rule::in(array_keys(ServiceCall::PRIORITIES))],
-            'scheduled_date' => 'nullable|date',
-            'address' => 'nullable|string',
-            'city' => 'nullable|string',
-            'state' => 'nullable|string|max:2',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'observations' => 'nullable|string',
-            'resolution_notes' => 'nullable|string',
-            'equipment_ids' => 'nullable|array',
-            'equipment_ids.*' => [Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-        ]);
+        $validated = $request->validated();
 
         $equipmentIds = $validated['equipment_ids'] ?? null;
         unset($validated['equipment_ids']);
@@ -376,7 +349,7 @@ class ServiceCallController extends Controller
             });
 
             AuditLog::log('created', "OS criada a partir do chamado {$serviceCall->call_number}", $wo);
-            return response()->json($wo->load('equipmentsList'), 201);
+            return response()->json($wo->load(['customer:id,name,latitude,longitude', 'equipmentsList']), 201);
         } catch (\Throwable $e) {
             Log::error('ServiceCall convert failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Erro ao converter chamado em OS'], 500);
@@ -600,7 +573,7 @@ class ServiceCallController extends Controller
                     ->orWhere('current_tenant_id', $tenantId)
                     ->orWhereHas('tenants', fn ($tenantQuery) => $tenantQuery->where('tenants.id', $tenantId));
             })
-            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['tecnico', 'motorista']))
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', [Role::TECNICO, Role::MOTORISTA]))
             ->with('roles:id,name')
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
@@ -613,11 +586,11 @@ class ServiceCallController extends Controller
 
         return response()->json([
             'technicians' => $users
-                ->filter(fn (User $user) => $user->roles->contains('name', 'tecnico'))
+                ->filter(fn (User $user) => $user->roles->contains('name', Role::TECNICO))
                 ->values()
                 ->map($toPayload),
             'drivers' => $users
-                ->filter(fn (User $user) => $user->roles->contains('name', 'motorista'))
+                ->filter(fn (User $user) => $user->roles->contains('name', Role::MOTORISTA))
                 ->values()
                 ->map($toPayload),
         ]);

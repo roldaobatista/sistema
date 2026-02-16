@@ -22,6 +22,15 @@ return new class extends Migration
 
     public function down(): void
     {
-        //
+        if (Schema::hasTable('products')) {
+            Schema::table('products', function (Blueprint $table) {
+                if (Schema::hasColumn('products', 'track_stock')) {
+                    $table->dropColumn('track_stock');
+                }
+                if (Schema::hasColumn('products', 'deleted_at')) {
+                    $table->dropSoftDeletes();
+                }
+            });
+        }
     }
 };

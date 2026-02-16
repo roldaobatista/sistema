@@ -75,7 +75,7 @@ export function QuoteDetailPage() {
 
     const duplicateMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/duplicate`),
-        onSuccess: (res: any) => { toast.success('Orçamento duplicado!'); navigate(`/orcamentos/${res.data.id}`) },
+        onSuccess: (res: any) => { toast.success('Orçamento duplicado!'); navigate(`/orçamentos/${res.data.id}`) },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao duplicar'),
     })
 
@@ -96,7 +96,7 @@ export function QuoteDetailPage() {
             const res = await api.get(`/quotes/${id}/pdf`, { responseType: 'blob' })
             const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
             const a = document.createElement('a')
-            a.href = url; a.download = `orcamento_${quote?.quote_number ?? id}.pdf`; a.click()
+            a.href = url; a.download = `orçamento_${quote?.quote_number ?? id}.pdf`; a.click()
             URL.revokeObjectURL(url)
             toast.success('PDF baixado!')
         } catch {
@@ -160,7 +160,7 @@ export function QuoteDetailPage() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                     {canUpdate && isMutable && (
-                        <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orcamentos/${id}/editar`)}>Editar</Button>
+                        <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orçamentos/${id}/editar`)}>Editar</Button>
                     )}
                     {canSend && isDraft && (
                         <Button size="sm" variant="outline" icon={<Send className="h-4 w-4" />} onClick={() => sendMut.mutate()} disabled={sendMut.isPending}>

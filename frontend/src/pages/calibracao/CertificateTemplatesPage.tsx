@@ -83,7 +83,7 @@ export default function CertificateTemplatesPage() {
             ...prev,
             layout_config: {
                 ...prev.layout_config,
-                [key]: !prev.layout_config[key],
+                [key]: !(prev.layout_config as Record<string, any>)[key],
             },
         }))
     }
@@ -209,7 +209,7 @@ export default function CertificateTemplatesPage() {
                                         <label key={key} className="flex items-center gap-2 text-sm">
                                             <input
                                                 type="checkbox"
-                                                checked={!!form.layout_config[key]}
+                                                checked={!!(form.layout_config as Record<string, any>)[key]}
                                                 onChange={() => toggleConfig(key)}
                                                 className="rounded border-muted"
                                             />

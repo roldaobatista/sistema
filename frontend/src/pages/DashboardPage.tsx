@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
-import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/emptystate'
 import { getStatusEntry, workOrderStatus } from '@/lib/status-config'
@@ -78,19 +77,15 @@ export function DashboardPage() {
 
     const { data: alertsRes } = useQuery({
         queryKey: ['dashboard-alerts-summary'],
-        queryFn: () => api.get('/api/v1/alerts/summary').then(r => r.data).catch(() => null),
+        queryFn: () => api.get('/alerts/summary').then(r => r.data).catch(() => null),
         refetchInterval: 120_000,
     })
 
     const { data: npsRes } = useQuery({
         queryKey: ['dashboard-nps'],
-        queryFn: () => api.get('/api/v1/dashboard-nps').then(r => r.data).catch(() => null),
+        queryFn: () => api.get('/dashboard-nps').then(r => r.data).catch(() => null),
         refetchInterval: 300_000,
     })
-
-    if (isError) {
-        toast.error('Erro ao carregar dados do dashboard')
-    }
 
     const s = statsRes?.data ?? {}
     const recentOs = s.recent_os ?? []

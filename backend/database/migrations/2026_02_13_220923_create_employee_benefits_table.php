@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('employee_benefits', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('tenant_id');
-            $table->uuid('user_id');
+            $table->id();
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('type'); // vt, vr, va, health, dental, life_insurance, other
             $table->string('provider')->nullable();
             $table->decimal('value', 10, 2);
@@ -24,9 +24,6 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->text('notes')->nullable();
             $table->timestamps();
-
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

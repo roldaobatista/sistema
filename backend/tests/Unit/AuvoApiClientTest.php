@@ -31,12 +31,12 @@ class AuvoApiClientTest extends TestCase
         $token = $this->client->authenticate();
 
         $this->assertEquals('mocked-bearer-token', $token);
-        $this->assertEquals('mocked-bearer-token', Cache::get('auvo_api_token'));
+        $this->assertEquals('mocked-bearer-token', Cache::get('auvo_api_token_global'));
     }
 
     public function test_authenticate_uses_cached_token(): void
     {
-        Cache::put('auvo_api_token', 'cached-token', 3600);
+        Cache::put('auvo_api_token_global', 'cached-token', 3600);
 
         Http::fake(); // No HTTP calls should be made
 
@@ -53,7 +53,7 @@ class AuvoApiClientTest extends TestCase
         ]);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/authentication failed/i');
+        $this->expectExceptionMessageMatches('/autenticação falhou/i');
 
         $this->client->authenticate();
     }
@@ -65,7 +65,7 @@ class AuvoApiClientTest extends TestCase
         ]);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/no token/i');
+        $this->expectExceptionMessageMatches('/não contém token/i');
 
         $this->client->authenticate();
     }
@@ -74,11 +74,11 @@ class AuvoApiClientTest extends TestCase
 
     public function test_clear_token_removes_cache(): void
     {
-        Cache::put('auvo_api_token', 'some-token', 3600);
+        Cache::put('auvo_api_token_global', 'some-token', 3600);
 
         $this->client->clearToken();
 
-        $this->assertNull(Cache::get('auvo_api_token'));
+        $this->assertNull(Cache::get('auvo_api_token_global'));
     }
 
     // ── GET Requests ──
@@ -98,7 +98,7 @@ class AuvoApiClientTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertArrayHasKey('result', $result);
-        $this->assertEquals(1, $result['result'][0]['id']);
+        $this->assertEquals(1, $result['result']['entityList'][0]['id']);
     }
 
     public function test_get_returns_null_on_failure(): void
@@ -210,7 +210,7 @@ class AuvoApiClientTest extends TestCase
     public function test_has_credentials_false_when_null(): void
     {
         config(['services.auvo.api_key' => null, 'services.auvo.api_token' => null]);
-        $defaultClient = new AuvoApiClient();
+        $defaultClient = AuvoApiClient::fromConfig();
 
         $this->assertFalse($defaultClient->hasCredentials());
     }

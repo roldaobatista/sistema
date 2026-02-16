@@ -104,6 +104,24 @@ Schedule::command('work-orders:check-unbilled')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/unbilled-work-orders.log'));
 
+// ─── Alert Engine (diário às 07:40) ───
+Schedule::command('alerts:run-engine')
+    ->dailyAt('07:40')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/alert-engine.log'));
+
+// ─── Collection Automation (diário às 09:00) ───
+Schedule::command('finance:run-collection')
+    ->dailyAt('09:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/collection-automation.log'));
+
+// ─── Satisfaction Survey Post-OS (diário às 10:00) ───
+Schedule::command('surveys:send-post-os')
+    ->dailyAt('10:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/post-os-surveys.log'));
+
 // ─── Email IMAP Sync (a cada 2 min) ───
 Schedule::call(function () {
     \App\Models\EmailAccount::where('is_active', true)->each(function ($account) {

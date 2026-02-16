@@ -29,8 +29,8 @@ const isEditableExpenseStatus = (status: string): status is 'pending' | 'rejecte
     status === EXPENSE_STATUS.PENDING || status === EXPENSE_STATUS.REJECTED
 
 const paymentMethods: Record<string, string> = {
-    dinheiro: 'Dinheiro', pix: 'PIX', cartao_credito: 'Cartão Crédito',
-    cartao_debito: 'Cartão Débito', boleto: 'Boleto', transferencia: 'Transferência',
+    dinheiro: 'Dinheiro', pix: 'PIX', cartao_crédito: 'Cartão Crédito',
+    cartao_débito: 'Cartão Débito', boleto: 'Boleto', transferencia: 'Transferência',
 }
 
 interface Exp {
@@ -925,7 +925,7 @@ export function ExpensesPage() {
                             </div>
                             <div>
                                 <span className="text-xs text-surface-500">Plano de Contas</span>
-                                <p className="text-sm font-medium">{showDetail.chart_of_account ? `${showDetail.chart_of_account.code} - ${showDetail.chart_of_account.name}` : 'â€”'}</p>
+                                <p className="text-sm font-medium">{showDetail.chart_of_account ? `${showDetail.chart_of_account.code} - ${showDetail.chart_of_account.name}` : '—'}</p>
                             </div>
                             <div><span className="text-xs text-surface-500">Valor</span><p className="text-sm font-semibold tabular-nums">{fmtBRL(showDetail.amount)}</p></div>
                             <div><span className="text-xs text-surface-500">Status</span><Badge variant={statusConfig[showDetail.status]?.variant}>{statusConfig[showDetail.status]?.label}</Badge></div>

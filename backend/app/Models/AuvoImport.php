@@ -117,6 +117,8 @@ class AuvoImport extends Model
         ];
     }
 
+    protected $appends = ['user_name'];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -125,6 +127,11 @@ class AuvoImport extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function getUserNameAttribute(): string
+    {
+        return $this->user?->name ?? 'Sistema';
     }
 
     public function scopeByEntity($query, string $entity)

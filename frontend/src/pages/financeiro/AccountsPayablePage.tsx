@@ -196,7 +196,7 @@ export function AccountsPayablePage() {
                 return
             }
             if (status === 403) {
-                toast.error('Voce nao tem permissao para esta acao')
+                toast.error('Voce não tem permissão para esta ação')
                 return
             }
             toast.error(extractMessage(error, 'Erro ao salvar conta'))
@@ -222,7 +222,7 @@ export function AccountsPayablePage() {
                 return
             }
             if (status === 403) {
-                toast.error('Voce nao tem permissao para registrar pagamento')
+                toast.error('Voce não tem permissão para registrar pagamento')
                 return
             }
             toast.error(extractMessage(error, 'Erro ao registrar pagamento'))
@@ -240,7 +240,7 @@ export function AccountsPayablePage() {
         onError: (error: unknown) => {
             const status = (error as ApiErrorLike | undefined)?.response?.status
             if (status === 403) {
-                toast.error('Voce nao tem permissao para excluir conta')
+                toast.error('Voce não tem permissão para excluir conta')
                 return
             }
             toast.error(extractMessage(error, 'Erro ao excluir conta'))
@@ -260,7 +260,7 @@ export function AccountsPayablePage() {
 
     const openCreate = () => {
         if (!canCreate) {
-            toast.error('Voce nao tem permissao para criar conta')
+            toast.error('Voce não tem permissão para criar conta')
             return
         }
         setEditingId(null)
@@ -271,11 +271,11 @@ export function AccountsPayablePage() {
 
     const openEdit = (record: AP) => {
         if (!canUpdate) {
-            toast.error('Voce nao tem permissao para editar conta')
+            toast.error('Voce não tem permissão para editar conta')
             return
         }
         if (record.status === FINANCIAL_STATUS.PAID || record.status === FINANCIAL_STATUS.CANCELLED) {
-            toast.error('Conta paga ou cancelada nao pode ser editada')
+            toast.error('Conta paga ou cancelada não pode ser editada')
             return
         }
         setEditingId(record.id)
@@ -491,7 +491,7 @@ export function AccountsPayablePage() {
                             {formErrors.chart_of_account_id && <p className="mt-1 text-xs text-red-500">{formErrors.chart_of_account_id[0]}</p>}
                         </div>
                     )}
-                    <Input label="Descricao" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} required />
+                    <Input label="Descrição" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('description', e.target.value)} error={formErrors.description?.[0]} required />
                     <div className="grid gap-4 sm:grid-cols-3">
                         <Input label="Valor (R$)" type="number" step="0.01" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('amount', e.target.value)} error={formErrors.amount?.[0]} required />
                         <Input label="Vencimento" type="date" value={form.due_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('due_date', e.target.value)} error={formErrors.due_date?.[0]} required />
@@ -557,7 +557,7 @@ export function AccountsPayablePage() {
                 {showDetail && (
                     <div className="space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <div><span className="text-xs text-surface-500">Descricao</span><p className="text-sm font-medium">{showDetail.description}</p></div>
+                            <div><span className="text-xs text-surface-500">Descrição</span><p className="text-sm font-medium">{showDetail.description}</p></div>
                             <div><span className="text-xs text-surface-500">Fornecedor</span><p className="text-sm font-medium">{showDetail.supplier_relation?.name ?? '-'}</p></div>
                             <div><span className="text-xs text-surface-500">Categoria</span><p className="text-sm font-medium">{showDetail.category_relation?.name ?? '-'}</p></div>
                             <div><span className="text-xs text-surface-500">Plano de Contas</span><p className="text-sm font-medium">{showDetail.chart_of_account ? `${showDetail.chart_of_account.code} - ${showDetail.chart_of_account.name}` : '-'}</p></div>
@@ -587,7 +587,7 @@ export function AccountsPayablePage() {
 
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Conta">
                 <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta conta? Esta acao nao pode ser desfeita.</p>
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.</p>
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
                         <Button variant="danger" loading={delMut.isPending} onClick={() => { if (deleteTarget) delMut.mutate(deleteTarget.id) }}>Excluir</Button>

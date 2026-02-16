@@ -31,15 +31,15 @@ const TAB_LABELS: Record<Tab, string> = {
 }
 
 const CATEGORY_ICONS: Record<TemplateCategory, LucideIcon> = {
-    os: ClipboardList, orcamentos: FileText, chamados: Headphones,
-    financeiro: DollarSign, equipamentos: Gauge, tecnicos: Wrench,
+    os: ClipboardList, orçamentos: FileText, chamados: Headphones,
+    financeiro: DollarSign, equipamentos: Gauge, técnicos: Wrench,
     estoque: Package, clientes: Users, contratos: FileCheck,
     rh: UserCheck, frota: Truck,
 }
 
 const ALL_CATEGORIES: TemplateCategory[] = [
-    'os', 'orcamentos', 'chamados', 'financeiro', 'equipamentos',
-    'tecnicos', 'estoque', 'clientes', 'contratos', 'rh', 'frota',
+    'os', 'orçamentos', 'chamados', 'financeiro', 'equipamentos',
+    'técnicos', 'estoque', 'clientes', 'contratos', 'rh', 'frota',
 ]
 
 const ALL_TRIGGER_EVENTS = Object.keys(TRIGGER_EVENT_LABELS)

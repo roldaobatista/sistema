@@ -1,0 +1,152 @@
+﻿=== CONTROLLERS COM WRITE METHODS ===
+Arquivo | WriteMethods | TryCatch | Transaction
+--------|-------------|----------|------------
+WorkOrderSignatureController.php | 1 | SIM | SIM
+WarehouseController.php | 3 | SIM | SIM
+AuvoImportController.php | 1 | SIM | SIM
+BatchController.php | 3 | SIM | SIM
+BranchController.php | 3 | SIM | SIM
+CentralController.php | 2 | SIM | SIM
+ChartOfAccountController.php | 3 | SIM | SIM
+EmployeeBenefitController.php | 3 | SIM | SIM
+EquipmentController.php | 3 | SIM | SIM
+ImportController.php | 1 | SIM | SIM
+InmetroController.php | 2 | SIM | SIM
+InventoryController.php | 3 | SIM | SIM
+InvoiceController.php | 3 | SIM | SIM
+JobPostingController.php | 3 | SIM | SIM
+NumberingSequenceController.php | 1 | SIM | SIM
+PaymentMethodController.php | 3 | SIM | SIM
+ProductKitController.php | 2 | SIM | SIM
+QuoteController.php | 5 | SIM | SIM
+ReconciliationRuleController.php | 3 | SIM | SIM
+ServiceCallController.php | 3 | SIM | SIM
+ServiceChecklistController.php | 3 | SIM | SIM
+SettingsController.php | 1 | SIM | SIM
+SkillsController.php | 3 | SIM | SIM
+SlaPolicyController.php | 3 | SIM | SIM
+StandardWeightController.php | 3 | SIM | SIM
+StockController.php | 1 | SIM | SIM
+TenantController.php | 3 | SIM | SIM
+WarehouseController.php | 3 | SIM | NAO
+WorkOrderChecklistResponseController.php | 1 | SIM | SIM
+EmailAccountController.php | 3 | SIM | SIM
+EmailNoteController.php | 2 | SIM | SIM
+EmailRuleController.php | 3 | SIM | SIM
+EmailSignatureController.php | 3 | SIM | SIM
+EmailTagController.php | 3 | SIM | SIM
+EmailTemplateController.php | 3 | SIM | SIM
+AccountPayableCategoryController.php | 3 | SIM | SIM
+AccountPayableController.php | 3 | SIM | SIM
+AccountReceivableController.php | 3 | SIM | SIM
+BankAccountController.php | 3 | SIM | SIM
+CommissionCampaignController.php | 3 | SIM | SIM
+CommissionDisputeController.php | 2 | SIM | SIM
+CommissionGoalController.php | 3 | SIM | SIM
+ExpenseController.php | 3 | SIM | SIM
+FuelingLogController.php | 4 | SIM | SIM
+FundTransferController.php | 2 | SIM | SIM
+PaymentController.php | 1 | SIM | SIM
+RecurringCommissionController.php | 2 | SIM | SIM
+FuelLogController.php | 3 | SIM | SIM
+TollIntegrationController.php | 2 | SIM | SIM
+VehicleAccidentController.php | 3 | SIM | SIM
+VehicleInspectionController.php | 3 | SIM | SIM
+VehicleInsuranceController.php | 3 | SIM | SIM
+VehiclePoolController.php | 2 | SIM | SIM
+VehicleTireController.php | 3 | SIM | SIM
+RoleController.php | 3 | SIM | SIM
+UserController.php | 3 | SIM | SIM
+UserLocationController.php | 1 | SIM | SIM
+CustomerController.php | 3 | SIM | SIM
+ProductController.php | 3 | SIM | SIM
+ServiceController.php | 3 | SIM | SIM
+SupplierController.php | 3 | SIM | SIM
+ChecklistController.php | 3 | SIM | SIM
+ChecklistSubmissionController.php | 1 | SIM | SIM
+ExpressWorkOrderController.php | 1 | SIM | SIM
+NpsController.php | 1 | SIM | SIM
+PartsKitController.php | 3 | SIM | SIM
+RecurringContractController.php | 3 | SIM | SIM
+WorkOrderChatController.php | 1 | SIM | SIM
+WorkOrderController.php | 3 | SIM | SIM
+CustomerLocationController.php | 1 | SIM | SIM
+ScheduleController.php | 3 | SIM | SIM
+TimeEntryController.php | 3 | SIM | SIM
+
+=== PAGINAS SEM EMPTY STATE ===
+  LoginPage.tsx
+  BatchExportPage.tsx
+  CalibrationReadingsPage.tsx
+  ProfilePage.tsx
+  EmailComposePage.tsx
+  EquipmentCreatePage.tsx
+  InventoryCreatePage.tsx
+  FiscalEmitirDialog.tsx
+  FleetPage.tsx
+  InmetroExecutivePage.tsx
+  InmetroMarketPage.tsx
+  AuvoImportPage.tsx
+  ChecklistBuilder.tsx
+  ChecklistForm.tsx
+  QuoteEditPage.tsx
+  PortalServiceCallPage.tsx
+  IsoDocumentsPage.tsx
+  QualityAuditsPage.tsx
+  ClockInPage.tsx
+  PeopleAnalyticsPage.tsx
+  PerformanceReviewDetailPage.tsx
+  TechProfilePage.tsx
+  TechSettingsPage.tsx
+  TechWorkOrderDetailPage.tsx
+  TechnicianGantt.tsx
+
+=== MODELOS SEM FILLABLE ===
+  CentralItem.php
+  CentralItemComment.php
+  CentralItemHistory.php
+  Email.php
+  EmailAccount.php
+  EmailAttachment.php
+  EmailRule.php
+
+=== MODELOS COM TENANT_ID SEM SCOPE ===
+  AssetTag.php
+  MaterialRequest.php
+  NpsResponse.php
+  PurchaseQuote.php
+  RmaRequest.php
+  StockDisposal.php
+
+=== SCORE POR MODULO FRONTEND ===
+admin                     | 1 pgs | Score: 100% | OK | Issues: 0
+alertas                   | 1 pgs | Score: 67% | CRITICO | Issues: 1
+automacao                 | 1 pgs | Score: 100% | OK | Issues: 0
+avancado                  | 1 pgs | Score: 100% | OK | Issues: 0
+cadastros                 | 8 pgs | Score: 96% | OK | Issues: 1
+calibracao                | 2 pgs | Score: 67% | CRITICO | Issues: 2
+central                   | 3 pgs | Score: 78% | AVISO | Issues: 2
+chamados                  | 6 pgs | Score: 100% | OK | Issues: 0
+configuracoes             | 7 pgs | Score: 90% | OK | Issues: 2
+emails                    | 3 pgs | Score: 89% | AVISO | Issues: 1
+equipamentos              | 7 pgs | Score: 90% | OK | Issues: 2
+estoque                   | 12 pgs | Score: 94% | OK | Issues: 2
+financeiro                | 20 pgs | Score: 98% | OK | Issues: 1
+fiscal                    | 2 pgs | Score: 67% | CRITICO | Issues: 2
+fleet                     | 14 pgs | Score: 95% | OK | Issues: 2
+ia                        | 1 pgs | Score: 100% | OK | Issues: 0
+iam                       | 3 pgs | Score: 100% | OK | Issues: 0
+importacao                | 1 pgs | Score: 100% | OK | Issues: 0
+inmetro                   | 17 pgs | Score: 96% | OK | Issues: 2
+integracao                | 1 pgs | Score: 67% | CRITICO | Issues: 1
+notificacoes              | 1 pgs | Score: 100% | OK | Issues: 0
+operational               | 3 pgs | Score: 67% | CRITICO | Issues: 3
+orcamentos                | 4 pgs | Score: 92% | OK | Issues: 1
+os                        | 8 pgs | Score: 88% | AVISO | Issues: 3
+portal                    | 6 pgs | Score: 89% | AVISO | Issues: 2
+qualidade                 | 3 pgs | Score: 67% | CRITICO | Issues: 3
+relatorios                | 1 pgs | Score: 100% | OK | Issues: 0
+rh                        | 20 pgs | Score: 95% | OK | Issues: 3
+tech                      | 16 pgs | Score: 94% | OK | Issues: 3
+tecnicos                  | 6 pgs | Score: 89% | AVISO | Issues: 2
+tv                        | 1 pgs | Score: 100% | OK | Issues: 0

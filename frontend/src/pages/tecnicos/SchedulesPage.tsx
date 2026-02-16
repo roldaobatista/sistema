@@ -411,7 +411,7 @@ export function SchedulesPage() {
                         </div>
                     )}
 
-                    <Input label="Titulo" value={form.title} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('title', event.target.value)} required placeholder="Ex: Manutencao preventiva" />
+                    <Input label="Título" value={form.title} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('title', event.target.value)} required placeholder="Ex: Manutenção preventiva" />
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
@@ -471,7 +471,7 @@ export function SchedulesPage() {
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <Input label="Inicio" type="datetime-local" value={form.scheduled_start} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('scheduled_start', event.target.value)} required />
+                        <Input label="Início" type="datetime-local" value={form.scheduled_start} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('scheduled_start', event.target.value)} required />
                         <Input label="Fim" type="datetime-local" value={form.scheduled_end} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setFormField('scheduled_end', event.target.value)} required />
                     </div>
 

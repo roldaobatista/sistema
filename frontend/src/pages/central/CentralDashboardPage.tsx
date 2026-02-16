@@ -14,17 +14,17 @@ import { useAuthStore } from '@/stores/auth-store'
 // ── Configuração de tipos ──
 
 const tipoIcons: Record<string, any> = {
-    os: Wrench, chamado: Phone, orcamento: FileText,
-    financeiro: DollarSign, calibracao: Scale,
+    os: Wrench, chamado: Phone, orçamento: FileText,
+    financeiro: DollarSign, calibração: Scale,
     contrato: FileText, tarefa: CheckCircle, lembrete: Clock,
 }
 
 const tipoColors: Record<string, string> = {
     os: 'text-blue-600 bg-blue-50',
     chamado: 'text-cyan-600 bg-cyan-50',
-    orcamento: 'text-amber-600 bg-amber-50',
+    orçamento: 'text-amber-600 bg-amber-50',
     financeiro: 'text-emerald-600 bg-emerald-50',
-    calibracao: 'text-indigo-600 bg-indigo-50',
+    calibração: 'text-indigo-600 bg-indigo-50',
     contrato: 'text-rose-600 bg-rose-50',
     tarefa: 'text-surface-600 bg-surface-50',
     lembrete: 'text-surface-500 bg-surface-50',

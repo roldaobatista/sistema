@@ -129,4 +129,14 @@ class WorkOrderItem extends Model
     {
         return $this->belongsTo(WorkOrder::class);
     }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'reference_id');
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class, 'reference_id');
+    }
 }

@@ -176,16 +176,16 @@ describe('Permission — Route Protection', () => {
     const routePermissions = [
         { route: '/cadastros/clientes', permission: 'cadastros.customer.view' },
         { route: '/os', permission: 'os.work_order.view' },
-        { route: '/orcamentos', permission: 'quotes.quote.view' },
+        { route: '/orçamentos', permission: 'quotes.quote.view' },
         { route: '/financeiro/receber', permission: 'finance.receivable.view' },
         { route: '/financeiro/pagar', permission: 'finance.payable.view' },
         { route: '/financeiro/despesas', permission: 'expenses.expense.view' },
         { route: '/estoque', permission: 'estoque.movement.view' },
-        { route: '/relatorios', permission: 'reports.os_report.view' },
+        { route: '/relatórios', permission: 'reports.os_report.view' },
         { route: '/equipamentos', permission: 'equipments.equipment.view' },
         { route: '/inmetro', permission: 'inmetro.intelligence.view' },
         { route: '/crm', permission: 'crm.deal.view' },
-        { route: '/configuracoes', permission: 'platform.settings.view' },
+        { route: '/configurações', permission: 'platform.settings.view' },
         { route: '/iam/usuarios', permission: 'iam.user.view' },
     ]
 

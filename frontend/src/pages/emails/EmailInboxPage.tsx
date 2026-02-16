@@ -29,13 +29,13 @@ import { ptBR } from 'date-fns/locale'
 function AICategoryBadge({ category }: { category: string | null }) {
     if (!category) return null
     const variants: Record<string, { color: string; icon: React.ReactNode }> = {
-        'orcamento': { color: 'bg-blue-100 text-blue-800', icon: <FileText className="w-3 h-3" /> },
+        'orçamento': { color: 'bg-blue-100 text-blue-800', icon: <FileText className="w-3 h-3" /> },
         'suporte': { color: 'bg-orange-100 text-orange-800', icon: <Wrench className="w-3 h-3" /> },
         'financeiro': { color: 'bg-green-100 text-green-800', icon: <Tag className="w-3 h-3" /> },
         'reclamacao': { color: 'bg-red-100 text-red-800', icon: <AlertCircle className="w-3 h-3" /> },
-        'informacao': { color: 'bg-surface-100 text-surface-800', icon: <Mail className="w-3 h-3" /> },
+        'informação': { color: 'bg-surface-100 text-surface-800', icon: <Mail className="w-3 h-3" /> },
     }
-    const v = variants[category] || variants['informacao']!
+    const v = variants[category] || variants['informação']!
     return (
         <Badge variant="outline" className={cn('text-xs gap-1', v.color)}>
             {v.icon} {category}
@@ -225,11 +225,11 @@ export default function EmailInboxPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas</SelectItem>
-                            <SelectItem value="orcamento">Orçamento</SelectItem>
+                            <SelectItem value="orçamento">Orçamento</SelectItem>
                             <SelectItem value="suporte">Suporte</SelectItem>
                             <SelectItem value="financeiro">Financeiro</SelectItem>
                             <SelectItem value="reclamacao">Reclamação</SelectItem>
-                            <SelectItem value="informacao">Informação</SelectItem>
+                            <SelectItem value="informação">Informação</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -336,7 +336,7 @@ export default function EmailInboxPage() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <span className={cn('text-sm truncate', !e.is_read && 'font-semibold')}>
-                                            {e.direction === 'outbound' ? `â†’ ${e.to_email}` : (e.from_name || e.from_email)}
+                                            {e.direction === 'outbound' ? `→ ${e.to_email}` : (e.from_name || e.from_email)}
                                         </span>
                                         {e.has_attachments && <Paperclip className="w-3 h-3 text-muted-foreground shrink-0" />}
                                         <AICategoryBadge category={e.ai_category} />
@@ -408,7 +408,7 @@ export default function EmailInboxPage() {
                                 {format(new Date(email.received_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                                 {email.account && (
                                     <>
-                                        <span>Â·</span>
+                                        <span>·</span>
                                         <span>{email.account.name}</span>
                                     </>
                                 )}

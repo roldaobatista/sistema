@@ -49,7 +49,7 @@ class WarehouseController extends Controller
                 'is_active' => 'boolean',
             ]);
 
-            $warehouse = Warehouse::create($validated);
+            $warehouse = DB::transaction(fn () => Warehouse::create($validated));
 
             return response()->json([
                 'message' => 'Armazém criado com sucesso.',
@@ -80,11 +80,11 @@ class WarehouseController extends Controller
                 'is_active' => 'boolean',
             ]);
 
-            $warehouse->update($validated);
+            DB::transaction(fn () => $warehouse->update($validated));
 
             return response()->json([
                 'message' => 'Armazém atualizado com sucesso.',
-                'data' => $warehouse
+                'data' => $warehouse->fresh()
             ]);
         } catch (ValidationException $e) {
             return response()->json(['message' => 'Erro de validação', 'errors' => $e->errors()], 422);
@@ -104,7 +104,7 @@ class WarehouseController extends Controller
                 ], 422);
             }
 
-            $warehouse->delete();
+            DB::transaction(fn () => $warehouse->delete());
 
             return response()->json([
                 'message' => 'Armazém excluído com sucesso.'

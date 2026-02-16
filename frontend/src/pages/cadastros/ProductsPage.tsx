@@ -185,7 +185,7 @@ export function ProductsPage() {
                                     </div>
                                 </td>
                                 <td className="hidden px-4 py-3 md:table-cell">
-                                    {p.category ? <Badge variant="brand">{p.category.name}</Badge> : <span className="text-xs text-surface-400">â€”</span>}
+                                    {p.category ? <Badge variant="brand">{p.category.name}</Badge> : <span className="text-xs text-surface-400">—</span>}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-right text-sm font-medium text-surface-900">{formatBRL(p.sell_price)}</td>
                                 <td className="hidden px-3.5 py-2.5 text-right lg:table-cell">

@@ -152,7 +152,7 @@ export function ServiceCallCreatePage() {
             }
 
             if (status === 403) {
-                toast.error('Sem permissao para criar chamado')
+                toast.error('Sem permissão para criar chamado')
                 return
             }
 
@@ -209,7 +209,7 @@ export function ServiceCallCreatePage() {
                 </Button>
                 <div>
                     <h1 className="text-xl font-bold text-surface-900">Novo Chamado</h1>
-                    <p className="text-sm text-surface-500">Preencha os dados para abrir um novo atendimento tecnico.</p>
+                    <p className="text-sm text-surface-500">Preencha os dados para abrir um novo atendimento técnico.</p>
                 </div>
             </div>
 
@@ -270,14 +270,14 @@ export function ServiceCallCreatePage() {
                         )}
                         {customersError && (
                             <p className="mt-1 text-xs text-red-600">
-                                Nao foi possivel carregar os clientes.
+                                Não foi possível carregar os clientes.
                             </p>
                         )}
                     </div>
                 </div>
 
                 <div className="space-y-4 rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                    <h2 className="text-sm font-semibold text-surface-900">Local e horario</h2>
+                    <h2 className="text-sm font-semibold text-surface-900">Local e horário</h2>
 
                     <div>
                         <label className="mb-1 block text-xs font-medium text-surface-500">Data agendada</label>
@@ -298,7 +298,7 @@ export function ServiceCallCreatePage() {
                             type="text"
                             value={form.address}
                             onChange={(event) => setForm((previous) => ({ ...previous, address: event.target.value }))}
-                            placeholder="Rua, numero, bairro"
+                            placeholder="Rua, número, bairro"
                             className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm"
                         />
                     </div>
@@ -361,7 +361,7 @@ export function ServiceCallCreatePage() {
                     {canAssign ? (
                         <>
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-surface-500">Tecnico</label>
+                                <label className="mb-1 block text-xs font-medium text-surface-500">Técnico</label>
                                 <select
                                     value={form.technician_id}
                                     onChange={(event) =>
@@ -403,13 +403,13 @@ export function ServiceCallCreatePage() {
                             </div>
                             {assigneesError && (
                                 <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                                    Nao foi possivel carregar tecnicos e motoristas.
+                                    Não foi possível carregar técnicos e motoristas.
                                 </p>
                             )}
                         </>
                     ) : (
                         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                            Seu perfil nao possui permissao para atribuir tecnico no cadastro.
+                            Seu perfil nao possui permissão para atribuir técnico no cadastro.
                         </p>
                     )}
 
@@ -436,7 +436,7 @@ export function ServiceCallCreatePage() {
                         ) : equipmentsLoading ? (
                             <p className="text-sm text-surface-500">Carregando equipamentos...</p>
                         ) : equipmentsError ? (
-                            <p className="text-sm text-red-600">Nao foi possivel carregar os equipamentos.</p>
+                            <p className="text-sm text-red-600">Não foi possível carregar os equipamentos.</p>
                         ) : equipments.length === 0 ? (
                             <p className="text-sm text-surface-500">Nenhum equipamento encontrado para este cliente.</p>
                         ) : (

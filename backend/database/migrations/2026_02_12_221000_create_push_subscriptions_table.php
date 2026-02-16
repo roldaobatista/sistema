@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->foreignId('tenant_id')->constrained('tenants')->onUpdate('cascade')->onDelete('cascade');
-            $table->text('endpoint');
+            $table->string('endpoint', 760);
             $table->string('p256dh_key', 500);
             $table->string('auth_key', 500);
             $table->string('user_agent')->nullable();

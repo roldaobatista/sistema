@@ -23,6 +23,7 @@ class StoreQuoteRequest extends FormRequest
             'valid_until' => 'nullable|date|after:today',
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'discount_amount' => 'nullable|numeric|min:0',
+            'displacement_value' => 'nullable|numeric|min:0',
             'observations' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'equipments' => 'required|array|min:1',

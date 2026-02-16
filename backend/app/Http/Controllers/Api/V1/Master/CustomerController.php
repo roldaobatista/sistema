@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Master;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\StoreCustomerRequest;
+use App\Http\Requests\Customer\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\CustomerContact;
 use App\Events\CustomerCreated;
@@ -65,58 +67,9 @@ class CustomerController extends Controller
         return response()->json($customers);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreCustomerRequest $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
-        $tenantId = $user?->tenant_id;
-
-        $validated = $request->validate([
-            'type' => 'required|in:PF,PJ',
-            'name' => 'required|string|max:255',
-            'trade_name' => 'nullable|string|max:255',
-            'document' => [
-                'nullable', 'string', 'max:20',
-                new \App\Rules\CpfCnpj(),
-                \Illuminate\Validation\Rule::unique('customers', 'document')
-                    ->where('tenant_id', $tenantId)
-                    ->whereNull('deleted_at'),
-            ],
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'phone2' => 'nullable|string|max:20',
-            'address_zip' => 'nullable|string|max:10',
-            'address_street' => 'nullable|string|max:255',
-            'address_number' => 'nullable|string|max:20',
-            'address_complement' => 'nullable|string|max:100',
-            'address_neighborhood' => 'nullable|string|max:100',
-            'address_city' => 'nullable|string|max:100',
-            'address_state' => 'nullable|string|max:2',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'google_maps_link' => 'nullable|url|max:500',
-            'notes' => 'nullable|string',
-            'is_active' => 'boolean',
-            // CRM fields
-            'source' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::SOURCES))],
-            'segment' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::SEGMENTS))],
-            'company_size' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::COMPANY_SIZES))],
-            'annual_revenue_estimate' => 'nullable|numeric|min:0',
-            'contract_type' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::CONTRACT_TYPES))],
-            'contract_start' => 'nullable|date',
-            'contract_end' => 'nullable|date|after_or_equal:contract_start',
-            'rating' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::RATINGS))],
-            'assigned_seller_id' => 'nullable|exists:users,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:50',
-            // Contacts
-            'contacts' => 'nullable|array',
-            'contacts.*.name' => 'required|string|max:255',
-            'contacts.*.role' => 'nullable|string|max:100',
-            'contacts.*.phone' => 'nullable|string|max:20',
-            'contacts.*.email' => 'nullable|email|max:255',
-            'contacts.*.is_primary' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         try {
             DB::beginTransaction();
@@ -148,60 +101,9 @@ class CustomerController extends Controller
         );
     }
 
-    public function update(Request $request, Customer $customer): JsonResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse
     {
-        $validated = $request->validate([
-            'type' => 'sometimes|in:PF,PJ',
-            'name' => 'sometimes|string|max:255',
-            'trade_name' => 'nullable|string|max:255',
-            'document' => [
-                'nullable', 'string', 'max:20',
-                new \App\Rules\CpfCnpj(),
-                \Illuminate\Validation\Rule::unique('customers', 'document')
-                    ->where('tenant_id', $customer->tenant_id)
-                    ->whereNull('deleted_at')
-                    ->ignore($customer->id),
-            ],
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'phone2' => 'nullable|string|max:20',
-            'address_zip' => 'nullable|string|max:10',
-            'address_street' => 'nullable|string|max:255',
-            'address_number' => 'nullable|string|max:20',
-            'address_complement' => 'nullable|string|max:100',
-            'address_neighborhood' => 'nullable|string|max:100',
-            'address_city' => 'nullable|string|max:100',
-            'address_state' => 'nullable|string|max:2',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'google_maps_link' => 'nullable|url|max:500',
-            'notes' => 'nullable|string',
-            'is_active' => 'boolean',
-            // CRM fields
-            'source' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::SOURCES))],
-            'segment' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::SEGMENTS))],
-            'company_size' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::COMPANY_SIZES))],
-            'annual_revenue_estimate' => 'nullable|numeric|min:0',
-            'contract_type' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::CONTRACT_TYPES))],
-            'contract_start' => 'nullable|date',
-            'contract_end' => 'nullable|date|after_or_equal:contract_start',
-            'rating' => ['nullable', 'string', \Illuminate\Validation\Rule::in(array_keys(Customer::RATINGS))],
-            'assigned_seller_id' => 'nullable|exists:users,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:50',
-            // Contacts
-            'contacts' => 'nullable|array',
-            'contacts.*.id' => [
-                'nullable',
-                \Illuminate\Validation\Rule::exists('customer_contacts', 'id')
-                    ->where('tenant_id', $customer->tenant_id),
-            ],
-            'contacts.*.name' => 'required|string|max:255',
-            'contacts.*.role' => 'nullable|string|max:100',
-            'contacts.*.phone' => 'nullable|string|max:20',
-            'contacts.*.email' => 'nullable|email|max:255',
-            'contacts.*.is_primary' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         try {
             DB::beginTransaction();

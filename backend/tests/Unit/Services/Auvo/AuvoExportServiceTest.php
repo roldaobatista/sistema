@@ -11,11 +11,9 @@ use App\Services\Auvo\AuvoApiClient;
 use App\Services\Auvo\AuvoExportService;
 use Tests\TestCase;
 use Mockery;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class AuvoExportServiceTest extends TestCase
 {
-    use RefreshDatabase;
 
     private $apiClient;
     private $service;

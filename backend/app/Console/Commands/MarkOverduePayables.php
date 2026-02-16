@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AccountPayable;
+use App\Models\Role;
 use App\Models\User;
 use App\Notifications\PaymentOverdue;
 use Illuminate\Console\Command;
@@ -29,7 +30,7 @@ class MarkOverduePayables extends Command
         $byTenant = $overdue->groupBy('tenant_id');
         foreach ($byTenant as $tenantId => $payables) {
             $managers = User::whereHas('tenants', fn($q) => $q->where('tenants.id', $tenantId))
-                ->whereHas('roles', fn($q) => $q->whereIn('name', ['admin', 'financeiro', 'gerente']))
+                ->whereHas('roles', fn($q) => $q->whereIn('name', [Role::ADMIN, Role::FINANCEIRO, Role::GERENTE]))
                 ->get();
 
             foreach ($payables as $payable) {

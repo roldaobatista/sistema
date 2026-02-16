@@ -132,7 +132,7 @@ export default function EquipmentCreatePage() {
                             <input value={form.model} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('model', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" placeholder="Ex: 2098" />
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">NÂº Série</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Nº Série</label>
                             <input value={form.serial_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('serial_number', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>
@@ -166,12 +166,12 @@ export default function EquipmentCreatePage() {
                         <div>
                             <label className="mb-1 block text-xs font-medium text-surface-600">Classe de Precisão</label>
                             <select value={form.precision_class} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('precision_class', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm">
-                                <option value="">â€”</option>
+                                <option value="">—</option>
                                 {Object.entries(classes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-surface-600">NÂº INMETRO</label>
+                            <label className="mb-1 block text-xs font-medium text-surface-600">Nº INMETRO</label>
                             <input value={form.inmetro_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('inmetro_number', e.target.value)} className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm" />
                         </div>
                         <div>

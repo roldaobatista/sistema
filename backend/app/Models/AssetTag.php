@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AssetTag extends Model
 {
+    use BelongsToTenant;
     protected $fillable = [
         'tenant_id', 'tag_code', 'tag_type', 'taggable_type', 'taggable_id',
         'status', 'location', 'last_scanned_at', 'last_scanned_by', 'metadata',

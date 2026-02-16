@@ -120,7 +120,7 @@ export function NewDealModal({ open, onClose, pipelineId, stageId }: Props) {
                         className="w-full rounded-lg border border-default px-3 py-2 text-sm text-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                     >
                         <option value="">Selecione</option>
-                        <option value="calibracao_vencendo">Calibração Vencendo</option>
+                        <option value="calibração_vencendo">Calibração Vencendo</option>
                         <option value="indicacao">Indicação</option>
                         <option value="prospeccao">Prospecção</option>
                         <option value="chamado">Chamado Técnico</option>

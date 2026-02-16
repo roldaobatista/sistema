@@ -300,7 +300,7 @@ export function WorkOrderCreatePage() {
                             <Input label="Tipo *" value={newEquip.type} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, type: e.target.value }))} placeholder="Ex: Impressora" />
                             <Input label="Marca" value={newEquip.brand} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, brand: e.target.value }))} />
                             <Input label="Modelo" value={newEquip.model} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, model: e.target.value }))} />
-                            <Input label="NÂº Série" value={newEquip.serial_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, serial_number: e.target.value }))} />
+                            <Input label="Nº Série" value={newEquip.serial_number} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, serial_number: e.target.value }))} />
                         </div>
                     )}
                 </div>
@@ -335,9 +335,9 @@ export function WorkOrderCreatePage() {
                                         <div className="flex-1">
                                             <select value={item.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateItem(i, 'reference_id', e.target.value)}
                                                 className="w-full rounded-lg border border-default bg-surface-0 px-2.5 py-1.5 text-xs focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
-                                                <option value="">â€” Selecionar {item.type === 'product' ? 'produto' : 'serviço'} â€”</option>
+                                                <option value="">— Selecionar {item.type === 'product' ? 'produto' : 'serviço'} —</option>
                                                 {(item.type === 'product' ? products : services).map((r: any) => (
-                                                    <option key={r.id} value={r.id}>{r.name} â€” R$ {item.type === 'product' ? r.sell_price : r.default_price}</option>
+                                                    <option key={r.id} value={r.id}>{r.name} — R$ {item.type === 'product' ? r.sell_price : r.default_price}</option>
                                                 ))}
                                             </select>
                                         </div>

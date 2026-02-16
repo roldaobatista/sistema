@@ -3,11 +3,14 @@
 namespace App\Listeners;
 
 use App\Events\WorkOrderCancelled;
+use App\Models\CommissionEvent;
 use App\Models\Notification;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Services\StockService;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class HandleWorkOrderCancellation implements ShouldQueue
 {
@@ -53,6 +56,21 @@ class HandleWorkOrderCancellation implements ShouldQueue
                 if ($product && $product->track_stock) {
                     $this->stockService->returnStock($product, (float) $item->quantity, $wo);
                 }
+            }
+        }
+
+        // Estornar comissões pendentes/aprovadas vinculadas à OS
+        // (despesas permanecem — técnico já gastou)
+        if (!$alreadyCancelled) {
+            $reversedCount = CommissionEvent::where('work_order_id', $wo->id)
+                ->whereIn('status', [CommissionEvent::STATUS_PENDING, CommissionEvent::STATUS_APPROVED])
+                ->update([
+                    'status' => CommissionEvent::STATUS_REVERSED,
+                    'notes' => DB::raw("CONCAT(COALESCE(notes, ''), ' | Estornado: OS cancelada em " . now()->format('d/m/Y H:i') . "')"),
+                ]);
+
+            if ($reversedCount > 0) {
+                Log::info("OS #{$wo->business_number} cancelada: {$reversedCount} comissões estornadas");
             }
         }
     }

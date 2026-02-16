@@ -137,7 +137,7 @@ export function InvoicesPage() {
         },
         onError: (error: ApiErrorLike) => {
             if (error?.response?.status === 403) {
-                toast.error('Sem permissao para criar fatura')
+                toast.error('Sem permissão para criar fatura')
                 return
             }
             toast.error(error?.response?.data?.message ?? 'Erro ao criar fatura')
@@ -154,7 +154,7 @@ export function InvoicesPage() {
         },
         onError: (error: ApiErrorLike) => {
             if (error?.response?.status === 403) {
-                toast.error('Sem permissao para excluir fatura')
+                toast.error('Sem permissão para excluir fatura')
                 return
             }
             toast.error(error?.response?.data?.message ?? 'Erro ao excluir fatura')
@@ -174,7 +174,7 @@ export function InvoicesPage() {
         },
         onError: (error: ApiErrorLike) => {
             if (error?.response?.status === 403) {
-                toast.error('Sem permissao para alterar status da fatura')
+                toast.error('Sem permissão para alterar status da fatura')
                 return
             }
             toast.error(error?.response?.data?.message ?? 'Erro ao atualizar fatura')
@@ -219,7 +219,7 @@ export function InvoicesPage() {
 
     const changeStatus = (invoice: Invoice, nextStatus: InvoiceStatus) => {
         if (!canUpdate) {
-            toast.error('Sem permissao para alterar status da fatura')
+            toast.error('Sem permissão para alterar status da fatura')
             return
         }
         setConfirmAction({ type: 'status', invoice, nextStatus })
@@ -227,7 +227,7 @@ export function InvoicesPage() {
 
     const removeInvoice = (invoice: Invoice) => {
         if (!canDelete) {
-            toast.error('Sem permissao para excluir fatura')
+            toast.error('Sem permissão para excluir fatura')
             return
         }
         setConfirmAction({ type: 'delete', invoice })
@@ -250,7 +250,7 @@ export function InvoicesPage() {
     const confirmTitle = confirmAction?.type === 'status' ? 'Alterar Status da Fatura' : 'Excluir Fatura'
     const confirmDescription = confirmAction?.type === 'status'
         ? `Alterar a fatura ${confirmAction.invoice.invoice_number} para ${statusMap[confirmAction.nextStatus].label}?`
-        : `Excluir a fatura ${confirmAction?.invoice.invoice_number}? Esta acao nao pode ser desfeita.`
+        : `Excluir a fatura ${confirmAction?.invoice.invoice_number}? Esta ação não pode ser desfeita.`
     const confirmButtonText = confirmAction?.type === 'status' ? 'Confirmar Status' : 'Excluir'
     const confirmButtonVariant = confirmAction?.type === 'status' ? 'primary' : 'danger'
 
@@ -268,7 +268,7 @@ export function InvoicesPage() {
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
                     <input
                         type="text"
-                        placeholder="Buscar por numero, NF, cliente ou OS..."
+                        placeholder="Buscar por número, NF, cliente ou OS..."
                         value={search}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             setSearch(event.target.value)
@@ -410,7 +410,7 @@ export function InvoicesPage() {
                         <div className="flex justify-between"><span className="text-surface-500">Cliente:</span><span className="font-medium">{detailInvoice.customer?.name ?? '-'}</span></div>
                         <div className="flex justify-between"><span className="text-surface-500">OS:</span><span className="font-medium">{woIdentifier(detailInvoice.work_order)}</span></div>
                         <div className="flex justify-between"><span className="text-surface-500">Status:</span><Badge variant={statusMap[detailInvoice.status]?.variant ?? 'default'}>{statusMap[detailInvoice.status]?.label ?? detailInvoice.status}</Badge></div>
-                        <div className="flex justify-between"><span className="text-surface-500">Numero NF:</span><span className="font-medium">{detailInvoice.nf_number ?? '-'}</span></div>
+                        <div className="flex justify-between"><span className="text-surface-500">Número NF:</span><span className="font-medium">{detailInvoice.nf_number ?? '-'}</span></div>
                         <div className="flex justify-between"><span className="text-surface-500">Vencimento:</span><span className="font-medium">{detailInvoice.due_date ? new Date(detailInvoice.due_date).toLocaleDateString('pt-BR') : '-'}</span></div>
                         <div className="flex justify-between"><span className="text-surface-500">Total:</span><span className="text-lg font-bold">{fmtBRL(detailInvoice.total)}</span></div>
                         {detailInvoice.observations ? (
@@ -426,7 +426,7 @@ export function InvoicesPage() {
                                     <table className="w-full text-xs">
                                         <thead className="bg-surface-50">
                                             <tr>
-                                                <th className="px-3 py-2 text-left">Descricao</th>
+                                                <th className="px-3 py-2 text-left">Descrição</th>
                                                 <th className="px-3 py-2 text-right">Qtd</th>
                                                 <th className="px-3 py-2 text-right">Unit</th>
                                                 <th className="px-3 py-2 text-right">Total</th>
@@ -489,7 +489,7 @@ export function InvoicesPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-surface-700">Numero da NF</label>
+                        <label className="mb-1 block text-sm font-medium text-surface-700">Número da NF</label>
                         <input
                             value={form.nf_number}
                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, nf_number: event.target.value }))}
@@ -524,7 +524,7 @@ export function InvoicesPage() {
                 </form>
             </Modal>
 
-            <Modal open={!!confirmAction} onOpenChange={() => setConfirmAction(null)} title={confirmTitle ?? 'Confirmacao'}>
+            <Modal open={!!confirmAction} onOpenChange={() => setConfirmAction(null)} title={confirmTitle ?? 'Confirmação'}>
                 <div className="space-y-4">
                     <p className="text-sm text-surface-600">{confirmDescription}</p>
                     <div className="flex justify-end gap-3 border-t pt-4">

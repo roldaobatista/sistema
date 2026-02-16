@@ -264,7 +264,7 @@ export function Customer360Page() {
                             <Tabs.List className="flex gap-1 overflow-x-auto no-scrollbar">
                                 {[
                                     { value: 'overview', label: 'Visão Geral', icon: TrendingUp },
-                                    { value: 'servicos', label: 'Serviços', icon: ClipboardList },
+                                    { value: 'serviços', label: 'Serviços', icon: ClipboardList },
                                     { value: 'equipamentos', label: 'Equipamentos', icon: Scale },
                                     { value: 'comercial', label: 'Comercial', icon: Target },
                                     canViewFinance && { value: 'financeiro', label: 'Financeiro', icon: DollarSign },
@@ -433,7 +433,7 @@ export function Customer360Page() {
                     </Tabs.Content>
 
                     {/* Tab: Serviços (OS + Chamados) */}
-                    <Tabs.Content value="servicos" className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+                    <Tabs.Content value="serviços" className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
                         <div className="rounded-2xl border border-default bg-surface-0 shadow-sm overflow-hidden">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-subtle bg-surface-50/50">
                                 <h3 className="text-sm font-bold text-surface-900">Ordens de Serviço</h3>

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api\V1\Os;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\WorkOrder\StoreWorkOrderRequest;
+use App\Http\Requests\WorkOrder\UpdateWorkOrderRequest;
+use App\Models\Role;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Models\WorkOrderStatusHistory;
@@ -108,53 +111,11 @@ class WorkOrderController extends Controller
         return response()->json($response);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreWorkOrderRequest $request): JsonResponse
     {
         $tenantId = $this->currentTenantId();
 
-        $validated = $request->validate([
-            'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'equipment_id' => ['nullable', Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'priority' => 'sometimes|in:low,normal,high,urgent',
-            'description' => 'required|string',
-            'internal_notes' => 'nullable|string',
-            'received_at' => 'nullable|date',
-            'discount' => 'sometimes|numeric|min:0',
-            // Novos campos v2
-            'os_number' => 'nullable|string|max:30',
-            'quote_id' => ['nullable', Rule::exists('quotes', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'service_call_id' => ['nullable', Rule::exists('service_calls', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'seller_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'origin_type' => ['nullable', \Illuminate\Validation\Rule::in([
-                WorkOrder::ORIGIN_QUOTE,
-                WorkOrder::ORIGIN_SERVICE_CALL,
-                WorkOrder::ORIGIN_RECURRING,
-                WorkOrder::ORIGIN_MANUAL,
-                'direct', // Legacy/Frontend support
-            ])],
-            'discount_percentage' => 'sometimes|numeric|min:0|max:100',
-            'displacement_value' => 'sometimes|numeric|min:0',
-            'technician_ids' => 'nullable|array',
-            'technician_ids.*' => [Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'equipment_ids' => 'nullable|array',
-            'equipment_ids.*' => [Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            // Equipamento inline
-            'new_equipment' => 'nullable|array',
-            'new_equipment.type' => 'required_with:new_equipment|string|max:100',
-            'new_equipment.brand' => 'nullable|string|max:100',
-            'new_equipment.model' => 'nullable|string|max:100',
-            'new_equipment.serial_number' => 'nullable|string|max:255',
-            // Itens inline
-            'items' => 'array',
-            'items.*.type' => 'required|in:product,service',
-            'items.*.reference_id' => 'nullable|integer',
-            'items.*.description' => 'required|string',
-            'items.*.quantity' => 'sometimes|numeric|min:0.01',
-            'items.*.unit_price' => 'sometimes|numeric|min:0',
-            'items.*.discount' => 'sometimes|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         // GAP-24: Gate de desconto — só admin/gerente pode aplicar
         $hasDiscount = (float) ($validated['discount'] ?? 0) > 0
@@ -204,11 +165,11 @@ class WorkOrderController extends Controller
             // Pivô técnicos
             if (!empty($validated['technician_ids'])) {
                 foreach ($validated['technician_ids'] as $techId) {
-                    $order->technicians()->attach($techId, ['role' => 'technician']);
+                    $order->technicians()->attach($techId, ['role' => Role::TECNICO]);
                 }
             }
             if (!empty($validated['driver_id'])) {
-                $order->technicians()->syncWithoutDetaching([$validated['driver_id'] => ['role' => 'driver']]);
+                $order->technicians()->syncWithoutDetaching([$validated['driver_id'] => ['role' => Role::MOTORISTA]]);
             }
 
             // Pivô equipamentos
@@ -255,8 +216,8 @@ class WorkOrderController extends Controller
         $workOrder->load([
             'customer:id,name',
             'equipment:id,name,serial_number',
-            'service:id,name',
-            'assignedTo:id,name',
+            'serviceCall:id,call_number,status',
+            'assignee:id,name',
             'items.product:id,name',
             'items.service:id,name',
             'attachments.uploader:id,name',
@@ -266,7 +227,6 @@ class WorkOrderController extends Controller
             'customer.contacts',
             'branch:id,name',
             'creator:id,name',
-            'assignee:id,name',
             'seller:id,name',
             'driver:id,name',
             'quote:id,quote_number,total',
@@ -284,26 +244,11 @@ class WorkOrderController extends Controller
         return response()->json($data);
     }
 
-    public function update(Request $request, WorkOrder $workOrder): JsonResponse
+    public function update(UpdateWorkOrderRequest $request, WorkOrder $workOrder): JsonResponse
     {
         $tenantId = $this->currentTenantId();
 
-        $validated = $request->validate([
-            'customer_id' => ['sometimes', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'equipment_id' => ['nullable', Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'priority' => 'sometimes|in:low,normal,high,urgent',
-            'description' => 'sometimes|string',
-            'internal_notes' => 'nullable|string',
-            'technical_report' => 'nullable|string',
-            'received_at' => 'nullable|date',
-            'discount' => 'sometimes|numeric|min:0',
-            'os_number' => 'nullable|string|max:30',
-            'seller_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'discount_percentage' => 'sometimes|numeric|min:0|max:100',
-            'displacement_value' => 'sometimes|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         // GAP-24: Gate de desconto — só admin/gerente pode aplicar
         $hasDiscount = (float) ($validated['discount'] ?? 0) > 0
@@ -454,7 +399,7 @@ class WorkOrderController extends Controller
                 default => null,
             };
 
-            return response()->json($workOrder->fresh()->load('statusHistory.user:id,name'));
+            return response()->json($workOrder->fresh()->load(['customer:id,name,latitude,longitude', 'statusHistory.user:id,name']));
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('WorkOrder status update failed', [
@@ -912,7 +857,7 @@ class WorkOrderController extends Controller
 
             DB::commit();
 
-            return response()->json($workOrder->fresh()->load('statusHistory.user:id,name'));
+            return response()->json($workOrder->fresh()->load(['customer:id,name,latitude,longitude', 'statusHistory.user:id,name']));
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('WorkOrder reopen failed', ['id' => $workOrder->id, 'error' => $e->getMessage()]);
@@ -958,7 +903,7 @@ class WorkOrderController extends Controller
 
             DB::commit();
 
-            return response()->json($workOrder->fresh()->load(['statusHistory.user:id,name', 'driver:id,name']));
+            return response()->json($workOrder->fresh()->load(['customer:id,name,latitude,longitude', 'statusHistory.user:id,name', 'driver:id,name']));
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('WorkOrder authorizeDispatch failed', ['id' => $workOrder->id, 'error' => $e->getMessage()]);
@@ -1029,5 +974,16 @@ class WorkOrderController extends Controller
             ->values();
 
         return response()->json(['data' => $combined]);
+    }
+
+    public function satisfaction(WorkOrder $workOrder): JsonResponse
+    {
+        $survey = \App\Models\SatisfactionSurvey::where('work_order_id', $workOrder->id)->first();
+
+        if (!$survey) {
+            return response()->json(['data' => null]);
+        }
+
+        return response()->json(['data' => $survey]);
     }
 }

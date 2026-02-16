@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud, FileText, MapPin } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud, FileText, MapPin, Loader2, CheckCircle2, Zap, Sprout, Briefcase, DollarSign, AlertTriangle, Sparkles } from 'lucide-react'
 import api from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useAuthStore } from '@/stores/auth-store'
@@ -46,6 +46,8 @@ function maskPhone(value: string): string {
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Contact { id?: number; name: string; role: string; phone: string; email: string; is_primary: boolean }
+interface Partner { name: string | null; role: string | null; document: string | null; entry_date?: string | null; share_percentage?: number | null }
+interface CnaeEntry { code: string; description: string | null }
 interface DeleteDependencies {
   active_work_orders?: boolean
   receivables?: boolean
@@ -73,6 +75,20 @@ interface CustomerForm {
   latitude: string
   longitude: string
   google_maps_link: string
+  // Enrichment
+  state_registration: string
+  municipal_registration: string
+  cnae_code: string
+  cnae_description: string
+  legal_nature: string
+  capital: string
+  simples_nacional: boolean | null
+  mei: boolean | null
+  company_status: string
+  opened_at: string
+  is_rural_producer: boolean
+  partners: Partner[]
+  secondary_activities: CnaeEntry[]
   // CRM
   source: string
   segment: string
@@ -88,6 +104,10 @@ const emptyForm: CustomerForm = {
   address_zip: '', address_street: '', address_number: '', address_complement: '',
   address_neighborhood: '', address_city: '', address_state: '',
   latitude: '', longitude: '', google_maps_link: '',
+  state_registration: '', municipal_registration: '',
+  cnae_code: '', cnae_description: '', legal_nature: '', capital: '',
+  simples_nacional: null, mei: null, company_status: '', opened_at: '',
+  is_rural_producer: false, partners: [], secondary_activities: [],
   source: '', segment: '', company_size: '', rating: '', assigned_seller_id: '',
   contacts: [],
 }
@@ -125,7 +145,7 @@ export function CustomersPage() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<CustomerForm>({ ...emptyForm })
-  const [activeTab, setActiveTab] = useState<'info' | 'address' | 'crm' | 'contacts'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'empresa' | 'address' | 'crm' | 'contacts'>('info')
 
   // Delete
   const [delId, setDelId] = useState<number | null>(null)
@@ -182,29 +202,79 @@ export function CustomersPage() {
     } catch { /* ignore */ }
   }
 
-  // CNPJ lookup
-  const lookupCnpj = async (cnpj: string) => {
-    const digits = cnpj.replace(/\D/g, '')
-    if (digits.length !== 14) return
+  // Document lookup state
+  const [lookupLoading, setLookupLoading] = useState(false)
+  const [enrichmentData, setEnrichmentData] = useState<any>(null)
+
+  const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  const lookupDocument = async (doc: string) => {
+    const digits = doc.replace(/\D/g, '')
+    if (digits.length !== 14 && digits.length !== 11) return
+    setLookupLoading(true)
+    setEnrichmentData(null)
     try {
-      const r = await api.get(`/external/cnpj/${digits}`)
-      if (r.data) {
-        setForm(prev => ({
-          ...prev,
-          name: r.data.razao_social || prev.name,
-          trade_name: r.data.nome_fantasia || prev.trade_name,
-          email: r.data.email || prev.email,
-          phone: r.data.ddd_telefone_1 ? maskPhone(r.data.ddd_telefone_1) : prev.phone,
-          address_zip: r.data.cep ? r.data.cep.replace(/\D/g, '') : prev.address_zip,
-          address_street: r.data.logradouro || prev.address_street,
-          address_number: r.data.numero || prev.address_number,
-          address_complement: r.data.complemento || prev.address_complement,
-          address_neighborhood: r.data.bairro || prev.address_neighborhood,
-          address_city: r.data.municipio || prev.address_city,
-          address_state: r.data.uf || prev.address_state,
-        }))
+      const r = await api.get(`/external/document/${digits}`)
+      const d = r.data
+      if (!d) { toast.error('Documento não encontrado'); return }
+
+      if (d.source === 'cpf_validation') {
+        toast.success('CPF válido!')
+        setEnrichmentData(d)
+        return
       }
-    } catch { /* ignore */ }
+
+      // CNPJ — preencher formulário
+      setForm(prev => ({
+        ...prev,
+        name: d.name || prev.name,
+        trade_name: d.trade_name || prev.trade_name,
+        email: d.email || prev.email,
+        phone: d.phone ? maskPhone(d.phone) : prev.phone,
+        phone2: d.phone2 ? maskPhone(d.phone2) : prev.phone2,
+        address_zip: d.address_zip ? String(d.address_zip).replace(/\D/g, '') : prev.address_zip,
+        address_street: d.address_street || prev.address_street,
+        address_number: d.address_number || prev.address_number,
+        address_complement: d.address_complement || prev.address_complement,
+        address_neighborhood: d.address_neighborhood || prev.address_neighborhood,
+        address_city: d.address_city || prev.address_city,
+        address_state: d.address_state || prev.address_state,
+        cnae_code: d.cnae_code || prev.cnae_code,
+        cnae_description: d.cnae_description || prev.cnae_description,
+        legal_nature: d.legal_nature || prev.legal_nature,
+        capital: d.capital != null ? String(d.capital) : prev.capital,
+        company_status: d.company_status || prev.company_status,
+        opened_at: d.opened_at || prev.opened_at,
+        simples_nacional: d.simples_nacional ?? prev.simples_nacional,
+        mei: d.mei ?? prev.mei,
+        partners: d.partners?.length ? d.partners : prev.partners,
+        secondary_activities: d.secondary_activities?.length ? d.secondary_activities : prev.secondary_activities,
+        company_size: mapCompanySize(d.company_size) || prev.company_size,
+      }))
+
+      setEnrichmentData(d)
+      toast.success(`Dados obtidos via ${d.source === 'brasilapi' ? 'BrasilAPI' : d.source === 'opencnpj' ? 'OpenCNPJ' : 'CNPJ.ws'}!`)
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        toast.error('Documento não encontrado na base da Receita Federal')
+      } else if (err.response?.status === 422) {
+        toast.error(err.response.data?.message || 'Documento inválido')
+      } else {
+        toast.error('Erro ao consultar documento. Tente novamente.')
+      }
+    } finally {
+      setLookupLoading(false)
+    }
+  }
+
+  const mapCompanySize = (raw: string | null): string => {
+    if (!raw) return ''
+    const lower = raw.toLowerCase()
+    if (lower.includes('micro') || lower === 'mei') return 'micro'
+    if (lower.includes('peque')) return 'pequena'
+    if (lower.includes('méd') || lower.includes('med')) return 'media'
+    if (lower.includes('grand')) return 'grande'
+    return ''
   }
 
   // Google Maps Parser
@@ -248,12 +318,21 @@ export function CustomersPage() {
   const saveMut = useMutation({
     mutationFn: (data: CustomerForm) => {
       const sanitized: Record<string, unknown> = { ...data }
-      // Convert empty strings to null for optional fields
-      for (const k of ['trade_name', 'email', 'phone', 'phone2', 'source', 'segment', 'company_size', 'rating', 'assigned_seller_id']) {
-        const key = k as keyof CustomerForm
-        if (sanitized[key] === '') sanitized[key] = null
+      const nullableStrings = [
+        'trade_name', 'email', 'phone', 'phone2', 'source', 'segment',
+        'company_size', 'rating', 'assigned_seller_id',
+        'state_registration', 'municipal_registration', 'cnae_code',
+        'cnae_description', 'legal_nature', 'capital', 'company_status', 'opened_at',
+      ]
+      for (const k of nullableStrings) {
+        if (sanitized[k] === '') sanitized[k] = null
       }
       if (sanitized.assigned_seller_id) sanitized.assigned_seller_id = Number(sanitized.assigned_seller_id)
+      if (sanitized.capital && typeof sanitized.capital === 'string') sanitized.capital = parseFloat(sanitized.capital) || null
+      if (enrichmentData && enrichmentData.source !== 'cpf_validation') {
+        sanitized.enrichment_data = enrichmentData
+        sanitized.enriched_at = new Date().toISOString()
+      }
       return editingId
         ? api.put(`/customers/${editingId}`, sanitized)
         : api.post('/customers', sanitized)
@@ -277,6 +356,8 @@ export function CustomersPage() {
           // Auto-switch tab based on which field failed
           if (['address_zip', 'address_street', 'address_number', 'address_complement', 'address_neighborhood', 'address_city', 'address_state', 'latitude', 'longitude', 'google_maps_link'].includes(firstField)) {
             setActiveTab('address')
+          } else if (['cnae_code', 'cnae_description', 'legal_nature', 'capital', 'company_status', 'opened_at', 'simples_nacional', 'mei'].includes(firstField) || firstField.startsWith('partners') || firstField.startsWith('secondary_activities')) {
+            setActiveTab('empresa')
           } else if (['source', 'segment', 'company_size', 'rating', 'assigned_seller_id'].includes(firstField)) {
             setActiveTab('crm')
           } else if (firstField.startsWith('contacts')) {
@@ -317,12 +398,14 @@ export function CustomersPage() {
   function openCreate() {
     setEditingId(null)
     setForm({ ...emptyForm })
+    setEnrichmentData(null)
     setActiveTab('info')
     setOpen(true)
   }
 
   function openEdit(c: any) {
     setEditingId(c.id)
+    setEnrichmentData(null)
     setForm({
       type: c.type ?? 'PJ',
       name: c.name ?? '',
@@ -343,6 +426,19 @@ export function CustomersPage() {
       latitude: c.latitude ?? '',
       longitude: c.longitude ?? '',
       google_maps_link: c.google_maps_link ?? '',
+      state_registration: c.state_registration ?? '',
+      municipal_registration: c.municipal_registration ?? '',
+      cnae_code: c.cnae_code ?? '',
+      cnae_description: c.cnae_description ?? '',
+      legal_nature: c.legal_nature ?? '',
+      capital: c.capital ?? '',
+      simples_nacional: c.simples_nacional ?? null,
+      mei: c.mei ?? null,
+      company_status: c.company_status ?? '',
+      opened_at: c.opened_at ?? '',
+      is_rural_producer: c.is_rural_producer ?? false,
+      partners: c.partners ?? [],
+      secondary_activities: c.secondary_activities ?? [],
       source: c.source ?? '',
       segment: c.segment ?? '',
       company_size: c.company_size ?? '',
@@ -548,7 +644,7 @@ export function CustomersPage() {
           {lastPage > 1 && (
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-surface-500">
-                Mostrando {((page - 1) * perPage) + 1}â€“{Math.min(page * perPage, totalCount)} de {totalCount}
+                Mostrando {((page - 1) * perPage) + 1}—{Math.min(page * perPage, totalCount)} de {totalCount}
               </p>
               <div className="flex items-center gap-1">
                 <Button
@@ -593,13 +689,13 @@ export function CustomersPage() {
         }
       >
         <div className="flex border-b border-default mb-4 -mx-1 overflow-x-auto">
-          {(['info', 'address', 'crm', 'contacts'] as const).map(tab => (
+          {(['info', 'empresa', 'address', 'crm', 'contacts'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 text-sm font-medium whitespace-nowrap ${activeTab === tab ? 'border-b-2 border-brand-600 text-brand-600' : 'text-surface-500 hover:text-surface-700'}`}
             >
-              {{ info: 'Informações', address: 'Endereço', crm: 'CRM', contacts: 'Contatos' }[tab]}
+              {{ info: 'Informações', empresa: 'Dados Empresa', address: 'Endereço', crm: 'CRM', contacts: 'Contatos' }[tab]}
             </button>
           ))}
         </div>
@@ -621,6 +717,118 @@ export function CustomersPage() {
                 ))}
               </div>
             </div>
+
+            {/* ── Consulta Inteligente de Documento ── */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-surface-700 mb-1">
+                {form.type === 'PJ' ? 'CNPJ' : 'CPF'} — Consulta Automática
+              </label>
+              <div className="flex gap-2 items-start">
+                <div className="flex-1">
+                  <input
+                    value={form.document}
+                    onChange={(e) => {
+                      const masked = maskCpfCnpj(e.target.value)
+                      setForm({ ...form, document: masked })
+                      const digits = masked.replace(/\D/g, '')
+                      if (digits.length === 14) setForm(prev => ({ ...prev, type: 'PJ' }))
+                      else if (digits.length === 11) setForm(prev => ({ ...prev, type: 'PF' }))
+                    }}
+                    maxLength={form.type === 'PJ' ? 18 : 14}
+                    placeholder={form.type === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'}
+                    className="w-full px-3 py-2.5 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0 font-mono tracking-wide"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => lookupDocument(form.document)}
+                  disabled={lookupLoading || form.document.replace(/\D/g, '').length < 11}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  {lookupLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : enrichmentData ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  {lookupLoading ? 'Consultando...' : enrichmentData ? 'Consultado' : 'Consultar'}
+                </button>
+              </div>
+              <p className="text-xs text-surface-400 mt-1.5">
+                {form.type === 'PJ'
+                  ? 'Preencha o CNPJ e clique em Consultar para importar automaticamente todos os dados da Receita Federal (razão social, endereço, sócios, CNAE, Simples Nacional, etc.)'
+                  : 'Preencha o CPF para validação automática. Para produtores rurais, marque a flag abaixo.'}
+              </p>
+            </div>
+
+            {/* ── Painel de Dados Enriquecidos (após consulta) ── */}
+            {enrichmentData && enrichmentData.source !== 'cpf_validation' && (
+              <div className="sm:col-span-2 rounded-xl border border-brand-200 bg-gradient-to-br from-brand-50/50 to-indigo-50/30 p-4 animate-fade-in">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-4 w-4 text-brand-600" />
+                  <h4 className="text-sm font-bold text-brand-800">Dados Obtidos da Receita Federal</h4>
+                  <Badge variant="info" size="sm">{enrichmentData.source}</Badge>
+                  {enrichmentData.company_status && (
+                    <Badge
+                      variant={enrichmentData.company_status.toUpperCase().includes('ATIVA') ? 'success' : 'danger'}
+                      size="sm"
+                    >
+                      {enrichmentData.company_status}
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  {enrichmentData.capital != null && (
+                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                      <div className="text-surface-400 flex items-center gap-1"><DollarSign className="h-3 w-3" /> Capital Social</div>
+                      <div className="font-bold text-surface-900 mt-0.5">{fmtBRL(enrichmentData.capital)}</div>
+                    </div>
+                  )}
+                  {enrichmentData.cnae_code && (
+                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                      <div className="text-surface-400 flex items-center gap-1"><Briefcase className="h-3 w-3" /> CNAE Principal</div>
+                      <div className="font-bold text-surface-900 mt-0.5">{enrichmentData.cnae_code}</div>
+                      <div className="text-surface-500 truncate">{enrichmentData.cnae_description}</div>
+                    </div>
+                  )}
+                  {enrichmentData.simples_nacional != null && (
+                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                      <div className="text-surface-400">Simples Nacional</div>
+                      <div className={`font-bold mt-0.5 ${enrichmentData.simples_nacional ? 'text-emerald-600' : 'text-surface-500'}`}>
+                        {enrichmentData.simples_nacional ? 'Optante' : 'Não optante'}
+                      </div>
+                    </div>
+                  )}
+                  {enrichmentData.opened_at && (
+                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                      <div className="text-surface-400">Abertura</div>
+                      <div className="font-bold text-surface-900 mt-0.5">{enrichmentData.opened_at}</div>
+                    </div>
+                  )}
+                </div>
+
+                {enrichmentData.partners?.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold text-brand-700 mb-1.5 flex items-center gap-1">
+                      <Users className="h-3 w-3" /> Quadro Societário ({enrichmentData.partners.length})
+                    </p>
+                    <div className="grid gap-1.5">
+                      {enrichmentData.partners.slice(0, 5).map((p: Partner, i: number) => (
+                        <div key={i} className="flex items-center justify-between rounded-lg bg-white/60 px-3 py-1.5 border border-brand-100 text-xs">
+                          <span className="font-medium text-surface-800">{p.name}</span>
+                          <span className="text-surface-400">{p.role}</span>
+                        </div>
+                      ))}
+                      {enrichmentData.partners.length > 5 && (
+                        <p className="text-xs text-surface-400 text-center">+ {enrichmentData.partners.length - 5} sócio(s)</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="sm:col-span-2">
               <Input
                 label={form.type === 'PJ' ? 'Razão Social *' : 'Nome Completo *'}
@@ -637,14 +845,6 @@ export function CustomersPage() {
                 />
               </div>
             )}
-            <Input
-              label={form.type === 'PJ' ? 'CNPJ' : 'CPF'}
-              value={form.document}
-              onChange={(e) => setForm({ ...form, document: maskCpfCnpj(e.target.value) })}
-              onBlur={() => form.type === 'PJ' && lookupCnpj(form.document)}
-              maxLength={form.type === 'PJ' ? 18 : 14}
-              placeholder={form.type === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'}
-            />
             <Input
               label="E-mail"
               type="email"
@@ -665,6 +865,38 @@ export function CustomersPage() {
               maxLength={15}
               placeholder="(00) 00000-0000"
             />
+
+            {/* ── Produtor Rural / IE / IM ── */}
+            <div className="sm:col-span-2 border-t border-default mt-2 pt-4">
+              <h4 className="text-sm font-semibold text-surface-900 mb-3 flex items-center gap-2">
+                <Sprout className="h-4 w-4 text-emerald-600" /> Produtor Rural / Registros
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_rural_producer"
+                    checked={form.is_rural_producer}
+                    onChange={(e) => setForm({ ...form, is_rural_producer: e.target.checked })}
+                    className="rounded border-default"
+                  />
+                  <label htmlFor="is_rural_producer" className="text-sm text-surface-700">Produtor Rural</label>
+                </div>
+                <Input
+                  label="Inscrição Estadual (IE)"
+                  value={form.state_registration}
+                  onChange={(e) => setForm({ ...form, state_registration: e.target.value })}
+                  placeholder="Ex: 123.456.789.012"
+                />
+                <Input
+                  label="Inscrição Municipal (IM)"
+                  value={form.municipal_registration}
+                  onChange={(e) => setForm({ ...form, municipal_registration: e.target.value })}
+                  placeholder="Ex: 12345678"
+                />
+              </div>
+            </div>
+
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-surface-700 mb-1">Observações</label>
               <textarea
@@ -684,6 +916,124 @@ export function CustomersPage() {
               />
               <label htmlFor="is_active" className="text-sm text-surface-700">Cliente ativo</label>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'empresa' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2 flex items-center gap-3 rounded-lg border border-surface-200 bg-surface-50 p-3">
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <p className="text-xs text-surface-600">
+                Estes campos são preenchidos automaticamente ao consultar o CNPJ. Você pode editá-los manualmente se necessário.
+              </p>
+            </div>
+
+            <Input
+              label="CNAE Principal"
+              value={form.cnae_code}
+              onChange={(e) => setForm({ ...form, cnae_code: e.target.value })}
+              placeholder="Ex: 4321500"
+            />
+            <Input
+              label="Descrição CNAE"
+              value={form.cnae_description}
+              onChange={(e) => setForm({ ...form, cnae_description: e.target.value })}
+            />
+            <Input
+              label="Natureza Jurídica"
+              value={form.legal_nature}
+              onChange={(e) => setForm({ ...form, legal_nature: e.target.value })}
+            />
+            <Input
+              label="Capital Social (R$)"
+              value={form.capital}
+              onChange={(e) => setForm({ ...form, capital: e.target.value })}
+              placeholder="Ex: 100000.00"
+            />
+            <Input
+              label="Situação Cadastral"
+              value={form.company_status}
+              onChange={(e) => setForm({ ...form, company_status: e.target.value })}
+              placeholder="Ex: ATIVA"
+            />
+            <Input
+              label="Data de Abertura"
+              type="date"
+              value={form.opened_at}
+              onChange={(e) => setForm({ ...form, opened_at: e.target.value })}
+            />
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm text-surface-700">
+                <input
+                  type="checkbox"
+                  checked={form.simples_nacional === true}
+                  onChange={(e) => setForm({ ...form, simples_nacional: e.target.checked })}
+                  className="rounded border-default"
+                />
+                Simples Nacional
+              </label>
+              <label className="flex items-center gap-2 text-sm text-surface-700">
+                <input
+                  type="checkbox"
+                  checked={form.mei === true}
+                  onChange={(e) => setForm({ ...form, mei: e.target.checked })}
+                  className="rounded border-default"
+                />
+                MEI
+              </label>
+            </div>
+
+            {/* Atividades Secundárias */}
+            {form.secondary_activities.length > 0 && (
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-surface-700 mb-2">Atividades Secundárias</label>
+                <div className="rounded-lg border border-default overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-surface-50">
+                        <th className="text-left px-3 py-2 font-medium text-surface-500">Código</th>
+                        <th className="text-left px-3 py-2 font-medium text-surface-500">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-subtle">
+                      {form.secondary_activities.map((act, i) => (
+                        <tr key={i} className="hover:bg-surface-50">
+                          <td className="px-3 py-1.5 font-mono text-surface-700">{act.code}</td>
+                          <td className="px-3 py-1.5 text-surface-600">{act.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Quadro Societário */}
+            {form.partners.length > 0 && (
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-surface-700 mb-2">Quadro Societário</label>
+                <div className="rounded-lg border border-default overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-surface-50">
+                        <th className="text-left px-3 py-2 font-medium text-surface-500">Nome</th>
+                        <th className="text-left px-3 py-2 font-medium text-surface-500">Qualificação</th>
+                        <th className="text-left px-3 py-2 font-medium text-surface-500">Entrada</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-subtle">
+                      {form.partners.map((p, i) => (
+                        <tr key={i} className="hover:bg-surface-50">
+                          <td className="px-3 py-1.5 font-medium text-surface-800">{p.name}</td>
+                          <td className="px-3 py-1.5 text-surface-600">{p.role}</td>
+                          <td className="px-3 py-1.5 text-surface-500">{p.entry_date || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

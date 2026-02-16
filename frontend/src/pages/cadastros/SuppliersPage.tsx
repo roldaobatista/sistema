@@ -212,14 +212,14 @@ export function SuppliersPage() {
                                     </div>
                                 </td>
                                 <td className="hidden px-4 py-3 text-sm text-surface-600 md:table-cell">
-                                    {s.document || <span className="text-surface-400">â€”</span>}
+                                    {s.document || <span className="text-surface-400">—</span>}
                                 </td>
                                 <td className="hidden px-4 py-3 lg:table-cell">
-                                    <div className="text-sm text-surface-600">{s.email || 'â€”'}</div>
+                                    <div className="text-sm text-surface-600">{s.email || '—'}</div>
                                     <div className="text-xs text-surface-400">{s.phone || ''}</div>
                                 </td>
                                 <td className="hidden px-4 py-3 text-sm text-surface-600 lg:table-cell">
-                                    {s.address_city ? `${s.address_city}/${s.address_state}` : 'â€”'}
+                                    {s.address_city ? `${s.address_city}/${s.address_state}` : '—'}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-center">
                                     <Badge variant={s.is_active ? 'success' : 'danger'}>
@@ -299,7 +299,7 @@ export function SuppliersPage() {
                             <select value={form.address_state} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { set('address_state', e.target.value); set('address_city', ''); }}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Selecione</option>
-                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} â€” {s.name}</option>)}
+                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
                             </select>
                         </div>
                     </div>
@@ -326,11 +326,11 @@ export function SuppliersPage() {
                     <div className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div><span className="text-xs text-surface-500">Tipo</span><p className="text-sm font-medium">{showDetail.type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}</p></div>
-                            <div><span className="text-xs text-surface-500">Documento</span><p className="text-sm font-medium font-mono">{showDetail.document || 'â€”'}</p></div>
+                            <div><span className="text-xs text-surface-500">Documento</span><p className="text-sm font-medium font-mono">{showDetail.document || '—'}</p></div>
                             <div><span className="text-xs text-surface-500">{showDetail.type === 'PJ' ? 'Razão Social' : 'Nome'}</span><p className="text-sm font-medium">{showDetail.name}</p></div>
-                            <div><span className="text-xs text-surface-500">Nome Fantasia</span><p className="text-sm font-medium">{showDetail.trade_name ?? 'â€”'}</p></div>
-                            <div><span className="text-xs text-surface-500">E-mail</span><p className="text-sm font-medium">{showDetail.email ?? 'â€”'}</p></div>
-                            <div><span className="text-xs text-surface-500">Telefone</span><p className="text-sm font-medium">{showDetail.phone ?? 'â€”'}</p></div>
+                            <div><span className="text-xs text-surface-500">Nome Fantasia</span><p className="text-sm font-medium">{showDetail.trade_name ?? '—'}</p></div>
+                            <div><span className="text-xs text-surface-500">E-mail</span><p className="text-sm font-medium">{showDetail.email ?? '—'}</p></div>
+                            <div><span className="text-xs text-surface-500">Telefone</span><p className="text-sm font-medium">{showDetail.phone ?? '—'}</p></div>
                         </div>
                         {(showDetail.address_street || showDetail.address_city) && (
                             <div className="border-t border-subtle pt-3">
@@ -339,7 +339,7 @@ export function SuppliersPage() {
                                     {[showDetail.address_street, showDetail.address_number, showDetail.address_complement].filter(Boolean).join(', ')}
                                 </p>
                                 <p className="text-sm text-surface-600">
-                                    {[showDetail.address_neighborhood, showDetail.address_city, showDetail.address_state].filter(Boolean).join(' â€” ')} {showDetail.address_zip && `â€¢ CEP ${showDetail.address_zip}`}
+                                    {[showDetail.address_neighborhood, showDetail.address_city, showDetail.address_state].filter(Boolean).join(' — ')} {showDetail.address_zip && `• CEP ${showDetail.address_zip}`}
                                 </p>
                             </div>
                         )}

@@ -127,7 +127,7 @@ export function BatchExportPage() {
                 <div className="bg-white rounded-xl border border-surface-200 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-surface-900">
-                            Campos para exportar â€” {currentEntity.label}
+                            Campos para exportar — {currentEntity.label}
                         </h2>
                         <button
                             onClick={toggleAllFields}

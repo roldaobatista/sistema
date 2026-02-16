@@ -8,6 +8,24 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Role extends SpatieRole
 {
+    // ── Constantes de nomes de roles do sistema ──
+    public const SUPER_ADMIN = 'super_admin';
+    public const ADMIN = 'admin';
+    public const GERENTE = 'gerente';
+    public const COORDENADOR = 'coordenador';
+    public const TECNICO = 'tecnico';
+    public const FINANCEIRO = 'financeiro';
+    public const COMERCIAL = 'comercial';
+    public const VENDEDOR = 'vendedor';
+    public const TECNICO_VENDEDOR = 'tecnico_vendedor';
+    public const ATENDIMENTO = 'atendimento';
+    public const RH = 'rh';
+    public const ESTOQUISTA = 'estoquista';
+    public const QUALIDADE = 'qualidade';
+    public const VISUALIZADOR = 'visualizador';
+    public const MOTORISTA = 'motorista';
+    public const MONITOR = 'monitor';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -15,6 +33,7 @@ class Role extends SpatieRole
      */
     protected $fillable = [
         'name',
+        'display_name',
         'description',
         'guard_name',
         'tenant_id',

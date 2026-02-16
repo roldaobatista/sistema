@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { PageHeader } from '@/components/ui/pageheader'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 import { Building2, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Receipt, CreditCard, FileText } from 'lucide-react'
 
 function formatCurrency(value: number) {

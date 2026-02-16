@@ -312,7 +312,7 @@ export function InmetroImportPage() {
                     <div className="space-y-3 text-xs text-surface-600 mb-4">
                         <p><strong>Passo 1:</strong> Acesse o portal PSIE e resolva o captcha:</p>
                         <a
-                            href="https://servicos.rbmlq.gov.br/Instrumento"
+                            href="https://serviços.rbmlq.gov.br/Instrumento"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 text-brand-600 hover:text-brand-700 underline"

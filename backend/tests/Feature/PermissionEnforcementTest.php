@@ -49,8 +49,8 @@ class PermissionEnforcementTest extends TestCase
         $this->admin->assignRole($adminRole);
 
         // Viewer role with only view permissions
-        $viewerRole = Role::firstOrCreate(['name' => 'viewer', 'guard_name' => 'api', 'team_id' => $this->tenant->id]);
-        $viewPerm = Permission::firstOrCreate(['name' => 'customer.view', 'guard_name' => 'api']);
+        $viewerRole = Role::firstOrCreate(['name' => 'visualizador', 'guard_name' => 'api', 'team_id' => $this->tenant->id]);
+        $viewPerm = Permission::firstOrCreate(['name' => 'cadastros.customer.view', 'guard_name' => 'api']);
         $viewerRole->givePermissionTo($viewPerm);
         $this->viewer->assignRole($viewerRole);
 

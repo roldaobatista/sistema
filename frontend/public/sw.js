@@ -1,349 +1,316 @@
-const CACHE_NAME = 'kalibrium-v4';
-const STATIC_ASSETS = [
-    '/',
-    '/manifest.json',
+/**
+ * Kalibrium — Service Worker (PWA Offline)
+ * 
+ * Estratégias:
+ * - Shell (HTML/CSS/JS): Cache-first, atualiza em background
+ * - API Reads (GET): Network-first com fallback para cache
+ * - API Writes (POST/PUT/DELETE): Queue offline, sync quando online
+ * - Fotos/Uploads: IndexedDB queue, upload em background
+ */
+
+const CACHE_NAME = 'kalibrium-v1';
+const API_CACHE = 'kalibrium-api-v1';
+
+const SHELL_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
 ];
 
-// ─── IndexedDB helpers (duplicated here because SW can't import modules) ───
+// URLs de API que devem ser cacheadas para uso offline do técnico
+const CACHEABLE_API_PATTERNS = [
+  /\/api\/v1\/me$/,
+  /\/api\/v1\/work-orders/,
+  /\/api\/v1\/equipments/,
+  /\/api\/v1\/standard-weights/,
+  /\/api\/v1\/customers/,
+  /\/api\/v1\/checklists/,
+  /\/api\/v1\/services/,
+  /\/api\/v1\/products/,
+];
 
-function openMutationDb() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('kalibrium-offline', 1);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(request.result);
-    });
-}
+// ─── INSTALL ──────────────────────────────────────────────────────
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(SHELL_URLS).catch(() => {
+        // Silently fail for optional shell URLs
+        console.log('[SW] Some shell URLs failed to cache, continuing...');
+      });
+    })
+  );
+  self.skipWaiting();
+});
 
-async function getAllMutationsFromDb() {
-    const db = await openMutationDb();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction('mutation-queue', 'readonly');
-        const store = tx.objectStore('mutation-queue');
-        const index = store.index('by-created');
-        const request = index.getAll();
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => reject(request.error);
-    });
-}
+// ─── ACTIVATE ─────────────────────────────────────────────────────
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME && key !== API_CACHE)
+          .map((key) => caches.delete(key))
+      );
+    })
+  );
+  self.clients.claim();
+});
 
-async function deleteMutationFromDb(id) {
-    const db = await openMutationDb();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction('mutation-queue', 'readwrite');
-        const store = tx.objectStore('mutation-queue');
-        const request = store.delete(id);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-    });
-}
+// ─── FETCH ────────────────────────────────────────────────────────
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
 
-async function updateMutationRetry(id, retries, error) {
-    const db = await openMutationDb();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction('mutation-queue', 'readwrite');
-        const store = tx.objectStore('mutation-queue');
-        const getReq = store.get(id);
-        getReq.onsuccess = () => {
-            const mutation = getReq.result;
-            if (mutation) {
-                mutation.retries = retries;
-                mutation.last_error = error;
-                store.put(mutation);
-            }
-            resolve();
-        };
-        getReq.onerror = () => reject(getReq.error);
-    });
-}
+  // Ignore non-GET requests for caching (writes go to sync queue)
+  if (event.request.method !== 'GET') {
+    // Para writes offline: interceptar e adicionar à fila
+    if (!navigator.onLine && isApiRequest(url)) {
+      event.respondWith(handleOfflineWrite(event.request));
+      return;
+    }
+    return;
+  }
 
-// ─── DEV MODE GUARD ─────────────────────────────────────────
+  // API requests: Network-first com fallback
+  if (isApiRequest(url) && isCacheableApi(url)) {
+    event.respondWith(networkFirstWithCache(event.request));
+    return;
+  }
 
-if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    self.addEventListener('install', () => self.skipWaiting());
-    self.addEventListener('activate', () => {
-        self.registration.unregister().then(() => {
-            self.clients.matchAll().then((clients) => {
-                clients.forEach((client) => client.navigate(client.url));
-            });
-        });
-    });
-} else {
-    // === PRODUCTION ONLY ===
+  // Shell/assets: Cache-first com atualização em background
+  if (isShellRequest(url)) {
+    event.respondWith(cacheFirstWithRefresh(event.request));
+    return;
+  }
+});
 
-    // ─── Install — pre-cache shell ──────────────────────────
-
-    self.addEventListener('install', (event) => {
-        event.waitUntil(
-            caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-        );
-        self.skipWaiting();
-    });
-
-    // ─── Activate — clean old caches ────────────────────────
-
-    self.addEventListener('activate', (event) => {
-        event.waitUntil(
-            caches.keys().then((keys) =>
-                Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-            )
-        );
-        self.clients.claim();
-    });
-
-    // ─── Fetch strategy ─────────────────────────────────────
-
-    self.addEventListener('fetch', (event) => {
-        const { request } = event;
-        const url = new URL(request.url);
-
-        if (!url.protocol.startsWith('http')) return;
-
-        // Skip dev paths
-        if (
-            url.pathname.startsWith('/@') ||
-            url.pathname.startsWith('/src/') ||
-            url.pathname.includes('__vite') ||
-            url.pathname.startsWith('/node_modules/')
-        ) return;
-
-        // API calls — Network First, fallback to cache
-        if (url.pathname.startsWith('/api/')) {
-            event.respondWith(
-                fetch(request)
-                    .then((response) => {
-                        if (request.method === 'GET' && response.ok) {
-                            const clone = response.clone();
-                            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-                        }
-                        return response;
-                    })
-                    .catch(() =>
-                        caches.match(request).then((cached) =>
-                            cached || new Response(JSON.stringify({ error: 'Offline', message: 'Sem conexão' }), {
-                                status: 503,
-                                headers: { 'Content-Type': 'application/json' },
-                            })
-                        )
-                    )
-            );
-            return;
-        }
-
-        // Static assets — Cache First
-        if (
-            url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff2?)$/) ||
-            url.pathname.startsWith('/icons/')
-        ) {
-            event.respondWith(
-                caches.match(request).then((cached) =>
-                    cached ||
-                    fetch(request).then((response) => {
-                        if (response.ok) {
-                            const clone = response.clone();
-                            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-                        }
-                        return response;
-                    }).catch(() =>
-                        new Response('', { status: 503, statusText: 'Offline' })
-                    )
-                )
-            );
-            return;
-        }
-
-        // Navigation — Network First, shell fallback
-        if (request.mode === 'navigate') {
-            event.respondWith(
-                fetch(request).catch(() =>
-                    caches.match('/').then((cached) =>
-                        cached || new Response('Offline', { status: 503 })
-                    )
-                )
-            );
-            return;
-        }
-
-        // Default — Network only
-        event.respondWith(
-            fetch(request).catch(() =>
-                new Response('Offline', { status: 503, statusText: 'Offline' })
-            )
-        );
-    });
-}
-
-// ─── Background Sync — replay offline mutations ─────────────
-
+// ─── SYNC (Background Sync) ──────────────────────────────────────
 self.addEventListener('sync', (event) => {
-    if (event.tag === 'sync-mutations') {
-        event.waitUntil(replayMutations());
-    }
+  if (event.tag === 'sync-offline-queue') {
+    event.waitUntil(processOfflineQueue());
+  }
 });
 
-// ─── Message handler — force sync from app ──────────────────
-
-self.addEventListener('message', (event) => {
-    if (event.data?.type === 'FORCE_SYNC') {
-        replayMutations().then((result) => {
-            notifyClients({ type: 'SYNC_COMPLETE', ...result });
-        }).catch((err) => {
-            notifyClients({ type: 'SYNC_ERROR', error: err.message });
-        });
-    }
-
-    if (event.data?.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-});
-
-// ─── Replay mutation queue ──────────────────────────────────
-
-const MAX_RETRIES = 5;
-
-async function replayMutations() {
-    let processed = 0;
-    let failed = 0;
-    const errors = [];
-
-    try {
-        const mutations = await getAllMutationsFromDb();
-
-        for (const mutation of mutations) {
-            if (mutation.retries >= MAX_RETRIES) {
-                errors.push({ id: mutation.id, error: `Max retries (${MAX_RETRIES}) exceeded` });
-                failed++;
-                continue;
-            }
-
-            try {
-                const token = await getAuthToken();
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    ...(mutation.headers || {}),
-                };
-
-                const fetchOpts = {
-                    method: mutation.method,
-                    headers,
-                };
-
-                if (mutation.body && mutation.method !== 'DELETE') {
-                    fetchOpts.body = JSON.stringify(mutation.body);
-                }
-
-                const response = await fetch(mutation.url, fetchOpts);
-
-                if (response.ok || response.status === 409) {
-                    // Success or conflict (already applied) — remove from queue
-                    await deleteMutationFromDb(mutation.id);
-                    processed++;
-                } else if (response.status === 422) {
-                    // Validation error — remove (won't succeed on retry)
-                    errors.push({ id: mutation.id, error: `Validation: ${response.statusText}` });
-                    await deleteMutationFromDb(mutation.id);
-                    failed++;
-                } else {
-                    // Transient error — retry later
-                    await updateMutationRetry(mutation.id, mutation.retries + 1, response.statusText);
-                    failed++;
-                }
-            } catch (networkErr) {
-                // Network still down — stop trying
-                await updateMutationRetry(mutation.id, mutation.retries + 1, networkErr.message);
-                break;
-            }
-        }
-    } catch (dbErr) {
-        console.error('[SW] Failed to read mutation queue:', dbErr);
-    }
-
-    return { processed, failed, errors };
-}
-
-// ─── Helpers ────────────────────────────────────────────────
-
-async function getAuthToken() {
-    try {
-        // Read from localStorage (persisted by zustand auth-store)
-        const authData = await readFromLocalStorage('auth-store');
-        if (authData?.state?.token) return authData.state.token;
-    } catch {
-        // Fallback: read raw localStorage
-    }
-
-    try {
-        return self.__auth_token || null;
-    } catch {
-        return null;
-    }
-}
-
-function readFromLocalStorage(key) {
-    // SW can't access localStorage directly — try reading from clients
-    return self.clients.matchAll().then((clients) => {
-        if (clients.length === 0) return null;
-        return new Promise((resolve) => {
-            const channel = new MessageChannel();
-            channel.port1.onmessage = (event) => resolve(event.data);
-            clients[0].postMessage({ type: 'GET_LOCAL_STORAGE', key }, [channel.port2]);
-            setTimeout(() => resolve(null), 1000);
-        });
-    });
-}
-
-async function notifyClients(message) {
-    const clients = await self.clients.matchAll();
-    clients.forEach((client) => client.postMessage(message));
-}
-
-// ─── Push Notifications ──────────────────────────────────────────────────────
-
+// ─── PUSH NOTIFICATIONS ──────────────────────────────────────────
 self.addEventListener('push', (event) => {
-    if (!event.data) return;
+  let data = { title: 'Kalibrium', body: 'Nova notificação', url: '/' };
 
-    let payload;
-    try {
-        payload = event.data.json();
-    } catch {
-        payload = {
-            title: 'Kalibrium',
-            body: event.data.text(),
-        };
+  try {
+    if (event.data) {
+      data = { ...data, ...event.data.json() };
     }
+  } catch (e) {
+    data.body = event.data?.text() || data.body;
+  }
 
-    const title = payload.title || 'Kalibrium';
-    const options = {
-        body: payload.body || '',
-        icon: payload.icon || '/icons/icon-192x192.png',
-        badge: payload.badge || '/icons/badge-72x72.png',
-        vibrate: [100, 50, 100],
-        data: payload.data || {},
-        actions: payload.actions || [],
-        tag: payload.tag || 'kalibrium-notification',
-        renotify: true,
-    };
-
-    event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: data.url },
+      vibrate: [200, 100, 200],
+      actions: [
+        { action: 'open', title: 'Abrir' },
+        { action: 'dismiss', title: 'Dispensar' },
+      ],
+    })
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
+  event.notification.close();
 
-    const url = event.notification.data?.url || '/';
+  if (event.action === 'dismiss') return;
 
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            for (const client of clientList) {
-                if (client.url.includes(url) && 'focus' in client) {
-                    return client.focus();
-                }
-            }
-            if (self.clients.openWindow) {
-                return self.clients.openWindow(url);
-            }
-        })
-    );
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((c) => c.url.includes(url));
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
+    })
+  );
 });
 
+// ─── MESSAGE (comunicação com o app) ─────────────────────────────
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+
+  if (event.data?.type === 'CACHE_API_DATA') {
+    // Pre-cache dados do técnico quando conectado
+    const urls = event.data.urls || [];
+    caches.open(API_CACHE).then((cache) => {
+      urls.forEach((url) => {
+        fetch(url, { headers: event.data.headers || {} })
+          .then((response) => {
+            if (response.ok) cache.put(url, response);
+          })
+          .catch(() => {});
+      });
+    });
+  }
+
+  if (event.data?.type === 'GET_SYNC_STATUS') {
+    getOfflineQueueCount().then((count) => {
+      event.ports[0]?.postMessage({ pendingCount: count });
+    });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function isApiRequest(url) {
+  return url.pathname.startsWith('/api/');
+}
+
+function isCacheableApi(url) {
+  return CACHEABLE_API_PATTERNS.some((pattern) => pattern.test(url.pathname));
+}
+
+function isShellRequest(url) {
+  return url.origin === self.location.origin && !isApiRequest(url);
+}
+
+async function networkFirstWithCache(request) {
+  const cache = await caches.open(API_CACHE);
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (err) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+
+    return new Response(JSON.stringify({ error: 'offline', message: 'Sem conexão. Dados em cache não disponíveis.' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+async function cacheFirstWithRefresh(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+
+  const networkFetch = fetch(request).then((response) => {
+    if (response.ok) cache.put(request, response.clone());
+    return response;
+  }).catch(() => null);
+
+  return cached || (await networkFetch) || new Response('Offline', { status: 503 });
+}
+
+async function handleOfflineWrite(request) {
+  try {
+    const body = await request.clone().text();
+    await addToOfflineQueue({
+      url: request.url,
+      method: request.method,
+      headers: Object.fromEntries(request.headers.entries()),
+      body,
+      timestamp: Date.now(),
+    });
+
+    // Register background sync
+    if ('sync' in self.registration) {
+      await self.registration.sync.register('sync-offline-queue');
+    }
+
+    return new Response(JSON.stringify({
+      message: 'Salvo offline. Será sincronizado quando a conexão for restabelecida.',
+      offline: true,
+    }), {
+      status: 202,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: 'Falha ao salvar offline' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// ─── IndexedDB para fila offline ─────────────────────────────────
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('kalibrium-offline', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('sync-queue')) {
+        db.createObjectStore('sync-queue', { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function addToOfflineQueue(data) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('sync-queue', 'readwrite');
+    tx.objectStore('sync-queue').add(data);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getOfflineQueueCount() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('sync-queue', 'readonly');
+      const req = tx.objectStore('sync-queue').count();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(0);
+    });
+  } catch {
+    return 0;
+  }
+}
+
+async function processOfflineQueue() {
+  const db = await openDB();
+  const tx = db.transaction('sync-queue', 'readonly');
+  const store = tx.objectStore('sync-queue');
+
+  const items = await new Promise((resolve) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve([]);
+  });
+
+  for (const item of items) {
+    try {
+      const response = await fetch(item.url, {
+        method: item.method,
+        headers: item.headers,
+        body: item.body,
+      });
+
+      if (response.ok || response.status < 500) {
+        // Remove da fila
+        const delTx = db.transaction('sync-queue', 'readwrite');
+        delTx.objectStore('sync-queue').delete(item.id);
+      }
+    } catch (err) {
+      // Mantém na fila para próxima tentativa
+      console.log('[SW] Sync failed for item', item.id, err);
+    }
+  }
+
+  // Notifica o app
+  const clients = await self.clients.matchAll();
+  clients.forEach((client) => {
+    client.postMessage({ type: 'SYNC_COMPLETE', remaining: items.length });
+  });
+}

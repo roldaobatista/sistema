@@ -33,7 +33,7 @@ class WorkOrder extends Model
         'signature_path', 'signature_signer', 'signature_at', 'signature_ip',
         'checklist_id', 'sla_policy_id', 'sla_due_at', 'sla_responded_at',
         'dispatch_authorized_by', 'dispatch_authorized_at',
-        'parent_id', 'is_master',
+        'parent_id', 'is_master', 'is_warranty',
     ];
 
     protected function casts(): array
@@ -52,6 +52,7 @@ class WorkOrder extends Model
             'displacement_value' => 'decimal:2',
             'total' => 'decimal:2',
             'is_master' => 'boolean',
+            'is_warranty' => 'boolean',
         ];
     }
 
@@ -227,6 +228,7 @@ class WorkOrder extends Model
     public function checklistResponses(): HasMany { return $this->hasMany(WorkOrderChecklistResponse::class); }
     public function slaPolicy(): BelongsTo { return $this->belongsTo(SlaPolicy::class); }
     public function chats(): HasMany { return $this->hasMany(WorkOrderChat::class)->orderBy('created_at'); }
+    public function satisfactionSurvey(): \Illuminate\Database\Eloquent\Relations\HasOne { return $this->hasOne(SatisfactionSurvey::class); }
 
     public function technicians(): BelongsToMany
     {

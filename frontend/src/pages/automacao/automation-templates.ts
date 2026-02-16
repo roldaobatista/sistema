@@ -4,8 +4,8 @@
 // =============================================================================
 
 export type TemplateCategory =
-    | 'os' | 'orcamentos' | 'chamados' | 'financeiro' | 'equipamentos'
-    | 'tecnicos' | 'estoque' | 'clientes' | 'contratos' | 'rh' | 'frota'
+    | 'os' | 'orçamentos' | 'chamados' | 'financeiro' | 'equipamentos'
+    | 'técnicos' | 'estoque' | 'clientes' | 'contratos' | 'rh' | 'frota'
 
 export interface AutomationTemplate {
     id: string
@@ -21,11 +21,11 @@ export interface AutomationTemplate {
 
 export const CATEGORY_META: Record<TemplateCategory, { label: string; color: string; bg: string; border: string }> = {
     os: { label: 'Ordens de Serviço', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
-    orcamentos: { label: 'Orçamentos', color: 'text-violet-700', bg: 'bg-violet-50', border: 'border-violet-200' },
+    orçamentos: { label: 'Orçamentos', color: 'text-violet-700', bg: 'bg-violet-50', border: 'border-violet-200' },
     chamados: { label: 'Chamados', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
     financeiro: { label: 'Financeiro', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
     equipamentos: { label: 'Equipamentos', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-    tecnicos: { label: 'Técnicos', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-200' },
+    técnicos: { label: 'Técnicos', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-200' },
     estoque: { label: 'Estoque', color: 'text-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
     clientes: { label: 'Clientes / CRM', color: 'text-pink-700', bg: 'bg-pink-50', border: 'border-pink-200' },
     contratos: { label: 'Contratos', color: 'text-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
@@ -244,61 +244,61 @@ export const TEMPLATES: AutomationTemplate[] = [
     {
         id: 'orc_001', name: 'Orçamento criado: aguardando aprovação interna',
         description: 'Notifica o admin quando um novo orçamento é criado e precisa de aprovação interna antes de ser enviado ao cliente.',
-        category: 'orcamentos', trigger_event: 'quote.created', action_type: 'send_notification',
+        category: 'orçamentos', trigger_event: 'quote.created', action_type: 'send_notification',
         trigger_label: 'Orçamento criado', action_label: 'Notificar admin para aprovação', recommended: true,
     },
     {
         id: 'orc_002', name: 'Alerta: orçamento vencendo em 7 dias',
         description: 'Avisa a equipe quando um orçamento enviado ao cliente está a 7 dias do vencimento sem resposta.',
-        category: 'orcamentos', trigger_event: 'quote.expiring', action_type: 'send_notification',
+        category: 'orçamentos', trigger_event: 'quote.expiring', action_type: 'send_notification',
         trigger_label: 'Orçamento vence em 7 dias', action_label: 'Alertar equipe',
     },
     {
         id: 'orc_003', name: 'Alerta urgente: orçamento vencendo em 3 dias',
         description: 'Alerta urgente quando orçamento está a apenas 3 dias do vencimento. Hora de ligar para o cliente!',
-        category: 'orcamentos', trigger_event: 'quote.expiring', action_type: 'create_alert',
+        category: 'orçamentos', trigger_event: 'quote.expiring', action_type: 'create_alert',
         trigger_label: 'Orçamento vence em 3 dias', action_label: 'Criar alerta urgente',
     },
     {
         id: 'orc_004', name: 'Vendedor: orçamento aprovado internamente',
         description: 'Notifica o vendedor quando o orçamento é aprovado internamente pelo admin e pode ser enviado ao cliente.',
-        category: 'orcamentos', trigger_event: 'quote.internal_approved', action_type: 'send_notification',
+        category: 'orçamentos', trigger_event: 'quote.internal_approved', action_type: 'send_notification',
         trigger_label: 'Orçamento aprovado internamente', action_label: 'Notificar vendedor',
     },
     {
         id: 'orc_005', name: 'Cliente aprovou orçamento!',
         description: 'Notifica admin e equipe quando o cliente aprovar um orçamento, para iniciar o atendimento.',
-        category: 'orcamentos', trigger_event: 'quote.approved', action_type: 'send_notification',
+        category: 'orçamentos', trigger_event: 'quote.approved', action_type: 'send_notification',
         trigger_label: 'Cliente aprovou orçamento', action_label: 'Notificar equipe', recommended: true,
     },
     {
         id: 'orc_006', name: 'Lembrete ao cliente sobre orçamento pendente',
         description: 'Envia e-mail ao cliente lembrando sobre o orçamento enviado que ainda não teve resposta.',
-        category: 'orcamentos', trigger_event: 'quote.pending', action_type: 'send_email',
+        category: 'orçamentos', trigger_event: 'quote.pending', action_type: 'send_email',
         trigger_label: 'Orçamento pendente de resposta', action_label: 'Enviar lembrete ao cliente',
     },
     {
         id: 'orc_007', name: 'Orçamento rejeitado pelo cliente',
         description: 'Notifica gerente e vendedor quando o cliente rejeitar um orçamento para análise e possível renegociação.',
-        category: 'orcamentos', trigger_event: 'quote.rejected', action_type: 'send_notification',
+        category: 'orçamentos', trigger_event: 'quote.rejected', action_type: 'send_notification',
         trigger_label: 'Orçamento rejeitado', action_label: 'Notificar gerente e vendedor',
     },
     {
         id: 'orc_008', name: 'Desconto solicitado: aprovação necessária',
         description: 'Alerta o admin quando um desconto é solicitado no orçamento e precisa de aprovação.',
-        category: 'orcamentos', trigger_event: 'quote.discount_requested', action_type: 'send_notification',
+        category: 'orçamentos', trigger_event: 'quote.discount_requested', action_type: 'send_notification',
         trigger_label: 'Desconto solicitado', action_label: 'Notificar admin para aprovar',
     },
     {
         id: 'orc_009', name: 'Orçamento venceu sem resposta',
         description: 'Registra e notifica quando um orçamento vence sem que o cliente tenha respondido.',
-        category: 'orcamentos', trigger_event: 'quote.expired', action_type: 'create_alert',
+        category: 'orçamentos', trigger_event: 'quote.expired', action_type: 'create_alert',
         trigger_label: 'Orçamento expirou', action_label: 'Criar alerta',
     },
     {
         id: 'orc_010', name: 'Criar chamado quando orçamento aprovado for agendado',
         description: 'Cria automaticamente um chamado técnico quando o orçamento for aprovado e o atendimento for agendado.',
-        category: 'orcamentos', trigger_event: 'quote.approved', action_type: 'create_chamado',
+        category: 'orçamentos', trigger_event: 'quote.approved', action_type: 'create_chamado',
         trigger_label: 'Orçamento aprovado e agendado', action_label: 'Criar chamado técnico',
     },
 
@@ -506,61 +506,61 @@ export const TEMPLATES: AutomationTemplate[] = [
     {
         id: 'tec_001', name: 'Despesa do técnico acima do limite',
         description: 'Alerta o admin quando um técnico registrar uma despesa individual acima do valor configurado.',
-        category: 'tecnicos', trigger_event: 'expense.high_value', action_type: 'send_notification',
+        category: 'técnicos', trigger_event: 'expense.high_value', action_type: 'send_notification',
         trigger_label: 'Despesa acima do limite', action_label: 'Notificar admin',
     },
     {
         id: 'tec_002', name: 'Técnico sem apontamento de horas há 2 dias',
         description: 'Alerta quando um técnico não registra apontamento de horas há mais de 2 dias úteis.',
-        category: 'tecnicos', trigger_event: 'technician.no_timesheet', action_type: 'create_alert',
+        category: 'técnicos', trigger_event: 'technician.no_timesheet', action_type: 'create_alert',
         trigger_label: 'Sem apontamento há 2 dias', action_label: 'Criar alerta',
     },
     {
         id: 'tec_003', name: 'OS concluída fora do horário comercial',
         description: 'Notifica o admin quando um técnico conclui OS fora do horário comercial (antes das 7h ou após 18h).',
-        category: 'tecnicos', trigger_event: 'os.after_hours', action_type: 'send_notification',
+        category: 'técnicos', trigger_event: 'os.after_hours', action_type: 'send_notification',
         trigger_label: 'OS concluída fora do horário', action_label: 'Notificar admin',
     },
     {
         id: 'tec_004', name: 'Técnico sem OS para o dia',
         description: 'Alerta quando um técnico não tem nenhuma OS atribuída para o dia seguinte.',
-        category: 'tecnicos', trigger_event: 'technician.idle', action_type: 'send_notification',
+        category: 'técnicos', trigger_event: 'technician.idle', action_type: 'send_notification',
         trigger_label: 'Técnico sem agenda para amanhã', action_label: 'Notificar gerente',
     },
     {
         id: 'tec_005', name: 'Resumo diário de OS para o técnico',
         description: 'Envia todo dia cedo um resumo com as OS do dia para cada técnico.',
-        category: 'tecnicos', trigger_event: 'technician.daily_schedule', action_type: 'send_notification',
+        category: 'técnicos', trigger_event: 'technician.daily_schedule', action_type: 'send_notification',
         trigger_label: 'Todo dia às 7h', action_label: 'Enviar resumo ao técnico',
     },
     {
         id: 'tec_006', name: 'Km rodado acima do esperado',
         description: 'Alerta quando o km registrado pelo técnico numa viagem está acima da distância esperada pela rota.',
-        category: 'tecnicos', trigger_event: 'technician.high_km', action_type: 'create_alert',
+        category: 'técnicos', trigger_event: 'technician.high_km', action_type: 'create_alert',
         trigger_label: 'Km acima do esperado', action_label: 'Criar alerta',
     },
     {
         id: 'tec_007', name: 'Despesas pendentes de prestação de contas',
         description: 'Alerta quando há despesas do técnico pendentes de conferência/aprovação há mais de 3 dias.',
-        category: 'tecnicos', trigger_event: 'technician.expenses_pending', action_type: 'send_notification',
+        category: 'técnicos', trigger_event: 'technician.expenses_pending', action_type: 'send_notification',
         trigger_label: 'Despesas pendentes há 3+ dias', action_label: 'Notificar admin',
     },
     {
         id: 'tec_008', name: 'Checklist preenchido em campo',
         description: 'Notifica o escritório quando um técnico conclui o preenchimento do checklist de calibração em campo.',
-        category: 'tecnicos', trigger_event: 'technician.checklist_done', action_type: 'send_notification',
+        category: 'técnicos', trigger_event: 'technician.checklist_done', action_type: 'send_notification',
         trigger_label: 'Checklist preenchido', action_label: 'Notificar escritório',
     },
     {
         id: 'tec_009', name: 'Assinatura do cliente não coletada',
         description: 'Alerta quando a OS é concluída mas a assinatura digital do cliente não foi registrada.',
-        category: 'tecnicos', trigger_event: 'technician.no_signature', action_type: 'create_alert',
+        category: 'técnicos', trigger_event: 'technician.no_signature', action_type: 'create_alert',
         trigger_label: 'Sem assinatura do cliente', action_label: 'Criar alerta',
     },
     {
         id: 'tec_010', name: 'Fotos pendentes de sincronização',
         description: 'Alerta quando há fotos de OS que ainda não foram sincronizadas com o servidor.',
-        category: 'tecnicos', trigger_event: 'technician.photos_pending', action_type: 'create_alert',
+        category: 'técnicos', trigger_event: 'technician.photos_pending', action_type: 'create_alert',
         trigger_label: 'Fotos aguardando sync', action_label: 'Criar alerta',
     },
 

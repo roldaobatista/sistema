@@ -226,7 +226,7 @@ export function BranchesPage() {
                                 {b.address_city && (
                                     <p className="flex items-center gap-1.5">
                                         <MapPin className="h-3 w-3" />
-                                        {b.address_street && `${b.address_street}, ${b.address_number || 'S/N'} â€” `}
+                                        {b.address_street && `${b.address_street}, ${b.address_number || 'S/N'} — `}
                                         {b.address_city}/{b.address_state}
                                     </p>
                                 )}
@@ -271,7 +271,7 @@ export function BranchesPage() {
                             <select value={form.address_state} onChange={e => setForm(f => ({ ...f, address_state: e.target.value, address_city: '' }))}
                                 className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
                                 <option value="">Selecione</option>
-                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} â€” {s.name}</option>)}
+                                {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
                             </select>
                         </div>
                         <Input label="Telefone" value={form.phone} onChange={set('phone')} />

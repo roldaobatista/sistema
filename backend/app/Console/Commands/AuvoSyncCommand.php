@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AuvoImport;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Services\Auvo\AuvoApiClient;
 use App\Services\Auvo\AuvoImportService;
@@ -32,9 +33,9 @@ class AuvoSyncCommand extends Command
             return self::FAILURE;
         }
 
-        $client = new AuvoApiClient();
+        $client = AuvoApiClient::forTenant($tenantId);
         if (!$client->hasCredentials()) {
-            $this->error('Auvo API credentials not configured. Set AUVO_API_KEY and AUVO_API_TOKEN in .env');
+            $this->error('Credenciais Auvo não configuradas. Configure via UI ou defina AUVO_API_KEY e AUVO_API_TOKEN no .env');
             return self::FAILURE;
         }
 
@@ -44,7 +45,7 @@ class AuvoSyncCommand extends Command
         $service = new AuvoImportService($client);
 
         // Use a system user ID (first admin) for the import record
-        $adminUser = $tenant->users()->whereHas('roles', fn($q) => $q->whereIn('name', ['super_admin', 'admin']))->first();
+        $adminUser = $tenant->users()->whereHas('roles', fn($q) => $q->whereIn('name', [Role::SUPER_ADMIN, Role::ADMIN]))->first();
         $userId = $adminUser?->id ?? 1;
 
         if ($entity) {

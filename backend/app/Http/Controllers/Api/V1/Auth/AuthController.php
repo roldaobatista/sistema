@@ -86,8 +86,12 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'tenant_id' => $user->current_tenant_id,
                     'tenant' => $defaultTenant,
-                    'permissions' => $user->getAllPermissions()->pluck('name'),
+                    'permissions' => $user->getEffectivePermissions()->pluck('name')->values(),
                     'roles' => $user->getRoleNames(),
+                    'role_details' => $user->roles->map(fn ($r) => [
+                        'name' => $r->name,
+                        'display_name' => $r->display_name ?: $r->name,
+                    ])->values(),
                 ],
             ]);
         } catch (ValidationException $e) {
@@ -115,8 +119,12 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'tenant' => $user->currentTenant,
-                'permissions' => $user->getAllPermissions()->pluck('name'),
+                'permissions' => $user->getEffectivePermissions()->pluck('name')->values(),
                 'roles' => $user->getRoleNames(),
+                'role_details' => $user->roles->map(fn ($r) => [
+                    'name' => $r->name,
+                    'display_name' => $r->display_name ?: $r->name,
+                ])->values(),
                 'last_login_at' => $user->last_login_at,
             ],
         ]);

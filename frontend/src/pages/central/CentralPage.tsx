@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores/auth-store'
 const tipoConfig: Record<string, { label: string; icon: any; color: string }> = {
     os: { label: 'OS', icon: Wrench, color: 'text-blue-600 bg-blue-50' },
     chamado: { label: 'Chamado', icon: Phone, color: 'text-cyan-600 bg-cyan-50' },
-    orcamento: { label: 'Orçamento', icon: FileText, color: 'text-amber-600 bg-amber-50' },
+    orçamento: { label: 'Orçamento', icon: FileText, color: 'text-amber-600 bg-amber-50' },
     financeiro: { label: 'Financeiro', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50' },
     calibracao: { label: 'Calibração', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50' },
     contrato: { label: 'Contrato', icon: FileText, color: 'text-rose-600 bg-rose-50' },
@@ -150,7 +150,7 @@ export function CentralPage() {
     // â”€â”€ Helpers â”€â”€
 
     const formatDate = (d: string | null) => {
-        if (!d) return 'â€”'
+        if (!d) return '—'
         return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     }
 
@@ -171,7 +171,7 @@ export function CentralPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-surface-900 tracking-tight">Central</h1>
-                    <p className="mt-0.5 text-sm text-surface-500">Inbox unificado de trabalho â€” OS, Chamados, Tarefas e mais</p>
+                    <p className="mt-0.5 text-sm text-surface-500">Inbox unificado de trabalho — OS, Chamados, Tarefas e mais</p>
                 </div>
                 <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowCreate(true)}>Nova Tarefa</Button>
             </div>
@@ -331,7 +331,7 @@ export function CentralPage() {
                             <div><span className="text-surface-500">Prioridade:</span> <span className={`font-medium ${prioridadeConfig[showDetail.prioridade]?.color ?? ''}`}>{prioridadeConfig[showDetail.prioridade]?.label ?? showDetail.prioridade}</span></div>
                             <div><span className="text-surface-500">Tipo:</span> {tipoConfig[showDetail.tipo]?.label ?? showDetail.tipo}</div>
                             <div><span className="text-surface-500">Prazo:</span> {formatDate(showDetail.due_at)}</div>
-                            <div><span className="text-surface-500">Responsável:</span> {showDetail.responsavel?.name ?? 'â€”'}</div>
+                            <div><span className="text-surface-500">Responsável:</span> {showDetail.responsavel?.name ?? '—'}</div>
                             <div><span className="text-surface-500">Criado em:</span> {formatDate(showDetail.created_at)}</div>
                         </div>
 
@@ -379,7 +379,7 @@ export function CentralPage() {
                                     {(showDetail.history ?? []).map((h: any) => (
                                         <div key={h.id} className="flex gap-2">
                                             <span className="text-surface-400">{formatDate(h.created_at)}</span>
-                                            <span>{h.action}: {h.from_value ?? ''} â†’ {h.to_value ?? ''}</span>
+                                            <span>{h.action}: {h.from_value ?? ''} → {h.to_value ?? ''}</span>
                                             <span className="text-surface-300">{h.user?.name}</span>
                                         </div>
                                     ))}

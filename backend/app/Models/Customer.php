@@ -21,6 +21,13 @@ class Customer extends Model
         'address_complement', 'address_neighborhood',
         'address_city', 'address_state',
         'latitude', 'longitude', 'google_maps_link',
+        // Enrichment fields
+        'state_registration', 'municipal_registration',
+        'cnae_code', 'cnae_description', 'legal_nature',
+        'capital', 'simples_nacional', 'mei',
+        'company_status', 'opened_at', 'is_rural_producer',
+        'partners', 'secondary_activities',
+        'enrichment_data', 'enriched_at',
         // CRM fields
         'source', 'segment', 'company_size', 'annual_revenue_estimate',
         'contract_type', 'contract_start', 'contract_end', 'health_score',
@@ -32,12 +39,21 @@ class Customer extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_rural_producer' => 'boolean',
+            'simples_nacional' => 'boolean',
+            'mei' => 'boolean',
+            'capital' => 'decimal:2',
             'annual_revenue_estimate' => 'decimal:2',
+            'opened_at' => 'date',
             'contract_start' => 'date',
             'contract_end' => 'date',
             'last_contact_at' => 'datetime',
             'next_follow_up_at' => 'datetime',
+            'enriched_at' => 'datetime',
             'tags' => 'array',
+            'partners' => 'array',
+            'secondary_activities' => 'array',
+            'enrichment_data' => 'array',
             'latitude' => 'float',
             'longitude' => 'float',
         ];

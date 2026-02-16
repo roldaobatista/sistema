@@ -123,7 +123,7 @@ export default function AdvancedFeaturesPage() {
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Cliente</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Tipo</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data Agendada</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Responsavel</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Responsável</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
                             <th className="px-4 py-2.5 text-right font-semibold text-surface-600">Acoes</th>
                         </tr></thead>
@@ -209,7 +209,7 @@ export default function AdvancedFeaturesPage() {
                 <div className="overflow-auto rounded-xl border border-default bg-surface-0 shadow-card">
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Codigo</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Código</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Nome</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Pai</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Status</th>
@@ -240,7 +240,7 @@ export default function AdvancedFeaturesPage() {
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-subtle bg-surface-50">
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Nome</th>
-                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Tecnico</th>
+                            <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Técnico</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Data</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Paradas</th>
                             <th className="px-4 py-2.5 text-left font-semibold text-surface-600">Distancia</th>
@@ -275,7 +275,7 @@ export default function AdvancedFeaturesPage() {
                         </tr></thead>
                         <tbody className="divide-y divide-subtle">
                             {loadingRatings && <tr><td colSpan={4} className="px-4 py-8 text-center text-surface-400">Carregando...</td></tr>}
-                            {!loadingRatings && ratings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-surface-400">Nenhuma avaliacao</td></tr>}
+                            {!loadingRatings && ratings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-surface-400">Nenhuma avaliação</td></tr>}
                             {ratings.map((r: any) => (
                                 <tr key={r.id} className="transition-colors hover:bg-surface-50/50">
                                     <td className="px-4 py-3 font-mono text-xs font-medium text-brand-600">OS #{r.work_order_id}</td>
@@ -362,7 +362,7 @@ export default function AdvancedFeaturesPage() {
                         </div>
                         <form onSubmit={e => { e.preventDefault(); saveCostCenter.mutate(costCenterForm) }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-surface-700 mb-1">Codigo *</label>
+                                <div><label className="block text-sm font-medium text-surface-700 mb-1">Código *</label>
                                     <input required value={costCenterForm.code} onChange={e => setCostCenterForm({ ...costCenterForm, code: e.target.value })} className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100" placeholder="CC-001" /></div>
                                 <div><label className="block text-sm font-medium text-surface-700 mb-1">Nome *</label>
                                     <input required value={costCenterForm.name} onChange={e => setCostCenterForm({ ...costCenterForm, name: e.target.value })} className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100" placeholder="Operacional" /></div>

@@ -190,7 +190,11 @@ class ChartOfAccountController extends Controller
             }
         }
 
-        DB::transaction(fn () => $account->update($data));
+        try {
+            DB::transaction(fn () => $account->update($data));
+        } catch (\Throwable $e) {
+            return $this->error('Erro ao atualizar conta: ' . $e->getMessage(), 500);
+        }
 
         return $this->success($account->fresh('parent:id,code,name,type'), 'Conta atualizada');
     }
@@ -219,7 +223,11 @@ class ChartOfAccountController extends Controller
             return $this->error('Nao e possivel excluir conta ja vinculada a lancamentos financeiros.', 422);
         }
 
-        DB::transaction(fn () => $account->delete());
+        try {
+            DB::transaction(fn () => $account->delete());
+        } catch (\Throwable $e) {
+            return $this->error('Erro ao remover conta: ' . $e->getMessage(), 500);
+        }
 
         return $this->success(null, 'Conta removida');
     }
