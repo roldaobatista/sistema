@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import { useSyncStatus } from '@/hooks/useSyncStatus'
 import { useAuthStore } from '@/stores/auth-store'
+import { ModeSwitcher } from '@/components/pwa/ModeSwitcher'
+import { InstallBanner } from '@/components/pwa/InstallBanner'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -100,6 +102,7 @@ export default function TechShell() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <ModeSwitcher />
                     {/* Pending sync badge */}
                     {pendingCount > 0 && (
                         <button
@@ -207,6 +210,8 @@ export default function TechShell() {
                     <span>Mais</span>
                 </button>
             </nav>
+
+            <InstallBanner />
         </div>
     )
 }

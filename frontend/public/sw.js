@@ -15,6 +15,7 @@ const SHELL_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/offline.html',
 ];
 
 // URLs de API que devem ser cacheadas para uso offline do técnico
@@ -45,13 +46,16 @@ self.addEventListener('install', (event) => {
 // ─── ACTIVATE ─────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME && key !== API_CACHE)
-          .map((key) => caches.delete(key))
-      );
-    })
+    Promise.all([
+      caches.keys().then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME && key !== API_CACHE)
+            .map((key) => caches.delete(key))
+        )
+      ),
+      self.registration.navigationPreload?.enable() ?? Promise.resolve(),
+    ])
   );
   self.clients.claim();
 });
@@ -78,8 +82,27 @@ self.addEventListener('fetch', (event) => {
 
   // Shell/assets: Cache-first com atualização em background
   if (isShellRequest(url)) {
-    event.respondWith(cacheFirstWithRefresh(event.request));
+    event.respondWith(
+      cacheFirstWithRefresh(event.request).then((response) => {
+        if (response.status === 503 && event.request.mode === 'navigate') {
+          return caches.match('/offline.html').then((r) => r || response);
+        }
+        return response;
+      })
+    );
     return;
+  }
+
+  // Navegação para rota SPA não cacheada: usa preload se disponível, fallback offline
+  if (event.request.mode === 'navigate' && url.origin === self.location.origin) {
+    const navPromise = event.preloadResponse
+      ? event.preloadResponse.then((r) => r || fetch(event.request))
+      : fetch(event.request);
+    event.respondWith(
+      navPromise.catch(() =>
+        caches.match('/offline.html').then((r) => r || new Response('Offline', { status: 503 }))
+      )
+    );
   }
 });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ScopesByRole;
 use App\Http\Requests\ServiceCall\StoreServiceCallRequest;
 use App\Http\Requests\ServiceCall\UpdateServiceCallRequest;
 use App\Models\AuditLog;
@@ -20,6 +21,8 @@ use Illuminate\Validation\Rule;
 
 class ServiceCallController extends Controller
 {
+    use ScopesByRole;
+
     private function currentTenantId(): int
     {
         $user = auth()->user();
@@ -49,6 +52,10 @@ class ServiceCallController extends Controller
         $query = ServiceCall::with(['customer:id,name', 'technician:id,name', 'driver:id,name'])
             ->withCount('equipments')
             ->where('tenant_id', $tenantId);
+
+        if ($this->shouldScopeByUser()) {
+            $query->where('created_by', auth()->id());
+        }
 
         if ($s = $request->get('search')) {
             $query->where(function ($q) use ($s) {

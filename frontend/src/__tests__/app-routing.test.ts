@@ -113,9 +113,9 @@ describe('resolveRequiredPermission', () => {
         expect(resolveRequiredPermission('/rota-que-nao-existe')).toBeNull()
     })
 
-    it('resolves /orçamentos/:id/editar via regex to quotes.quote.update', () => {
-        expect(resolveRequiredPermission('/orçamentos/123/editar')).toBe('quotes.quote.update')
-        expect(resolveRequiredPermission('/orçamentos/abc/editar')).toBe('quotes.quote.update')
+    it('resolves /orcamentos/:id/editar via regex to quotes.quote.update', () => {
+        expect(resolveRequiredPermission('/orcamentos/123/editar')).toBe('quotes.quote.update')
+        expect(resolveRequiredPermission('/orcamentos/abc/editar')).toBe('quotes.quote.update')
     })
 
     it('resolves sub-paths correctly using startsWith', () => {

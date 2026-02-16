@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ScopesByRole;
 use App\Models\CrmActivity;
 use App\Models\Role;
 use App\Models\CrmDeal;
@@ -26,6 +27,8 @@ use Illuminate\Validation\Rule;
 
 class CrmController extends Controller
 {
+    use ScopesByRole;
+
     private function tenantId(Request $request): int
     {
         /** @var \App\Models\User $user */
@@ -315,12 +318,17 @@ class CrmController extends Controller
 
     public function dealsIndex(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
         $query = CrmDeal::with([
             'customer:id,name',
             'stage:id,name,color,sort_order',
             'pipeline:id,name',
             'assignee:id,name',
-        ]);
+        ])->where('tenant_id', $tenantId);
+
+        if ($this->shouldScopeByUser()) {
+            $query->where('assigned_to', auth()->id());
+        }
 
         if ($request->filled('pipeline_id')) {
             $query->byPipeline($request->pipeline_id);

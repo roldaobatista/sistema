@@ -207,36 +207,44 @@ class AuvoImportService
         return $this->importWithMapping($import, $strategy, function (array $mapped) use ($import) {
             $data = AuvoFieldMapper::stripMetadata($mapped);
 
-            // Auvo V2 returns email and phoneNumber as arrays — extract first element
-            if (isset($data['email']) && is_array($data['email'])) {
-                $data['email'] = $data['email'][0] ?? null;
-            }
-            if (isset($data['phone']) && is_array($data['phone'])) {
-                $data['phone'] = $data['phone'][0] ?? null;
+            $auvoId = $mapped['_auvo_id'] ?? null;
+
+            // Name obrigatório - fallback se vazio
+            if (empty(trim((string) ($data['name'] ?? '')))) {
+                $data['name'] = $auvoId ? "Cliente Auvo #{$auvoId}" : 'Cliente importado do Auvo';
             }
 
-            // Normalize document
+            // Email: extrair de array ou objeto
+            if (isset($data['email'])) {
+                $data['email'] = $this->extractFirstValue($data['email']);
+            }
+
+            // Phone: extrair de array ou objeto
+            if (isset($data['phone'])) {
+                $data['phone'] = $this->extractFirstValue($data['phone']);
+            }
+
+            // Document: normalizar (apenas dígitos)
             if (!empty($data['document'])) {
-                $data['document'] = preg_replace('/\D/', '', $data['document']);
+                $data['document'] = preg_replace('/\D/', '', (string) $data['document']);
             }
 
-            // Auto-detect PF/PJ
+            // Tipo PF/PJ
             if (!empty($data['document'])) {
-                $docLen = strlen($data['document']);
-                $data['type'] = $docLen <= 11 ? 'PF' : 'PJ';
-            }
-
-            // Normalize ZIP
-            if (!empty($data['address_zip'])) {
-                $data['address_zip'] = preg_replace('/\D/', '', $data['address_zip']);
-            }
-
-            // Status mapping (Auvo V2 uses boolean 'active' field)
-            if (isset($data['is_active'])) {
-                $data['is_active'] = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
+                $data['type'] = strlen($data['document']) <= 11 ? 'PF' : 'PJ';
             } else {
-                $data['is_active'] = true;
+                $data['type'] = $data['type'] ?? 'PF';
             }
+
+            // CEP: apenas dígitos
+            if (!empty($data['address_zip'])) {
+                $data['address_zip'] = preg_replace('/\D/', '', (string) $data['address_zip']);
+            }
+
+            // Status ativo
+            $data['is_active'] = isset($data['is_active'])
+                ? filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN)
+                : true;
 
             return $data;
         }, function (array $data, int $tenantId) {
@@ -671,13 +679,45 @@ class AuvoImportService
             'imported_ids' => $importedIds ?: null,
         ]);
 
-        return [
+        $result = [
             'total_fetched' => $totalFetched,
             'total_imported' => $inserted,
             'total_updated' => $updated,
             'total_skipped' => $skipped,
             'total_errors' => $errors,
         ];
+        if (!empty($errorLog)) {
+            $result['first_error'] = $errorLog[0]['message'] ?? 'Erro desconhecido';
+            $result['error_log'] = array_slice($errorLog, 0, 5);
+        }
+        return $result;
+    }
+
+    /**
+     * Extract scalar value from array (first element) or object (value/number key).
+     */
+    private function extractFirstValue(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_string($value) && trim($value) !== '') {
+            return trim($value);
+        }
+        if (!is_array($value)) {
+            return (string) $value;
+        }
+        $first = $value[0] ?? null;
+        if ($first === null) {
+            return null;
+        }
+        if (is_string($first)) {
+            return trim($first);
+        }
+        if (is_array($first)) {
+            return $first['value'] ?? $first['number'] ?? $first['phone'] ?? $first['email'] ?? null;
+        }
+        return (string) $first;
     }
 
     /**

@@ -55,6 +55,10 @@ export interface AuvoImportResult {
     errors: number
     error_details: string[]
     duration_seconds: number
+    /** API pode retornar total_* em alguns endpoints */
+    total_imported?: number
+    total_updated?: number
+    total_errors?: number
 }
 
 export interface AuvoImportHistory {
@@ -146,7 +150,10 @@ export function useAuvoImportEntity() {
         mutationFn: ({ entity, strategy }) =>
             api.post(`/auvo/import/${entity}`, { strategy: strategy || 'skip' }).then(r => r.data),
         onSuccess: (data) => {
-            toast.success(`${data.entity_type}: ${data.inserted} importados, ${data.updated} atualizados`)
+            const imported = data.total_imported ?? data.inserted ?? 0
+            const updated = data.total_updated ?? data.updated ?? 0
+            const errCount = data.total_errors ?? data.errors ?? 0
+            toast.success(`${data.entity_type}: ${imported} importados, ${updated} atualizados${errCount > 0 ? `, ${errCount} erro(s)` : ''}`)
             qc.invalidateQueries({ queryKey: ['auvo'] })
         },
         onError: handleMutationError,

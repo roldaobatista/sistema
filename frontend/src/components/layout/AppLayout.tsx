@@ -10,15 +10,18 @@ import {
     Weight, RotateCcw, TrendingUp, History, Warehouse, ArrowLeftRight, Bell,
     CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
     MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
-    Monitor,
+    Monitor, Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUIStore } from '@/stores/ui-store'
 import { usePWA } from '@/hooks/usePWA'
+import { useAppMode } from '@/hooks/useAppMode'
 import { useCurrentTenant as useTenantHook } from '@/hooks/useCurrentTenant'
 import NotificationPanel from '@/components/notifications/NotificationPanel'
 import OfflineIndicator from '@/components/pwa/OfflineIndicator'
+import { ModeSwitcher } from '@/components/pwa/ModeSwitcher'
+import { InstallBanner } from '@/components/pwa/InstallBanner'
 
 interface NavItem {
     label: string
@@ -233,6 +236,42 @@ const navigationSections: NavSection[] = [
     },
 ]
 
+/** Sidebar do Modo Vendedor (comercial/vendedor) — vê tudo de vendas */
+const salesOnlySections: NavSection[] = [
+    {
+        label: 'Comercial',
+        items: [
+            { label: 'Dashboard CRM', icon: BarChart3, path: '/crm', permission: 'crm.deal.view' },
+            { label: 'Pipeline', icon: Grid3x3, path: '/crm/pipeline', permission: 'crm.pipeline.view' },
+            { label: 'Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
+            { label: 'Clientes', icon: Users, path: '/cadastros/clientes', permission: 'cadastros.customer.view' },
+            { label: 'Templates', icon: FileText, path: '/crm/templates', permission: 'crm.message.view' },
+            { label: 'Leads', icon: Target, path: '/inmetro/leads', permission: 'inmetro.intelligence.view' },
+            {
+                label: 'Chamados', icon: Phone, path: '/chamados', permission: 'service_calls.service_call.view',
+                children: [
+                    { label: 'Lista', icon: FileText, path: '/chamados' },
+                    { label: 'Mapa', icon: Scale, path: '/chamados/mapa' },
+                    { label: 'Agenda', icon: Calendar, path: '/chamados/agenda' },
+                ],
+            },
+        ],
+    },
+]
+
+/** Sidebar restrita para tecnico_vendedor no Modo Vendedor (apenas seus dados) */
+const tecnicoVendedorSections: NavSection[] = [
+    {
+        label: 'Comercial',
+        items: [
+            { label: 'Dashboard CRM', icon: BarChart3, path: '/crm', permission: 'crm.deal.view' },
+            { label: 'Meus Orçamentos', icon: FileText, path: '/orcamentos', permission: 'quotes.quote.view' },
+            { label: 'Clientes', icon: Users, path: '/cadastros/clientes', permission: 'cadastros.customer.view' },
+            { label: 'Templates', icon: FileText, path: '/crm/templates', permission: 'crm.message.view' },
+        ],
+    },
+]
+
 const navigation: NavItem[] = navigationSections.flatMap(s => s.items)
 
 function filterNavByPermission(items: NavItem[], userPerms: string[], isSuperAdmin: boolean): NavItem[] {
@@ -278,10 +317,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, logout, hasRole, hasPermission } = useAuthStore()
     const { sidebarCollapsed, toggleSidebar, sidebarMobileOpen, toggleMobileSidebar } = useUIStore()
     const { isInstallable, isOnline, install } = usePWA()
+    const { currentMode } = useAppMode()
     const { currentTenant, tenants, switchTenant, isSwitching } = useTenantHook()
 
+    const baseSections =
+        currentMode === 'vendedor'
+            ? hasRole('tecnico_vendedor') && !hasRole('comercial') && !hasRole('vendedor')
+                ? tecnicoVendedorSections
+                : salesOnlySections
+            : navigationSections
+
     const filteredSections = filterNavSectionsByPermission(
-        navigationSections,
+        baseSections,
         user?.permissions ?? [],
         hasRole('super_admin')
     )
@@ -529,6 +576,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <ModeSwitcher />
                         {isInstallable && (
                             <button onClick={install}
                                 className="flex items-center gap-1.5 rounded-md bg-surface-100 px-2.5 py-1 text-xs font-medium text-surface-700 transition-colors hover:bg-surface-200">
@@ -596,6 +644,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </main>
 
                 <OfflineIndicator />
+                <InstallBanner />
             </div>
         </div>
     )

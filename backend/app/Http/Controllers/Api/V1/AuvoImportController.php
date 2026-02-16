@@ -106,8 +106,17 @@ class AuvoImportController extends Controller
 
             $result = $service->importEntity($entity, $tenantId, $userId, $strategy);
 
+            $message = 'Importação concluída';
+            if (($result['total_errors'] ?? 0) > 0) {
+                $firstError = $result['first_error'] ?? null;
+                $message .= sprintf('. %d erro(s).', $result['total_errors']);
+                if ($firstError) {
+                    $message .= ' Ex.: ' . (is_string($firstError) ? $firstError : ($firstError['message'] ?? json_encode($firstError)));
+                }
+            }
+
             return response()->json(array_merge([
-                'message' => 'Importação concluída',
+                'message' => $message,
                 'entity_label' => AuvoImport::ENTITY_TYPES[$entity],
             ], $result));
         } catch (\Exception $e) {

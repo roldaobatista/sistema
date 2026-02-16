@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\QuoteStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ScopesByRole;
 use App\Http\Requests\Quote\StoreQuoteRequest;
 use App\Http\Requests\Quote\UpdateQuoteRequest;
 use App\Models\AuditLog;
@@ -22,6 +23,8 @@ use Illuminate\Validation\Rule;
 
 class QuoteController extends Controller
 {
+    use ScopesByRole;
+
     public function __construct(
         protected QuoteService $service
     ) {}
@@ -47,6 +50,10 @@ class QuoteController extends Controller
         $query = Quote::with(['customer:id,name', 'seller:id,name'])
             ->where('tenant_id', $this->currentTenantId())
             ->withCount('equipments');
+
+        if ($this->shouldScopeByUser()) {
+            $query->where('seller_id', auth()->id());
+        }
 
         if ($s = $request->get('search')) {
             $query->where(function ($q) use ($s) {

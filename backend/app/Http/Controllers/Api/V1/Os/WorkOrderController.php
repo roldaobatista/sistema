@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Os;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ScopesByRole;
 use App\Http\Requests\WorkOrder\StoreWorkOrderRequest;
 use App\Http\Requests\WorkOrder\UpdateWorkOrderRequest;
 use App\Models\Role;
@@ -24,6 +25,8 @@ use Illuminate\Validation\Rule;
 
 class WorkOrderController extends Controller
 {
+    use ScopesByRole;
+
     private function currentTenantId(): int
     {
         $user = auth()->user();
@@ -60,6 +63,16 @@ class WorkOrderController extends Controller
             'quote:id,quote_number',
             'serviceCall:id,call_number',
         ]);
+
+        $tenantId = $this->currentTenantId();
+        $query->where('tenant_id', $tenantId);
+
+        if ($this->shouldScopeByUser()) {
+            $userId = auth()->id();
+            $query->where(function ($q) use ($userId) {
+                $q->where('assigned_to', $userId)->orWhere('created_by', $userId);
+            });
+        }
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {

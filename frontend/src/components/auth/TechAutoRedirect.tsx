@@ -1,12 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
-
-const isMobileDevice = () => {
-    if (typeof window === 'undefined') return false
-    const ua = navigator.userAgent
-    return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)
-        || (window.innerWidth <= 768 && 'ontouchstart' in window)
-}
+import { useAppMode, MODE_STORAGE_KEY } from '@/hooks/useAppMode'
 
 const FIELD_ONLY_ROLES = new Set(['tecnico', 'tecnico_vendedor', 'motorista'])
 const MANAGEMENT_ROLES = new Set([
@@ -14,24 +8,42 @@ const MANAGEMENT_ROLES = new Set([
     'financeiro', 'comercial', 'atendimento', 'rh',
     'estoquista', 'qualidade', 'vendedor', 'monitor', 'visualizador',
 ])
+const VENDEDOR_ROLES = new Set(['comercial', 'vendedor', 'tecnico_vendedor'])
 
 /**
- * Wraps the DashboardPage route. If authenticated user ONLY has
- * field-level roles (tecnico, tecnico_vendedor, motorista) and is
- * on a mobile device, auto-redirect to /tech.
- * Users with any management/admin role always see the full dashboard.
+ * Redireciona para o modo correto: único modo vai direto; multi-role respeita último modo (localStorage).
  */
 export function TechAutoRedirect({ children }: { children: React.ReactNode }) {
     const { user } = useAuthStore()
+    const { availableModes } = useAppMode()
 
-    if (user && isMobileDevice()) {
-        const roles = user.roles ?? user.all_roles ?? []
-        const hasManagementRole = roles.some(r => MANAGEMENT_ROLES.has(r))
-        const hasFieldRole = roles.some(r => FIELD_ONLY_ROLES.has(r))
+    if (!user) return <>{children}</>
 
-        if (hasFieldRole && !hasManagementRole) {
+    const roles = user.roles ?? user.all_roles ?? []
+    const hasManagementRole = roles.some((r) => MANAGEMENT_ROLES.has(r))
+    const hasFieldRole = roles.some((r) => FIELD_ONLY_ROLES.has(r))
+    const hasVendedorRole = roles.some((r) => VENDEDOR_ROLES.has(r))
+
+    if (availableModes.length === 1) {
+        if (availableModes[0] === 'tecnico') return <Navigate to="/tech" replace />
+        if (availableModes[0] === 'vendedor') return <Navigate to="/crm" replace />
+        return <>{children}</>
+    }
+
+    try {
+        const lastMode = localStorage.getItem(MODE_STORAGE_KEY)
+        if (lastMode === 'tecnico' && availableModes.includes('tecnico')) {
             return <Navigate to="/tech" replace />
         }
+        if (lastMode === 'vendedor' && availableModes.includes('vendedor')) {
+            return <Navigate to="/crm" replace />
+        }
+    } catch {
+        // ignore
+    }
+
+    if (hasFieldRole && !hasManagementRole && !hasVendedorRole) {
+        return <Navigate to="/tech" replace />
     }
 
     return <>{children}</>

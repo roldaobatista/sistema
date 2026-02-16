@@ -21,25 +21,30 @@ export function usePWA() {
     const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null)
 
     useEffect(() => {
-        // Register service worker
+        let updateIntervalId: ReturnType<typeof setInterval> | undefined
         if (import.meta.env.PROD && 'serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').then((reg: ServiceWorkerRegistration) => {
                 setSwRegistration(reg)
                 console.log('[SW] registered:', reg.scope)
-
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'activated') {
-                                console.log('[SW] new version activated')
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                setSwRegistration(reg)
                             }
                         })
                     }
                 })
+                updateIntervalId = setInterval(() => reg.update(), 30 * 60 * 1000)
             }).catch((err: unknown) => console.error('[SW] registration failed:', err))
         }
+        return () => {
+            if (updateIntervalId) clearInterval(updateIntervalId)
+        }
+    }, [])
 
+    useEffect(() => {
         // Install prompt
         const handleBeforeInstall = (e: Event) => {
             const event = e as BeforeInstallPromptEvent

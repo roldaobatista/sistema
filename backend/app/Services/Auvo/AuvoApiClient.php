@@ -280,20 +280,18 @@ class AuvoApiClient
 
     /**
      * Extract the list of records from an Auvo API response.
+     * Suporta variações: entityList, list, customerList, customers, data, result (array).
      */
     private function extractRecords(array $response): array
     {
-        // Auvo V2 patterns: result.entityList, result.list, result (array), data
         $result = $response['result'] ?? null;
 
         if (is_array($result)) {
-            if (isset($result['entityList']) && is_array($result['entityList'])) {
-                return $result['entityList'];
+            foreach (['entityList', 'list', 'customerList', 'customers', 'data'] as $key) {
+                if (isset($result[$key]) && is_array($result[$key]) && array_is_list($result[$key])) {
+                    return $result[$key];
+                }
             }
-            if (isset($result['list']) && is_array($result['list'])) {
-                return $result['list'];
-            }
-            // If result is a sequential array (not associative), return it
             if (array_is_list($result)) {
                 return $result;
             }

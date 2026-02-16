@@ -110,6 +110,23 @@ Não use `-Migrate` quando:
 - Rollback automático é executado
 - Verificar logs: `.\deploy-prod.ps1 -Logs`
 
+## Checklist de segurança (produção)
+
+Antes do primeiro deploy ou se o servidor ainda não foi ajustado:
+
+1. **backend/.env no servidor** deve ter:
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `CORS_ALLOWED_ORIGINS` = URL real (ex: `http://178.156.176.145`), nunca placeholder
+   - Senhas fortes para `DB_PASSWORD` e `DB_ROOT_PASSWORD`
+
+2. O script `deploy.sh` **bloqueia** o deploy se:
+   - `APP_ENV` não for `production`
+   - `APP_DEBUG` for `true`
+   - `CORS_ALLOWED_ORIGINS` estiver com valor de exemplo
+
+3. Documentação completa: `deploy/SEGURANCA-PRODUCAO.md`
+
 ## NUNCA faça em produção
 
 - NUNCA execute `php artisan migrate:fresh` em produção (apaga TODOS os dados)
@@ -117,3 +134,4 @@ Não use `-Migrate` quando:
 - NUNCA altere backend/.env do servidor sem backup
 - NUNCA delete volumes Docker em produção (`docker volume rm`)
 - NUNCA execute deploy sem commit (código sujo)
+- NUNCA use `APP_DEBUG=true` ou `APP_ENV=local` no servidor

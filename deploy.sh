@@ -47,7 +47,7 @@ info()  { echo -e "${BLUE}[INFO]${NC} $1"; }
 step()  { echo -e "\n${BLUE}━━━ $1 ━━━${NC}"; }
 
 # =============================================================================
-# PRE-FLIGHT: Validações antes de tudo
+# PRE-FLIGHT: Validações antes de tudo (segurança em produção)
 # =============================================================================
 preflight() {
     step "ETAPA 1/6: Verificações pré-deploy"
@@ -56,12 +56,28 @@ preflight() {
     command -v docker compose >/dev/null 2>&1 || error "Docker Compose não instalado"
 
     [ -f "$COMPOSE_FILE" ] || error "$COMPOSE_FILE não encontrado"
-    [ -f "backend/.env" ] || error "backend/.env não encontrado. Copie de .env.example e configure."
+    [ -f "backend/.env" ] || error "backend/.env não encontrado. Copie de backend/.env.example e configure."
 
+    # CORS: sem placeholder
     if grep -q 'CORS_ALLOWED_ORIGINS=https://seu-dominio.com.br' backend/.env 2>/dev/null; then
         error "CORS_ALLOWED_ORIGINS ainda tem valor placeholder em backend/.env!"
     fi
 
+    # Produção: APP_ENV deve ser production
+    local app_env
+    app_env=$(grep -oP '^APP_ENV=\K.*' backend/.env 2>/dev/null | tr -d '\r' || echo "")
+    if [ -n "$app_env" ] && [ "$app_env" != "production" ]; then
+        error "backend/.env deve ter APP_ENV=production em produção (atual: APP_ENV=$app_env)"
+    fi
+
+    # Produção: APP_DEBUG deve ser false
+    local app_debug
+    app_debug=$(grep -oP '^APP_DEBUG=\K.*' backend/.env 2>/dev/null | tr -d '\r' || echo "true")
+    if [ "$app_debug" = "true" ]; then
+        error "backend/.env deve ter APP_DEBUG=false em produção (segurança)"
+    fi
+
+    # Espaço em disco
     local disk_available
     disk_available=$(df -m / | awk 'NR==2{print $4}')
     if [ "$disk_available" -lt 500 ]; then
@@ -70,7 +86,7 @@ preflight() {
 
     mkdir -p "$BACKUP_DIR"
 
-    log "Verificações OK (compose: $COMPOSE_FILE, disco: ${disk_available}MB livres)"
+    log "Verificações OK (compose: $COMPOSE_FILE, APP_ENV=$app_env, disco: ${disk_available}MB livres)"
 }
 
 # =============================================================================
@@ -124,12 +140,16 @@ backup_database() {
     db_user=$(grep -oP 'DB_USERNAME=\K.*' backend/.env | tr -d '\r' || echo "kalibrium")
     db_pass=$(grep -oP 'DB_PASSWORD=\K.*' backend/.env | tr -d '\r' || echo "")
 
-    local backup_file="${BACKUP_DIR}/kalibrium_${DEPLOY_TAG}.sql.gz"
+    # Nome do backup sem caracteres especiais (segurança)
+    local safe_tag
+    safe_tag=$(echo "$DEPLOY_TAG" | tr -dc '0-9_')
+    local backup_file="${BACKUP_DIR}/kalibrium_${safe_tag}.sql.gz"
 
     log "Fazendo backup de '${db_name}'..."
 
-    if docker exec "$db_container" mysqldump \
-        -u"$db_user" -p"$db_pass" \
+    # -e MYSQL_PWD no container evita senha em argumentos na linha de comando do host
+    if docker exec -e MYSQL_PWD="$db_pass" "$db_container" mysqldump \
+        -u"$db_user" \
         --single-transaction --quick --lock-tables=false \
         "$db_name" 2>/dev/null | gzip > "$backup_file"; then
 
@@ -171,7 +191,7 @@ restore_database() {
 
     warn "Restaurando banco de: $backup_file"
 
-    if gunzip -c "$backup_file" | docker exec -i "$db_container" mysql -u"$db_user" -p"$db_pass" "$db_name" 2>/dev/null; then
+    if gunzip -c "$backup_file" | docker exec -i -e MYSQL_PWD="$db_pass" "$db_container" mysql -u"$db_user" "$db_name" 2>/dev/null; then
         log "Banco restaurado com sucesso!"
     else
         error "Falha ao restaurar backup. Intervenção manual necessária."
@@ -299,10 +319,10 @@ swap_containers() {
 }
 
 # =============================================================================
-# MIGRATIONS: Executa migrations com proteção
+# MIGRATIONS: Executa apenas migrate --force (NUNCA fresh/reset)
 # =============================================================================
 run_migrations() {
-    log "Executando migrations..."
+    log "Executando migrations (apenas migrate --force, nunca fresh/reset)..."
 
     if ! docker compose -f "$COMPOSE_FILE" exec -T backend php artisan migrate --force 2>&1; then
         warn "MIGRATIONS FALHARAM! Restaurando backup do banco..."

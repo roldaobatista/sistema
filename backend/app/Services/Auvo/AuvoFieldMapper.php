@@ -10,21 +10,35 @@ namespace App\Services\Auvo;
 class AuvoFieldMapper
 {
     // ─── Customers ──────────────────────────────────────────
-    // Auvo V2: id, description (=name), cpfCnpj, phoneNumber (array), email (array), active
+    // Auvo API variações: description/nome/name, cpfCnpj, phoneNumber/phones, email/emails (array ou string)
     public const CUSTOMER_MAP = [
         'id'              => '_auvo_id',
         'description'     => 'name',
+        'nome'            => 'name',
+        'name'            => 'name',
+        'customerName'    => 'name',
         'cpfCnpj'         => 'document',
-        'email'           => 'email',        // array in Auvo — first element used
-        'phoneNumber'     => 'phone',        // array in Auvo — first element used
+        'cnpj'            => 'document',
+        'cpf'             => 'document',
+        'email'           => 'email',
+        'emails'          => 'email',
+        'phoneNumber'     => 'phone',
+        'phoneNumbers'    => 'phone',
+        'phones'          => 'phone',
+        'phone'           => 'phone',
         'address'         => 'address_street',
+        'street'          => 'address_street',
         'number'          => 'address_number',
+        'addressNumber'   => 'address_number',
         'complement'      => 'address_complement',
         'neighborhood'    => 'address_neighborhood',
+        'district'        => 'address_neighborhood',
         'city'            => 'address_city',
         'state'           => 'address_state',
         'zipCode'         => 'address_zip',
+        'cep'             => 'address_zip',
         'notes'           => 'notes',
+        'observation'     => 'notes',
         'externalId'      => '_external_id',
         'active'          => 'is_active',
     ];

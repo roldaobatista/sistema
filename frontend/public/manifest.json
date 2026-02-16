@@ -1,104 +1,38 @@
 {
-  "name": "Kalibrium - Sistema OS",
+  "name": "Kalibrium",
   "short_name": "Kalibrium",
-  "description": "Sistema de Ordens de Serviço — Gestão completa de OS, financeiro e equipe",
-  "start_url": "/tech",
+  "description": "Sistema de Gestão - OS, CRM, Financeiro e mais",
+  "start_url": "/",
+  "scope": "/",
+  "id": "kalibrium",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "display_override": ["window-controls-overlay", "standalone"],
   "theme_color": "#2563eb",
+  "background_color": "#0f172a",
   "orientation": "any",
-  "icons": [
-    {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/icon-192.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/icons/icon-512.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Ordens de Serviço",
-      "short_name": "OS",
-      "description": "Ver minhas ordens de serviço",
-      "url": "/tech",
-      "icons": [
-        {
-          "src": "/icons/icon-192.svg",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Escanear Código",
-      "short_name": "Escanear",
-      "description": "Abrir leitor de código de barras",
-      "url": "/tech/barcode",
-      "icons": [
-        {
-          "src": "/icons/icon-192.svg",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Acesso Rápido",
-      "short_name": "Widget",
-      "description": "Visão rápida de OS e atalhos",
-      "url": "/tech/widget",
-      "icons": [
-        {
-          "src": "/icons/icon-192.svg",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Configurações",
-      "short_name": "Config",
-      "description": "Configurações do app",
-      "url": "/tech/configuracoes",
-      "icons": [
-        {
-          "src": "/icons/icon-192.svg",
-          "sizes": "192x192"
-        }
-      ]
-    }
-  ],
-  "categories": [
-    "business",
-    "productivity"
-  ],
   "lang": "pt-BR",
   "dir": "ltr",
+  "categories": ["business", "productivity"],
   "prefer_related_applications": false,
-  "related_applications": []
+  "related_applications": [],
+  "icons": [
+    {"src": "/icons/icon-48.png", "sizes": "48x48", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "/icons/icon-192.svg", "sizes": "any", "type": "image/svg+xml"}
+  ],
+  "shortcuts": [
+    {"name": "Dashboard", "short_name": "Dashboard", "description": "Painel principal", "url": "/", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Ordens de Serviço", "short_name": "OS", "description": "Lista de OS", "url": "/os", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "CRM", "short_name": "CRM", "description": "Pipeline e vendas", "url": "/crm", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Modo Técnico", "short_name": "Tech", "description": "OS no campo", "url": "/tech", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]}
+  ]
 }
