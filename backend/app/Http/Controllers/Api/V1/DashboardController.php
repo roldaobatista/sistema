@@ -45,13 +45,13 @@ class DashboardController extends Controller
         $recentOs = WorkOrder::with(['customer:id,name', 'assignee:id,name'])
             ->orderByDesc('created_at')
             ->take(10)
-            ->get(['id', 'number', 'customer_id', 'assignee_id', 'status', 'total', 'created_at']);
+            ->get(['id', 'number', 'customer_id', 'assigned_to', 'status', 'total', 'created_at']);
 
-        $topTechnicians = WorkOrder::select('assignee_id', DB::raw('COUNT(*) as os_count'), DB::raw('SUM(total) as total_revenue'))
+        $topTechnicians = WorkOrder::select('assigned_to', DB::raw('COUNT(*) as os_count'), DB::raw('SUM(total) as total_revenue'))
             ->where('status', WorkOrder::STATUS_COMPLETED)
             ->where('updated_at', '>=', $from)
-            ->whereNotNull('assignee_id')
-            ->groupBy('assignee_id')
+            ->whereNotNull('assigned_to')
+            ->groupBy('assigned_to')
             ->orderByDesc('os_count')
             ->take(5)
             ->with('assignee:id,name')

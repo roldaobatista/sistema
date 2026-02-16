@@ -543,7 +543,7 @@ export function DashboardPage() {
                         ) : topTechs.length === 0 ? (
                             <EmptyState title="Sem dados" compact />
                         ) : topTechs.map((t: any, i: number) => (
-                            <div key={t.assignee_id} className="flex items-center justify-between px-5 py-3">
+                            <div key={t.assigned_to ?? t.assignee_id ?? i} className="flex items-center justify-between px-5 py-3">
                                 <div className="flex items-center gap-2.5">
                                     <span className={cn('flex h-5 w-5 items-center justify-center rounded text-xs font-bold',
                                         i === 0 ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-500')}>
