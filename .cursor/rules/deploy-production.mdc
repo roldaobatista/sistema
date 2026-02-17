@@ -61,6 +61,14 @@ ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o ServerAliveInterval=15 -o ServerAli
 
 Para rebuild apenas do backend (sem frontend): remover `frontend` do build.
 
+### Passo 5b: Reiniciar nginx (OBRIGATÓRIO após up -d)
+
+O nginx mantém o IP antigo do backend em cache. Sem este passo, a aplicação retorna 502 Bad Gateway até o próximo restart do nginx.
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o StrictHostKeyChecking=no root@178.156.176.145 'cd /root/sistema && docker compose -f docker-compose.prod-http.yml restart nginx && echo NGINX_RESTART_OK'
+```
+
 ### Passo 6: Migrations (se necessário)
 
 ```powershell
@@ -126,7 +134,7 @@ NÃO use migrations quando:
 
 ### Erro: 502 Bad Gateway após recriar containers
 **Causa:** Nginx mantém cache do IP antigo do container backend. Quando containers são recriados, recebem novo IP na rede Docker.
-**Solução:** Sempre reiniciar nginx após recriar containers backend: `docker compose restart nginx`. Já implementado no `deploy.sh`.
+**Solução:** O fluxo de deploy inclui o **Passo 5b (Reiniciar nginx)** — executar esse passo após todo `up -d`. O script `deploy.sh` também faz o restart. Se o 502 aparecer por ter pulado o passo, rodar: `docker compose -f docker-compose.prod-http.yml restart nginx`.
 
 ### Erro: Storage/logs sem permissão de escrita
 **Causa:** Containers novos podem perder ownership do diretório storage.

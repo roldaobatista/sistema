@@ -519,35 +519,50 @@ show_logs() {
 # =============================================================================
 # SSL INIT
 # =============================================================================
+# Requer: domínio apontando para este servidor (Let's Encrypt não emite cert para IP).
+# Uso: DOMAIN=gestao.empresa.com CERTBOT_EMAIL=admin@empresa.com ./deploy.sh --init-ssl
 init_ssl() {
     if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "your-domain.com" ]; then
-        error "Defina DOMAIN primeiro: DOMAIN=meudominio.com ./deploy.sh --init-ssl"
+        error "Defina DOMAIN (ex: gestao.empresa.com). Let's Encrypt não emite certificado para IP."
+        error "Exemplo: DOMAIN=gestao.empresa.com CERTBOT_EMAIL=admin@empresa.com ./deploy.sh --init-ssl"
+    fi
+    if [ -z "$EMAIL" ] || [ "$EMAIL" = "admin@your-domain.com" ]; then
+        error "Defina CERTBOT_EMAIL para o Let's Encrypt (ex: CERTBOT_EMAIL=admin@empresa.com)."
     fi
 
-    log "Configurando SSL para $DOMAIN..."
+    log "Configurando SSL para $DOMAIN (e-mail: $EMAIL)..."
 
     mkdir -p certbot/conf certbot/www
 
-    if [ -f "nginx/default.conf" ]; then
-        sed -i "s|\${DOMAIN}|${DOMAIN}|g" nginx/default.conf
+    # Fase 1: nginx só em HTTP (porta 80) para o desafio ACME; certificado ainda não existe
+    if [ ! -f "nginx/default-bootstrap.conf" ]; then
+        error "Arquivo nginx/default-bootstrap.conf não encontrado. Execute a partir da raiz do projeto."
     fi
+    cp nginx/default.conf nginx/default.conf.https
+    cp nginx/default-bootstrap.conf nginx/default.conf
 
-    log "Iniciando servidor HTTP temporário..."
+    log "Iniciando nginx em HTTP para validação Let's Encrypt..."
     docker compose -f docker-compose.prod.yml up -d nginx
 
-    log "Solicitando certificado..."
-    docker compose -f docker-compose.prod.yml run --rm certbot \
+    log "Solicitando certificado Let's Encrypt..."
+    if ! docker compose -f docker-compose.prod.yml run --rm certbot \
         certbot certonly --webroot \
         --webroot-path=/var/www/certbot \
         --email "$EMAIL" \
         --agree-tos \
         --no-eff-email \
-        -d "$DOMAIN"
+        --non-interactive \
+        -d "$DOMAIN"; then
+        cp nginx/default.conf.https nginx/default.conf
+        error "Falha ao obter certificado. Verifique: DNS do domínio aponta para este servidor? Porta 80 acessível?"
+    fi
 
-    log "Reiniciando com SSL..."
+    # Fase 2: ativar HTTPS (substituir DOMAIN no template e usar config com SSL)
+    sed "s|\${DOMAIN}|$DOMAIN|g" nginx/default.conf.https > nginx/default.conf
+    log "Reiniciando nginx com SSL..."
     docker compose -f docker-compose.prod.yml restart nginx
 
-    log "SSL configurado para $DOMAIN!"
+    log "SSL configurado para https://$DOMAIN"
 }
 
 # =============================================================================

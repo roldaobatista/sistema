@@ -82,8 +82,14 @@ Abra no navegador: **http://178.156.176.145**
 
 ---
 
-## Quando tiver domínio
+## Quando tiver domínio (HTTPS / "Seguro")
 
-1. Aponte o domínio para `178.156.176.145`
-2. Configure `nginx/default.conf` (versão SSL)
-3. Use `docker-compose.prod.yml` e `./deploy.sh --init-ssl`
+Para o navegador deixar de mostrar "Não seguro", é preciso um **domínio** (Let's Encrypt não emite certificado para IP). Passos completos: **[deploy/SSL-SETUP.md](SSL-SETUP.md)**.
+
+Resumo: aponte o domínio (DNS A) para `178.156.176.145`, depois no servidor:
+
+```bash
+DOMAIN=gestao.empresa.com CERTBOT_EMAIL=admin@empresa.com ./deploy.sh --init-ssl
+```
+
+Em seguida use `docker-compose.prod.yml` e ajuste `APP_URL` / `CORS` no backend para `https://seu-dominio`.

@@ -227,7 +227,11 @@ export function TenantManagementPage() {
         mutationFn: (data: TenantForm) => {
             const payload = Object.fromEntries(
                 Object.entries(data).map(([k, v]) => [k, v === '' ? null : v])
-            )
+            ) as Record<string, unknown>
+            if (payload.website && typeof payload.website === 'string') {
+                const w = payload.website.trim()
+                if (w && !/^https?:\/\//i.test(w)) payload.website = 'https://' + w.replace(/^\/+/, '')
+            }
             return selectedTenant ? api.put(`/tenants/${selectedTenant.id}`, payload) : api.post('/tenants', payload)
         },
         onSuccess: () => {
@@ -251,6 +255,8 @@ export function TenantManagementPage() {
                     serverErrors[key as keyof TenantForm] = Array.isArray(msgs) ? msgs[0] : String(msgs)
                 }
                 setFormErrors(serverErrors)
+                toast.error('Verifique os campos marcados.')
+                return
             }
             toast.error(err.response?.data?.message ?? 'Erro ao salvar empresa.')
         },
@@ -657,7 +663,10 @@ export function TenantManagementPage() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-3">
-                                <Input label="Website" value={form.website} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, website: e.target.value }))} placeholder="https://..." />
+                                <div>
+                                    <Input label="Website" value={form.website} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setForm(f => ({ ...f, website: e.target.value })); setFormErrors(p => ({ ...p, website: undefined })) }} placeholder="https://... ou www.exemplo.com" />
+                                    {formErrors.website && <p className="text-xs text-red-500 mt-0.5">{formErrors.website}</p>}
+                                </div>
                                 <Input label="Insc. Estadual" value={form.state_registration} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, state_registration: e.target.value }))} />
                                 <Input label="Insc. Municipal" value={form.city_registration} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, city_registration: e.target.value }))} />
                             </div>
