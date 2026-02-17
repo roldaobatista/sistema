@@ -8,8 +8,8 @@
  * - Fotos/Uploads: IndexedDB queue, upload em background
  */
 
-const CACHE_NAME = 'kalibrium-v2';
-const API_CACHE = 'kalibrium-api-v2';
+const CACHE_NAME = 'kalibrium-v3';
+const API_CACHE = 'kalibrium-api-v3';
 
 const SHELL_URLS = [
   '/',
@@ -109,11 +109,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Shell/assets: Cache-first com atualização em background
+  // Navegação (HTML): Network-first para sempre pegar o index.html mais recente
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const cache = caches.open(CACHE_NAME).then((c) => c.put(event.request, response.clone()));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/index.html').then((r) => r || caches.match('/offline.html')).then((r) => r || new Response('Offline', { status: 503 })))
+    );
+    return;
+  }
+
+  // Assets estáticos (JS/CSS com hash no nome são imutáveis — network-first com cache)
   if (isShellRequest(url)) {
     event.respondWith(
       cacheFirstWithRefresh(event.request).then((response) => {
-        if (response.status === 503 && event.request.mode === 'navigate') {
+        if (response.status === 503) {
           return caches.match('/offline.html').then((r) => r || response);
         }
         return response;
@@ -122,17 +137,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navegação para rota SPA não cacheada: usa preload se disponível, fallback offline
-  if (event.request.mode === 'navigate' && url.origin === self.location.origin) {
-    const navPromise = event.preloadResponse
-      ? event.preloadResponse.then((r) => r || fetch(event.request))
-      : fetch(event.request);
-    event.respondWith(
-      navPromise.catch(() =>
-        caches.match('/offline.html').then((r) => r || new Response('Offline', { status: 503 }))
-      )
-    );
-  }
 });
 
 // ─── SYNC (Background Sync) ──────────────────────────────────────
@@ -199,7 +203,7 @@ self.addEventListener('message', (event) => {
           .then((response) => {
             if (response.ok) cache.put(url, response);
           })
-          .catch(() => {});
+          .catch(() => { });
       });
     });
   }
