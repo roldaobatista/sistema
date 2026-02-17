@@ -46,7 +46,14 @@ class HandleWorkOrderCompletion implements ShouldQueue
         }
 
         // Notificar cliente via email
-        $this->clientNotificationService->notifyOsCompleted($wo);
+        try {
+            $this->clientNotificationService->notifyOsCompleted($wo);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Falha ao notificar cliente sobre conclusão da OS', [
+                'work_order_id' => $wo->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
 

@@ -97,24 +97,32 @@ class StockMovement extends Model
             return;
         }
 
-        DB::transaction(function () use ($product) {
-            if ($this->type === StockMovementType::Transfer) {
-                $this->handleTransfer();
-            } else {
-                $this->handleRegularMovement();
-            }
+        if ($this->type === StockMovementType::Transfer) {
+            $this->handleTransfer();
+        } else {
+            $this->handleRegularMovement();
+        }
 
-            // Atualiza saldo global cacheado no produto para compatibilidade e performance de listagem
-            $product->update([
-                'stock_qty' => WarehouseStock::where('product_id', $product->id)->sum('quantity'),
-            ]);
-        });
+        // Atualiza saldo global cacheado no produto para compatibilidade e performance de listagem
+        $product->update([
+            'stock_qty' => WarehouseStock::where('product_id', $product->id)->sum('quantity'),
+        ]);
     }
 
     protected function handleRegularMovement(): void
     {
+        // Transfer é tratado em handleTransfer(), não deve entrar aqui
+        if ($this->type === StockMovementType::Transfer) {
+            return;
+        }
+
         $direction = $this->type->affectsStock();
-        $delta = $direction === 0 ? $this->quantity : $this->quantity * $direction;
+        // Adjustment (direction=0) → delta = quantity diretamente (permite + e -)
+        // Entry/Return (direction=1) → delta positivo
+        // Exit/Reserve (direction=-1) → delta negativo
+        $delta = $direction === 0
+            ? (float) $this->quantity
+            : (float) $this->quantity * $direction;
 
         $stock = WarehouseStock::firstOrCreate([
             'warehouse_id' => $this->warehouse_id,
@@ -137,7 +145,7 @@ class StockMovement extends Model
             'product_id' => $this->product_id,
             'batch_id' => $this->batch_id,
         ]);
-        $sourceStock->decrement('quantity', $this->quantity);
+        $sourceStock->decrement('quantity', (float) $this->quantity);
 
         // Entrada no armazém de destino
         $targetStock = WarehouseStock::firstOrCreate([
@@ -145,6 +153,6 @@ class StockMovement extends Model
             'product_id' => $this->product_id,
             'batch_id' => $this->batch_id,
         ]);
-        $targetStock->increment('quantity', $this->quantity);
+        $targetStock->increment('quantity', (float) $this->quantity);
     }
 }

@@ -6,7 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\WorkOrder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -15,8 +15,6 @@ use Tests\TestCase;
  */
 class TenantScopeTest extends TestCase
 {
-    use RefreshDatabase;
-
     private Tenant $tenantA;
     private Tenant $tenantB;
     private User $userA;
@@ -25,6 +23,7 @@ class TenantScopeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->tenantA = Tenant::factory()->create();
         $this->tenantB = Tenant::factory()->create();
@@ -94,13 +93,17 @@ class TenantScopeTest extends TestCase
 
         WorkOrder::withoutGlobalScopes()->create([
             'tenant_id' => $this->tenantA->id,
+            'number' => 'OS-A-001',
             'customer_id' => $customerA->id,
+            'created_by' => $this->userA->id,
             'description' => 'WO Tenant A',
             'status' => 'open',
         ]);
         WorkOrder::withoutGlobalScopes()->create([
             'tenant_id' => $this->tenantB->id,
+            'number' => 'OS-B-001',
             'customer_id' => $customerB->id,
+            'created_by' => $this->userB->id,
             'description' => 'WO Tenant B',
             'status' => 'open',
         ]);

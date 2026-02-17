@@ -26,7 +26,7 @@ interface StockMovement {
     id: number
     product: { id: number; name: string; code: string | null }
     work_order: { id: number; number: string; os_number?: string | null; business_number?: string | null } | null
-    type: 'entry' | 'exit' | 'reserve' | 'return' | 'adjustment'
+    type: 'entry' | 'exit' | 'reserve' | 'return' | 'adjustment' | 'transfer'
     quantity: string
     unit_cost: string
     reference: string | null
@@ -42,6 +42,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; colo
     reserve: { label: 'Reserva', icon: Package, color: 'text-amber-600 bg-amber-50', badgeVariant: 'amber' },
     return: { label: 'Devolução', icon: RotateCcw, color: 'text-blue-600 bg-blue-50', badgeVariant: 'blue' },
     adjustment: { label: 'Ajuste', icon: ArrowLeftRight, color: 'text-surface-600 bg-surface-100', badgeVariant: 'brand' },
+    transfer: { label: 'Transferência', icon: ArrowLeftRight, color: 'text-purple-600 bg-purple-50', badgeVariant: 'brand' },
 }
 const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
     wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
@@ -58,7 +59,7 @@ const emptyForm = {
 }
 
 export function StockMovementsPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
@@ -113,7 +114,7 @@ export function StockMovementsPage() {
         onSuccess: (res) => {
             qc.invalidateQueries({ queryKey: ['stock-movements'] })
             toast.success('XML processado com sucesso!')
-                setShowXmlModal(false)
+            setShowXmlModal(false)
             setXmlFile(null)
             const errors = res.data.data.errors
             if (errors && errors.length > 0) {
@@ -187,6 +188,7 @@ export function StockMovementsPage() {
                     <option value="reserve">Reserva</option>
                     <option value="return">Devolução</option>
                     <option value="adjustment">Ajuste</option>
+                    <option value="transfer">Transferência</option>
                 </select>
             </div>
 

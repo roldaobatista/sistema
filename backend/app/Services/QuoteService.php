@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\QuoteStatus;
 use App\Events\QuoteApproved;
 use App\Models\AuditLog;
 use App\Models\Quote;
@@ -72,7 +73,7 @@ class QuoteService
      */
     public function requestInternalApproval(Quote $quote): Quote
     {
-        if ($quote->status !== Quote::STATUS_DRAFT) {
+        if ($quote->status !== QuoteStatus::DRAFT) {
             throw new \DomainException('Apenas orçamentos em rascunho podem solicitar aprovação interna');
         }
 
@@ -88,7 +89,7 @@ class QuoteService
 
     public function sendQuote(Quote $quote): Quote
     {
-        if ($quote->status !== Quote::STATUS_INTERNALLY_APPROVED) {
+        if ($quote->status !== QuoteStatus::INTERNALLY_APPROVED) {
             throw new \DomainException('Orçamento precisa estar aprovado internamente antes de enviar ao cliente');
         }
 
@@ -104,7 +105,7 @@ class QuoteService
 
     public function approveQuote(Quote $quote, ?User $actor = null): Quote
     {
-        if ($quote->status !== Quote::STATUS_SENT) {
+        if ($quote->status !== QuoteStatus::SENT) {
             throw new \DomainException('Orçamento precisa estar enviado para aprovar');
         }
 
@@ -123,7 +124,7 @@ class QuoteService
 
     public function publicApprove(Quote $quote): Quote
     {
-        if ($quote->status !== Quote::STATUS_SENT) {
+        if ($quote->status !== QuoteStatus::SENT) {
             throw new \DomainException('Orçamento não está disponível para aprovação');
         }
 
@@ -149,7 +150,7 @@ class QuoteService
 
     public function rejectQuote(Quote $quote, ?string $reason): Quote
     {
-        if ($quote->status !== Quote::STATUS_SENT) {
+        if ($quote->status !== QuoteStatus::SENT) {
             throw new \DomainException('Orçamento precisa estar enviado para rejeitar');
         }
 
@@ -167,7 +168,7 @@ class QuoteService
 
     public function reopenQuote(Quote $quote): Quote
     {
-        $allowedStatuses = [Quote::STATUS_REJECTED, Quote::STATUS_EXPIRED];
+        $allowedStatuses = [QuoteStatus::REJECTED, QuoteStatus::EXPIRED];
         if (!in_array($quote->status, $allowedStatuses, true)) {
             throw new \DomainException('Só é possível reabrir orçamentos rejeitados ou expirados');
         }
@@ -239,7 +240,7 @@ class QuoteService
 
     public function convertToWorkOrder(Quote $quote, int $userId): WorkOrder
     {
-        if ($quote->status !== Quote::STATUS_APPROVED) {
+        if ($quote->status !== QuoteStatus::APPROVED) {
             throw new \DomainException('Orçamento precisa estar aprovado para converter');
         }
 
@@ -262,7 +263,7 @@ class QuoteService
         }
 
         return DB::transaction(function () use ($quote, $userId) {
-            $quote->loadMissing([
+            $quote->load([
                 'equipments.items.product:id,name',
                 'equipments.items.service:id,name',
             ]);
@@ -320,7 +321,7 @@ class QuoteService
 
     public function convertToServiceCall(Quote $quote, int $userId): \App\Models\ServiceCall
     {
-        if ($quote->status !== Quote::STATUS_APPROVED) {
+        if ($quote->status !== QuoteStatus::APPROVED) {
             throw new \DomainException('Orçamento precisa estar aprovado para converter em chamado');
         }
 
@@ -378,4 +379,3 @@ class QuoteService
         return User::where('tenant_id', $quote->tenant_id)->orderBy('id')->first();
     }
 }
-

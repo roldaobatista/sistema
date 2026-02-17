@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class UserController extends Controller
             'email' => $user->email,
             'phone' => $user->phone,
             'tenant' => $user->currentTenant,
-            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'permissions' => $user->getEffectivePermissions()->pluck('name'),
             'roles' => $user->getRoleNames(),
             'last_login_at' => $user->last_login_at,
             'created_at' => $user->created_at,
@@ -50,7 +51,12 @@ class UserController extends Controller
 
         try {
             unset($validated['current_password']);
-            $user->update($validated);
+
+            DB::transaction(function () use ($user, $validated) {
+                $user->update($validated);
+            });
+
+            AuditLog::log('updated', "Perfil do usuário {$user->name} atualizado", $user);
 
             return response()->json([
                 'message' => 'Perfil atualizado.',

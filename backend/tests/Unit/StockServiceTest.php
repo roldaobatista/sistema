@@ -8,9 +8,10 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Models\WorkOrder;
 use App\Services\StockService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -19,18 +20,18 @@ use Tests\TestCase;
  */
 class StockServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private StockService $service;
     private Tenant $tenant;
     private User $user;
     private Product $product;
     private Customer $customer;
     private WorkOrder $workOrder;
+    private Warehouse $warehouse;
 
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new StockService();
         $this->tenant = Tenant::factory()->create();
@@ -49,6 +50,13 @@ class StockServiceTest extends TestCase
             'name' => 'Peso Padrão 10kg',
             'stock_qty' => 50,
         ]);
+        $this->warehouse = Warehouse::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Estoque Central',
+            'code' => 'CENTRAL-TST',
+            'type' => Warehouse::TYPE_FIXED,
+            'is_active' => true,
+        ]);
 
         $this->workOrder = WorkOrder::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -66,6 +74,7 @@ class StockServiceTest extends TestCase
         $movement = $this->service->manualEntry(
             product: $this->product,
             qty: 10,
+            warehouseId: $this->warehouse->id,
             unitCost: 25.50,
             notes: 'Compra fornecedor X',
             user: $this->user,
@@ -132,12 +141,13 @@ class StockServiceTest extends TestCase
         $movement = $this->service->manualAdjustment(
             product: $this->product,
             qty: -3,
+            warehouseId: $this->warehouse->id,
             notes: 'Ajuste de inventário físico',
             user: $this->user,
         );
 
         $this->assertEquals(StockMovementType::Adjustment, $movement->type);
-        $this->assertEquals(3, $movement->quantity); // abs(qty)
+        $this->assertEquals(-3, $movement->quantity);
         $this->assertEquals('Ajuste de inventário', $movement->reference);
     }
 
@@ -147,7 +157,8 @@ class StockServiceTest extends TestCase
     {
         $movement = $this->service->manualEntry(
             product: $this->product,
-            qty: -10, // negative input
+            qty: -10,
+            warehouseId: $this->warehouse->id, // negative input
             unitCost: 5.00,
             notes: null,
             user: $this->user,
@@ -161,6 +172,7 @@ class StockServiceTest extends TestCase
         $movement = $this->service->manualEntry(
             product: $this->product,
             qty: 1,
+            warehouseId: $this->warehouse->id,
             unitCost: 1.00,
             notes: null,
             user: $this->user,

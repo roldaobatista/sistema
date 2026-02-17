@@ -61,6 +61,7 @@ class Import extends Model
         'tenant_id', 'user_id', 'entity_type', 'file_name', 'original_name',
         'separator', 'total_rows', 'inserted', 'updated', 'skipped', 'errors',
         'status', 'mapping', 'error_log', 'duplicate_strategy', 'imported_ids',
+        'progress',
     ];
 
     protected function casts(): array
@@ -74,6 +75,7 @@ class Import extends Model
             'updated' => 'integer',
             'skipped' => 'integer',
             'errors' => 'integer',
+            'progress' => 'integer',
         ];
     }
 

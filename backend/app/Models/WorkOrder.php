@@ -35,6 +35,7 @@ class WorkOrder extends Model
         'dispatch_authorized_by', 'dispatch_authorized_at',
         'parent_id', 'is_master', 'is_warranty',
         'displacement_started_at', 'displacement_arrived_at', 'displacement_duration_minutes',
+        'cancelled_at', 'cancellation_reason',
     ];
 
     protected function casts(): array
@@ -49,6 +50,7 @@ class WorkOrder extends Model
             'sla_responded_at' => 'datetime',
             'displacement_started_at' => 'datetime',
             'displacement_arrived_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'discount' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',

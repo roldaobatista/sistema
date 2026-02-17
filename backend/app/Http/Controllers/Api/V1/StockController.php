@@ -21,7 +21,10 @@ class StockController extends Controller
 
     public function movements(Request $request): JsonResponse
     {
-        $query = StockMovement::with(['product:id,name,code,unit', 'createdByUser:id,name', 'workOrder:id,number,os_number'])
+        $tenantId = app('current_tenant_id');
+
+        $query = StockMovement::where('tenant_id', $tenantId)
+            ->with(['product:id,name,code,unit', 'createdByUser:id,name', 'workOrder:id,number,os_number'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('search')) {

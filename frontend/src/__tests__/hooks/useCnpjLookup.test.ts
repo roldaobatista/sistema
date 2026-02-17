@@ -82,7 +82,10 @@ describe('useCnpjLookup', () => {
         await act(async () => {
             response = await result.current.lookup('12345678000190')
         })
-        expect(response).toEqual(apiData)
+        expect(response).toMatchObject(apiData)
+        const res = response as Record<string, unknown>
+        expect(res.state_registration).toBe('')
+        expect(res.city_registration).toBe('')
     })
 
     it('returns null on API error', async () => {
@@ -124,7 +127,7 @@ describe('useCnpjLookup', () => {
         expect(response).toBeNull()
     })
 
-    it('returns all 14 fields', async () => {
+    it('returns all 17 fields', async () => {
         mockGet.mockResolvedValueOnce({
             data: {
                 name: 'A', trade_name: 'B', email: 'c', phone: 'd',
@@ -138,6 +141,6 @@ describe('useCnpjLookup', () => {
         await act(async () => {
             response = await result.current.lookup('12345678000190')
         })
-        expect(Object.keys(response as object)).toHaveLength(14)
+        expect(Object.keys(response as object)).toHaveLength(17)
     })
 })

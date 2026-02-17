@@ -39,6 +39,7 @@ const emptyForm = {
 
 export default function BatchManagementPage() {
     const { hasPermission } = useAuthStore()
+    const canManage = hasPermission('estoque.manage')
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -127,10 +128,12 @@ export default function BatchManagementPage() {
                     </h1>
                     <p className="text-sm text-surface-500 mt-1">Controle de lotes de produtos com rastreabilidade e validade</p>
                 </div>
-                <Button onClick={() => { setEditing(null); setForm(emptyForm); setShowForm(true) }} className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    Novo Lote
-                </Button>
+                {canManage && (
+                    <Button onClick={() => { setEditing(null); setForm(emptyForm); setShowForm(true) }} className="gap-2">
+                        <Plus className="w-4 h-4" />
+                        Novo Lote
+                    </Button>
+                )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -220,12 +223,16 @@ export default function BatchManagementPage() {
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <button onClick={() => handleEdit(batch)} className="p-1.5 rounded-md hover:bg-surface-100 text-surface-500 hover:text-brand-600" title="Editar">
-                                                        <Edit2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                    <button onClick={() => setDeleteConfirm(batch)} className="p-1.5 rounded-md hover:bg-red-50 text-surface-500 hover:text-red-600" title="Excluir">
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
+                                                    {canManage && (
+                                                        <button onClick={() => handleEdit(batch)} className="p-1.5 rounded-md hover:bg-surface-100 text-surface-500 hover:text-brand-600" title="Editar">
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                    {canManage && (
+                                                        <button onClick={() => setDeleteConfirm(batch)} className="p-1.5 rounded-md hover:bg-red-50 text-surface-500 hover:text-red-600" title="Excluir">
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

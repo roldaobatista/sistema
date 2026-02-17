@@ -27,6 +27,10 @@ use App\Http\Controllers\Api\V1\Fleet\FuelLogController;
 use App\Http\Controllers\Api\V1\Fleet\VehiclePoolController;
 use App\Http\Controllers\Api\V1\Fleet\VehicleAccidentController;
 use App\Http\Controllers\Api\V1\Fleet\VehicleInspectionController;
+use App\Http\Controllers\Api\V1\Os\WorkOrderChatController;
+use App\Http\Controllers\Api\V1\WorkOrderChecklistResponseController;
+use App\Http\Controllers\Api\V1\ServiceChecklistController;
+use App\Http\Controllers\Api\V1\Os\PartsKitController;
 
 /*
 |--------------------------------------------------------------------------
@@ -98,6 +102,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:iam.user.update')->group(function () {
             Route::put('users/{user}', [UserController::class, 'update']);
             Route::post('users/{user}/toggle-active', [UserController::class, 'toggleActive']);
+            Route::post('users/{user}/roles', [UserController::class, 'assignRoles']);
             Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
             Route::post('users/{user}/force-logout', [UserController::class, 'forceLogout']);
             Route::get('users/{user}/sessions', [UserController::class, 'sessions']);
@@ -276,6 +281,23 @@ Route::prefix('v1')->group(function () {
             Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/average-cost', [StockIntelligenceController::class, 'averageCost']);
             Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/reorder-points', [StockIntelligenceController::class, 'reorderPoints']);
             Route::middleware('check.permission:estoque.movement.view')->get('stock/intelligence/reservations', [StockIntelligenceController::class, 'reservations']);
+
+            // ═══ Transferências de Estoque ═══
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/transfers', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'index']);
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/transfers/{transfer}', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'show']);
+            Route::middleware('check.permission:estoque.movement.create')->post('stock/transfers', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'store']);
+            Route::middleware('check.permission:estoque.movement.create')->post('stock/transfers/{transfer}/accept', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'accept']);
+            Route::middleware('check.permission:estoque.movement.create')->post('stock/transfers/{transfer}/reject', [\App\Http\Controllers\Api\V1\StockTransferController::class, 'reject']);
+
+            // ═══ Peças Usadas (Used Stock Items) ═══
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/used-items', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'index']);
+            Route::middleware('check.permission:estoque.movement.create')->post('stock/used-items/{usedStockItem}/report', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'report']);
+            Route::middleware('check.permission:estoque.movement.create')->post('stock/used-items/{usedStockItem}/confirm-return', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'confirmReturn']);
+            Route::middleware('check.permission:estoque.movement.create')->post('stock/used-items/{usedStockItem}/confirm-write-off', [\App\Http\Controllers\Api\V1\UsedStockItemController::class, 'confirmWriteOff']);
+
+            // ═══ Números de Série ═══
+            Route::middleware('check.permission:estoque.movement.view')->get('stock/serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'serialNumbers']);
+            Route::middleware('check.permission:estoque.movement.create')->post('stock/serial-numbers', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'storeSerialNumber']);
         });
         Route::middleware('check.permission:estoque.movement.create')->group(function () {
             Route::post('stock/movements', [\App\Http\Controllers\Api\V1\StockController::class, 'store']);
@@ -460,6 +482,50 @@ Route::prefix('v1')->group(function () {
             Route::post('work-orders/{work_order}/equipments', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'attachEquipment']);
             Route::delete('work-orders/{work_order}/equipments/{equipment}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'detachEquipment']);
         });
+
+        // Chat interno da OS
+        Route::middleware('check.permission:os.work_order.view')->group(function () {
+            Route::get('work-orders/{work_order}/chats', [WorkOrderChatController::class, 'index']);
+            Route::post('work-orders/{work_order}/chats', [WorkOrderChatController::class, 'store']);
+            Route::post('work-orders/{work_order}/chats/read', [WorkOrderChatController::class, 'markAsRead']);
+        });
+
+        // Checklist Responses
+        Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/checklist-responses', [WorkOrderChecklistResponseController::class, 'index']);
+        Route::middleware('check.permission:os.work_order.update')->post('work-orders/{work_order}/checklist-responses', [WorkOrderChecklistResponseController::class, 'store']);
+
+        // Audit Trail
+        Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/audit-trail', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'auditTrail']);
+
+        // Satisfação do Cliente (NPS)
+        Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/satisfaction', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'satisfaction']);
+
+        // Estimativa de Custo
+        Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/cost-estimate', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'costEstimate']);
+
+        // PDF da OS
+        Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/pdf', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'downloadPdf']);
+
+        // Kits de Peças (Parts Kits)
+        Route::middleware('check.permission:os.work_order.view')->group(function () {
+            Route::get('parts-kits', [PartsKitController::class, 'index']);
+            Route::get('parts-kits/{parts_kit}', [PartsKitController::class, 'show']);
+        });
+        Route::middleware('check.permission:os.work_order.create')->post('parts-kits', [PartsKitController::class, 'store']);
+        Route::middleware('check.permission:os.work_order.update')->group(function () {
+            Route::put('parts-kits/{parts_kit}', [PartsKitController::class, 'update']);
+            Route::post('work-orders/{work_order}/apply-kit/{parts_kit}', [PartsKitController::class, 'applyToWorkOrder']);
+        });
+        Route::middleware('check.permission:os.work_order.delete')->delete('parts-kits/{parts_kit}', [PartsKitController::class, 'destroy']);
+
+        // Service Checklists
+        Route::middleware('check.permission:os.work_order.view')->group(function () {
+            Route::get('service-checklists', [ServiceChecklistController::class, 'index']);
+            Route::get('service-checklists/{service_checklist}', [ServiceChecklistController::class, 'show']);
+        });
+        Route::middleware('check.permission:os.work_order.create')->post('service-checklists', [ServiceChecklistController::class, 'store']);
+        Route::middleware('check.permission:os.work_order.update')->put('service-checklists/{service_checklist}', [ServiceChecklistController::class, 'update']);
+        Route::middleware('check.permission:os.work_order.delete')->delete('service-checklists/{service_checklist}', [ServiceChecklistController::class, 'destroy']);
 
         // Contratos Recorrentes (#24)
         Route::middleware('check.permission:os.work_order.view')->group(function () {
@@ -648,6 +714,10 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:commissions.recurring.update')->put('recurring-commissions/{id}/status', [\App\Http\Controllers\Api\V1\Financial\RecurringCommissionController::class, 'updateStatus']);
         Route::middleware('check.permission:commissions.recurring.delete')->delete('recurring-commissions/{id}', [\App\Http\Controllers\Api\V1\Financial\RecurringCommissionController::class, 'destroy']);
+        // Comissões pessoais do técnico/vendedor (dados próprios — sem permissão extra)
+        Route::get('my/commission-events', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'myEvents']);
+        Route::get('my/commission-settlements', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'mySettlements']);
+        Route::get('my/commission-summary', [\App\Http\Controllers\Api\V1\Financial\CommissionController::class, 'mySummary']);
 
         // Despesas
         Route::middleware('check.permission:expenses.expense.view')->group(function () {
@@ -788,18 +858,32 @@ Route::prefix('v1')->group(function () {
         // Relatórios
         Route::middleware('check.permission:reports.os_report.view')->get('reports/work-orders', [\App\Http\Controllers\Api\V1\ReportController::class, 'workOrders']);
         Route::middleware('check.permission:reports.productivity_report.view')->get('reports/productivity', [\App\Http\Controllers\Api\V1\ReportController::class, 'productivity']);
-        Route::middleware('check.permission:reports.financial_report.view')->get('reports/financial', [\App\Http\Controllers\Api\V1\ReportController::class, 'financial']);
-        Route::middleware('check.permission:reports.commission_report.view')->get('reports/commissions', [\App\Http\Controllers\Api\V1\ReportController::class, 'commissions']);
-        Route::middleware('check.permission:reports.margin_report.view')->get('reports/profitability', [\App\Http\Controllers\Api\V1\ReportController::class, 'profitability']);
-        Route::middleware('check.permission:reports.quotes_report.view')->get('reports/quotes', [\App\Http\Controllers\Api\V1\ReportController::class, 'quotes']);
-        Route::middleware('check.permission:reports.service_calls_report.view')->get('reports/service-calls', [\App\Http\Controllers\Api\V1\ReportController::class, 'serviceCalls']);
-        Route::middleware('check.permission:reports.technician_cash_report.view')->get('reports/technician-cash', [\App\Http\Controllers\Api\V1\ReportController::class, 'technicianCash']);
-        Route::middleware('check.permission:reports.crm_report.view')->get('reports/crm', [\App\Http\Controllers\Api\V1\ReportController::class, 'crm']);
-        Route::middleware('check.permission:reports.equipments_report.view')->get('reports/equipments', [\App\Http\Controllers\Api\V1\ReportController::class, 'equipments']);
-        Route::middleware('check.permission:reports.suppliers_report.view')->get('reports/suppliers', [\App\Http\Controllers\Api\V1\ReportController::class, 'suppliers']);
-        Route::middleware('check.permission:reports.stock_report.view')->get('reports/stock', [\App\Http\Controllers\Api\V1\ReportController::class, 'stock']);
-        Route::middleware('check.permission:reports.customers_report.view')->get('reports/customers', [\App\Http\Controllers\Api\V1\ReportController::class, 'customers']);
-        Route::middleware('check.report.export')->get('reports/{type}/export', [\App\Http\Controllers\Api\V1\PdfController::class, 'reportExport']);
+        Route::middleware('check.permission:reports.financial_report.view')->get('/reports/financial', [\App\Http\Controllers\Api\V1\ReportController::class, 'financial']);
+    Route::middleware('check.permission:reports.commissions_report.view')->get('/reports/commissions', [\App\Http\Controllers\Api\V1\ReportController::class, 'commissions']);
+    Route::middleware('check.permission:reports.profitability_report.view')->get('/reports/profitability', [\App\Http\Controllers\Api\V1\ReportController::class, 'profitability']);
+    Route::middleware('check.permission:reports.quotes_report.view')->get('/reports/quotes', [\App\Http\Controllers\Api\V1\ReportController::class, 'quotes']);
+    Route::middleware('check.permission:reports.service_calls_report.view')->get('/reports/service-calls', [\App\Http\Controllers\Api\V1\ReportController::class, 'serviceCalls']);
+    Route::middleware('check.permission:reports.technician_cash_report.view')->get('/reports/technician-cash', [\App\Http\Controllers\Api\V1\ReportController::class, 'technicianCash']);
+    Route::middleware('check.permission:reports.crm_report.view')->get('/reports/crm', [\App\Http\Controllers\Api\V1\ReportController::class, 'crm']);
+    
+    // New Reports
+    Route::middleware('check.permission:reports.equipments_report.view')->get('/reports/equipments', [\App\Http\Controllers\Api\V1\ReportController::class, 'equipments']);
+    Route::middleware('check.permission:reports.suppliers_report.view')->get('/reports/suppliers', [\App\Http\Controllers\Api\V1\ReportController::class, 'suppliers']);
+    Route::middleware('check.permission:reports.stock_report.view')->get('/reports/stock', [\App\Http\Controllers\Api\V1\ReportController::class, 'stock']);
+    Route::middleware('check.permission:reports.customers_report.view')->get('/reports/customers', [\App\Http\Controllers\Api\V1\ReportController::class, 'customers']);
+
+    // Export Routes
+    Route::get('/reports/{type}/export', [\App\Http\Controllers\Api\V1\ReportController::class, 'export']);
+
+        // Analytics Hub (Fase 2 — Unified Analytics)
+        Route::middleware('check.permission:reports.analytics.view')->group(function () {
+            Route::get('analytics/executive-summary', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'executiveSummary']);
+            Route::get('analytics/trends', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'trends']);
+            Route::get('analytics/forecast', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'forecast']);
+            Route::get('analytics/anomalies', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'anomalies']);
+            Route::get('analytics/nl-query', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'nlQuery']);
+        });
+
         // Importação
         Route::middleware('check.permission:import.data.view')->group(function () {
             Route::get('import/fields/{entity}', [\App\Http\Controllers\Api\V1\ImportController::class, 'fields']);
@@ -809,6 +893,7 @@ Route::prefix('v1')->group(function () {
             Route::get('import/export/{entity}', [\App\Http\Controllers\Api\V1\ImportController::class, 'exportData']);
             Route::get('import/{id}/errors', [\App\Http\Controllers\Api\V1\ImportController::class, 'exportErrors']);
             Route::get('import/{id}', [\App\Http\Controllers\Api\V1\ImportController::class, 'show']);
+            Route::get('import/{id}/progress', [\App\Http\Controllers\Api\V1\ImportController::class, 'progress']);
             Route::get('import-stats', [\App\Http\Controllers\Api\V1\ImportController::class, 'stats']);
             Route::get('import-entity-counts', [\App\Http\Controllers\Api\V1\ImportController::class, 'entityCounts']);
         });
@@ -1158,6 +1243,7 @@ Route::prefix('v1')->group(function () {
         // FIX-B1: Usar FQCN para Api\V1\UserController (não confundir com Iam\UserController importado no topo)
         Route::get('profile', [\App\Http\Controllers\Api\V1\UserController::class, 'me']);
         Route::put('profile', [\App\Http\Controllers\Api\V1\UserController::class, 'updateProfile']);
+        Route::post('profile/change-password', [\App\Http\Controllers\Api\V1\UserController::class, 'changePassword']);
 
         // Filiais
         Route::middleware('check.permission:platform.branch.view')->group(function () {

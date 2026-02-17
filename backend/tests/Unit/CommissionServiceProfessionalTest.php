@@ -12,7 +12,7 @@ use App\Models\User;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Services\CommissionService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -23,8 +23,6 @@ use Tests\TestCase;
  */
 class CommissionServiceProfessionalTest extends TestCase
 {
-    use RefreshDatabase;
-
     private CommissionService $service;
     private Tenant $tenant;
     private User $technician;
@@ -34,6 +32,7 @@ class CommissionServiceProfessionalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new CommissionService();
         $this->tenant = Tenant::factory()->create();
@@ -48,7 +47,6 @@ class CommissionServiceProfessionalTest extends TestCase
         $this->customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
 
         app()->instance('current_tenant_id', $this->tenant->id);
-        setPermissionsTeamId($this->tenant->id);
     }
 
     private function createWorkOrder(float $total, array $overrides = []): WorkOrder
@@ -139,10 +137,11 @@ class CommissionServiceProfessionalTest extends TestCase
         Expense::create([
             'tenant_id' => $this->tenant->id,
             'work_order_id' => $wo->id,
+            'created_by' => $this->technician->id,
             'description' => 'Combustível',
             'amount' => 500.00,
             'status' => Expense::STATUS_APPROVED,
-            'date' => now(),
+            'expense_date' => now()->toDateString(),
         ]);
 
         $this->createRule($this->technician, CommissionRule::CALC_PERCENT_NET, 10.00);
@@ -278,6 +277,7 @@ class CommissionServiceProfessionalTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
             'work_order_id' => $wo->id,
+            'created_by' => $this->technician->id,
             'description' => 'Fatura teste',
             'amount' => 5000,
             'amount_paid' => 5000,
@@ -409,7 +409,7 @@ class CommissionServiceProfessionalTest extends TestCase
     public function test_tiered_calculation_applies_progressive_rates(): void
     {
         $wo = $this->createWorkOrder(12000.00);
-        $this->createRule($this->technician, CommissionRule::CALC_TIERED_GROSS, 0, 'technician', [
+        $this->createRule($this->technician, CommissionRule::CALC_TIERED_GROSS, 0, CommissionRule::ROLE_TECHNICIAN, [
             'tiers' => [
                 ['up_to' => 5000, 'percent' => 3],
                 ['up_to' => 10000, 'percent' => 5],

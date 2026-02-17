@@ -1,42 +1,70 @@
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
+import type EchoType from 'laravel-echo';
 
-// Expose Pusher to window object as Laravel Echo expects it
-(window as any).Pusher = Pusher;
+let echoInstance: EchoType<'reverb'> | null = null;
+let initAttempted = false;
 
-let echoInstance: Echo<'reverb'> | null = null;
-
-function getEcho(): Echo<'reverb'> | null {
+/**
+ * Retorna instância singleton do Laravel Echo (WebSocket).
+ * - Se VITE_REVERB_APP_KEY não está definida → retorna null (sem tentar conectar)
+ * - Se falhar ao conectar → retorna null com warning único no console
+ * - Se já conectado → retorna instância existente
+ */
+async function initEcho(): Promise<EchoType<'reverb'> | null> {
     if (echoInstance) return echoInstance;
+    if (initAttempted) return null;
 
-    const key = import.meta.env.VITE_REVERB_APP_KEY;
+    const key = (import.meta.env.VITE_REVERB_APP_KEY || '').trim();
     if (!key) {
-        console.warn('[Echo] VITE_REVERB_APP_KEY não configurada — WebSocket desabilitado.');
+        initAttempted = true;
+        console.info('[Echo] VITE_REVERB_APP_KEY não configurada — WebSocket desabilitado.');
         return null;
     }
 
-    // Quando host vazio, usa mesma origem da página (IP ou domínio)
-    const wsHost = (import.meta.env.VITE_REVERB_HOST || '').trim()
-        || (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
-    const wsPort = (import.meta.env.VITE_REVERB_PORT || '').trim()
-        || (typeof window !== 'undefined'
-            ? (window.location.port || (window.location.protocol === 'https:' ? '443' : '80'))
-            : '80');
-    const useTls = (import.meta.env.VITE_REVERB_SCHEME || '').trim()
-        ? (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https'
-        : (typeof window !== 'undefined' ? window.location.protocol === 'https:' : false);
+    try {
+        // Dynamic import — Pusher e Echo só entram no bundle se realmente usar
+        const [{ default: Pusher }, { default: Echo }] = await Promise.all([
+            import('pusher-js'),
+            import('laravel-echo'),
+        ]);
 
-    echoInstance = new Echo({
-        broadcaster: 'reverb',
-        key,
-        wsHost,
-        wsPort: parseInt(wsPort, 10) || 80,
-        wssPort: parseInt(wsPort, 10) || 443,
-        forceTLS: useTls,
-        enabledTransports: ['ws', 'wss'],
-    });
+        // Desabilita logs automáticos do Pusher no console
+        Pusher.logToConsole = false;
 
+        // Expõe Pusher no window (requerido pelo Laravel Echo)
+        (window as any).Pusher = Pusher;
+
+        // Quando host vazio, usa mesma origem da página (IP ou domínio)
+        const wsHost = (import.meta.env.VITE_REVERB_HOST || '').trim()
+            || window.location.hostname;
+        const wsPort = (import.meta.env.VITE_REVERB_PORT || '').trim()
+            || window.location.port
+            || (window.location.protocol === 'https:' ? '443' : '80');
+        const useTls = (import.meta.env.VITE_REVERB_SCHEME || '').trim()
+            ? import.meta.env.VITE_REVERB_SCHEME === 'https'
+            : window.location.protocol === 'https:';
+
+        echoInstance = new Echo({
+            broadcaster: 'reverb',
+            key,
+            wsHost,
+            wsPort: parseInt(wsPort, 10) || 80,
+            wssPort: parseInt(wsPort, 10) || 443,
+            forceTLS: useTls,
+            enabledTransports: ['ws', 'wss'],
+        });
+
+        return echoInstance;
+    } catch (err) {
+        initAttempted = true;
+        console.warn('[Echo] Falha ao inicializar WebSocket — tempo real desabilitado.', err);
+        return null;
+    }
+}
+
+// Cache síncrono para acesso rápido após inicialização
+function getEchoSync(): EchoType<'reverb'> | null {
     return echoInstance;
 }
 
-export default getEcho;
+export { initEcho, getEchoSync };
+export default initEcho;

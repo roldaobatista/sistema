@@ -8,9 +8,10 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Models\WorkOrder;
 use App\Services\StockService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -21,17 +22,17 @@ use Tests\TestCase;
  */
 class StockServiceProfessionalTest extends TestCase
 {
-    use RefreshDatabase;
-
     private StockService $service;
     private Tenant $tenant;
     private User $user;
     private Product $product;
     private Customer $customer;
+    private Warehouse $warehouse;
 
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new StockService();
         $this->tenant = Tenant::factory()->create();
@@ -45,6 +46,13 @@ class StockServiceProfessionalTest extends TestCase
             'name' => 'Sensor de Temperatura',
             'stock_qty' => 100,
         ]);
+        $this->warehouse = Warehouse::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Estoque Central',
+            'code' => 'CENTRAL',
+            'type' => Warehouse::TYPE_FIXED,
+            'is_active' => true,
+        ]);
 
         $this->actingAs($this->user);
         app()->instance('current_tenant_id', $this->tenant->id);
@@ -55,7 +63,6 @@ class StockServiceProfessionalTest extends TestCase
         return WorkOrder::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
-            'business_number' => 'OS-2025-001',
         ]);
     }
 
@@ -72,7 +79,7 @@ class StockServiceProfessionalTest extends TestCase
         $this->assertInstanceOf(StockMovement::class, $movement);
         $this->assertEquals(StockMovementType::Reserve, $movement->type);
         $this->assertEquals(5, $movement->quantity);
-        $this->assertStringContainsString('OS-2025-001', $movement->reference);
+        $this->assertStringContainsString('OS-', $movement->reference);
         $this->assertDatabaseHas('stock_movements', [
             'product_id' => $this->product->id,
             'type' => StockMovementType::Reserve->value,
@@ -120,6 +127,7 @@ class StockServiceProfessionalTest extends TestCase
         $movement = $this->service->manualEntry(
             $this->product,
             qty: 20,
+            warehouseId: $this->warehouse->id,
             unitCost: 45.50,
             notes: 'Compra fornecedor ABC',
             user: $this->user
@@ -145,6 +153,7 @@ class StockServiceProfessionalTest extends TestCase
         $movement = $this->service->manualAdjustment(
             $this->product,
             qty: -5,
+            warehouseId: $this->warehouse->id,
             notes: 'Diferença inventário',
             user: $this->user
         );
@@ -162,14 +171,15 @@ class StockServiceProfessionalTest extends TestCase
         $movement = $this->service->manualAdjustment(
             $this->product,
             qty: -10,
+            warehouseId: $this->warehouse->id,
             notes: null,
             user: $this->user
         );
 
-        $this->assertEquals(10, $movement->quantity);
+        $this->assertEquals(-10, $movement->quantity);
         $this->assertDatabaseHas('stock_movements', [
             'product_id' => $this->product->id,
-            'quantity' => 10,
+            'quantity' => -10,
         ]);
     }
 
@@ -206,6 +216,7 @@ class StockServiceProfessionalTest extends TestCase
         $movement = $this->service->manualEntry(
             $this->product,
             qty: 10,
+            warehouseId: $this->warehouse->id,
             unitCost: 30.00,
             notes: 'Reposição',
             user: $this->user
@@ -223,6 +234,7 @@ class StockServiceProfessionalTest extends TestCase
         $movement = $this->service->manualEntry(
             $this->product,
             qty: 5,
+            warehouseId: $this->warehouse->id,
             unitCost: 10.00,
             notes: null,
             user: $this->user

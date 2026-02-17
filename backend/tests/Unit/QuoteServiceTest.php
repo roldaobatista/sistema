@@ -2,22 +2,20 @@
 
 namespace Tests\Unit;
 
+use App\Enums\QuoteStatus;
 use App\Models\Customer;
 use App\Models\Quote;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\QuoteService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
-
 /**
  * Unit tests for QuoteService — validates quote lifecycle:
  * create, send, approve, reject, reopen, duplicate, and convert to OS.
  */
 class QuoteServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private QuoteService $service;
     private Tenant $tenant;
     private User $user;
@@ -26,6 +24,7 @@ class QuoteServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new QuoteService();
         $this->tenant = Tenant::factory()->create();
@@ -63,7 +62,7 @@ class QuoteServiceTest extends TestCase
         $this->assertInstanceOf(Quote::class, $quote);
         $this->assertEquals($this->tenant->id, $quote->tenant_id);
         $this->assertEquals($this->customer->id, $quote->customer_id);
-        $this->assertEquals(Quote::STATUS_DRAFT, $quote->status);
+        $this->assertEquals(QuoteStatus::DRAFT, $quote->status);
     }
 
     // ── SEND ──
@@ -96,7 +95,7 @@ class QuoteServiceTest extends TestCase
 
         $result = $this->service->sendQuote($quote);
 
-        $this->assertEquals(Quote::STATUS_SENT, $result->status);
+        $this->assertEquals(QuoteStatus::SENT, $result->status);
         $this->assertNotNull($result->sent_at);
     }
 
@@ -113,7 +112,7 @@ class QuoteServiceTest extends TestCase
 
         $result = $this->service->approveQuote($quote, $this->user);
 
-        $this->assertEquals(Quote::STATUS_APPROVED, $result->status);
+        $this->assertEquals(QuoteStatus::APPROVED, $result->status);
         $this->assertNotNull($result->approved_at);
     }
 
@@ -130,7 +129,7 @@ class QuoteServiceTest extends TestCase
 
         $result = $this->service->rejectQuote($quote, 'Preço muito alto');
 
-        $this->assertEquals(Quote::STATUS_REJECTED, $result->status);
+        $this->assertEquals(QuoteStatus::REJECTED, $result->status);
         $this->assertEquals('Preço muito alto', $result->rejection_reason);
         $this->assertNotNull($result->rejected_at);
     }
@@ -148,7 +147,7 @@ class QuoteServiceTest extends TestCase
 
         $result = $this->service->reopenQuote($quote);
 
-        $this->assertEquals(Quote::STATUS_DRAFT, $result->status);
+        $this->assertEquals(QuoteStatus::DRAFT, $result->status);
     }
 
     // ── DUPLICATE ──
@@ -165,7 +164,7 @@ class QuoteServiceTest extends TestCase
         $copy = $this->service->duplicateQuote($original);
 
         $this->assertNotEquals($original->id, $copy->id);
-        $this->assertEquals(Quote::STATUS_DRAFT, $copy->status);
+        $this->assertEquals(QuoteStatus::DRAFT, $copy->status);
         $this->assertEquals($original->customer_id, $copy->customer_id);
         $this->assertEquals($original->tenant_id, $copy->tenant_id);
     }
@@ -189,6 +188,6 @@ class QuoteServiceTest extends TestCase
 
         // Quote should be marked as invoiced after conversion
         $quote->refresh();
-        $this->assertEquals(Quote::STATUS_INVOICED, $quote->status);
+        $this->assertEquals(QuoteStatus::INVOICED, $quote->status);
     }
 }

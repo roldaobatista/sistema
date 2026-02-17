@@ -16,7 +16,7 @@ class AccountPayableFactory extends Factory
         return [
             'tenant_id' => \App\Models\Tenant::factory(),
             'created_by' => User::factory(),
-            'supplier' => fake()->company(),
+            'supplier_id' => null,
             'description' => fake()->sentence(4),
             'amount' => fake()->randomFloat(2, 10, 5000),
             'due_date' => fake()->dateTimeBetween('now', '+1 month'),

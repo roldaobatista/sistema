@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import * as Tabs from '@radix-ui/react-tabs'
 import {
     ArrowLeft, User, Phone, Mail, MapPin, Building2, Tag,
@@ -57,8 +57,10 @@ export function Customer360Page() {
     // MVP: Delete mutation
     const deleteMutation = useMutation({
         mutationFn: (noteId: number) => api.delete(`/crm/activities/${noteId}`),
-        onSuccess: () => { toast.success('Atividade removida');
-                queryClient.invalidateQueries({ queryKey: ['customer-360', id] }) },
+        onSuccess: () => {
+            toast.success('Atividade removida');
+            queryClient.invalidateQueries({ queryKey: ['customer-360', id] })
+        },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
     })
     const handleDeleteActivity = (noteId: number) => {
@@ -196,6 +198,32 @@ export function Customer360Page() {
                         </div>
                     </div>
 
+                    {/* Contract Status Indicator — GAP 12 */}
+                    {customer.contract_type && (
+                        <div className="mt-3 p-3 rounded-xl bg-surface-50 border border-subtle">
+                            <p className="text-[10px] uppercase font-bold text-surface-400 text-left">Contrato</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <FileCheck className="h-4 w-4 text-brand-500" />
+                                <span className="text-sm font-bold text-surface-800">{customer.contract_type}</span>
+                                {(() => {
+                                    if (!customer.contract_end) return <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-surface-100 text-surface-500">Sem vencimento</span>
+                                    const endDate = new Date(customer.contract_end)
+                                    const now = new Date()
+                                    const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                                    if (daysRemaining < 0) return <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-bold animate-pulse">Vencido há {Math.abs(daysRemaining)}d</span>
+                                    if (daysRemaining <= 30) return <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">Vence em {daysRemaining}d</span>
+                                    return <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Ativo ({daysRemaining}d)</span>
+                                })()}
+                            </div>
+                            {(customer.contract_start || customer.contract_end) && (
+                                <p className="text-[10px] text-surface-400 mt-1">
+                                    {customer.contract_start && `Início: ${new Date(customer.contract_start).toLocaleDateString('pt-BR')}`}
+                                    {customer.contract_start && customer.contract_end && ' — '}
+                                    {customer.contract_end && `Fim: ${new Date(customer.contract_end).toLocaleDateString('pt-BR')}`}
+                                </p>
+                            )}
+                        </div>
+                    )}
                     <div className="mt-6 flex flex-col gap-2">
                         <Button variant="primary" className="w-full" onClick={() => setActivityFormOpen(true)}>
                             <Plus className="h-4 w-4 mr-2" />
@@ -211,7 +239,15 @@ export function Customer360Page() {
                                 <Download className="h-4 w-4 mr-2 text-brand-500" />
                                 Relatório 360º
                             </Button>
-                            <Button className="font-bold">Ações Rápidas</Button>
+                            <div className="relative group">
+                                <Button className="font-bold">Ações Rápidas</Button>
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-surface-0 border border-default rounded-xl shadow-xl z-50 py-1 hidden group-focus-within:block group-hover:block">
+                                    {canCreateOs && <button className="w-full text-left px-4 py-2 text-sm hover:bg-surface-50" onClick={() => navigate(`/os/nova?customer_id=${customerId}`)}>Nova OS</button>}
+                                    {canCreateChamado && <button className="w-full text-left px-4 py-2 text-sm hover:bg-surface-50" onClick={() => navigate(`/chamados/novo?customer_id=${customerId}`)}>Novo Chamado</button>}
+                                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-surface-50" onClick={() => navigate(`/orcamentos/novo?customer_id=${customerId}`)}>Novo Orçamento</button>
+                                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-surface-50" onClick={() => setSendMessageOpen(true)}>Enviar Mensagem</button>
+                                </div>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <Button variant="outline" size="sm" onClick={() => setSendMessageOpen(true)}>
@@ -219,7 +255,7 @@ export function Customer360Page() {
                                 Mensagem
                             </Button>
                             {canEdit && (
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="sm" onClick={() => navigate(`/cadastros/clientes?edit=${customerId}`)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Editar
                                 </Button>
@@ -400,7 +436,7 @@ export function Customer360Page() {
                                         <History className="h-4 w-4 text-brand-500" />
                                         Atividades Recentes
                                     </h3>
-                                    <Link to="#" className="text-xs text-brand-600 font-semibold hover:underline">Ver todas</Link>
+                                    <button onClick={() => { const el = document.querySelector('[data-state][value="crm"]') as HTMLElement; el?.click() }} className="text-xs text-brand-600 font-semibold hover:underline">Ver todas</button>
                                 </div>
                                 <CustomerTimeline activities={timeline.slice(0, 5)} compact />
                             </div>
@@ -576,7 +612,7 @@ export function Customer360Page() {
                         <div className="rounded-2xl border border-default bg-surface-0 shadow-sm overflow-hidden">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-subtle bg-surface-50/50">
                                 <h3 className="text-sm font-bold text-surface-900">Parque de Equipamentos</h3>
-                                <Button variant="primary" size="xs">Adicionar Equipamento</Button>
+                                <Button variant="primary" size="xs" onClick={() => navigate(`/equipamentos/novo?customer_id=${customerId}`)}>Adicionar Equipamento</Button>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
@@ -623,7 +659,7 @@ export function Customer360Page() {
                                                     </div>
                                                 </td>
                                                 <td className="px-5 py-3 text-right">
-                                                    <Button variant="ghost" size="xs">Certificados</Button>
+                                                    <Button variant="ghost" size="xs" onClick={() => navigate(`/equipamentos/${eq.id}?tab=certificados`)}>Certificados</Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -658,7 +694,7 @@ export function Customer360Page() {
                                     <Receipt className="h-4 w-4 text-emerald-500" />
                                     Contas a Receber (Parcelas)
                                 </h3>
-                                <Button variant="outline" size="xs">Lançar Avulso</Button>
+                                <Button variant="outline" size="xs" onClick={() => navigate(`/financeiro/contas-receber/nova?customer_id=${customerId}`)}>Lançar Avulso</Button>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
@@ -715,7 +751,7 @@ export function Customer360Page() {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="text-sm font-bold text-surface-900">{fmtBRL(Number(nf.total_value))}</span>
-                                            <Button variant="ghost" size="xs"><Download className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="xs" onClick={() => { if (nf.file_url) window.open(nf.file_url, '_blank'); else toast.info('Download não disponível para esta nota') }}><Download className="h-4 w-4" /></Button>
                                         </div>
                                     </div>
                                 ))}
@@ -759,7 +795,7 @@ export function Customer360Page() {
                                     <DataField label="Nome Fantasia" value={customer.trade_name} />
                                     <DataField label="Documento" value={customer.document} />
                                     <DataField label="E-mail" value={customer.email} />
-                                    <DataField label="Telefone الرئيسي" value={customer.phone} />
+                                    <DataField label="Telefone Principal" value={customer.phone} />
                                     <DataField label="Telefone Secundário" value={customer.phone2} />
                                     <DataField label="Endereço" value={`${customer.address_street}, ${customer.address_number} - ${customer.address_neighborhood}, ${customer.address_city}/${customer.address_state}`} />
                                 </div>
@@ -776,6 +812,34 @@ export function Customer360Page() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Contatos Cadastrados — GAP 11 */}
+                        {customer.contacts?.length > 0 && (
+                            <div className="rounded-2xl border border-default bg-surface-0 p-6 shadow-sm mt-5">
+                                <h3 className="text-sm font-bold text-surface-900 mb-4 flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-brand-500" />
+                                    Contatos Cadastrados ({customer.contacts.length})
+                                </h3>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    {customer.contacts.map((ct: any) => (
+                                        <div key={ct.id} className="flex items-start gap-3 p-3 rounded-xl border border-subtle bg-surface-50/50">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 text-xs font-bold">
+                                                {ct.name?.charAt(0)?.toUpperCase() || '?'}
+                                            </div>
+                                            <div className="min-w-0 text-sm">
+                                                <p className="font-semibold text-surface-900 flex items-center gap-2">
+                                                    {ct.name}
+                                                    {ct.is_primary && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700 font-bold">Principal</span>}
+                                                </p>
+                                                {ct.role && <p className="text-surface-500 text-xs">{ct.role}</p>}
+                                                {ct.phone && <p className="text-surface-500 text-xs mt-1">{ct.phone}</p>}
+                                                {ct.email && <p className="text-surface-500 text-xs">{ct.email}</p>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </Tabs.Content>
                 </Tabs.Root>
             </main>

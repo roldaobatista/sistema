@@ -137,6 +137,10 @@ export function CustomersPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [segmentFilter, setSegmentFilter] = useState<string>('')
+  const [ratingFilter, setRatingFilter] = useState<string>('')
+  const [sourceFilter, setSourceFilter] = useState<string>('')
+  const [sellerFilter, setSellerFilter] = useState<string>('')
   const [page, setPage] = useState(1)
   const perPage = 20
   const debouncedSearch = useDebounce(search, 300)
@@ -168,12 +172,16 @@ export function CustomersPage() {
 
   // Fetch customers
   const { data: res, isLoading } = useQuery({
-    queryKey: ['customers', debouncedSearch, typeFilter, statusFilter, page],
+    queryKey: ['customers', debouncedSearch, typeFilter, statusFilter, segmentFilter, ratingFilter, sourceFilter, sellerFilter, page],
     queryFn: () => api.get('/customers', {
       params: {
         search: debouncedSearch || undefined,
         type: typeFilter || undefined,
         is_active: statusFilter === '' ? undefined : statusFilter === '1',
+        segment: segmentFilter || undefined,
+        rating: ratingFilter || undefined,
+        source: sourceFilter || undefined,
+        assigned_seller_id: sellerFilter || undefined,
         page,
         per_page: perPage,
       }
@@ -339,7 +347,7 @@ export function CustomersPage() {
     },
     onSuccess: () => {
       toast.success(editingId ? 'Cliente atualizado!' : 'Cliente criado!')
-                qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers'] })
       closeModal()
     },
     onError: (err: any) => {
@@ -347,7 +355,7 @@ export function CustomersPage() {
         const errs = err.response.data.errors
         if (errs?.document) {
           toast.error(`Documento inválido: ${errs.document[0]}`)
-                setActiveTab('info')
+          setActiveTab('info')
         } else {
           const firstField = Object.keys(errs)[0]
           const firstMsg = Object.values(errs).flat()[0] as string
@@ -379,7 +387,7 @@ export function CustomersPage() {
     mutationFn: (id: number) => api.delete(`/customers/${id}`),
     onSuccess: () => {
       toast.success('Cliente excluído!')
-                qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['customers'] })
       setDelId(null)
       setDelDeps(null)
     },
@@ -388,7 +396,7 @@ export function CustomersPage() {
         setDelDeps((err.response.data.dependencies ?? null) as DeleteDependencies | null)
       } else if (err.response?.status === 403) {
         toast.error('Você não tem permissão')
-                setDelId(null)
+        setDelId(null)
       } else {
         toast.error(err.response?.data?.message || 'Erro ao excluir')
       }
@@ -488,6 +496,10 @@ export function CustomersPage() {
   const handleSearch = (val: string) => { setSearch(val); setPage(1) }
   const handleTypeFilter = (val: string) => { setTypeFilter(val); setPage(1) }
   const handleStatusFilter = (val: string) => { setStatusFilter(val); setPage(1) }
+  const handleSegmentFilter = (val: string) => { setSegmentFilter(val); setPage(1) }
+  const handleRatingFilter = (val: string) => { setRatingFilter(val); setPage(1) }
+  const handleSourceFilter = (val: string) => { setSourceFilter(val); setPage(1) }
+  const handleSellerFilter = (val: string) => { setSellerFilter(val); setPage(1) }
 
   return (
     <div className="space-y-6">
@@ -541,6 +553,50 @@ export function CustomersPage() {
           <option value="1">Ativos</option>
           <option value="0">Inativos</option>
         </select>
+        <select
+          value={segmentFilter}
+          onChange={(e) => handleSegmentFilter(e.target.value)}
+          aria-label="Filtrar por segmento"
+          className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          <option value="">Todos segmentos</option>
+          {(crmOptions?.segments ?? []).map((s: string) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select
+          value={ratingFilter}
+          onChange={(e) => handleRatingFilter(e.target.value)}
+          aria-label="Filtrar por rating"
+          className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          <option value="">Todos ratings</option>
+          {(crmOptions?.ratings ?? []).map((r: string) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+        <select
+          value={sourceFilter}
+          onChange={(e) => handleSourceFilter(e.target.value)}
+          aria-label="Filtrar por origem"
+          className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          <option value="">Todas origens</option>
+          {(crmOptions?.sources ?? []).map((s: string) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select
+          value={sellerFilter}
+          onChange={(e) => handleSellerFilter(e.target.value)}
+          aria-label="Filtrar por vendedor"
+          className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          <option value="">Todos vendedores</option>
+          {sellers.map((s: any) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
       </div>
 
       {isLoading ? (
@@ -553,7 +609,7 @@ export function CustomersPage() {
         <EmptyState
           icon={<Users className="h-8 w-8" />}
           title="Nenhum cliente encontrado"
-          description={search || typeFilter || statusFilter ? 'Tente ajustar os filtros de busca' : 'Comece cadastrando seu primeiro cliente'}
+          description={search || typeFilter || statusFilter || segmentFilter || ratingFilter || sourceFilter || sellerFilter ? 'Tente ajustar os filtros de busca' : 'Comece cadastrando seu primeiro cliente'}
           action={canCreate ? { label: 'Novo Cliente', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined}
         />
       ) : (
@@ -592,6 +648,15 @@ export function CustomersPage() {
                   {c.document && <p>{maskCpfCnpj(c.document)}</p>}
                   {c.email && <p>{c.email}</p>}
                   {c.phone && <p>{maskPhone(c.phone)}</p>}
+                  {c.contacts?.length > 0 && (() => {
+                    const primary = c.contacts.find((ct: any) => ct.is_primary) || c.contacts[0]
+                    return primary ? (
+                      <p className="text-surface-400 flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {primary.name}{primary.role ? ` (${primary.role})` : ''}
+                      </p>
+                    ) : null
+                  })()}
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">

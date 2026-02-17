@@ -12,6 +12,7 @@ const RETRY_DELAYS = [3000, 5000, 10000, 20000, 30000];
 
 const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) => {
     const [status, setStatus] = useState<'loading' | 'connected' | 'error' | 'idle'>('idle');
+    const [retryAttempt, setRetryAttempt] = useState(0);
     const videoRef = useRef<HTMLVideoElement>(null);
     const retryCount = useRef(0);
     const retryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -41,6 +42,7 @@ const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) =>
                 if (mounted.current) {
                     setStatus('connected');
                     retryCount.current = 0;
+                    setRetryAttempt(0);
                 }
             })
             .catch(() => {
@@ -57,6 +59,7 @@ const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) =>
         const delay = RETRY_DELAYS[Math.min(retryCount.current, RETRY_DELAYS.length - 1)];
         setStatus('loading');
         retryCount.current += 1;
+        setRetryAttempt(retryCount.current);
 
         retryTimer.current = setTimeout(() => {
             if (mounted.current) connect();
@@ -90,6 +93,7 @@ const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) =>
 
     const handleManualRetry = () => {
         retryCount.current = 0;
+        setRetryAttempt(0);
         connect();
     };
 
@@ -110,9 +114,9 @@ const WebRTCPlayer: React.FC<WebRTCPlayerProps> = ({ url, label, className }) =>
                     {status === 'loading' && (
                         <>
                             <Loader2 className="h-6 w-6 text-blue-500 animate-spin mb-2" />
-                            {retryCount.current > 0 && (
+                            {retryAttempt > 0 && (
                                 <span className="text-neutral-600 font-mono text-[8px]">
-                                    RECONECTANDO ({retryCount.current}/{MAX_RETRIES})
+                                    RECONECTANDO ({retryAttempt}/{MAX_RETRIES})
                                 </span>
                             )}
                         </>

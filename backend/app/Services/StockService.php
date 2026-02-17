@@ -230,6 +230,10 @@ class StockService
             $product, $type, $quantity, $warehouseId, $targetWarehouseId,
             $batchId, $serialId, $workOrder, $reference, $unitCost, $notes, $user
         ) {
+            $normalizedQuantity = $type === StockMovementType::Adjustment
+                ? $quantity
+                : abs($quantity);
+
             $movement = StockMovement::create([
                 'tenant_id' => $product->tenant_id,
                 'product_id' => $product->id,
@@ -239,7 +243,7 @@ class StockService
                 'product_serial_id' => $serialId,
                 'work_order_id' => $workOrder?->id,
                 'type' => $type->value,
-                'quantity' => $quantity,
+                'quantity' => $normalizedQuantity,
                 'unit_cost' => $unitCost,
                 'reference' => $reference,
                 'notes' => $notes,
@@ -258,6 +262,7 @@ class StockService
             return $movement;
         });
     }
+
 
     private function explodeKit(Product $kit, float $quantity, int $warehouseId, StockMovementType $type, ?string $notes = null, ?User $user = null, int $depth = 0): void
     {
@@ -303,7 +308,13 @@ class StockService
         if ($dateFrom) {
             $priorBalance = StockMovement::where('tenant_id', $tenantId)
                 ->where('product_id', $productId)
-                ->where('warehouse_id', $warehouseId)
+                ->where(function ($q) use ($warehouseId) {
+                    $q->where('warehouse_id', $warehouseId)
+                      ->orWhere(function ($q2) use ($warehouseId) {
+                          $q2->where('type', 'transfer')
+                             ->where('target_warehouse_id', $warehouseId);
+                      });
+                })
                 ->where('created_at', '<', $dateFrom)
                 ->selectRaw("
                     SUM(CASE
@@ -311,9 +322,10 @@ class StockService
                         WHEN type IN ('entry','return') THEN quantity
                         WHEN type IN ('exit','reserve') THEN -quantity
                         WHEN type = 'transfer' AND warehouse_id = ? THEN -quantity
+                        WHEN type = 'transfer' AND target_warehouse_id = ? THEN quantity
                         ELSE 0
                     END) as balance
-                ", [$warehouseId])
+                ", [$warehouseId, $warehouseId])
                 ->value('balance');
 
             $runningBalance = (float) ($priorBalance ?? 0);
@@ -321,7 +333,13 @@ class StockService
 
         $query = StockMovement::where('tenant_id', $tenantId)
             ->where('product_id', $productId)
-            ->where('warehouse_id', $warehouseId)
+            ->where(function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId)
+                  ->orWhere(function ($q2) use ($warehouseId) {
+                      $q2->where('type', 'transfer')
+                         ->where('target_warehouse_id', $warehouseId);
+                  });
+            })
             ->with(['batch', 'productSerial', 'user:id,name'])
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc');
@@ -335,14 +353,21 @@ class StockService
 
         $movements = $query->get();
 
-        return $movements->map(function ($movement) use (&$runningBalance) {
+        return $movements->map(function ($movement) use (&$runningBalance, $warehouseId) {
             $type = $movement->type;
             $qty = (float) $movement->quantity;
-            $sign = $type->affectsStock();
 
             if ($type === StockMovementType::Adjustment) {
                 $runningBalance += $qty;
+            } elseif ($type === StockMovementType::Transfer) {
+                // Se o armazém é origem → saída; se é destino → entrada
+                if ((int) $movement->warehouse_id === $warehouseId) {
+                    $runningBalance -= $qty;
+                } else {
+                    $runningBalance += $qty;
+                }
             } else {
+                $sign = $type->affectsStock();
                 $runningBalance += ($qty * $sign);
             }
 

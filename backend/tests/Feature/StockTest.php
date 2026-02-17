@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -16,6 +17,7 @@ class StockTest extends TestCase
 
     private Tenant $tenant;
     private User $user;
+    private Warehouse $warehouse;
 
     protected function setUp(): void
     {
@@ -35,6 +37,14 @@ class StockTest extends TestCase
 
         app()->instance('current_tenant_id', $this->tenant->id);
         Sanctum::actingAs($this->user, ['*']);
+
+        $this->warehouse = Warehouse::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Estoque Central',
+            'code' => 'CENTRAL-TEST',
+            'type' => 'fixed',
+            'is_active' => true,
+        ]);
     }
 
     // ── Movimentações ──
@@ -48,6 +58,7 @@ class StockTest extends TestCase
 
         $response = $this->postJson('/api/v1/stock/movements', [
             'product_id' => $product->id,
+            'warehouse_id' => $this->warehouse->id,
             'type' => 'entry',
             'quantity' => 5,
             'unit_cost' => 25.00,
@@ -71,6 +82,7 @@ class StockTest extends TestCase
 
         $response = $this->postJson('/api/v1/stock/movements', [
             'product_id' => $product->id,
+            'warehouse_id' => $this->warehouse->id,
             'type' => 'adjustment',
             'quantity' => 5,
             'notes' => 'Ajuste de inventário',

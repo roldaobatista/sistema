@@ -64,7 +64,7 @@ class IamTest extends TestCase
         $response = $this->postJson('/api/v1/users', [
             'name' => 'João Técnico',
             'email' => 'joao@test.com',
-            'password' => 'senha1234',
+            'password' => 'Senha1234',
         ]);
 
         $response->assertStatus(201)

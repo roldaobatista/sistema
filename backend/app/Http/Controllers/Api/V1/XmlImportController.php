@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\XmlImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class XmlImportController extends Controller
 {
@@ -29,8 +30,15 @@ class XmlImportController extends Controller
                 'data' => $result
             ]);
         } catch (\Exception $e) {
+            Log::error('XML Import failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'tenant_id' => $tenantId,
+                'warehouse_id' => $request->warehouse_id,
+            ]);
+
             return response()->json([
-                'message' => 'Erro ao processar o arquivo XML.'
+                'message' => 'Erro ao processar o arquivo XML: ' . mb_substr($e->getMessage(), 0, 200),
             ], 422);
         }
     }

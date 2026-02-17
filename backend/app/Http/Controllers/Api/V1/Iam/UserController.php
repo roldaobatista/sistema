@@ -286,6 +286,38 @@ class UserController extends Controller
     }
 
     /**
+     * POST /users/{user}/roles — sincroniza roles de um usuário.
+     */
+    public function assignRoles(Request $request, User $user): JsonResponse
+    {
+        $tenantId = $this->tenantId($request);
+        $this->resolveTenantUser($user, $tenantId);
+
+        $validated = $request->validate([
+            'roles' => 'required|array',
+            'roles.*' => 'string|exists:roles,name',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user->syncRoles($validated['roles']);
+
+            DB::commit();
+
+            $user->load('roles:id,name,display_name');
+
+            AuditLog::log('updated', "Roles do usuário {$user->name} atualizadas", $user);
+
+            return response()->json($user);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Assign roles failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atribuir roles.'], 500);
+        }
+    }
+
+    /**
      * Dropdown: lista users ativos por role(s).
      * GET /users/by-role/tecnico ou /users/by-role/tecnico,vendedor
      */

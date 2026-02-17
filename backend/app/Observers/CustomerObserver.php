@@ -8,13 +8,16 @@ class CustomerObserver
 {
     /**
      * Handle the Customer "saved" event.
+     *
+     * Usa withoutEvents para evitar recursão infinita:
+     * recalculateHealthScore() → update() → saved() → recalculateHealthScore() → ∞
      */
     public function saved(Customer $customer): void
     {
-        // Recalcular Health Score apenas se campos que o influenciam mudarem
-        // rating, type, segment influenciam no breakdown/calculo
         if ($customer->wasChanged(['rating', 'type', 'segment', 'is_active'])) {
-             $customer->recalculateHealthScore();
+            Customer::withoutEvents(function () use ($customer) {
+                $customer->recalculateHealthScore();
+            });
         }
     }
 
@@ -23,6 +26,8 @@ class CustomerObserver
      */
     public function created(Customer $customer): void
     {
-        $customer->recalculateHealthScore();
+        Customer::withoutEvents(function () use ($customer) {
+            $customer->recalculateHealthScore();
+        });
     }
 }

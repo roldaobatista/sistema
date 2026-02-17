@@ -139,11 +139,13 @@ class AccountPayableController extends Controller
         }
 
         try {
-            $accountPayable->update($validated);
+            DB::transaction(function () use ($validated, $accountPayable) {
+                $accountPayable->update($validated);
 
-            if (isset($validated['amount'])) {
-                $accountPayable->recalculateStatus();
-            }
+                if (isset($validated['amount'])) {
+                    $accountPayable->recalculateStatus();
+                }
+            });
 
             return response()->json($accountPayable->fresh()->load(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'chartOfAccount:id,code,name,type']));
         } catch (\Throwable $e) {
@@ -198,6 +200,7 @@ class AccountPayableController extends Controller
         }
 
         try {
+            // amount_paid e status são atualizados automaticamente pelo Payment::booted()
             $payment = DB::transaction(function () use ($validated, $request, $accountPayable) {
                 return Payment::create([
                     ...$validated,
@@ -206,7 +209,6 @@ class AccountPayableController extends Controller
                     'payable_id' => $accountPayable->id,
                     'received_by' => $request->user()->id,
                 ]);
-                // amount_paid e status são atualizados automaticamente pelo Payment::booted()
             });
 
             PaymentMade::dispatch($accountPayable->fresh(), $payment);

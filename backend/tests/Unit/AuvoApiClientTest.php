@@ -23,7 +23,7 @@ class AuvoApiClientTest extends TestCase
     public function test_authenticate_caches_token(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response([
+            'api.auvo.com.br/v2/login*' => Http::response([
                 'result' => ['accessToken' => 'mocked-bearer-token'],
             ], 200),
         ]);
@@ -49,7 +49,7 @@ class AuvoApiClientTest extends TestCase
     public function test_authenticate_throws_on_failure(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['error' => 'invalid'], 401),
+            'api.auvo.com.br/v2/login*' => Http::response(['error' => 'invalid'], 401),
         ]);
 
         $this->expectException(\RuntimeException::class);
@@ -61,7 +61,7 @@ class AuvoApiClientTest extends TestCase
     public function test_authenticate_throws_when_no_token_in_response(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => []], 200),
+            'api.auvo.com.br/v2/login*' => Http::response(['result' => []], 200),
         ]);
 
         $this->expectException(\RuntimeException::class);
@@ -86,7 +86,7 @@ class AuvoApiClientTest extends TestCase
     public function test_get_returns_json_on_success(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response([
+            'api.auvo.com.br/v2/login*' => Http::response([
                 'result' => ['accessToken' => 'token-123'],
             ]),
             'api.auvo.com.br/v2/customers*' => Http::response([
@@ -104,7 +104,7 @@ class AuvoApiClientTest extends TestCase
     public function test_get_returns_null_on_failure(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response([
+            'api.auvo.com.br/v2/login*' => Http::response([
                 'result' => ['accessToken' => 'token-123'],
             ]),
             'api.auvo.com.br/v2/customers*' => Http::response([], 500),
@@ -120,7 +120,7 @@ class AuvoApiClientTest extends TestCase
         $callCount = 0;
 
         Http::fake([
-            'api.auvo.com.br/v2/login/' => function () use (&$callCount) {
+            'api.auvo.com.br/v2/login*' => function () use (&$callCount) {
                 $callCount++;
                 return Http::response([
                     'result' => ['accessToken' => "token-{$callCount}"],
@@ -142,7 +142,7 @@ class AuvoApiClientTest extends TestCase
     public function test_count_parses_total_from_response(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login*' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/customers*' => Http::response([
                 'result' => ['totalCount' => 42],
             ]),
@@ -156,7 +156,7 @@ class AuvoApiClientTest extends TestCase
     public function test_count_returns_zero_on_failure(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login*' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/customers*' => Http::response([], 500),
         ]);
 
@@ -170,7 +170,7 @@ class AuvoApiClientTest extends TestCase
     public function test_test_connection_returns_success(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response([
+            'api.auvo.com.br/v2/login*' => Http::response([
                 'result' => ['accessToken' => 'valid-token'],
             ]),
         ]);
@@ -184,7 +184,7 @@ class AuvoApiClientTest extends TestCase
     public function test_test_connection_returns_failure(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['error' => 'bad'], 401),
+            'api.auvo.com.br/v2/login*' => Http::response(['error' => 'bad'], 401),
         ]);
 
         $result = $this->client->testConnection();
@@ -220,7 +220,7 @@ class AuvoApiClientTest extends TestCase
     public function test_fetch_all_yields_records_across_pages(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login*' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/customers*' => Http::sequence()
                 ->push(['result' => ['entityList' => [['id' => 1], ['id' => 2]]]], 200)  // Page 1 (full = pageSize 2)
                 ->push(['result' => ['entityList' => [['id' => 3]]]], 200),              // Page 2 (partial = last)
@@ -239,7 +239,7 @@ class AuvoApiClientTest extends TestCase
     public function test_fetch_all_stops_on_empty_response(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login*' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/customers*' => Http::response(null, 500),
         ]);
 
@@ -253,7 +253,7 @@ class AuvoApiClientTest extends TestCase
     public function test_get_entity_counts_returns_counts(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login*' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/*' => Http::response(['result' => ['totalCount' => 10]]),
         ]);
 
@@ -267,7 +267,7 @@ class AuvoApiClientTest extends TestCase
     public function test_get_entity_counts_marks_failures_with_negative_one(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login*' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/*' => Http::response([], 500),
         ]);
 

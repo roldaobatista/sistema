@@ -145,7 +145,7 @@ function FreshnessIndicator({ updatedAt }: { updatedAt: number }) {
 
     if (!updatedAt) return null;
 
-    const ageSec = Math.floor((Date.now() - updatedAt) / 1000);
+    const ageSec = Math.floor((new Date().getTime() - updatedAt) / 1000);
     const stale = ageSec > 120;
     const label = ageSec < 60 ? `${ageSec}s atrás` : `${Math.floor(ageSec / 60)}min atrás`;
 
@@ -160,7 +160,7 @@ function FreshnessIndicator({ updatedAt }: { updatedAt: number }) {
 // --- Status helpers ---
 const getRealStatus = (tech: Technician) => {
     if (!tech.location_updated_at) return tech.status;
-    const diffMin = (Date.now() - new Date(tech.location_updated_at).getTime()) / 60000;
+    const diffMin = (new Date().getTime() - new Date(tech.location_updated_at).getTime()) / 60000;
     if (diffMin > 10) return 'offline';
     return tech.status;
 };

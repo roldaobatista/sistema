@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Clipboard, ScanBarcode, Camera, DollarSign, Pen,
     ClipboardList, RefreshCw, ChevronRight, Loader2,
@@ -30,21 +30,23 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 
 export default function TechWidgetPage() {
 
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/tech-widget/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['tech-widget'] }) },
-    onError: (err: unknown) => { toast.error(getApiErrorMessage(err, 'Erro ao remover')) },
-  })
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
-  const handleDelete = (id: number) => { setConfirmDeleteId(id) }
-  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
+    // MVP: Delete mutation
+    const queryClient = useQueryClient()
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/tech-widget/${id}`),
+        onSuccess: () => {
+            toast.success('Removido com sucesso');
+            queryClient.invalidateQueries({ queryKey: ['tech-widget'] })
+        },
+        onError: (err: unknown) => { toast.error(getApiErrorMessage(err, 'Erro ao remover')) },
+    })
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+    const handleDelete = (id: number) => { setConfirmDeleteId(id) }
+    const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
 
-  // MVP: Search
-  const [searchTerm, setSearchTerm] = useState('')
-  const { hasPermission } = useAuthStore()
+    // MVP: Search
+    const [searchTerm, setSearchTerm] = useState('')
+    const { hasPermission } = useAuthStore()
 
     const navigate = useNavigate()
     const { user } = useAuthStore()
@@ -62,7 +64,7 @@ export default function TechWidgetPage() {
 
     const shortcuts = [
         { label: 'Escanear', icon: ScanBarcode, path: '/tech/barcode', color: 'text-violet-500 bg-violet-100 dark:bg-violet-900/30' },
-        { label: 'Despesas', icon: DollarSign, path: '/tech/os/0/expenses', color: 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30' },
+        { label: 'Despesas', icon: DollarSign, path: '/tech/despesas', color: 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30' },
         { label: 'Assinatura', icon: Pen, path: '/tech/os/0/signature', color: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30' },
         { label: 'Checklist', icon: ClipboardList, path: '/tech/os/0/checklist', color: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30' },
         { label: 'Câmera', icon: Camera, path: '/tech/thermal-camera', color: 'text-red-500 bg-red-100 dark:bg-red-900/30' },

@@ -82,7 +82,8 @@ class UpdateCustomerRequest extends FormRequest
             'contacts.*.id' => [
                 'nullable',
                 Rule::exists('customer_contacts', 'id')
-                    ->where('tenant_id', $tenantId),
+                    ->where('tenant_id', $tenantId)
+                    ->where('customer_id', $customer instanceof Customer ? $customer->id : $customer),
             ],
             'contacts.*.name' => 'required|string|max:255',
             'contacts.*.role' => 'nullable|string|max:100',

@@ -57,7 +57,7 @@ function NpsIndicator({ score }: { score: number }) {
 export default function SatisfactionTab({ workOrderId }: { workOrderId: number }) {
     const { data, isLoading } = useQuery<SurveyData>({
         queryKey: ['wo-satisfaction', workOrderId],
-        queryFn: () => api.get(`/api/v1/work-orders/${workOrderId}/satisfaction`).then(r => r.data.data ?? r.data),
+        queryFn: () => api.get(`/work-orders/${workOrderId}/satisfaction`).then(r => r.data.data ?? r.data),
     })
 
     if (isLoading) {

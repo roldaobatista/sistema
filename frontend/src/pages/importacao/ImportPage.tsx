@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -58,10 +58,12 @@ const entities: { key: Entity; label: string }[] = [
     { key: 'suppliers', label: 'Fornecedores' },
 ]
 
-const ACCEPTED_FILE_TYPES = ['.csv', '.txt']
+const ACCEPTED_FILE_TYPES = ['.csv', '.txt', '.xlsx', '.xls']
 const ACCEPTED_MIME_TYPES = [
     'text/csv',
     'text/plain',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
 ]
 
 const isValidFile = (file: File): boolean => {
@@ -102,6 +104,9 @@ export default function ImportPage() {
     const [isDownloadingSample, setIsDownloadingSample] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
     const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => { } })
+    const [importProgressId, setImportProgressId] = useState<number | null>(null)
+    const [importProgress, setImportProgress] = useState<{ progress: number; status: string; total_rows: number; inserted: number; updated: number; skipped: number; errors: number } | null>(null)
+    const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const queryClient = useQueryClient()
     const hasPermission = useAuthStore(s => s.hasPermission)
@@ -164,90 +169,97 @@ export default function ImportPage() {
         suppliers: ['suppliers'],
     }
 
-    // Upload
-    const uploadMutation = useMutation({
-        mutationFn: async (file: File) => {
-            const fd = new FormData()
-            fd.append('file', file)
-            fd.append('entity_type', entity)
-            return api.post('/import/upload', fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            }).then(r => r.data as UploadResult)
+    // Polling de progresso real
+    useQuery({
+        queryKey: ['import-progress', importProgressId],
+        queryFn: async () => {
+            if (!importProgressId) return null
+            const res = await api.get(`/import/${importProgressId}/progress`)
+            return res.data
         },
-        onSuccess: (data) => {
-            setUploadData(data)
-            setErrorMessage(null)
-            // Auto-map por nome similar
-            const autoMap: Record<string, string> = {}
-            data.available_fields.forEach(f => {
-                const match = data.headers.find(h =>
-                    h.toLowerCase().includes(f.key.toLowerCase()) ||
-                    f.label.toLowerCase().includes(h.toLowerCase()) ||
-                    h.toLowerCase().includes(f.label.toLowerCase())
-                )
-                if (match) autoMap[f.key] = match
-            })
-            setMapping(autoMap)
-            setStep(1)
-        },
-        onError: (err: any) => {
-            toast.error('Ocorreu um erro. Tente novamente.')
-            if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para realizar upload.')
-            } else {
-                setErrorMessage('Erro ao processar arquivo. Verifique o formato e tente novamente.')
+        enabled: !!importProgressId,
+        refetchInterval: (query) => {
+            const data = query.state.data
+            // Parar polling se concluído ou falhou
+            if (data?.status === 'done' || data?.status === 'failed' || data?.status === 'rolled_back') {
+                return false
             }
+            return 1000 // Poll a cada 1s
         },
-    })
+        // Atualizar estado local a cada fetch
+        select: (data) => {
+            if (!data) return null
+            setImportProgress(data)
 
-    // Preview
-    const previewMutation = useMutation({
-        mutationFn: () => api.post('/import/preview', {
-            file_path: uploadData?.file_path,
-            entity_type: entity,
-            mapping,
-            separator: uploadData?.separator,
-        }).then(r => r.data),
-        onSuccess: (data) => {
-            setPreviewRows(data.rows)
-            setPreviewStats(data.stats)
-            setErrorMessage(null)
-            setStep(2)
-        },
-        onError: (err: any) => {
-            toast.error('Ocorreu um erro. Tente novamente.')
-            if (err?.response?.status === 403) {
-                setErrorMessage('Sem permissão para validar preview.')
-            } else {
-                setErrorMessage('Erro ao validar preview. Verifique o mapeamento e tente novamente.')
+            // Se terminou, finalizar
+            if (data.status === 'done' || data.status === 'failed') {
+                // Pequeno delay para usuário ver 100%
+                setTimeout(() => {
+                    setImportProgressId(null)
+                    setImportProgress(null)
+                    setResult(data) // ImportResult tem estrutura compatível ou igual
+                    setStep(3)
+                    setSuccessMessage(data.status === 'done' ? 'Importação concluída com sucesso!' : 'Importação finalizada com erros.')
+                    queryClient.invalidateQueries({ queryKey: ['import-history'] })
+                    // Invalidate entity cache
+                    const keys = entityQueryKeyMap[entity]
+                    if (keys) queryClient.invalidateQueries({ queryKey: keys })
+                }, 500)
             }
-        },
+            return data
+        }
     })
 
     // Execute
     const executeMutation = useMutation({
-        mutationFn: () => api.post('/import/execute', {
-            file_path: uploadData?.file_path,
-            entity_type: entity,
-            mapping,
-            separator: uploadData?.separator,
-            duplicate_strategy: strategy,
-            original_name: uploadData?.file_name,
-        }).then(r => r.data as ImportResult),
+        mutationFn: async () => {
+            setImportProgress(null)
+            const res = await api.post('/import/execute', {
+                file_path: uploadData?.file_path,
+                entity_type: entity,
+                mapping,
+                separator: uploadData?.separator,
+                duplicate_strategy: strategy,
+                original_name: uploadData?.file_name,
+            })
+            return res.data // Retorna { import_id, status, message }
+        },
+        onMutate: () => {
+            setImportProgress({
+                progress: 0,
+                status: 'pending', // Começa como pending/queued
+                total_rows: uploadData?.total_rows ?? 0,
+                inserted: 0,
+                updated: 0,
+                skipped: 0,
+                errors: 0
+            })
+        },
         onSuccess: (data) => {
-            setResult(data)
+            // O backend agora retorna apenas o ID da importação e status 'pending'
+            if (data.import_id) {
+                setImportProgressId(data.import_id)
+                // Não muda step ainda, espera polling terminar
+                toast.success('Importação iniciada em segundo plano.')
+            } else {
+                // Fallback caso backend retorne executado (se síncrono por algum motivo)
+                setResult(data as any)
+                setStep(3)
+            }
             setErrorMessage(null)
-            setStep(3)
-            queryClient.invalidateQueries({ queryKey: ['import-history'] })
-            // Invalidate entity cache so lists reflect new data
-            const keys = entityQueryKeyMap[entity]
-            if (keys) queryClient.invalidateQueries({ queryKey: keys })
         },
         onError: (err: any) => {
-            toast.error('Ocorreu um erro. Tente novamente.')
+            setImportProgressId(null)
+            setImportProgress(null)
             if (err?.response?.status === 403) {
+                toast.error('Sem permissão para executar importação.')
                 setErrorMessage('Sem permissão para executar importação.')
+            } else if (err?.response?.status === 422 && err?.response?.data?.errors) {
+                const msgs = Object.values(err.response.data.errors).flat().join('; ')
+                toast.error(msgs || 'Erro de validação na importação.')
+                setErrorMessage(msgs || 'Erro de validação na importação.')
             } else {
+                toast.error(err?.response?.data?.message || 'Erro ao executar importação.')
                 setErrorMessage(err?.response?.data?.message || 'Erro ao executar importação. Tente novamente.')
             }
         },
@@ -262,7 +274,7 @@ export default function ImportPage() {
         }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                setSuccessMessage('Template salvo com sucesso!')
+            setSuccessMessage('Template salvo com sucesso!')
             queryClient.invalidateQueries({ queryKey: ['import-templates'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
@@ -281,7 +293,7 @@ export default function ImportPage() {
         mutationFn: (id: number) => api.delete(`/import/templates/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                setSuccessMessage('Template removido!')
+            setSuccessMessage('Template removido!')
             queryClient.invalidateQueries({ queryKey: ['import-templates'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
@@ -318,7 +330,7 @@ export default function ImportPage() {
         mutationFn: (id: number) => api.delete(`/import/${id}`),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                setSuccessMessage('Registro de importação removido.')
+            setSuccessMessage('Registro de importação removido.')
             queryClient.invalidateQueries({ queryKey: ['import-history'] })
             setTimeout(() => setSuccessMessage(null), 3000)
         },
@@ -339,7 +351,7 @@ export default function ImportPage() {
             const url = window.URL.createObjectURL(new Blob([response.data]))
             const link = document.createElement('a')
             link.href = url
-            link.download = `modelo_importação_${entity}.csv`
+            link.download = `modelo_importação_${entity}.xlsx`
             link.click()
             window.URL.revokeObjectURL(url)
         } catch {
@@ -363,8 +375,10 @@ export default function ImportPage() {
             setTimeout(() => setSuccessMessage(null), 3000)
         } catch (err: any) {
             if (err?.response?.status === 403) {
+                toast.error('Sem permissão para exportar dados.')
                 setErrorMessage('Sem permissão para exportar dados.')
             } else {
+                toast.error('Erro ao exportar dados.')
                 setErrorMessage('Erro ao exportar dados.')
             }
         } finally {
@@ -391,7 +405,7 @@ export default function ImportPage() {
         const file = e.dataTransfer.files[0]
         if (file) {
             if (!isValidFile(file)) {
-                setErrorMessage('Tipo de arquivo inválido. Aceitos: CSV, TXT.')
+                setErrorMessage('Tipo de arquivo inválido. Aceitos: CSV, TXT, XLSX, XLS.')
                 return
             }
             setErrorMessage(null)
@@ -403,7 +417,7 @@ export default function ImportPage() {
         const file = e.target.files?.[0]
         if (file) {
             if (!isValidFile(file)) {
-                setErrorMessage('Tipo de arquivo inválido. Aceitos: CSV, TXT.')
+                setErrorMessage('Tipo de arquivo inválido. Aceitos: CSV, TXT, XLSX, XLS.')
                 return
             }
             uploadMutation.mutate(file)
@@ -875,7 +889,7 @@ export default function ImportPage() {
                                 <>
                                     <Upload size={48} className="mb-4 text-surface-400" />
                                     <p className="mb-2 text-lg font-medium text-surface-700">
-                                        Arraste um arquivo CSV ou TXT aqui
+                                        Arraste um arquivo CSV, TXT ou Excel aqui
                                     </p>
                                     <p className="mb-4 text-[13px] text-surface-500">
                                         ou clique para selecionar
@@ -884,7 +898,7 @@ export default function ImportPage() {
                                         Selecionar Arquivo
                                         <input
                                             type="file"
-                                            accept=".csv,.txt"
+                                            accept=".csv,.txt,.xlsx,.xls"
                                             onChange={handleFileSelect}
                                             className="hidden"
                                         />
@@ -900,7 +914,7 @@ export default function ImportPage() {
                                     Dicas de Formatação
                                 </h4>
                                 <ul className="list-disc pl-5 space-y-1 text-blue-700">
-                                    <li>Arquivos <strong>CSV</strong> ou <strong>TXT</strong> com codificação UTF-8 ou ISO-8859-1.</li>
+                                    <li>Arquivos <strong>CSV</strong>, <strong>TXT</strong> ou <strong>Excel (.xlsx, .xls)</strong> com codificação UTF-8 ou ISO-8859-1.</li>
                                     <li>Separadores aceitos: Ponto e vírgula (;), Vírgula (,) ou Tabulação.</li>
                                     <li>Para valores monetários, use o formato brasileiro (ex: <strong>1.234,56</strong>) ou internacional (ex: <strong>1234.56</strong>).</li>
                                     <li>Datas devem estar no formato <strong>DD/MM/AAAA</strong> ou <strong>AAAA-MM-DD</strong>.</li>
@@ -914,8 +928,8 @@ export default function ImportPage() {
                                     disabled={isDownloadingSample}
                                     className="flex items-center gap-2 rounded-lg border border-blue-300 bg-surface-0 dark:bg-surface-800 px-4 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
                                 >
-                                    {isDownloadingSample ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                                    Baixar Modelo CSV
+                                    {isDownloadingSample ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+                                    Baixar Modelo Excel
                                 </button>
                                 {hasPermission('import.data.execute') && (
                                     <button
@@ -1222,6 +1236,49 @@ export default function ImportPage() {
                                 )}
                             </button>
                         </div>
+
+                        {/* Progress Bar */}
+                        {executeMutation.isPending && importProgress && (
+                            <div className="rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-blue-50 p-6 shadow-card">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 size={18} className="animate-spin text-brand-600" />
+                                        <span className="text-sm font-semibold text-surface-800">Importando dados...</span>
+                                    </div>
+                                    <span className="text-lg font-bold text-brand-700">{importProgress.progress}%</span>
+                                </div>
+                                <div className="relative mb-4 h-4 overflow-hidden rounded-full bg-surface-200">
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-500 ease-out"
+                                        style={{ width: `${importProgress.progress}%` }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                                </div>
+                                <div className="grid grid-cols-4 gap-3 text-center">
+                                    <div className="rounded-lg bg-surface-0/80 p-2">
+                                        <p className="text-lg font-bold text-emerald-600">+{importProgress.inserted}</p>
+                                        <p className="text-[11px] text-surface-500">Inseridos</p>
+                                    </div>
+                                    <div className="rounded-lg bg-surface-0/80 p-2">
+                                        <p className="text-lg font-bold text-blue-600">{importProgress.updated}</p>
+                                        <p className="text-[11px] text-surface-500">Atualizados</p>
+                                    </div>
+                                    <div className="rounded-lg bg-surface-0/80 p-2">
+                                        <p className="text-lg font-bold text-surface-500">{importProgress.skipped}</p>
+                                        <p className="text-[11px] text-surface-500">Pulados</p>
+                                    </div>
+                                    <div className="rounded-lg bg-surface-0/80 p-2">
+                                        <p className="text-lg font-bold text-red-600">{importProgress.errors}</p>
+                                        <p className="text-[11px] text-surface-500">Erros</p>
+                                    </div>
+                                </div>
+                                {importProgress.total_rows > 0 && (
+                                    <p className="mt-3 text-center text-xs text-surface-400">
+                                        {Math.round(importProgress.total_rows * importProgress.progress / 100)} de {importProgress.total_rows.toLocaleString('pt-BR')} linhas processadas
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 

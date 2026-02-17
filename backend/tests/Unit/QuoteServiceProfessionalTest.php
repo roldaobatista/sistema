@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Enums\QuoteStatus;
 use App\Events\QuoteApproved;
 use App\Models\Customer;
 use App\Models\Equipment;
@@ -12,7 +13,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\QuoteService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -24,8 +24,6 @@ use Tests\TestCase;
  */
 class QuoteServiceProfessionalTest extends TestCase
 {
-    use RefreshDatabase;
-
     private QuoteService $service;
     private Tenant $tenant;
     private User $user;
@@ -34,6 +32,7 @@ class QuoteServiceProfessionalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new QuoteService();
         $this->tenant = Tenant::factory()->create();
@@ -52,13 +51,15 @@ class QuoteServiceProfessionalTest extends TestCase
         return $this->service->createQuote([
             'customer_id' => $this->customer->id,
             'valid_until' => now()->addDays(30),
-            'observations' => 'Teste calibração balança',
+            'observations' => 'Teste de calibracao balanca',
+            'equipments' => [],
         ], $this->tenant->id, $this->user->id);
     }
 
     private function addEquipmentWithItem(Quote $quote): QuoteEquipment
     {
         $equipment = Equipment::factory()->create(['tenant_id' => $this->tenant->id]);
+        $service = \App\Models\Service::factory()->create(['tenant_id' => $this->tenant->id]);
 
         $quoteEquipment = QuoteEquipment::create([
             'quote_id' => $quote->id,
@@ -71,9 +72,12 @@ class QuoteServiceProfessionalTest extends TestCase
             'quote_equipment_id' => $quoteEquipment->id,
             'tenant_id' => $this->tenant->id,
             'type' => 'service',
+            'service_id' => $service->id,
             'custom_description' => 'Calibração padrão',
             'quantity' => 1,
+            'original_price' => 2500.00,
             'unit_price' => 2500.00,
+            'discount_percentage' => 0,
             'subtotal' => 2500.00,
         ]);
 
@@ -90,7 +94,7 @@ class QuoteServiceProfessionalTest extends TestCase
 
         $this->assertNotNull($quote->id);
         $this->assertNotNull($quote->quote_number);
-        $this->assertEquals(Quote::STATUS_DRAFT, $quote->status);
+        $this->assertEquals(QuoteStatus::DRAFT, $quote->status);
         $this->assertEquals($this->customer->id, $quote->customer_id);
         $this->assertDatabaseHas('quotes', [
             'id' => $quote->id,
@@ -108,9 +112,10 @@ class QuoteServiceProfessionalTest extends TestCase
         $quote = $this->createDraftQuote();
         $this->addEquipmentWithItem($quote);
 
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $result = $this->service->sendQuote($quote);
 
-        $this->assertEquals(Quote::STATUS_SENT, $result->status);
+        $this->assertEquals(QuoteStatus::SENT, $result->status);
         $this->assertNotNull($result->sent_at);
         $this->assertDatabaseHas('quotes', [
             'id' => $quote->id,
@@ -128,6 +133,7 @@ class QuoteServiceProfessionalTest extends TestCase
 
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('pelo menos um equipamento com itens');
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $this->service->sendQuote($quote);
     }
 
@@ -137,15 +143,14 @@ class QuoteServiceProfessionalTest extends TestCase
 
     public function test_approve_changes_status_to_approved(): void
     {
-        Event::fake([QuoteApproved::class]);
-
         $quote = $this->createDraftQuote();
         $this->addEquipmentWithItem($quote);
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $this->service->sendQuote($quote);
 
         $result = $this->service->approveQuote($quote, $this->user);
 
-        $this->assertEquals(Quote::STATUS_APPROVED, $result->status);
+        $this->assertEquals(QuoteStatus::APPROVED, $result->status);
         $this->assertNotNull($result->approved_at);
         Event::assertDispatched(QuoteApproved::class);
     }
@@ -171,11 +176,12 @@ class QuoteServiceProfessionalTest extends TestCase
     {
         $quote = $this->createDraftQuote();
         $this->addEquipmentWithItem($quote);
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $this->service->sendQuote($quote);
 
         $result = $this->service->rejectQuote($quote, 'Preço muito alto');
 
-        $this->assertEquals(Quote::STATUS_REJECTED, $result->status);
+        $this->assertEquals(QuoteStatus::REJECTED, $result->status);
         $this->assertNotNull($result->rejected_at);
         $this->assertEquals('Preço muito alto', $result->rejection_reason);
         $this->assertDatabaseHas('quotes', [
@@ -204,6 +210,7 @@ class QuoteServiceProfessionalTest extends TestCase
     {
         $quote = $this->createDraftQuote();
         $this->addEquipmentWithItem($quote);
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $this->service->sendQuote($quote);
         $this->service->approveQuote($quote, $this->user);
 
@@ -231,6 +238,7 @@ class QuoteServiceProfessionalTest extends TestCase
     {
         $quote = $this->createDraftQuote();
         $this->addEquipmentWithItem($quote);
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $this->service->sendQuote($quote);
         $this->service->approveQuote($quote, $this->user);
         $this->service->convertToWorkOrder($quote, $this->user->id);
@@ -249,6 +257,7 @@ class QuoteServiceProfessionalTest extends TestCase
     {
         $quote = $this->createDraftQuote();
         $this->addEquipmentWithItem($quote);
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $this->service->sendQuote($quote);
         $this->service->approveQuote($quote, $this->user);
         $this->service->convertToWorkOrder($quote, $this->user->id);
@@ -281,12 +290,13 @@ class QuoteServiceProfessionalTest extends TestCase
     {
         $quote = $this->createDraftQuote();
         $this->addEquipmentWithItem($quote);
+        $quote->update(['status' => Quote::STATUS_INTERNALLY_APPROVED]);
         $this->service->sendQuote($quote);
 
         $duplicate = $this->service->duplicateQuote($quote);
 
         $this->assertNotEquals($quote->id, $duplicate->id);
-        $this->assertEquals(Quote::STATUS_DRAFT, $duplicate->status);
+        $this->assertEquals(QuoteStatus::DRAFT, $duplicate->status);
         $this->assertEquals($this->customer->id, $duplicate->customer_id);
         $this->assertNull($duplicate->sent_at);
         $this->assertNull($duplicate->approved_at);

@@ -274,7 +274,29 @@ class ImportTest extends TestCase
             'duplicate_strategy' => Import::STRATEGY_SKIP
         ]);
 
-        $response->assertOk();
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $response = $this->postJson('/api/v1/import/execute', [
+            'file_path' => "imports/$fileName",
+            'entity_type' => Import::ENTITY_CUSTOMERS,
+            'mapping' => [
+                'name' => 'Nome',
+                'document' => 'CPF',
+                'email' => 'Email'
+            ],
+            'separator' => ';',
+            'duplicate_strategy' => Import::STRATEGY_SKIP
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'pending');
+
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ImportJob::class);
+
+        // Manually process to assert database state
+        $import = Import::first();
+        
+        (new \App\Services\ImportService)->processImport($import);
 
         $this->assertDatabaseHas('customers', [
             'tenant_id' => $this->tenant->id,
@@ -306,7 +328,25 @@ class ImportTest extends TestCase
             'duplicate_strategy' => Import::STRATEGY_UPDATE
         ]);
 
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $response = $this->postJson('/api/v1/import/execute', [
+            'file_path' => "imports/$fileName",
+            'entity_type' => Import::ENTITY_CUSTOMERS,
+            'mapping' => [
+                'document' => 'Documento',
+                'name' => 'Nome',
+            ],
+            'separator' => ';',
+            'duplicate_strategy' => Import::STRATEGY_UPDATE
+        ]);
+
         $response->assertOk();
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ImportJob::class);
+
+        // Manual process
+        $import = Import::latest()->first();
+        (new \App\Services\ImportService)->processImport($import);
 
         $this->assertDatabaseHas('customers', [
             'id' => $customer->id,
@@ -337,10 +377,30 @@ class ImportTest extends TestCase
             'duplicate_strategy' => Import::STRATEGY_SKIP
         ]);
 
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $response = $this->postJson('/api/v1/import/execute', [
+            'file_path' => "imports/$fileName",
+            'entity_type' => Import::ENTITY_CUSTOMERS,
+            'mapping' => [
+                'document' => 'Documento',
+                'name' => 'Nome',
+            ],
+            'separator' => ';',
+            'duplicate_strategy' => Import::STRATEGY_SKIP
+        ]);
+
         $response->assertOk();
-        $this->assertEquals(0, $response->json('inserted'));
-        $this->assertEquals(0, $response->json('updated'));
-        $this->assertEquals(1, $response->json('skipped'));
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ImportJob::class);
+        
+        // Manual process
+        $import = Import::latest()->first();
+        (new \App\Services\ImportService)->processImport($import);
+        $import->refresh();
+
+        $this->assertEquals(0, $import->inserted);
+        $this->assertEquals(0, $import->updated);
+        $this->assertEquals(1, $import->skipped);
 
         $this->assertDatabaseHas('customers', [
             'id' => $customer->id,
@@ -368,8 +428,28 @@ class ImportTest extends TestCase
             'duplicate_strategy' => Import::STRATEGY_SKIP,
         ]);
 
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $response = $this->postJson('/api/v1/import/execute', [
+            'file_path' => "imports/$fileName",
+            'entity_type' => Import::ENTITY_PRODUCTS,
+            'mapping' => [
+                'code' => 'Codigo',
+                'name' => 'Nome',
+                'sell_price' => 'Preco',
+            ],
+            'separator' => ';',
+            'duplicate_strategy' => Import::STRATEGY_SKIP,
+        ]);
+
         $response->assertOk();
-        $this->assertEquals(1, $response->json('inserted'));
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ImportJob::class);
+
+        $import = Import::latest()->first();
+        (new \App\Services\ImportService)->processImport($import);
+        $import->refresh();
+
+        $this->assertEquals(1, $import->inserted);
 
         $this->assertDatabaseHas('products', [
             'tenant_id' => $this->tenant->id,
@@ -641,12 +721,12 @@ class ImportTest extends TestCase
 
     // ─── Download Sample ───
 
-    public function test_download_sample_returns_csv(): void
+    public function test_download_sample_returns_excel(): void
     {
         $response = $this->get('/api/v1/import/sample/customers');
 
         $response->assertOk()
-            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
     public function test_download_sample_rejects_invalid_entity(): void
@@ -690,5 +770,124 @@ class ImportTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('total', 1);
+    }
+
+    // ─── XLSX Support ───
+
+    public function test_upload_accepts_xlsx_file(): void
+    {
+        // Criar um arquivo XLSX real usando PhpSpreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Nome', 'CPF/CNPJ', 'Email'],
+            ['João Excel', '12345678901', 'joao@excel.com'],
+            ['Maria Excel', '98765432100', 'maria@excel.com'],
+        ]);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'test') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tempPath);
+        $spreadsheet->disconnectWorksheets();
+
+        $file = new UploadedFile($tempPath, 'clientes.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        $response = $this->postJson('/api/v1/import/upload', [
+            'file' => $file,
+            'entity_type' => Import::ENTITY_CUSTOMERS,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'file_path', 'file_name', 'encoding', 'separator',
+                'headers', 'total_rows', 'entity_type', 'available_fields',
+            ])
+            ->assertJsonPath('total_rows', 2)
+            ->assertJsonPath('entity_type', Import::ENTITY_CUSTOMERS);
+
+        // Verificar que os headers foram extraídos (3 colunas)
+        $headers = $response->json('headers');
+        $this->assertCount(3, $headers);
+
+        // Verificar que pelo menos um header contém texto esperado (BOM pode alterar primeiro header)
+        $headersJoined = implode('|', $headers);
+        $this->assertStringContainsString('Email', $headersJoined);
+
+        @unlink($tempPath);
+    }
+
+    public function test_convert_spreadsheet_to_csv(): void
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Produto', 'Preço', 'Estoque'],
+            ['Widget A', '10.50', '100'],
+            ['Widget B', '20.00', '50'],
+        ]);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'test') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tempPath);
+        $spreadsheet->disconnectWorksheets();
+
+        $service = app(\App\Services\ImportService::class);
+        $csvPath = $service->convertSpreadsheetToCsv($tempPath);
+
+        $this->assertFileExists($csvPath);
+        $this->assertStringEndsWith('.csv', $csvPath);
+
+        // Verificar conteúdo do CSV
+        $content = file_get_contents($csvPath);
+        $this->assertStringContainsString('Produto', $content);
+        $this->assertStringContainsString('Widget A', $content);
+        $this->assertStringContainsString('Widget B', $content);
+
+        // Arquivo original xlsx deve ter sido deletado
+        $this->assertFileDoesNotExist($tempPath);
+
+        @unlink($csvPath);
+    }
+
+    // ─── Progress ───
+
+    public function test_progress_endpoint_returns_progress(): void
+    {
+        $import = Import::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $this->user->id,
+            'status' => Import::STATUS_PROCESSING,
+            'progress' => 45,
+            'total_rows' => 100,
+            'inserted' => 30,
+            'updated' => 10,
+            'skipped' => 3,
+            'errors' => 2,
+        ]);
+
+        $response = $this->getJson("/api/v1/import/{$import->id}/progress");
+
+        $response->assertOk()
+            ->assertJsonStructure(['progress', 'status', 'total_rows', 'inserted', 'updated', 'skipped', 'errors'])
+            ->assertJsonPath('progress', 45)
+            ->assertJsonPath('status', Import::STATUS_PROCESSING)
+            ->assertJsonPath('total_rows', 100)
+            ->assertJsonPath('inserted', 30)
+            ->assertJsonPath('errors', 2);
+    }
+
+    public function test_progress_endpoint_returns_404_for_other_tenant(): void
+    {
+        $otherTenant = Tenant::factory()->create();
+        $import = Import::factory()->create([
+            'tenant_id' => $otherTenant->id,
+            'user_id' => $this->user->id,
+            'status' => Import::STATUS_DONE,
+            'progress' => 100,
+        ]);
+
+        $response = $this->getJson("/api/v1/import/{$import->id}/progress");
+
+        $response->assertStatus(404);
     }
 }

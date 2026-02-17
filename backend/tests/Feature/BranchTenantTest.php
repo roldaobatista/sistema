@@ -91,8 +91,8 @@ class BranchTenantTest extends TestCase
     public function test_invite_user_to_tenant(): void
     {
         $response = $this->postJson("/api/v1/tenants/{$this->tenant->id}/invite", [
+            'name' => 'Novo Usuário',
             'email' => 'novo.usuario@empresa.com',
-            'role' => 'operator',
         ]);
         $response->assertCreated();
     }

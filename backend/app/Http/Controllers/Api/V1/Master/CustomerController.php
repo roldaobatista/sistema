@@ -17,7 +17,8 @@ class CustomerController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Customer::with(['contacts', 'assignedSeller:id,name']);
+        $query = Customer::with(['contacts', 'assignedSeller:id,name'])
+            ->withCount('documents');
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {

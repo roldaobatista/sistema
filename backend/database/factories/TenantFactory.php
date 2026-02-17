@@ -13,10 +13,14 @@ class TenantFactory extends Factory
     {
         return [
             'name' => fake()->company(),
+            'trade_name' => fake()->optional()->company(),
             'document' => fake()->numerify('##.###.###/####-##'),
             'email' => fake()->companyEmail(),
             'phone' => fake()->phoneNumber(),
             'status' => Tenant::STATUS_ACTIVE,
+            'website' => fake()->optional()->url(),
+            'address_city' => fake()->optional()->city(),
+            'address_state' => fake()->optional()->stateAbbr(),
         ];
     }
 }

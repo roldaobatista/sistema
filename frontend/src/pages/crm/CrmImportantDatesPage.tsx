@@ -51,7 +51,7 @@ export function CrmImportantDatesPage() {
                     {dates.map(d => {
                         const tc = typeConfig[d.type] ?? typeConfig.custom
                         const Icon = tc.icon
-                        const daysUntil = Math.ceil((new Date(d.date).getTime() - Date.now()) / 86400000)
+                        const daysUntil = Math.ceil((new Date(d.date).getTime() - new Date().getTime()) / 86400000)
                         return (
                             <Card key={d.id} className={`hover:shadow-sm transition-shadow ${daysUntil <= 7 ? 'border-amber-200 bg-amber-50/50' : ''}`}>
                                 <CardContent className="py-3">

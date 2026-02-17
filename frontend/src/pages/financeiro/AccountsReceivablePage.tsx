@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     DollarSign, Plus, Search, ArrowDown, AlertTriangle,
-    CheckCircle, Clock, Eye, Trash2, FileText, Pencil,
+    CheckCircle, Clock, Eye, Trash2, FileText, Pencil, Ban,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -111,6 +111,7 @@ export function AccountsReceivablePage() {
     const [showPay, setShowPay] = useState<AR | null>(null)
     const [showDetail, setShowDetail] = useState<AR | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<AR | null>(null)
+    const [cancelTarget, setCancelTarget] = useState<AR | null>(null)
     const [formErrors, setFormErrors] = useState<Record<string, string[]>>({})
     const [payErrors, setPayErrors] = useState<Record<string, string[]>>({})
     const [form, setForm] = useState<ARForm>(emptyForm)
@@ -266,6 +267,24 @@ export function AccountsReceivablePage() {
                 return
             }
             toast.error(extractMessage(error, 'Erro ao excluir título'))
+        },
+    })
+
+    const cancelMut = useMutation({
+        mutationFn: (id: number) => api.put(`/accounts-receivable/${id}`, { status: 'cancelled' }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
+            qc.invalidateQueries({ queryKey: ['ar-summary'] })
+            setCancelTarget(null)
+            toast.success('Título cancelado com sucesso')
+        },
+        onError: (error: unknown) => {
+            const status = (error as ApiErrorLike | undefined)?.response?.status
+            if (status === 403) {
+                toast.error('Voce não tem permissão para cancelar título')
+                return
+            }
+            toast.error(extractMessage(error, 'Erro ao cancelar título'))
         },
     })
 
@@ -447,6 +466,9 @@ export function AccountsReceivablePage() {
                                                 setPayErrors({})
                                             }} className="hover:text-emerald-600" />
                                         )}
+                                        {canUpdate && r.status !== FINANCIAL_STATUS.PAID && r.status !== FINANCIAL_STATUS.CANCELLED && (
+                                            <IconButton label="Cancelar" icon={<Ban className="h-4 w-4" />} onClick={() => setCancelTarget(r)} className="hover:text-amber-600" />
+                                        )}
                                         {canDelete && (
                                             <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteTarget(r)} className="hover:text-red-600" />
                                         )}
@@ -625,6 +647,22 @@ export function AccountsReceivablePage() {
                         )}
                     </div>
                 )}
+            </Modal>
+
+            <Modal open={!!cancelTarget} onOpenChange={() => setCancelTarget(null)} title="Cancelar Título">
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">Tem certeza que deseja cancelar este título? O status será alterado para <strong>Cancelado</strong> e ele não poderá mais ser editado ou receber pagamentos.</p>
+                    {cancelTarget && (
+                        <div className="rounded-lg bg-amber-50 p-3 text-sm">
+                            <p className="font-medium text-amber-800">{cancelTarget.description}</p>
+                            <p className="text-amber-700">{fmtBRL(cancelTarget.amount)} — {cancelTarget.customer.name} — venc. {fmtDate(cancelTarget.due_date)}</p>
+                        </div>
+                    )}
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" onClick={() => setCancelTarget(null)}>Voltar</Button>
+                        <Button variant="danger" loading={cancelMut.isPending} onClick={() => { if (cancelTarget) cancelMut.mutate(cancelTarget.id) }}>Confirmar Cancelamento</Button>
+                    </div>
+                </div>
             </Modal>
 
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Título">

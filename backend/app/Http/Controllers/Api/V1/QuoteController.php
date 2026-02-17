@@ -38,7 +38,8 @@ class QuoteController extends Controller
 
     private function ensureQuoteMutable(Quote $quote): ?JsonResponse
     {
-        if (!in_array($quote->status, [Quote::STATUS_DRAFT, Quote::STATUS_REJECTED], true)) {
+        $status = $quote->status instanceof QuoteStatus ? $quote->status : QuoteStatus::tryFrom($quote->status);
+        if (!$status || !$status->isMutable()) {
             return response()->json(['message' => 'Só é possível editar orçamentos em rascunho ou rejeitados'], 422);
         }
 
@@ -228,7 +229,7 @@ class QuoteController extends Controller
     public function internalApprove(Quote $quote): JsonResponse
     {
         try {
-            if (!in_array($quote->status, [Quote::STATUS_DRAFT, Quote::STATUS_PENDING_INTERNAL], true)) {
+            if (!in_array($quote->status, [QuoteStatus::DRAFT, QuoteStatus::PENDING_INTERNAL_APPROVAL], true)) {
                 return response()->json(['message' => 'Orçamento não está em status que permite aprovação interna'], 422);
             }
 
@@ -533,9 +534,16 @@ class QuoteController extends Controller
             return $error;
         }
 
-        Storage::disk('public')->delete($photo->path);
-        $photo->delete();
-        return response()->json(null, 204);
+        try {
+            DB::transaction(function () use ($photo) {
+                Storage::disk('public')->delete($photo->path);
+                $photo->delete();
+            });
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover foto'], 500);
+        }
     }
 
     // ── Summary & Timeline ──

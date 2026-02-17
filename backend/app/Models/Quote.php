@@ -49,6 +49,8 @@ class Quote extends Model
 
     public const ACTIVITY_TYPE_APPROVED = 'quote_approved';
 
+    protected $appends = ['approval_url'];
+
     protected $fillable = [
         'tenant_id', 'quote_number', 'revision', 'customer_id', 'seller_id', 'status',
         'source', 'valid_until', 'discount_percentage', 'discount_amount',
@@ -61,6 +63,7 @@ class Quote extends Model
     protected function casts(): array
     {
         return [
+            'status' => QuoteStatus::class,
             'valid_until' => 'date',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
@@ -91,12 +94,12 @@ class Quote extends Model
 
     public function canSendToClient(): bool
     {
-        return in_array($this->status, [self::STATUS_INTERNALLY_APPROVED]);
+        return $this->status === QuoteStatus::INTERNALLY_APPROVED;
     }
 
     public function requiresInternalApproval(): bool
     {
-        return $this->status === self::STATUS_PENDING_INTERNAL;
+        return $this->status === QuoteStatus::PENDING_INTERNAL_APPROVAL;
     }
 
     public function equipments(): HasMany
@@ -142,7 +145,7 @@ class Quote extends Model
 
     public function isExpired(): bool
     {
-        return $this->valid_until && $this->valid_until->isPast() && $this->status === self::STATUS_SENT;
+        return $this->valid_until && $this->valid_until->isPast() && $this->status === QuoteStatus::SENT;
     }
 
     public static function nextNumber(int $tenantId): string

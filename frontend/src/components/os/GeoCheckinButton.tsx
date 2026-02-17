@@ -33,7 +33,7 @@ export default function GeoCheckinButton({ workOrderId, hasCheckin, hasCheckout 
             setGettingLocation(true)
             const position = await getPosition()
             setGettingLocation(false)
-            return api.post(`/api/v1/work-orders/${workOrderId}/checkin`, {
+            return api.post(`/work-orders/${workOrderId}/checkin`, {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
             })
@@ -53,7 +53,7 @@ export default function GeoCheckinButton({ workOrderId, hasCheckin, hasCheckout 
             setGettingLocation(true)
             const position = await getPosition()
             setGettingLocation(false)
-            return api.post(`/api/v1/work-orders/${workOrderId}/checkout`, {
+            return api.post(`/work-orders/${workOrderId}/checkout`, {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
             })

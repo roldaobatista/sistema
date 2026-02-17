@@ -228,10 +228,15 @@ class TenantController extends Controller
                             $q->where('team_id', $tenant->id)->orWhereNull('team_id');
                         })->exists();
 
-                    if ($roleExists) {
-                        setPermissionsTeamId($tenant->id);
-                        $user->assignRole($validated['role']);
+                    if (!$roleExists) {
+                        return response()->json([
+                            'message' => 'Role informada não existe.',
+                            'errors' => ['role' => ['A role informada não é válida para esta empresa.']],
+                        ], 422);
                     }
+
+                    setPermissionsTeamId($tenant->id);
+                    $user->assignRole($validated['role']);
                 }
 
                 if ($isNewUser) {

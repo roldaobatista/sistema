@@ -65,7 +65,7 @@ export default function EquipmentQrPublicPage() {
     const cal = data.last_calibration
     const isExpired = cal?.next_due_date ? new Date(cal.next_due_date) < new Date() : false
     const isNearExpiry = cal?.next_due_date
-        ? new Date(cal.next_due_date) < new Date(Date.now() + 30 * 86400000) && !isExpired
+        ? new Date(cal.next_due_date) < new Date(new Date().getTime() + 30 * 86400000) && !isExpired
         : false
 
     return (

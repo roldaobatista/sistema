@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     DollarSign, Plus, Search, ArrowUp, AlertTriangle,
-    CheckCircle, Clock, Eye, Trash2, Pencil, Download,
+    CheckCircle, Clock, Eye, Trash2, Pencil, Download, Ban,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -110,6 +110,7 @@ export function AccountsPayablePage() {
     const [showPay, setShowPay] = useState<AP | null>(null)
     const [showDetail, setShowDetail] = useState<AP | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<AP | null>(null)
+    const [cancelTarget, setCancelTarget] = useState<AP | null>(null)
     const [form, setForm] = useState<APForm>(emptyForm)
     const [formErrors, setFormErrors] = useState<Record<string, string[]>>({})
     const [payErrors, setPayErrors] = useState<Record<string, string[]>>({})
@@ -254,6 +255,24 @@ export function AccountsPayablePage() {
                 return
             }
             toast.error(extractMessage(error, 'Erro ao excluir conta'))
+        },
+    })
+
+    const cancelMut = useMutation({
+        mutationFn: (id: number) => api.put(`/accounts-payable/${id}`, { status: 'cancelled' }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['accounts-payable'] })
+            qc.invalidateQueries({ queryKey: ['ap-summary'] })
+            setCancelTarget(null)
+            toast.success('Conta cancelada com sucesso')
+        },
+        onError: (error: unknown) => {
+            const status = (error as ApiErrorLike | undefined)?.response?.status
+            if (status === 403) {
+                toast.error('Voce não tem permissão para cancelar conta')
+                return
+            }
+            toast.error(extractMessage(error, 'Erro ao cancelar conta'))
         },
     })
 
@@ -469,6 +488,9 @@ export function AccountsPayablePage() {
                                                 setPayErrors({})
                                             }} className="hover:text-emerald-600" />
                                         )}
+                                        {canUpdate && r.status !== FINANCIAL_STATUS.PAID && r.status !== FINANCIAL_STATUS.CANCELLED && (
+                                            <IconButton label="Cancelar" icon={<Ban className="h-4 w-4" />} onClick={() => setCancelTarget(r)} className="hover:text-amber-600" />
+                                        )}
                                         {canDelete && (
                                             <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteTarget(r)} className="hover:text-red-600" />
                                         )}
@@ -616,6 +638,22 @@ export function AccountsPayablePage() {
                         )}
                     </div>
                 )}
+            </Modal>
+
+            <Modal open={!!cancelTarget} onOpenChange={() => setCancelTarget(null)} title="Cancelar Conta">
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">Tem certeza que deseja cancelar esta conta? O status será alterado para <strong>Cancelado</strong> e ela não poderá mais ser editada ou paga.</p>
+                    {cancelTarget && (
+                        <div className="rounded-lg bg-amber-50 p-3 text-sm">
+                            <p className="font-medium text-amber-800">{cancelTarget.description}</p>
+                            <p className="text-amber-700">{fmtBRL(cancelTarget.amount)} — venc. {fmtDate(cancelTarget.due_date)}</p>
+                        </div>
+                    )}
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" onClick={() => setCancelTarget(null)}>Voltar</Button>
+                        <Button variant="danger" loading={cancelMut.isPending} onClick={() => { if (cancelTarget) cancelMut.mutate(cancelTarget.id) }}>Confirmar Cancelamento</Button>
+                    </div>
+                </div>
             </Modal>
 
             <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Conta">

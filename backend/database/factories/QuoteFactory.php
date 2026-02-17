@@ -23,7 +23,9 @@ class QuoteFactory extends Factory
             'status' => Quote::STATUS_DRAFT,
             'valid_until' => now()->addDays(7),
             'subtotal' => 1000.00,
+            'displacement_value' => 0,
             'total' => 1000.00,
+            'source' => null,
         ];
     }
 }

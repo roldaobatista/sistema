@@ -14,7 +14,7 @@ class WarehouseController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Warehouse::query();
+        $query = Warehouse::with(['user:id,name', 'vehicle:id,plate']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -43,7 +43,9 @@ class WarehouseController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'code' => 'required|string|max:50|unique:warehouses,code,NULL,id,tenant_id,' . app('current_tenant_id'),
-                'type' => 'required|in:fixed,vehicle',
+                'type' => 'required|in:fixed,vehicle,technician',
+                'user_id' => 'nullable|integer|exists:users,id',
+                'vehicle_id' => 'nullable|integer|exists:fleet_vehicles,id',
                 'is_active' => 'boolean',
             ]);
 
@@ -74,7 +76,9 @@ class WarehouseController extends Controller
             $validated = $request->validate([
                 'name' => 'string|max:255',
                 'code' => 'string|max:50|unique:warehouses,code,' . $warehouse->id . ',id,tenant_id,' . app('current_tenant_id'),
-                'type' => 'in:fixed,vehicle',
+                'type' => 'in:fixed,vehicle,technician',
+                'user_id' => 'nullable|integer|exists:users,id',
+                'vehicle_id' => 'nullable|integer|exists:fleet_vehicles,id',
                 'is_active' => 'boolean',
             ]);
 

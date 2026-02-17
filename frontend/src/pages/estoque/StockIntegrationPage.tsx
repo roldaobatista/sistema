@@ -101,12 +101,22 @@ export default function StockIntegrationPage() {
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [createOpen, setCreateOpen] = useState(false);
+    const [detailItem, setDetailItem] = useState<any>(null);
     const [confirmAction, setConfirmAction] = useState<{
         id: number; status: string; label: string;
         type: 'quote' | 'request' | 'rma' | 'disposal';
     } | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; label: string } | null>(null);
     const [form, setForm] = useState<Record<string, any>>({});
     const queryClient = useQueryClient();
+
+    // Produtos para seletor nos formulários
+    const { data: productsRes } = useQuery({
+        queryKey: ['products-for-integration'],
+        queryFn: () => api.get('/stock/summary').then(r => r.data),
+        enabled: createOpen,
+    });
+    const productOptions: { id: number; name: string; code?: string; unit?: string }[] = productsRes?.products ?? [];
 
     const updateForm = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -141,32 +151,51 @@ export default function StockIntegrationPage() {
         enabled: activeTab === 'disposal',
     });
 
+    // ═══ Delete mutation ═══
+    const deleteQuoteMut = useMutation({
+        mutationFn: (id: number) => api.delete(`/purchase-quotes/${id}`),
+        onSuccess: () => {
+            toast.success('Cotação excluída com sucesso');
+            queryClient.invalidateQueries({ queryKey: ['purchase-quotes'] });
+            setDeleteConfirm(null);
+        },
+        onError: (error: any) => toast.error(error?.response?.data?.message || 'Erro ao excluir cotação'),
+    });
+
     // ═══ Status update mutations ═══
     const updateQuoteStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/purchase-quotes/${id}`, { status }),
-        onSuccess: () => { toast.success('Cotação atualizada');
-                queryClient.invalidateQueries({ queryKey: ['purchase-quotes'] }); },
+        onSuccess: () => {
+            toast.success('Cotação atualizada');
+            queryClient.invalidateQueries({ queryKey: ['purchase-quotes'] });
+        },
         onError: () => toast.error('Erro ao atualizar cotação'),
     });
 
     const updateRequestStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/material-requests/${id}`, { status }),
-        onSuccess: () => { toast.success('Solicitação atualizada');
-                queryClient.invalidateQueries({ queryKey: ['material-requests'] }); },
+        onSuccess: () => {
+            toast.success('Solicitação atualizada');
+            queryClient.invalidateQueries({ queryKey: ['material-requests'] });
+        },
         onError: () => toast.error('Erro ao atualizar'),
     });
 
     const updateRmaStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/rma/${id}`, { status }),
-        onSuccess: () => { toast.success('RMA atualizado');
-                queryClient.invalidateQueries({ queryKey: ['rma-requests'] }); },
+        onSuccess: () => {
+            toast.success('RMA atualizado');
+            queryClient.invalidateQueries({ queryKey: ['rma-requests'] });
+        },
         onError: () => toast.error('Erro ao atualizar RMA'),
     });
 
     const updateDisposalStatus = useMutation({
         mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/stock-disposals/${id}`, { status }),
-        onSuccess: () => { toast.success('Descarte atualizado');
-                queryClient.invalidateQueries({ queryKey: ['stock-disposals'] }); },
+        onSuccess: () => {
+            toast.success('Descarte atualizado');
+            queryClient.invalidateQueries({ queryKey: ['stock-disposals'] });
+        },
         onError: () => toast.error('Erro ao atualizar descarte'),
     });
 
@@ -308,46 +337,50 @@ export default function StockIntegrationPage() {
             {activeTab === 'quotes' && !quotesLoading && (
                 <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
                     <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-subtle">
-                        <thead className="bg-surface-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Ref</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Título</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Fornecedores</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Prazo</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-surface-100">
-                            {(quotesData?.data ?? []).length === 0 && (
-                                <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
-                                    <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhuma cotação
-                                </td></tr>
-                            )}
-                            {(quotesData?.data ?? []).map((q: any) => (
-                                <tr key={q.id} className="hover:bg-surface-50">
-                                    <td className="px-4 py-3 text-sm font-mono">{q.reference}</td>
-                                    <td className="px-4 py-3 text-sm font-medium">{q.title}</td>
-                                    <td className="px-4 py-3 text-sm text-center">{q.items?.length ?? 0}</td>
-                                    <td className="px-4 py-3 text-sm text-center">{q.suppliers?.length ?? 0}</td>
-                                    <td className="px-4 py-3 text-sm text-center">{formatDate(q.deadline)}</td>
-                                    <td className="px-4 py-3 text-center"><StatusBadge status={q.status} /></td>
-                                    <td className="px-4 py-3 text-center">
-                                        <div className="flex justify-center gap-1">
-                                            {q.status === 'draft' && (
-                                                <button title="Enviar" onClick={() => updateQuoteStatus.mutate({ id: q.id, status: 'sent' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
-                                            )}
-                                                {q.status !== 'cancelled' && (
-                                                <button title="Cancelar" onClick={() => setConfirmAction({ id: q.id, status: 'cancelled', label: 'cancelar esta cotação', type: 'quote' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
-                                            )}
-                                        </div>
-                                    </td>
+                        <table className="min-w-full divide-y divide-subtle">
+                            <thead className="bg-surface-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Ref</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Título</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Fornecedores</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Prazo</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-surface-100">
+                                {(quotesData?.data ?? []).length === 0 && (
+                                    <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
+                                        <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhuma cotação
+                                    </td></tr>
+                                )}
+                                {(quotesData?.data ?? []).map((q: any) => (
+                                    <tr key={q.id} className="hover:bg-surface-50">
+                                        <td className="px-4 py-3 text-sm font-mono">{q.reference}</td>
+                                        <td className="px-4 py-3 text-sm font-medium">{q.title}</td>
+                                        <td className="px-4 py-3 text-sm text-center">{q.items?.length ?? 0}</td>
+                                        <td className="px-4 py-3 text-sm text-center">{q.suppliers?.length ?? 0}</td>
+                                        <td className="px-4 py-3 text-sm text-center">{formatDate(q.deadline)}</td>
+                                        <td className="px-4 py-3 text-center"><StatusBadge status={q.status} /></td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="flex justify-center gap-1">
+                                                <button title="Ver detalhes" onClick={() => setDetailItem(q)} className="p-1.5 text-surface-500 hover:bg-surface-100 rounded"><Eye className="h-4 w-4" /></button>
+                                                {q.status === 'draft' && (
+                                                    <button title="Enviar" onClick={() => updateQuoteStatus.mutate({ id: q.id, status: 'sent' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
+                                                )}
+                                                {q.status !== 'cancelled' && (
+                                                    <button title="Cancelar" onClick={() => setConfirmAction({ id: q.id, status: 'cancelled', label: 'cancelar esta cotação', type: 'quote' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
+                                                )}
+                                                {(q.status === 'draft' || q.status === 'cancelled') && (
+                                                    <button title="Excluir" onClick={() => setDeleteConfirm({ id: q.id, label: q.title || q.reference })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                     <PaginationControls data={quotesData} page={page} onPageChange={setPage} />
                 </div>
@@ -356,51 +389,52 @@ export default function StockIntegrationPage() {
             {activeTab === 'requests' && !requestsLoading && (
                 <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
                     <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-subtle">
-                        <thead className="bg-surface-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Ref</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Solicitante</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Prioridade</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Data</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-subtle">
-                            {(requestsData?.data ?? []).length === 0 && (
-                                <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
-                                    <PackageSearch className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhuma solicitação
-                                </td></tr>
-                            )}
-                            {(requestsData?.data ?? []).map((r: any) => (
-                                <tr key={r.id} className="hover:bg-surface-50">
-                                    <td className="px-4 py-3 text-sm font-mono">{r.reference}</td>
-                                    <td className="px-4 py-3 text-sm">{r.requester?.name ?? '—'}</td>
-                                    <td className="px-4 py-3 text-sm text-center">{r.items?.length ?? 0}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                                            r.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                                                r.priority === 'normal' ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-surface-700'
-                                            }`}>{r.priority === 'urgent' ? 'Urgente' : r.priority === 'high' ? 'Alta' : r.priority === 'normal' ? 'Normal' : 'Baixa'}</span>
-                                    </td>
-                                    <td className="px-4 py-3 text-center"><StatusBadge status={r.status} /></td>
-                                    <td className="px-4 py-3 text-sm">{formatDate(r.created_at)}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <div className="flex justify-center gap-1">
-                                            {r.status === 'pending' && (
-                                                <>
-                                                    <button title="Aprovar" onClick={() => updateRequestStatus.mutate({ id: r.id, status: 'approved' })} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-4 w-4" /></button>
-                                                    <button title="Rejeitar" onClick={() => setConfirmAction({ id: r.id, status: 'rejected', label: 'rejeitar esta solicitação', type: 'request' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
+                        <table className="min-w-full divide-y divide-subtle">
+                            <thead className="bg-surface-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Ref</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Solicitante</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Prioridade</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Data</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-subtle">
+                                {(requestsData?.data ?? []).length === 0 && (
+                                    <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
+                                        <PackageSearch className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhuma solicitação
+                                    </td></tr>
+                                )}
+                                {(requestsData?.data ?? []).map((r: any) => (
+                                    <tr key={r.id} className="hover:bg-surface-50">
+                                        <td className="px-4 py-3 text-sm font-mono">{r.reference}</td>
+                                        <td className="px-4 py-3 text-sm">{r.requester?.name ?? '—'}</td>
+                                        <td className="px-4 py-3 text-sm text-center">{r.items?.length ?? 0}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                                                r.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                                                    r.priority === 'normal' ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-surface-700'
+                                                }`}>{r.priority === 'urgent' ? 'Urgente' : r.priority === 'high' ? 'Alta' : r.priority === 'normal' ? 'Normal' : 'Baixa'}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center"><StatusBadge status={r.status} /></td>
+                                        <td className="px-4 py-3 text-sm">{formatDate(r.created_at)}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="flex justify-center gap-1">
+                                                <button title="Ver detalhes" onClick={() => setDetailItem(r)} className="p-1.5 text-surface-500 hover:bg-surface-100 rounded"><Eye className="h-4 w-4" /></button>
+                                                {r.status === 'pending' && (
+                                                    <>
+                                                        <button title="Aprovar" onClick={() => updateRequestStatus.mutate({ id: r.id, status: 'approved' })} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-4 w-4" /></button>
+                                                        <button title="Rejeitar" onClick={() => setConfirmAction({ id: r.id, status: 'rejected', label: 'rejeitar esta solicitação', type: 'request' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                     <PaginationControls data={requestsData} page={page} onPageChange={setPage} />
                 </div>
@@ -409,39 +443,39 @@ export default function StockIntegrationPage() {
             {activeTab === 'tags' && !tagsLoading && (
                 <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
                     <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-subtle">
-                        <thead className="bg-surface-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Código</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Tipo</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Localização</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Última Leitura</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Por</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-subtle">
-                            {(tagsData?.data ?? []).length === 0 && (
-                                <tr><td colSpan={6} className="px-4 py-12 text-center text-surface-400">
-                                    <QrCode className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhuma tag
-                                </td></tr>
-                            )}
-                            {(tagsData?.data ?? []).map((t: any) => (
-                                <tr key={t.id} className="hover:bg-surface-50">
-                                    <td className="px-4 py-3 text-sm font-mono font-medium">{t.tag_code}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.tag_type === 'rfid' ? 'bg-purple-100 text-purple-700' :
-                                            t.tag_type === 'qrcode' ? 'bg-teal-100 text-teal-700' : 'bg-surface-100 text-surface-700'
-                                            }`}>{t.tag_type?.toUpperCase()}</span>
-                                    </td>
-                                    <td className="px-4 py-3 text-sm">{t.location ?? '—'}</td>
-                                    <td className="px-4 py-3 text-center"><StatusBadge status={t.status} /></td>
-                                    <td className="px-4 py-3 text-sm">{t.last_scanned_at ? formatDate(t.last_scanned_at) : '—'}</td>
-                                    <td className="px-4 py-3 text-sm">{t.last_scanner?.name ?? '—'}</td>
+                        <table className="min-w-full divide-y divide-subtle">
+                            <thead className="bg-surface-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Código</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Tipo</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Localização</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Última Leitura</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Por</th>
                                 </tr>
-                            ))}
+                            </thead>
+                            <tbody className="divide-y divide-subtle">
+                                {(tagsData?.data ?? []).length === 0 && (
+                                    <tr><td colSpan={6} className="px-4 py-12 text-center text-surface-400">
+                                        <QrCode className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhuma tag
+                                    </td></tr>
+                                )}
+                                {(tagsData?.data ?? []).map((t: any) => (
+                                    <tr key={t.id} className="hover:bg-surface-50">
+                                        <td className="px-4 py-3 text-sm font-mono font-medium">{t.tag_code}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.tag_type === 'rfid' ? 'bg-purple-100 text-purple-700' :
+                                                t.tag_type === 'qrcode' ? 'bg-teal-100 text-teal-700' : 'bg-surface-100 text-surface-700'
+                                                }`}>{t.tag_type?.toUpperCase()}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm">{t.location ?? '—'}</td>
+                                        <td className="px-4 py-3 text-center"><StatusBadge status={t.status} /></td>
+                                        <td className="px-4 py-3 text-sm">{t.last_scanned_at ? formatDate(t.last_scanned_at) : '—'}</td>
+                                        <td className="px-4 py-3 text-sm">{t.last_scanner?.name ?? '—'}</td>
+                                    </tr>
+                                ))}
                             </tbody>
-                    </table>
+                        </table>
                     </div>
                     <PaginationControls data={tagsData} page={page} onPageChange={setPage} />
                 </div>
@@ -450,46 +484,47 @@ export default function StockIntegrationPage() {
             {activeTab === 'rma' && !rmaLoading && (
                 <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
                     <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-subtle">
-                        <thead className="bg-surface-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Nº RMA</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Tipo</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Cliente</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Data</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-surface-100">
-                            {(rmaData?.data ?? []).length === 0 && (
-                                <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
-                                    <RotateCcw className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhum RMA
-                                </td></tr>
-                            )}
-                            {(rmaData?.data ?? []).map((r: any) => (
-                                <tr key={r.id} className="hover:bg-surface-50">
-                                    <td className="px-4 py-3 text-sm font-mono font-medium">{r.rma_number}</td>
-                                    <td className="px-4 py-3 text-sm">{r.type === 'customer_return' ? 'Cliente' : 'Fornecedor'}</td>
-                                    <td className="px-4 py-3 text-sm">{r.customer?.name ?? '—'}</td>
-                                    <td className="px-4 py-3 text-sm text-center">{r.items?.length ?? 0}</td>
-                                    <td className="px-4 py-3 text-center"><StatusBadge status={r.status} /></td>
-                                    <td className="px-4 py-3 text-sm">{formatDate(r.created_at)}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <div className="flex justify-center gap-1">
-                                            {r.status === 'requested' && (
-                                                <button title="Aprovar" onClick={() => updateRmaStatus.mutate({ id: r.id, status: 'approved' })} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-4 w-4" /></button>
-                                            )}
-                                            {r.status === 'inspected' && (
-                                                <button title="Resolver" onClick={() => updateRmaStatus.mutate({ id: r.id, status: 'resolved' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
-                                            )}
-                                        </div>
-                                    </td>
+                        <table className="min-w-full divide-y divide-subtle">
+                            <thead className="bg-surface-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Nº RMA</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Tipo</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Cliente</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Data</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-surface-100">
+                                {(rmaData?.data ?? []).length === 0 && (
+                                    <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
+                                        <RotateCcw className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhum RMA
+                                    </td></tr>
+                                )}
+                                {(rmaData?.data ?? []).map((r: any) => (
+                                    <tr key={r.id} className="hover:bg-surface-50">
+                                        <td className="px-4 py-3 text-sm font-mono font-medium">{r.rma_number}</td>
+                                        <td className="px-4 py-3 text-sm">{r.type === 'customer_return' ? 'Cliente' : 'Fornecedor'}</td>
+                                        <td className="px-4 py-3 text-sm">{r.customer?.name ?? '—'}</td>
+                                        <td className="px-4 py-3 text-sm text-center">{r.items?.length ?? 0}</td>
+                                        <td className="px-4 py-3 text-center"><StatusBadge status={r.status} /></td>
+                                        <td className="px-4 py-3 text-sm">{formatDate(r.created_at)}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="flex justify-center gap-1">
+                                                <button title="Ver detalhes" onClick={() => setDetailItem(r)} className="p-1.5 text-surface-500 hover:bg-surface-100 rounded"><Eye className="h-4 w-4" /></button>
+                                                {r.status === 'requested' && (
+                                                    <button title="Aprovar" onClick={() => updateRmaStatus.mutate({ id: r.id, status: 'approved' })} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-4 w-4" /></button>
+                                                )}
+                                                {r.status === 'inspected' && (
+                                                    <button title="Resolver" onClick={() => updateRmaStatus.mutate({ id: r.id, status: 'resolved' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                     <PaginationControls data={rmaData} page={page} onPageChange={setPage} />
                 </div>
@@ -498,59 +533,60 @@ export default function StockIntegrationPage() {
             {activeTab === 'disposal' && !disposalLoading && (
                 <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
                     <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-subtle">
-                        <thead className="bg-surface-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Ref</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Tipo</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Método</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Data</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-surface-100">
-                            {(disposalData?.data ?? []).length === 0 && (
-                                <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
-                                    <Trash2 className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhum descarte
-                                </td></tr>
-                            )}
-                            {(disposalData?.data ?? []).map((d: any) => {
-                                const typeLabels: Record<string, string> = {
-                                    expired: 'Vencido', damaged: 'Danificado', obsolete: 'Obsoleto',
-                                    recalled: 'Recall', hazardous: 'Perigoso', other: 'Outro',
-                                };
-                                const methodLabels: Record<string, string> = {
-                                    recycling: 'Reciclagem', incineration: 'Incineração', landfill: 'Aterro',
-                                    donation: 'Doação', return_manufacturer: 'Devolução Fabricante', specialized_treatment: 'Tratamento',
-                                };
-                                return (
-                                    <tr key={d.id} className="hover:bg-surface-50">
-                                        <td className="px-4 py-3 text-sm font-mono font-medium">{d.reference}</td>
-                                        <td className="px-4 py-3 text-sm">{typeLabels[d.disposal_type] ?? d.disposal_type}</td>
-                                        <td className="px-4 py-3 text-sm">{methodLabels[d.disposal_method] ?? d.disposal_method}</td>
-                                        <td className="px-4 py-3 text-sm text-center">{d.items?.length ?? 0}</td>
-                                        <td className="px-4 py-3 text-center"><StatusBadge status={d.status} /></td>
-                                        <td className="px-4 py-3 text-sm">{formatDate(d.created_at)}</td>
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="flex justify-center gap-1">
-                                                {d.status === 'pending' && (
-                                                    <button title="Aprovar" onClick={() => updateDisposalStatus.mutate({ id: d.id, status: 'approved' })} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-4 w-4" /></button>
-                                                )}
-                                                {d.status === 'approved' && (
-                                                    <button title="Concluir" onClick={() => updateDisposalStatus.mutate({ id: d.id, status: 'completed' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
-                                                )}
-                                                {d.status !== 'completed' && d.status !== 'cancelled' && (
-                                                    <button title="Cancelar" onClick={() => setConfirmAction({ id: d.id, status: 'cancelled', label: 'cancelar este descarte', type: 'disposal' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                        <table className="min-w-full divide-y divide-subtle">
+                            <thead className="bg-surface-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Ref</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Tipo</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Método</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Itens</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-surface-500 uppercase">Data</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-surface-100">
+                                {(disposalData?.data ?? []).length === 0 && (
+                                    <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
+                                        <Trash2 className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhum descarte
+                                    </td></tr>
+                                )}
+                                {(disposalData?.data ?? []).map((d: any) => {
+                                    const typeLabels: Record<string, string> = {
+                                        expired: 'Vencido', damaged: 'Danificado', obsolete: 'Obsoleto',
+                                        recalled: 'Recall', hazardous: 'Perigoso', other: 'Outro',
+                                    };
+                                    const methodLabels: Record<string, string> = {
+                                        recycling: 'Reciclagem', incineration: 'Incineração', landfill: 'Aterro',
+                                        donation: 'Doação', return_manufacturer: 'Devolução Fabricante', specialized_treatment: 'Tratamento',
+                                    };
+                                    return (
+                                        <tr key={d.id} className="hover:bg-surface-50">
+                                            <td className="px-4 py-3 text-sm font-mono font-medium">{d.reference}</td>
+                                            <td className="px-4 py-3 text-sm">{typeLabels[d.disposal_type] ?? d.disposal_type}</td>
+                                            <td className="px-4 py-3 text-sm">{methodLabels[d.disposal_method] ?? d.disposal_method}</td>
+                                            <td className="px-4 py-3 text-sm text-center">{d.items?.length ?? 0}</td>
+                                            <td className="px-4 py-3 text-center"><StatusBadge status={d.status} /></td>
+                                            <td className="px-4 py-3 text-sm">{formatDate(d.created_at)}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex justify-center gap-1">
+                                                    <button title="Ver detalhes" onClick={() => setDetailItem(d)} className="p-1.5 text-surface-500 hover:bg-surface-100 rounded"><Eye className="h-4 w-4" /></button>
+                                                    {d.status === 'pending' && (
+                                                        <button title="Aprovar" onClick={() => updateDisposalStatus.mutate({ id: d.id, status: 'approved' })} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-4 w-4" /></button>
+                                                    )}
+                                                    {d.status === 'approved' && (
+                                                        <button title="Concluir" onClick={() => updateDisposalStatus.mutate({ id: d.id, status: 'completed' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
+                                                    )}
+                                                    {d.status !== 'completed' && d.status !== 'cancelled' && (
+                                                        <button title="Cancelar" onClick={() => setConfirmAction({ id: d.id, status: 'cancelled', label: 'cancelar este descarte', type: 'disposal' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                     <PaginationControls data={disposalData} page={page} onPageChange={setPage} />
                 </div>
@@ -570,7 +606,18 @@ export default function StockIntegrationPage() {
                             <Input label="Observações" value={form.notes ?? ''} onChange={e => updateForm('notes', e.target.value)} placeholder="Observações (opcional)" />
                             <div className="border border-default rounded-lg p-3 space-y-2 bg-surface-50">
                                 <p className="text-xs font-semibold text-surface-500 uppercase">Item da Cotação</p>
-                                <Input label="ID do Produto" type="number" value={form._item_product_id ?? ''} onChange={e => updateForm('_item_product_id', e.target.value)} placeholder="ID do produto" />
+                                <div className="space-y-1.5">
+                                    <label className="block text-[13px] font-medium text-surface-700">Produto</label>
+                                    <select
+                                        value={form._item_product_id ?? ''}
+                                        onChange={e => updateForm('_item_product_id', e.target.value)}
+                                        className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400"
+                                        title="Selecionar produto"
+                                    >
+                                        <option value="">Selecione um produto...</option>
+                                        {productOptions.map(p => <option key={p.id} value={p.id}>{p.name} {p.code ? `(${p.code})` : ''}</option>)}
+                                    </select>
+                                </div>
                                 <Input label="Quantidade" type="number" step="0.01" min="0.01" value={form._item_qty ?? ''} onChange={e => updateForm('_item_qty', e.target.value)} placeholder="Quantidade" />
                                 <Input label="Especificações" value={form._item_specs ?? ''} onChange={e => updateForm('_item_specs', e.target.value)} placeholder="Especificações (opcional)" />
                             </div>
@@ -722,6 +769,89 @@ export default function StockIntegrationPage() {
                 <div className="flex justify-end gap-2 mt-6">
                     <Button variant="outline" onClick={() => setConfirmAction(null)}>Voltar</Button>
                     <Button variant="danger" onClick={handleConfirmAction}>Confirmar</Button>
+                </div>
+            </Modal>
+
+            {/* ═══ Detail Modal ═══ */}
+            <Modal
+                open={!!detailItem}
+                onClose={() => setDetailItem(null)}
+                title={`Detalhes — ${detailItem?.reference ?? detailItem?.rma_number ?? detailItem?.tag_code ?? '#' + detailItem?.id}`}
+                size="lg"
+            >
+                {detailItem && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            {detailItem.title && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Título</p><p className="font-medium text-sm">{detailItem.title}</p></div>}
+                            {detailItem.reference && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Referência</p><p className="font-mono text-sm">{detailItem.reference}</p></div>}
+                            {detailItem.rma_number && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Nº RMA</p><p className="font-mono text-sm">{detailItem.rma_number}</p></div>}
+                            {detailItem.status && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Status</p><StatusBadge status={detailItem.status} /></div>}
+                            {detailItem.priority && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Prioridade</p><p className="text-sm font-medium capitalize">{detailItem.priority}</p></div>}
+                            {detailItem.deadline && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Prazo</p><p className="text-sm">{formatDate(detailItem.deadline)}</p></div>}
+                            {detailItem.type && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Tipo</p><p className="text-sm capitalize">{detailItem.type?.replace(/_/g, ' ')}</p></div>}
+                            {detailItem.created_at && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Criado em</p><p className="text-sm">{formatDate(detailItem.created_at)}</p></div>}
+                            {detailItem.requester?.name && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Solicitante</p><p className="text-sm">{detailItem.requester.name}</p></div>}
+                            {detailItem.customer?.name && <div className="bg-surface-50 p-3 rounded-lg"><p className="text-xs text-surface-400 mb-0.5">Cliente</p><p className="text-sm">{detailItem.customer.name}</p></div>}
+                        </div>
+                        {(detailItem.notes || detailItem.reason || detailItem.justification) && (
+                            <div className="bg-surface-50 p-3 rounded-lg">
+                                <p className="text-xs text-surface-400 mb-0.5">{detailItem.reason ? 'Motivo' : detailItem.justification ? 'Justificativa' : 'Observações'}</p>
+                                <p className="text-sm text-surface-700">{detailItem.notes || detailItem.reason || detailItem.justification}</p>
+                            </div>
+                        )}
+                        {detailItem.items?.length > 0 && (
+                            <div>
+                                <h4 className="text-xs font-bold text-surface-400 uppercase mb-2">Itens ({detailItem.items.length})</h4>
+                                <div className="border border-default rounded-lg divide-y divide-default overflow-hidden">
+                                    {detailItem.items.map((item: any, idx: number) => (
+                                        <div key={idx} className="p-3 flex items-center justify-between hover:bg-surface-50/50">
+                                            <div className="flex items-center gap-2">
+                                                <Package className="h-4 w-4 text-surface-400" />
+                                                <div>
+                                                    <p className="text-sm font-medium">{item.product?.name ?? `Produto #${item.product_id}`}</p>
+                                                    {item.specifications && <p className="text-xs text-surface-400">{item.specifications}</p>}
+                                                    {item.defect_description && <p className="text-xs text-red-500">{item.defect_description}</p>}
+                                                </div>
+                                            </div>
+                                            <span className="text-sm font-bold">{item.quantity ?? item.quantity_requested ?? '—'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {detailItem.suppliers?.length > 0 && (
+                            <div>
+                                <h4 className="text-xs font-bold text-surface-400 uppercase mb-2">Fornecedores ({detailItem.suppliers.length})</h4>
+                                <div className="border border-default rounded-lg divide-y divide-default overflow-hidden">
+                                    {detailItem.suppliers.map((s: any, idx: number) => (
+                                        <div key={idx} className="p-3 flex items-center justify-between hover:bg-surface-50/50">
+                                            <p className="text-sm font-medium">{s.supplier?.name ?? `Fornecedor #${s.supplier_id}`}</p>
+                                            <StatusBadge status={s.status} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Modal>
+
+            {/* Modal confirmação de exclusão */}
+            <Modal open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)} title="Confirmar Exclusão" size="sm">
+                <div className="space-y-4 pt-2">
+                    <p className="text-sm text-surface-600">
+                        Tem certeza que deseja excluir a cotação <strong>{deleteConfirm?.label}</strong>? Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
+                        <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancelar</Button>
+                        <Button
+                            variant="destructive"
+                            loading={deleteQuoteMut.isPending}
+                            onClick={() => { if (deleteConfirm) deleteQuoteMut.mutate(deleteConfirm.id) }}
+                        >
+                            Excluir
+                        </Button>
+                    </div>
                 </div>
             </Modal>
         </div>

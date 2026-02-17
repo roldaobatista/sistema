@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CustomerMergeController extends Controller
 {
@@ -105,7 +106,14 @@ class CustomerMergeController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw $e;
+            Log::error('Falha ao mesclar clientes', [
+                'primary_id' => $request->input('primary_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'message' => 'Erro ao mesclar clientes. Verifique os dados e tente novamente.',
+            ], 500);
         }
     }
 
@@ -121,11 +129,17 @@ class CustomerMergeController extends Controller
         // This is a heavy query, optimize for specific cases or limited set.
         
         $type = $request->query('type', 'name'); // name, document, email
+
+        // DB-agnostic aggregate: GROUP_CONCAT (MySQL/SQLite) vs STRING_AGG (PostgreSQL)
+        $driver = DB::connection()->getDriverName();
+        $concatExpr = $driver === 'pgsql'
+            ? "STRING_AGG(CAST(id AS VARCHAR), ',')"
+            : 'GROUP_CONCAT(id)';
         
         $duplicates = [];
 
         if ($type === 'document') {
-             $duplicates = Customer::select('document', DB::raw('count(*) as count'), DB::raw('group_concat(id) as ids'))
+             $duplicates = Customer::select('document', DB::raw('count(*) as count'), DB::raw("{$concatExpr} as ids"))
                 ->whereNotNull('document')
                 ->where('document', '!=', '')
                 ->groupBy('document')
@@ -133,7 +147,7 @@ class CustomerMergeController extends Controller
                 ->limit(20)
                 ->get();
         } elseif ($type === 'email') {
-             $duplicates = Customer::select('email', DB::raw('count(*) as count'), DB::raw('group_concat(id) as ids'))
+             $duplicates = Customer::select('email', DB::raw('count(*) as count'), DB::raw("{$concatExpr} as ids"))
                 ->whereNotNull('email')
                 ->where('email', '!=', '')
                 ->groupBy('email')
@@ -143,7 +157,7 @@ class CustomerMergeController extends Controller
         } else {
             // Name fuzzy search is hard in pure SQL efficiently without fulltext, 
             // but we can look for exact matches first.
-            $duplicates = Customer::select('name', DB::raw('count(*) as count'), DB::raw('group_concat(id) as ids'))
+            $duplicates = Customer::select('name', DB::raw('count(*) as count'), DB::raw("{$concatExpr} as ids"))
                 ->groupBy('name')
                 ->having('count', '>', 1)
                 ->limit(20)

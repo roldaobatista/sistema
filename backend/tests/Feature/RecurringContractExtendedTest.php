@@ -15,7 +15,7 @@ use Tests\TestCase;
  * Recurring Contract Tests — validates CRUD, generation of Work Orders
  * from contracts, validation rules, and active/inactive filtering.
  */
-class RecurringContractTest extends TestCase
+class RecurringContractExtendedTest extends TestCase
 {
     use RefreshDatabase;
 

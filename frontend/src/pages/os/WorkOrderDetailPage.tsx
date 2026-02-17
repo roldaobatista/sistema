@@ -5,7 +5,7 @@ import {
     ArrowLeft, Clock, User, Phone, Mail, MapPin, ClipboardList,
     Briefcase, Package, Plus, Trash2, Pencil, Download, Save, X,
     CheckCircle2, AlertTriangle, Play, Pause, Truck, XCircle,
-    DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users, Copy, RotateCcw, Navigation, QrCode,
+    DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users, Copy, RotateCcw, Navigation, QrCode, TrendingUp, Layers,
 } from 'lucide-react'
 import { parseLabelQrPayload } from '@/lib/labelQr'
 import api from '@/lib/api'
@@ -85,11 +85,20 @@ export function WorkOrderDetailPage() {
     const [deleteAttachId, setDeleteAttachId] = useState<number | null>(null)
     const [showQrScanner, setShowQrScanner] = useState(false)
 
+    // Equipment attach/detach state
+    const [showEquipmentModal, setShowEquipmentModal] = useState(false)
+    const [detachEquipId, setDetachEquipId] = useState<number | null>(null)
+
+    // Cost estimate & kit states
+    const [showCostEstimate, setShowCostEstimate] = useState(false)
+    const [showKitModal, setShowKitModal] = useState(false)
+
     // Queries
     const { data: res, isLoading, isError, refetch: refetchOrder } = useQuery({
         queryKey: ['work-order', id],
         queryFn: () => api.get(`/work-orders/${id}`),
     })
+    const order = res?.data
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-select'],
@@ -117,7 +126,6 @@ export function WorkOrderDetailPage() {
 
     const [checklistForm, setChecklistForm] = useState<Record<number, { value: string; notes: string }>>({})
 
-    const order = res?.data
     const products = productsRes?.data?.data ?? []
     const services = servicesRes?.data?.data ?? []
 
@@ -228,12 +236,70 @@ export function WorkOrderDetailPage() {
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar assinatura'),
     })
 
+    // Equipment attach/detach mutations
+    const { data: customerEquipmentsRes } = useQuery({
+        queryKey: ['customer-equipments', order?.customer_id],
+        queryFn: () => api.get('/equipments', { params: { customer_id: order?.customer_id, per_page: 100 } }),
+        enabled: !!order?.customer_id && showEquipmentModal,
+    })
+    const customerEquipments = customerEquipmentsRes?.data?.data ?? []
+
+    const attachEquipMut = useMutation({
+        mutationFn: (equipmentId: number) => api.post(`/work-orders/${id}/equipments`, { equipment_id: equipmentId }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            setShowEquipmentModal(false)
+            toast.success('Equipamento vinculado com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao vincular equipamento'),
+    })
+
+    const detachEquipMut = useMutation({
+        mutationFn: (equipmentId: number) => api.delete(`/work-orders/${id}/equipments/${equipmentId}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            setDetachEquipId(null)
+            toast.success('Equipamento desvinculado!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao desvincular equipamento'),
+    })
+
+    // Cost estimate query (lazy)
+    const { data: costEstimateRes, isLoading: costEstimateLoading } = useQuery({
+        queryKey: ['wo-cost-estimate', id],
+        queryFn: () => api.get(`/work-orders/${id}/cost-estimate`),
+        enabled: showCostEstimate && canViewPrices,
+    })
+    const costEstimate = costEstimateRes?.data
+
+    // Parts kits query (lazy - loaded when modal opens)
+    const { data: partsKitsRes } = useQuery({
+        queryKey: ['parts-kits-select'],
+        queryFn: () => api.get('/parts-kits', { params: { per_page: 100 } }),
+        enabled: showKitModal,
+    })
+    const partsKits = partsKitsRes?.data?.data ?? []
+
+    const applyKitMut = useMutation({
+        mutationFn: (kitId: number) => api.post(`/work-orders/${id}/apply-kit/${kitId}`),
+        onSuccess: (res: any) => {
+            qc.invalidateQueries({ queryKey: ['work-order', id] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            qc.invalidateQueries({ queryKey: ['stock'] })
+            qc.invalidateQueries({ queryKey: ['products'] })
+            qc.invalidateQueries({ queryKey: ['wo-cost-estimate', id] })
+            setShowKitModal(false)
+            toast.success(res?.data?.message || 'Kit aplicado com sucesso!')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao aplicar kit'),
+    })
+
     const duplicateMut = useMutation({
         mutationFn: () => api.post(`/work-orders/${id}/duplicate`),
         onSuccess: (res: any) => {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             toast.success('OS duplicada com sucesso!')
-                navigate(`/os/${res.data?.data?.id ?? res.data?.id}`)
+            navigate(`/os/${res.data?.data?.id ?? res.data?.id}`)
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao duplicar OS'),
     })
@@ -827,6 +893,9 @@ export function WorkOrderDetailPage() {
                                             <Button variant="ghost" size="sm" onClick={() => openItemForm()} icon={<Plus className="h-4 w-4" />}>
                                                 Adicionar
                                             </Button>
+                                            <Button variant="ghost" size="sm" onClick={() => setShowKitModal(true)} icon={<Layers className="h-4 w-4" />} title="Aplicar kit de peças">
+                                                Aplicar Kit
+                                            </Button>
                                             <Button variant="ghost" size="sm" onClick={handleScanLabel} icon={<QrCode className="h-4 w-4" />} title="Escanear etiqueta (QR da peça)">
                                                 Escanear etiqueta
                                             </Button>
@@ -1001,30 +1070,49 @@ export function WorkOrderDetailPage() {
                         </div>
                     </div>
 
-                    {
-                        (order.equipment || order.equipments_list?.length > 0) && (
-                            <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900">
-                                    <Shield className="h-4 w-4 text-brand-500" />
-                                    Equipamentos
-                                </h3>
-                                <div className="space-y-2">
-                                    {order.equipment && (
-                                        <div className="rounded-lg border border-default p-2.5">
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <Shield className="h-4 w-4 text-brand-500" />
+                                Equipamentos
+                            </h3>
+                            {canUpdate && (
+                                <Button variant="ghost" size="sm" onClick={() => setShowEquipmentModal(true)} icon={<Plus className="h-4 w-4" />}>
+                                    Vincular
+                                </Button>
+                            )}
+                        </div>
+                        {!order.equipment && (!order.equipments_list || order.equipments_list.length === 0) ? (
+                            <p className="py-4 text-center text-sm text-surface-400">Nenhum equipamento vinculado</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {order.equipment && (
+                                    <div className="flex items-center gap-2 rounded-lg border border-default p-2.5">
+                                        <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-surface-800">{order.equipment.type} {order.equipment.brand ?? ''} {order.equipment.model ?? ''}</p>
                                             {order.equipment.serial_number && <p className="text-xs text-surface-400">S/N: {order.equipment.serial_number}</p>}
                                         </div>
-                                    )}
-                                    {order.equipments_list?.map((eq: any) => (
-                                        <div key={eq.id} className="rounded-lg border border-default p-2.5">
+                                    </div>
+                                )}
+                                {order.equipments_list?.map((eq: any) => (
+                                    <div key={eq.id} className="flex items-center gap-2 rounded-lg border border-default p-2.5">
+                                        <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-surface-800">{eq.type} {eq.brand ?? ''} {eq.model ?? ''}</p>
                                             {eq.serial_number && <p className="text-xs text-surface-400">S/N: {eq.serial_number}</p>}
                                         </div>
-                                    ))}
-                                </div>
+                                        {canUpdate && (
+                                            <IconButton
+                                                label="Desvincular equipamento"
+                                                icon={<X className="h-3.5 w-3.5" />}
+                                                onClick={() => setDetachEquipId(eq.id)}
+                                                className="hover:text-red-600 flex-shrink-0"
+                                            />
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                        )
-                    }
+                        )}
+                    </div>
 
                     {
                         order.technicians?.length > 0 && (
@@ -1090,6 +1178,59 @@ export function WorkOrderDetailPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* Estimativa de Custo */}
+                    {canViewPrices && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <button
+                                onClick={() => setShowCostEstimate(prev => !prev)}
+                                className="flex w-full items-center justify-between text-sm font-semibold text-surface-900"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4 text-brand-500" />
+                                    Estimativa de Custo
+                                </span>
+                                <span className="text-xs text-surface-400">{showCostEstimate ? '▲' : '▼'}</span>
+                            </button>
+                            {showCostEstimate && (
+                                costEstimateLoading ? (
+                                    <div className="mt-3 space-y-2">
+                                        <div className="h-4 w-full rounded bg-surface-100 animate-pulse" />
+                                        <div className="h-4 w-2/3 rounded bg-surface-100 animate-pulse" />
+                                    </div>
+                                ) : costEstimate ? (
+                                    <div className="mt-3 space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-surface-500">Peças</span>
+                                            <span className="font-medium">{formatBRL(costEstimate.parts_cost)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-surface-500">Mão de obra ({costEstimate.labor_hours}h)</span>
+                                            <span className="font-medium">{formatBRL(costEstimate.labor_cost)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-surface-500">Deslocamento</span>
+                                            <span className="font-medium">{formatBRL(costEstimate.displacement_cost)}</span>
+                                        </div>
+                                        <div className="flex justify-between border-t border-subtle pt-2">
+                                            <span className="font-semibold text-surface-900">Custo Total</span>
+                                            <span className="font-semibold">{formatBRL(costEstimate.total_cost)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-surface-500">Receita OS</span>
+                                            <span className="font-medium">{formatBRL(costEstimate.revenue)}</span>
+                                        </div>
+                                        <div className="flex justify-between border-t border-subtle pt-2">
+                                            <span className="font-semibold text-surface-900">Margem</span>
+                                            <span className={cn('font-bold', costEstimate.is_profitable ? 'text-emerald-600' : 'text-red-600')}>
+                                                {costEstimate.margin_percent}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : null
+                            )}
+                        </div>
+                    )}
 
                     {/* SLA Info */}
                     {
@@ -1299,10 +1440,24 @@ export function WorkOrderDetailPage() {
                             <p className="col-span-2 py-4 text-center text-sm text-surface-400">Este status é final. Não há transições disponíveis.</p>
                         )}
                     </div>
-                    <Input label="Observações (Opcional)" value={statusNotes} onChange={(e: any) => setStatusNotes(e.target.value)} />
+                    <Input
+                        label={newStatus === 'cancelled' ? 'Motivo do cancelamento *' : 'Observações (Opcional)'}
+                        value={statusNotes}
+                        onChange={(e: any) => setStatusNotes(e.target.value)}
+                        placeholder={newStatus === 'cancelled' ? 'Informe o motivo do cancelamento...' : 'Observações sobre a mudança de status...'}
+                    />
+                    {newStatus === 'cancelled' && !statusNotes.trim() && (
+                        <p className="text-xs text-red-500">O motivo do cancelamento é obrigatório.</p>
+                    )}
                     <div className="flex justify-end gap-2 pt-2">
                         <Button variant="outline" onClick={() => setShowStatusModal(false)}>Cancelar</Button>
-                        <Button onClick={() => statusMut.mutate({ status: newStatus, notes: statusNotes })} disabled={!newStatus} loading={statusMut.isPending}>Confirmar</Button>
+                        <Button
+                            onClick={() => statusMut.mutate({ status: newStatus, notes: statusNotes })}
+                            disabled={!newStatus || (newStatus === 'cancelled' && !statusNotes.trim())}
+                            loading={statusMut.isPending}
+                        >
+                            Confirmar
+                        </Button>
                     </div>
                 </div>
             </Modal>
@@ -1335,6 +1490,102 @@ export function WorkOrderDetailPage() {
                         >
                             Remover
                         </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal: Vincular Equipamento */}
+            <Modal open={showEquipmentModal} onOpenChange={setShowEquipmentModal} title="Vincular Equipamento">
+                <div className="space-y-3">
+                    {customerEquipments.length === 0 ? (
+                        <p className="py-4 text-center text-sm text-surface-400">
+                            Nenhum equipamento encontrado para este cliente.
+                        </p>
+                    ) : (
+                        <div className="max-h-64 space-y-2 overflow-y-auto">
+                            {customerEquipments
+                                .filter((eq: any) => {
+                                    const alreadyAttached = order?.equipments_list?.some((attached: any) => attached.id === eq.id) ||
+                                        order?.equipment?.id === eq.id
+                                    return !alreadyAttached
+                                })
+                                .map((eq: any) => (
+                                    <button
+                                        key={eq.id}
+                                        className="flex w-full items-center gap-3 rounded-lg border border-default p-3 text-left transition-colors hover:border-brand-500 hover:bg-brand-50"
+                                        onClick={() => attachEquipMut.mutate(eq.id)}
+                                        disabled={attachEquipMut.isPending}
+                                    >
+                                        <Shield className="h-4 w-4 text-surface-400 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-surface-800 truncate">{eq.type} {eq.brand ?? ''} {eq.model ?? ''}</p>
+                                            {eq.serial_number && <p className="text-xs text-surface-400">S/N: {eq.serial_number}</p>}
+                                        </div>
+                                    </button>
+                                ))
+                            }
+                            {customerEquipments.filter((eq: any) => {
+                                const alreadyAttached = order?.equipments_list?.some((attached: any) => attached.id === eq.id) ||
+                                    order?.equipment?.id === eq.id
+                                return !alreadyAttached
+                            }).length === 0 && (
+                                    <p className="py-4 text-center text-sm text-surface-400">
+                                        Todos os equipamentos do cliente já estão vinculados.
+                                    </p>
+                                )}
+                        </div>
+                    )}
+                    <div className="flex justify-end pt-2">
+                        <Button variant="outline" onClick={() => setShowEquipmentModal(false)}>Fechar</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal: Confirmar Desvinculação */}
+            <Modal open={detachEquipId !== null} onOpenChange={(open) => { if (!open) setDetachEquipId(null) }} title="Desvincular Equipamento">
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">Tem certeza que deseja desvincular este equipamento da OS?</p>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setDetachEquipId(null)}>Cancelar</Button>
+                        <Button
+                            variant="danger"
+                            onClick={() => { if (detachEquipId) detachEquipMut.mutate(detachEquipId) }}
+                            loading={detachEquipMut.isPending}
+                        >
+                            Desvincular
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal: Aplicar Kit de Peças */}
+            <Modal open={showKitModal} onOpenChange={setShowKitModal} title="Aplicar Kit de Peças">
+                <div className="space-y-3">
+                    <p className="text-sm text-surface-500">Selecione um kit para adicionar todos os seus itens automaticamente à OS.</p>
+                    {partsKits.length === 0 ? (
+                        <p className="py-4 text-center text-sm text-surface-400">
+                            Nenhum kit de peças cadastrado.
+                        </p>
+                    ) : (
+                        <div className="max-h-64 space-y-2 overflow-y-auto">
+                            {partsKits.map((kit: any) => (
+                                <button
+                                    key={kit.id}
+                                    className="flex w-full items-center gap-3 rounded-lg border border-default p-3 text-left transition-colors hover:border-brand-500 hover:bg-brand-50"
+                                    onClick={() => applyKitMut.mutate(kit.id)}
+                                    disabled={applyKitMut.isPending}
+                                >
+                                    <Layers className="h-4 w-4 text-surface-400 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-surface-800">{kit.name}</p>
+                                        <p className="text-xs text-surface-400">{kit.items_count ?? kit.items?.length ?? '—'} itens</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <div className="flex justify-end pt-2">
+                        <Button variant="outline" onClick={() => setShowKitModal(false)}>Fechar</Button>
                     </div>
                 </div>
             </Modal>

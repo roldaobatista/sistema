@@ -102,7 +102,7 @@ export function LoginPage() {
 
                         {/* Error */}
                         {error && (
-                            <div className="mb-5 rounded-lg border border-red-200/50 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700 flex items-center gap-2">
+                            <div className="mb-5 rounded-lg border border-red-200/50 dark:border-red-700/50 bg-red-50 dark:bg-red-900/30 px-3.5 py-2.5 text-[13px] text-red-700 dark:text-red-400 flex items-center gap-2">
                                 <Shield className="h-3.5 w-3.5 flex-shrink-0" /> {error}
                             </div>
                         )}
@@ -110,7 +110,7 @@ export function LoginPage() {
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-1.5">
-                                <label htmlFor="email" className="block text-[13px] font-medium text-surface-700">
+                                <label htmlFor="email" className="block text-[13px] font-medium text-surface-700 dark:text-surface-300">
                                     E-mail
                                 </label>
                                 <input
@@ -122,16 +122,16 @@ export function LoginPage() {
                                     required
                                     autoFocus
                                     className={cn(
-                                        'w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900',
-                                        'placeholder:text-surface-400',
-                                        'focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
+                                        'w-full rounded-md border border-default bg-surface-50 dark:bg-surface-800/50 px-3 py-2 text-sm text-surface-900 dark:text-surface-100',
+                                        'placeholder:text-surface-400 dark:placeholder:text-surface-500',
+                                        'focus:border-brand-400 focus:bg-surface-0 dark:focus:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
                                         'transition-all duration-150'
                                     )}
                                 />
                             </div>
 
                             <div className="space-y-1.5">
-                                <label htmlFor="password" className="block text-[13px] font-medium text-surface-700">
+                                <label htmlFor="password" className="block text-[13px] font-medium text-surface-700 dark:text-surface-300">
                                     Senha
                                 </label>
                                 <div className="relative">
@@ -143,9 +143,9 @@ export function LoginPage() {
                                         placeholder="••••••••"
                                         required
                                         className={cn(
-                                            'w-full rounded-md border border-default bg-surface-50 px-3 py-2 pr-9 text-sm text-surface-900',
-                                            'placeholder:text-surface-400',
-                                            'focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
+                                            'w-full rounded-md border border-default bg-surface-50 dark:bg-surface-800/50 px-3 py-2 pr-9 text-sm text-surface-900 dark:text-surface-100',
+                                            'placeholder:text-surface-400 dark:placeholder:text-surface-500',
+                                            'focus:border-brand-400 focus:bg-surface-0 dark:focus:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
                                             'transition-all duration-150'
                                         )}
                                     />

@@ -10,7 +10,7 @@ import {
     Weight, RotateCcw, TrendingUp, History, Warehouse, ArrowLeftRight, Bell,
     CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
     MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
-    Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy, Wallet,
+    Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy, Wallet, Calculator,
     GitBranch, PieChart, Swords, Globe, Eye, Video,
     MapPin, StickyNote, Handshake, Lightbulb, ShieldCheck, CalendarHeart, Route,
     UserX, Medal, Printer,
@@ -189,11 +189,14 @@ const navigationSections: NavSection[] = [
                     { label: 'Produtos', icon: Package, path: '/cadastros/produtos', permission: 'cadastros.product.view' },
                     { label: 'Movimentações', icon: ArrowLeftRight, path: '/estoque/movimentacoes' },
                     { label: 'Armazéns', icon: Warehouse, path: '/estoque/armazens' },
+                    { label: 'Transferências', icon: ArrowLeftRight, path: '/estoque/transferencias' },
                     { label: 'Inventário', icon: ClipboardCheck, path: '/estoque/inventarios' },
                     { label: 'Meu inventário', icon: ClipboardCheck, path: '/estoque/inventario-pwa', permission: 'estoque.view' },
                     { label: 'Etiquetas', icon: Printer, path: '/estoque/etiquetas', permission: 'estoque.label.print' },
                     { label: 'Kardex', icon: ScrollText, path: '/estoque/kardex' },
                     { label: 'Calib. Ferramentas', icon: Wrench, path: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
+                    { label: 'Peças Usadas', icon: Package, path: '/estoque/pecas-usadas' },
+                    { label: 'Nº de Série', icon: ScrollText, path: '/estoque/numeros-serie' },
                 ],
             },
         ],
@@ -220,6 +223,16 @@ const navigationSections: NavSection[] = [
                     { label: 'Cobrança Auto', icon: Zap, path: '/financeiro/cobranca-automatica', permission: 'finance.receivable.view' },
                     { label: 'Plano de Contas', icon: FileText, path: '/financeiro/plano-contas', permission: 'finance.chart.view' },
                     { label: 'Consolidado', icon: Building2, path: '/financeiro/consolidado', permission: 'financeiro.view' },
+                    { label: 'Formas de Pagamento', icon: CreditCard, path: '/financeiro/formas-pagamento', permission: 'finance.payable.view|finance.receivable.view' },
+                    { label: 'Reembolsos', icon: ArrowUpFromLine, path: '/financeiro/reembolsos', permission: 'expenses.expense.view' },
+                    { label: 'Cheques', icon: CheckSquare, path: '/financeiro/cheques', permission: 'finance.payable.view' },
+                    { label: 'Contratos Fornecedores', icon: ScrollText, path: '/financeiro/contratos-fornecedores', permission: 'finance.payable.view' },
+                    { label: 'Adiantamentos', icon: ArrowDownToLine, path: '/financeiro/adiantamentos-fornecedores', permission: 'finance.payable.view' },
+                    { label: 'Simulador Recebíveis', icon: TrendingUp, path: '/financeiro/simulador-recebiveis', permission: 'finance.receivable.view' },
+                    { label: 'Aprovação em Lote', icon: CheckSquare, path: '/financeiro/aprovacao-lote', permission: 'finance.payable.view' },
+                    { label: 'Alocação Despesas', icon: PieChart, path: '/financeiro/alocacao-despesas', permission: 'expenses.expense.view' },
+                    { label: 'Calculadora Tributos', icon: Calculator, path: '/financeiro/calculadora-tributos', permission: 'financeiro.view' },
+                    { label: 'DRE', icon: BarChart3, path: '/financeiro/dre', permission: 'financeiro.view' },
                 ],
             },
             { label: 'Relatórios', icon: BarChart3, path: '/relatorios', permission: 'reports.os_report.view' },
@@ -270,6 +283,7 @@ const navigationSections: NavSection[] = [
     {
         label: 'Avançado',
         items: [
+            { label: 'Analytics Hub', icon: BarChart3, path: '/analytics', permission: 'reports.analytics.view' },
             { label: 'Frota', icon: Truck, path: '/frota', permission: 'fleet.vehicle.view' },
             {
                 label: 'RH', icon: Users, path: '/rh', permission: 'hr.schedule.view',
@@ -478,8 +492,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         className={cn(
                                             'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                             isActive(item.path)
-                                                ? 'bg-surface-100 text-surface-900'
-                                                : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
+                                                ? 'bg-surface-100 dark:bg-surface-700 text-surface-900'
+                                                : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
                                             sidebarCollapsed && 'justify-center px-2'
                                         )}
                                     >
@@ -522,8 +536,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                 className={cn(
                                                     'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     item.children.some(c => isActive(c.path))
-                                                        ? 'bg-surface-100 text-surface-900'
-                                                        : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
+                                                        ? 'bg-surface-100 dark:bg-surface-700 text-surface-900'
+                                                        : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
                                                     sidebarCollapsed && 'justify-center px-2'
                                                 )}
                                             >
@@ -549,8 +563,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                 className={cn(
                                                     'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     isActive(item.path)
-                                                        ? 'bg-surface-100 text-surface-900'
-                                                        : 'text-surface-600 hover:bg-surface-100 hover:text-surface-800',
+                                                        ? 'bg-surface-100 dark:bg-surface-700 text-surface-900'
+                                                        : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
                                                     sidebarCollapsed && 'justify-center px-2'
                                                 )}
                                             >
@@ -590,8 +604,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                         className={cn(
                                                             'relative flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-xs font-medium transition-colors duration-100',
                                                             isActive(child.path)
-                                                                ? 'bg-brand-50 text-brand-700'
-                                                                : 'text-surface-500 hover:bg-surface-50 hover:text-surface-700'
+                                                                ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400'
+                                                                : 'text-surface-500 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-700'
                                                         )}
                                                     >
                                                         <child.icon className="h-3.5 w-3.5" />
@@ -677,11 +691,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         </button>
 
                         <Link to="/perfil" className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-surface-50 transition-colors duration-100">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 text-brand-700 text-xs font-bold ring-1 ring-brand-200/50">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-400 text-xs font-bold ring-1 ring-brand-200/50 dark:ring-brand-600/30">
                                 {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                             </div>
                             <div className="hidden sm:flex flex-col">
-                                <span className="text-sm font-medium text-surface-700 leading-tight">
+                                <span className="text-sm font-medium text-surface-700 dark:text-surface-300 leading-tight">
                                     {user?.name ?? 'Usuário'}
                                 </span>
                                 {user?.role_details?.[0] && (
@@ -694,7 +708,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
                         <button
                             onClick={logout}
-                            className="rounded-md p-1 text-surface-400 hover:bg-red-50 hover:text-red-600 transition-colors duration-100"
+                            className="rounded-md p-1 text-surface-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-100"
                             title="Sair"
                         >
                             <LogOut className="h-3.5 w-3.5" />

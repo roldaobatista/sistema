@@ -30,4 +30,3 @@ class CheckExpiredQuotes extends Command
     }
 }
 
-

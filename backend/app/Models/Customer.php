@@ -201,7 +201,7 @@ class Customer extends Model
     {
         $breakdown = $this->health_score_breakdown;
         $total = collect($breakdown)->sum('score');
-        $this->update(['health_score' => $total]);
+        $this->updateQuietly(['health_score' => $total]);
         return $total;
     }
 
@@ -242,8 +242,6 @@ class Customer extends Model
             ->min('next_calibration_at');
     }
 
-    protected $appends = ['nearest_calibration_at'];
-
     public function workOrders(): HasMany
     {
         return $this->hasMany(WorkOrder::class);
@@ -262,6 +260,21 @@ class Customer extends Model
     public function accountsReceivable(): HasMany
     {
         return $this->hasMany(AccountReceivable::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(CustomerDocument::class);
+    }
+
+    public function complaints(): HasMany
+    {
+        return $this->hasMany(CustomerComplaint::class);
+    }
+
+    public function rfmScores(): HasMany
+    {
+        return $this->hasMany(CustomerRfmScore::class);
     }
 
     // ─── Import Support ─────────────────────────────────────

@@ -14,7 +14,7 @@ import { QrScannerModal } from '@/components/qr/QrScannerModal'
 import { parseLabelQrPayload } from '@/lib/labelQr'
 
 export default function InventoryExecutionPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
@@ -41,25 +41,25 @@ export default function InventoryExecutionPage() {
 
     const { data: invRes, isLoading } = useQuery({
         queryKey: ['inventory-detail', id],
-        queryFn: () => api.get(`/inventory/inventories/${id}`)
+        queryFn: () => api.get(`/stock/inventories/${id}`)
     })
     const inventory = invRes?.data
 
     const updateItemMut = useMutation({
         mutationFn: ({ itemId, quantity }: { itemId: number, quantity: number }) =>
-            api.put(`/inventory/inventories/${id}/items/${itemId}`, { counted_quantity: quantity }),
+            api.put(`/stock/inventories/${id}/items/${itemId}`, { counted_quantity: quantity }),
         onSuccess: () => {
             toast.success('Contagem salva!')
-                qc.invalidateQueries({ queryKey: ['inventory-detail', id] })
+            qc.invalidateQueries({ queryKey: ['inventory-detail', id] })
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar')
     })
 
     const completeMut = useMutation({
-        mutationFn: () => api.post(`/inventory/inventories/${id}/complete`),
+        mutationFn: () => api.post(`/stock/inventories/${id}/complete`),
         onSuccess: () => {
             toast.success('Inventário finalizado com sucesso!')
-                navigate('/estoque/inventarios')
+            navigate('/estoque/inventarios')
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao finalizar')
     })
@@ -222,7 +222,7 @@ export default function InventoryExecutionPage() {
                 <div className="h-1.5 w-full bg-surface-100 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-brand-500 transition-all duration-500"
-                        style={{ width: `${Math.round(((inventory?.items.length - itemsPending) / (inventory?.items.length || 1)) * 100)}%` }}
+                        style={{ width: `${Math.round(((inventory?.items.length - itemsPending) / (inventory?.items.length || 1)) * 100)}%` } as React.CSSProperties}
                     />
                 </div>
             </div>

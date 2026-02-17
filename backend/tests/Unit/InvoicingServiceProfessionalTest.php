@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Services\InvoicingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -21,8 +21,6 @@ use Tests\TestCase;
  */
 class InvoicingServiceProfessionalTest extends TestCase
 {
-    use RefreshDatabase;
-
     private InvoicingService $service;
     private Tenant $tenant;
     private User $user;
@@ -31,6 +29,7 @@ class InvoicingServiceProfessionalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new InvoicingService();
         $this->tenant = Tenant::factory()->create();
@@ -51,7 +50,7 @@ class InvoicingServiceProfessionalTest extends TestCase
             'customer_id' => $this->customer->id,
             'total' => $total,
             'status' => WorkOrder::STATUS_COMPLETED,
-            'business_number' => 'OS-2025-100',
+            'os_number' => 'OS-2025-100',
         ]);
 
         if (empty($items)) {
@@ -107,7 +106,7 @@ class InvoicingServiceProfessionalTest extends TestCase
         $this->assertEquals(3200.00, $result['ar']->amount);
         $this->assertEquals(0, $result['ar']->amount_paid);
         $this->assertEquals(AccountReceivable::STATUS_PENDING, $result['ar']->status);
-        $this->assertDatabaseHas('account_receivables', [
+        $this->assertDatabaseHas('accounts_receivable', [
             'work_order_id' => $wo->id,
             'amount' => 3200.00,
             'amount_paid' => 0,

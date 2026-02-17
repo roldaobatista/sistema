@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Csv as CsvWriter;
 
 class ImportService
 {
@@ -33,9 +35,9 @@ class ImportService
     }
 
     /**
-     * Gera CSV de exemplo para uma entidade.
+     * Gera Excel de exemplo para uma entidade (substitui CSV).
      */
-    public function generateSampleCsv(string $entity): string
+    public function generateSampleExcel(string $entity): string
     {
         $fields = $this->getFields($entity);
         if (empty($fields)) return '';
@@ -43,26 +45,41 @@ class ImportService
         $headers = array_map(fn($f) => $f['label'], $fields);
         $keys = array_map(fn($f) => $f['key'], $fields);
 
-        $sampleData = $this->getSampleData($entity, $keys);
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-        $output = fopen('php://temp', 'r+');
-        // BOM for Excel UTF-8
-        fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, $headers, ';');
+        // Headers
+        $sheet->fromArray($headers, null, 'A1');
 
-        foreach ($sampleData as $row) {
-            $line = [];
-            foreach ($keys as $key) {
-                $line[] = $row[$key] ?? '';
-            }
-            fputcsv($output, $line, ';');
+        // Style Headers (Bold, Auto-size)
+        $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->getFont()->setBold(true);
+        foreach (range('A', $sheet->getHighestColumn()) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        rewind($output);
-        $csv = stream_get_contents($output);
-        fclose($output);
+        // Sample Data
+        $sampleData = $this->getSampleData($entity, $keys);
+        
+        // Prepare data for fromArray (indexed only)
+        $rows = [];
+        foreach ($sampleData as $data) {
+            $row = [];
+            foreach ($keys as $key) {
+                // Ensure values are strings to prevent Excel format issues
+                $row[] = (string)($data[$key] ?? '');
+            }
+            $rows[] = $row;
+        }
 
-        return $csv;
+        if (!empty($rows)) {
+            $sheet->fromArray($rows, null, 'A2');
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        ob_start();
+        $writer->save('php://output');
+        return ob_get_clean();
     }
 
     private function getSampleData(string $entity, array $keys): array
@@ -262,21 +279,78 @@ class ImportService
     }
 
     /**
+     * Converte arquivo Excel (xlsx/xls) para CSV.
+     */
+    public function convertSpreadsheetToCsv(string $fullPath): string
+    {
+        $spreadsheet = IOFactory::load($fullPath);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Gerar CSV temporário
+        $csvPath = preg_replace('/\.(xlsx?|xls)$/i', '.csv', $fullPath);
+        if ($csvPath === $fullPath) {
+            $csvPath = $fullPath . '.csv';
+        }
+
+        $writer = new CsvWriter($spreadsheet);
+        $writer->setDelimiter(';');
+        $writer->setEnclosure('"');
+        $writer->setUseBOM(true);
+        $writer->setSheetIndex(0);
+        $writer->save($csvPath);
+
+        // Limpar o arquivo original xlsx
+        if (file_exists($fullPath) && $fullPath !== $csvPath) {
+            @unlink($fullPath);
+        }
+
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+
+        return $csvPath;
+    }
+
+    /**
+     * Detecta se o arquivo é uma planilha Excel.
+     */
+    private function isSpreadsheetFile(string $path): bool
+    {
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return in_array($ext, ['xlsx', 'xls']);
+    }
+
+    /**
      * Processa o upload e retorna metadados.
      */
     public function processUpload($file, string $entityType): array
     {
         $path = $file->store('imports', 'local');
         $fullPath = Storage::disk('local')->path($path);
+        $encoding = 'UTF-8';
 
-        // Detectar encoding e converter para UTF-8 se necessário
-        $content = file_get_contents($fullPath);
-        $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true) ?: 'UTF-8';
+        // Se for Excel, converter para CSV primeiro
+        if ($this->isSpreadsheetFile($fullPath)) {
+            $csvFullPath = $this->convertSpreadsheetToCsv($fullPath);
+            // Atualizar o path relativo ao storage
+            $path = str_replace(
+                Storage::disk('local')->path(''),
+                '',
+                str_replace('\\', '/', $csvFullPath)
+            );
+            $fullPath = $csvFullPath;
+        } else {
+            // Detectar encoding e converter para UTF-8 se necessário
+            $content = file_get_contents($fullPath);
+            $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true) ?: 'UTF-8';
 
-        if ($encoding !== 'UTF-8') {
-            $content = mb_convert_encoding($content, 'UTF-8', $encoding);
-            file_put_contents($fullPath, $content);
+            if ($encoding !== 'UTF-8') {
+                $content = mb_convert_encoding($content, 'UTF-8', $encoding);
+                file_put_contents($fullPath, $content);
+            }
         }
+
+        // Ler o CSV (original ou convertido)
+        $content = file_get_contents($fullPath);
 
         // Detectar separador
         $firstLine = strtok($content, "\n");
@@ -351,24 +425,33 @@ class ImportService
     /**
      * Executa a importação completa.
      */
-    public function executeImport(Import $import): void
+    public function processImport(Import $import): void
     {
-        $fullPath = Storage::disk('local')->path($import->file_name);
-
-        if (!file_exists($fullPath)) {
+        if (!Storage::disk('local')->exists($import->file_name)) {
             $altPath = str_starts_with($import->file_name, 'imports/')
                 ? $import->file_name
                 : 'imports/' . $import->file_name;
-            $altFullPath = Storage::disk('local')->path($altPath);
-            if (file_exists($altFullPath)) {
-                $fullPath = $altFullPath;
+            
+            if (Storage::disk('local')->exists($altPath)) {
+                $import->file_name = $altPath;
+                $import->save(); // Update correct path
+                $fullPath = Storage::disk('local')->path($altPath);
             } else {
+                // Se arquivo não existe, falha imediatamente
+                $import->update(['status' => Import::STATUS_FAILED, 'error_log' => [['line' => 0, 'message' => 'Arquivo não encontrado: ' . $import->file_name]]]);
                 throw new \Exception('Arquivo de importação não encontrado: ' . $import->file_name);
             }
+        } else {
+            $fullPath = Storage::disk('local')->path($import->file_name);
         }
+
+        $import->update(['status' => Import::STATUS_PROCESSING, 'progress' => 0]);
 
         $separator = $import->separator ?? $this->detectSeparator($fullPath);
         if ($separator === 'tab') $separator = "\t";
+
+        // Contar total de linhas para calcular progresso
+        $totalLines = $this->countCsvRows($fullPath);
 
         $handle = fopen($fullPath, 'r');
         $headers = fgetcsv($handle, 0, $separator);
@@ -381,6 +464,8 @@ class ImportService
         $errorLog = [];
         $importedIds = [];
         $lineNum = 1;
+        $lastProgressUpdate = 0;
+        $progressInterval = max(1, (int) ceil($totalLines * 0.05)); // Atualiza a cada 5%
 
         while (($line = fgetcsv($handle, 0, $separator)) !== false) {
             $lineNum++;
@@ -439,6 +524,21 @@ class ImportService
                     'data' => $rowData,
                 ];
             }
+
+            // Atualizar progresso periodicamente (a cada 5% ou 50 linhas)
+            $processedRows = $lineNum - 1;
+            if ($totalLines > 0 && ($processedRows - $lastProgressUpdate) >= $progressInterval) {
+                $progress = min(99, (int) round(($processedRows / $totalLines) * 100));
+                $import->update([
+                    'progress' => $progress,
+                    'total_rows' => $totalLines,
+                    'inserted' => $inserted,
+                    'updated' => $updated,
+                    'skipped' => $skipped,
+                    'errors' => $errors,
+                ]);
+                $lastProgressUpdate = $processedRows;
+            }
         }
         fclose($handle);
 
@@ -455,6 +555,7 @@ class ImportService
             'error_log' => $errorLog,
             'imported_ids' => $importedIds,
             'status' => $finalStatus,
+            'progress' => 100,
         ]);
 
         // Cleanup: remove uploaded file after processing

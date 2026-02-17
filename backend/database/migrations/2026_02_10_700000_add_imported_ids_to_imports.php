@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('imports', function (Blueprint $table) {
-            $table->json('imported_ids')->nullable();
-        });
+        if (!Schema::hasColumn('imports', 'imported_ids')) {
+            Schema::table('imports', function (Blueprint $table) {
+                $table->json('imported_ids')->nullable();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('imports', function (Blueprint $table) {
-            $table->dropColumn('imported_ids');
-        });
+        if (Schema::hasColumn('imports', 'imported_ids')) {
+            Schema::table('imports', function (Blueprint $table) {
+                $table->dropColumn('imported_ids');
+            });
+        }
     }
 };

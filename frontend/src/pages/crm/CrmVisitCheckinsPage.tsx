@@ -113,7 +113,7 @@ export function CrmVisitCheckinsPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div><span className="text-muted-foreground">Cliente:</span><p className="font-medium">{activeCheckin.customer?.name}</p></div>
                             <div><span className="text-muted-foreground">Entrada:</span><p className="font-medium">{fmtDate(activeCheckin.checkin_at)}</p></div>
-                            <div><span className="text-muted-foreground">Duração:</span><p className="font-medium">{fmtDuration(Math.floor((Date.now() - new Date(activeCheckin.checkin_at).getTime()) / 60000))}</p></div>
+                            <div><span className="text-muted-foreground">Duração:</span><p className="font-medium">{fmtDuration(Math.floor((new Date().getTime() - new Date(activeCheckin.checkin_at).getTime()) / 60000))}</p></div>
                             {activeCheckin.distance_from_client_meters != null && (
                                 <div><span className="text-muted-foreground">Distância:</span><p className="font-medium">{activeCheckin.distance_from_client_meters > 1000 ? `${(activeCheckin.distance_from_client_meters / 1000).toFixed(1)} km` : `${Math.round(activeCheckin.distance_from_client_meters)} m`}</p></div>
                             )}

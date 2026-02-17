@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Wifi, WifiOff, CloudOff, RefreshCw, CheckCircle2 } from 'lucide-react'
 
 export default function OfflineIndicator() {
@@ -6,6 +6,26 @@ export default function OfflineIndicator() {
     const [queueCount, setQueueCount] = useState(0)
     const [syncing, setSyncing] = useState(false)
     const [showBanner, setShowBanner] = useState(false)
+
+    const updateQueueCount = useCallback(async () => {
+        try {
+            if ('indexedDB' in window) {
+                const request = indexedDB.open('kalibrium-offline', 1)
+                request.onsuccess = () => {
+                    const db = request.result
+                    if (db.objectStoreNames.contains('offline-queue')) {
+                        const tx = db.transaction('offline-queue', 'readonly')
+                        const store = tx.objectStore('offline-queue')
+                        const countReq = store.count()
+                        countReq.onsuccess = () => setQueueCount(countReq.result)
+                    }
+                    db.close()
+                }
+            }
+        } catch {
+            // IndexedDB not available
+        }
+    }, [])
 
     useEffect(() => {
         const handleOnline = () => {
@@ -45,27 +65,7 @@ export default function OfflineIndicator() {
             window.removeEventListener('offline', handleOffline)
             navigator.serviceWorker?.removeEventListener('message', handleSyncMessage)
         }
-    }, [])
-
-    const updateQueueCount = async () => {
-        try {
-            if ('indexedDB' in window) {
-                const request = indexedDB.open('kalibrium-offline', 1)
-                request.onsuccess = () => {
-                    const db = request.result
-                    if (db.objectStoreNames.contains('offline-queue')) {
-                        const tx = db.transaction('offline-queue', 'readonly')
-                        const store = tx.objectStore('offline-queue')
-                        const countReq = store.count()
-                        countReq.onsuccess = () => setQueueCount(countReq.result)
-                    }
-                    db.close()
-                }
-            }
-        } catch {
-            // IndexedDB not available
-        }
-    }
+    }, [updateQueueCount])
 
     const forceSync = async () => {
         if (navigator.serviceWorker?.controller) {

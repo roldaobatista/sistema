@@ -128,7 +128,7 @@ export default function TechContractInfoPage() {
     const isExpiringSoon = (c: RecurringContract) => {
         if (!c.end_date) return false
         const end = new Date(c.end_date)
-        const diff = (end.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        const diff = (end.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
         return diff > 0 && diff <= 30
     }
 

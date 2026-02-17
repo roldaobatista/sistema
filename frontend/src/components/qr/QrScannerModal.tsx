@@ -23,10 +23,13 @@ export function QrScannerModal({ open, onClose, onScan, title = 'Escanear etique
     const scannerRef = useRef<Html5Qrcode | null>(null)
     const onScanRef = useRef(onScan)
     const onCloseRef = useRef(onClose)
-    onScanRef.current = onScan
-    onCloseRef.current = onClose
     const [error, setError] = useState<string | null>(null)
     const containerId = useId().replace(/:/g, '-') || SCANNER_ID
+
+    useEffect(() => {
+        onScanRef.current = onScan
+        onCloseRef.current = onClose
+    }, [onScan, onClose])
 
     useEffect(() => {
         if (!open) return

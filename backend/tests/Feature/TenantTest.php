@@ -134,7 +134,7 @@ class TenantTest extends TestCase
         // Tenant $this->tenant has $this->user attached
         $response = $this->deleteJson("/api/v1/tenants/{$this->tenant->id}");
 
-        $response->assertStatus(422)
+        $response->assertStatus(409)
             ->assertJsonPath('message', 'Não é possível excluir empresa com dados vinculados.')
             ->assertJsonPath('dependencies.users', 1)
             ->assertJsonMissing(['dependencies' => ['branches' => 0]]);
@@ -147,7 +147,7 @@ class TenantTest extends TestCase
 
         $response = $this->deleteJson("/api/v1/tenants/{$tenant->id}");
 
-        $response->assertStatus(422)
+        $response->assertStatus(409)
             ->assertJsonPath('dependencies.branches', 1);
     }
 
@@ -434,7 +434,7 @@ class TenantTest extends TestCase
 
         $response = $this->deleteJson("/api/v1/tenants/{$tenantWithSettings->id}");
 
-        $response->assertStatus(422)
+        $response->assertStatus(409)
             ->assertJsonPath('dependencies.users', 1);
     }
 }

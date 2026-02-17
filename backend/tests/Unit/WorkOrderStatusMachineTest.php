@@ -10,7 +10,6 @@ use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -24,8 +23,6 @@ use Tests\TestCase;
  */
 class WorkOrderStatusMachineTest extends TestCase
 {
-    use RefreshDatabase;
-
     private Tenant $tenant;
     private User $user;
     private Customer $customer;
@@ -33,23 +30,30 @@ class WorkOrderStatusMachineTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        fwrite(STDERR, "SM:setUp:start\n");
 
         $this->tenant = Tenant::factory()->create();
+        fwrite(STDERR, "SM:setUp:tenant\n");
         $this->user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'current_tenant_id' => $this->tenant->id,
         ]);
+        fwrite(STDERR, "SM:setUp:user\n");
         $this->customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+        fwrite(STDERR, "SM:setUp:customer\n");
 
         Sanctum::actingAs($this->user);
         app()->instance('current_tenant_id', $this->tenant->id);
         setPermissionsTeamId($this->tenant->id);
+        fwrite(STDERR, "SM:setUp:sanctum\n");
 
         // Assign all permissions for OS
         $role = \Spatie\Permission\Models\Role::firstOrCreate(
             ['name' => 'admin', 'guard_name' => 'api', 'team_id' => $this->tenant->id]
         );
+        fwrite(STDERR, "SM:setUp:role\n");
         $this->user->assignRole($role);
+        fwrite(STDERR, "SM:setUp:done\n");
     }
 
     private function createWorkOrder(string $status = 'open'): WorkOrder

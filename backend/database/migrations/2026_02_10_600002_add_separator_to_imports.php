@@ -7,15 +7,19 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('imports', function (Blueprint $t) {
-            $t->string('separator', 10)->default(';');
-        });
+        if (!Schema::hasColumn('imports', 'separator')) {
+            Schema::table('imports', function (Blueprint $t) {
+                $t->string('separator', 10)->default(';');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('imports', function (Blueprint $t) {
-            $t->dropColumn('separator');
-        });
+        if (Schema::hasColumn('imports', 'separator')) {
+            Schema::table('imports', function (Blueprint $t) {
+                $t->dropColumn('separator');
+            });
+        }
     }
 };

@@ -42,8 +42,12 @@ class HandleWorkOrderInvoicing implements ShouldQueue
         // 4. Gerar comissões (regras com applies_when = os_invoiced)
         try {
             $this->commissionService->calculateAndGenerate($wo, \App\Models\CommissionRule::WHEN_OS_INVOICED);
-        } catch (\Exception) {
+        } catch (\Exception $e) {
             // Comissões já geradas ou sem regras — não impede faturamento
+            \Illuminate\Support\Facades\Log::warning('Falha ao gerar comissões no faturamento da OS', [
+                'work_order_id' => $wo->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         // 5. Notificar equipe financeira

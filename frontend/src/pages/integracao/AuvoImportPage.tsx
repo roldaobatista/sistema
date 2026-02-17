@@ -689,7 +689,7 @@ export function AuvoImportPage() {
                                             <div key={idx} className="rounded-lg border border-default bg-surface-50 p-3">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
-                                                        Auvo ID: {item.auvo_id ?? '—'}
+                                                        Auvo ID: {String(item.auvo_id ?? '—')}
                                                     </span>
                                                 </div>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">

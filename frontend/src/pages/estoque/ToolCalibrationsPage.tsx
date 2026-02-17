@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { Wrench, Plus, AlertTriangle, CheckCircle2, Pencil, Trash2, Search } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ToolCalibration {
     id: number
@@ -42,6 +43,8 @@ const emptyForm = {
 
 export default function ToolCalibrationsPage() {
     const queryClient = useQueryClient()
+    const { hasPermission } = useAuthStore()
+    const canManage = hasPermission('estoque.manage')
     const [showFormModal, setShowFormModal] = useState(false)
     const [editingId, setEditingId] = useState<number | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<ToolCalibration | null>(null)
@@ -166,11 +169,11 @@ export default function ToolCalibrationsPage() {
             <PageHeader
                 title="Calibração de Ferramentas"
                 subtitle="Registro de calibrações de ferramentas e instrumentos do estoque"
-                action={
+                action={canManage ? (
                     <Button onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>
                         Registrar Calibração
                     </Button>
-                }
+                ) : undefined}
             />
 
             {expiring.length > 0 && (
@@ -269,7 +272,7 @@ export default function ToolCalibrationsPage() {
                         </thead>
                         <tbody className="divide-y">
                             {filteredCalibrations.map(c => {
-                                const isExpiring = c.next_due_date && new Date(c.next_due_date) < new Date(Date.now() + 30 * 86400000)
+                                const isExpiring = c.next_due_date && new Date(c.next_due_date) < new Date(new Date().getTime() + 30 * 86400000)
                                 return (
                                     <tr key={c.id}>
                                         <td className="p-3 font-medium">{c.item_name ?? `Item #${c.inventory_item_id}`}</td>
@@ -284,11 +287,10 @@ export default function ToolCalibrationsPage() {
                                         <td className="p-3 text-xs">{c.certificate_number ?? '—'}</td>
                                         <td className="p-3 text-xs">{c.laboratory ?? '—'}</td>
                                         <td className="p-3 text-center">
-                                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                c.result === 'approved'
-                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                            }`}>
+                                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.result === 'approved'
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                }`}>
                                                 {c.result === 'approved' ? 'Aprovado' : 'Reprovado'}
                                             </span>
                                         </td>
@@ -297,23 +299,27 @@ export default function ToolCalibrationsPage() {
                                         </td>
                                         <td className="p-3">
                                             <div className="flex items-center justify-center gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleEdit(c)}
-                                                    title="Editar"
-                                                >
-                                                    <Pencil className="h-3.5 w-3.5" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => setDeleteTarget(c)}
-                                                    title="Excluir"
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </Button>
+                                                {canManage && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleEdit(c)}
+                                                        title="Editar"
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                )}
+                                                {canManage && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => setDeleteTarget(c)}
+                                                        title="Excluir"
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

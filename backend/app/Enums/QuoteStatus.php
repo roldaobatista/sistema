@@ -44,6 +44,6 @@ enum QuoteStatus: string
     /** Statuses que permitem edição */
     public function isMutable(): bool
     {
-        return in_array($this, [self::DRAFT, self::REJECTED], true);
+        return in_array($this, [self::DRAFT, self::PENDING_INTERNAL_APPROVAL, self::REJECTED], true);
     }
 }

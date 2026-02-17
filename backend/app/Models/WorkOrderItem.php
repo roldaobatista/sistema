@@ -155,6 +155,9 @@ class WorkOrderItem extends Model
 
     protected static function syncUsedStockItemQuantity(self $item, float $quantity): void
     {
+        if ($item->type !== self::TYPE_PRODUCT || !$item->reference_id) {
+            return;
+        }
         \App\Models\UsedStockItem::where('work_order_item_id', $item->id)->update(['quantity' => $quantity]);
     }
 

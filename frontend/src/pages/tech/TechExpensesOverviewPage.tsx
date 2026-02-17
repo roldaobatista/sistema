@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Receipt, Loader2 } from 'lucide-react'
+import { ArrowLeft, Receipt, Loader2, Plus, CheckCircle2, X, Camera } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+
+interface ExpenseCategory {
+    id: number
+    name: string
+    color: string
+}
 
 interface Expense {
     id: number
@@ -17,16 +23,6 @@ interface Expense {
     created_at: string
     notes?: string | null
     receipt_path?: string | null
-}
-
-const CATEGORY_ICONS: Record<string, string> = {
-    'Transporte': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-    'Alimentação': 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
-    'Hospedagem': 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-    'Peças/Material': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
-    'Pedágio': 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
-    'Combustível': 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-    'Outros': 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400',
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -43,6 +39,22 @@ export default function TechExpensesOverviewPage() {
     const [loading, setLoading] = useState(true)
     const [period, setPeriod] = useState<'week' | 'month' | 'all'>('month')
     const [categoryFilter, setCategoryFilter] = useState('')
+
+    // Create form state
+    const [showCreateForm, setShowCreateForm] = useState(false)
+    const [apiCategories, setApiCategories] = useState<ExpenseCategory[]>([])
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
+    const [description, setDescription] = useState('')
+    const [amount, setAmount] = useState('')
+    const [photo, setPhoto] = useState<File | null>(null)
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+    const [saving, setSaving] = useState(false)
+
+    useEffect(() => {
+        api.get('/expense-categories')
+            .then(res => setApiCategories(res.data ?? []))
+            .catch(() => toast.error('Erro ao carregar categorias'))
+    }, [])
 
     useEffect(() => {
         fetchExpenses()
@@ -70,6 +82,49 @@ export default function TechExpensesOverviewPage() {
         }
     }
 
+    const handlePhoto = (file: File) => {
+        setPhoto(file)
+        const reader = new FileReader()
+        reader.onloadend = () => setPhotoPreview(reader.result as string)
+        reader.readAsDataURL(file)
+    }
+
+    const selectedCategory = apiCategories.find(c => c.id === selectedCategoryId)
+
+    const handleCreateExpense = useCallback(async () => {
+        if (!selectedCategoryId || !amount) return
+        setSaving(true)
+        try {
+            const catName = selectedCategory?.name ?? ''
+            const formData = new FormData()
+            formData.append('expense_category_id', String(selectedCategoryId))
+            formData.append('description', description || catName)
+            formData.append('amount', amount)
+            formData.append('expense_date', new Date().toISOString().slice(0, 10))
+            formData.append('affects_technician_cash', '1')
+            formData.append('affects_net_value', '1')
+            if (description) formData.append('notes', description)
+            if (photo) formData.append('receipt', photo)
+
+            await api.post('/expenses', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            })
+
+            setSelectedCategoryId(null)
+            setDescription('')
+            setAmount('')
+            setPhoto(null)
+            setPhotoPreview(null)
+            setShowCreateForm(false)
+            toast.success('Despesa registrada com sucesso')
+            fetchExpenses()
+        } catch {
+            toast.error('Não foi possível salvar a despesa. Tente novamente.')
+        } finally {
+            setSaving(false)
+        }
+    }, [selectedCategoryId, selectedCategory, description, amount, photo])
+
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
@@ -82,10 +137,10 @@ export default function TechExpensesOverviewPage() {
     const pendingAmount = filtered.filter(e => e.status === 'pending' || e.status === 'reviewed').reduce((sum, e) => sum + toNum(e.amount), 0)
     const approvedAmount = filtered.filter(e => e.status === 'approved' || e.status === 'reimbursed').reduce((sum, e) => sum + toNum(e.amount), 0)
 
-    const categories = [...new Set(expenses.map(e => e.category?.name ?? 'Outros'))].sort()
+    const uniqueCategories = [...new Set(expenses.map(e => e.category?.name ?? 'Outros'))].sort()
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
             <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
                 <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
@@ -129,7 +184,7 @@ export default function TechExpensesOverviewPage() {
                 </div>
 
                 {/* Category filter */}
-                {categories.length > 0 && (
+                {uniqueCategories.length > 0 && (
                     <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                         <button
                             onClick={() => setCategoryFilter('')}
@@ -140,7 +195,7 @@ export default function TechExpensesOverviewPage() {
                         >
                             Todas
                         </button>
-                        {categories.map(cat => (
+                        {uniqueCategories.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setCategoryFilter(cat)}
@@ -170,13 +225,16 @@ export default function TechExpensesOverviewPage() {
                     <div className="space-y-2">
                         {filtered.map((exp) => {
                             const catName = exp.category?.name ?? 'Outros'
-                            const catColor = CATEGORY_ICONS[catName] || CATEGORY_ICONS['Outros']
+                            const catColor = exp.category?.color ?? '#9ca3af'
                             const statusInfo = STATUS_LABELS[exp.status] || STATUS_LABELS.pending
                             const woLabel = exp.work_order?.os_number ?? exp.work_order?.number
                             return (
                                 <div key={exp.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
                                     <div className="flex items-center gap-3">
-                                        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', catColor)}>
+                                        <div
+                                            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                            style={{ backgroundColor: `${catColor}20`, color: catColor }}
+                                        >
                                             <Receipt className="w-4 h-4" />
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -203,7 +261,123 @@ export default function TechExpensesOverviewPage() {
                         })}
                     </div>
                 )}
+
+                {/* Bottom spacer for FAB */}
+                <div className="h-16" />
             </div>
+
+            {/* FAB — New Expense */}
+            {!showCreateForm && (
+                <button
+                    onClick={() => setShowCreateForm(true)}
+                    aria-label="Nova despesa avulsa"
+                    className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-brand-600 text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-10"
+                >
+                    <Plus className="w-6 h-6" />
+                </button>
+            )}
+
+            {/* Bottom Sheet — Create Expense */}
+            {showCreateForm && (
+                <div className="absolute inset-0 z-20 flex flex-col">
+                    <div className="flex-1 bg-black/40" onClick={() => setShowCreateForm(false)} />
+                    <div className="bg-white dark:bg-surface-900 rounded-t-2xl px-4 pt-4 pb-6 shadow-2xl animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-base font-bold text-surface-900 dark:text-surface-50">Nova Despesa Avulsa</h2>
+                            <button onClick={() => setShowCreateForm(false)} aria-label="Fechar formulário" className="p-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-800">
+                                <X className="w-5 h-5 text-surface-400" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Category chips */}
+                            <div>
+                                <label className="text-xs text-surface-500 font-medium mb-2 block">Categoria *</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {apiCategories.map((cat) => (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setSelectedCategoryId(cat.id)}
+                                            className={cn(
+                                                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                                                selectedCategoryId === cat.id
+                                                    ? 'text-white'
+                                                    : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+                                            )}
+                                            style={selectedCategoryId === cat.id ? { backgroundColor: cat.color } : undefined}
+                                        >
+                                            {cat.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Amount */}
+                            <div>
+                                <label className="text-xs text-surface-500 font-medium mb-1 block">Valor (R$) *</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={amount}
+                                    onChange={e => setAmount(e.target.value)}
+                                    placeholder="0,00"
+                                    className="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                                />
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="text-xs text-surface-500 font-medium mb-1 block">Descrição</label>
+                                <input
+                                    type="text"
+                                    value={description}
+                                    onChange={e => setDescription(e.target.value)}
+                                    placeholder="Descrição da despesa"
+                                    className="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                                />
+                            </div>
+
+                            {/* Photo */}
+                            <div>
+                                <label className="text-xs text-surface-500 font-medium mb-1 block">Comprovante</label>
+                                {photoPreview ? (
+                                    <div className="relative w-full h-32 rounded-lg overflow-hidden">
+                                        <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
+                                        <button onClick={() => { setPhoto(null); setPhotoPreview(null) }}
+                                            className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center">
+                                            <X className="w-3 h-3 text-white" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className="flex items-center justify-center gap-2 w-full py-6 border-2 border-dashed border-surface-300 dark:border-surface-600 rounded-lg cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
+                                        <Camera className="w-5 h-5 text-surface-400" />
+                                        <span className="text-xs text-surface-500">Tirar foto ou selecionar</span>
+                                        <input type="file" accept="image/*" className="hidden" aria-label="Selecionar comprovante"
+                                            onChange={e => { if (e.target.files?.[0]) handlePhoto(e.target.files[0]) }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* Save button */}
+                            <button
+                                onClick={handleCreateExpense}
+                                disabled={saving || !selectedCategoryId || !amount}
+                                className={cn(
+                                    'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-colors',
+                                    selectedCategoryId && amount
+                                        ? 'bg-brand-600 active:bg-brand-700'
+                                        : 'bg-surface-300 dark:bg-surface-700',
+                                    saving && 'opacity-70',
+                                )}
+                            >
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                Salvar Despesa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

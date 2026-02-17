@@ -142,72 +142,25 @@ class StockAdvancedController extends Controller
         ]);
 
         try {
-            DB::beginTransaction();
+            $service = app(\App\Services\StockTransferService::class);
+            $transfer = $service->createTransfer(
+                fromWarehouseId: $validated['from_warehouse_id'],
+                toWarehouseId: $validated['to_warehouse_id'],
+                items: $validated['items'],
+                notes: $validated['notes'] ?? null,
+                createdBy: auth()->id(),
+            );
 
-            $id = DB::table('stock_transfers')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'from_warehouse_id' => $validated['from_warehouse_id'],
-                'to_warehouse_id' => $validated['to_warehouse_id'],
-                'status' => 'completed',
-                'notes' => $validated['notes'] ?? null,
-                'created_by' => auth()->id(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            foreach ($validated['items'] as $item) {
-                DB::table('stock_transfer_items')->insert([
-                    'stock_transfer_id' => $id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'created_at' => now(),
-                ]);
-
-                $sourceStock = DB::table('warehouse_stocks')
-                    ->where('warehouse_id', $validated['from_warehouse_id'])
-                    ->where('product_id', $item['product_id'])
-                    ->first();
-
-                $currentQty = $sourceStock ? (float) $sourceStock->quantity : 0;
-                if ($currentQty < $item['quantity']) {
-                    DB::rollBack();
-                    $productName = DB::table('products')->where('id', $item['product_id'])->value('name') ?? $item['product_id'];
-                    return response()->json([
-                        'message' => "Saldo insuficiente para o produto \"{$productName}\". Disponível: {$currentQty}, Solicitado: {$item['quantity']}",
-                    ], 422);
-                }
-
-                DB::table('warehouse_stocks')
-                    ->where('warehouse_id', $validated['from_warehouse_id'])
-                    ->where('product_id', $item['product_id'])
-                    ->decrement('quantity', $item['quantity']);
-
-                // Increase at destination
-                $destinationStock = DB::table('warehouse_stocks')
-                    ->where('warehouse_id', $validated['to_warehouse_id'])
-                    ->where('product_id', $item['product_id'])
-                    ->first();
-
-                if ($destinationStock) {
-                    DB::table('warehouse_stocks')
-                        ->where('warehouse_id', $validated['to_warehouse_id'])
-                        ->where('product_id', $item['product_id'])
-                        ->increment('quantity', $item['quantity']);
-                } else {
-                    DB::table('warehouse_stocks')->insert([
-                        'warehouse_id' => $validated['to_warehouse_id'],
-                        'product_id' => $item['product_id'],
-                        'quantity' => $item['quantity'],
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Transferência realizada com sucesso', 'id' => $id], 201);
+            return response()->json([
+                'message' => 'Transferência realizada com sucesso',
+                'data' => $transfer,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Stock transfer failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro na transferência'], 500);
         }

@@ -278,7 +278,6 @@ class WorkOrderController extends Controller
             'seller:id,name',
             'driver:id,name',
             'quote:id,quote_number,total',
-            'serviceCall:id,call_number,status',
             'technicians:id,name',
             'equipmentsList',
             'items',
@@ -399,12 +398,20 @@ class WorkOrderController extends Controller
 
         DB::beginTransaction();
         try {
-            $workOrder->update([
+            $updateData = [
                 'status' => $to,
                 'started_at' => $to === WorkOrder::STATUS_IN_PROGRESS && !$workOrder->started_at ? now() : $workOrder->started_at,
                 'completed_at' => $to === WorkOrder::STATUS_COMPLETED ? now() : $workOrder->completed_at,
                 'delivered_at' => $to === WorkOrder::STATUS_DELIVERED ? now() : $workOrder->delivered_at,
-            ]);
+            ];
+
+            // Registrar dados de cancelamento
+            if ($to === WorkOrder::STATUS_CANCELLED) {
+                $updateData['cancelled_at'] = now();
+                $updateData['cancellation_reason'] = $validated['notes'] ?? null;
+            }
+
+            $workOrder->update($updateData);
 
             // statusHistory criado apenas para transições sem Listener dedicado
             // Os Listeners WorkOrderStarted, Completed, Cancelled, Invoiced já criam seus próprios registros
@@ -442,20 +449,6 @@ class WorkOrderController extends Controller
             }
 
             DB::commit();
-
-            // Dispatch domain events AFTER commit to prevent race conditions
-            $user = $request->user();
-            match ($to) {
-                WorkOrder::STATUS_IN_PROGRESS => WorkOrderStarted::dispatch($workOrder, $user, $from),
-                WorkOrder::STATUS_COMPLETED => WorkOrderCompleted::dispatch($workOrder, $user, $from),
-                WorkOrder::STATUS_INVOICED => WorkOrderInvoiced::dispatch($workOrder, $user, $from),
-                WorkOrder::STATUS_CANCELLED => WorkOrderCancelled::dispatch($workOrder, $user, $validated['notes'] ?? '', $from),
-                default => null,
-            };
-
-            event(new \App\Events\WorkOrderStatusChanged($workOrder));
-
-            return response()->json($workOrder->fresh()->load(['customer:id,name,latitude,longitude', 'statusHistory.user:id,name']));
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('WorkOrder status update failed', [
@@ -467,6 +460,29 @@ class WorkOrderController extends Controller
 
             return response()->json(['message' => 'Erro ao alterar status da OS'], 500);
         }
+
+        // Dispatch domain events AFTER commit in separate try-catch
+        // Falha em event/listener não deve retornar 500 ao usuário (dados já salvos)
+        try {
+            $user = $request->user();
+            match ($to) {
+                WorkOrder::STATUS_IN_PROGRESS => WorkOrderStarted::dispatch($workOrder, $user, $from),
+                WorkOrder::STATUS_COMPLETED => WorkOrderCompleted::dispatch($workOrder, $user, $from),
+                WorkOrder::STATUS_INVOICED => WorkOrderInvoiced::dispatch($workOrder, $user, $from),
+                WorkOrder::STATUS_CANCELLED => WorkOrderCancelled::dispatch($workOrder, $user, $validated['notes'] ?? '', $from),
+                default => null,
+            };
+
+            event(new \App\Events\WorkOrderStatusChanged($workOrder));
+        } catch (\Exception $eventEx) {
+            Log::warning('WorkOrder event dispatch failed (data already committed)', [
+                'work_order_id' => $workOrder->id,
+                'to_status' => $to,
+                'error' => $eventEx->getMessage(),
+            ]);
+        }
+
+        return response()->json($workOrder->fresh()->load(['customer:id,name,latitude,longitude', 'statusHistory.user:id,name']));
     }
 
     // --- Itens CRUD ---
@@ -499,6 +515,8 @@ class WorkOrderController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // Total calculado automaticamente pelo model boot (WorkOrderItem::booted)
             $item = $workOrder->items()->create($validated);
             DB::commit();
             return response()->json($item, 201);
@@ -541,6 +559,8 @@ class WorkOrderController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // Total recalculado automaticamente pelo model boot (WorkOrderItem::booted)
             $item->update($validated);
             DB::commit();
             return response()->json($item);
@@ -759,7 +779,13 @@ class WorkOrderController extends Controller
         try {
             DB::beginTransaction();
 
-            $newOrder = $workOrder->replicate(['number', 'os_number', 'status', 'started_at', 'completed_at', 'delivered_at', 'cancelled_at', 'cancellation_reason', 'signature_path', 'signed_by_name', 'signature_at', 'invoice_id']);
+            $newOrder = $workOrder->replicate([
+                'number', 'os_number', 'status',
+                'started_at', 'completed_at', 'delivered_at', 'cancelled_at', 'cancellation_reason',
+                'signature_path', 'signature_signer', 'signature_at', 'signature_ip',
+                'sla_responded_at', 'dispatch_authorized_by', 'dispatch_authorized_at',
+                'displacement_started_at', 'displacement_arrived_at', 'displacement_duration_minutes',
+            ]);
             $newOrder->number = WorkOrder::nextNumber($tenantId);
             $newOrder->status = WorkOrder::STATUS_OPEN;
             $newOrder->created_by = $request->user()->id;
@@ -1280,5 +1306,230 @@ class WorkOrderController extends Controller
         }
 
         return response()->json(['data' => $survey]);
+    }
+
+    /**
+     * GET /work-orders/{work_order}/cost-estimate
+     * Returns an itemized cost breakdown for the work order.
+     */
+    public function costEstimate(WorkOrder $workOrder): JsonResponse
+    {
+        $this->ensureTenantOwnership($workOrder);
+        $workOrder->load('items');
+
+        $itemsSubtotal = '0.00';
+        $itemsDiscount = '0.00';
+        $breakdown = [];
+
+        foreach ($workOrder->items as $item) {
+            $lineTotal = bcmul((string) $item->quantity, (string) $item->unit_price, 2);
+            $lineDiscount = (string) ($item->discount ?? '0.00');
+            $lineNet = bcsub($lineTotal, $lineDiscount, 2);
+
+            $itemsSubtotal = bcadd($itemsSubtotal, $lineTotal, 2);
+            $itemsDiscount = bcadd($itemsDiscount, $lineDiscount, 2);
+
+            $breakdown[] = [
+                'id' => $item->id,
+                'type' => $item->type,
+                'description' => $item->description,
+                'quantity' => $item->quantity,
+                'unit_price' => $item->unit_price,
+                'discount' => $item->discount ?? '0.00',
+                'line_total' => $lineNet,
+            ];
+        }
+
+        $displacement = (string) ($workOrder->displacement_value ?? '0.00');
+        $globalDiscount = (string) ($workOrder->discount ?? '0.00');
+        $subtotalWithDisplacement = bcadd($itemsSubtotal, $displacement, 2);
+        $totalBeforeDiscount = bcsub($subtotalWithDisplacement, $itemsDiscount, 2);
+        $grandTotal = bcsub($totalBeforeDiscount, $globalDiscount, 2);
+
+        return response()->json([
+            'items' => $breakdown,
+            'items_subtotal' => $itemsSubtotal,
+            'items_discount' => $itemsDiscount,
+            'displacement_value' => $displacement,
+            'global_discount' => $globalDiscount,
+            'grand_total' => $grandTotal,
+        ]);
+    }
+
+    /**
+     * GET /work-orders/{work_order}/pdf
+     * Generates and downloads a PDF for the work order.
+     */
+    public function downloadPdf(WorkOrder $workOrder)
+    {
+        $this->ensureTenantOwnership($workOrder);
+
+        $workOrder->load([
+            'customer',
+            'items',
+            'equipments',
+            'assignedTo',
+            'driver',
+            'statusHistories',
+            'attachments',
+        ]);
+
+        try {
+            $tenant = \App\Models\Tenant::find($workOrder->tenant_id);
+
+            $data = [
+                'order' => $workOrder,
+                'tenant' => $tenant,
+                'items' => $workOrder->items,
+                'customer' => $workOrder->customer,
+                'equipments' => $workOrder->equipments ?? collect(),
+                'technician' => $workOrder->assignedTo,
+                'driver' => $workOrder->driver,
+            ];
+
+            // Calculate totals
+            $subtotal = $workOrder->items->sum(fn ($i) => bcmul((string) $i->quantity, (string) $i->unit_price, 2));
+            $discount = $workOrder->items->sum('discount') + ($workOrder->discount ?? 0);
+            $displacement = $workOrder->displacement_value ?? 0;
+            $total = bcsub(bcadd((string) $subtotal, (string) $displacement, 2), (string) $discount, 2);
+
+            $data['subtotal'] = number_format((float) $subtotal, 2, ',', '.');
+            $data['discount'] = number_format((float) $discount, 2, ',', '.');
+            $data['displacement'] = number_format((float) $displacement, 2, ',', '.');
+            $data['total'] = number_format((float) $total, 2, ',', '.');
+
+            // Use Blade template if available, otherwise generate simple HTML
+            $viewName = 'pdf.work-order';
+            if (view()->exists($viewName)) {
+                $html = view($viewName, $data)->render();
+            } else {
+                $html = $this->generatePdfHtml($data);
+            }
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
+                ->setPaper('a4', 'portrait');
+
+            $filename = "os-{$workOrder->id}.pdf";
+
+            return $pdf->download($filename);
+        } catch (\Exception $e) {
+            Log::error('WorkOrder PDF generation failed', [
+                'work_order_id' => $workOrder->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(['message' => 'Erro ao gerar PDF da OS'], 500);
+        }
+    }
+
+    /**
+     * Generate a fallback HTML for the PDF when no Blade template exists.
+     */
+    private function generatePdfHtml(array $data): string
+    {
+        $order = $data['order'];
+        $customer = $data['customer'];
+        $tenant = $data['tenant'];
+        $items = $data['items'];
+
+        $statusLabels = [
+            'open' => 'Aberta', 'scheduled' => 'Agendada', 'in_progress' => 'Em Andamento',
+            'completed' => 'Concluída', 'invoiced' => 'Faturada', 'cancelled' => 'Cancelada',
+        ];
+        $priorityLabels = [
+            'low' => 'Baixa', 'normal' => 'Normal', 'high' => 'Alta', 'urgent' => 'Urgente',
+        ];
+
+        $statusLabel = $statusLabels[$order->status] ?? $order->status;
+        $priorityLabel = $priorityLabels[$order->priority] ?? $order->priority;
+        $createdAt = $order->created_at ? $order->created_at->format('d/m/Y H:i') : '—';
+        $technician = $data['technician']->name ?? '—';
+
+        $itemsHtml = '';
+        foreach ($items as $item) {
+            $lineTotal = number_format($item->quantity * $item->unit_price, 2, ',', '.');
+            $unitPrice = number_format($item->unit_price, 2, ',', '.');
+            $typeLabel = $item->type === 'product' ? 'Produto' : 'Serviço';
+            $itemsHtml .= "<tr>
+                <td>{$typeLabel}</td>
+                <td>{$item->description}</td>
+                <td style='text-align:center'>{$item->quantity}</td>
+                <td style='text-align:right'>R$ {$unitPrice}</td>
+                <td style='text-align:right'>R$ {$lineTotal}</td>
+            </tr>";
+        }
+
+        if (empty($itemsHtml)) {
+            $itemsHtml = '<tr><td colspan="5" style="text-align:center;color:#999">Nenhum item</td></tr>';
+        }
+
+        $equipmentsHtml = '';
+        foreach ($data['equipments'] as $eq) {
+            $equipmentsHtml .= "<li>{$eq->name} — {$eq->brand} {$eq->model} (S/N: {$eq->serial_number})</li>";
+        }
+        if (empty($equipmentsHtml)) {
+            $equipmentsHtml = '<li style="color:#999">Nenhum equipamento vinculado</li>';
+        }
+
+        return "<!DOCTYPE html>
+<html lang='pt-BR'>
+<head><meta charset='UTF-8'>
+<style>
+  body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11px; color: #333; margin: 30px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  h2 { font-size: 13px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #ddd; padding: 5px 8px; font-size: 10px; }
+  th { background: #f5f5f5; text-align: left; }
+  .info-grid { display: table; width: 100%; }
+  .info-row { display: table-row; }
+  .info-label { display: table-cell; width: 130px; font-weight: bold; padding: 3px 0; }
+  .info-value { display: table-cell; padding: 3px 0; }
+  .totals { margin-top: 12px; text-align: right; }
+  .totals p { margin: 2px 0; }
+  .total-final { font-size: 14px; font-weight: bold; }
+</style></head>
+<body>
+  <h1>" . ($tenant->name ?? 'Empresa') . "</h1>
+  <p style='color:#666; margin-top:0'>Ordem de Serviço Nº {$order->id}</p>
+
+  <h2>Informações Gerais</h2>
+  <div class='info-grid'>
+    <div class='info-row'><span class='info-label'>Status:</span><span class='info-value'>{$statusLabel}</span></div>
+    <div class='info-row'><span class='info-label'>Prioridade:</span><span class='info-value'>{$priorityLabel}</span></div>
+    <div class='info-row'><span class='info-label'>Data Criação:</span><span class='info-value'>{$createdAt}</span></div>
+    <div class='info-row'><span class='info-label'>Técnico:</span><span class='info-value'>{$technician}</span></div>
+  </div>
+
+  <h2>Cliente</h2>
+  <div class='info-grid'>
+    <div class='info-row'><span class='info-label'>Nome:</span><span class='info-value'>" . ($customer->name ?? '—') . "</span></div>
+    <div class='info-row'><span class='info-label'>CNPJ/CPF:</span><span class='info-value'>" . ($customer->document ?? '—') . "</span></div>
+    <div class='info-row'><span class='info-label'>Telefone:</span><span class='info-value'>" . ($customer->phone ?? '—') . "</span></div>
+    <div class='info-row'><span class='info-label'>Endereço:</span><span class='info-value'>" . ($customer->address ?? '—') . "</span></div>
+  </div>
+
+  <h2>Equipamentos</h2>
+  <ul>{$equipmentsHtml}</ul>
+
+  <h2>Descrição</h2>
+  <p>" . ($order->description ?? 'Sem descrição') . "</p>
+
+  <h2>Itens</h2>
+  <table>
+    <thead><tr><th>Tipo</th><th>Descrição</th><th style='text-align:center'>Qtd</th><th style='text-align:right'>Preço Unit.</th><th style='text-align:right'>Total</th></tr></thead>
+    <tbody>{$itemsHtml}</tbody>
+  </table>
+
+  <div class='totals'>
+    <p>Subtotal: R$ {$data['subtotal']}</p>
+    <p>Deslocamento: R$ {$data['displacement']}</p>
+    <p>Desconto: R$ {$data['discount']}</p>
+    <p class='total-final'>Total: R$ {$data['total']}</p>
+  </div>
+
+  " . ($order->technical_report ? "<h2>Laudo Técnico</h2><p>{$order->technical_report}</p>" : '') . "
+</body></html>";
     }
 }

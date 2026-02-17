@@ -128,12 +128,14 @@ class AccountReceivableController extends Controller
         }
 
         try {
-            $accountReceivable->update($validated);
+            DB::transaction(function () use ($validated, $accountReceivable) {
+                $accountReceivable->update($validated);
 
-            // Recalculate status if amount changed
-            if (isset($validated['amount'])) {
-                $accountReceivable->recalculateStatus();
-            }
+                // Recalculate status if amount changed
+                if (isset($validated['amount'])) {
+                    $accountReceivable->recalculateStatus();
+                }
+            });
 
             return response()->json($accountReceivable->fresh()->load(['customer:id,name', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type']));
         } catch (\Throwable $e) {

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
 use App\Traits\SyncsWithCentral;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class AccountReceivable extends Model
 {
-    use BelongsToTenant, SoftDeletes, Auditable, SyncsWithCentral;
+    use BelongsToTenant, HasFactory, SoftDeletes, Auditable, SyncsWithCentral;
 
     protected $table = 'accounts_receivable';
 

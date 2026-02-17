@@ -9,7 +9,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\InvoicingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -18,8 +18,6 @@ use Tests\TestCase;
  */
 class InvoicingServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private InvoicingService $service;
     private Tenant $tenant;
     private User $user;
@@ -28,6 +26,7 @@ class InvoicingServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new InvoicingService();
         $this->tenant = Tenant::factory()->create();

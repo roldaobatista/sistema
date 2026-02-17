@@ -51,7 +51,7 @@ class ImportController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:10240',
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:20480',
             'entity_type' => 'required|in:' . implode(',', array_keys(Import::ENTITY_TYPES)),
         ]);
 
@@ -150,7 +150,7 @@ class ImportController extends Controller
                 'mapping' => $request->input('mapping'),
                 'separator' => $request->input('separator', ';'),
                 'duplicate_strategy' => $request->input('duplicate_strategy', Import::STRATEGY_SKIP),
-                'status' => Import::STATUS_PROCESSING,
+                'status' => Import::STATUS_PENDING,
             ]);
             DB::commit();
         } catch (\Throwable $e) {
@@ -160,29 +160,21 @@ class ImportController extends Controller
         }
 
         try {
-            $this->importService->executeImport($import);
-            $import->refresh();
+            // Dispatch async job
+            \App\Jobs\ImportJob::dispatch($import);
 
             return response()->json([
                 'import_id' => $import->id,
-                'total_rows' => $import->total_rows,
-                'inserted' => $import->inserted,
-                'updated' => $import->updated,
-                'skipped' => $import->skipped,
-                'errors' => $import->errors,
-                'error_log' => array_slice($import->error_log ?? [], 0, 50),
+                'status' => 'pending',
+                'message' => 'Importação agendada com sucesso',
             ]);
         } catch (\Throwable $e) {
-            Log::error('Import execution failed', [
+            Log::error('Import job dispatch failed', [
                 'import_id' => $import->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
-            $import->update([
-                'status' => Import::STATUS_FAILED,
-                'error_log' => [['line' => 0, 'message' => $e->getMessage()]]
-            ]);
-            return response()->json(['message' => $e->getMessage()], 500);
+            $import->update(['status' => Import::STATUS_FAILED]);
+            return response()->json(['message' => 'Erro ao agendar importação'], 500);
         }
     }
 
@@ -282,22 +274,23 @@ class ImportController extends Controller
     }
 
     /**
-     * Download CSV modelo para uma entidade.
+     * Download Excel modelo para uma entidade.
      */
     public function downloadSample(string $entity): StreamedResponse|JsonResponse
     {
-        $csv = $this->importService->generateSampleCsv($entity);
+        // Use the new Excel generation method
+        $content = $this->importService->generateSampleExcel($entity);
 
-        if (empty($csv)) {
+        if (empty($content)) {
             return response()->json(['message' => 'Entidade inválida'], 422);
         }
 
-        $filename = "modelo_importacao_{$entity}.csv";
+        $filename = "modelo_importacao_{$entity}.xlsx";
 
-        return response()->streamDownload(function () use ($csv) {
-            echo $csv;
+        return response()->streamDownload(function () use ($content) {
+            echo $content;
         }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 
@@ -445,6 +438,32 @@ class ImportController extends Controller
             Log::error('Import delete failed', ['import_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao remover registro'], 500);
         }
+    }
+
+    /**
+     * Retorna progresso de uma importação em andamento.
+     */
+    public function progress(Request $request, int $id): JsonResponse
+    {
+        $tenantId = $this->tenantId($request);
+
+        $import = Import::where('tenant_id', $tenantId)
+            ->where('id', $id)
+            ->first();
+
+        if (!$import) {
+            return response()->json(['message' => 'Importação não encontrada'], 404);
+        }
+
+        return response()->json([
+            'progress' => $import->progress ?? 0,
+            'status' => $import->status,
+            'total_rows' => $import->total_rows,
+            'inserted' => $import->inserted,
+            'updated' => $import->updated,
+            'skipped' => $import->skipped,
+            'errors' => $import->errors,
+        ]);
     }
 
     // ─── Métodos privados ───────────────────────────────────────

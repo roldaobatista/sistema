@@ -30,16 +30,18 @@ export function TechAutoRedirect({ children }: { children: React.ReactNode }) {
         return <>{children}</>
     }
 
+    let lastMode: string | null = null
     try {
-        const lastMode = localStorage.getItem(MODE_STORAGE_KEY)
-        if (lastMode === 'tecnico' && availableModes.includes('tecnico')) {
-            return <Navigate to="/tech" replace />
-        }
-        if (lastMode === 'vendedor' && availableModes.includes('vendedor')) {
-            return <Navigate to="/crm" replace />
-        }
+        lastMode = localStorage.getItem(MODE_STORAGE_KEY)
     } catch {
         // ignore
+    }
+
+    if (lastMode === 'tecnico' && availableModes.includes('tecnico')) {
+        return <Navigate to="/tech" replace />
+    }
+    if (lastMode === 'vendedor' && availableModes.includes('vendedor')) {
+        return <Navigate to="/crm" replace />
     }
 
     if (hasFieldRole && !hasManagementRole && !hasVendedorRole) {

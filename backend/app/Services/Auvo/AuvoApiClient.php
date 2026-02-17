@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class AuvoApiClient
 {
     private const BASE_URL = 'https://api.auvo.com.br/v2';
-    private const TOKEN_TTL_SECONDS = 1500;
+    private const TOKEN_TTL_SECONDS = 1700;
     private const MAX_RETRIES = 3;
     private const RETRY_DELAY_MS = 500;
     private const TIMEOUT_SECONDS = 30;
@@ -36,8 +36,8 @@ class AuvoApiClient
     {
         $credentials = TenantSetting::getValue($tenantId, 'auvo_credentials');
 
-        $apiKey = $credentials['api_key'] ?? config('services.auvo.api_key', '');
-        $apiToken = $credentials['api_token'] ?? config('services.auvo.api_token', '');
+        $apiKey = (string) ($credentials['api_key'] ?? config('services.auvo.api_key') ?? '');
+        $apiToken = (string) ($credentials['api_token'] ?? config('services.auvo.api_token') ?? '');
 
         return new self($apiKey, $apiToken, $tenantId);
     }
@@ -48,8 +48,8 @@ class AuvoApiClient
     public static function fromConfig(): self
     {
         return new self(
-            config('services.auvo.api_key', ''),
-            config('services.auvo.api_token', ''),
+            (string) (config('services.auvo.api_key') ?? ''),
+            (string) (config('services.auvo.api_token') ?? ''),
         );
     }
 
@@ -77,8 +77,10 @@ class AuvoApiClient
 
         Log::info('Auvo: authenticating', ['tenant' => $this->tenantId]);
 
-        $response = Http::timeout(self::TIMEOUT_SECONDS)
-            ->post(self::BASE_URL . '/login/', [
+        $response = Http::asJson()
+            ->acceptJson()
+            ->timeout(self::TIMEOUT_SECONDS)
+            ->post(self::BASE_URL . '/login', [
                 'apiKey' => $this->apiKey,
                 'apiToken' => $this->apiToken,
             ]);
@@ -92,10 +94,17 @@ class AuvoApiClient
 
         $data = $response->json();
 
+        Log::debug('Auvo: login response structure', [
+            'keys' => is_array($data) ? array_keys($data) : 'not-array',
+            'result_keys' => isset($data['result']) && is_array($data['result']) ? array_keys($data['result']) : null,
+        ]);
+
         // Auvo V2 may return token in different paths
         $token = $data['result']['accessToken']
+            ?? $data['result']['access_token']
             ?? $data['result']['token']
             ?? $data['accessToken']
+            ?? $data['access_token']
             ?? $data['token']
             ?? null;
 
@@ -308,7 +317,7 @@ class AuvoApiClient
         $result = $response['result'] ?? null;
 
         if (is_array($result)) {
-            foreach (['entityList', 'list', 'customerList', 'customers', 'data', 'items', 'results'] as $key) {
+            foreach (['entityList', 'list', 'customerList', 'taskList', 'equipmentList', 'productList', 'serviceList', 'expenseList', 'customers', 'tasks', 'equipments', 'products', 'services', 'expenses', 'data', 'items', 'results'] as $key) {
                 if (isset($result[$key]) && is_array($result[$key]) && array_is_list($result[$key])) {
                     return $result[$key];
                 }
@@ -336,7 +345,8 @@ class AuvoApiClient
 
         try {
             /** @var Response $response */
-            $response = Http::timeout($timeout)
+            $response = Http::acceptJson()
+                ->timeout($timeout)
                 ->retry(self::MAX_RETRIES, self::RETRY_DELAY_MS, function (\Exception $exception) {
                     if ($exception instanceof \Illuminate\Http\Client\RequestException) {
                         $status = $exception->response?->status();
@@ -357,7 +367,8 @@ class AuvoApiClient
             $token = $this->authenticate();
 
             try {
-                $response = Http::timeout($timeout)
+                $response = Http::acceptJson()
+                    ->timeout($timeout)
                     ->withToken($token)
                     ->$method($url, $params);
             } catch (\Exception $e) {
@@ -378,7 +389,9 @@ class AuvoApiClient
         $url = self::BASE_URL . '/' . ltrim($endpoint, '/');
 
         /** @var Response $response */
-        $response = Http::timeout(self::TIMEOUT_SECONDS)
+        $response = Http::asJson()
+            ->acceptJson()
+            ->timeout(self::TIMEOUT_SECONDS)
             ->withToken($token)
             ->$method($url, $data);
 
@@ -386,7 +399,9 @@ class AuvoApiClient
             $this->clearToken();
             $token = $this->authenticate();
 
-            $response = Http::timeout(self::TIMEOUT_SECONDS)
+            $response = Http::asJson()
+                ->acceptJson()
+                ->timeout(self::TIMEOUT_SECONDS)
                 ->withToken($token)
                 ->$method($url, $data);
         }

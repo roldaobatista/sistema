@@ -47,7 +47,7 @@ class CustomerTest extends TestCase
         $response = $this->postJson('/api/v1/customers', [
             'type' => 'PF',
             'name' => 'José Silva',
-            'document' => '123.456.789-00',
+            'document' => '529.982.247-25',
             'email' => 'jose@test.com',
             'phone' => '(11)99999-0000',
         ]);
@@ -69,7 +69,7 @@ class CustomerTest extends TestCase
         $response = $this->postJson('/api/v1/customers', [
             'type' => 'PJ',
             'name' => 'Indústria ABC',
-            'document' => '12.345.678/0001-90',
+            'document' => '11.222.333/0001-81',
             'email' => 'contato@abc.com',
         ]);
 

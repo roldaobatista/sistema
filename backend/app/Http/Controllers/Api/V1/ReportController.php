@@ -705,15 +705,31 @@ class ReportController extends Controller
             $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
             $to = $this->validatedDate($request, 'to', now()->toDateString());
 
-            $dealsByStatus = CrmDeal::where('tenant_id', $tenantId)
+            $branchId = $this->branchId($request);
+
+            $applyBranchFilter = function ($query) use ($branchId) {
+                if ($branchId) {
+                    $query->whereHas('assignee', fn ($q) => $q->where('branch_id', $branchId));
+                }
+            };
+
+            $dealsByStatusQuery = CrmDeal::where('tenant_id', $tenantId)
+                ->whereBetween('created_at', [$from, "{$to} 23:59:59"]);
+            $applyBranchFilter($dealsByStatusQuery);
+            $dealsByStatus = $dealsByStatusQuery
                 ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(value) as value'))
-                ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
                 ->groupBy('status')
                 ->get();
 
-            $dealsBySeller = CrmDeal::where('crm_deals.tenant_id', $tenantId)
+            $dealsBySellerQuery = CrmDeal::where('crm_deals.tenant_id', $tenantId)
                 ->leftJoin('users', 'users.id', '=', 'crm_deals.assigned_to')
-                ->whereBetween('crm_deals.created_at', [$from, "{$to} 23:59:59"])
+                ->whereBetween('crm_deals.created_at', [$from, "{$to} 23:59:59"]);
+            
+            if ($branchId) {
+                $dealsBySellerQuery->where('users.branch_id', $branchId);
+            }
+
+            $dealsBySeller = $dealsBySellerQuery
                 ->select(
                     'users.id as owner_id',
                     'users.name as owner_name',
@@ -723,30 +739,40 @@ class ReportController extends Controller
                 ->groupBy('users.id', 'users.name')
                 ->get();
 
-            $totalDeals = CrmDeal::where('tenant_id', $tenantId)
-                ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
-                ->count();
+            $totalDealsQuery = CrmDeal::where('tenant_id', $tenantId)
+                ->whereBetween('created_at', [$from, "{$to} 23:59:59"]);
+            $applyBranchFilter($totalDealsQuery);
+            $totalDeals = $totalDealsQuery->count();
 
-            $wonDeals = CrmDeal::where('tenant_id', $tenantId)
+            $wonDealsQuery = CrmDeal::where('tenant_id', $tenantId)
                 ->where('status', CrmDeal::STATUS_WON)
-                ->whereBetween('won_at', [$from, "{$to} 23:59:59"])
-                ->count();
+                ->whereBetween('won_at', [$from, "{$to} 23:59:59"]);
+            $applyBranchFilter($wonDealsQuery);
+            $wonDeals = $wonDealsQuery->count();
 
-            $revenue = (float) CrmDeal::where('tenant_id', $tenantId)
+            $revenueQuery = CrmDeal::where('tenant_id', $tenantId)
                 ->where('status', CrmDeal::STATUS_WON)
-                ->whereBetween('won_at', [$from, "{$to} 23:59:59"])
-                ->sum('value');
+                ->whereBetween('won_at', [$from, "{$to} 23:59:59"]);
+            $applyBranchFilter($revenueQuery);
+            $revenue = (float) $revenueQuery->sum('value');
 
-            $totalValue = (float) CrmDeal::where('tenant_id', $tenantId)
-                ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
-                ->sum('value');
+            $totalValueQuery = CrmDeal::where('tenant_id', $tenantId)
+                ->whereBetween('created_at', [$from, "{$to} 23:59:59"]);
+            $applyBranchFilter($totalValueQuery);
+            $totalValue = (float) $totalValueQuery->sum('value');
 
             $avgDealValue = $totalDeals > 0 ? round($totalValue / $totalDeals, 2) : 0;
             $conversionRate = $totalDeals > 0 ? round(($wonDeals / $totalDeals) * 100, 1) : 0;
 
-            $healthSummary = Customer::where('tenant_id', $tenantId)
+            $healthSummaryQuery = Customer::where('tenant_id', $tenantId)
                 ->where('is_active', true)
-                ->whereNotNull('health_score')
+                ->whereNotNull('health_score');
+            
+            if ($branchId) {
+                $healthSummaryQuery->whereHas('assignedSeller', fn ($q) => $q->where('branch_id', $branchId));
+            }
+
+            $healthSummary = $healthSummaryQuery
                 ->select(DB::raw("
                     SUM(CASE WHEN health_score >= 80 THEN 1 ELSE 0 END) as healthy,
                     SUM(CASE WHEN health_score >= 50 AND health_score < 80 THEN 1 ELSE 0 END) as at_risk,
@@ -789,47 +815,78 @@ class ReportController extends Controller
             $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
             $to = $this->validatedDate($request, 'to', now()->toDateString());
 
-            $totalActive = Equipment::where('tenant_id', $tenantId)->active()->count();
-            $totalInactive = Equipment::where('tenant_id', $tenantId)
+            $branchId = $this->branchId($request);
+            
+            $applyBranchFilter = function ($query) use ($branchId) {
+                if ($branchId) {
+                    $query->whereHas('responsible', fn ($q) => $q->where('branch_id', $branchId));
+                }
+            };
+
+            $totalActiveQuery = Equipment::where('tenant_id', $tenantId)->active();
+            $applyBranchFilter($totalActiveQuery);
+            $totalActive = $totalActiveQuery->count();
+
+            $totalInactiveQuery = Equipment::where('tenant_id', $tenantId)
                 ->where(function ($query) {
                     $query->where('is_active', false)->orWhere('status', Equipment::STATUS_DISCARDED);
-                })
-                ->count();
+                });
+            $applyBranchFilter($totalInactiveQuery);
+            $totalInactive = $totalInactiveQuery->count();
 
-            $byClass = Equipment::where('tenant_id', $tenantId)
-                ->active()
+            $byClassQuery = Equipment::where('tenant_id', $tenantId)->active();
+            $applyBranchFilter($byClassQuery);
+            $byClass = $byClassQuery
                 ->select('precision_class', DB::raw('COUNT(*) as count'))
                 ->groupBy('precision_class')
                 ->get();
 
-            $overdue = Equipment::where('tenant_id', $tenantId)->overdue()->active()->count();
-            $rawDue7 = Equipment::where('tenant_id', $tenantId)->calibrationDue(7)->active()->count();
+            $overdueQuery = Equipment::where('tenant_id', $tenantId)->overdue()->active();
+            $applyBranchFilter($overdueQuery);
+            $overdue = $overdueQuery->count();
+
+            $rawDue7Query = Equipment::where('tenant_id', $tenantId)->calibrationDue(7)->active();
+            $applyBranchFilter($rawDue7Query);
+            $rawDue7 = $rawDue7Query->count();
             $dueNext7 = max(0, $rawDue7 - $overdue);
-            $rawDue30 = Equipment::where('tenant_id', $tenantId)->calibrationDue(30)->active()->count();
+
+            $rawDue30Query = Equipment::where('tenant_id', $tenantId)->calibrationDue(30)->active();
+            $applyBranchFilter($rawDue30Query);
+            $rawDue30 = $rawDue30Query->count();
             $dueNext30 = max(0, $rawDue30 - $overdue - $dueNext7);
 
-            $calibrationsInPeriod = EquipmentCalibration::where('tenant_id', $tenantId)
-                ->whereBetween('calibration_date', [$from, "{$to} 23:59:59"])
+            $calibrationsInPeriodQuery = EquipmentCalibration::where('equipment_calibrations.tenant_id', $tenantId)
+                ->whereBetween('calibration_date', [$from, "{$to} 23:59:59"]);
+            if ($branchId) {
+                $calibrationsInPeriodQuery->whereHas('equipment.responsible', fn ($q) => $q->where('branch_id', $branchId));
+            }
+            $calibrationsInPeriod = $calibrationsInPeriodQuery
                 ->select('result', DB::raw('COUNT(*) as count'), DB::raw('SUM(cost) as total_cost'))
                 ->groupBy('result')
                 ->get();
 
-            $totalCalibrationCost = (float) EquipmentCalibration::where('tenant_id', $tenantId)
-                ->whereBetween('calibration_date', [$from, "{$to} 23:59:59"])
-                ->sum('cost');
+            $totalCalibrationCostQuery = EquipmentCalibration::where('equipment_calibrations.tenant_id', $tenantId)
+                ->whereBetween('calibration_date', [$from, "{$to} 23:59:59"]);
+            if ($branchId) {
+                $totalCalibrationCostQuery->whereHas('equipment.responsible', fn ($q) => $q->where('branch_id', $branchId));
+            }
+            $totalCalibrationCost = (float) $totalCalibrationCostQuery->sum('cost');
 
-            $topBrands = Equipment::where('tenant_id', $tenantId)
-                ->active()
+            $topBrandsQuery = Equipment::where('tenant_id', $tenantId)->active();
+            $applyBranchFilter($topBrandsQuery);
+            $topBrands = $topBrandsQuery
                 ->select('brand', DB::raw('COUNT(*) as count'))
                 ->groupBy('brand')
                 ->orderByDesc('count')
                 ->take(10)
                 ->get();
 
-            $dueAlerts = Equipment::where('tenant_id', $tenantId)
+            $dueAlertsQuery = Equipment::where('tenant_id', $tenantId)
                 ->active()
                 ->whereNotNull('next_calibration_at')
-                ->whereBetween('next_calibration_at', [now()->toDateString(), now()->addDays(30)->toDateString()])
+                ->whereBetween('next_calibration_at', [now()->toDateString(), now()->addDays(30)->toDateString()]);
+            $applyBranchFilter($dueAlertsQuery);
+            $dueAlerts = $dueAlertsQuery
                 ->orderBy('next_calibration_at')
                 ->select('id', 'brand', 'model', 'code', 'next_calibration_at')
                 ->limit(30)
@@ -978,12 +1035,26 @@ class ReportController extends Controller
             $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
             $to = $this->validatedDate($request, 'to', now()->toDateString());
 
-            $topByRevenue = DB::table('accounts_receivable')
+            $branchId = $this->branchId($request);
+            
+            $applyBranchFilter = function ($query) use ($branchId) {
+                if ($branchId) {
+                    $query->whereHas('assignedSeller', fn ($q) => $q->where('branch_id', $branchId));
+                }
+            };
+
+            $topByRevenueQuery = DB::table('accounts_receivable')
                 ->join('work_orders', 'accounts_receivable.work_order_id', '=', 'work_orders.id')
                 ->join('customers', 'work_orders.customer_id', '=', 'customers.id')
                 ->where('accounts_receivable.tenant_id', $tenantId)
                 ->whereBetween('accounts_receivable.due_date', [$from, "{$to} 23:59:59"])
-                ->where('accounts_receivable.status', '!=', AccountReceivable::STATUS_CANCELLED)
+                ->where('accounts_receivable.status', '!=', AccountReceivable::STATUS_CANCELLED);
+            
+            if ($branchId) {
+                $topByRevenueQuery->where('work_orders.branch_id', $branchId);
+            }
+
+            $topByRevenue = $topByRevenueQuery
                 ->select(
                     'customers.id',
                     'customers.name',
@@ -995,16 +1066,22 @@ class ReportController extends Controller
                 ->limit(20)
                 ->get();
 
-            $bySegment = Customer::where('tenant_id', $tenantId)
-                ->where('is_active', true)
+            $bySegmentQuery = Customer::where('tenant_id', $tenantId)
+                ->where('is_active', true);
+            $applyBranchFilter($bySegmentQuery);
+            $bySegment = $bySegmentQuery
                 ->select('segment', DB::raw('COUNT(*) as count'))
                 ->groupBy('segment')
                 ->get();
 
-            $totalActive = Customer::where('tenant_id', $tenantId)->where('is_active', true)->count();
-            $newInPeriod = Customer::where('tenant_id', $tenantId)
-                ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
-                ->count();
+            $totalActiveQuery = Customer::where('tenant_id', $tenantId)->where('is_active', true);
+            $applyBranchFilter($totalActiveQuery);
+            $totalActive = $totalActiveQuery->count();
+
+            $newInPeriodQuery = Customer::where('tenant_id', $tenantId)
+                ->whereBetween('created_at', [$from, "{$to} 23:59:59"]);
+            $applyBranchFilter($newInPeriodQuery);
+            $newInPeriod = $newInPeriodQuery->count();
 
             return response()->json([
                 'period' => ['from' => $from, 'to' => $to],
@@ -1016,6 +1093,125 @@ class ReportController extends Controller
         } catch (\Throwable $e) {
             Log::error('Report customers failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Erro ao gerar relatório de clientes.'], 500);
+        }
+    }
+    public function export(Request $request, string $type)
+    {
+        try {
+            $tenantId = $this->resolvedTenantId();
+            $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
+            $to = $this->validatedDate($request, 'to', now()->toDateString());
+            $branchId = $this->branchId($request);
+
+            $headers = [
+                'Content-type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=relatorio-{$type}-{$from}-{$to}.csv",
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0',
+            ];
+
+            $callback = function () use ($type, $tenantId, $from, $to, $branchId, $request) {
+                $file = fopen('php://output', 'w');
+                fputs($file, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF))); // Byte Order Mark for Excel
+
+                switch ($type) {
+                    case 'equipments':
+                        fputcsv($file, ['ID', 'Código', 'Cliente', 'Marca', 'Modelo', 'Nº Série', 'Status', 'Próxima Calibração'], ';');
+                        $query = Equipment::where('tenant_id', $tenantId)->with('customer:id,name');
+                        if ($branchId) {
+                            $query->whereHas('responsible', fn ($q) => $q->where('branch_id', $branchId));
+                        }
+                        $query->chunk(500, function ($items) use ($file) {
+                            foreach ($items as $item) {
+                                fputcsv($file, [
+                                    $item->id,
+                                    $item->code,
+                                    $item->customer?->name,
+                                    $item->brand,
+                                    $item->model,
+                                    $item->serial_number,
+                                    $item->status,
+                                    $item->next_calibration_at ? Carbon::parse($item->next_calibration_at)->format('d/m/Y') : '',
+                                ], ';');
+                            }
+                        });
+                        break;
+
+                    case 'suppliers':
+                        fputcsv($file, ['ID', 'Nome', 'Documento', 'Tipo', 'Telefone', 'Email', 'Status'], ';');
+                        Supplier::where('tenant_id', $tenantId)
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->id,
+                                        $item->name,
+                                        $item->document,
+                                        $item->type,
+                                        $item->phone,
+                                        $item->email,
+                                        $item->is_active ? 'Ativo' : 'Inativo',
+                                    ], ';');
+                                }
+                            });
+                        break;
+
+                    case 'stock':
+                        fputcsv($file, ['ID', 'Código', 'Nome', 'Quantidade', 'Custo Médio', 'Preço Venda', 'Valor Total', 'Status'], ';');
+                        Product::where('tenant_id', $tenantId)
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->id,
+                                        $item->code,
+                                        $item->name,
+                                        number_format($item->stock_qty, 2, ',', '.'),
+                                        number_format($item->cost_price, 2, ',', '.'),
+                                        number_format($item->sell_price, 2, ',', '.'),
+                                        number_format($item->stock_qty * $item->cost_price, 2, ',', '.'),
+                                        $item->is_active ? 'Ativo' : 'Inativo',
+                                    ], ';');
+                                }
+                            });
+                        break;
+
+                    case 'customers':
+                        fputcsv($file, ['ID', 'Nome', 'Documento', 'Segmento', 'Telefone', 'Email', 'Status', 'Criado em'], ';');
+                        $cQuery = Customer::where('tenant_id', $tenantId);
+                        if ($branchId) {
+                            $cQuery->whereHas('assignedSeller', fn ($q) => $q->where('branch_id', $branchId));
+                        }
+                        $cQuery->chunk(500, function ($items) use ($file) {
+                            foreach ($items as $item) {
+                                fputcsv($file, [
+                                    $item->id,
+                                    $item->name,
+                                    $item->document,
+                                    $item->segment,
+                                    $item->phone,
+                                    $item->email,
+                                    $item->is_active ? 'Ativo' : 'Inativo',
+                                    $item->created_at ? Carbon::parse($item->created_at)->format('d/m/Y') : '',
+                                ], ';');
+                            }
+                        });
+                        break;
+                    
+                    // Fallback for existing reports if needed, or default
+                    default:
+                        // Implement other report exports or return error
+                        // For now we handle the new ones. Ideally we'd move all export logic here.
+                        fputcsv($file, ['Erro', 'Tipo de relatório não implementado para exportação CSV.'], ';');
+                        break;
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Throwable $e) {
+            Log::error('Report export failed', ['type' => $type, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao exportar relatório.'], 500);
         }
     }
 }

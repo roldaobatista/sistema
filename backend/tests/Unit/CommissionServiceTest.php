@@ -9,7 +9,7 @@ use App\Models\Customer;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WorkOrder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
 
@@ -19,8 +19,6 @@ use Tests\TestCase;
  */
 class CommissionServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private CommissionService $service;
     private Tenant $tenant;
     private User $user;
@@ -29,6 +27,7 @@ class CommissionServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake();
 
         $this->service = new CommissionService();
         $this->tenant = Tenant::factory()->create();
@@ -36,7 +35,6 @@ class CommissionServiceTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'current_tenant_id' => $this->tenant->id,
         ]);
-        $this->user->tenants()->attach($this->tenant->id, ['is_default' => true]);
 
         $this->customer = Customer::factory()->create([
             'tenant_id' => $this->tenant->id,
@@ -114,6 +112,7 @@ class CommissionServiceTest extends TestCase
 
         CommissionRule::create([
             'tenant_id' => $this->tenant->id,
+            'user_id' => $this->user->id,
             'name' => 'Rule Zero',
             'type' => CommissionRule::TYPE_PERCENTAGE,
             'applies_to_role' => CommissionRule::ROLE_TECHNICIAN,
@@ -138,6 +137,7 @@ class CommissionServiceTest extends TestCase
 
         CommissionRule::create([
             'tenant_id' => $this->tenant->id,
+            'user_id' => $this->user->id,
             'name' => 'Rule Sim',
             'type' => CommissionRule::TYPE_PERCENTAGE,
             'applies_to_role' => CommissionRule::ROLE_TECHNICIAN,

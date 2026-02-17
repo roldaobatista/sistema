@@ -13,6 +13,7 @@ import { getStatusEntry, workOrderStatus } from '@/lib/status-config'
 import api from '@/lib/api'
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const SKELETON_BAR_HEIGHTS = ['38%', '52%', '64%', '46%', '70%', '58%']
 
 function TrendBadge({ current, previous, invert = false }: {
     current: number
@@ -57,8 +58,8 @@ function ChartSkeleton() {
                 <div className="h-4 w-32 rounded bg-surface-200" />
             </div>
             <div className="p-5 h-40 flex items-end gap-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="flex-1 rounded-sm bg-surface-100" style={{ height: `${30 + Math.random() * 60}%` }} />
+                {SKELETON_BAR_HEIGHTS.map((height, i) => (
+                    <div key={i} className="flex-1 rounded-sm bg-surface-100" style={{ height }} />
                 ))}
             </div>
         </div>

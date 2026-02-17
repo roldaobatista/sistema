@@ -138,7 +138,7 @@ export function useApproveFuelingLog() {
             const { data } = await api.post(`/fueling-logs/${id}/approve`, { action, rejection_reason })
             return data
         },
-        onSuccess: (_: any, vars: { id: number; action: 'approve' | 'reject' }) => {
+        onSuccess: (_: any, vars: { id: number; action: 'approve' | 'reject'; rejection_reason?: string }) => {
             toast.success(vars.action === 'approve' ? 'Abastecimento aprovado' : 'Abastecimento rejeitado')
             qc.invalidateQueries({ queryKey: ['fueling-logs'] })
         },

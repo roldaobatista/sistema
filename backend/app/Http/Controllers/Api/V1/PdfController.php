@@ -33,6 +33,7 @@ class PdfController extends Controller
         $workOrder->load([
             'customer',
             'equipment',
+            'technicians',
             'assignee',
             'seller',
             'creator',

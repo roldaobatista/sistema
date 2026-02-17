@@ -59,6 +59,9 @@ class ExpressWorkOrderController extends Controller
                     'notes' => 'OS Express criada',
                 ]);
 
+                // Broadcast para dashboard/kanban em real-time
+                event(new \App\Events\WorkOrderStatusChanged($workOrder));
+
                 return response()->json([
                     'message' => 'OS Express criada com sucesso',
                     'data' => $workOrder->load(['customer:id,name', 'assignee:id,name'])
