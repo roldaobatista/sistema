@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -104,9 +104,9 @@ export default function EquipmentListPage() {
         }).then(r => r.data),
     })
 
-    if (isError) {
-        toast.error('Erro ao carregar equipamentos')
-    }
+    useEffect(() => {
+        if (isError) toast.error('Erro ao carregar equipamentos')
+    }, [isError])
 
     const deleteMutation = useMutation({
         mutationFn: (id: number) => api.delete(`/equipments/${id}`),
@@ -137,7 +137,19 @@ export default function EquipmentListPage() {
                         label: 'Exportar CSV',
                         icon: <Download size={16} />,
                         variant: 'outline' as const,
-                        onClick: () => window.open(`${(api.defaults as any).baseURL}/equipments-export`, '_blank'),
+                        onClick: async () => {
+                            try {
+                                const res = await api.get('/equipments-export', { responseType: 'blob' })
+                                const url = URL.createObjectURL(res.data)
+                                const a = document.createElement('a')
+                                a.href = url
+                                a.download = `equipamentos_${new Date().toISOString().slice(0, 10)}.csv`
+                                a.click()
+                                URL.revokeObjectURL(url)
+                            } catch {
+                                toast.error('Erro ao exportar CSV')
+                            }
+                        },
                     },
                     {
                         label: 'Novo Equipamento',

@@ -93,11 +93,11 @@ export default function TechChecklistPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Checklist</h1>
+                <h1 className="text-lg font-bold text-foreground">Checklist</h1>
 
                 {/* Checklist selector */}
                 {checklists.length > 1 && (
@@ -114,7 +114,7 @@ export default function TechChecklistPage() {
                                     'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
                                     selectedChecklist?.id === cl.id
                                         ? 'bg-brand-600 text-white'
-                                        : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                        : 'bg-surface-100 text-surface-600'
                                 )}
                             >
                                 {cl.name}
@@ -140,7 +140,7 @@ export default function TechChecklistPage() {
                         return (
                             <div
                                 key={item.id}
-                                className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden"
+                                className="bg-card rounded-xl overflow-hidden"
                             >
                                 <button
                                     onClick={() => toggleSection(index)}
@@ -152,7 +152,7 @@ export default function TechChecklistPage() {
                                             ? 'bg-emerald-500 text-white'
                                             : item.required
                                                 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'
-                                                : 'bg-surface-100 dark:bg-surface-700 text-surface-400'
+                                                : 'bg-surface-100 text-surface-400'
                                     )}>
                                         {isFilled ? (
                                             <CheckCircle2 className="w-4 h-4" />
@@ -161,7 +161,7 @@ export default function TechChecklistPage() {
                                         )}
                                     </div>
                                     <div className="flex-1 text-left">
-                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                        <p className="text-sm font-medium text-foreground">
                                             {item.label}
                                             {item.required && <span className="text-red-500 ml-1">*</span>}
                                         </p>
@@ -188,9 +188,9 @@ export default function TechChecklistPage() {
                                                             'flex-1 py-2.5 rounded-lg text-xs font-medium transition-colors',
                                                             value === opt.val
                                                                 ? `${opt.color} text-white`
-                                                                : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
-                                                        )}
-                                                    >
+: 'bg-surface-100 text-surface-600'
+                                                    )}
+                                                >
                                                         {opt.label}
                                                     </button>
                                                 ))}
@@ -205,7 +205,7 @@ export default function TechChecklistPage() {
                                                             'px-3 py-2 rounded-lg text-xs font-medium transition-colors',
                                                             value === opt
                                                                 ? 'bg-brand-600 text-white'
-                                                                : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+                                                                : 'bg-surface-100 text-surface-600'
                                                         )}
                                                     >
                                                         {opt}
@@ -218,7 +218,7 @@ export default function TechChecklistPage() {
                                                 onChange={(e) => updateResponse(item.id, e.target.value)}
                                                 placeholder="Digite aqui..."
                                                 rows={2}
-                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
+                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
                                             />
                                         )}
                                     </div>
@@ -230,7 +230,7 @@ export default function TechChecklistPage() {
             </div>
 
             {/* Save button */}
-            <div className="p-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 safe-area-bottom">
+            <div className="p-4 bg-card border-t border-border safe-area-bottom">
                 <button
                     onClick={handleSave}
                     disabled={saving || !allRequiredFilled}
@@ -240,7 +240,7 @@ export default function TechChecklistPage() {
                             ? 'bg-emerald-600'
                             : allRequiredFilled
                                 ? 'bg-brand-600 active:bg-brand-700'
-                                : 'bg-surface-300 dark:bg-surface-700',
+                                : 'bg-surface-300',
                         saving && 'opacity-70',
                     )}
                 >

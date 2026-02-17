@@ -827,12 +827,12 @@ class CrmController extends Controller
         $churnRisk = $lastContactDays > 150 ? 'crítico' : ($lastContactDays > 90 ? 'alto' : ($lastContactDays > 45 ? 'médio' : 'baixo'));
 
         // 2. Commercial Metrics (LTV & Conversão)
-        $wonQuotesSum = $customer->quotes()->where('status', 'Aprovado')->sum('total');
-        $paidOsSum = $customer->workOrders()->where('status', 'Concluído')->sum('total');
+        $wonQuotesSum = $customer->quotes()->where('status', Quote::STATUS_APPROVED)->sum('total');
+        $paidOsSum = $customer->workOrders()->where('status', WorkOrder::STATUS_COMPLETED)->sum('total');
         $ltv = (float)$wonQuotesSum + (float)$paidOsSum;
 
         $totalQuotesCount = $customer->quotes()->count();
-        $approvedQuotesCount = $customer->quotes()->where('status', 'Aprovado')->count();
+        $approvedQuotesCount = $customer->quotes()->where('status', Quote::STATUS_APPROVED)->count();
         $conversionRate = $totalQuotesCount > 0 ? round(($approvedQuotesCount / $totalQuotesCount) * 100, 1) : 0;
 
         // 3. Forecast de Calibrações (Próximos 6 meses)
@@ -892,7 +892,8 @@ class CrmController extends Controller
         if (in_array($churnRisk, ['crítico', 'alto'])) {
             $hasOpenFollowUp = CrmActivity::where('customer_id', $customer->id)
                 ->where('type', 'call')
-                ->where('status', 'pending')
+                ->where('is_automated', true)
+                ->whereNull('completed_at')
                 ->where('title', 'LIKE', '%Retenção%')
                 ->exists();
 
@@ -900,13 +901,12 @@ class CrmController extends Controller
                 CrmActivity::create([
                     'tenant_id' => $tenantId,
                     'customer_id' => $customer->id,
-                    'assigned_to' => $customer->assigned_seller_id ?? $request->user()->id,
-                    'title' => '🚨 Retenção: Cliente com Risco de Churn ' . ucfirst($churnRisk),
+                    'user_id' => $customer->assigned_seller_id ?? $request->user()->id,
+                    'title' => 'Retenção: Cliente com Risco de Churn ' . ucfirst($churnRisk),
                     'description' => "Automação: O sistema detectou risco de perda devido à inatividade de {$lastContactDays} dias. Favor entrar em contato.",
                     'type' => 'call',
-                    'priority' => 'high',
-                    'status' => 'pending',
-                    'due_date' => now()->addDays(2),
+                    'is_automated' => true,
+                    'scheduled_at' => now()->addDays(2),
                 ]);
             }
         }

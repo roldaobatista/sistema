@@ -215,7 +215,7 @@ export function CashFlowWeeklyDashboardPage() {
                         </div>
                         <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                             <table className="w-full text-sm">
-                                <thead className="sticky top-0 bg-surface-50 dark:bg-surface-800">
+                                <thead className="sticky top-0 bg-surface-50">
                                     <tr>
                                         <th className="px-4 py-2 text-left font-medium text-content-secondary">Data</th>
                                         <th className="px-4 py-2 text-right font-medium text-content-secondary">Entradas</th>
@@ -232,7 +232,7 @@ export function CashFlowWeeklyDashboardPage() {
                                         return (
                                             <tr
                                                 key={d.date}
-                                                className={d.is_today ? 'bg-brand-50 dark:bg-brand-900/20' : ''}
+                                                className={d.is_today ? 'bg-brand-50' : ''}
                                             >
                                                 <td className="px-4 py-2 font-medium">
                                                     {new Date(d.date + 'T12:00:00').toLocaleDateString('pt-BR', {

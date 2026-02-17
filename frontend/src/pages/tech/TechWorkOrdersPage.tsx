@@ -22,16 +22,16 @@ function getSlaInfo(slaDueAt: string | null | undefined, status: string): { labe
     const diffHours = diffMs / (1000 * 60 * 60)
 
     if (diffHours < 0) return { label: 'SLA Estourado', color: 'bg-red-500 text-white' }
-    if (diffHours < 2) return { label: `${Math.ceil(diffHours * 60)}min`, color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
-    if (diffHours < 24) return { label: `${Math.ceil(diffHours)}h`, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' }
-    return { label: `${Math.ceil(diffHours / 24)}d`, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }
+    if (diffHours < 2) return { label: `${Math.ceil(diffHours * 60)}min`, color: 'bg-red-100 text-red-700 dark:bg-red-900/30' }
+    if (diffHours < 24) return { label: `${Math.ceil(diffHours)}h`, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' }
+    return { label: `${Math.ceil(diffHours / 24)}d`, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' }
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', icon: Clock },
+    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30', icon: Clock },
     in_progress: { label: 'Em Andamento', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: Wrench },
-    completed: { label: 'Concluída', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: CheckCircle2 },
-    cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: AlertCircle },
+    completed: { label: 'Concluída', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30', icon: CheckCircle2 },
+    cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30', icon: AlertCircle },
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -191,10 +191,10 @@ export default function TechWorkOrdersPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Search */}
-            <div className="sticky top-0 z-10 bg-white dark:bg-surface-900 px-4 pt-4 pb-2 space-y-3">
+            <div className="sticky top-0 z-10 bg-card px-4 pt-4 pb-2 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <h1 className="text-lg font-bold text-foreground">
                             Ordens de Serviço
                         </h1>
                         {!isOnline && (
@@ -209,7 +209,7 @@ export default function TechWorkOrdersPage() {
                             'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
                             selectionMode
                                 ? 'bg-brand-600 text-white'
-                                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         {selectionMode ? `${selectedIds.size} selecionadas` : 'Selecionar'}
@@ -223,7 +223,7 @@ export default function TechWorkOrdersPage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Buscar OS, cliente..."
-                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                     />
                 </div>
 
@@ -237,7 +237,7 @@ export default function TechWorkOrdersPage() {
                                 'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
                                 statusFilter === f.key
                                     ? 'bg-brand-600 text-white'
-                                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                    : 'bg-surface-100 text-surface-600'
                             )}
                         >
                             {f.label}
@@ -273,7 +273,7 @@ export default function TechWorkOrdersPage() {
                                 onClick={() => selectionMode ? toggleSelection(wo.id) : navigate(`/tech/os/${wo.id}`)}
                                 onKeyDown={(e) => e.key === 'Enter' && (selectionMode ? toggleSelection(wo.id) : navigate(`/tech/os/${wo.id}`))}
                                 className={cn(
-                                    'w-full text-left bg-white dark:bg-surface-800/80 rounded-xl p-4 border-l-4 shadow-sm cursor-pointer',
+                                    'w-full text-left bg-card rounded-xl p-4 border-l-4 shadow-sm cursor-pointer',
                                     'active:scale-[0.98] transition-transform',
                                     PRIORITY_COLORS[priorityKey] || PRIORITY_COLORS.normal,
                                 )}
@@ -285,7 +285,7 @@ export default function TechWorkOrdersPage() {
                                                 'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
                                                 selectedIds.has(wo.id)
                                                     ? 'bg-brand-600 border-brand-600'
-                                                    : 'border-surface-300 dark:border-surface-600'
+                                                    : 'border-surface-300'
                                             )}
                                         >
                                             {selectedIds.has(wo.id) && <CheckCircle2 className="w-3 h-3 text-white" />}
@@ -293,7 +293,7 @@ export default function TechWorkOrdersPage() {
                                     )}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                            <span className="font-semibold text-sm text-surface-900 dark:text-surface-50">
+                                            <span className="font-semibold text-sm text-foreground">
                                                 {wo.os_number || wo.number}
                                             </span>
                                             <span className={cn(
@@ -310,7 +310,7 @@ export default function TechWorkOrdersPage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-surface-500 dark:text-surface-400 truncate">
+                                        <p className="text-xs text-surface-500 truncate">
                                             {wo.customer_name || 'Cliente não informado'}
                                         </p>
                                         {wo.description && (
@@ -318,7 +318,7 @@ export default function TechWorkOrdersPage() {
                                                 {wo.description}
                                             </p>
                                         )}
-                                        <div className="flex items-center gap-3 mt-2 text-[11px] text-surface-400 dark:text-surface-500">
+                                        <div className="flex items-center gap-3 mt-2 text-[11px] text-surface-400">
                                             {wo.scheduled_date && (
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-3 h-3" />
@@ -333,11 +333,11 @@ export default function TechWorkOrdersPage() {
                                             )}
                                         </div>
                                         {!['completed', 'cancelled'].includes(wo.status) && (
-                                            <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-surface-100 dark:border-surface-700/50">
+                                            <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-surface-100">
                                                 {wo.status === 'pending' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleQuickStart(wo) }}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-[11px] font-medium active:scale-95 transition-all"
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-50 text-brand-600 text-[11px] font-medium active:scale-95 transition-all"
                                                     >
                                                         <PlayCircle className="w-3.5 h-3.5" /> Iniciar
                                                     </button>
@@ -349,7 +349,7 @@ export default function TechWorkOrdersPage() {
                                                             const addr = encodeURIComponent(`${wo.customer_address || ''} ${wo.city || ''}`)
                                                             window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, '_blank')
                                                         }}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium active:scale-95 transition-all"
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium active:scale-95 transition-all"
                                                     >
                                                         <Navigation2 className="w-3.5 h-3.5" /> Navegar
                                                     </button>
@@ -358,7 +358,7 @@ export default function TechWorkOrdersPage() {
                                                     <a
                                                         href={`tel:${wo.customer_phone}`}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[11px] font-medium active:scale-95 transition-all"
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 dark:text-blue-400 text-[11px] font-medium active:scale-95 transition-all"
                                                     >
                                                         <Phone className="w-3.5 h-3.5" /> Ligar
                                                     </a>
@@ -373,7 +373,7 @@ export default function TechWorkOrdersPage() {
                                         >
                                             <Pin className={cn('w-3.5 h-3.5', pinnedIds.has(wo.id) ? 'text-brand-600 fill-brand-600' : 'text-surface-300')} />
                                         </button>
-                                        <ChevronRight className="w-5 h-5 text-surface-300 dark:text-surface-600 mt-1" />
+                                        <ChevronRight className="w-5 h-5 text-surface-300 mt-1" />
                                     </div>
                                 </div>
                             </div>
@@ -383,7 +383,7 @@ export default function TechWorkOrdersPage() {
             </div>
 
             {selectionMode && selectedIds.size > 0 && (
-                <div className="sticky bottom-0 p-3 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 flex gap-2 safe-area-bottom">
+                <div className="sticky bottom-0 p-3 bg-card border-t border-border flex gap-2 safe-area-bottom">
                     <button
                         onClick={handleBatchStart}
                         disabled={batchLoading}

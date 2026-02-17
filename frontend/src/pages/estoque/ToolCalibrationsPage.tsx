@@ -177,8 +177,8 @@ export default function ToolCalibrationsPage() {
             />
 
             {expiring.length > 0 && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
-                    <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-amber-700">
                         <AlertTriangle className="h-4 w-4" />
                         {expiring.length} ferramenta(s) com calibração vencendo nos próximos 30 dias
                     </div>
@@ -288,8 +288,8 @@ export default function ToolCalibrationsPage() {
                                         <td className="p-3 text-xs">{c.laboratory ?? '—'}</td>
                                         <td className="p-3 text-center">
                                             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.result === 'approved'
-                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
+                                                : 'bg-red-100 text-red-700 dark:bg-red-900/30'
                                                 }`}>
                                                 {c.result === 'approved' ? 'Aprovado' : 'Reprovado'}
                                             </span>

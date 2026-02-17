@@ -32,10 +32,10 @@ const ACTION_ICONS: Record<string, any> = {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-    created: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30',
-    updated: 'text-brand-500 bg-brand-50 dark:bg-brand-900/30',
-    deleted: 'text-red-500 bg-red-50 dark:bg-red-900/30',
-    status_changed: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30',
+    created: 'text-emerald-500 bg-emerald-50',
+    updated: 'text-brand-500 bg-brand-50',
+    deleted: 'text-red-500 bg-red-50',
+    status_changed: 'text-amber-500 bg-amber-50',
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -86,7 +86,7 @@ export default function AuditTrailTab({ workOrderId }: AuditTrailTabProps) {
     if (entries.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-                <div className="w-16 h-16 rounded-3xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-300">
+                <div className="w-16 h-16 rounded-3xl bg-surface-100 flex items-center justify-center text-surface-300">
                     <Shield className="w-8 h-8" />
                 </div>
                 <p className="text-sm font-medium text-surface-500">Nenhum registro de auditoria para esta OS.</p>
@@ -96,7 +96,7 @@ export default function AuditTrailTab({ workOrderId }: AuditTrailTabProps) {
 
     return (
         <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
-            <div className="px-5 py-4 border-b border-subtle bg-surface-50 dark:bg-surface-900/50">
+            <div className="px-5 py-4 border-b border-subtle bg-surface-50">
                 <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-surface-900 flex items-center gap-2">
                         <Clock className="h-4 w-4 text-brand-500" />
@@ -127,12 +127,12 @@ export default function AuditTrailTab({ workOrderId }: AuditTrailTabProps) {
                                     <div className="flex items-center gap-2 mb-0.5">
                                         <span className="text-xs font-bold uppercase tracking-wider text-surface-400">{entry.action_label}</span>
                                         {entry.entity_type && entry.entity_type !== 'WorkOrder' && (
-                                            <span className="text-[10px] bg-surface-100 dark:bg-surface-800 px-1.5 py-0.5 rounded font-medium text-surface-500">
+                                            <span className="text-[10px] bg-surface-100 px-1.5 py-0.5 rounded font-medium text-surface-500">
                                                 {entry.entity_type === 'WorkOrderItem' ? 'Item' : entry.entity_type}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-surface-700 dark:text-surface-300 leading-snug">{entry.description}</p>
+                                    <p className="text-sm text-surface-700 leading-snug">{entry.description}</p>
                                     <div className="flex items-center gap-3 mt-1.5">
                                         <span className="text-[11px] text-surface-400 flex items-center gap-1">
                                             <User className="w-3 h-3" />
@@ -151,10 +151,10 @@ export default function AuditTrailTab({ workOrderId }: AuditTrailTabProps) {
                             {/* Expanded diff view */}
                             {isExpanded && changedFields.length > 0 && (
                                 <div className="px-5 pb-4 pl-16">
-                                    <div className="rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
+                                    <div className="rounded-lg border border-border overflow-hidden">
                                         <table className="w-full text-xs">
                                             <thead>
-                                                <tr className="bg-surface-50 dark:bg-surface-800">
+                                                <tr className="bg-surface-50">
                                                     <th className="text-left px-3 py-2 font-semibold text-surface-600">Campo</th>
                                                     <th className="text-left px-3 py-2 font-semibold text-red-500">Antes</th>
                                                     <th className="text-left px-3 py-2 font-semibold text-emerald-500">Depois</th>

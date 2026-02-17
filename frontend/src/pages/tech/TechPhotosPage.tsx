@@ -15,13 +15,13 @@ type PhotoTag = (typeof PHOTO_TAGS)[number]
 function PhotoCard({ photo, onRemove }: { photo: any; onRemove: (id: string) => void }) {
     if (!photo) {
         return (
-            <div className="rounded-xl overflow-hidden bg-surface-100 dark:bg-surface-800 aspect-square flex items-center justify-center">
+            <div className="rounded-xl overflow-hidden bg-surface-100 aspect-square flex items-center justify-center">
                 <ImageIcon className="w-8 h-8 text-surface-400" />
             </div>
         )
     }
     return (
-        <div className="relative rounded-xl overflow-hidden bg-surface-100 dark:bg-surface-800 aspect-square">
+        <div className="relative rounded-xl overflow-hidden bg-surface-100 aspect-square">
             {photo.preview ? (
                 <img src={photo.preview} alt="Foto" className="w-full h-full object-cover" />
             ) : (
@@ -138,12 +138,12 @@ export default function TechPhotosPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
                 <div className="flex items-center justify-between">
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Fotos ({photos.length})
                     </h1>
                     <label className={cn(
@@ -164,7 +164,7 @@ export default function TechPhotosPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="text-xs text-surface-500 dark:text-surface-400 self-center">Tag:</span>
+                    <span className="text-xs text-surface-500 self-center">Tag:</span>
                     {(['before', 'after', 'general'] as const).map((tag) => (
                         <button
                             key={tag}
@@ -174,7 +174,7 @@ export default function TechPhotosPage() {
                                 'px-2.5 py-1 rounded-md text-xs font-medium',
                                 selectedTag === tag
                                     ? 'bg-brand-600 text-white'
-                                    : 'bg-surface-200 dark:bg-surface-700 text-surface-600 dark:text-surface-400',
+                                    : 'bg-surface-200 text-surface-600',
                             )}
                         >
                             {tag === 'before' ? 'Antes' : tag === 'after' ? 'Depois' : 'Geral'}
@@ -191,7 +191,7 @@ export default function TechPhotosPage() {
                                 'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
                                 viewMode === 'gallery'
                                     ? 'bg-brand-600 text-white'
-                                    : 'bg-surface-200 dark:bg-surface-700 text-surface-600',
+                                    : 'bg-surface-200 text-surface-600',
                             )}
                         >
                             <Grid3X3 className="w-3.5 h-3.5" /> Galeria
@@ -203,7 +203,7 @@ export default function TechPhotosPage() {
                                 'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
                                 viewMode === 'compare'
                                     ? 'bg-brand-600 text-white'
-                                    : 'bg-surface-200 dark:bg-surface-700 text-surface-600',
+                                    : 'bg-surface-200 text-surface-600',
                             )}
                         >
                             <Columns2 className="w-3.5 h-3.5" /> Antes/Depois
@@ -236,11 +236,11 @@ export default function TechPhotosPage() {
                             <div key={i} className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-medium text-surface-500 uppercase">Antes</p>
-                                    {beforePhotos[i] ? <PhotoCard photo={beforePhotos[i]} onRemove={remove} /> : <div className="aspect-square rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs text-surface-400">—</div>}
+                                    {beforePhotos[i] ? <PhotoCard photo={beforePhotos[i]} onRemove={remove} /> : <div className="aspect-square rounded-lg bg-surface-100 flex items-center justify-center text-xs text-surface-400">—</div>}
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-medium text-surface-500 uppercase">Depois</p>
-                                    {afterPhotos[i] ? <PhotoCard photo={afterPhotos[i]} onRemove={remove} /> : <div className="aspect-square rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs text-surface-400">—</div>}
+                                    {afterPhotos[i] ? <PhotoCard photo={afterPhotos[i]} onRemove={remove} /> : <div className="aspect-square rounded-lg bg-surface-100 flex items-center justify-center text-xs text-surface-400">—</div>}
                                 </div>
                             </div>
                         ))}

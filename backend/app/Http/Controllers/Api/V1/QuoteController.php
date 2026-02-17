@@ -423,13 +423,11 @@ class QuoteController extends Controller
 
         try {
             $item = DB::transaction(function () use ($equipment, $tenantId, $validated) {
-                $item = $equipment->items()->create([
+                return $equipment->items()->create([
                     'tenant_id' => $tenantId,
                     ...$validated,
                     'sort_order' => $equipment->items()->count(),
                 ]);
-                $equipment->quote->recalculateTotal();
-                return $item;
             });
 
             return response()->json($item->load(['product', 'service']), 201);

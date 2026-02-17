@@ -72,7 +72,7 @@ export default function GeoCheckinButton({ workOrderId, hasCheckin, hasCheckout 
 
     if (hasCheckout) {
         return (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                 <MapPin className="h-4 w-4" />
                 Check-in/out concluído
             </div>

@@ -109,7 +109,7 @@ export default function CollectionAutomationPage() {
             </div>
 
             {/* Informação da automação */}
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30">
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800">
                 <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-400">
                     <Zap className="h-4 w-4" /> Automação Ativa
                 </div>
@@ -161,10 +161,10 @@ export default function CollectionAutomationPage() {
                                         <td className="p-3 text-center">
                                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
                                                 action.status === 'sent'
-                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
                                                     : action.status === 'failed'
-                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
+                                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
                                             }`}>
                                                 {action.status === 'sent' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                                                 {action.status === 'sent' ? 'Enviado' : action.status === 'failed' ? 'Falhou' : 'Pendente'}

@@ -119,7 +119,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
     }
 
     return (
-        <div className="flex flex-col h-[600px] bg-surface-50 dark:bg-surface-900/50 rounded-xl border border-default overflow-hidden">
+        <div className="flex flex-col h-[600px] bg-surface-50 rounded-xl border border-default overflow-hidden">
             {/* Messages Area */}
             <div
                 ref={scrollRef}
@@ -127,7 +127,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
             >
                 {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-                        <div className="w-16 h-16 rounded-3xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-300">
+                        <div className="w-16 h-16 rounded-3xl bg-surface-100 flex items-center justify-center text-surface-300">
                             <Send className="w-8 h-8" />
                         </div>
                         <p className="text-sm font-medium text-surface-500 max-w-xs">Nenhuma mensagem ainda. O chat interno registra a comunicação entre o campo e o escritório.</p>
@@ -140,7 +140,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
                         if (isSystem) {
                             return (
                                 <div key={msg.id} className="flex justify-center my-4">
-                                    <div className="bg-surface-200/50 dark:bg-surface-800/80 px-4 py-1.5 rounded-full border border-surface-200 dark:border-surface-700/50">
+                                    <div className="bg-surface-200/50 dark:bg-surface-800/80 px-4 py-1.5 rounded-full border border-border/50">
                                         <p className="text-[11px] font-bold text-surface-500 text-center uppercase tracking-wider">
                                             {msg.message.replace(/\*\*/g, '')} • {formatDistanceToNow(new Date(msg.created_at), { locale: ptBR, addSuffix: true })}
                                         </p>
@@ -158,7 +158,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
                                 )}
                             >
                                 <div className="flex-shrink-0 mt-1">
-                                    <div className="w-8 h-8 rounded-full bg-surface-200 dark:bg-surface-800 flex items-center justify-center overflow-hidden border border-default">
+                                    <div className="w-8 h-8 rounded-full bg-surface-200 flex items-center justify-center overflow-hidden border border-default">
                                         {msg.user?.avatar_url ? (
                                             <img src={msg.user.avatar_url} alt={msg.user.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -174,7 +174,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
                                         "px-4 py-3 rounded-2xl text-sm shadow-sm",
                                         isOwn
                                             ? "bg-brand-600 text-white rounded-tr-none"
-                                            : "bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-50 rounded-tl-none border border-default"
+                                            : "bg-card text-foreground rounded-tl-none border border-default"
                                     )}>
                                         {msg.type === 'file' ? (
                                             <div className="flex items-center gap-3 pr-2">
@@ -211,7 +211,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
             </div>
 
             {/* Input Area */}
-            <div className="px-6 py-4 bg-white dark:bg-surface-800 border-t border-default">
+            <div className="px-6 py-4 bg-card border-t border-default">
                 <form
                     onSubmit={handleSendMessage}
                     className="flex items-center gap-3"
@@ -226,7 +226,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="rounded-xl bg-surface-50 dark:bg-surface-700/50 hover:bg-surface-100 dark:hover:bg-brand-900/20"
+                        className="rounded-xl bg-surface-50 hover:bg-surface-100 dark:hover:bg-brand-900/20"
                         onClick={() => fileInputRef.current?.click()}
                     >
                         <Paperclip className="w-5 h-5 text-surface-500" />
@@ -237,7 +237,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder="Escreva uma mensagem para o técnico..."
-                            className="w-full bg-surface-50 dark:bg-surface-700/50 border-none rounded-xl px-5 py-3 text-sm focus:ring-2 focus:ring-brand-500 transition-all dark:text-white"
+                            className="w-full bg-surface-50 border-none rounded-xl px-5 py-3 text-sm focus:ring-2 focus:ring-brand-500 transition-all dark:text-white"
                         />
                     </div>
                     <Button

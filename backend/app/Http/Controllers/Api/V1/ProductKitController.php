@@ -30,38 +30,38 @@ class ProductKitController extends Controller
 
     public function store(Request $request, Product $product): JsonResponse
     {
+        if (!$product->is_kit) {
+            return response()->json(['message' => 'Este produto não é um kit'], 422);
+        }
+
+        $tenantId = app('current_tenant_id');
+
         try {
-            DB::beginTransaction();
-
-            if (!$product->is_kit) {
-                return response()->json(['message' => 'Este produto não é um kit'], 422);
-            }
-
-            $tenantId = app('current_tenant_id');
             $validated = $request->validate([
                 'child_id' => "required|exists:products,id,tenant_id,{$tenantId}",
                 'quantity' => 'required|numeric|min:0.0001',
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Validação falhou', 'errors' => $e->errors()], 422);
+        }
 
-            if ($validated['child_id'] == $product->id) {
-                return response()->json(['message' => 'Um kit não pode conter a si mesmo'], 422);
-            }
+        if ($validated['child_id'] == $product->id) {
+            return response()->json(['message' => 'Um kit não pode conter a si mesmo'], 422);
+        }
 
-            $kitItem = $product->kitItems()->updateOrCreate(
-                ['child_id' => $validated['child_id']],
-                ['quantity' => $validated['quantity']]
-            );
+        try {
+            $kitItem = DB::transaction(function () use ($product, $validated) {
+                return $product->kitItems()->updateOrCreate(
+                    ['child_id' => $validated['child_id']],
+                    ['quantity' => $validated['quantity']]
+                );
+            });
 
-            DB::commit();
             return response()->json([
                 'message' => 'Componente adicionado ao kit',
                 'data' => $kitItem->load('child')
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Validação falhou', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('ProductKit store failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao adicionar componente ao kit'], 500);
         }

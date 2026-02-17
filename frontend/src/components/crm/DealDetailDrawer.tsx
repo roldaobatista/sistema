@@ -89,7 +89,7 @@ export function DealDetailDrawer({ dealId, open, onClose }: Props) {
 
             {/* Drawer */}
             <div className={cn(
-                'fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-subtle bg-surface-0 dark:bg-surface-900 shadow-modal',
+                'fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-subtle bg-surface-0 shadow-modal',
                 'animate-in slide-in-from-right duration-300'
             )}>
                 {/* Header */}

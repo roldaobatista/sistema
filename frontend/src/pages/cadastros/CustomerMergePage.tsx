@@ -87,7 +87,7 @@ export function CustomerMergePage() {
                 </Button>
             </div>
 
-            <div className="bg-surface-0 dark:bg-surface-800 p-4 rounded-lg shadow border border-surface-200">
+            <div className="bg-surface-0 p-4 rounded-lg shadow border border-surface-200">
                 <div className="flex items-center gap-4">
                     <span className="text-[13px] font-medium text-surface-700">Buscar duplicatas por:</span>
                     <div className="flex gap-2">
@@ -132,7 +132,7 @@ export function CustomerMergePage() {
                                 <div
                                     key={idx}
                                     onClick={() => handleSelectGroup(group)}
-                                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedGroup === group ? 'bg-brand-50 border-brand-500' : 'bg-surface-0 dark:bg-surface-800 border-surface-200 hover:bg-surface-50'}`}
+                                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedGroup === group ? 'bg-brand-50 border-brand-500' : 'bg-surface-0 border-surface-200 hover:bg-surface-50'}`}
                                 >
                                     <div className="flex justify-between items-start">
                                         <div>
@@ -152,7 +152,7 @@ export function CustomerMergePage() {
                     {/* Merge Area */}
                     <div className="lg:col-span-2">
                         {selectedGroup ? (
-                            <div className="bg-surface-0 dark:bg-surface-800 rounded-lg shadow border border-surface-200 p-6 space-y-5">
+                            <div className="bg-surface-0 rounded-lg shadow border border-surface-200 p-6 space-y-5">
                                 <div>
                                     <h2 className="text-[15px] font-semibold tabular-nums text-surface-900 flex items-center">
                                         <Merge className="h-5 w-5 mr-2 text-brand-600" />

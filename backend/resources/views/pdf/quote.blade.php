@@ -13,8 +13,9 @@
             <div class="doc-date">
                 <strong>Emissão:</strong> {{ $quote->created_at->format('d/m/Y') }}<br>
                 <strong>Validade:</strong> {{ $quote->valid_until?->format('d/m/Y') ?? '—' }}<br>
-                <span class="status-badge status-{{ $quote->status }}">
-                    {{ \App\Models\Quote::STATUSES[$quote->status]['label'] ?? $quote->status }}
+                @php $rawStatus = $quote->status instanceof \App\Enums\QuoteStatus ? $quote->status->value : $quote->status; @endphp
+                <span class="status-badge status-{{ $rawStatus }}">
+                    {{ \App\Models\Quote::STATUSES[$rawStatus]['label'] ?? $rawStatus }}
                 </span>
             </div>
         </div>
@@ -105,6 +106,9 @@
                 <div class="totals-row"><span class="totals-label">Desconto ({{ number_format($quote->discount_percentage, 1, ',', '.') }}%)</span><span class="totals-value" style="color: #dc2626">- R$ {{ number_format($quote->discount_amount ?? 0, 2, ',', '.') }}</span></div>
             @elseif($quote->discount_amount > 0)
                 <div class="totals-row"><span class="totals-label">Desconto</span><span class="totals-value" style="color: #dc2626">- R$ {{ number_format($quote->discount_amount, 2, ',', '.') }}</span></div>
+            @endif
+            @if(($quote->displacement_value ?? 0) > 0)
+                <div class="totals-row"><span class="totals-label">Deslocamento</span><span class="totals-value">+ R$ {{ number_format($quote->displacement_value, 2, ',', '.') }}</span></div>
             @endif
             <div class="totals-row total-final"><span class="totals-label">VALOR TOTAL</span><span class="totals-value">R$ {{ number_format($quote->total ?? 0, 2, ',', '.') }}</span></div>
         </div>

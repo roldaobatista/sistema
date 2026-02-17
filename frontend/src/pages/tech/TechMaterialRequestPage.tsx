@@ -35,12 +35,12 @@ interface SelectedItem {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', icon: Clock },
-    approved: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: CheckCircle2 },
+    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30', icon: Clock },
+    approved: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30', icon: CheckCircle2 },
     in_separation: { label: 'Em Separação', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: Package },
     shipped: { label: 'Enviada', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: Truck },
-    delivered: { label: 'Entregue', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: CheckCircle2 },
-    rejected: { label: 'Rejeitada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: Trash2 },
+    delivered: { label: 'Entregue', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30', icon: CheckCircle2 },
+    rejected: { label: 'Rejeitada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30', icon: Trash2 },
 }
 
 export default function TechMaterialRequestPage() {
@@ -180,15 +180,15 @@ export default function TechMaterialRequestPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Solicitação de Material
                     </h1>
                 </div>
@@ -201,7 +201,7 @@ export default function TechMaterialRequestPage() {
                             'flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                             activeTab === 'list'
                                 ? 'bg-brand-600 text-white'
-                                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Minhas Solicitações
@@ -212,7 +212,7 @@ export default function TechMaterialRequestPage() {
                             'flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                             activeTab === 'new'
                                 ? 'bg-brand-600 text-white'
-                                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Nova Solicitação
@@ -243,12 +243,12 @@ export default function TechMaterialRequestPage() {
                                     return (
                                         <div
                                             key={request.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-4 shadow-sm"
+                                            className="bg-card rounded-xl p-4 shadow-sm"
                                         >
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                        <span className="font-semibold text-sm text-surface-900 dark:text-surface-50">
+                                                        <span className="font-semibold text-sm text-foreground">
                                                             {request.reference || `#${request.id}`}
                                                         </span>
                                                         <span
@@ -262,11 +262,11 @@ export default function TechMaterialRequestPage() {
                                                         </span>
                                                     </div>
                                                     {request.description && (
-                                                        <p className="text-xs text-surface-500 dark:text-surface-400 line-clamp-2 mt-1">
+                                                        <p className="text-xs text-surface-500 line-clamp-2 mt-1">
                                                             {request.description}
                                                         </p>
                                                     )}
-                                                    <div className="flex items-center gap-3 mt-2 text-[11px] text-surface-400 dark:text-surface-500">
+                                                    <div className="flex items-center gap-3 mt-2 text-[11px] text-surface-400">
                                                         <span className="flex items-center gap-1">
                                                             <Package className="w-3 h-3" />
                                                             {request.items_count || 0} item(ns)
@@ -293,7 +293,7 @@ export default function TechMaterialRequestPage() {
                     <div className="space-y-4">
                         {/* Work Order */}
                         <div>
-                            <label className="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1.5">
+                            <label className="block text-xs font-medium text-surface-600 mb-1.5">
                                 Ordem de Serviço (opcional)
                             </label>
                             <input
@@ -301,13 +301,13 @@ export default function TechMaterialRequestPage() {
                                 value={workOrderNumber}
                                 onChange={(e) => setWorkOrderNumber(e.target.value)}
                                 placeholder="Número da OS"
-                                className="w-full px-3 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                className="w-full px-3 py-2.5 rounded-xl bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                             />
                         </div>
 
                         {/* Product Search */}
                         <div>
-                            <label className="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1.5">
+                            <label className="block text-xs font-medium text-surface-600 mb-1.5">
                                 Buscar Produtos
                             </label>
                             <div className="relative">
@@ -317,7 +317,7 @@ export default function TechMaterialRequestPage() {
                                     value={productSearch}
                                     onChange={(e) => setProductSearch(e.target.value)}
                                     placeholder="Digite para buscar..."
-                                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                    className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                 />
                             </div>
 
@@ -337,11 +337,11 @@ export default function TechMaterialRequestPage() {
                                             <button
                                                 key={product.id}
                                                 onClick={() => handleAddProduct(product)}
-                                                className="w-full text-left px-3 py-2 rounded-lg bg-surface-50 dark:bg-surface-700/50 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+                                                className="w-full text-left px-3 py-2 rounded-lg bg-surface-50 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                        <p className="text-sm font-medium text-foreground">
                                                             {product.name}
                                                         </p>
                                                         {product.sku && (
@@ -360,17 +360,17 @@ export default function TechMaterialRequestPage() {
                         {/* Selected Items */}
                         {selectedItems.length > 0 && (
                             <div>
-                                <label className="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1.5">
+                                <label className="block text-xs font-medium text-surface-600 mb-1.5">
                                     Itens Selecionados
                                 </label>
                                 <div className="space-y-2">
                                     {selectedItems.map((item) => (
                                         <div
                                             key={item.product_id}
-                                            className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-3 flex items-center justify-between"
+                                            className="bg-surface-50 rounded-lg p-3 flex items-center justify-between"
                                         >
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50 truncate">
+                                                <p className="text-sm font-medium text-foreground truncate">
                                                     {item.product_name}
                                                 </p>
                                             </div>
@@ -379,7 +379,7 @@ export default function TechMaterialRequestPage() {
                                                     onClick={() => handleUpdateQuantity(item.product_id, -0.5)}
                                                     className="p-1 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-600"
                                                 >
-                                                    <Minus className="w-4 h-4 text-surface-600 dark:text-surface-400" />
+                                                    <Minus className="w-4 h-4 text-surface-600" />
                                                 </button>
                                                 <input
                                                     type="number"
@@ -396,13 +396,13 @@ export default function TechMaterialRequestPage() {
                                                     }}
                                                     min="0.01"
                                                     step="0.01"
-                                                    className="w-20 px-2 py-1 text-sm rounded-lg bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-center"
+                                                    className="w-20 px-2 py-1 text-sm rounded-lg bg-card border border-border text-center"
                                                 />
                                                 <button
                                                     onClick={() => handleUpdateQuantity(item.product_id, 0.5)}
                                                     className="p-1 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-600"
                                                 >
-                                                    <Plus className="w-4 h-4 text-surface-600 dark:text-surface-400" />
+                                                    <Plus className="w-4 h-4 text-surface-600" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleRemoveItem(item.product_id)}
@@ -419,7 +419,7 @@ export default function TechMaterialRequestPage() {
 
                         {/* Notes */}
                         <div>
-                            <label className="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1.5">
+                            <label className="block text-xs font-medium text-surface-600 mb-1.5">
                                 Observações
                             </label>
                             <textarea
@@ -427,7 +427,7 @@ export default function TechMaterialRequestPage() {
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Observações sobre a solicitação..."
                                 rows={3}
-                                className="w-full px-3 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
+                                className="w-full px-3 py-2.5 rounded-xl bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
                             />
                         </div>
 

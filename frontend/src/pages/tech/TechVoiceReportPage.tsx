@@ -67,16 +67,16 @@ export default function TechVoiceReportPage() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-full bg-surface-50">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 shrink-0">
+            <div className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border shrink-0">
                 <button onClick={() => navigate(-1)} className="p-1">
-                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600" />
                 </button>
                 <div className="flex-1">
                     <div className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-                        <h1 className="text-sm font-bold text-surface-900 dark:text-surface-50">
+                        <FileText className="w-5 h-5 text-brand-600" />
+                        <h1 className="text-sm font-bold text-foreground">
                             Relatório por Voz
                         </h1>
                     </div>
@@ -101,13 +101,13 @@ export default function TechVoiceReportPage() {
                         if (voice.transcript) voice.clearTranscript()
                     }}
                     placeholder="Dite ou digite o relatório técnico aqui..."
-                    className="w-full h-full min-h-[300px] resize-none bg-white dark:bg-surface-800/80 rounded-xl p-4 text-sm text-surface-900 dark:text-surface-50 border border-surface-200 dark:border-surface-700 outline-none focus:ring-2 focus:ring-brand-500/30 placeholder:text-surface-400"
+                    className="w-full h-full min-h-[300px] resize-none bg-card rounded-xl p-4 text-sm text-foreground border border-border outline-none focus:ring-2 focus:ring-brand-500/30 placeholder:text-surface-400"
                 />
 
                 {/* Interim (live) text */}
                 {voice.isListening && voice.interimTranscript && (
-                    <div className="mt-2 px-3 py-2 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800">
-                        <p className="text-sm text-brand-600 dark:text-brand-300 italic">
+                    <div className="mt-2 px-3 py-2 rounded-lg bg-brand-50 border border-brand-200">
+                        <p className="text-sm text-brand-600 italic">
                             {voice.interimTranscript}
                         </p>
                     </div>
@@ -115,20 +115,20 @@ export default function TechVoiceReportPage() {
             </div>
 
             {/* Bottom toolbar */}
-            <div className="bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 px-4 py-3 shrink-0">
+            <div className="bg-card border-t border-border px-4 py-3 shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex gap-2">
                         <button
                             onClick={handleCopy}
                             disabled={!fullText.trim()}
-                            className="p-2.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 disabled:opacity-30"
+                            className="p-2.5 rounded-lg bg-surface-100 text-surface-600 disabled:opacity-30"
                         >
                             {copied ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
                         </button>
                         <button
                             onClick={handleClear}
                             disabled={!fullText.trim()}
-                            className="p-2.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-red-500 disabled:opacity-30"
+                            className="p-2.5 rounded-lg bg-surface-100 text-red-500 disabled:opacity-30"
                         >
                             <Trash2 className="w-5 h-5" />
                         </button>

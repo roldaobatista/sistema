@@ -12,6 +12,17 @@ class StoreQuoteRequest extends FormRequest
         return true;
     }
 
+    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        $validator->after(function ($v) {
+            $pct = (float) ($this->discount_percentage ?? 0);
+            $amt = (float) ($this->discount_amount ?? 0);
+            if ($pct > 0 && $amt > 0) {
+                $v->errors()->add('discount_amount', 'Não é possível informar desconto percentual e valor fixo ao mesmo tempo.');
+            }
+        });
+    }
+
     public function rules(): array
     {
         $tenantId = $this->user()->current_tenant_id ?? $this->user()->tenant_id;

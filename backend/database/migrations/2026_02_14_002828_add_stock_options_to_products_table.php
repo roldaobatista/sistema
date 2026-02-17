@@ -12,20 +12,30 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_kit')->default(false);
-            $table->boolean('track_batch')->default(false);
-            $table->boolean('track_serial')->default(false);
-            $table->decimal('min_repo_point', 15, 2)->nullable();
+            if (!Schema::hasColumn('products', 'is_kit')) {
+                $table->boolean('is_kit')->default(false);
+            }
+            if (!Schema::hasColumn('products', 'track_batch')) {
+                $table->boolean('track_batch')->default(false);
+            }
+            if (!Schema::hasColumn('products', 'track_serial')) {
+                $table->boolean('track_serial')->default(false);
+            }
+            if (!Schema::hasColumn('products', 'min_repo_point')) {
+                $table->decimal('min_repo_point', 15, 2)->nullable();
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            //
+            $cols = ['is_kit', 'track_batch', 'track_serial', 'min_repo_point'];
+            foreach ($cols as $col) {
+                if (Schema::hasColumn('products', $col)) {
+                    $table->dropColumn($col);
+                }
+            }
         });
     }
 };

@@ -41,11 +41,11 @@ export function TechAlertBanner() {
     }
 
     return (
-        <div className="bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-surface-100 dark:border-surface-800">
+        <div className="bg-card border-b border-border">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-surface-100">
                 <div className="flex items-center gap-2">
                     <Bell className="w-4 h-4 text-amber-500" />
-                    <span className="text-xs font-semibold text-surface-900 dark:text-surface-50">
+                    <span className="text-xs font-semibold text-surface-900">
                         {alerts.length} alerta{alerts.length > 1 ? 's' : ''}
                     </span>
                 </div>
@@ -77,7 +77,7 @@ export function TechAlertBanner() {
                             onClick={() => alert.workOrderId && navigate(`/tech/os/${alert.workOrderId}`)}
                             onKeyDown={(e) => e.key === 'Enter' && alert.workOrderId && navigate(`/tech/os/${alert.workOrderId}`)}
                         >
-                            <p className="text-xs font-medium text-surface-900 dark:text-surface-50 truncate">{alert.title}</p>
+                            <p className="text-xs font-medium text-surface-900 truncate">{alert.title}</p>
                             <p className="text-[10px] text-surface-500 truncate">{alert.message}</p>
                         </div>
                         <button type="button" aria-label={`Dispensar alerta: ${alert.title}`} onClick={() => dismiss(alert.id)} className="p-1 flex-shrink-0">

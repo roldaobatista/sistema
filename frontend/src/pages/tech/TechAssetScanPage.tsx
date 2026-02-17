@@ -46,12 +46,12 @@ interface WorkOrder {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-    active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    ativo: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    inactive: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400',
-    fora_de_uso: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400',
-    calibration_due: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30',
+    ativo: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30',
+    inactive: 'bg-surface-200 text-surface-600',
+    fora_de_uso: 'bg-surface-200 text-surface-600',
+    calibration_due: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30',
+    overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30',
 }
 
 const TAG_TYPE_LABELS: Record<string, string> = {
@@ -229,21 +229,21 @@ export default function TechAssetScanPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <button
                     onClick={() => navigate('/tech')}
-                    className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2"
+                    className="flex items-center gap-1 text-sm text-brand-600 mb-2"
                 >
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                <h1 className="text-lg font-bold text-foreground">
                     Scan de Ativos
                 </h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {/* Scan section */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                <div className="bg-card rounded-xl p-4 space-y-3">
                     <button
                         onClick={() => navigate('/tech/barcode')}
                         className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-brand-600 text-white font-medium active:scale-[0.98] transition-transform"
@@ -258,7 +258,7 @@ export default function TechAssetScanPage() {
                             onChange={(e) => setCodeInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             placeholder="Ou digite tag/código"
-                            className="flex-1 px-3 py-2 rounded-lg bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-sm text-surface-900 dark:text-surface-50 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                            className="flex-1 px-3 py-2 rounded-lg bg-surface-50 border border-border text-sm text-foreground focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                         />
                         <button
                             onClick={handleSearch}
@@ -280,13 +280,13 @@ export default function TechAssetScanPage() {
                 {!loading && equipment && (
                     <>
                         {/* Equipment info card */}
-                        <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
-                            <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                        <div className="bg-card rounded-xl p-4 space-y-3">
+                            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                 <Scale className="w-4 h-4" />
                                 Equipamento
                             </h2>
                             <div className="space-y-2">
-                                <p className="text-base font-medium text-surface-900 dark:text-surface-50">
+                                <p className="text-base font-medium text-foreground">
                                     {equipment.name || equipment.code || equipment.type || `Equipamento ${equipment.id}`}
                                 </p>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -303,8 +303,8 @@ export default function TechAssetScanPage() {
 
                         {/* Tags card */}
                         {tags.length > 0 && (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
-                                <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                            <div className="bg-card rounded-xl p-4 space-y-3">
+                                <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                     <Tag className="w-4 h-4" />
                                     Tags
                                 </h2>
@@ -316,12 +316,12 @@ export default function TechAssetScanPage() {
                                             className={cn(
                                                 'flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors',
                                                 selectedTagId === tag.id
-                                                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                                                    : 'border-surface-200 dark:border-surface-700'
+                                                    ? 'border-brand-500 bg-brand-50'
+                                                    : 'border-border'
                                             )}
                                         >
                                             <div>
-                                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{tag.tag_code}</p>
+                                                <p className="text-sm font-medium text-foreground">{tag.tag_code}</p>
                                                 <p className="text-xs text-surface-500">
                                                     {TAG_TYPE_LABELS[tag.tag_type] || tag.tag_type} • Último scan:{' '}
                                                     {tag.last_scanned_at
@@ -336,8 +336,8 @@ export default function TechAssetScanPage() {
                         )}
 
                         {/* Calibration history */}
-                        <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
-                            <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                        <div className="bg-card rounded-xl p-4 space-y-3">
+                            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                 <History className="w-4 h-4" />
                                 Histórico de Calibração (últimas 5)
                             </h2>
@@ -348,9 +348,9 @@ export default function TechAssetScanPage() {
                                     {calibrations.map((cal) => {
                                         const isPass = cal.result === 'aprovado' || cal.result === 'aprovado_com_ressalva'
                                         return (
-                                            <div key={cal.id} className="flex items-center justify-between py-1.5 border-b border-surface-100 dark:border-surface-700 last:border-0">
+                                            <div key={cal.id} className="flex items-center justify-between py-1.5 border-b border-surface-100 last:border-0">
                                                 <div>
-                                                    <p className="text-sm text-surface-900 dark:text-surface-50">
+                                                    <p className="text-sm text-foreground">
                                                         {new Date(cal.calibration_date).toLocaleDateString('pt-BR')}
                                                     </p>
                                                     {cal.certificate_number && (
@@ -359,7 +359,7 @@ export default function TechAssetScanPage() {
                                                 </div>
                                                 <span className={cn(
                                                     'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium',
-                                                    isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                    isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-red-100 text-red-700 dark:bg-red-900/30'
                                                 )}>
                                                     {isPass ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                                                     {isPass ? 'Aprovado' : 'Reprovado'}
@@ -372,8 +372,8 @@ export default function TechAssetScanPage() {
                         </div>
 
                         {/* Maintenance history */}
-                        <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
-                            <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                        <div className="bg-card rounded-xl p-4 space-y-3">
+                            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                 <Wrench className="w-4 h-4" />
                                 Histórico de Manutenção (últimas 5)
                             </h2>
@@ -382,9 +382,9 @@ export default function TechAssetScanPage() {
                             ) : (
                                 <div className="space-y-2">
                                     {workOrders.map((wo) => (
-                                        <div key={wo.id} className="flex items-center justify-between py-1.5 border-b border-surface-100 dark:border-surface-700 last:border-0">
+                                        <div key={wo.id} className="flex items-center justify-between py-1.5 border-b border-surface-100 last:border-0">
                                             <div>
-                                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                <p className="text-sm font-medium text-foreground">
                                                     OS {wo.os_number || wo.number || wo.id}
                                                 </p>
                                                 <p className="text-xs text-surface-500">
@@ -400,13 +400,13 @@ export default function TechAssetScanPage() {
 
                         {/* Next calibration alert */}
                         {equipment.next_calibration_at && (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-2">
-                                <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2">
+                            <div className="bg-card rounded-xl p-4 space-y-2">
+                                <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                     <Calendar className="w-4 h-4" />
                                     Próxima Calibração
                                 </h2>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                                    <span className="text-sm text-surface-600">
                                         {new Date(equipment.next_calibration_at).toLocaleDateString('pt-BR')}
                                     </span>
                                     <span className={cn('font-medium', getCalibrationUrgency().color)}>

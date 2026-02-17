@@ -87,7 +87,7 @@ export function PriceHistoryPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-surface-0 dark:bg-surface-800 p-4 rounded-lg shadow border border-surface-200">
+            <div className="bg-surface-0 p-4 rounded-lg shadow border border-surface-200">
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="flex gap-2">
                         <Button
@@ -131,7 +131,7 @@ export function PriceHistoryPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-surface-0 dark:bg-surface-800 shadow overflow-hidden sm:rounded-lg border border-surface-200">
+            <div className="bg-surface-0 shadow overflow-hidden sm:rounded-lg border border-surface-200">
                 <table className="min-w-full divide-y divide-surface-200">
                     <thead className="bg-surface-50">
                         <tr>
@@ -146,7 +146,7 @@ export function PriceHistoryPage() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Alterado por</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-surface-0 dark:bg-surface-800 divide-y divide-surface-200">
+                    <tbody className="bg-surface-0 divide-y divide-surface-200">
                         {isLoading ? (
                             <tr><td colSpan={9} className="px-6 py-8 text-center text-surface-500">Carregando...</td></tr>
                         ) : entries.length === 0 ? (

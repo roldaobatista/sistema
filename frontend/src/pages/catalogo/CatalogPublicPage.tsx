@@ -40,7 +40,7 @@ export default function CatalogPublicPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
+      <div className="min-h-screen flex items-center justify-center bg-surface-50">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface-300 border-t-surface-600" />
           <p className="text-sm text-surface-500">Carregando catálogo...</p>
@@ -51,8 +51,8 @@ export default function CatalogPublicPage() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950 p-4">
-        <div className="max-w-md w-full rounded-2xl bg-surface-0 dark:bg-surface-800 p-8 shadow-sm border border-surface-200 dark:border-surface-700 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-surface-50 p-4">
+        <div className="max-w-md w-full rounded-2xl bg-surface-0 p-8 shadow-sm border border-surface-200 text-center">
           <AlertTriangle className="mx-auto h-12 w-12 text-amber-500" />
           <h1 className="mt-4 text-xl font-semibold text-surface-900">Não encontrado</h1>
           <p className="mt-2 text-surface-600">{error}</p>
@@ -64,7 +64,7 @@ export default function CatalogPublicPage() {
   const { catalog, tenant, items } = data
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950">
+    <div className="min-h-screen bg-surface-50">
       <header className="border-b border-surface-200/80 dark:border-surface-700 bg-surface-0/90 dark:bg-surface-900/90 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto max-w-5xl px-6 py-5">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -91,7 +91,7 @@ export default function CatalogPublicPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-10 sm:py-14">
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-800 p-12 text-center">
+          <div className="rounded-2xl border border-surface-200 bg-surface-0 p-12 text-center">
             <p className="text-surface-500">Este catálogo ainda não possui itens.</p>
           </div>
         ) : (
@@ -99,11 +99,11 @@ export default function CatalogPublicPage() {
             {items.map((item, idx) => (
               <article
                 key={item.id}
-                className="group rounded-2xl overflow-hidden bg-surface-0 dark:bg-surface-800 border border-surface-200/80 dark:border-surface-700 shadow-sm hover:shadow-md transition-shadow duration-300"
+                className="group rounded-2xl overflow-hidden bg-surface-0 border border-surface-200/80 dark:border-surface-700 shadow-sm hover:shadow-md transition-shadow duration-300"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
                 <div className="flex flex-col sm:flex-row">
-                  <div className="sm:w-[42%] aspect-[4/3] sm:aspect-square bg-surface-100 dark:bg-surface-900 relative overflow-hidden shrink-0">
+                  <div className="sm:w-[42%] aspect-[4/3] sm:aspect-square bg-surface-100 relative overflow-hidden shrink-0">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -126,7 +126,7 @@ export default function CatalogPublicPage() {
                       </p>
                     )}
                     {item.service && (
-                      <div className="mt-4 pt-4 border-t border-surface-100 dark:border-surface-700 flex items-center justify-between">
+                      <div className="mt-4 pt-4 border-t border-surface-100 flex items-center justify-between">
                         <span className="text-xs uppercase tracking-wider text-surface-400 font-medium">
                           {item.service.code ? `#${item.service.code}` : 'Serviço'}
                         </span>

@@ -7,13 +7,11 @@ use App\Http\Requests\Equipment\StoreEquipmentRequest;
 use App\Http\Requests\Equipment\UpdateEquipmentRequest;
 use App\Models\Equipment;
 use App\Models\EquipmentCalibration;
-use App\Models\EquipmentMaintenance;
 use App\Models\EquipmentDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 class EquipmentController extends Controller
 {
@@ -223,7 +221,7 @@ class EquipmentController extends Controller
                 'serial_number' => $e->serial_number,
                 'customer' => $e->customer?->name,
                 'next_calibration_at' => $e->next_calibration_at?->toDateString(),
-                'days_remaining' => $e->next_calibration_at?->diffInDays(now(), false),
+                'days_remaining' => $e->next_calibration_at ? (int) now()->diffInDays($e->next_calibration_at, false) : null,
                 'status' => $e->calibration_status,
             ]);
 
@@ -232,45 +230,10 @@ class EquipmentController extends Controller
 
     // ─── Calibrações ────────────────────────────────────────
 
-    public function history(Request $request, Equipment $equipment): JsonResponse
+    public function calibrationHistory(Request $request, Equipment $equipment): JsonResponse
     {
         $this->checkTenantAccess($request, $equipment);
 
-        $calibrations = $equipment->calibrations()
-            ->with(['performer:id,name', 'workOrder:id,number,os_number,status'])
-            ->get()
-            ->map(fn($c) => [
-                'id' => $c->id,
-                'type' => 'calibration',
-                'date' => $c->calibration_date,
-                'title' => "Calibração: {$c->certificate_number}",
-                'result' => $c->result,
-                'performer' => $c->performer?->name,
-                'work_order' => $c->workOrder,
-                'details' => $c,
-            ]);
-
-        $maintenances = $equipment->maintenances()
-            ->with(['performer:id,name', 'workOrder:id,number,os_number,status'])
-            ->get()
-            ->map(fn($m) => [
-                'id' => $m->id,
-                'type' => 'maintenance',
-                'date' => $m->created_at,
-                'title' => "Manutenção: " . (ucfirst($m->type)),
-                'result' => null,
-                'performer' => $m->performer?->name,
-                'work_order' => $m->workOrder,
-                'details' => $m,
-            ]);
-
-        $all = $calibrations->concat($maintenances)->sortByDesc('date')->values();
-
-        return response()->json(['history' => $all]);
-    }
-
-    public function calibrationHistory(Equipment $equipment): JsonResponse
-    {
         $calibrations = $equipment->calibrations()
             ->with(['performer:id,name', 'approver:id,name', 'standardWeights:id,code,nominal_value,unit,certificate_number'])
             ->get();
@@ -328,12 +291,15 @@ class EquipmentController extends Controller
                 $calibration->standardWeights()->attach($standardWeightIds);
             }
 
-            // Atualizar equipamento
+            $newStatus = $data['result'] === 'reprovado'
+                ? Equipment::STATUS_OUT_OF_SERVICE
+                : Equipment::STATUS_ACTIVE;
+
             $equipment->update([
                 'last_calibration_at' => $data['calibration_date'],
                 'next_calibration_at' => $data['next_due_date'] ?? null,
                 'certificate_number' => $data['certificate_number'] ?? $equipment->certificate_number,
-                'status' => Equipment::STATUS_ACTIVE,
+                'status' => $newStatus,
             ]);
 
             \Illuminate\Support\Facades\DB::commit();
@@ -399,6 +365,20 @@ class EquipmentController extends Controller
         return response()->json(['document' => $doc], 201);
     }
 
+    public function downloadDocument(Request $request, EquipmentDocument $document)
+    {
+        $equipment = $document->equipment;
+        $this->checkTenantAccess($request, $equipment);
+
+        $path = storage_path('app/' . $document->file_path);
+
+        if (!file_exists($path)) {
+            return response()->json(['message' => 'Arquivo não encontrado'], 404);
+        }
+
+        return response()->download($path, $document->name);
+    }
+
     public function deleteDocument(Request $request, EquipmentDocument $document): JsonResponse
     {
         $equipment = $document->equipment;
@@ -417,6 +397,15 @@ class EquipmentController extends Controller
             'categories' => Equipment::CATEGORIES,
             'precision_classes' => Equipment::PRECISION_CLASSES,
             'statuses' => Equipment::STATUSES,
+            'types' => Equipment::query()
+                ->whereNotNull('type')->where('type', '!=', '')
+                ->distinct()->orderBy('type')->pluck('type')->values(),
+            'brands' => Equipment::query()
+                ->whereNotNull('brand')->where('brand', '!=', '')
+                ->distinct()->orderBy('brand')->pluck('brand')->values(),
+            'models' => Equipment::query()
+                ->whereNotNull('model')->where('model', '!=', '')
+                ->distinct()->orderBy('model')->pluck('model')->values(),
             'calibration_types' => [
                 'interna' => 'Interna',
                 'externa' => 'Externa',

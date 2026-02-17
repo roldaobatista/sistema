@@ -26,10 +26,10 @@ interface Expense {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    reviewed: { label: 'Conferida', color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' },
-    approved: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    rejected: { label: 'Rejeitada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' },
+    reviewed: { label: 'Conferida', color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30' },
+    approved: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' },
+    rejected: { label: 'Rejeitada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30' },
     reimbursed: { label: 'Reembolsada', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
 }
 
@@ -141,27 +141,27 @@ export default function TechExpensesOverviewPage() {
 
     return (
         <div className="flex flex-col h-full relative">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Minhas Despesas</h1>
+                <h1 className="text-lg font-bold text-foreground">Minhas Despesas</h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {/* Summary cards */}
                 <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3 text-center">
+                    <div className="bg-card rounded-xl p-3 text-center">
                         <p className="text-[10px] text-surface-500 font-medium uppercase">Total</p>
-                        <p className="text-sm font-bold text-surface-900 dark:text-surface-50 mt-0.5">{formatCurrency(totalAmount)}</p>
+                        <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(totalAmount)}</p>
                     </div>
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3 text-center">
+                    <div className="bg-card rounded-xl p-3 text-center">
                         <p className="text-[10px] text-amber-600 font-medium uppercase">Pendente</p>
-                        <p className="text-sm font-bold text-amber-700 dark:text-amber-400 mt-0.5">{formatCurrency(pendingAmount)}</p>
+                        <p className="text-sm font-bold text-amber-700 mt-0.5">{formatCurrency(pendingAmount)}</p>
                     </div>
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3 text-center">
+                    <div className="bg-card rounded-xl p-3 text-center">
                         <p className="text-[10px] text-emerald-600 font-medium uppercase">Aprovado</p>
-                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{formatCurrency(approvedAmount)}</p>
+                        <p className="text-sm font-bold text-emerald-700 mt-0.5">{formatCurrency(approvedAmount)}</p>
                     </div>
                 </div>
 
@@ -175,7 +175,7 @@ export default function TechExpensesOverviewPage() {
                                 'flex-1 py-2 rounded-lg text-xs font-medium transition-colors',
                                 period === key
                                     ? 'bg-brand-600 text-white'
-                                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                    : 'bg-surface-100 text-surface-600'
                             )}
                         >
                             {label}
@@ -190,7 +190,7 @@ export default function TechExpensesOverviewPage() {
                             onClick={() => setCategoryFilter('')}
                             className={cn(
                                 'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
-                                !categoryFilter ? 'bg-brand-600 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                !categoryFilter ? 'bg-brand-600 text-white' : 'bg-surface-100 text-surface-600'
                             )}
                         >
                             Todas
@@ -201,7 +201,7 @@ export default function TechExpensesOverviewPage() {
                                 onClick={() => setCategoryFilter(cat)}
                                 className={cn(
                                     'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
-                                    categoryFilter === cat ? 'bg-brand-600 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                    categoryFilter === cat ? 'bg-brand-600 text-white' : 'bg-surface-100 text-surface-600'
                                 )}
                             >
                                 {cat}
@@ -229,7 +229,7 @@ export default function TechExpensesOverviewPage() {
                             const statusInfo = STATUS_LABELS[exp.status] || STATUS_LABELS.pending
                             const woLabel = exp.work_order?.os_number ?? exp.work_order?.number
                             return (
-                                <div key={exp.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                                <div key={exp.id} className="bg-card rounded-xl p-3">
                                     <div className="flex items-center gap-3">
                                         <div
                                             className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -239,7 +239,7 @@ export default function TechExpensesOverviewPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{exp.description}</p>
+                                                <p className="text-sm font-medium text-foreground">{exp.description}</p>
                                                 <span className={cn('px-1.5 py-0.5 rounded-full text-[10px] font-medium', statusInfo.color)}>
                                                     {statusInfo.label}
                                                 </span>
@@ -252,7 +252,7 @@ export default function TechExpensesOverviewPage() {
                                                 <span>{new Date(exp.expense_date + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
                                             </div>
                                         </div>
-                                        <p className="text-sm font-bold text-surface-900 dark:text-surface-50 flex-shrink-0">
+                                        <p className="text-sm font-bold text-foreground flex-shrink-0">
                                             {formatCurrency(toNum(exp.amount))}
                                         </p>
                                     </div>
@@ -281,9 +281,9 @@ export default function TechExpensesOverviewPage() {
             {showCreateForm && (
                 <div className="absolute inset-0 z-20 flex flex-col">
                     <div className="flex-1 bg-black/40" onClick={() => setShowCreateForm(false)} />
-                    <div className="bg-white dark:bg-surface-900 rounded-t-2xl px-4 pt-4 pb-6 shadow-2xl animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto">
+                    <div className="bg-card rounded-t-2xl px-4 pt-4 pb-6 shadow-2xl animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-base font-bold text-surface-900 dark:text-surface-50">Nova Despesa Avulsa</h2>
+                            <h2 className="text-base font-bold text-foreground">Nova Despesa Avulsa</h2>
                             <button onClick={() => setShowCreateForm(false)} aria-label="Fechar formulário" className="p-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-800">
                                 <X className="w-5 h-5 text-surface-400" />
                             </button>
@@ -302,7 +302,7 @@ export default function TechExpensesOverviewPage() {
                                                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                                                 selectedCategoryId === cat.id
                                                     ? 'text-white'
-                                                    : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+                                                    : 'bg-surface-100 text-surface-600'
                                             )}
                                             style={selectedCategoryId === cat.id ? { backgroundColor: cat.color } : undefined}
                                         >
@@ -321,7 +321,7 @@ export default function TechExpensesOverviewPage() {
                                     value={amount}
                                     onChange={e => setAmount(e.target.value)}
                                     placeholder="0,00"
-                                    className="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                                    className="w-full rounded-lg border border-border bg-surface-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                                 />
                             </div>
 
@@ -333,7 +333,7 @@ export default function TechExpensesOverviewPage() {
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     placeholder="Descrição da despesa"
-                                    className="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                                    className="w-full rounded-lg border border-border bg-surface-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                                 />
                             </div>
 
@@ -349,7 +349,7 @@ export default function TechExpensesOverviewPage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <label className="flex items-center justify-center gap-2 w-full py-6 border-2 border-dashed border-surface-300 dark:border-surface-600 rounded-lg cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
+                                    <label className="flex items-center justify-center gap-2 w-full py-6 border-2 border-dashed border-surface-300 rounded-lg cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
                                         <Camera className="w-5 h-5 text-surface-400" />
                                         <span className="text-xs text-surface-500">Tirar foto ou selecionar</span>
                                         <input type="file" accept="image/*" className="hidden" aria-label="Selecionar comprovante"
@@ -367,7 +367,7 @@ export default function TechExpensesOverviewPage() {
                                     'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-colors',
                                     selectedCategoryId && amount
                                         ? 'bg-brand-600 active:bg-brand-700'
-                                        : 'bg-surface-300 dark:bg-surface-700',
+                                        : 'bg-surface-300',
                                     saving && 'opacity-70',
                                 )}
                             >

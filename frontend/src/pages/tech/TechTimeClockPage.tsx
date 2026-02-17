@@ -217,20 +217,20 @@ export default function TechTimeClockPage() {
     if (loading) {
         return (
             <div className="flex flex-col h-full">
-                <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+                <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/tech')}
                             className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
-                        </button>
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
-                            Ponto Eletrônico
-                        </h1>
-                    </div>
+<ArrowLeft className="w-5 h-5 text-surface-600" />
+                    </button>
+                    <h1 className="text-lg font-bold text-foreground">
+                        Ponto Eletrônico
+                    </h1>
                 </div>
-                <div className="flex-1 overflow-y-auto flex items-center justify-center">
+            </div>
+            <div className="flex-1 overflow-y-auto flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
                 </div>
             </div>
@@ -239,15 +239,15 @@ export default function TechTimeClockPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/tech')}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Ponto Eletrônico
                     </h1>
                 </div>
@@ -258,13 +258,13 @@ export default function TechTimeClockPage() {
                     className={cn(
                         'rounded-xl p-5',
                         status?.clocked_in && !status?.on_break
-                            ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800'
-                            : 'bg-white dark:bg-surface-800/80'
+                            ? 'bg-emerald-50 border border-emerald-200'
+                            : 'bg-card'
                     )}
                 >
                     {status?.clocked_in && !status?.on_break ? (
                         <>
-                            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 mb-1">
+                            <div className="flex items-center gap-2 text-emerald-700 mb-1">
                                 <CheckCircle2 className="w-5 h-5" />
                                 <span className="font-semibold">Em serviço</span>
                             </div>
@@ -279,7 +279,7 @@ export default function TechTimeClockPage() {
                             </div>
                         </>
                     ) : (
-                        <div className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                        <div className="flex items-center gap-2 text-surface-600">
                             <Pause className="w-5 h-5" />
                             <span className="font-medium">Fora de serviço</span>
                         </div>
@@ -349,8 +349,8 @@ export default function TechTimeClockPage() {
                     )}
                 </div>
 
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2 mb-3">
+                <div className="bg-card rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
                         <Clock className="w-4 h-4" />
                         Registros de hoje
                     </h3>
@@ -361,13 +361,13 @@ export default function TechTimeClockPage() {
                             {todayEntries.map((e, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-between py-2 border-b border-surface-100 dark:border-surface-700 last:border-0"
+                                    className="flex items-center justify-between py-2 border-b border-surface-100 last:border-0"
                                 >
-                                    <span className="text-sm text-surface-700 dark:text-surface-300">
+                                    <span className="text-sm text-surface-700">
                                         {ENTRY_LABELS[e.type] ?? e.type}
                                     </span>
                                     <div className="text-right">
-                                        <span className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                        <span className="text-sm font-medium text-foreground">
                                             {formatTime(e.time)}
                                         </span>
                                         {e.location && (
@@ -380,27 +380,27 @@ export default function TechTimeClockPage() {
                     )}
                 </div>
 
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2 mb-3">
+                <div className="bg-card rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
                         <Calendar className="w-4 h-4" />
                         Resumo do mês
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         <div>
                             <p className="text-xs text-surface-500">Horas trabalhadas</p>
-                            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                            <p className="text-lg font-bold text-foreground">
                                 {monthSummary?.total_hours?.toFixed(1) ?? '0'}h
                             </p>
                         </div>
                         <div>
                             <p className="text-xs text-surface-500">Dias trabalhados</p>
-                            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                            <p className="text-lg font-bold text-foreground">
                                 {monthSummary?.days_worked ?? 0}
                             </p>
                         </div>
                         <div>
                             <p className="text-xs text-surface-500">Média/dia</p>
-                            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                            <p className="text-lg font-bold text-foreground">
                                 {monthSummary?.average_hours_per_day?.toFixed(1) ?? '0'}h
                             </p>
                         </div>
@@ -409,7 +409,7 @@ export default function TechTimeClockPage() {
 
                 <button
                     onClick={handleRequestAdjust}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 border border-surface-200 dark:border-surface-600 rounded-xl text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border border-surface-200 rounded-xl text-sm font-medium text-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
                 >
                     <Edit className="w-4 h-4" />
                     Solicitar Ajuste

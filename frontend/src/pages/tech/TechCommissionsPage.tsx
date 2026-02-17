@@ -11,14 +11,14 @@ const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
 const STATUS_BADGES: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30',
     approved: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    open: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    resolved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    accepted: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30',
+    cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30',
+    rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30',
+    open: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30',
+    resolved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30',
+    accepted: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -223,14 +223,14 @@ export default function TechCommissionsPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <button
                     onClick={() => navigate('/tech')}
-                    className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2"
+                    className="flex items-center gap-1 text-sm text-brand-600 mb-2"
                 >
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                <h1 className="text-lg font-bold text-foreground">
                     Comissões
                 </h1>
             </div>
@@ -243,28 +243,28 @@ export default function TechCommissionsPage() {
                 ) : (
                     <>
                         <div className="grid grid-cols-3 gap-3">
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-1 mb-1">
                                     <DollarSign className="w-4 h-4 text-brand-600" />
-                                    <span className="text-xs text-surface-500 dark:text-surface-400">Total do Mês</span>
+                                    <span className="text-xs text-surface-500">Total do Mês</span>
                                 </div>
-                                <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                                <p className="text-lg font-bold text-foreground">
                                     {formatCurrency(summary.total_month ?? 0)}
                                 </p>
                             </div>
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-1 mb-1">
                                     <Clock className="w-4 h-4 text-amber-500" />
-                                    <span className="text-xs text-surface-500 dark:text-surface-400">Pendente</span>
+                                    <span className="text-xs text-surface-500">Pendente</span>
                                 </div>
                                 <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
                                     {formatCurrency(summary.pending ?? 0)}
                                 </p>
                             </div>
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-1 mb-1">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="text-xs text-surface-500 dark:text-surface-400">Pago</span>
+                                    <span className="text-xs text-surface-500">Pago</span>
                                 </div>
                                 <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                                     {formatCurrency(summary.paid ?? 0)}
@@ -295,7 +295,7 @@ export default function TechCommissionsPage() {
                                         'flex-1 px-3 py-2 rounded-lg text-sm font-medium',
                                         periodFilter === pf
                                             ? 'bg-brand-600 text-white'
-                                            : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                            : 'bg-surface-100 text-surface-600'
                                     )}
                                 >
                                     {pf === 'current' ? 'Mês Atual' : pf === 'previous' ? 'Mês Anterior' : 'Tudo'}
@@ -303,7 +303,7 @@ export default function TechCommissionsPage() {
                             ))}
                         </div>
 
-                        <div className="flex gap-2 border-b border-surface-200 dark:border-surface-700 pb-2">
+                        <div className="flex gap-2 border-b border-border pb-2">
                             {(['events', 'settlements', 'disputes'] as const).map((tab) => (
                                 <button
                                     key={tab}
@@ -312,7 +312,7 @@ export default function TechCommissionsPage() {
                                         'flex-1 px-3 py-2 rounded-lg text-sm font-medium',
                                         activeTab === tab
                                             ? 'bg-brand-600 text-white'
-                                            : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                            : 'bg-surface-100 text-surface-600'
                                     )}
                                 >
                                     {tab === 'events' ? 'Eventos' : tab === 'settlements' ? 'Fechamentos' : 'Disputas'}
@@ -328,11 +328,11 @@ export default function TechCommissionsPage() {
                                     events.map((ev) => (
                                         <div
                                             key={ev.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-3"
+                                            className="bg-card rounded-xl p-3"
                                         >
                                             <div className="flex justify-between items-start gap-2">
                                                 <div>
-                                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                    <p className="text-sm font-medium text-foreground">
                                                         {ev.notes || ev.rule?.name || 'Comissão'}
                                                     </p>
                                                     <p className="text-xs text-surface-500">
@@ -340,7 +340,7 @@ export default function TechCommissionsPage() {
                                                     </p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                    <p className="text-sm font-medium text-foreground">
                                                         {formatCurrency(Number(ev.commission_amount || 0))}
                                                     </p>
                                                     <span
@@ -374,11 +374,11 @@ export default function TechCommissionsPage() {
                                         return (
                                             <div
                                                 key={s.id}
-                                                className="bg-white dark:bg-surface-800/80 rounded-xl p-3"
+                                                className="bg-card rounded-xl p-3"
                                             >
                                                 <div className="flex justify-between items-start">
                                                     <div>
-                                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                        <p className="text-sm font-medium text-foreground">
                                                             {s.period.replace(/-/, '/')}
                                                         </p>
                                                         <p className="text-xs text-surface-500">
@@ -428,14 +428,14 @@ export default function TechCommissionsPage() {
                         {activeTab === 'disputes' && (
                             <div className="space-y-3">
                                 {showDisputeForm && (
-                                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
-                                        <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                                    <div className="bg-card rounded-xl p-4 space-y-3">
+                                        <h3 className="text-sm font-semibold text-foreground">
                                             Nova contestação
                                         </h3>
                                         <select
                                             value={disputeEventId ?? ''}
                                             onChange={(e) => setDisputeEventId(Number(e.target.value) || null)}
-                                            className="w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm"
+                                            className="w-full px-3 py-2 rounded-lg bg-surface-100 border-0 text-sm"
                                         >
                                             <option value="">Selecione o evento</option>
                                             {disputableEvents.map((e) => (
@@ -449,7 +449,7 @@ export default function TechCommissionsPage() {
                                             onChange={(e) => setDisputeReason(e.target.value)}
                                             placeholder="Motivo da contestação (mín. 10 caracteres)"
                                             rows={3}
-                                            className="w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm resize-none"
+                                            className="w-full px-3 py-2 rounded-lg bg-surface-100 border-0 text-sm resize-none"
                                         />
                                         <input
                                             type="number"
@@ -457,7 +457,7 @@ export default function TechCommissionsPage() {
                                             onChange={(e) => setDisputeAmount(e.target.value)}
                                             placeholder="Valor esperado (opcional)"
                                             step="0.01"
-                                            className="w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm"
+                                            className="w-full px-3 py-2 rounded-lg bg-surface-100 border-0 text-sm"
                                         />
                                         <div className="flex gap-2">
                                             <button
@@ -467,7 +467,7 @@ export default function TechCommissionsPage() {
                                                     setDisputeAmount('')
                                                     setDisputeEventId(null)
                                                 }}
-                                                className="flex-1 px-3 py-2 rounded-lg bg-surface-200 dark:bg-surface-700 text-sm"
+                                                className="flex-1 px-3 py-2 rounded-lg bg-surface-200 text-sm"
                                             >
                                                 Cancelar
                                             </button>
@@ -486,7 +486,7 @@ export default function TechCommissionsPage() {
                                 {!showDisputeForm && (
                                     <button
                                         onClick={() => setShowDisputeForm(true)}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-400 hover:border-brand-500 hover:text-brand-600"
+                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-surface-300 dark:border-surface-600 text-surface-600 hover:border-brand-500 hover:text-brand-600"
                                     >
                                         <Plus className="w-5 h-5" /> Nova contestação
                                     </button>
@@ -498,9 +498,9 @@ export default function TechCommissionsPage() {
                                     disputes.map((d) => (
                                         <div
                                             key={d.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-3"
+                                            className="bg-card rounded-xl p-3"
                                         >
-                                            <p className="text-sm text-surface-900 dark:text-surface-50 line-clamp-2">
+                                            <p className="text-sm text-foreground line-clamp-2">
                                                 {d.reason}
                                             </p>
                                             <div className="flex justify-between items-center mt-2">

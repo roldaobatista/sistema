@@ -89,7 +89,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="mt-6 flex gap-3 justify-center">
               <button
                 onClick={() => this.setState({ hasError: false, error: null })}
-                className="rounded-lg border border-red-300 dark:border-red-800 bg-surface-0 dark:bg-surface-800 px-4 py-2.5 text-sm font-medium text-red-700 dark:text-red-400 shadow-sm transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                className="rounded-lg border border-red-300 dark:border-red-800 bg-surface-0 px-4 py-2.5 text-sm font-medium text-red-700 shadow-sm transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               >
                 Tentar novamente
               </button>

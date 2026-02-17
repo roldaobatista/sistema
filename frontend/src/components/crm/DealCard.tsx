@@ -27,7 +27,7 @@ export function DealCard({ deal, onClick }: DealCardProps) {
             ref={setNodeRef}
             style={style}
             className={cn(
-                'group rounded-lg border border-default bg-surface-0 dark:bg-surface-800 p-3 shadow-card cursor-pointer',
+                'group rounded-lg border border-default bg-surface-0 p-3 shadow-card cursor-pointer',
                 'transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5',
                 isDragging && 'opacity-50 shadow-elevated rotate-2 z-50'
             )}

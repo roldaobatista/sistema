@@ -6,7 +6,7 @@
   "scope": "/",
   "id": "kalibrium",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": ["window-controls-overlay", "standalone", "fullscreen"],
   "theme_color": "#2563eb",
   "background_color": "#0f172a",
   "orientation": "any",
@@ -33,6 +33,7 @@
     {"name": "Dashboard", "short_name": "Dashboard", "description": "Painel principal", "url": "/", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
     {"name": "Ordens de Serviço", "short_name": "OS", "description": "Lista de OS", "url": "/os", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
     {"name": "CRM", "short_name": "CRM", "description": "Pipeline e vendas", "url": "/crm", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
-    {"name": "Modo Técnico", "short_name": "Tech", "description": "OS no campo", "url": "/tech", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]}
+    {"name": "Modo Técnico", "short_name": "Tech", "description": "OS no campo", "url": "/tech", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "TV Dashboard", "short_name": "War Room", "description": "Central de monitoramento em tela cheia", "url": "/tv/dashboard", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]}
   ]
 }

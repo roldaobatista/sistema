@@ -308,15 +308,15 @@ export default function TechVehicleCheckinPage() {
     if (loading) {
         return (
             <div className="flex flex-col h-full">
-                <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+                <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/tech')}
                             className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                            <ArrowLeft className="w-5 h-5 text-surface-600" />
                         </button>
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Meu Veículo</h1>
+                        <h1 className="text-lg font-bold text-foreground">Meu Veículo</h1>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto flex items-center justify-center">
@@ -329,20 +329,20 @@ export default function TechVehicleCheckinPage() {
     if (!vehicle) {
         return (
             <div className="flex flex-col h-full">
-                <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+                <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/tech')}
                             className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                            <ArrowLeft className="w-5 h-5 text-surface-600" />
                         </button>
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Meu Veículo</h1>
+                        <h1 className="text-lg font-bold text-foreground">Meu Veículo</h1>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center justify-center gap-4">
                     <Car className="w-12 h-12 text-surface-400" />
-                    <p className="text-sm text-surface-600 dark:text-surface-400 text-center">
+                    <p className="text-sm text-surface-600 text-center">
                         Nenhum veículo atribuído a você.
                     </p>
                     <button
@@ -364,30 +364,30 @@ export default function TechVehicleCheckinPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/tech')}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Meu Veículo</h1>
+                    <h1 className="text-lg font-bold text-foreground">Meu Veículo</h1>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
                 <div className="p-4 space-y-4">
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-brand-100 dark:bg-brand-900/30">
-                                <Car className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                            <div className="p-2 rounded-lg bg-brand-100">
+                                <Car className="w-5 h-5 text-brand-600" />
                             </div>
                             <div>
-                                <p className="font-semibold text-surface-900 dark:text-surface-50">
+                                <p className="font-semibold text-foreground">
                                     {vehicle.plate}
                                 </p>
-                                <p className="text-sm text-surface-600 dark:text-surface-400">
+                                <p className="text-sm text-surface-600">
                                     {[vehicle.brand, vehicle.model, vehicle.year].filter(Boolean).join(' · ')}
                                 </p>
                                 {vehicle.odometer_km != null && (
@@ -400,7 +400,7 @@ export default function TechVehicleCheckinPage() {
                         </div>
                     </div>
 
-                    <div className="flex gap-1 p-1 rounded-lg bg-surface-100 dark:bg-surface-800">
+                    <div className="flex gap-1 p-1 rounded-lg bg-surface-100">
                         {tabs.map((t) => (
                             <button
                                 key={t.id}
@@ -408,8 +408,8 @@ export default function TechVehicleCheckinPage() {
                                 className={cn(
                                     'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors',
                                     tab === t.id
-                                        ? 'bg-white dark:bg-surface-700 text-brand-600 dark:text-brand-400 shadow-sm'
-                                        : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-50'
+                                        ? 'bg-card text-brand-600 shadow-sm'
+                                        : 'text-surface-600 hover:text-surface-900'
                                 )}
                             >
                                 {t.label}
@@ -419,19 +419,19 @@ export default function TechVehicleCheckinPage() {
 
                     {tab === 'checkin' && (
                         <div className="space-y-4">
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                            <div className="bg-card rounded-xl p-4">
                                 <div className="flex items-center gap-2 mb-4">
                                     {activeCheckin ? (
                                         <>
                                             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                                            <span className="text-sm text-surface-700 dark:text-surface-300">
+                                            <span className="text-sm text-surface-700">
                                                 Check-in ativo desde {formatTime(activeCheckin.inspection_date)}
                                             </span>
                                         </>
                                     ) : (
                                         <>
                                             <CircleDot className="w-5 h-5 text-amber-500" />
-                                            <span className="text-sm text-surface-700 dark:text-surface-300">
+                                            <span className="text-sm text-surface-700">
                                                 Sem check-in
                                             </span>
                                         </>
@@ -441,7 +441,7 @@ export default function TechVehicleCheckinPage() {
                                 {!activeCheckin && (
                                     <>
                                         <div className="space-y-3 mb-4">
-                                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+                                            <label className="block text-sm font-medium text-surface-700">
                                                 Km atual
                                             </label>
                                             <input
@@ -449,15 +449,15 @@ export default function TechVehicleCheckinPage() {
                                                 value={checkinKm}
                                                 onChange={(e) => setCheckinKm(e.target.value)}
                                                 placeholder="Ex: 45000"
-                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                             />
-                                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+                                            <label className="block text-sm font-medium text-surface-700">
                                                 Nível combustível
                                             </label>
                                             <select
                                                 value={checkinFuel}
                                                 onChange={(e) => setCheckinFuel(e.target.value)}
-                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                             >
                                                 {FUEL_LEVELS.map((f) => (
                                                     <option key={f} value={f}>{f}</option>
@@ -478,8 +478,8 @@ export default function TechVehicleCheckinPage() {
                                                         className={cn(
                                                             'px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5',
                                                             val
-                                                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                                                : 'bg-surface-200 dark:bg-surface-600 text-surface-600 dark:text-surface-400'
+                                                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700'
+                                                                : 'bg-surface-200 text-surface-600'
                                                         )}
                                                     >
                                                         <Shield className="w-3.5 h-3.5" />
@@ -487,7 +487,7 @@ export default function TechVehicleCheckinPage() {
                                                     </button>
                                                 ))}
                                             </div>
-                                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+                                            <label className="block text-sm font-medium text-surface-700">
                                                 Observações
                                             </label>
                                             <textarea
@@ -495,7 +495,7 @@ export default function TechVehicleCheckinPage() {
                                                 onChange={(e) => setCheckinObs(e.target.value)}
                                                 rows={2}
                                                 placeholder="Opcional"
-                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
+                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
                                             />
                                         </div>
                                         <button
@@ -516,7 +516,7 @@ export default function TechVehicleCheckinPage() {
                                 {activeCheckin && (
                                     <>
                                         <div className="space-y-3 mb-4">
-                                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+                                            <label className="block text-sm font-medium text-surface-700">
                                                 Km final
                                             </label>
                                             <input
@@ -524,7 +524,7 @@ export default function TechVehicleCheckinPage() {
                                                 value={checkoutKm}
                                                 onChange={(e) => setCheckoutKm(e.target.value)}
                                                 placeholder="Ex: 45120"
-                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                             />
                                             <label className="flex items-center gap-2">
                                                 <input
@@ -533,7 +533,7 @@ export default function TechVehicleCheckinPage() {
                                                     onChange={(e) => setCheckoutCondition(e.target.checked)}
                                                     className="rounded"
                                                 />
-                                                <span className="text-sm text-surface-700 dark:text-surface-300">
+                                                <span className="text-sm text-surface-700">
                                                     Condição OK
                                                 </span>
                                             </label>
@@ -560,20 +560,20 @@ export default function TechVehicleCheckinPage() {
                         <div className="space-y-4">
                             <button
                                 onClick={() => setShowFuelForm(!showFuelForm)}
-                                className="w-full py-2.5 rounded-lg border-2 border-dashed border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-400 text-sm font-medium flex items-center justify-center gap-2"
+                                className="w-full py-2.5 rounded-lg border-2 border-dashed border-surface-300 text-surface-600 text-sm font-medium flex items-center justify-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
                                 Novo Abastecimento
                             </button>
 
                             {showFuelForm && (
-                                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                                <div className="bg-card rounded-xl p-4 space-y-3">
                                     <input
                                         type="number"
                                         value={fuelKm}
                                         onChange={(e) => setFuelKm(e.target.value)}
                                         placeholder="Km"
-                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                     />
                                     <input
                                         type="number"
@@ -581,7 +581,7 @@ export default function TechVehicleCheckinPage() {
                                         value={fuelLiters}
                                         onChange={(e) => setFuelLiters(e.target.value)}
                                         placeholder="Litros"
-                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                     />
                                     <input
                                         type="number"
@@ -589,19 +589,19 @@ export default function TechVehicleCheckinPage() {
                                         value={fuelTotal}
                                         onChange={(e) => setFuelTotal(e.target.value)}
                                         placeholder="Valor total (R$)"
-                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                     />
                                     <input
                                         type="text"
                                         value={fuelStation}
                                         onChange={(e) => setFuelStation(e.target.value)}
                                         placeholder="Posto"
-                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                     />
                                     <select
                                         value={fuelType}
                                         onChange={(e) => setFuelType(e.target.value)}
-                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                     >
                                         {FUEL_TYPES.map((f) => (
                                             <option key={f} value={f}>{f}</option>
@@ -625,12 +625,12 @@ export default function TechVehicleCheckinPage() {
                                     fuelLogs.map((log) => (
                                         <div
                                             key={log.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-4 flex items-center justify-between"
+                                            className="bg-card rounded-xl p-4 flex items-center justify-between"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Fuel className="w-5 h-5 text-brand-500" />
                                                 <div>
-                                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                    <p className="text-sm font-medium text-foreground">
                                                         {formatDate(log.date)} · {log.liters} L
                                                     </p>
                                                     <p className="text-xs text-surface-500">
@@ -650,18 +650,18 @@ export default function TechVehicleCheckinPage() {
                         <div className="space-y-4">
                             <button
                                 onClick={() => setShowIncidentForm(!showIncidentForm)}
-                                className="w-full py-2.5 rounded-lg border-2 border-dashed border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-400 text-sm font-medium flex items-center justify-center gap-2"
+                                className="w-full py-2.5 rounded-lg border-2 border-dashed border-surface-300 text-surface-600 text-sm font-medium flex items-center justify-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
                                 Reportar Ocorrência
                             </button>
 
                             {showIncidentForm && (
-                                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                                <div className="bg-card rounded-xl p-4 space-y-3">
                                     <select
                                         value={incidentType}
                                         onChange={(e) => setIncidentType(e.target.value)}
-                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                     >
                                         {INCIDENT_TYPES.map((t) => (
                                             <option key={t} value={t}>{t}</option>
@@ -672,7 +672,7 @@ export default function TechVehicleCheckinPage() {
                                         onChange={(e) => setIncidentDesc(e.target.value)}
                                         rows={3}
                                         placeholder="Descrição da ocorrência"
-                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
+                                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
                                     />
                                     <button
                                         onClick={handleIncidentSubmit}
@@ -696,15 +696,15 @@ export default function TechVehicleCheckinPage() {
                                         return (
                                             <div
                                                 key={a.id}
-                                                className="bg-white dark:bg-surface-800/80 rounded-xl p-4"
+                                                className="bg-card rounded-xl p-4"
                                             >
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700">
                                                         {type}
                                                     </span>
                                                     <span className="text-xs text-surface-500">{formatDate(a.occurrence_date)}</span>
                                                 </div>
-                                                <p className="text-sm text-surface-700 dark:text-surface-300 mt-2">{desc}</p>
+                                                <p className="text-sm text-surface-700 mt-2">{desc}</p>
                                             </div>
                                         )
                                     })

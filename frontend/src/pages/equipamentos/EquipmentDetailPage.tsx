@@ -40,11 +40,12 @@ interface Calibration {
 
 interface Maintenance {
     id: number
-    maintenance_date: string
-    maintenance_type: string
+    type: string
     description: string
     cost: string | null
     performer?: { id: number; name: string }
+    work_order?: { id: number; number: string } | null
+    created_at: string
 }
 
 interface Equipment {
@@ -61,7 +62,6 @@ interface Equipment {
     location: string | null
     tag: string | null
     status: string
-    status_label: string
     inmetro_number: string | null
     last_calibration_at: string | null
     next_calibration_at: string | null
@@ -74,18 +74,26 @@ interface Equipment {
     equipment_model?: { id: number; name: string; brand: string | null; category: string | null; products?: { id: number; name: string; code: string | null }[] } | null
     calibrations: Calibration[]
     maintenances: Maintenance[]
-    documents: { id: number; name: string; file_path: string; type: string; created_at: string }[]
+    documents: { id: number; name: string; file_path: string; type: string; created_at: string; uploaded_by?: number }[]
     created_at: string
 }
 
 /* ═══════════ Constants ═══════════ */
 
 const statusColors: Record<string, string> = {
-    active: 'bg-emerald-100 text-emerald-700',
-    inactive: 'bg-surface-200 text-surface-600',
-    in_calibration: 'bg-blue-100 text-blue-700',
-    maintenance: 'bg-amber-100 text-amber-700',
-    decommissioned: 'bg-red-100 text-red-700',
+    ativo: 'bg-emerald-100 text-emerald-700',
+    em_calibracao: 'bg-blue-100 text-blue-700',
+    em_manutencao: 'bg-amber-100 text-amber-700',
+    fora_de_uso: 'bg-surface-200 text-surface-600',
+    descartado: 'bg-red-100 text-red-700',
+}
+
+const statusLabels: Record<string, string> = {
+    ativo: 'Ativo',
+    em_calibracao: 'Em Calibração',
+    em_manutencao: 'Em Manutenção',
+    fora_de_uso: 'Fora de Uso',
+    descartado: 'Descartado',
 }
 
 const resultColors: Record<string, string> = {
@@ -112,10 +120,10 @@ function fmtDate(d: string | null | undefined) {
 }
 
 function calibrationBadge(status: string | null) {
-    if (!status) return null
-    if (status === 'overdue') return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600"><XCircle className="h-3 w-3" /> Vencida</span>
-    if (status === 'due_soon') return <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600"><AlertTriangle className="h-3 w-3" /> Vencendo</span>
-    if (status === 'ok') return <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Em dia</span>
+    if (!status || status === 'sem_data') return null
+    if (status === 'vencida') return <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600"><XCircle className="h-3 w-3" /> Vencida</span>
+    if (status === 'vence_em_breve') return <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600"><AlertTriangle className="h-3 w-3" /> Vencendo</span>
+    if (status === 'em_dia') return <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Em dia</span>
     return null
 }
 
@@ -232,12 +240,12 @@ export default function EquipmentDetailPage() {
                     <div className="flex items-center gap-2">
                         {calibrationBadge(equipment.calibration_status)}
                         <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold', statusColors[equipment.status] ?? 'bg-surface-100 text-surface-600')}>
-                            {equipment.status_label ?? equipment.status}
+                            {statusLabels[equipment.status] ?? equipment.status}
                         </span>
                         <button
                             onClick={async () => {
                                 try {
-                                    const res = await api.post(`/api/v1/equipments/${id}/generate-qr`)
+                                    const res = await api.post(`/equipments/${id}/generate-qr`)
                                     const token = res.data.qr_token ?? res.data.data?.qr_token
                                     const url = `${window.location.origin}/equipamento-qr/${token}`
                                     await navigator.clipboard.writeText(url)
@@ -763,14 +771,21 @@ function MaintenanceTab({ maintenances }: { maintenances: Maintenance[] }) {
         )
     }
 
+    const typeLabelsMap: Record<string, string> = {
+        preventiva: 'Preventiva',
+        corretiva: 'Corretiva',
+        ajuste: 'Ajuste',
+        limpeza: 'Limpeza',
+    }
+
     return (
         <div className="space-y-3">
             {maintenances.map(m => (
                 <div key={m.id} className="rounded-lg border border-default p-3 hover:bg-surface-50 transition-colors">
                     <div className="flex items-center gap-2 text-xs">
-                        <span className="font-medium text-surface-800">{m.maintenance_type}</span>
+                        <span className="font-medium text-surface-800">{typeLabelsMap[m.type] ?? m.type}</span>
                         <span className="text-surface-400">•</span>
-                        <span className="text-surface-500">{fmtDate(m.maintenance_date)}</span>
+                        <span className="text-surface-500">{fmtDate(m.created_at)}</span>
                         {m.performer && (
                             <>
                                 <span className="text-surface-400">•</span>
@@ -813,9 +828,24 @@ function DocumentTab({ documents }: { documents: Equipment['documents'] }) {
                         <span className="text-surface-400">{doc.type}</span>
                         <span className="text-surface-400">{fmtDate(doc.created_at)}</span>
                     </div>
-                    <a href={doc.file_path} target="_blank" rel="noopener noreferrer" className="rounded-md p-1 text-surface-400 hover:text-brand-600">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const res = await api.get(`/equipment-documents/${doc.id}/download`, { responseType: 'blob' })
+                                const url = URL.createObjectURL(res.data)
+                                const a = document.createElement('a')
+                                a.href = url
+                                a.download = doc.name
+                                a.click()
+                                URL.revokeObjectURL(url)
+                            } catch {
+                                toast.error('Erro ao baixar documento')
+                            }
+                        }}
+                        className="rounded-md p-1 text-surface-400 hover:text-brand-600"
+                    >
                         <Download className="h-3.5 w-3.5" />
-                    </a>
+                    </button>
                 </div>
             ))}
         </div>

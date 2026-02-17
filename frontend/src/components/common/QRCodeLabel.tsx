@@ -70,7 +70,7 @@ export const QRCodeLabel: React.FC<QRCodeLabelProps> = ({ value, label, subLabel
     };
 
     return (
-        <div className="flex flex-col items-center gap-4 p-4 border rounded-xl bg-surface-50 dark:bg-surface-900">
+        <div className="flex flex-col items-center gap-4 p-4 border rounded-xl bg-surface-50">
             <div ref={printRef} className="hidden print:flex bg-white flex-row items-center justify-center p-1 border">
                 <div className="qr-container">
                     <QRCodeSVG
@@ -87,7 +87,7 @@ export const QRCodeLabel: React.FC<QRCodeLabelProps> = ({ value, label, subLabel
                 </div>
             </div>
 
-            <div className="bg-surface-0 dark:bg-surface-800 p-6 shadow-sm rounded-lg flex flex-col items-center gap-2 border">
+            <div className="bg-surface-0 p-6 shadow-sm rounded-lg flex flex-col items-center gap-2 border">
                 <QRCodeSVG value={value} size={150} />
                 <div className="text-center mt-2">
                     <p className="font-bold text-lg">{label}</p>

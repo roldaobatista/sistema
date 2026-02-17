@@ -65,12 +65,12 @@ export default function TechSettingsPage() {
     ]
 
     return (
-        <div className="flex flex-col h-full overflow-y-auto bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-full overflow-y-auto bg-surface-50">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 py-5 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
-                    <Settings className="w-6 h-6 text-brand-600 dark:text-brand-400" />
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <Settings className="w-6 h-6 text-brand-600" />
+                    <h1 className="text-lg font-bold text-foreground">
                         Configurações
                     </h1>
                 </div>
@@ -78,7 +78,7 @@ export default function TechSettingsPage() {
 
             <div className="px-4 py-4 space-y-4">
                 {/* Theme Selector */}
-                <section className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                <section className="bg-card rounded-xl p-4 space-y-3">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide">Aparência</h3>
                     <div className="grid grid-cols-3 gap-2">
                         {themeOptions.map(opt => (
@@ -88,8 +88,8 @@ export default function TechSettingsPage() {
                                 className={cn(
                                     'flex flex-col items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all',
                                     theme === opt.value
-                                        ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 ring-2 ring-brand-500'
-                                        : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+                                        ? 'bg-brand-100 text-brand-700 ring-2 ring-brand-500'
+                                        : 'bg-surface-100 text-surface-600'
                                 )}
                             >
                                 <opt.icon className="w-5 h-5" />
@@ -100,7 +100,7 @@ export default function TechSettingsPage() {
                 </section>
 
                 {/* Security */}
-                <section className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                <section className="bg-card rounded-xl overflow-hidden">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide px-4 pt-4 pb-2">Segurança</h3>
 
                     <button
@@ -113,7 +113,7 @@ export default function TechSettingsPage() {
                             : <Fingerprint className="w-5 h-5 text-orange-500" />
                         }
                         <div className="flex-1 text-left">
-                            <p className="text-sm text-surface-900 dark:text-surface-50">
+                            <p className="text-sm text-foreground">
                                 Login biométrico
                             </p>
                             <p className="text-xs text-surface-500">
@@ -130,7 +130,7 @@ export default function TechSettingsPage() {
                 </section>
 
                 {/* Notifications */}
-                <section className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                <section className="bg-card rounded-xl overflow-hidden">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide px-4 pt-4 pb-2">Notificações</h3>
 
                     <button
@@ -142,7 +142,7 @@ export default function TechSettingsPage() {
                             : <BellOff className="w-5 h-5 text-surface-400" />
                         }
                         <div className="flex-1 text-left">
-                            <p className="text-sm text-surface-900 dark:text-surface-50">
+                            <p className="text-sm text-foreground">
                                 Push Notifications
                             </p>
                             <p className="text-xs text-surface-500">
@@ -153,7 +153,7 @@ export default function TechSettingsPage() {
                             'w-10 h-6 rounded-full relative transition-colors',
                             notificationsEnabled
                                 ? 'bg-brand-600'
-                                : 'bg-surface-300 dark:bg-surface-600',
+                                : 'bg-surface-300',
                         )}>
                             <div className={cn(
                                 'w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all',
@@ -164,7 +164,7 @@ export default function TechSettingsPage() {
                 </section>
 
                 {/* Data Mode */}
-                <section className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                <section className="bg-card rounded-xl overflow-hidden">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide px-4 pt-4 pb-2">Dados e Performance</h3>
 
                     <button
@@ -176,7 +176,7 @@ export default function TechSettingsPage() {
                             lowData.isEnabled ? 'text-amber-500' : 'text-surface-400'
                         )} />
                         <div className="flex-1 text-left">
-                            <p className="text-sm text-surface-900 dark:text-surface-50">
+                            <p className="text-sm text-foreground">
                                 Modo economia de dados
                             </p>
                             <p className="text-xs text-surface-500">
@@ -191,7 +191,7 @@ export default function TechSettingsPage() {
                             'w-10 h-6 rounded-full relative transition-colors',
                             lowData.isEnabled
                                 ? 'bg-amber-500'
-                                : 'bg-surface-300 dark:bg-surface-600',
+                                : 'bg-surface-300',
                         )}>
                             <div className={cn(
                                 'w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all',
@@ -200,7 +200,7 @@ export default function TechSettingsPage() {
                         </div>
                     </button>
 
-                    <div className="border-t border-surface-100 dark:border-surface-700" />
+                    <div className="border-t border-surface-100" />
 
                     <div className="flex items-center gap-3 px-4 py-3.5">
                         {isOnline
@@ -208,7 +208,7 @@ export default function TechSettingsPage() {
                             : <WifiOff className="w-5 h-5 text-red-500" />
                         }
                         <div className="flex-1 text-left">
-                            <p className="text-sm text-surface-900 dark:text-surface-50">
+                            <p className="text-sm text-foreground">
                                 Conexão
                             </p>
                             <p className="text-xs text-surface-500">
@@ -219,7 +219,7 @@ export default function TechSettingsPage() {
                 </section>
 
                 {/* Location Sharing */}
-                <section className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                <section className="bg-card rounded-xl overflow-hidden">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide px-4 pt-4 pb-2">Localização</h3>
 
                     <button
@@ -228,7 +228,7 @@ export default function TechSettingsPage() {
                     >
                         <MapPin className={cn('w-5 h-5', locationSharing.isSharing ? 'text-emerald-500' : 'text-surface-400')} />
                         <div className="flex-1 text-left">
-                            <p className="text-sm text-surface-900 dark:text-surface-50">
+                            <p className="text-sm text-foreground">
                                 Compartilhar localização
                             </p>
                             <p className="text-xs text-surface-500">
@@ -239,7 +239,7 @@ export default function TechSettingsPage() {
                         </div>
                         <div className={cn(
                             'w-10 h-6 rounded-full relative transition-colors',
-                            locationSharing.isSharing ? 'bg-emerald-500' : 'bg-surface-300 dark:bg-surface-600'
+                            locationSharing.isSharing ? 'bg-emerald-500' : 'bg-surface-300'
                         )}>
                             <div className={cn(
                                 'w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all',
@@ -251,16 +251,16 @@ export default function TechSettingsPage() {
 
                 {/* Install PWA */}
                 {isInstallable && !isInstalled && (
-                    <section className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                    <section className="bg-card rounded-xl overflow-hidden">
                         <button
                             onClick={handleInstall}
                             className="w-full flex items-center gap-3 px-4 py-4 active:bg-surface-50 dark:active:bg-surface-700"
                         >
-                            <div className="w-10 h-10 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-                                <Download className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                            <div className="w-10 h-10 rounded-lg bg-brand-100 flex items-center justify-center">
+                                <Download className="w-5 h-5 text-brand-600" />
                             </div>
                             <div className="flex-1 text-left">
-                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                <p className="text-sm font-medium text-foreground">
                                     Instalar Kalibrium
                                 </p>
                                 <p className="text-xs text-surface-500">
@@ -274,7 +274,7 @@ export default function TechSettingsPage() {
 
                 {/* Modo Quiosque */}
                 {kiosk.isSupported && (
-                    <section className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                    <section className="bg-card rounded-xl overflow-hidden">
                         <button
                             onClick={kiosk.toggle}
                             className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-surface-50 dark:active:bg-surface-700"
@@ -285,7 +285,7 @@ export default function TechSettingsPage() {
                                 <Maximize2 className="w-5 h-5 text-surface-400" />
                             )}
                             <div className="flex-1 text-left">
-                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                <p className="text-sm font-medium text-foreground">
                                     Modo Quiosque
                                 </p>
                                 <p className="text-xs text-surface-500">
@@ -294,7 +294,7 @@ export default function TechSettingsPage() {
                             </div>
                             <div className={cn(
                                 'w-10 h-6 rounded-full flex items-center transition-colors',
-                                kiosk.isActive ? 'bg-orange-500 justify-end' : 'bg-surface-300 dark:bg-surface-600 justify-start',
+                                kiosk.isActive ? 'bg-orange-500 justify-end' : 'bg-surface-300 justify-start',
                             )}>
                                 <div className="w-5 h-5 rounded-full bg-white shadow-sm mx-0.5" />
                             </div>
@@ -303,10 +303,10 @@ export default function TechSettingsPage() {
                 )}
 
                 {isInstalled && (
-                    <section className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <section className="bg-card rounded-xl p-4">
                         <div className="flex items-center gap-3">
                             <Smartphone className="w-5 h-5 text-emerald-500" />
-                            <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                            <p className="text-sm text-emerald-600 font-medium">
                                 App instalado ✓
                             </p>
                         </div>

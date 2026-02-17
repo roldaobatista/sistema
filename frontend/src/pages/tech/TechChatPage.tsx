@@ -57,14 +57,14 @@ export default function TechChatPage() {
     const isOwnMessage = (msg: ChatMessage) => msg.sender_id === user?.id
 
     return (
-        <div className="flex flex-col h-full bg-surface-100 dark:bg-surface-950">
+        <div className="flex flex-col h-full bg-surface-100">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 shrink-0">
+            <div className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border shrink-0">
                 <button onClick={() => navigate(-1)} className="p-1">
-                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600" />
                 </button>
                 <div className="flex-1">
-                    <h1 className="text-sm font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-sm font-bold text-foreground">
                         Chat da OS #{workOrderId}
                     </h1>
                     <p className="text-xs text-surface-500">
@@ -98,10 +98,10 @@ export default function TechChatPage() {
                             'max-w-[80%] rounded-2xl px-4 py-2.5',
                             isOwnMessage(msg)
                                 ? 'bg-brand-600 text-white rounded-br-sm'
-                                : 'bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-50 rounded-bl-sm'
+                                : 'bg-card text-foreground rounded-bl-sm'
                         )}>
                             {!isOwnMessage(msg) && (
-                                <p className="text-xs font-medium text-brand-600 dark:text-brand-400 mb-0.5">
+                                <p className="text-xs font-medium text-brand-600 mb-0.5">
                                     {msg.sender_name}
                                 </p>
                             )}
@@ -124,8 +124,8 @@ export default function TechChatPage() {
 
             {/* Voice transcript preview */}
             {voice.isListening && (voice.transcript || voice.interimTranscript) && (
-                <div className="px-4 py-2 bg-brand-50 dark:bg-brand-900/20 border-t border-brand-200 dark:border-brand-800">
-                    <p className="text-sm text-brand-700 dark:text-brand-300">
+                <div className="px-4 py-2 bg-brand-50 border-t border-brand-200">
+                    <p className="text-sm text-brand-700">
                         {voice.transcript}
                         <span className="opacity-50">{voice.interimTranscript}</span>
                     </p>
@@ -133,7 +133,7 @@ export default function TechChatPage() {
             )}
 
             {/* Input */}
-            <div className="bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 px-3 py-2 shrink-0">
+            <div className="bg-card border-t border-border px-3 py-2 shrink-0">
                 <div className="flex items-center gap-2">
                     <button
                         onClick={handleVoiceToggle}
@@ -141,7 +141,7 @@ export default function TechChatPage() {
                             'p-2.5 rounded-full transition-colors',
                             voice.isListening
                                 ? 'bg-red-500 text-white animate-pulse'
-                                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300'
+                                : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         {voice.isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -159,7 +159,7 @@ export default function TechChatPage() {
                         }}
                         onKeyDown={handleKeyDown}
                         placeholder={voice.isListening ? 'Ouvindo...' : 'Mensagem...'}
-                        className="flex-1 px-4 py-2.5 rounded-full bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-50 text-sm border-none outline-none placeholder:text-surface-400"
+                        className="flex-1 px-4 py-2.5 rounded-full bg-surface-100 text-foreground text-sm border-none outline-none placeholder:text-surface-400"
                     />
 
                     <button

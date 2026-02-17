@@ -215,7 +215,7 @@ export default function DebtRenegotiationPage() {
                     {!customersLoading && customerOptions.map(c => (
                       <li
                         key={c.id}
-                        className={`p-3 cursor-pointer hover:bg-surface-100 ${selectedCustomerId === String(c.id) ? 'bg-brand-50 dark:bg-brand-900/20' : ''}`}
+                        className={`p-3 cursor-pointer hover:bg-surface-100 ${selectedCustomerId === String(c.id) ? 'bg-brand-50' : ''}`}
                         onClick={() => {
                           setSelectedCustomerId(String(c.id))
                           setSelectedCustomerName(c.name)
@@ -252,7 +252,7 @@ export default function DebtRenegotiationPage() {
                         return (
                           <li
                             key={r.id}
-                            className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-surface-50 ${checked ? 'bg-brand-50 dark:bg-brand-900/20' : ''}`}
+                            className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-surface-50 ${checked ? 'bg-brand-50' : ''}`}
                             onClick={() => toggleReceivable(r.id)}
                           >
                             <input

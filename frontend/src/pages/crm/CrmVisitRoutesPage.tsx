@@ -99,7 +99,7 @@ export function CrmVisitRoutesPage() {
                                     {expanded && route.stops && (
                                         <div className="mt-4 ml-8 space-y-2">
                                             {route.stops.map((stop, i) => (
-                                                <div key={stop.id} className={`flex items-center gap-3 p-2 rounded ${stop.status === 'visited' ? 'bg-green-50 dark:bg-green-900/30' : stop.status === 'skipped' ? 'bg-surface-50 dark:bg-surface-800' : 'bg-surface-0 dark:bg-surface-800'}`}>
+                                                <div key={stop.id} className={`flex items-center gap-3 p-2 rounded ${stop.status === 'visited' ? 'bg-green-50 dark:bg-green-900/30' : stop.status === 'skipped' ? 'bg-surface-50' : 'bg-surface-0'}`}>
                                                     <span className="text-sm font-mono text-muted-foreground w-6">{i + 1}.</span>
                                                     <MapPin className={`h-4 w-4 ${stop.status === 'visited' ? 'text-green-600' : 'text-muted-foreground'}`} />
                                                     <div className="flex-1">

@@ -151,31 +151,31 @@ export default function TechPriceTablePage() {
     function getStockBadge(p: Product) {
         const qty = p.stock_quantity ?? 0
         const status = p.stock_status || (qty > 10 ? 'in_stock' : qty > 0 ? 'low' : 'out_of_stock')
-        const cls = status === 'in_stock' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : status === 'low' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+        const cls = status === 'in_stock' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
+            : status === 'low' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
+            : 'bg-red-100 text-red-700 dark:bg-red-900/30'
         const label = status === 'in_stock' ? 'Em estoque' : status === 'low' ? 'Baixo' : 'Sem estoque'
         return <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', cls)}>{label}</span>
     }
 
     return (
         <div className="flex flex-col h-full">
-            <header className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
+            <header className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border">
                 <button onClick={() => navigate('/tech')} className="p-1">
-                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600" />
                 </button>
-                <DollarSign className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Tabela de Preços</h1>
+                <DollarSign className="w-5 h-5 text-brand-600" />
+                <h1 className="text-lg font-bold text-foreground">Tabela de Preços</h1>
             </header>
 
-            <div className="flex border-b border-surface-200 dark:border-surface-700">
+            <div className="flex border-b border-border">
                 <button
                     onClick={() => setTab('servicos')}
                     className={cn(
                         'flex-1 py-3 text-sm font-medium flex items-center justify-center gap-1',
                         tab === 'servicos'
-                            ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500'
-                            : 'text-surface-500 dark:text-surface-400'
+                            ? 'text-brand-600 border-b-2 border-brand-500'
+                            : 'text-surface-500'
                     )}
                 >
                     <Layers className="w-4 h-4" /> Serviços
@@ -185,8 +185,8 @@ export default function TechPriceTablePage() {
                     className={cn(
                         'flex-1 py-3 text-sm font-medium flex items-center justify-center gap-1',
                         tab === 'produtos'
-                            ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500'
-                            : 'text-surface-500 dark:text-surface-400'
+                            ? 'text-brand-600 border-b-2 border-brand-500'
+                            : 'text-surface-500'
                     )}
                 >
                     <Package className="w-4 h-4" /> Produtos
@@ -201,7 +201,7 @@ export default function TechPriceTablePage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Buscar..."
-                        className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                        className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                     />
                 </div>
 
@@ -214,8 +214,8 @@ export default function TechPriceTablePage() {
                                 className={cn(
                                     'px-3 py-1.5 rounded-lg text-xs font-medium',
                                     selectedTableId === t.id
-                                        ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
-                                        : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+                                        ? 'bg-brand-100 text-brand-700'
+                                        : 'bg-surface-100 text-surface-600'
                                 )}
                             >
                                 {t.name}
@@ -232,7 +232,7 @@ export default function TechPriceTablePage() {
                     <div className="space-y-4">
                         {Object.keys(byCategory).sort().map((cat) => (
                             <div key={cat}>
-                                <p className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase mb-2">{cat}</p>
+                                <p className="text-xs font-semibold text-surface-500 uppercase mb-2">{cat}</p>
                                 <div className="space-y-2">
                                     {byCategory[cat].map((s) => {
                                         const price = s.sale_price ?? s.price ?? 0
@@ -240,22 +240,22 @@ export default function TechPriceTablePage() {
                                         return (
                                             <div
                                                 key={s.id}
-                                                className="bg-white dark:bg-surface-800/80 rounded-xl p-4"
+                                                className="bg-card rounded-xl p-4"
                                             >
                                                 <button
                                                     onClick={() => setExpandedService(isExpanded ? null : s.id)}
                                                     className="w-full text-left flex items-center justify-between"
                                                 >
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{s.name}</p>
-                                                        <p className="text-xs text-brand-600 dark:text-brand-400 mt-0.5">
+                                                        <p className="text-sm font-medium text-foreground">{s.name}</p>
+                                                        <p className="text-xs text-brand-600 mt-0.5">
                                                             {formatCurrency(price)}
                                                         </p>
                                                     </div>
                                                     <ChevronDown className={cn('w-4 h-4 text-surface-400 flex-shrink-0 transition-transform', isExpanded && 'rotate-180')} />
                                                 </button>
                                                 {isExpanded && (s.description || s.duration_minutes) && (
-                                                    <div className="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700 text-xs text-surface-500">
+                                                    <div className="mt-3 pt-3 border-t border-surface-100 text-xs text-surface-500">
                                                         {s.description && <p>{s.description}</p>}
                                                         {s.duration_minutes && (
                                                             <p className="mt-1">Duração estimada: {s.duration_minutes} min</p>
@@ -280,15 +280,15 @@ export default function TechPriceTablePage() {
                         {filteredProducts.map((p) => {
                             const price = p.sale_price ?? p.price ?? 0
                             return (
-                                <div key={p.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-4 flex items-center justify-between">
+                                <div key={p.id} className="bg-card rounded-xl p-4 flex items-center justify-between">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{p.name}</p>
+                                        <p className="text-sm font-medium text-foreground">{p.name}</p>
                                         <div className="flex items-center gap-2 mt-1">
                                             {p.sku && <span className="text-xs text-surface-500">SKU: {p.sku}</span>}
                                             {getStockBadge(p)}
                                         </div>
                                     </div>
-                                    <p className="text-sm font-semibold text-brand-600 dark:text-brand-400 ml-2">
+                                    <p className="text-sm font-semibold text-brand-600 ml-2">
                                         {formatCurrency(price)}
                                     </p>
                                 </div>

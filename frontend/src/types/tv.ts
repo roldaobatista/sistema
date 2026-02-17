@@ -90,7 +90,7 @@ export interface TvDashboardData {
     };
 }
 
-export type TvLayout = '3x2' | '2x2' | '1+list' | 'map-full';
+export type TvLayout = '3x2' | '2x2' | '1+list' | 'map-full' | 'cameras-only' | 'focus' | '4x4';
 
 export interface TvSettings {
     layout: TvLayout;

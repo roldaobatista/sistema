@@ -95,6 +95,10 @@ interface CustomerForm {
   company_size: string
   rating: string
   assigned_seller_id: string
+  annual_revenue_estimate: string
+  contract_type: string
+  contract_start: string
+  contract_end: string
   // Contacts
   contacts: Contact[]
 }
@@ -109,7 +113,13 @@ const emptyForm: CustomerForm = {
   simples_nacional: null, mei: null, company_status: '', opened_at: '',
   is_rural_producer: false, partners: [], secondary_activities: [],
   source: '', segment: '', company_size: '', rating: '', assigned_seller_id: '',
+  annual_revenue_estimate: '', contract_type: '', contract_start: '', contract_end: '',
   contacts: [],
+}
+
+function toDateInput(val: string | null | undefined): string {
+  if (!val) return ''
+  return val.substring(0, 10)
 }
 
 const emptyContact: Contact = { name: '', role: '', phone: '', email: '', is_primary: false }
@@ -331,12 +341,23 @@ export function CustomersPage() {
         'company_size', 'rating', 'assigned_seller_id',
         'state_registration', 'municipal_registration', 'cnae_code',
         'cnae_description', 'legal_nature', 'capital', 'company_status', 'opened_at',
+        'annual_revenue_estimate', 'contract_type', 'contract_start', 'contract_end',
+        'google_maps_link',
       ]
       for (const k of nullableStrings) {
         if (sanitized[k] === '') sanitized[k] = null
       }
       if (sanitized.assigned_seller_id) sanitized.assigned_seller_id = Number(sanitized.assigned_seller_id)
       if (sanitized.capital && typeof sanitized.capital === 'string') sanitized.capital = parseFloat(sanitized.capital) || null
+      if (sanitized.annual_revenue_estimate && typeof sanitized.annual_revenue_estimate === 'string') {
+        sanitized.annual_revenue_estimate = parseFloat(sanitized.annual_revenue_estimate as string) || null
+      }
+
+      const latStr = sanitized.latitude as string
+      const lngStr = sanitized.longitude as string
+      sanitized.latitude = latStr ? parseFloat(latStr) || null : null
+      sanitized.longitude = lngStr ? parseFloat(lngStr) || null : null
+
       if (enrichmentData && enrichmentData.source !== 'cpf_validation') {
         sanitized.enrichment_data = enrichmentData
         sanitized.enriched_at = new Date().toISOString()
@@ -431,8 +452,8 @@ export function CustomersPage() {
       address_neighborhood: c.address_neighborhood ?? '',
       address_city: c.address_city ?? '',
       address_state: c.address_state ?? '',
-      latitude: c.latitude ?? '',
-      longitude: c.longitude ?? '',
+      latitude: c.latitude != null ? String(c.latitude) : '',
+      longitude: c.longitude != null ? String(c.longitude) : '',
       google_maps_link: c.google_maps_link ?? '',
       state_registration: c.state_registration ?? '',
       municipal_registration: c.municipal_registration ?? '',
@@ -443,7 +464,7 @@ export function CustomersPage() {
       simples_nacional: c.simples_nacional ?? null,
       mei: c.mei ?? null,
       company_status: c.company_status ?? '',
-      opened_at: c.opened_at ?? '',
+      opened_at: toDateInput(c.opened_at),
       is_rural_producer: c.is_rural_producer ?? false,
       partners: c.partners ?? [],
       secondary_activities: c.secondary_activities ?? [],
@@ -452,6 +473,10 @@ export function CustomersPage() {
       company_size: c.company_size ?? '',
       rating: c.rating ?? '',
       assigned_seller_id: c.assigned_seller_id?.toString() ?? '',
+      annual_revenue_estimate: c.annual_revenue_estimate ?? '',
+      contract_type: c.contract_type ?? '',
+      contract_start: toDateInput(c.contract_start),
+      contract_end: toDateInput(c.contract_end),
       contacts: (c.contacts ?? []).map((ct: any) => ({
         id: ct.id,
         name: ct.name ?? '',
@@ -482,7 +507,11 @@ export function CustomersPage() {
   function updateContact(i: number, field: string, value: any) {
     setForm(prev => ({
       ...prev,
-      contacts: prev.contacts.map((c, idx) => idx === i ? { ...c, [field]: value } : c),
+      contacts: prev.contacts.map((c, idx) => {
+        if (idx === i) return { ...c, [field]: value }
+        if (field === 'is_primary' && value === true) return { ...c, is_primary: false }
+        return c
+      }),
     }))
   }
 
@@ -1292,6 +1321,44 @@ export function CustomersPage() {
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="sm:col-span-2 border-t border-default mt-2 pt-4">
+              <h4 className="text-sm font-semibold text-surface-900 mb-3">Contrato e Faturamento</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="crm-contract-type" className="block text-sm font-medium text-surface-700 mb-1">Tipo de Contrato</label>
+                  <select
+                    id="crm-contract-type"
+                    value={form.contract_type}
+                    onChange={(e) => setForm({ ...form, contract_type: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0"
+                  >
+                    <option value="">Selecione...</option>
+                    {crmOptions?.contract_types && Object.entries(crmOptions.contract_types).map(([k, v]) => (
+                      <option key={k} value={k}>{v as string}</option>
+                    ))}
+                  </select>
+                </div>
+                <Input
+                  label="Receita Anual Estimada (R$)"
+                  value={form.annual_revenue_estimate}
+                  onChange={(e) => setForm({ ...form, annual_revenue_estimate: e.target.value })}
+                  placeholder="Ex: 50000.00"
+                />
+                <Input
+                  label="Início do Contrato"
+                  type="date"
+                  value={form.contract_start}
+                  onChange={(e) => setForm({ ...form, contract_start: e.target.value })}
+                />
+                <Input
+                  label="Fim do Contrato"
+                  type="date"
+                  value={form.contract_end}
+                  onChange={(e) => setForm({ ...form, contract_end: e.target.value })}
+                />
+              </div>
             </div>
           </div>
         )}

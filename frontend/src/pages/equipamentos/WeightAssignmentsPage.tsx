@@ -132,7 +132,7 @@ export default function WeightAssignmentsPage() {
                                     <td className="p-3 text-xs">{new Date(a.assigned_at).toLocaleDateString('pt-BR')}</td>
                                     <td className="p-3 text-xs">
                                         {a.returned_at ? new Date(a.returned_at).toLocaleDateString('pt-BR') : (
-                                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30">
                                                 Em campo
                                             </span>
                                         )}

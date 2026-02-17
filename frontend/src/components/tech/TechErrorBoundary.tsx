@@ -27,18 +27,18 @@ export class TechErrorBoundary extends Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="flex flex-col items-center justify-center h-full px-6 py-12 bg-surface-50 dark:bg-surface-950">
+                <div className="flex flex-col items-center justify-center h-full px-6 py-12 bg-surface-50">
                     <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
                         <AlertTriangle className="w-8 h-8 text-red-500" />
                     </div>
-                    <h2 className="text-lg font-bold text-surface-900 dark:text-surface-50 mb-1">
+                    <h2 className="text-lg font-bold text-foreground mb-1">
                         Algo deu errado
                     </h2>
                     <p className="text-sm text-surface-500 text-center mb-6 max-w-xs">
                         Ocorreu um erro inesperado. Tente recarregar a página.
                     </p>
                     {this.state.error?.message && (
-                        <p className="text-xs text-surface-400 bg-surface-100 dark:bg-surface-800 rounded-lg px-3 py-2 mb-6 max-w-xs text-center font-mono">
+                        <p className="text-xs text-surface-400 bg-surface-100 rounded-lg px-3 py-2 mb-6 max-w-xs text-center font-mono">
                             {this.state.error.message.slice(0, 100)}
                         </p>
                     )}
@@ -62,7 +62,7 @@ export class TechErrorBoundary extends Component<Props, State> {
                                 this.setState({ hasError: false, error: null })
                                 window.location.href = '/tech'
                             }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300 text-sm font-medium active:bg-surface-300 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-200 text-surface-700 text-sm font-medium active:bg-surface-300 transition-colors"
                         >
                             <Home className="w-4 h-4" />
                             Início

@@ -19,9 +19,9 @@ const FREQUENCY_LABELS: Record<string, string> = {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-    active: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-    expired: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-    suspended: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+    active: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700',
+    expired: 'bg-red-100 dark:bg-red-900/30 text-red-700',
+    suspended: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700',
 }
 
 function formatDate(d: string | Date | null | undefined): string {
@@ -134,24 +134,24 @@ export default function TechContractInfoPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <button
                     onClick={() => navigate(`/tech/os/${id}`)}
-                    className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2"
+                    className="flex items-center gap-1 text-sm text-brand-600 mb-2"
                 >
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-brand-600" />
                     Contrato do Cliente
                 </h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {!hasContract ? (
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-6 flex flex-col items-center justify-center gap-3 text-center">
+                    <div className="bg-card rounded-xl p-6 flex flex-col items-center justify-center gap-3 text-center">
                         <Shield className="w-12 h-12 text-surface-400" />
-                        <p className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                        <p className="text-sm font-medium text-surface-700">
                             Cliente sem contrato ativo
                         </p>
                         <p className="text-xs text-surface-500">
@@ -160,7 +160,7 @@ export default function TechContractInfoPage() {
                     </div>
                 ) : (
                     <>
-                        <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                        <div className="bg-card rounded-xl p-4 space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className={cn(
                                     'px-2.5 py-1 rounded-lg text-xs font-medium',
@@ -195,14 +195,14 @@ export default function TechContractInfoPage() {
                         </div>
 
                         {contract.items && contract.items.length > 0 && (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2 mb-3">
+                            <div className="bg-card rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
                                     <List className="w-4 h-4" />
                                     Serviços cobertos
                                 </h3>
                                 <ul className="space-y-1.5">
                                     {contract.items.map((item, i) => (
-                                        <li key={i} className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
+                                        <li key={i} className="flex items-center gap-2 text-sm text-surface-600">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                             {item.description}
                                         </li>
@@ -212,8 +212,8 @@ export default function TechContractInfoPage() {
                         )}
 
                         {visitHistory.length > 0 && (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 flex items-center gap-2 mb-3">
+                            <div className="bg-card rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
                                     <Clock className="w-4 h-4" />
                                     Histórico de visitas
                                 </h3>
@@ -221,7 +221,7 @@ export default function TechContractInfoPage() {
                                     {visitHistory.map((v) => (
                                         <li
                                             key={v.id}
-                                            className="flex items-center justify-between text-sm py-1.5 border-b border-surface-100 dark:border-surface-700 last:border-0"
+                                            className="flex items-center justify-between text-sm py-1.5 border-b border-surface-100 last:border-0"
                                         >
                                             <span>{formatDate(v.created_at)}</span>
                                             <span className="font-medium">{v.os_number ?? v.number ?? v.id}</span>
@@ -233,24 +233,24 @@ export default function TechContractInfoPage() {
                         )}
 
                         {contract.next_run_date && getContractStatus(contract) === 'active' && (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-2">
+                            <div className="bg-card rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-foreground mb-2">
                                     Próximas visitas
                                 </h3>
-                                <p className="text-sm text-surface-600 dark:text-surface-400">
+                                <p className="text-sm text-surface-600">
                                     Próxima: {formatDate(contract.next_run_date)}
                                 </p>
                             </div>
                         )}
 
                         {isExpiringSoon(contract) && (
-                            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 flex items-start gap-3">
+                            <div className="bg-amber-50 rounded-xl p-4 flex items-start gap-3">
                                 <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
                                         Contrato expirando em breve
                                     </p>
-                                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                                    <p className="text-xs text-amber-700 mt-1">
                                         O contrato vence em {formatDate(contract.end_date)}. Considere renovar.
                                     </p>
                                 </div>

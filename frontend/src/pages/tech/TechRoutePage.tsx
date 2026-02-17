@@ -175,21 +175,21 @@ export default function TechRoutePage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <button
                     onClick={() => navigate('/tech')}
-                    className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2"
+                    className="flex items-center gap-1 text-sm text-brand-600 mb-2"
                 >
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                <h1 className="text-lg font-bold text-foreground">
                     Roteirização Inteligente
                 </h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {/* Date selector */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <label className="block text-xs font-semibold text-surface-400 uppercase mb-2">
                         Data
                     </label>
@@ -197,15 +197,15 @@ export default function TechRoutePage() {
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-sm text-surface-900 dark:text-surface-50 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-lg bg-surface-50 border border-border text-sm text-foreground focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                     />
                     <p className="text-xs text-surface-500 mt-1">{formattedDate}</p>
                 </div>
 
                 {/* Summary card */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                <div className="bg-card rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                        <h2 className="text-sm font-semibold text-foreground">
                             Resumo da Rota
                         </h2>
                         <button
@@ -214,7 +214,7 @@ export default function TechRoutePage() {
                             className={cn(
                                 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                                 workOrders.length < 2 || optimizing
-                                    ? 'bg-surface-100 dark:bg-surface-700 text-surface-400 cursor-not-allowed'
+                                    ? 'bg-surface-100 text-surface-400 cursor-not-allowed'
                                     : 'bg-brand-600 text-white active:scale-95'
                             )}
                         >
@@ -234,19 +234,19 @@ export default function TechRoutePage() {
                     <div className="grid grid-cols-3 gap-3">
                         <div>
                             <p className="text-xs text-surface-400 uppercase mb-1">Total de Paradas</p>
-                            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                            <p className="text-lg font-bold text-foreground">
                                 {summary.totalStops}
                             </p>
                         </div>
                         <div>
                             <p className="text-xs text-surface-400 uppercase mb-1">Distância Estimada</p>
-                            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                            <p className="text-lg font-bold text-foreground">
                                 {summary.estimatedDistance ? `${summary.estimatedDistance.toFixed(1)} km` : '—'}
                             </p>
                         </div>
                         <div>
                             <p className="text-xs text-surface-400 uppercase mb-1">Tempo Estimado</p>
-                            <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                            <p className="text-lg font-bold text-foreground">
                                 {summary.estimatedTime ? `${Math.round(summary.estimatedTime / 60)} min` : '—'}
                             </p>
                         </div>
@@ -272,14 +272,14 @@ export default function TechRoutePage() {
 
                             return (
                                 <div key={wo.id} className="relative">
-                                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 flex items-start gap-3">
+                                    <div className="bg-card rounded-xl p-4 flex items-start gap-3">
                                         {/* Stop number and connector */}
                                         <div className="relative flex-shrink-0">
                                             <div className="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center text-sm font-bold z-10 relative">
                                                 {index + 1}
                                             </div>
                                             {!isLast && (
-                                                <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-surface-200 dark:bg-surface-700" />
+                                                <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-surface-200" />
                                             )}
                                         </div>
 
@@ -288,7 +288,7 @@ export default function TechRoutePage() {
                                             <div className="flex items-start justify-between gap-2 mb-2">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                                                        <span className="text-sm font-semibold text-foreground">
                                                             {wo.os_number || wo.number || 'N/A'}
                                                         </span>
                                                         <span
@@ -301,7 +301,7 @@ export default function TechRoutePage() {
                                                             {statusLabel}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-surface-600 dark:text-surface-400 truncate">
+                                                    <p className="text-xs text-surface-600 truncate">
                                                         {wo.customer_name || 'Sem cliente'}
                                                     </p>
                                                 </div>
@@ -328,7 +328,7 @@ export default function TechRoutePage() {
 
                                             <button
                                                 onClick={() => handleNavigate(wo)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-xs font-medium active:scale-95 transition-transform"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-600 text-xs font-medium active:scale-95 transition-transform"
                                             >
                                                 <Navigation className="w-3.5 h-3.5" />
                                                 Navegar

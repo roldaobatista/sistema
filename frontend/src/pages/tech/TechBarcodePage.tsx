@@ -50,15 +50,15 @@ export default function TechBarcodePage() {
     }
 
     return (
-        <div className="flex flex-col h-full overflow-y-auto bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-full overflow-y-auto bg-surface-50">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border">
                 <button onClick={() => navigate(-1)} className="p-1">
-                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600" />
                 </button>
                 <div className="flex items-center gap-2">
-                    <ScanBarcode className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <ScanBarcode className="w-5 h-5 text-brand-600" />
+                    <h1 className="text-lg font-bold text-foreground">
                         Leitor de Código
                     </h1>
                 </div>
@@ -93,17 +93,17 @@ export default function TechBarcodePage() {
 
                 {/* Result Display */}
                 {scanner.lastResult && (
-                    <div className="w-full bg-white dark:bg-surface-800/80 rounded-xl p-5 space-y-3">
+                    <div className="w-full bg-card rounded-xl p-5 space-y-3">
                         <div className="flex items-center gap-2 text-emerald-500">
                             <Check className="w-5 h-5" />
                             <span className="text-sm font-semibold">Código detectado</span>
                         </div>
 
-                        <div className="bg-surface-50 dark:bg-surface-900 rounded-lg p-4">
+                        <div className="bg-surface-50 rounded-lg p-4">
                             <p className="text-xs text-surface-400 mb-1">
                                 {formatLabel[scanner.lastResult.format] || scanner.lastResult.format}
                             </p>
-                            <p className="text-lg font-mono font-bold text-surface-900 dark:text-surface-50 break-all">
+                            <p className="text-lg font-mono font-bold text-foreground break-all">
                                 {scanner.lastResult.rawValue}
                             </p>
                         </div>
@@ -121,7 +121,7 @@ export default function TechBarcodePage() {
                                     scanner.clearResult()
                                     handleStartScan()
                                 }}
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-200 text-sm font-medium"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-200 text-surface-700 text-sm font-medium"
                             >
                                 <Camera className="w-4 h-4" />
                                 Escanear outro
@@ -132,7 +132,7 @@ export default function TechBarcodePage() {
                             onClick={() => {
                                 navigate(`/tech?search=${encodeURIComponent(scanner.lastResult!.rawValue)}`)
                             }}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-brand-500 text-brand-600 dark:text-brand-400 text-sm font-medium"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-brand-500 text-brand-600 text-sm font-medium"
                         >
                             <Search className="w-4 h-4" />
                             Buscar este código nas OS
@@ -141,7 +141,7 @@ export default function TechBarcodePage() {
                             onClick={() => {
                                 navigate(`/tech/scan-ativos?code=${encodeURIComponent(scanner.lastResult!.rawValue)}`)
                             }}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-brand-500 text-brand-600 dark:text-brand-400 text-sm font-medium"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-brand-500 text-brand-600 text-sm font-medium"
                         >
                             Ver ativo / Histórico
                         </button>
@@ -164,14 +164,14 @@ export default function TechBarcodePage() {
 
                         <button
                             onClick={() => setShowManualInput(true)}
-                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-surface-200 dark:bg-surface-800 text-surface-700 dark:text-surface-200"
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-surface-200 text-surface-700"
                         >
                             <Keyboard className="w-4 h-4" />
                             Digitar código manualmente
                         </button>
 
                         {!scanner.isSupported && (
-                            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-center">
+                            <div className="bg-amber-50 rounded-xl p-4 text-center">
                                 <p className="text-sm text-amber-800 dark:text-amber-200">
                                     Barcode Detection API não suportada neste navegador.
                                     Use a entrada manual.
@@ -183,8 +183,8 @@ export default function TechBarcodePage() {
 
                 {/* Manual Input */}
                 {showManualInput && (
-                    <div className="w-full bg-white dark:bg-surface-800/80 rounded-xl p-5 space-y-3">
-                        <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                    <div className="w-full bg-card rounded-xl p-5 space-y-3">
+                        <h3 className="text-sm font-semibold text-foreground">
                             Digite o código
                         </h3>
                         <input
@@ -192,14 +192,14 @@ export default function TechBarcodePage() {
                             value={manualValue}
                             onChange={e => setManualValue(e.target.value)}
                             placeholder="Ex: 7891234567890"
-                            className="w-full px-4 py-3 rounded-lg border border-surface-300 dark:border-surface-600 bg-surface-50 dark:bg-surface-900 text-surface-900 dark:text-surface-50 text-lg font-mono"
+                            className="w-full px-4 py-3 rounded-lg border border-surface-300 bg-surface-50 text-foreground text-lg font-mono"
                             autoFocus
                             onKeyDown={e => e.key === 'Enter' && handleManualSubmit()}
                         />
                         <div className="flex gap-2">
                             <button
                                 onClick={() => { setShowManualInput(false); setManualValue('') }}
-                                className="flex-1 py-2.5 rounded-lg bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-200 text-sm font-medium"
+                                className="flex-1 py-2.5 rounded-lg bg-surface-200 text-surface-700 text-sm font-medium"
                             >
                                 Cancelar
                             </button>
@@ -216,7 +216,7 @@ export default function TechBarcodePage() {
 
                 {/* Error */}
                 {scanner.error && (
-                    <div className="w-full bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-center">
+                    <div className="w-full bg-red-50 rounded-xl p-4 text-center">
                         <p className="text-sm text-red-600 dark:text-red-400">{scanner.error}</p>
                     </div>
                 )}

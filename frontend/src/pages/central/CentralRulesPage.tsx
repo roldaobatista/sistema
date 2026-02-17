@@ -146,7 +146,7 @@ export function CentralRulesPage() {
                         const AcaoIcon = acao.icon
                         return (
                             <div key={rule.id}
-                                className={`rounded-xl border bg-surface-0 dark:bg-surface-800 p-4 shadow-card transition-all hover:shadow-md ${rule.ativo ? 'border-surface-200' : 'border-surface-100 opacity-60'}`}>
+                                className={`rounded-xl border bg-surface-0 p-4 shadow-card transition-all hover:shadow-md ${rule.ativo ? 'border-surface-200' : 'border-surface-100 opacity-60'}`}>
                                 <div className="flex items-center gap-4">
                                     {/* Toggle */}
                                     <button onClick={() => toggleMut.mutate({ id: rule.id, ativo: !rule.ativo })}

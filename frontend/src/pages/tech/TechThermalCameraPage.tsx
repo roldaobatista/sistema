@@ -42,15 +42,15 @@ export default function TechThermalCameraPage() {
         : thermal.captures
 
     return (
-        <div className="flex flex-col h-full overflow-y-auto bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-full overflow-y-auto bg-surface-50">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 shrink-0">
+            <div className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border shrink-0">
                 <button onClick={() => navigate(-1)} className="p-1" title="Voltar">
-                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600" />
                 </button>
                 <div className="flex items-center gap-2">
                     <Thermometer className="w-5 h-5 text-orange-500" />
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Câmera Térmica
                     </h1>
                 </div>
@@ -58,14 +58,14 @@ export default function TechThermalCameraPage() {
 
             <div className="flex-1 px-4 py-5 space-y-4 overflow-y-auto">
                 {/* Device Selector */}
-                <section className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                <section className="bg-card rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                         <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide">
                             Dispositivo
                         </h3>
                         <button
                             onClick={() => thermal.detectDevices()}
-                            className="text-xs text-brand-600 dark:text-brand-400 flex items-center gap-1"
+                            className="text-xs text-brand-600 flex items-center gap-1"
                         >
                             <RefreshCw className="w-3 h-3" /> Atualizar
                         </button>
@@ -80,7 +80,7 @@ export default function TechThermalCameraPage() {
                             value={thermal.selectedDevice}
                             onChange={e => thermal.setSelectedDevice(e.target.value)}
                             title="Selecionar câmera"
-                            className="w-full rounded-lg border border-surface-300 dark:border-surface-600 bg-surface-50 dark:bg-surface-900 px-3 py-2.5 text-sm text-surface-900 dark:text-surface-50"
+                            className="w-full rounded-lg border border-surface-300 bg-surface-50 px-3 py-2.5 text-sm text-foreground"
                         >
                             {thermal.devices.map(d => (
                                 <option key={d.deviceId} value={d.deviceId}>
@@ -137,7 +137,7 @@ export default function TechThermalCameraPage() {
 
                 {/* Captured Gallery */}
                 {osCaptures.length > 0 && (
-                    <section className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                    <section className="bg-card rounded-xl p-4 space-y-3">
                         <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide">
                             Capturas ({osCaptures.length})
                         </h3>
@@ -145,7 +145,7 @@ export default function TechThermalCameraPage() {
                             {osCaptures.slice().reverse().map(capture => (
                                 <div
                                     key={capture.id}
-                                    className="relative group rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700"
+                                    className="relative group rounded-lg overflow-hidden border border-border"
                                 >
                                     <img
                                         src={capture.dataUrl}
@@ -184,7 +184,7 @@ export default function TechThermalCameraPage() {
 
                 {/* Error */}
                 {thermal.error && (
-                    <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 flex items-start gap-2">
+                    <div className="bg-red-50 rounded-xl p-4 flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                         <p className="text-sm text-red-600 dark:text-red-400">{thermal.error}</p>
                     </div>

@@ -10,15 +10,14 @@ import { toast } from 'sonner'
 
 interface Equipment {
     id: number
-    name: string
+    code: string
+    type?: string
     model?: string
     brand?: string
     serial_number?: string
     tag?: string
-    customer?: { name: string }
-    customer_name?: string
-    equipment_class?: string
-    precision?: string
+    customer?: { id: number; name: string }
+    precision_class?: string
     next_calibration_at?: string
 }
 
@@ -46,10 +45,10 @@ interface WorkOrder {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30',
     in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    cancelled: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400',
+    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30',
+    cancelled: 'bg-surface-200 text-surface-600',
 }
 
 export default function TechEquipmentHistoryPage() {
@@ -122,11 +121,11 @@ export default function TechEquipmentHistoryPage() {
     if (loading) {
         return (
             <div className="flex flex-col h-full">
-                <header className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
+                <header className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border">
                     <button onClick={() => navigate(-1)} className="p-1">
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Histórico do Equipamento</h1>
+                    <h1 className="text-lg font-bold text-foreground">Histórico do Equipamento</h1>
                 </header>
                 <div className="flex-1 flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
@@ -138,11 +137,11 @@ export default function TechEquipmentHistoryPage() {
     if (!equipment) {
         return (
             <div className="flex flex-col h-full">
-                <header className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
+                <header className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border">
                     <button onClick={() => navigate(-1)} className="p-1">
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Equipamento não encontrado</h1>
+                    <h1 className="text-lg font-bold text-foreground">Equipamento não encontrado</h1>
                 </header>
                 <div className="flex-1 flex items-center justify-center p-4">
                     <p className="text-sm text-surface-500">Equipamento não encontrado.</p>
@@ -153,39 +152,39 @@ export default function TechEquipmentHistoryPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <header className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700">
+            <header className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border">
                 <button onClick={() => navigate(-1)} className="p-1">
-                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600" />
                 </button>
-                <History className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Histórico do Equipamento</h1>
+                <History className="w-5 h-5 text-brand-600" />
+                <h1 className="text-lg font-bold text-foreground">Histórico do Equipamento</h1>
             </header>
 
             <div className="p-4">
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-2">
-                    <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">{equipment.name}</span>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-surface-500">
-                        {equipment.model && <span>Modelo: {equipment.model}</span>}
-                        {equipment.brand && <span>Marca: {equipment.brand}</span>}
+                <div className="bg-card rounded-xl p-4 space-y-2">
+                    <span className="text-sm font-semibold text-foreground">{equipment.brand} {equipment.model}</span>
+                    <p className="text-xs text-surface-400">{equipment.code}</p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-surface-500 mt-1">
+                        {equipment.type && <span>Tipo: {equipment.type}</span>}
                         {equipment.serial_number && <span>S/N: {equipment.serial_number}</span>}
-                        {(equipment.customer?.name || equipment.customer_name) && (
-                            <span>Cliente: {equipment.customer?.name || equipment.customer_name}</span>
+                        {equipment.customer?.name && (
+                            <span>Cliente: {equipment.customer.name}</span>
                         )}
-                        {(equipment.equipment_class || equipment.precision) && (
-                            <span>Classe: {equipment.equipment_class || equipment.precision}</span>
+                        {equipment.precision_class && (
+                            <span>Classe: {equipment.precision_class}</span>
                         )}
                     </div>
                 </div>
             </div>
 
-            <div className="flex border-b border-surface-200 dark:border-surface-700">
+            <div className="flex border-b border-border">
                 <button
                     onClick={() => setTab('calibracoes')}
                     className={cn(
                         'flex-1 py-3 text-sm font-medium flex items-center justify-center gap-1',
                         tab === 'calibracoes'
-                            ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500'
-                            : 'text-surface-500 dark:text-surface-400'
+                            ? 'text-brand-600 border-b-2 border-brand-500'
+                            : 'text-surface-500'
                     )}
                 >
                     <Scale className="w-4 h-4" /> Calibrações
@@ -195,8 +194,8 @@ export default function TechEquipmentHistoryPage() {
                     className={cn(
                         'flex-1 py-3 text-sm font-medium flex items-center justify-center gap-1',
                         tab === 'manutencoes'
-                            ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500'
-                            : 'text-surface-500 dark:text-surface-400'
+                            ? 'text-brand-600 border-b-2 border-brand-500'
+                            : 'text-surface-500'
                     )}
                 >
                     <Wrench className="w-4 h-4" /> Manutenções
@@ -206,8 +205,8 @@ export default function TechEquipmentHistoryPage() {
                     className={cn(
                         'flex-1 py-3 text-sm font-medium flex items-center justify-center gap-1',
                         tab === 'certificados'
-                            ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500'
-                            : 'text-surface-500 dark:text-surface-400'
+                            ? 'text-brand-600 border-b-2 border-brand-500'
+                            : 'text-surface-500'
                     )}
                 >
                     <FileText className="w-4 h-4" /> Certificados
@@ -224,7 +223,7 @@ export default function TechEquipmentHistoryPage() {
                             </div>
                         )}
                         {nextCalDate && (
-                            <div className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400">
+                            <div className="flex items-center gap-2 text-sm text-surface-600">
                                 <Calendar className="w-4 h-4" />
                                 Próxima calibração: {nextCalDate.toLocaleDateString('pt-BR')}
                                 {(() => {
@@ -237,9 +236,9 @@ export default function TechEquipmentHistoryPage() {
                             {calibrations.map((cal) => {
                                 const pass = cal.result === 'aprovado' || cal.result === 'approved' || cal.result === 'aprovado_com_ressalva'
                                 return (
-                                    <div key={cal.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-4 flex items-center justify-between">
+                                    <div key={cal.id} className="bg-card rounded-xl p-4 flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                            <p className="text-sm font-medium text-foreground">
                                                 {new Date(cal.calibration_date).toLocaleDateString('pt-BR')}
                                             </p>
                                             <p className="text-xs text-surface-500">
@@ -248,7 +247,7 @@ export default function TechEquipmentHistoryPage() {
                                         </div>
                                         <span className={cn(
                                             'px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1',
-                                            pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-red-100 text-red-700 dark:bg-red-900/30'
                                         )}>
                                             {pass ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                                             {pass ? 'Aprovado' : 'Reprovado'}
@@ -272,10 +271,10 @@ export default function TechEquipmentHistoryPage() {
                             <button
                                 key={wo.id}
                                 onClick={() => navigate(`/tech/os/${wo.id}`)}
-                                className="w-full text-left bg-white dark:bg-surface-800/80 rounded-xl p-4 flex items-center justify-between active:scale-[0.98]"
+                                className="w-full text-left bg-card rounded-xl p-4 flex items-center justify-between active:scale-[0.98]"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                    <p className="text-sm font-medium text-foreground">
                                         OS {wo.os_number || wo.number || wo.id}
                                     </p>
                                     <p className="text-xs text-surface-500 mt-0.5">
@@ -305,9 +304,9 @@ export default function TechEquipmentHistoryPage() {
                 {tab === 'certificados' && (
                     <div className="space-y-2">
                         {certificates.map((cert) => (
-                            <div key={cert.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-4 flex items-center justify-between">
+                            <div key={cert.id} className="bg-card rounded-xl p-4 flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                    <p className="text-sm font-medium text-foreground">
                                         {cert.number || `Certificado #${cert.id}`}
                                     </p>
                                     <p className="text-xs text-surface-500">
@@ -317,7 +316,7 @@ export default function TechEquipmentHistoryPage() {
                                 {cert.hasPdf && (
                                     <button
                                         onClick={() => openCertificatePdf(cert.id)}
-                                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 text-sm font-medium"
+                                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-100 text-brand-700 text-sm font-medium"
                                     >
                                         <Download className="w-4 h-4" /> Baixar
                                     </button>

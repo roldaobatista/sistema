@@ -43,7 +43,7 @@ export default function EquipmentQrPublicPage() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-950">
+            <div className="flex min-h-screen items-center justify-center bg-surface-50">
                 <div className="text-surface-500">Carregando...</div>
             </div>
         )
@@ -51,8 +51,8 @@ export default function EquipmentQrPublicPage() {
 
     if (error || !data) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-950">
-                <div className="rounded-xl bg-surface-0 dark:bg-surface-800 p-8 shadow-lg text-center max-w-md">
+            <div className="flex min-h-screen items-center justify-center bg-surface-50">
+                <div className="rounded-xl bg-surface-0 p-8 shadow-lg text-center max-w-md">
                     <AlertTriangle className="mx-auto h-12 w-12 text-amber-500" />
                     <h1 className="mt-4 text-xl font-bold text-surface-900">Erro</h1>
                     <p className="mt-2 text-surface-600">{error}</p>
@@ -67,12 +67,13 @@ export default function EquipmentQrPublicPage() {
     const isNearExpiry = cal?.next_due_date
         ? new Date(cal.next_due_date) < new Date(new Date().getTime() + 30 * 86400000) && !isExpired
         : false
+    const isRejected = cal?.result === 'reprovado'
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-surface-950 dark:to-surface-900 p-4">
             <div className="mx-auto max-w-md space-y-4">
                 {/* Header */}
-                <div className="rounded-2xl bg-surface-0 dark:bg-surface-800 p-6 shadow-lg text-center">
+                <div className="rounded-2xl bg-surface-0 p-6 shadow-lg text-center">
                     <Scale className="mx-auto h-10 w-10 text-emerald-600" />
                     <h1 className="mt-2 text-xl font-bold text-surface-900">{eq.brand} {eq.model}</h1>
                     <p className="text-sm text-surface-500">Código: {eq.code}</p>
@@ -84,7 +85,7 @@ export default function EquipmentQrPublicPage() {
                 </div>
 
                 {/* Equipment Details */}
-                <div className="rounded-2xl bg-surface-0 dark:bg-surface-800 p-6 shadow-lg">
+                <div className="rounded-2xl bg-surface-0 p-6 shadow-lg">
                     <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-surface-400">Equipamento</h2>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span className="text-surface-500">Nº Série</span><span className="font-medium">{eq.serial_number || '—'}</span></div>
@@ -106,12 +107,12 @@ export default function EquipmentQrPublicPage() {
                 {/* Calibration Status */}
                 {cal ? (
                     <div className={`rounded-2xl p-6 shadow-lg ${
-                        isExpired ? 'bg-red-50 border-2 border-red-200' :
+                        isRejected || isExpired ? 'bg-red-50 border-2 border-red-200' :
                         isNearExpiry ? 'bg-amber-50 border-2 border-amber-200' :
                         'bg-emerald-50 border-2 border-emerald-200'
                     }`}>
                         <div className="flex items-center gap-2">
-                            {isExpired ? (
+                            {isRejected || isExpired ? (
                                 <AlertTriangle className="h-5 w-5 text-red-600" />
                             ) : isNearExpiry ? (
                                 <AlertTriangle className="h-5 w-5 text-amber-600" />
@@ -122,12 +123,12 @@ export default function EquipmentQrPublicPage() {
                         </div>
 
                         <div className={`mt-3 text-center py-3 rounded-xl ${
-                            isExpired ? 'bg-red-100' : isNearExpiry ? 'bg-amber-100' : 'bg-emerald-100'
+                            isRejected || isExpired ? 'bg-red-100' : isNearExpiry ? 'bg-amber-100' : 'bg-emerald-100'
                         }`}>
                             <div className={`text-2xl font-bold ${
-                                isExpired ? 'text-red-700' : isNearExpiry ? 'text-amber-700' : 'text-emerald-700'
+                                isRejected || isExpired ? 'text-red-700' : isNearExpiry ? 'text-amber-700' : 'text-emerald-700'
                             }`}>
-                                {cal.result === 'aprovado' ? 'APROVADO' : 'REPROVADO'}
+                                {cal.result === 'aprovado' ? 'APROVADO' : cal.result === 'aprovado_com_ressalva' ? 'APROVADO COM RESSALVA' : 'REPROVADO'}
                             </div>
                             <div className="text-xs text-surface-500 mt-1">
                                 Certificado: {cal.certificate_number}
@@ -156,7 +157,7 @@ export default function EquipmentQrPublicPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="rounded-2xl bg-surface-100 dark:bg-surface-800 p-6 shadow-lg text-center">
+                    <div className="rounded-2xl bg-surface-100 p-6 shadow-lg text-center">
                         <AlertTriangle className="mx-auto h-8 w-8 text-surface-400" />
                         <p className="mt-2 text-sm text-surface-500">Sem calibração registrada</p>
                     </div>

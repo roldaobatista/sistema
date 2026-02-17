@@ -40,16 +40,23 @@ export function QuoteEditPage() {
     const [internalNotes, setInternalNotes] = useState('')
     const [source, setSource] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
-    const [discountAmount, setDiscountAmount] = useState(0)
     const [displacementValue, setDisplacementValue] = useState(0)
     const [addItemEquipmentId, setAddItemEquipmentId] = useState<number | null>(null)
     const [newItem, setNewItem] = useState<ItemForm>({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
+    const [showAddEquipment, setShowAddEquipment] = useState(false)
 
     const { data: quote, isLoading } = useQuery<Quote>({
         queryKey: ['quote', id],
         queryFn: () => api.get(`/quotes/${id}`).then(r => r.data),
         enabled: !!id,
     })
+
+    const { data: customerEquipmentsRes } = useQuery({
+        queryKey: ['customer-equipments', quote?.customer_id],
+        queryFn: () => api.get(`/customers/${quote!.customer_id}`).then(r => r.data),
+        enabled: !!quote?.customer_id,
+    })
+    const customerEquipments: { id: number; brand?: string; model?: string; tag?: string }[] = customerEquipmentsRes?.equipments ?? []
 
     const { data: products } = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products?per_page=999').then(r => r.data?.data ?? r.data) })
     const { data: services } = useQuery({ queryKey: ['services'], queryFn: () => api.get('/services?per_page=999').then(r => r.data?.data ?? r.data) })
@@ -61,7 +68,6 @@ export function QuoteEditPage() {
             setInternalNotes(quote.internal_notes ?? '')
             setSource(quote.source ?? '')
             setDiscountPercentage(parseFloat(String(quote.discount_percentage)) || 0)
-            setDiscountAmount(parseFloat(String(quote.discount_amount)) || 0)
             setDisplacementValue(parseFloat(String(quote.displacement_value)) || 0)
         }
     }, [quote])
@@ -94,11 +100,23 @@ export function QuoteEditPage() {
         mutationFn: ({ equipId, data }: { equipId: number; data: ItemForm }) => api.post(`/quote-equipments/${equipId}/items`, data),
         onSuccess: () => {
             toast.success('Item adicionado!')
-                setAddItemEquipmentId(null)
+            setAddItemEquipmentId(null)
             setNewItem({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
             invalidateAll()
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao adicionar item'),
+    })
+
+    const addEquipmentMut = useMutation({
+        mutationFn: (equipmentId: number) => api.post(`/quotes/${id}/equipments`, { equipment_id: equipmentId }),
+        onSuccess: () => { toast.success('Equipamento adicionado!'); setShowAddEquipment(false); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao adicionar equipamento'),
+    })
+
+    const removeEquipmentMut = useMutation({
+        mutationFn: ({ quoteEquipId }: { quoteEquipId: number }) => api.delete(`/quotes/${id}/equipments/${quoteEquipId}`),
+        onSuccess: () => { toast.success('Equipamento removido!'); invalidateAll() },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao remover equipamento'),
     })
 
     const handleSaveGeneral = () => {
@@ -108,12 +126,11 @@ export function QuoteEditPage() {
             observations: observations || null,
             internal_notes: internalNotes || null,
             discount_percentage: discountPercentage,
-            discount_amount: discountAmount,
             displacement_value: displacementValue,
         })
     }
 
-    const isMutable = quote ? (quote.status === QUOTE_STATUS.DRAFT || quote.status === QUOTE_STATUS.REJECTED) : true
+    const isMutable = quote ? (quote.status === QUOTE_STATUS.DRAFT || quote.status === QUOTE_STATUS.PENDING_INTERNAL || quote.status === QUOTE_STATUS.REJECTED) : true
 
     useEffect(() => {
         if (quote && !isMutable) {
@@ -199,6 +216,43 @@ export function QuoteEditPage() {
             </Card>
 
             {/* Equipamentos e Itens */}
+            <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-content-secondary">Equipamentos e Itens</h2>
+                <Button variant="outline" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setShowAddEquipment(!showAddEquipment)}>
+                    Adicionar Equipamento
+                </Button>
+            </div>
+
+            {showAddEquipment && (
+                <Card className="p-4 border-dashed border-brand-300 bg-brand-50/30">
+                    <h4 className="text-sm font-medium text-content-primary mb-3">Selecione um equipamento do cliente</h4>
+                    {customerEquipments.length === 0 ? (
+                        <p className="text-sm text-content-tertiary italic">Nenhum equipamento cadastrado para este cliente.</p>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            {customerEquipments
+                                .filter(ce => !quote.equipments?.some(qe => qe.equipment_id === ce.id))
+                                .map(ce => (
+                                    <button
+                                        key={ce.id}
+                                        type="button"
+                                        onClick={() => addEquipmentMut.mutate(ce.id)}
+                                        disabled={addEquipmentMut.isPending}
+                                        className="rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-medium text-surface-600 hover:border-brand-500 hover:bg-brand-50 hover:text-brand-700 transition-all"
+                                    >
+                                        <Plus className="inline h-3 w-3 mr-1" />
+                                        {ce.brand ? `${ce.brand} ${ce.model}` : ce.model ?? ce.tag ?? `Equip #${ce.id}`}
+                                    </button>
+                                ))
+                            }
+                            {customerEquipments.filter(ce => !quote.equipments?.some(qe => qe.equipment_id === ce.id)).length === 0 && (
+                                <p className="text-sm text-content-tertiary italic">Todos os equipamentos do cliente já foram adicionados.</p>
+                            )}
+                        </div>
+                    )}
+                </Card>
+            )}
+
             {quote.equipments?.map((eq) => (
                 <Card key={eq.id} className="p-5">
                     <div className="flex items-center justify-between mb-4">
@@ -206,9 +260,20 @@ export function QuoteEditPage() {
                             {eq.equipment?.tag || eq.equipment?.model || 'Equipamento'}
                             {eq.description && <span className="text-sm text-content-secondary ml-2">— {eq.description}</span>}
                         </h3>
-                        <Button variant="outline" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setAddItemEquipmentId(eq.id)}>
-                            Adicionar Item
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setAddItemEquipmentId(eq.id)}>
+                                Adicionar Item
+                            </Button>
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                icon={<Trash2 className="h-4 w-4" />}
+                                onClick={() => { if (confirm('Remover equipamento e todos os seus itens?')) removeEquipmentMut.mutate({ quoteEquipId: eq.id }) }}
+                                disabled={removeEquipmentMut.isPending}
+                            >
+                                Remover
+                            </Button>
+                        </div>
                     </div>
 
                     <div className="space-y-3">

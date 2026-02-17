@@ -47,9 +47,11 @@ class ProductController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $validated = $request->validate([
-            'category_id' => 'nullable|exists:product_categories,id',
-            'code' => 'nullable|string|max:50',
+            'category_id' => "nullable|exists:product_categories,id,tenant_id,{$tenantId}",
+            'code' => "nullable|string|max:50|unique:products,code,NULL,id,tenant_id,{$tenantId},deleted_at,NULL",
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'unit' => 'sometimes|string|max:10',
@@ -58,6 +60,11 @@ class ProductController extends Controller
             'stock_qty' => 'numeric|min:0',
             'stock_min' => 'numeric|min:0',
             'is_active' => 'boolean',
+            'track_stock' => 'boolean',
+            'is_kit' => 'boolean',
+            'track_batch' => 'boolean',
+            'track_serial' => 'boolean',
+            'min_repo_point' => 'nullable|numeric|min:0',
             'manufacturer_code' => 'nullable|string|max:100',
             'storage_location' => 'nullable|string|max:100',
         ]);
@@ -78,9 +85,11 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $validated = $request->validate([
-            'category_id' => 'nullable|exists:product_categories,id',
-            'code' => 'nullable|string|max:50',
+            'category_id' => "nullable|exists:product_categories,id,tenant_id,{$tenantId}",
+            'code' => "nullable|string|max:50|unique:products,code,{$product->id},id,tenant_id,{$tenantId},deleted_at,NULL",
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'unit' => 'sometimes|string|max:10',
@@ -89,6 +98,11 @@ class ProductController extends Controller
             'stock_qty' => 'numeric|min:0',
             'stock_min' => 'numeric|min:0',
             'is_active' => 'boolean',
+            'track_stock' => 'boolean',
+            'is_kit' => 'boolean',
+            'track_batch' => 'boolean',
+            'track_serial' => 'boolean',
+            'min_repo_point' => 'nullable|numeric|min:0',
             'manufacturer_code' => 'nullable|string|max:100',
             'storage_location' => 'nullable|string|max:100',
         ]);
@@ -106,7 +120,6 @@ class ProductController extends Controller
     {
         $quotesCount = \App\Models\QuoteItem::where('product_id', $product->id)->count();
         $ordersCount = \App\Models\WorkOrderItem::where('product_id', $product->id)->count();
-        // Assuming StockMovement model exists and has product_id
         $stocksCount = \App\Models\StockMovement::where('product_id', $product->id)->count();
 
         if ($quotesCount > 0 || $ordersCount > 0 || $stocksCount > 0) {

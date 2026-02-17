@@ -61,14 +61,14 @@ export default function TechPhotoAnnotationPage() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-full bg-surface-50">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 py-3 flex items-center gap-3 border-b border-surface-200 dark:border-surface-700 shrink-0">
+            <div className="bg-card px-4 py-3 flex items-center gap-3 border-b border-border shrink-0">
                 <button onClick={() => navigate(-1)} className="p-1">
-                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-300" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600" />
                 </button>
                 <div className="flex-1">
-                    <h1 className="text-sm font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-sm font-bold text-foreground">
                         Anotação de Foto
                     </h1>
                     <p className="text-xs text-surface-500">
@@ -92,7 +92,7 @@ export default function TechPhotoAnnotationPage() {
                     <div className="flex flex-col items-center justify-center h-full space-y-4">
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-32 h-32 rounded-2xl bg-surface-200 dark:bg-surface-800 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                            className="w-32 h-32 rounded-2xl bg-surface-200 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform"
                         >
                             <Pencil className="w-8 h-8 text-surface-400 mb-2" />
                             <p className="text-xs text-surface-500">Selecionar foto</p>
@@ -125,7 +125,7 @@ export default function TechPhotoAnnotationPage() {
 
             {/* Toolbar */}
             {imageLoaded && (
-                <div className="bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 px-3 py-2 shrink-0">
+                <div className="bg-card border-t border-border px-3 py-2 shrink-0">
                     <div className="flex items-center justify-between">
                         {/* Tool selector */}
                         <div className="flex gap-1">
@@ -137,8 +137,8 @@ export default function TechPhotoAnnotationPage() {
                                     className={cn(
                                         'p-2.5 rounded-lg transition-colors',
                                         ann.currentTool === tool.id
-                                            ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400'
-                                            : 'text-surface-500 dark:text-surface-400'
+                                            ? 'bg-brand-100 text-brand-600'
+                                            : 'text-surface-500'
                                     )}
                                 >
                                     <tool.icon className="w-5 h-5" />
@@ -154,13 +154,13 @@ export default function TechPhotoAnnotationPage() {
                                     className="p-2.5 rounded-lg text-surface-500"
                                 >
                                     <div
-                                        className="w-5 h-5 rounded-full border-2 border-surface-300 dark:border-surface-500"
+                                        className="w-5 h-5 rounded-full border-2 border-surface-300"
                                         style={{ backgroundColor: ann.currentColor }}
                                     />
                                 </button>
 
                                 {showColorPicker && (
-                                    <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-surface-800 rounded-xl shadow-lg p-2 flex gap-1.5">
+                                    <div className="absolute bottom-full right-0 mb-2 bg-card rounded-xl shadow-lg p-2 flex gap-1.5">
                                         {COLORS.map(c => (
                                             <button
                                                 key={c}
@@ -169,7 +169,7 @@ export default function TechPhotoAnnotationPage() {
                                                     'w-7 h-7 rounded-full border-2 transition-transform',
                                                     ann.currentColor === c
                                                         ? 'border-brand-500 scale-110'
-                                                        : 'border-surface-300 dark:border-surface-500'
+                                                        : 'border-surface-300'
                                                 )}
                                                 style={{ backgroundColor: c }}
                                             />

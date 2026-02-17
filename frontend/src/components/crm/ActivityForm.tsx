@@ -95,7 +95,7 @@ export function ActivityForm({ open, onClose, customerId, dealId }: Props) {
                                 onClick={() => set('type', t.value)}
                                 className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${form.type === t.value
                                     ? 'border-brand-300 bg-brand-50 text-brand-700'
-                                    : 'border-subtle bg-surface-0 dark:bg-surface-800 text-surface-600 hover:bg-surface-50 dark:hover:bg-surface-700'
+                                    : 'border-subtle bg-surface-0 text-surface-600 hover:bg-surface-50 dark:hover:bg-surface-700'
                                     }`}
                             >
                                 {t.label}

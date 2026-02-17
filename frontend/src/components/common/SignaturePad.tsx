@@ -90,7 +90,7 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({ onSave, onClear, pla
 
     return (
         <div className="flex flex-col gap-2">
-            <div className="relative border-2 border-dashed border-surface-300 rounded-lg bg-surface-0 dark:bg-surface-800 overflow-hidden" style={{ height: '200px' }}>
+            <div className="relative border-2 border-dashed border-surface-300 rounded-lg bg-surface-0 overflow-hidden" style={{ height: '200px' }}>
                 {isEmpty && (
                     <div className="absolute inset-0 flex items-center justify-center text-surface-400 pointer-events-none text-sm italic">
                         {placeholder}

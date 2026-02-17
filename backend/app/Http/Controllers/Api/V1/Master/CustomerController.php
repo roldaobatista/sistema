@@ -83,7 +83,7 @@ class CustomerController extends Controller
                 }
             }
 
-            \App\Events\CustomerCreated::dispatch($customer);
+            CustomerCreated::dispatch($customer);
 
             DB::commit();
 
@@ -98,7 +98,7 @@ class CustomerController extends Controller
     public function show(Customer $customer): JsonResponse
     {
         return response()->json(
-            $customer->load(['contacts', 'assignedSeller:id,name'])
+            $customer->load(['contacts', 'assignedSeller:id,name', 'equipments'])
         );
     }
 
@@ -118,8 +118,10 @@ class CustomerController extends Controller
 
                 foreach ($providedContacts as $contactData) {
                     if (!empty($contactData['id'])) {
-                        $customer->contacts()->where('id', $contactData['id'])->update($contactData);
-                        $existingContactIds[] = $contactData['id'];
+                        $contactId = $contactData['id'];
+                        $updateData = collect($contactData)->except('id')->toArray();
+                        $customer->contacts()->where('id', $contactId)->update($updateData);
+                        $existingContactIds[] = $contactId;
                     } else {
                         $newContact = $customer->contacts()->create($contactData);
                         $existingContactIds[] = $newContact->id;

@@ -28,11 +28,11 @@ interface ServiceCall {
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
     open: { label: 'Aberto', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    scheduled: { label: 'Agendado', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    scheduled: { label: 'Agendado', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' },
     in_transit: { label: 'Em Trânsito', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
     in_progress: { label: 'Em Atendimento', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-    completed: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    completed: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' },
+    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30' },
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -140,15 +140,15 @@ export default function TechServiceCallsPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Chamados Técnicos
                     </h1>
                 </div>
@@ -164,7 +164,7 @@ export default function TechServiceCallsPage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Buscar chamados..."
-                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                     />
                 </div>
 
@@ -178,7 +178,7 @@ export default function TechServiceCallsPage() {
                                 'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
                                 statusFilter === f.key
                                     ? 'bg-brand-600 text-white'
-                                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                    : 'bg-surface-100 text-surface-600'
                             )}
                         >
                             {f.label}
@@ -210,7 +210,7 @@ export default function TechServiceCallsPage() {
                                 <div
                                     key={call.id}
                                     className={cn(
-                                        'bg-white dark:bg-surface-800/80 rounded-xl p-4 border-l-4 shadow-sm',
+                                        'bg-card rounded-xl p-4 border-l-4 shadow-sm',
                                         PRIORITY_COLORS[priorityKey] || PRIORITY_COLORS.normal
                                     )}
                                 >
@@ -221,7 +221,7 @@ export default function TechServiceCallsPage() {
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                    <span className="font-semibold text-sm text-surface-900 dark:text-surface-50">
+                                                    <span className="font-semibold text-sm text-foreground">
                                                         {call.call_number}
                                                     </span>
                                                     <span
@@ -232,11 +232,11 @@ export default function TechServiceCallsPage() {
                                                     >
                                                         {status.label}
                                                     </span>
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface-100 text-surface-600">
                                                         {PRIORITY_LABELS[priorityKey]}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-surface-500 dark:text-surface-400 truncate">
+                                                <p className="text-xs text-surface-500 truncate">
                                                     {call.customer?.name || 'Cliente não informado'}
                                                 </p>
                                                 {call.observations && (
@@ -244,7 +244,7 @@ export default function TechServiceCallsPage() {
                                                         {call.observations}
                                                     </p>
                                                 )}
-                                                <div className="flex items-center gap-3 mt-2 text-[11px] text-surface-400 dark:text-surface-500">
+                                                <div className="flex items-center gap-3 mt-2 text-[11px] text-surface-400">
                                                     <span className="flex items-center gap-1">
                                                         <Clock className="w-3 h-3" />
                                                         {new Date(call.created_at).toLocaleDateString('pt-BR')}
@@ -265,7 +265,7 @@ export default function TechServiceCallsPage() {
                                             </div>
                                             <ChevronRight
                                                 className={cn(
-                                                    'w-5 h-5 text-surface-300 dark:text-surface-600 mt-1 flex-shrink-0 transition-transform',
+                                                    'w-5 h-5 text-surface-300 mt-1 flex-shrink-0 transition-transform',
                                                     isExpanded && 'rotate-90'
                                                 )}
                                             />
@@ -274,13 +274,13 @@ export default function TechServiceCallsPage() {
 
                                     {/* Expanded details */}
                                     {isExpanded && (
-                                        <div className="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700 space-y-3">
+                                        <div className="mt-4 pt-4 border-t border-border space-y-3">
                                             {call.observations && (
                                                 <div>
-                                                    <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-1">
+                                                    <p className="text-xs font-medium text-surface-600 mb-1">
                                                         Observações
                                                     </p>
-                                                    <p className="text-sm text-surface-900 dark:text-surface-50">
+                                                    <p className="text-sm text-foreground">
                                                         {call.observations}
                                                     </p>
                                                 </div>
@@ -290,7 +290,7 @@ export default function TechServiceCallsPage() {
                                                     <Phone className="w-4 h-4 text-surface-400" />
                                                     <a
                                                         href={`tel:${call.customer.phone}`}
-                                                        className="text-sm text-brand-600 dark:text-brand-400"
+                                                        className="text-sm text-brand-600"
                                                     >
                                                         {call.customer.phone}
                                                     </a>
@@ -299,7 +299,7 @@ export default function TechServiceCallsPage() {
                                             {(call.address || call.city) && (
                                                 <div className="flex items-start gap-2">
                                                     <MapPin className="w-4 h-4 text-surface-400 mt-0.5" />
-                                                    <p className="text-sm text-surface-900 dark:text-surface-50 flex-1">
+                                                    <p className="text-sm text-foreground flex-1">
                                                         {[call.address, call.city, call.state].filter(Boolean).join(', ')}
                                                     </p>
                                                 </div>

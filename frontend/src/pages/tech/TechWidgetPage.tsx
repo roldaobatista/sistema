@@ -73,7 +73,7 @@ export default function TechWidgetPage() {
     const osIdentifier = (wo: WidgetOS) => wo.business_number ?? wo.os_number ?? wo.number ?? `#${wo.id}`
 
     return (
-        <div className="flex flex-col h-full overflow-y-auto bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-full overflow-y-auto bg-surface-50">
             {/* Header Compact */}
             <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-4 py-4">
                 <p className="text-xs text-brand-200">Kalibrium · Acesso Rápido</p>
@@ -109,7 +109,7 @@ export default function TechWidgetPage() {
                             <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
                         </div>
                     ) : workOrders.length === 0 ? (
-                        <div className="bg-white dark:bg-surface-800/80 rounded-xl p-5 text-center">
+                        <div className="bg-card rounded-xl p-5 text-center">
                             <Clipboard className="w-8 h-8 text-surface-300 mx-auto mb-2" />
                             <p className="text-sm text-surface-500">Nenhuma OS pendente</p>
                         </div>
@@ -119,14 +119,14 @@ export default function TechWidgetPage() {
                                 <button
                                     key={wo.id}
                                     onClick={() => navigate(`/tech/os/${wo.id}`)}
-                                    className="w-full bg-white dark:bg-surface-800/80 rounded-xl p-3.5 flex items-center gap-3 active:bg-surface-50 dark:active:bg-surface-700 transition-colors"
+                                    className="w-full bg-card rounded-xl p-3.5 flex items-center gap-3 active:bg-surface-50 dark:active:bg-surface-700 transition-colors"
                                 >
                                     <div className={cn(
                                         'w-2 h-8 rounded-full shrink-0',
                                         statusLabels[wo.status]?.color ?? 'bg-surface-300',
                                     )} />
                                     <div className="flex-1 text-left min-w-0">
-                                        <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 truncate">
+                                        <p className="text-sm font-semibold text-foreground truncate">
                                             {osIdentifier(wo)}
                                         </p>
                                         <p className="text-xs text-surface-500 truncate">
@@ -146,7 +146,7 @@ export default function TechWidgetPage() {
 
                     <button
                         onClick={() => navigate('/tech')}
-                        className="w-full mt-2 py-2 text-xs text-brand-600 dark:text-brand-400 font-medium text-center"
+                        className="w-full mt-2 py-2 text-xs text-brand-600 font-medium text-center"
                     >
                         Ver todas as OS →
                     </button>
@@ -162,12 +162,12 @@ export default function TechWidgetPage() {
                             <button
                                 key={s.path}
                                 onClick={() => navigate(s.path)}
-                                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white dark:bg-surface-800/80 active:scale-95 transition-transform"
+                                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card active:scale-95 transition-transform"
                             >
                                 <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', s.color)}>
                                     <s.icon className="w-5 h-5" />
                                 </div>
-                                <span className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
+                                <span className="text-[10px] font-medium text-surface-600">
                                     {s.label}
                                 </span>
                             </button>

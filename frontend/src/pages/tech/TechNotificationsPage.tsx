@@ -24,7 +24,7 @@ const TYPE_CONFIG: Record<string, { icon: typeof Bell; color: string }> = {
     message: { icon: MessageSquare, color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
     financial: { icon: DollarSign, color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' },
     schedule: { icon: Calendar, color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
-    info: { icon: Info, color: 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400' },
+    info: { icon: Info, color: 'bg-surface-100 text-surface-600' },
 }
 
 export default function TechNotificationsPage() {
@@ -99,16 +99,16 @@ export default function TechNotificationsPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
                 <div className="flex items-center justify-between">
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Notificações</h1>
+                    <h1 className="text-lg font-bold text-foreground">Notificações</h1>
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllAsRead}
-                            className="flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400"
+                            className="flex items-center gap-1 text-xs font-medium text-brand-600"
                         >
                             <CheckCheck className="w-3.5 h-3.5" /> Ler todas
                         </button>
@@ -123,7 +123,7 @@ export default function TechNotificationsPage() {
                         onClick={() => setFilter('all')}
                         className={cn(
                             'px-3 py-1.5 rounded-full text-xs font-medium',
-                            filter === 'all' ? 'bg-brand-600 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                            filter === 'all' ? 'bg-brand-600 text-white' : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Todas
@@ -132,7 +132,7 @@ export default function TechNotificationsPage() {
                         onClick={() => setFilter('unread')}
                         className={cn(
                             'px-3 py-1.5 rounded-full text-xs font-medium',
-                            filter === 'unread' ? 'bg-brand-600 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                            filter === 'unread' ? 'bg-brand-600 text-white' : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Não lidas {unreadCount > 0 && `(${unreadCount})`}
@@ -165,7 +165,7 @@ export default function TechNotificationsPage() {
                                         'w-full text-left flex items-start gap-3 p-3 rounded-xl transition-colors',
                                         !n.read_at
                                             ? 'bg-brand-50/50 dark:bg-brand-900/10'
-                                            : 'bg-white dark:bg-surface-800/60',
+                                            : 'bg-card',
                                     )}
                                 >
                                     <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5', typeConf.color)}>
@@ -173,7 +173,7 @@ export default function TechNotificationsPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
-                                            <p className={cn('text-sm text-surface-900 dark:text-surface-50', !n.read_at && 'font-semibold')}>
+                                            <p className={cn('text-sm text-foreground', !n.read_at && 'font-semibold')}>
                                                 {n.title}
                                             </p>
                                             <span className="text-[10px] text-surface-400 whitespace-nowrap flex-shrink-0">

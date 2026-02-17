@@ -72,6 +72,15 @@ class CustomerMergeController extends Controller
                 // Accounts Receivable
                 $duplicate->accountsReceivable()->update(['customer_id' => $primaryId]);
 
+                // Documents
+                $duplicate->documents()->update(['customer_id' => $primaryId]);
+
+                // Complaints
+                $duplicate->complaints()->update(['customer_id' => $primaryId]);
+
+                // RFM Scores
+                $duplicate->rfmScores()->update(['customer_id' => $primaryId]);
+
                 // Client Portal Users (if any)
                 // We need to check if schema exists or try catch, as it was just added in 6.1
                 try {

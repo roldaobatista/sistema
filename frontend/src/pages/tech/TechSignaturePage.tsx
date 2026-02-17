@@ -130,13 +130,13 @@ export default function TechSignaturePage() {
     }, [woId, hasStrokes, signerName, putSignature])
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-surface-950">
+        <div className="flex flex-col h-full bg-background">
             {/* Header */}
-            <div className="px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Assinatura do Cliente</h1>
+                <h1 className="text-lg font-bold text-foreground">Assinatura do Cliente</h1>
             </div>
 
             {/* Signer name */}
@@ -147,13 +147,13 @@ export default function TechSignaturePage() {
                     value={signerName}
                     onChange={(e) => setSignerName(e.target.value)}
                     placeholder="Nome completo"
-                    className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                 />
             </div>
 
             {/* Canvas */}
             <div className="flex-1 px-4 pb-4">
-                <div className="relative h-full rounded-xl border-2 border-dashed border-surface-300 dark:border-surface-600 overflow-hidden">
+                <div className="relative h-full rounded-xl border-2 border-dashed border-surface-300 overflow-hidden">
                     <canvas
                         ref={canvasRef}
                         className="w-full h-full touch-none cursor-crosshair"
@@ -177,7 +177,7 @@ export default function TechSignaturePage() {
                         <button
                             onClick={clearCanvas}
                             aria-label="Limpar assinatura"
-                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-surface-500 shadow-sm"
+                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface-100 flex items-center justify-center text-surface-500 shadow-sm"
                         >
                             <RotateCcw className="w-4 h-4" />
                         </button>
@@ -186,7 +186,7 @@ export default function TechSignaturePage() {
             </div>
 
             {/* Save */}
-            <div className="p-4 border-t border-surface-200 dark:border-surface-700 safe-area-bottom">
+            <div className="p-4 border-t border-border safe-area-bottom">
                 <button
                     onClick={handleSave}
                     disabled={saving || !hasStrokes}
@@ -196,7 +196,7 @@ export default function TechSignaturePage() {
                             ? 'bg-emerald-600'
                             : hasStrokes
                                 ? 'bg-brand-600 active:bg-brand-700'
-                                : 'bg-surface-300 dark:bg-surface-700',
+                                : 'bg-surface-300',
                         saving && 'opacity-70',
                     )}
                 >

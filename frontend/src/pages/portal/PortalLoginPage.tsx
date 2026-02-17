@@ -43,7 +43,7 @@ export function PortalLoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-surface-50 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-surface-0 dark:bg-surface-800 p-8 rounded-xl shadow-card border border-surface-200">
+            <div className="max-w-md w-full space-y-8 bg-surface-0 p-8 rounded-xl shadow-card border border-surface-200">
                 <div className="text-center">
                     <div className="mx-auto h-12 w-12 bg-brand-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
                         PC

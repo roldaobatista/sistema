@@ -81,15 +81,15 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-surface-50 dark:bg-surface-950 animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-surface-50 animate-in slide-in-from-bottom duration-300">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 shadow-sm">
+            <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shadow-sm">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
                         <User className="w-5 h-5 text-brand-600" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-surface-900 dark:text-surface-50">Chat Interno</h3>
+                        <h3 className="font-bold text-surface-900">Chat Interno</h3>
                         <p className="text-[10px] text-surface-500 uppercase tracking-wider font-semibold">Comunicação OS #{workOrderId}</p>
                     </div>
                 </div>
@@ -113,7 +113,7 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
                     </div>
                 ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-                        <div className="w-16 h-16 rounded-3xl bg-surface-100 dark:bg-surface-900 flex items-center justify-center text-surface-300">
+                        <div className="w-16 h-16 rounded-3xl bg-surface-100 flex items-center justify-center text-surface-300">
                             <Send className="w-8 h-8" />
                         </div>
                         <p className="text-sm font-medium text-surface-500">Nenhuma mensagem ainda. Use o chat para falar com o escritório.</p>
@@ -147,7 +147,7 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
                                     "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
                                     isOwn
                                         ? "bg-brand-600 text-white rounded-tr-none"
-                                        : "bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-50 rounded-tl-none border border-surface-200 dark:border-surface-800"
+                                        : "bg-card text-foreground rounded-tl-none border border-border"
                                 )}>
                                     <p className="leading-relaxed">{msg.message}</p>
                                 </div>
@@ -164,14 +164,14 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-800 pb-safe">
+            <div className="p-4 bg-card border-t border-border pb-safe">
                 <form
                     onSubmit={handleSendMessage}
                     className="flex items-center gap-2"
                 >
                     <button
                         type="button"
-                        className="p-3 rounded-xl bg-surface-50 dark:bg-surface-800 text-surface-500 active:scale-95 transition-all"
+                        className="p-3 rounded-xl bg-surface-50 text-surface-500 active:scale-95 transition-all"
                     >
                         <Paperclip className="w-5 h-5" />
                     </button>
@@ -181,7 +181,7 @@ export default function TechChatDrawer({ workOrderId, isOpen, onClose }: TechCha
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder="Escreva sua mensagem..."
-                            className="w-full bg-surface-50 dark:bg-surface-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 transition-all dark:text-white"
+                            className="w-full bg-surface-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 transition-all dark:text-white"
                         />
                     </div>
                     <button

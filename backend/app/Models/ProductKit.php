@@ -13,6 +13,13 @@ class ProductKit extends Model
         'quantity',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'decimal:4',
+        ];
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'parent_id');

@@ -10,6 +10,8 @@ interface TvState {
     showAlertPanel: boolean;
     isKiosk: boolean;
     cameraPage: number;
+    headerVisible: boolean;
+    fullscreenAccepted: boolean;
 
     setLayout: (layout: TvLayout) => void;
     setAutoRotate: (enabled: boolean) => void;
@@ -19,6 +21,8 @@ interface TvState {
     setKiosk: (enabled: boolean) => void;
     setCameraPage: (page: number) => void;
     nextCameraPage: (totalCameras: number) => void;
+    setHeaderVisible: (visible: boolean) => void;
+    setFullscreenAccepted: (accepted: boolean) => void;
 }
 
 const camerasPerLayout: Record<TvLayout, number> = {
@@ -26,6 +30,9 @@ const camerasPerLayout: Record<TvLayout, number> = {
     '2x2': 4,
     '1+list': 1,
     'map-full': 0,
+    'cameras-only': 9,
+    'focus': 1,
+    '4x4': 16,
 };
 
 export const useTvStore = create<TvState>()(
@@ -38,6 +45,8 @@ export const useTvStore = create<TvState>()(
             showAlertPanel: false,
             isKiosk: false,
             cameraPage: 0,
+            headerVisible: true,
+            fullscreenAccepted: false,
 
             setLayout: (layout) => set({ layout, cameraPage: 0 }),
             setAutoRotate: (enabled) => set({ autoRotateCameras: enabled }),
@@ -56,6 +65,8 @@ export const useTvStore = create<TvState>()(
                 const next = get().cameraPage >= maxPage ? 0 : get().cameraPage + 1;
                 set({ cameraPage: next });
             },
+            setHeaderVisible: (visible) => set({ headerVisible: visible }),
+            setFullscreenAccepted: (accepted) => set({ fullscreenAccepted: accepted }),
         }),
         {
             name: 'tv-settings',
@@ -65,6 +76,7 @@ export const useTvStore = create<TvState>()(
                 rotationInterval: state.rotationInterval,
                 soundAlerts: state.soundAlerts,
                 showAlertPanel: state.showAlertPanel,
+                fullscreenAccepted: state.fullscreenAccepted,
             }),
         }
     )

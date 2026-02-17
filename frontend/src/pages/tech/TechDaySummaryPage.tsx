@@ -15,10 +15,10 @@ const formatHours = (minutes: number) =>
     `${Math.floor(minutes / 60)}h ${minutes % 60}min`
 
 const STATUS_BADGES: Record<string, string> = {
-    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30',
     in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30',
+    cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -203,29 +203,29 @@ export default function TechDaySummaryPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <button
                     onClick={() => navigate('/tech')}
-                    className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2"
+                    className="flex items-center gap-1 text-sm text-brand-600 mb-2"
                 >
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                <h1 className="text-lg font-bold text-foreground">
                     Resumo Diário
                 </h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                <div className="flex items-center justify-between bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                <div className="flex items-center justify-between bg-card rounded-xl p-3">
                     <button
                         onClick={() => navigateDate(-1)}
                         className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700"
                     >
-                        <ChevronLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ChevronLeft className="w-5 h-5 text-surface-600" />
                     </button>
                     <div className="flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-brand-600" />
-                        <span className="text-sm font-medium text-surface-900 dark:text-surface-50 capitalize">
+                        <span className="text-sm font-medium text-foreground capitalize">
                             {formattedDate}
                         </span>
                     </div>
@@ -233,7 +233,7 @@ export default function TechDaySummaryPage() {
                         onClick={() => navigateDate(1)}
                         className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700"
                     >
-                        <ChevronRight className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ChevronRight className="w-5 h-5 text-surface-600" />
                     </button>
                 </div>
 
@@ -244,46 +244,46 @@ export default function TechDaySummaryPage() {
                 ) : (
                     <>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-2 mb-1">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="text-xs text-surface-500 dark:text-surface-400">OS Atendidas</span>
+                                    <span className="text-xs text-surface-500">OS Atendidas</span>
                                 </div>
-                                <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                                <p className="text-lg font-bold text-foreground">
                                     {summary.workOrdersCount}
                                 </p>
                             </div>
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-2 mb-1">
                                     <Clock className="w-4 h-4 text-blue-500" />
-                                    <span className="text-xs text-surface-500 dark:text-surface-400">Horas Trabalhadas</span>
+                                    <span className="text-xs text-surface-500">Horas Trabalhadas</span>
                                 </div>
-                                <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                                <p className="text-lg font-bold text-foreground">
                                     {formatHours(summary.hoursWorked)}
                                 </p>
                             </div>
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-2 mb-1">
                                     <Car className="w-4 h-4 text-amber-500" />
-                                    <span className="text-xs text-surface-500 dark:text-surface-400">Km Percorridos</span>
+                                    <span className="text-xs text-surface-500">Km Percorridos</span>
                                 </div>
-                                <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                                <p className="text-lg font-bold text-foreground">
                                     {kmTotal ?? 0} km
                                 </p>
                             </div>
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-2 mb-1">
                                     <Receipt className="w-4 h-4 text-purple-500" />
-                                    <span className="text-xs text-surface-500 dark:text-surface-400">Total Despesas</span>
+                                    <span className="text-xs text-surface-500">Total Despesas</span>
                                 </div>
-                                <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                                <p className="text-lg font-bold text-foreground">
                                     {formatCurrency(summary.expensesTotal)}
                                 </p>
                             </div>
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-3 flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                                 <Briefcase className="w-4 h-4" /> OS do Dia
                             </h3>
                             {workOrders.length === 0 ? (
@@ -293,11 +293,11 @@ export default function TechDaySummaryPage() {
                                     {workOrders.map((wo) => (
                                         <div
                                             key={wo.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-3"
+                                            className="bg-card rounded-xl p-3"
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                    <p className="text-sm font-medium text-foreground">
                                                         {(wo.os_number || wo.number) ?? `#${wo.id}`}
                                                     </p>
                                                     <p className="text-xs text-surface-500">
@@ -337,7 +337,7 @@ export default function TechDaySummaryPage() {
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-3 flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                                 <Receipt className="w-4 h-4" /> Despesas do Dia
                             </h3>
                             {expenses.length === 0 ? (
@@ -347,10 +347,10 @@ export default function TechDaySummaryPage() {
                                     {expenses.map((ex) => (
                                         <div
                                             key={ex.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-3 flex justify-between items-center"
+                                            className="bg-card rounded-xl p-3 flex justify-between items-center"
                                         >
                                             <div>
-                                                <p className="text-sm text-surface-900 dark:text-surface-50">
+                                                <p className="text-sm text-foreground">
                                                     {ex.category?.name ?? 'Despesa'}
                                                 </p>
                                                 {ex.description && (
@@ -359,7 +359,7 @@ export default function TechDaySummaryPage() {
                                                     </p>
                                                 )}
                                             </div>
-                                            <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                            <p className="text-sm font-medium text-foreground">
                                                 {formatCurrency(Number(ex.amount || 0))}
                                             </p>
                                         </div>
@@ -369,7 +369,7 @@ export default function TechDaySummaryPage() {
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-3 flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                                 <Clock className="w-4 h-4" /> Apontamentos
                             </h3>
                             {timeEntries.length === 0 ? (
@@ -379,10 +379,10 @@ export default function TechDaySummaryPage() {
                                     {timeEntries.map((te) => (
                                         <div
                                             key={te.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-3"
+                                            className="bg-card rounded-xl p-3"
                                         >
                                             <div className="flex justify-between items-center">
-                                                <span className="text-sm text-surface-900 dark:text-surface-50">
+                                                <span className="text-sm text-foreground">
                                                     OS {(te.work_order?.os_number || te.work_order?.number) ?? '—'}
                                                 </span>
                                                 <span className="text-sm font-medium">

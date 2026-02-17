@@ -5,6 +5,10 @@ import { toast } from 'sonner'
 import './index.css'
 import App from './App'
 
+// go2rtc URL for camera streaming (injected at build time or fallback to /go2rtc)
+;(window as Window & { __GO2RTC_URL?: string }).__GO2RTC_URL =
+  import.meta.env.VITE_GO2RTC_URL || (window.location.origin + '/go2rtc')
+
 // Escuta eventos de 403 (permissão negada) disparados pelo interceptor da API
 window.addEventListener('api:forbidden', ((e: CustomEvent<{ message: string }>) => {
   toast.error(e.detail.message || 'Você não tem permissão para realizar esta ação.')

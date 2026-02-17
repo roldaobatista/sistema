@@ -237,11 +237,11 @@ export default function TechCalibrationReadingsPage() {
     }
 
     const inputClass =
-        'w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none'
+        'w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none'
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         type="button"
@@ -249,9 +249,9 @@ export default function TechCalibrationReadingsPage() {
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         aria-label="Voltar"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Leituras de Calibração
                     </h1>
                 </div>
@@ -264,13 +264,13 @@ export default function TechCalibrationReadingsPage() {
                         <p className="text-sm text-surface-500">Carregando equipamentos...</p>
                     </div>
                 ) : error ? (
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                     </div>
                 ) : (
                     <>
                         <div>
-                            <h2 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2 flex items-center gap-2">
+                            <h2 className="text-sm font-medium text-surface-700 mb-2 flex items-center gap-2">
                                 <Gauge className="w-4 h-4" />
                                 Selecione o equipamento
                             </h2>
@@ -280,7 +280,7 @@ export default function TechCalibrationReadingsPage() {
                                         key={eq.id}
                                         onClick={() => handleSelectEquipment(eq)}
                                         className={cn(
-                                            'bg-white dark:bg-surface-800/80 rounded-xl p-4 text-left transition-colors',
+                                            'bg-card rounded-xl p-4 text-left transition-colors',
                                             selectedEquipment?.id === eq.id
                                                 ? 'ring-2 ring-brand-500'
                                                 : 'hover:bg-surface-50 dark:hover:bg-surface-700/80'
@@ -289,7 +289,7 @@ export default function TechCalibrationReadingsPage() {
                                         <div className="flex items-center gap-2">
                                             <Scale className="w-5 h-5 text-brand-500" />
                                             <div>
-                                                <p className="font-medium text-surface-900 dark:text-surface-50">
+                                                <p className="font-medium text-foreground">
                                                     {eq.code || eq.name || `Equipamento #${eq.id}`}
                                                 </p>
                                                 {(eq.serial_number || eq.model) && (
@@ -306,15 +306,15 @@ export default function TechCalibrationReadingsPage() {
 
                         {selectedEquipment && calibrationId && (
                             <>
-                                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                                <div className="bg-card rounded-xl p-4">
                                     <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                                        <h3 className="text-sm font-medium text-surface-700 flex items-center gap-2">
                                             <FlaskConical className="w-4 h-4" />
                                             Pontos de leitura
                                         </h3>
                                         <button
                                             onClick={addReading}
-                                            className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400"
+                                            className="flex items-center gap-1 text-sm text-brand-600"
                                         >
                                             <Plus className="w-4 h-4" /> Adicionar Leitura
                                         </button>
@@ -325,7 +325,7 @@ export default function TechCalibrationReadingsPage() {
                                             return (
                                                 <div
                                                     key={i}
-                                                    className="flex flex-wrap items-end gap-2 p-3 rounded-lg bg-surface-50 dark:bg-surface-700/50"
+                                                    className="flex flex-wrap items-end gap-2 p-3 rounded-lg bg-surface-50"
                                                 >
                                                     <div className="flex-1 min-w-[80px]">
                                                         <label className="text-xs text-surface-500 block mb-1">
@@ -373,7 +373,7 @@ export default function TechCalibrationReadingsPage() {
                                                         <label className="text-xs text-surface-500 block mb-1">
                                                             Erro
                                                         </label>
-                                                        <p className="text-sm font-mono text-surface-700 dark:text-surface-300 py-2">
+                                                        <p className="text-sm font-mono text-surface-700 py-2">
                                                             {err !== null ? err.toFixed(4) : '—'}
                                                         </p>
                                                     </div>
@@ -407,12 +407,12 @@ export default function TechCalibrationReadingsPage() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                                <div className="bg-card rounded-xl p-4">
                                     <button
                                         onClick={() => setExcentricityExpanded((x) => !x)}
                                         className="w-full flex items-center justify-between text-left"
                                     >
-                                        <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                                        <span className="text-sm font-medium text-surface-700">
                                             Ensaio de Excentricidade
                                         </span>
                                         {excentricityExpanded ? (
@@ -482,7 +482,7 @@ export default function TechCalibrationReadingsPage() {
                                 </div>
 
                                 <div className="flex gap-2 items-center">
-                                    <label className="text-sm text-surface-600 dark:text-surface-400" htmlFor="tolerance-input">
+                                    <label className="text-sm text-surface-600" htmlFor="tolerance-input">
                                         Tolerância:
                                     </label>
                                     <input
@@ -500,8 +500,8 @@ export default function TechCalibrationReadingsPage() {
                                     className={cn(
                                         'rounded-xl p-4 flex items-center gap-3',
                                         passed
-                                            ? 'bg-emerald-50 dark:bg-emerald-900/20'
-                                            : 'bg-red-50 dark:bg-red-900/20'
+                                            ? 'bg-emerald-50'
+                                            : 'bg-red-50'
                                     )}
                                 >
                                     {passed ? (

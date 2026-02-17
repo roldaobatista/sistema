@@ -307,7 +307,8 @@ export function QuotesListPage() {
                                     const isApproved = q.status === QUOTE_STATUS.APPROVED
                                     const isRejected = q.status === QUOTE_STATUS.REJECTED
                                     const isExpired = q.status === QUOTE_STATUS.EXPIRED
-                                    const isMutable = isDraft || isRejected
+                                    const isPendingInternal = q.status === QUOTE_STATUS.PENDING_INTERNAL
+                                    const isMutable = isDraft || isPendingInternal || isRejected
 
                                     return (
                                         <tr key={q.id} className="hover:bg-surface-50 transition-colors duration-100 cursor-pointer" onClick={() => navigate(`/orcamentos/${q.id}`)}>

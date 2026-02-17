@@ -202,7 +202,7 @@ export function QuoteDetailPage() {
     const isApproved = quote.status === QUOTE_STATUS.APPROVED
     const isRejected = quote.status === QUOTE_STATUS.REJECTED
     const isExpired = quote.status === QUOTE_STATUS.EXPIRED
-    const isMutable = isDraft || isRejected
+    const isMutable = isDraft || isPendingInternal || isRejected
 
     return (
         <div className="space-y-6">

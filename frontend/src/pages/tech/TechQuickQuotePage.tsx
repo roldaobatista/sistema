@@ -240,7 +240,7 @@ export default function TechQuickQuotePage() {
                 <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col items-center justify-center gap-4">
                     <CheckCircle2 className="w-16 h-16 text-emerald-500" />
                     <div className="text-center">
-                        <h2 className="text-xl font-bold text-surface-900 dark:text-surface-50">Orçamento salvo!</h2>
+                        <h2 className="text-xl font-bold text-foreground">Orçamento salvo!</h2>
                         <p className="text-sm text-surface-500 mt-1">Nº {savedQuoteNumber}</p>
                     </div>
                     <div className="flex gap-2">
@@ -253,7 +253,7 @@ export default function TechQuickQuotePage() {
                         </button>
                         <button
                             onClick={() => { setSavedQuoteId(null); setSavedQuoteNumber(null) }}
-                            className="px-4 py-2.5 rounded-xl bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300 font-medium"
+                            className="px-4 py-2.5 rounded-xl bg-surface-200 text-surface-700 font-medium"
                         >
                             Novo orçamento
                         </button>
@@ -265,21 +265,21 @@ export default function TechQuickQuotePage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/tech')}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Orçamento Rápido</h1>
+                    <h1 className="text-lg font-bold text-foreground">Orçamento Rápido</h1>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                    <label className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                <div className="bg-card rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-surface-700 mb-2">
                         <Search className="w-4 h-4" />
                         Buscar cliente
                     </label>
@@ -289,7 +289,7 @@ export default function TechQuickQuotePage() {
                         onChange={(e) => { setCustomerSearch(e.target.value); setCustomer(null) }}
                         onFocus={() => customer && setCustomer(null)}
                         placeholder="Digite nome, CPF/CNPJ..."
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                     />
                     {searchingCustomers && (
                         <div className="flex items-center gap-2 mt-2 text-xs text-surface-500">
@@ -314,10 +314,10 @@ export default function TechQuickQuotePage() {
                 </div>
 
                 {customer && (
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <User className="w-4 h-4 text-brand-500" />
-                            <span className="font-semibold text-surface-900 dark:text-surface-50">{customer.name}</span>
+                            <span className="font-semibold text-foreground">{customer.name}</span>
                         </div>
                         {customer.phone && <p className="text-xs text-surface-500">{customer.phone}</p>}
                         {customer.email && <p className="text-xs text-surface-500">{customer.email}</p>}
@@ -329,16 +329,16 @@ export default function TechQuickQuotePage() {
                         <button
                             type="button"
                             onClick={() => setCustomer(null)}
-                            className="text-xs text-brand-600 dark:text-brand-400 mt-2"
+                            className="text-xs text-brand-600 mt-2"
                         >
                             Trocar cliente
                         </button>
                     </div>
                 )}
 
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-surface-700 dark:text-surface-300 flex items-center gap-2">
+                        <span className="text-sm font-medium text-surface-700 flex items-center gap-2">
                             <ShoppingCart className="w-4 h-4" />
                             Itens
                         </span>
@@ -353,7 +353,7 @@ export default function TechQuickQuotePage() {
                             <button
                                 type="button"
                                 onClick={() => setShowProductSearch(true)}
-                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300 text-xs font-medium"
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface-200 text-surface-700 text-xs font-medium"
                             >
                                 <Plus className="w-3.5 h-3.5" /> Produto
                             </button>
@@ -361,13 +361,13 @@ export default function TechQuickQuotePage() {
                     </div>
 
                     {showServiceSearch && (
-                        <div className="mb-3 p-2 rounded-lg bg-surface-50 dark:bg-surface-800">
+                        <div className="mb-3 p-2 rounded-lg bg-surface-50">
                             <input
                                 type="text"
                                 value={serviceSearch}
                                 onChange={(e) => setServiceSearch(e.target.value)}
                                 placeholder="Buscar serviço..."
-                                className="w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm mb-2"
+                                className="w-full px-3 py-2 rounded-lg bg-surface-100 border-0 text-sm mb-2"
                                 autoFocus
                             />
                             <ul className="max-h-32 overflow-y-auto space-y-1">
@@ -394,13 +394,13 @@ export default function TechQuickQuotePage() {
                     )}
 
                     {showProductSearch && (
-                        <div className="mb-3 p-2 rounded-lg bg-surface-50 dark:bg-surface-800">
+                        <div className="mb-3 p-2 rounded-lg bg-surface-50">
                             <input
                                 type="text"
                                 value={productSearch}
                                 onChange={(e) => setProductSearch(e.target.value)}
                                 placeholder="Buscar produto..."
-                                className="w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm mb-2"
+                                className="w-full px-3 py-2 rounded-lg bg-surface-100 border-0 text-sm mb-2"
                                 autoFocus
                             />
                             <ul className="max-h-32 overflow-y-auto space-y-1">
@@ -433,7 +433,7 @@ export default function TechQuickQuotePage() {
                             {items.map((it, idx) => (
                                 <li
                                     key={`${it.type}-${it.id}-${idx}`}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-surface-50 dark:bg-surface-800"
+                                    className="flex items-center gap-2 p-2 rounded-lg bg-surface-50"
                                 >
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium truncate">{it.name}</p>
@@ -444,7 +444,7 @@ export default function TechQuickQuotePage() {
                                                 step={0.01}
                                                 value={it.quantity}
                                                 onChange={(e) => updateItem(idx, 'quantity', parseFloat(e.target.value) || 1)}
-                                                className="w-14 px-2 py-1 rounded bg-surface-100 dark:bg-surface-700 text-xs"
+                                                className="w-14 px-2 py-1 rounded bg-surface-100 text-xs"
                                             />
                                             <input
                                                 type="number"
@@ -452,7 +452,7 @@ export default function TechQuickQuotePage() {
                                                 step={0.01}
                                                 value={it.unit_price}
                                                 onChange={(e) => updateItem(idx, 'unit_price', parseFloat(e.target.value) || 0)}
-                                                className="w-20 px-2 py-1 rounded bg-surface-100 dark:bg-surface-700 text-xs"
+                                                className="w-20 px-2 py-1 rounded bg-surface-100 text-xs"
                                             />
                                             <span className="text-xs font-medium">
                                                 {formatCurrency(it.quantity * it.unit_price)}
@@ -473,10 +473,10 @@ export default function TechQuickQuotePage() {
                     )}
                 </div>
 
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <Calculator className="w-4 h-4 text-brand-500" />
-                        <span className="text-sm font-medium text-surface-700 dark:text-surface-300">Totais</span>
+                        <span className="text-sm font-medium text-surface-700">Totais</span>
                     </div>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
@@ -493,7 +493,7 @@ export default function TechQuickQuotePage() {
                                 value={discountPercent}
                                 onChange={(e) => setDiscountPercent(e.target.value)}
                                 placeholder="0"
-                                className="w-16 px-2 py-1 rounded bg-surface-100 dark:bg-surface-700 text-sm text-right"
+                                className="w-16 px-2 py-1 rounded bg-surface-100 text-sm text-right"
                             />
                         </div>
                         {discount > 0 && (
@@ -502,7 +502,7 @@ export default function TechQuickQuotePage() {
                                 <span>-{formatCurrency(discountAmount)}</span>
                             </div>
                         )}
-                        <div className="flex justify-between font-bold text-base pt-2 border-t border-surface-200 dark:border-surface-700">
+                        <div className="flex justify-between font-bold text-base pt-2 border-t border-border">
                             <span>Total</span>
                             <span>{formatCurrency(total)}</span>
                         </div>
@@ -510,13 +510,13 @@ export default function TechQuickQuotePage() {
                 </div>
 
                 <div>
-                    <label className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2 block">Observações</label>
+                    <label className="text-sm font-medium text-surface-700 mb-2 block">Observações</label>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Notas do orçamento..."
                         rows={2}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
+                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
                     />
                 </div>
 
@@ -524,7 +524,7 @@ export default function TechQuickQuotePage() {
                     <button
                         onClick={handleSaveDraft}
                         disabled={saving || !canSave}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300 font-semibold disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-200 text-surface-700 font-semibold disabled:opacity-50"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Salvar Rascunho

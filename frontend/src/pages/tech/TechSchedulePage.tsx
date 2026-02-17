@@ -88,43 +88,43 @@ export default function TechSchedulePage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Minha Agenda</h1>
+                <h1 className="text-lg font-bold text-foreground">Minha Agenda</h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {/* Month navigation */}
-                <div className="flex items-center justify-between bg-white dark:bg-surface-800/80 rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between bg-card rounded-xl px-4 py-3">
                     <button
                         onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
                         className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700"
                     >
-                        <ChevronLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ChevronLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                    <span className="text-sm font-semibold text-foreground">
                         {MONTHS[month]} {year}
                     </span>
                     <button
                         onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
                         className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700"
                     >
-                        <ChevronRight className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ChevronRight className="w-5 h-5 text-surface-600" />
                     </button>
                 </div>
 
                 {/* Route button */}
                 <button
                     onClick={() => navigate('/tech/rota')}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-xs font-medium active:scale-[0.98] transition-all"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-50 text-brand-600 text-xs font-medium active:scale-[0.98] transition-all"
                 >
                     <Navigation className="w-4 h-4" /> Ver Rota Otimizada do Dia
                 </button>
 
                 {/* Calendar grid */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                <div className="bg-card rounded-xl p-3">
                     <div className="grid grid-cols-7 gap-1 mb-2">
                         {WEEKDAYS.map(d => (
                             <div key={d} className="text-center text-[10px] font-medium text-surface-400 uppercase py-1">
@@ -147,8 +147,8 @@ export default function TechSchedulePage() {
                                     className={cn(
                                         'relative flex flex-col items-center py-1.5 rounded-lg text-xs transition-all',
                                         isSelected && 'bg-brand-600 text-white',
-                                        !isSelected && isToday && 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold',
-                                        !isSelected && !isToday && 'text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700',
+                                        !isSelected && isToday && 'bg-brand-50 text-brand-600 font-bold',
+                                        !isSelected && !isToday && 'text-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700',
                                     )}
                                 >
                                     <span className="font-medium">{day}</span>
@@ -189,13 +189,13 @@ export default function TechSchedulePage() {
                             <button
                                 key={wo.id}
                                 onClick={() => navigate(`/tech/os/${wo.id}`)}
-                                className="w-full text-left bg-white dark:bg-surface-800/80 rounded-xl p-3 active:scale-[0.98] transition-transform"
+                                className="w-full text-left bg-card rounded-xl p-3 active:scale-[0.98] transition-transform"
                             >
                                 <div className="flex items-start gap-3">
                                     <div className={cn('w-1 h-full min-h-[40px] rounded-full flex-shrink-0', STATUS_COLORS[wo.status] || 'bg-surface-400')} />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                                            <span className="text-sm font-semibold text-foreground">
                                                 {wo.os_number || wo.number}
                                             </span>
                                         </div>

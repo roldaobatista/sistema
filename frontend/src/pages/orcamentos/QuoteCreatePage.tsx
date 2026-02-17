@@ -3,13 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-    ArrowLeft, ArrowRight, Plus, Trash2, Search, Package, Wrench, Save,
+    ArrowLeft, ArrowRight, Plus, Trash2, Search, Package, Wrench, Save, Scale,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
+import QuickEquipmentModal from '@/components/common/QuickEquipmentModal'
 
 // Strings constant for easy localization in the future
 const STRINGS = {
@@ -73,6 +74,7 @@ export function QuoteCreatePage() {
     const [sellerId, setSellerId] = useState<number | null>(null)
     const [blocks, setBlocks] = useState<EquipmentBlock[]>([])
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [showQuickEquipmentModal, setShowQuickEquipmentModal] = useState(false)
 
     const { data: preselectedCustomer } = useQuery({
         queryKey: ['customer', customerIdFromUrl],
@@ -180,7 +182,7 @@ export function QuoteCreatePage() {
         },
         onSuccess: () => {
             toast.success('Orçamento criado com sucesso!')
-                qc.invalidateQueries({ queryKey: ['quotes'] })
+            qc.invalidateQueries({ queryKey: ['quotes'] })
             qc.invalidateQueries({ queryKey: ['quotes-summary'] })
             navigate('/orcamentos')
         },
@@ -324,7 +326,17 @@ export function QuoteCreatePage() {
                 {/* Step 2: Equipments & Items */}
                 {step === 'equipments' && (
                     <div className="space-y-6">
-                        <h3 className="text-sm font-semibold text-surface-900 mb-2">{STRINGS.customerEquipments}</h3>
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-semibold text-surface-900">{STRINGS.customerEquipments}</h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowQuickEquipmentModal(true)}
+                                className="flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-all"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                Cadastrar Equipamento
+                            </button>
+                        </div>
                         {customerEquipments.length === 0 ? (
                             <p className="text-sm text-surface-400 italic">{STRINGS.noEquipments}</p>
                         ) : (
@@ -418,6 +430,15 @@ export function QuoteCreatePage() {
                                 {STRINGS.next}
                             </Button>
                         </div>
+
+                        {customerId && (
+                            <QuickEquipmentModal
+                                open={showQuickEquipmentModal}
+                                onOpenChange={setShowQuickEquipmentModal}
+                                customerId={customerId}
+                                customerName={customerSearch}
+                            />
+                        )}
                     </div>
                 )}
 

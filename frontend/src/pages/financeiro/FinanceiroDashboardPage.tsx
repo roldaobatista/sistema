@@ -166,8 +166,8 @@ export function FinanceiroDashboardPage() {
                                     to={path}
                                     className="flex items-center gap-3 rounded-lg border border-subtle bg-surface-0 p-4 transition-colors hover:bg-surface-50 hover:border-brand-300 dark:hover:bg-surface-800 dark:hover:border-brand-700"
                                 >
-                                    <div className="rounded-lg bg-brand-100 p-2 dark:bg-brand-900/30">
-                                        <Icon className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+                                    <div className="rounded-lg bg-brand-100 p-2">
+                                        <Icon className="h-5 w-5 text-brand-600" />
                                     </div>
                                     <span className="text-sm font-medium text-content-primary">{label}</span>
                                 </Link>

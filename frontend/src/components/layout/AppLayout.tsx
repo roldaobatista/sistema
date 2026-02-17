@@ -492,7 +492,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         className={cn(
                                             'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                             isActive(item.path)
-                                                ? 'bg-surface-100 dark:bg-surface-700 text-surface-900'
+                                                ? 'bg-surface-100 text-surface-900'
                                                 : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
                                             sidebarCollapsed && 'justify-center px-2'
                                         )}
@@ -536,7 +536,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                 className={cn(
                                                     'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     item.children.some(c => isActive(c.path))
-                                                        ? 'bg-surface-100 dark:bg-surface-700 text-surface-900'
+                                                        ? 'bg-surface-100 text-surface-900'
                                                         : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
                                                     sidebarCollapsed && 'justify-center px-2'
                                                 )}
@@ -563,7 +563,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                 className={cn(
                                                     'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     isActive(item.path)
-                                                        ? 'bg-surface-100 dark:bg-surface-700 text-surface-900'
+                                                        ? 'bg-surface-100 text-surface-900'
                                                         : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
                                                     sidebarCollapsed && 'justify-center px-2'
                                                 )}
@@ -604,7 +604,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                         className={cn(
                                                             'relative flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-xs font-medium transition-colors duration-100',
                                                             isActive(child.path)
-                                                                ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400'
+                                                                ? 'bg-brand-50 text-brand-700'
                                                                 : 'text-surface-500 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-700'
                                                         )}
                                                     >
@@ -691,11 +691,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         </button>
 
                         <Link to="/perfil" className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-surface-50 transition-colors duration-100">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-400 text-xs font-bold ring-1 ring-brand-200/50 dark:ring-brand-600/30">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 text-brand-700 text-xs font-bold ring-1 ring-brand-200/50 dark:ring-brand-600/30">
                                 {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                             </div>
                             <div className="hidden sm:flex flex-col">
-                                <span className="text-sm font-medium text-surface-700 dark:text-surface-300 leading-tight">
+                                <span className="text-sm font-medium text-surface-700 leading-tight">
                                     {user?.name ?? 'Usuário'}
                                 </span>
                                 {user?.role_details?.[0] && (

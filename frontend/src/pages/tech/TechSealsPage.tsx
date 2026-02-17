@@ -77,13 +77,13 @@ export default function TechSealsPage() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-full bg-surface-50">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate(`/tech/os/${woId}`)} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Aplicar Selo/Lacre</h1>
+                <h1 className="text-lg font-bold text-foreground">Aplicar Selo/Lacre</h1>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -102,8 +102,8 @@ export default function TechSealsPage() {
                                 className={cn(
                                     "p-4 rounded-xl border text-left transition-all",
                                     selectedEquipmentId === eq.id
-                                        ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500"
-                                        : "border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900"
+                                        ? "border-brand-500 bg-brand-50 ring-1 ring-brand-500"
+                                        : "border-surface-200 bg-card"
                                 )}
                             >
                                 <p className="text-sm font-semibold">{eq.brand} - {eq.model}</p>
@@ -121,7 +121,7 @@ export default function TechSealsPage() {
                     {loadingSeals ? (
                         <div className="flex items-center gap-2 text-sm text-surface-500"><Loader2 className="w-4 h-4 animate-spin" /> Carregando seus selos...</div>
                     ) : mySeals.length === 0 ? (
-                        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-900/30 flex items-center gap-3">
+                        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 flex items-center gap-3">
                             <AlertTriangle className="w-5 h-5 text-amber-600" />
                             <p className="text-sm text-amber-700">Você não possui selos atribuídos. Solicite ao administrativo.</p>
                         </div>
@@ -134,8 +134,8 @@ export default function TechSealsPage() {
                                     className={cn(
                                         "p-3 rounded-lg border text-center transition-all",
                                         selectedSealId === seal.id
-                                            ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500 font-bold"
-                                            : "border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900 text-sm"
+                                            ? "border-brand-500 bg-brand-50 ring-1 ring-brand-500 font-bold"
+                                            : "border-surface-200 bg-card text-sm"
                                     )}
                                 >
                                     {seal.number}
@@ -168,7 +168,7 @@ export default function TechSealsPage() {
                                 "flex flex-col items-center justify-center w-full aspect-video rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden",
                                 photoPreview
                                     ? "border-emerald-500"
-                                    : "border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900"
+                                    : "border-border bg-card"
                             )}
                         >
                             {photoPreview ? (
@@ -195,14 +195,14 @@ export default function TechSealsPage() {
             </div>
 
             {/* Ação */}
-            <div className="p-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 safe-area-bottom">
+            <div className="p-4 bg-card border-t border-border safe-area-bottom">
                 <button
                     onClick={handleSubmit}
                     disabled={!selectedEquipmentId || !selectedSealId || !capturedPhoto || useMut.isPending}
                     className={cn(
                         "w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-bold text-white shadow-lg transition-all active:scale-95",
                         (!selectedEquipmentId || !selectedSealId || !capturedPhoto)
-                            ? "bg-surface-300 dark:bg-surface-800"
+                            ? "bg-surface-300"
                             : "bg-brand-600 hover:bg-brand-700 shadow-brand-500/20"
                     )}
                 >

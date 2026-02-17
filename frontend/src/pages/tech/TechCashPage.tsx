@@ -119,11 +119,11 @@ export default function TechCashPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Meu Caixa</h1>
+                <h1 className="text-lg font-bold text-foreground">Meu Caixa</h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -160,8 +160,8 @@ export default function TechCashPage() {
 
                 {/* Request funds form */}
                 {showRequestForm && (
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
-                        <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">Solicitar Fundos</h3>
+                    <div className="bg-card rounded-xl p-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-foreground">Solicitar Fundos</h3>
                         <div>
                             <label className="text-xs text-surface-500 font-medium mb-1 block">Valor (R$) *</label>
                             <input
@@ -171,7 +171,7 @@ export default function TechCashPage() {
                                 value={requestAmount}
                                 onChange={(e) => setRequestAmount(e.target.value)}
                                 placeholder="0,00"
-                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                             />
                         </div>
                         <div>
@@ -181,13 +181,13 @@ export default function TechCashPage() {
                                 onChange={(e) => setRequestReason(e.target.value)}
                                 placeholder="Ex: Preciso de troco para OS em campo..."
                                 rows={2}
-                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
+                                className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
                             />
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setShowRequestForm(false)}
-                                className="flex-1 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-700 text-sm font-medium text-surface-600 dark:text-surface-400"
+                                className="flex-1 py-2.5 rounded-xl bg-surface-100 text-sm font-medium text-surface-600"
                             >
                                 Cancelar
                             </button>
@@ -196,7 +196,7 @@ export default function TechCashPage() {
                                 disabled={submitting || !requestAmount}
                                 className={cn(
                                     'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors',
-                                    requestAmount ? 'bg-brand-600 active:bg-brand-700' : 'bg-surface-300 dark:bg-surface-700',
+                                    requestAmount ? 'bg-brand-600 active:bg-brand-700' : 'bg-surface-300',
                                 )}
                             >
                                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -209,7 +209,7 @@ export default function TechCashPage() {
                 {/* Commissions link */}
                 <button
                     onClick={() => navigate('/tech/comissoes')}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 text-xs font-medium active:scale-[0.98] transition-all"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-surface-100 text-surface-600 text-xs font-medium active:scale-[0.98] transition-all"
                 >
                     <DollarSign className="w-4 h-4" /> Ver Minhas Comissões
                 </button>
@@ -220,7 +220,7 @@ export default function TechCashPage() {
                         onClick={() => setActiveTab('transactions')}
                         className={cn(
                             'flex-1 py-2 rounded-lg text-xs font-medium transition-colors',
-                            activeTab === 'transactions' ? 'bg-brand-600 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                            activeTab === 'transactions' ? 'bg-brand-600 text-white' : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Movimentações
@@ -229,7 +229,7 @@ export default function TechCashPage() {
                         onClick={() => setActiveTab('requests')}
                         className={cn(
                             'flex-1 py-2 rounded-lg text-xs font-medium transition-colors relative',
-                            activeTab === 'requests' ? 'bg-brand-600 text-white' : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                            activeTab === 'requests' ? 'bg-brand-600 text-white' : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Solicitações
@@ -254,14 +254,14 @@ export default function TechCashPage() {
                             const TxIcon = config.icon
                             const isPositive = ['credit', 'fund_in'].includes(tx.type)
                             return (
-                                <div key={tx.id} className="flex items-center gap-3 bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                                <div key={tx.id} className="flex items-center gap-3 bg-card rounded-xl p-3">
                                     <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
                                         isPositive ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30'
                                     )}>
                                         <TxIcon className={cn('w-4 h-4', config.color)} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{config.label}</p>
+                                        <p className="text-sm font-medium text-foreground">{config.label}</p>
                                         {tx.description && <p className="text-xs text-surface-500 truncate">{tx.description}</p>}
                                         <p className="text-[10px] text-surface-400 mt-0.5">
                                             {new Date(tx.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
@@ -288,13 +288,13 @@ export default function TechCashPage() {
                             const config = reqStatusConfig[req.status] || reqStatusConfig.pending
                             const ReqIcon = config.icon
                             return (
-                                <div key={req.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                                <div key={req.id} className="bg-card rounded-xl p-3">
                                     <div className="flex items-center gap-3">
                                         <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', config.color)}>
                                             <ReqIcon className="w-4 h-4" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-surface-900 dark:text-surface-50">
+                                            <p className="text-sm font-bold text-foreground">
                                                 {formatCurrency(req.amount)}
                                             </p>
                                             {req.reason && <p className="text-xs text-surface-500 truncate">{req.reason}</p>}

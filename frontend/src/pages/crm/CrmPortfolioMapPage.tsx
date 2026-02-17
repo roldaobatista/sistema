@@ -39,7 +39,7 @@ export function CrmPortfolioMapPage() {
 
             <div className="grid grid-cols-5 gap-3">
                 {[
-                    { key: 'total', label: 'Total', value: stats.total, className: 'bg-surface-0 dark:bg-surface-800' },
+                    { key: 'total', label: 'Total', value: stats.total, className: 'bg-surface-0' },
                     { key: 'ok', label: 'Em Dia', value: stats.ok, className: 'bg-green-50 border-green-200' },
                     { key: 'attention', label: 'Atenção', value: stats.attention, className: 'bg-amber-50 border-amber-200' },
                     { key: 'warning', label: 'Alerta', value: stats.warning, className: 'bg-orange-50 border-orange-200' },

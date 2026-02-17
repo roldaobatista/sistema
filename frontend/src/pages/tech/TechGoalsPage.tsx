@@ -70,13 +70,13 @@ export default function TechGoalsPage() {
     const getGoalStatusColor = (status: string) => {
         switch (status) {
             case 'active':
-                return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
             case 'completed':
                 return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
             case 'expired':
-                return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                return 'bg-red-100 text-red-700 dark:bg-red-900/30'
             default:
-                return 'bg-surface-100 text-surface-700 dark:bg-surface-800 dark:text-surface-400'
+                return 'bg-surface-100 text-surface-700'
         }
     }
 
@@ -96,13 +96,13 @@ export default function TechGoalsPage() {
     const getCampaignStatusColor = (status: string) => {
         switch (status) {
             case 'active':
-                return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
             case 'upcoming':
-                return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
             case 'ended':
-                return 'bg-surface-100 text-surface-700 dark:bg-surface-800 dark:text-surface-400'
+                return 'bg-surface-100 text-surface-700'
             default:
-                return 'bg-surface-100 text-surface-700 dark:bg-surface-800 dark:text-surface-400'
+                return 'bg-surface-100 text-surface-700'
         }
     }
 
@@ -127,15 +127,15 @@ export default function TechGoalsPage() {
     if (loading) {
         return (
             <div className="flex flex-col h-full">
-                <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+                <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}
                             className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                            <ArrowLeft className="w-5 h-5 text-surface-600" />
                         </button>
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <h1 className="text-lg font-bold text-foreground">
                             Metas e Campanhas
                         </h1>
                     </div>
@@ -150,15 +150,15 @@ export default function TechGoalsPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3 mb-3">
                     <button
                         onClick={() => navigate(-1)}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Metas e Campanhas
                     </h1>
                 </div>
@@ -171,7 +171,7 @@ export default function TechGoalsPage() {
                             'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                             activeTab === 'goals'
                                 ? 'bg-brand-600 text-white'
-                                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Metas
@@ -182,7 +182,7 @@ export default function TechGoalsPage() {
                             'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                             activeTab === 'campaigns'
                                 ? 'bg-brand-600 text-white'
-                                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                : 'bg-surface-100 text-surface-600'
                         )}
                     >
                         Campanhas
@@ -206,17 +206,17 @@ export default function TechGoalsPage() {
                                 return (
                                     <div
                                         key={goal.id}
-                                        className="bg-white dark:bg-surface-800/80 rounded-xl p-4"
+                                        className="bg-card rounded-xl p-4"
                                     >
                                         <div className="flex items-start justify-between gap-3 mb-3">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <Target className="w-4 h-4 text-brand-600" />
-                                                    <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                                                    <h3 className="text-sm font-semibold text-foreground">
                                                         {goal.name}
                                                     </h3>
                                                 </div>
-                                                <p className="text-xs text-surface-500 dark:text-surface-400">
+                                                <p className="text-xs text-surface-500">
                                                     Período: {goal.period}
                                                 </p>
                                             </div>
@@ -230,14 +230,14 @@ export default function TechGoalsPage() {
 
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between text-xs">
-                                                <span className="text-surface-600 dark:text-surface-400">
+                                                <span className="text-surface-600">
                                                     {goal.current_value.toLocaleString('pt-BR')} / {goal.target_value.toLocaleString('pt-BR')}
                                                 </span>
-                                                <span className="font-semibold text-surface-900 dark:text-surface-50">
+                                                <span className="font-semibold text-foreground">
                                                     {progress.toFixed(0)}%
                                                 </span>
                                             </div>
-                                            <div className="h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
+                                            <div className="h-2 bg-surface-100 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-brand-600 rounded-full transition-all"
                                                     style={{ width: `${progress}%` }}
@@ -260,18 +260,18 @@ export default function TechGoalsPage() {
                             campaigns.map((campaign) => (
                                 <div
                                     key={campaign.id}
-                                    className="bg-white dark:bg-surface-800/80 rounded-xl p-4"
+                                    className="bg-card rounded-xl p-4"
                                 >
                                     <div className="flex items-start justify-between gap-3 mb-3">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <Gift className="w-4 h-4 text-purple-500" />
-                                                <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                                                <h3 className="text-sm font-semibold text-foreground">
                                                     {campaign.name}
                                                 </h3>
                                             </div>
                                             {campaign.description && (
-                                                <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                                                <p className="text-xs text-surface-500 mt-1">
                                                     {campaign.description}
                                                 </p>
                                             )}
@@ -285,7 +285,7 @@ export default function TechGoalsPage() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="flex items-center gap-2 text-xs text-surface-600 dark:text-surface-400">
+                                        <div className="flex items-center gap-2 text-xs text-surface-600">
                                             <Calendar className="w-3 h-3" />
                                             <span>
                                                 {formatDate(campaign.start_date)} - {formatDate(campaign.end_date)}
@@ -295,7 +295,7 @@ export default function TechGoalsPage() {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <Trophy className="w-4 h-4 text-amber-500" />
-                                                <span className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                                                <span className="text-sm font-semibold text-foreground">
                                                     Bônus: {formatCurrency(campaign.bonus_value)}
                                                 </span>
                                             </div>
@@ -304,12 +304,12 @@ export default function TechGoalsPage() {
                                         {campaign.progress !== undefined && campaign.status === 'active' && (
                                             <div className="space-y-1">
                                                 <div className="flex items-center justify-between text-xs">
-                                                    <span className="text-surface-600 dark:text-surface-400">Progresso</span>
-                                                    <span className="font-semibold text-surface-900 dark:text-surface-50">
+                                                    <span className="text-surface-600">Progresso</span>
+                                                    <span className="font-semibold text-foreground">
                                                         {campaign.progress.toFixed(0)}%
                                                     </span>
                                                 </div>
-                                                <div className="h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-surface-100 rounded-full overflow-hidden">
                                                     <div
                                                         className="h-full bg-brand-600 rounded-full transition-all"
                                                         style={{ width: `${campaign.progress}%` }}

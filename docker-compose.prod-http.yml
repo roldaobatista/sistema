@@ -93,10 +93,24 @@ services:
         VITE_REVERB_HOST: ${VITE_REVERB_HOST:-}
         VITE_REVERB_PORT: ${VITE_REVERB_PORT:-}
         VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-}
+        VITE_GO2RTC_URL: ${VITE_GO2RTC_URL:-}
     container_name: kalibrium_frontend
     restart: unless-stopped
     expose:
       - "80"
+    networks:
+      - kalibrium
+
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: kalibrium_go2rtc
+    restart: unless-stopped
+    environment:
+      GO2RTC_API_ORIGIN: "*"
+    ports:
+      - "1984:1984"
+      - "8555:8555/tcp"
+      - "8555:8555/udp"
     networks:
       - kalibrium
 

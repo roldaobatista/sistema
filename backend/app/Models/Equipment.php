@@ -135,8 +135,8 @@ class Equipment extends Model
     {
         if ($this->calibration_interval_months && $this->last_calibration_at) {
             $last = $this->last_calibration_at;
-            $carbonLast = ($last instanceof \Carbon\Carbon) ? $last : \Carbon\Carbon::parse($last);
-            
+            $carbonLast = ($last instanceof \Carbon\Carbon) ? $last->copy() : \Carbon\Carbon::parse($last);
+
             $this->next_calibration_at = $carbonLast->addMonths($this->calibration_interval_months);
             $this->save();
         }

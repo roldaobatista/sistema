@@ -52,13 +52,13 @@ export default function TechProfilePage() {
     return (
         <div className="flex flex-col h-full overflow-y-auto">
             {/* User card */}
-            <div className="bg-white dark:bg-surface-900 px-4 py-6 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 py-6 border-b border-border">
                 <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
-                        <User className="w-7 h-7 text-brand-600 dark:text-brand-400" />
+                    <div className="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center">
+                        <User className="w-7 h-7 text-brand-600" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <h1 className="text-lg font-bold text-foreground">
                             {user?.name || 'Técnico'}
                         </h1>
                         <p className="text-sm text-surface-500">{user?.email}</p>
@@ -68,7 +68,7 @@ export default function TechProfilePage() {
 
             <div className="px-4 py-4 space-y-4">
                 {/* Sync status card */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4 space-y-3">
+                <div className="bg-card rounded-xl p-4 space-y-3">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide">Sincronização</h3>
 
                     <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ export default function TechProfilePage() {
                             {isOnline ? <Cloud className="w-5 h-5" /> : <CloudOff className="w-5 h-5" />}
                         </div>
                         <div className="flex-1">
-                            <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                            <p className="text-sm font-medium text-foreground">
                                 {isOnline ? 'Conectado' : 'Offline'}
                             </p>
                             <p className="text-xs text-surface-500">
@@ -105,7 +105,7 @@ export default function TechProfilePage() {
                             'w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors',
                             isOnline
                                 ? 'bg-brand-600 text-white active:bg-brand-700'
-                                : 'bg-surface-200 dark:bg-surface-700 text-surface-400',
+                                : 'bg-surface-200 text-surface-400',
                             isSyncing && 'opacity-70',
                         )}
                     >
@@ -115,7 +115,7 @@ export default function TechProfilePage() {
                 </div>
 
                 {/* Settings */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl overflow-hidden">
+                <div className="bg-card rounded-xl overflow-hidden">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide px-4 pt-4 pb-2">Configurações</h3>
 
                     <button
@@ -125,13 +125,13 @@ export default function TechProfilePage() {
                     >
                         <Database className="w-5 h-5 text-amber-500" />
                         <div className="flex-1 text-left">
-                            <p className="text-sm text-surface-900 dark:text-surface-50">Limpar dados locais</p>
+                            <p className="text-sm text-foreground">Limpar dados locais</p>
                             <p className="text-xs text-surface-500">Remove cache offline</p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-surface-300" />
                     </button>
 
-                    <div className="border-t border-surface-100 dark:border-surface-700" />
+                    <div className="border-t border-surface-100" />
 
                     <button
                         onClick={handleLogout}

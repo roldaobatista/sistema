@@ -115,6 +115,69 @@ class CameraController extends Controller
         }
     }
 
+    public function health(): JsonResponse
+    {
+        $cameras = Camera::where('tenant_id', $this->tenantId())
+            ->where('is_active', true)
+            ->orderBy('position')
+            ->get();
+
+        $results = $cameras->map(function (Camera $camera) {
+            $status = 'offline';
+            $latencyMs = null;
+
+            $url = $camera->stream_url;
+            $start = microtime(true);
+
+            try {
+                if (str_starts_with($url, 'rtsp://')) {
+                    $parsed = parse_url($url);
+                    $host = $parsed['host'] ?? '';
+                    $port = $parsed['port'] ?? 554;
+
+                    if ($host) {
+                        $connection = @fsockopen($host, $port, $errno, $errstr, 2);
+                        if ($connection) {
+                            fclose($connection);
+                            $status = 'online';
+                            $latencyMs = round((microtime(true) - $start) * 1000);
+                        }
+                    }
+                } elseif (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+                    $ch = curl_init($url);
+                    curl_setopt_array($ch, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_TIMEOUT => 3,
+                        CURLOPT_CONNECTTIMEOUT => 2,
+                        CURLOPT_NOBODY => true,
+                    ]);
+                    curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+
+                    if ($httpCode >= 200 && $httpCode < 400) {
+                        $status = 'online';
+                        $latencyMs = round((microtime(true) - $start) * 1000);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Camera health check failed', [
+                    'camera_id' => $camera->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return [
+                'id' => $camera->id,
+                'name' => $camera->name,
+                'status' => $status,
+                'latency_ms' => $latencyMs,
+            ];
+        });
+
+        return response()->json(['cameras' => $results]);
+    }
+
     public function testConnection(Request $request): JsonResponse
     {
         $data = $request->validate([

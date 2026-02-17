@@ -112,7 +112,7 @@ export function TechnicianRecommendationSelector({
                                 disabled={hasConflict}
                                 className={cn(
                                     "flex w-full flex-col gap-1 rounded-md border p-2 text-left transition-colors",
-                                    isSelected ? "border-brand-500 bg-brand-50" : "border-surface-200 bg-surface-0 dark:bg-surface-800 hover:bg-surface-50",
+                                    isSelected ? "border-brand-500 bg-brand-50" : "border-surface-200 bg-surface-0 hover:bg-surface-50",
                                     hasConflict && "opacity-60 cursor-not-allowed bg-red-50 border-red-100"
                                 )}
                             >

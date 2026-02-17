@@ -124,7 +124,7 @@ export function BatchExportPage() {
 
             {/* Field Selection */}
             {currentEntity && (
-                <div className="bg-surface-0 dark:bg-surface-800 rounded-xl border border-surface-200 p-5">
+                <div className="bg-surface-0 rounded-xl border border-surface-200 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-surface-900">
                             Campos para exportar — {currentEntity.label}

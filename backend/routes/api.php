@@ -86,6 +86,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/tv/cameras/reorder', [\App\Http\Controllers\CameraController::class, 'reorder']);
             Route::post('/tv/cameras/test-connection', [\App\Http\Controllers\CameraController::class, 'testConnection']);
         });
+        Route::middleware('check.permission:tv.dashboard.view')
+            ->get('/tv/cameras/health', [\App\Http\Controllers\CameraController::class, 'health']);
         Route::middleware('check.permission:finance.cashflow.view')->get('/cash-flow', [\App\Http\Controllers\Api\V1\CashFlowController::class, 'cashFlow']);
         Route::middleware('check.permission:finance.dre.view')->get('/dre', [\App\Http\Controllers\Api\V1\CashFlowController::class, 'dre']);
 
@@ -243,8 +245,8 @@ Route::prefix('v1')->group(function () {
             
             // Kits
             Route::get('products/{product}/kit', [ProductKitController::class, 'index']);
-            Route::post('products/{product}/kit', [ProductKitController::class, 'store']);
-            Route::delete('products/{product}/kit/{childId}', [ProductKitController::class, 'destroy']);
+            Route::middleware('check.permission:cadastros.product.update')->post('products/{product}/kit', [ProductKitController::class, 'store']);
+            Route::middleware('check.permission:cadastros.product.update')->delete('products/{product}/kit/{childId}', [ProductKitController::class, 'destroy']);
 
             // Inventário Cego
             Route::middleware('check.permission:estoque.movement.view')->get('inventories', [InventoryController::class, 'index']);
@@ -1179,6 +1181,7 @@ Route::prefix('v1')->group(function () {
             Route::get('equipments-constants', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'constants']);
             Route::get('equipments/{equipment}/calibrations', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'calibrationHistory']);
             Route::get('equipments-export', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'exportCsv']);
+            Route::get('equipment-documents/{document}/download', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'downloadDocument']);
         });
         Route::middleware('check.permission:equipments.equipment.create')->group(function () {
             Route::post('equipments', [\App\Http\Controllers\Api\V1\EquipmentController::class, 'store']);
@@ -2432,8 +2435,8 @@ Route::prefix('v1')->group(function () {
 
         // ═══ Kardex de Produto ═══════════════════════════════════════
         Route::middleware('check.permission:estoque.view')->group(function () {
-            Route::get('products/{product}/kardex', [\App\Http\Controllers\Api\V1\ProductKardexController::class, 'index']);
-            Route::get('products/{product}/kardex/summary', [\App\Http\Controllers\Api\V1\ProductKardexController::class, 'monthlySummary']);
+            Route::get('products/{product}/kardex-overview', [\App\Http\Controllers\Api\V1\ProductKardexController::class, 'index']);
+            Route::get('products/{product}/kardex-overview/summary', [\App\Http\Controllers\Api\V1\ProductKardexController::class, 'monthlySummary']);
         });
 
         // ═══ Rastreamento de Ferramentas ═════════════════════════════
@@ -2535,7 +2538,7 @@ Route::prefix('v1')->group(function () {
             Route::post('work-orders/{workOrder}/checkin', [$fc, 'checkinWorkOrder']);
             Route::post('work-orders/{workOrder}/checkout', [$fc, 'checkoutWorkOrder']);
         });
-        Route::middleware('check.permission:equipamentos.equipment.update')->post('equipments/{equipment}/generate-qr', [$fc, 'generateEquipmentQr']);
+        Route::middleware('check.permission:equipments.equipment.update')->post('equipments/{equipment}/generate-qr', [$fc, 'generateEquipmentQr']);
 
         // --- Qualidade: Auditorias internas ---
         Route::prefix('quality-audits')->middleware('check.permission:quality.audit.view')->group(function () use ($fc) {

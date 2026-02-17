@@ -103,11 +103,11 @@ export default function TechShell() {
     const hasAllowedRole = ALLOWED_TECH_ROLES.some(role => hasRole(role))
     if (user && !hasAllowedRole) {
         return (
-            <div className="flex flex-col items-center justify-center h-[100dvh] bg-surface-50 dark:bg-surface-950 px-6">
-                <div className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50/70 dark:bg-red-950/30 p-8 text-center shadow-sm max-w-md">
+            <div className="flex flex-col items-center justify-center h-[100dvh] bg-surface-50 px-6">
+                <div className="rounded-2xl border border-red-200 bg-red-50/70 dark:bg-red-950/30 p-8 text-center shadow-sm max-w-md">
                     <ShieldAlert className="mx-auto h-12 w-12 text-red-400 mb-4" />
                     <h2 className="text-lg font-semibold text-red-800 dark:text-red-300">Acesso negado</h2>
-                    <p className="mt-2 text-sm text-red-700 dark:text-red-400">
+                    <p className="mt-2 text-sm text-red-700">
                         Você não tem permissão para acessar o painel técnico.
                     </p>
                     <button
@@ -122,11 +122,11 @@ export default function TechShell() {
     }
 
     return (
-        <div className="flex flex-col h-[100dvh] bg-surface-50 dark:bg-surface-950">
+        <div className="flex flex-col h-[100dvh] bg-surface-50">
             {/* ─── Top Bar ────────────────────────────────── */}
-            <header className="flex items-center justify-between px-4 py-3 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 safe-area-top">
+            <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border safe-area-top">
                 <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-brand-600 dark:text-brand-400">
+                    <span className="text-lg font-bold text-brand-600">
                         Kalibrium
                     </span>
                 </div>
@@ -138,7 +138,7 @@ export default function TechShell() {
                         <button
                             onClick={() => syncNow()}
                             disabled={isSyncing || !isOnline}
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 text-xs font-medium"
                         >
                             <RefreshCw className={cn('w-3.5 h-3.5', isSyncing && 'animate-spin')} />
                             {pendingCount}
@@ -149,8 +149,8 @@ export default function TechShell() {
                     <div className={cn(
                         'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
                         isOnline
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700'
                     )}>
                         {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
                         {isOnline ? 'Online' : 'Offline'}
@@ -182,9 +182,9 @@ export default function TechShell() {
                         className="flex-1 bg-black/40 backdrop-blur-sm"
                         aria-label="Fechar menu"
                     />
-                    <div className="bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 rounded-t-2xl p-4 pb-6 safe-area-bottom animate-in slide-in-from-bottom-4">
+                    <div className="bg-card border-t border-border rounded-t-2xl p-4 pb-6 safe-area-bottom animate-in slide-in-from-bottom-4">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">Mais opções</h3>
+                            <h3 className="text-sm font-semibold text-surface-900">Mais opções</h3>
                             <button onClick={() => setShowMoreMenu(false)} className="p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                                 <X className="w-5 h-5 text-surface-500" />
                             </button>
@@ -200,11 +200,11 @@ export default function TechShell() {
                                     >
                                         <div className={cn(
                                             'w-10 h-10 rounded-xl flex items-center justify-center',
-                                            isActive ? 'bg-brand-100 dark:bg-brand-900/30' : 'bg-surface-100 dark:bg-surface-800'
+                                            isActive ? 'bg-brand-100' : 'bg-surface-100'
                                         )}>
-                                            <item.icon className={cn('w-5 h-5', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-surface-600 dark:text-surface-400')} />
+                                            <item.icon className={cn('w-5 h-5', isActive ? 'text-brand-600' : 'text-surface-600')} />
                                         </div>
-                                        <span className={cn('text-[10px] font-medium', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-surface-600 dark:text-surface-400')}>
+                                        <span className={cn('text-[10px] font-medium', isActive ? 'text-brand-600' : 'text-surface-600')}>
                                             {item.label}
                                         </span>
                                     </button>
@@ -216,7 +216,7 @@ export default function TechShell() {
             )}
 
             {/* ─── Bottom Navigation ─────────────────────── */}
-            <nav className="flex items-center justify-around bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 safe-area-bottom">
+            <nav className="flex items-center justify-around bg-card border-t border-border safe-area-bottom">
                 {NAV_ITEMS.map((item) => (
                     <NavLink
                         key={item.path}
@@ -225,8 +225,8 @@ export default function TechShell() {
                         className={({ isActive }) => cn(
                             'flex flex-col items-center gap-0.5 py-2 px-3 text-xs font-medium transition-colors min-w-[60px]',
                             isActive
-                                ? 'text-brand-600 dark:text-brand-400'
-                                : 'text-surface-500 dark:text-surface-400'
+                                ? 'text-brand-600'
+                                : 'text-surface-500'
                         )}
                     >
                         <item.icon className="w-5 h-5" />
@@ -237,7 +237,7 @@ export default function TechShell() {
                     onClick={() => setShowMoreMenu(true)}
                     className={cn(
                         'flex flex-col items-center gap-0.5 py-2 px-3 text-xs font-medium transition-colors min-w-[60px]',
-                        showMoreMenu ? 'text-brand-600 dark:text-brand-400' : 'text-surface-500 dark:text-surface-400'
+                        showMoreMenu ? 'text-brand-600' : 'text-surface-500'
                     )}
                 >
                     <Menu className="w-5 h-5" />

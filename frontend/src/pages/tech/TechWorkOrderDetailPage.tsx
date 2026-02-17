@@ -37,7 +37,7 @@ const ACTION_CARDS = [
     { key: 'chat', label: 'Chat Interno', icon: Send, color: 'text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400' },
     { key: 'voice-report', label: 'Relatório Voz', icon: Mic, color: 'text-rose-600 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400' },
     { key: 'annotate', label: 'Anotar Foto', icon: ImagePlus, color: 'text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400' },
-    { key: 'print', label: 'Impressão BT', icon: Printer, color: 'text-slate-600 bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400' },
+    { key: 'print', label: 'Impressão BT', icon: Printer, color: 'text-surface-600 bg-surface-100' },
     { key: 'ocorrencia', label: 'Ocorrência', icon: Flag, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
     { key: 'contrato', label: 'Contrato', icon: FileCheck, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
     { key: 'nps', label: 'Avaliação NPS', icon: Star, color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400' },
@@ -438,14 +438,14 @@ export default function TechWorkOrderDetailPage() {
     return (
         <div className="relative flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-3">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 mb-3">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
 
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <h1 className="text-lg font-bold text-foreground">
                             {wo.os_number || wo.number}
                         </h1>
                         <span className={cn(
@@ -467,7 +467,7 @@ export default function TechWorkOrderDetailPage() {
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {/* Customer info */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700/50 overflow-hidden">
+                <div className="bg-card rounded-2xl shadow-sm border border-surface-100 overflow-hidden">
                     <div className="p-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-[10px] font-bold text-surface-400 uppercase tracking-[0.1em]">Informações do Cliente</h3>
@@ -477,7 +477,7 @@ export default function TechWorkOrderDetailPage() {
                                         <a
                                             href={`tel:${wo.customer_phone}`}
                                             title="Ligar para o cliente"
-                                            className="p-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 active:scale-95 transition-all"
+                                            className="p-2 rounded-full bg-emerald-50 text-emerald-600 dark:text-emerald-400 active:scale-95 transition-all"
                                         >
                                             <Phone className="w-4 h-4" />
                                         </a>
@@ -500,7 +500,7 @@ export default function TechWorkOrderDetailPage() {
                                 <User className="w-6 h-6 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="font-bold text-base text-surface-900 dark:text-surface-50 truncate">
+                                <p className="font-bold text-base text-foreground truncate">
                                     {wo.customer_name || 'Não informado'}
                                 </p>
                                 {wo.customer_address && (
@@ -519,7 +519,7 @@ export default function TechWorkOrderDetailPage() {
                                     href={wo.google_maps_link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-[11px] font-bold text-surface-700 dark:text-surface-200 active:scale-95 transition-all shadow-sm"
+                                    className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-50 border border-border text-[11px] font-bold text-surface-700 active:scale-95 transition-all shadow-sm"
                                 >
                                     <MapPin className="w-3.5 h-3.5 text-red-500" /> Google Maps
                                 </a>
@@ -527,7 +527,7 @@ export default function TechWorkOrderDetailPage() {
                             {wo.waze_link && (
                                 <a
                                     href={wo.waze_link}
-                                    className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 text-[11px] font-bold text-surface-700 dark:text-surface-200 active:scale-95 transition-all shadow-sm"
+                                    className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-50 border border-border text-[11px] font-bold text-surface-700 active:scale-95 transition-all shadow-sm"
                                 >
                                     <Navigation className="w-3.5 h-3.5 text-[#33ccff]" /> Waze
                                 </a>
@@ -535,7 +535,7 @@ export default function TechWorkOrderDetailPage() {
                         </div>
 
                         {/* Deslocamento */}
-                        <div className="space-y-2 pt-2 border-t border-surface-100 dark:border-surface-700/50">
+                        <div className="space-y-2 pt-2 border-t border-surface-100">
                             {wo.displacement_status === 'not_started' || !wo.displacement_status ? (
                                 <button
                                     onClick={handleStartDisplacement}
@@ -551,7 +551,7 @@ export default function TechWorkOrderDetailPage() {
                                 </button>
                             ) : wo.displacement_status === 'in_progress' ? (
                                 <>
-                                    <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                                    <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-50 border border-blue-200 dark:border-blue-800">
                                         <MapPinned className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                         <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Em deslocamento</span>
                                     </div>
@@ -569,7 +569,7 @@ export default function TechWorkOrderDetailPage() {
                                             <button
                                                 onClick={() => setShowStopModal(true)}
                                                 disabled={displacementLoading}
-                                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300 text-[11px] font-bold active:scale-[0.98] disabled:opacity-50"
+                                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-100 text-surface-700 text-[11px] font-bold active:scale-[0.98] disabled:opacity-50"
                                             >
                                                 <Coffee className="w-3.5 h-3.5" /> Registrar parada
                                             </button>
@@ -585,7 +585,7 @@ export default function TechWorkOrderDetailPage() {
                                     </div>
                                 </>
                             ) : wo.displacement_status === 'arrived' ? (
-                                <div className="py-2 px-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                                <div className="py-2 px-3 rounded-lg bg-emerald-50 border border-emerald-200 dark:border-emerald-800 space-y-1">
                                     <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
                                         Chegou às {wo.displacement_arrived_at ? new Date(wo.displacement_arrived_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—'}
                                     </p>
@@ -615,11 +615,11 @@ export default function TechWorkOrderDetailPage() {
 
                 {/* Schedule */}
                 {wo.scheduled_date && (
-                    <div className="flex items-center gap-2 bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="flex items-center gap-2 bg-card rounded-xl p-4">
                         <Clock className="w-5 h-5 text-surface-400" />
                         <div>
                             <p className="text-xs text-surface-400">Agendamento</p>
-                            <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                            <p className="text-sm font-medium text-foreground">
                                 {new Date(wo.scheduled_date).toLocaleString('pt-BR', {
                                     day: '2-digit', month: '2-digit', year: 'numeric',
                                     hour: '2-digit', minute: '2-digit',
@@ -631,12 +631,12 @@ export default function TechWorkOrderDetailPage() {
 
                 {/* Timer */}
                 {wo.status === 'in_progress' && (
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-brand-500" />
                                 <div>
-                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">Cronômetro</p>
+                                    <p className="text-sm font-medium text-foreground">Cronômetro</p>
                                     <p className="text-xs text-surface-500">Registre o tempo nesta OS</p>
                                 </div>
                             </div>
@@ -646,8 +646,8 @@ export default function TechWorkOrderDetailPage() {
                                     className={cn(
                                         'px-3 py-1.5 rounded-lg text-xs font-medium',
                                         timer.isRunning
-                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                            : 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
+                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
+                                            : 'bg-brand-100 text-brand-700'
                                     )}
                                 >
                                     {timer.isRunning ? 'Pausar' : 'Continuar'}
@@ -666,16 +666,16 @@ export default function TechWorkOrderDetailPage() {
 
                 {/* Description */}
                 {wo.description && (
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-2">Descrição</h3>
-                        <p className="text-sm text-surface-700 dark:text-surface-300 leading-relaxed">
+                        <p className="text-sm text-surface-700 leading-relaxed">
                             {wo.description}
                         </p>
                     </div>
                 )}
 
                 {/* Quick Note */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide">Nota Rápida</h3>
                     </div>
@@ -685,7 +685,7 @@ export default function TechWorkOrderDetailPage() {
                             value={quickNote}
                             onChange={(e) => setQuickNote(e.target.value)}
                             placeholder="Adicionar observação..."
-                            className="flex-1 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                            className="flex-1 px-3 py-2 rounded-lg bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                             onKeyDown={(e) => e.key === 'Enter' && quickNote.trim() && handleSendNote()}
                         />
                         <button
@@ -695,7 +695,7 @@ export default function TechWorkOrderDetailPage() {
                                 'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                                 quickNote.trim()
                                     ? 'bg-brand-600 text-white active:bg-brand-700'
-                                    : 'bg-surface-200 dark:bg-surface-700 text-surface-400'
+                                    : 'bg-surface-200 text-surface-400'
                             )}
                         >
                             {sendingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -708,7 +708,7 @@ export default function TechWorkOrderDetailPage() {
                                     <span className="text-surface-400 flex-shrink-0">
                                         {new Date(note.created_at || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
-                                    <span className="text-surface-600 dark:text-surface-300">{note.content || note.message || note.body}</span>
+                                    <span className="text-surface-600">{note.content || note.message || note.body}</span>
                                 </div>
                             ))}
                         </div>
@@ -724,13 +724,13 @@ export default function TechWorkOrderDetailPage() {
                                 if (card.key === 'chat') { setIsChatOpen(true) }
                                 else { navigate(`/tech/os/${wo.id}/${card.key}`) }
                             }}
-                            className="flex flex-col items-start gap-4 bg-white dark:bg-surface-800/80 rounded-2xl p-5 border border-surface-100 dark:border-surface-700/50 shadow-sm active:scale-[0.96] active:bg-surface-50 dark:active:bg-surface-700 transition-all group"
+                            className="flex flex-col items-start gap-4 bg-card rounded-2xl p-5 border border-surface-100 shadow-sm active:scale-[0.96] active:bg-surface-50 dark:active:bg-surface-700 transition-all group"
                         >
                             <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-active:scale-90', card.color)}>
                                 <card.icon className="w-6 h-6" />
                             </div>
                             <div className="flex items-center justify-between w-full">
-                                <p className="text-sm font-bold text-surface-900 dark:text-surface-50">{card.label}</p>
+                                <p className="text-sm font-bold text-foreground">{card.label}</p>
                                 <ChevronRight className="w-4 h-4 text-surface-300 group-hover:translate-x-1 transition-transform" />
                             </div>
                         </button>
@@ -740,7 +740,7 @@ export default function TechWorkOrderDetailPage() {
 
             {/* Bottom action */}
             {currentStatus.next && (
-                <div className="p-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 safe-area-bottom">
+                <div className="p-4 bg-card border-t border-border safe-area-bottom">
                     <button
                         onClick={handleStatusTransition}
                         disabled={transitioning}
@@ -765,10 +765,10 @@ export default function TechWorkOrderDetailPage() {
             )}
 
             {showCompletionWizard && (
-                <div className="absolute inset-0 z-50 flex flex-col bg-surface-50 dark:bg-surface-950">
-                    <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+                <div className="absolute inset-0 z-50 flex flex-col bg-surface-50">
+                    <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-surface-900 dark:text-surface-50">Finalizar OS</h2>
+                            <h2 className="text-lg font-bold text-foreground">Finalizar OS</h2>
                             <button onClick={() => setShowCompletionWizard(false)} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                                 <X className="w-5 h-5 text-surface-500" />
                             </button>
@@ -788,25 +788,25 @@ export default function TechWorkOrderDetailPage() {
                                 <button
                                     key={step.key}
                                     onClick={() => navigate(step.path)}
-                                    className="w-full flex items-center gap-3 bg-white dark:bg-surface-800/80 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                                    className="w-full flex items-center gap-3 bg-card rounded-xl p-4 active:scale-[0.98] transition-transform"
                                 >
                                     <div className={cn(
                                         'w-10 h-10 rounded-xl flex items-center justify-center',
                                         completionSteps[step.key as keyof typeof completionSteps]
                                             ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                                            : 'bg-surface-100 dark:bg-surface-800'
+                                            : 'bg-surface-100'
                                     )}>
                                         {completionSteps[step.key as keyof typeof completionSteps] ? (
                                             <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                         ) : (
-                                            <StepIcon className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                                            <StepIcon className="w-5 h-5 text-surface-600" />
                                         )}
                                     </div>
                                     <div className="flex-1 text-left">
                                         <div className="flex items-center gap-2">
-                                            <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{step.label}</p>
+                                            <p className="text-sm font-medium text-foreground">{step.label}</p>
                                             {step.required && (
-                                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">Recomendado</span>
+                                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 font-medium">Recomendado</span>
                                             )}
                                         </div>
                                         <p className="text-xs text-surface-500">{step.desc}</p>
@@ -817,7 +817,7 @@ export default function TechWorkOrderDetailPage() {
                         })}
                     </div>
 
-                    <div className="p-4 bg-white dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 safe-area-bottom">
+                    <div className="p-4 bg-card border-t border-border safe-area-bottom">
                         <button
                             onClick={handleCompleteOS}
                             disabled={transitioning}
@@ -835,9 +835,9 @@ export default function TechWorkOrderDetailPage() {
 
             {showStopModal && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-sm bg-white dark:bg-surface-900 rounded-t-2xl sm:rounded-2xl p-4 shadow-xl">
+                    <div className="w-full max-w-sm bg-card rounded-t-2xl sm:rounded-2xl p-4 shadow-xl">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-base font-bold text-surface-900 dark:text-surface-50">Registrar parada</h3>
+                            <h3 className="text-base font-bold text-foreground">Registrar parada</h3>
                             <button onClick={() => { setShowStopModal(false); setStopNotes('') }} className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
                                 <X className="w-5 h-5 text-surface-500" />
                             </button>
@@ -852,7 +852,7 @@ export default function TechWorkOrderDetailPage() {
                                 <button
                                     key={type}
                                     onClick={() => handleAddStop(type)}
-                                    className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-surface-50 dark:bg-surface-800 hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-900 dark:text-surface-50 text-sm font-medium active:scale-[0.98]"
+                                    className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-surface-50 hover:bg-surface-100 dark:hover:bg-surface-700 text-foreground text-sm font-medium active:scale-[0.98]"
                                 >
                                     <Icon className="w-5 h-5 text-surface-500" />
                                     {label}
@@ -864,7 +864,7 @@ export default function TechWorkOrderDetailPage() {
                             value={stopNotes}
                             onChange={(e) => setStopNotes(e.target.value)}
                             placeholder="Observação (opcional)"
-                            className="mt-3 w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30"
+                            className="mt-3 w-full px-3 py-2 rounded-lg bg-surface-100 border-0 text-sm placeholder:text-surface-400 focus:ring-2 focus:ring-brand-500/30"
                         />
                     </div>
                 </div>

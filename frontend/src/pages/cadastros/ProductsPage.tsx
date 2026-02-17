@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Pencil, Trash2, Package, AlertTriangle, UploadCloud, Scale } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Package, AlertTriangle, UploadCloud, Scale, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuvoExport } from '@/hooks/useAuvoExport'
@@ -34,25 +34,33 @@ const emptyForm = {
 export function ProductsPage() {
   const { hasPermission } = useAuthStore()
 
+    const canCreate = hasPermission('cadastros.product.create')
+    const canEdit = hasPermission('cadastros.product.update')
+    const canDelete = hasPermission('cadastros.product.delete')
+
     const qc = useQueryClient()
     const { exportProduct } = useAuvoExport()
     const [search, setSearch] = useState('')
     const debouncedSearch = useDebounce(search, 400)
+    const [page, setPage] = useState(1)
     const [showForm, setShowForm] = useState(false)
     const [editing, setEditing] = useState<Product | null>(null)
     const [form, setForm] = useState(emptyForm)
     const [newCat, setNewCat] = useState('')
 
-    // Delete handling state
     const [showConfirmDelete, setShowConfirmDelete] = useState<Product | null>(null)
     const [deleteDependencies, setDeleteDependencies] = useState<any>(null)
     const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
 
+    const perPage = 25
+
     const { data: res, isLoading } = useQuery({
-        queryKey: ['products', debouncedSearch],
-        queryFn: () => api.get('/products', { params: { search: debouncedSearch, per_page: 50 } }),
+        queryKey: ['products', debouncedSearch, page],
+        queryFn: () => api.get('/products', { params: { search: debouncedSearch, per_page: perPage, page } }),
     })
     const products: Product[] = res?.data?.data ?? []
+    const totalProducts: number = res?.data?.total ?? 0
+    const lastPage: number = res?.data?.last_page ?? 1
 
     const { data: catsRes } = useQuery({
         queryKey: ['product-categories'],
@@ -125,7 +133,15 @@ export function ProductsPage() {
     const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
         setForm(prev => ({ ...prev, [k]: v }))
 
-    const isLowStock = (p: Product) => parseFloat(p.stock_qty) <= parseFloat(p.stock_min)
+    const handleSearch = (val: string) => {
+        setSearch(val)
+        setPage(1)
+    }
+
+    const isLowStock = (p: Product) => {
+        const min = parseFloat(p.stock_min)
+        return min > 0 && parseFloat(p.stock_qty) <= min
+    }
 
     const formatBRL = (v: string) => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -148,14 +164,14 @@ export function ProductsPage() {
             <PageHeader
                 title="Produtos"
                 subtitle="Catálogo de produtos e peças"
-                count={products.length}
-                actions={[{ label: 'Novo Produto', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }]}
+                count={totalProducts}
+                actions={canCreate ? [{ label: 'Novo Produto', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []}
             />
 
             <div className="max-w-sm">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-                    <input type="text" value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                    <input type="text" value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearch(e.target.value)}
                         placeholder="Buscar por nome ou código..."
                         className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-4 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                 </div>
@@ -178,7 +194,7 @@ export function ProductsPage() {
                                 <EmptyState
                                     icon={<Package className="h-5 w-5 text-surface-300" />}
                                     message="Nenhum produto encontrado"
-                                    action={{ label: 'Novo Produto', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }}
+                                    action={canCreate ? { label: 'Novo Produto', onClick: openCreate, icon: <Plus className="h-4 w-4" /> } : undefined}
                                     compact
                                 />
                             </td></tr>
@@ -219,12 +235,16 @@ export function ProductsPage() {
                                                 disabled={exportProduct.isPending}
                                             />
                                         )}
-                                        <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(p)} className="hover:text-brand-600" />
-                                        <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => {
-                                            setShowConfirmDelete(p)
-                                            setDeleteDependencies(null)
-                                            setDeleteMessage(null)
-                                        }} className="hover:text-red-600" />
+                                        {canEdit && (
+                                            <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(p)} className="hover:text-brand-600" />
+                                        )}
+                                        {canDelete && (
+                                            <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => {
+                                                setShowConfirmDelete(p)
+                                                setDeleteDependencies(null)
+                                                setDeleteMessage(null)
+                                            }} className="hover:text-red-600" />
+                                        )}
                                     </div>
                                 </td>
                             </tr>
@@ -232,6 +252,23 @@ export function ProductsPage() {
                     </tbody>
                 </table>
             </div>
+
+            {lastPage > 1 && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-surface-500">
+                        Mostrando {(page - 1) * perPage + 1}–{Math.min(page * perPage, totalProducts)} de {totalProducts}
+                    </p>
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="px-3 text-sm text-surface-700">Página {page} de {lastPage}</span>
+                        <Button variant="outline" size="sm" disabled={page >= lastPage} onClick={() => setPage(p => p + 1)}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             <Modal open={showForm} onOpenChange={setShowForm} title={editing ? 'Editar Produto' : 'Novo Produto'} size="lg">
                 <form onSubmit={e => { e.preventDefault(); saveMut.mutate(form) }} className="space-y-4">
@@ -243,8 +280,8 @@ export function ProductsPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Categoria</label>
-                            <select value={form.category_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('category_id', e.target.value)}
+                            <label htmlFor="product-category" className="mb-1.5 block text-sm font-medium text-surface-700">Categoria</label>
+                            <select id="product-category" value={form.category_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('category_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Sem categoria</option>
                                 {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -266,10 +303,19 @@ export function ProductsPage() {
                         <Input label="Estoque Mín." type="number" step="0.01" value={form.stock_min} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('stock_min', e.target.value)} />
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Descrição</label>
-                        <textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} rows={2}
+                        <label htmlFor="product-description" className="mb-1.5 block text-sm font-medium text-surface-700">Descrição</label>
+                        <textarea id="product-description" placeholder="Descrição do produto" value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={form.is_active}
+                            onChange={(e) => set('is_active', e.target.checked)}
+                            className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500"
+                        />
+                        <span className="text-sm font-medium text-surface-700">Produto ativo</span>
+                    </label>
                     {editing && productEquipmentModels.length > 0 && (
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Usado nos modelos de balança</label>

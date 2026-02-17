@@ -22,7 +22,7 @@ interface Props {
 export function CustomerTimeline({ activities, className, compact = false }: Props) {
     if (activities.length === 0) {
         return (
-            <div className={cn('rounded-xl border border-default bg-surface-0 dark:bg-surface-800 p-8 text-center', className)}>
+            <div className={cn('rounded-xl border border-default bg-surface-0 p-8 text-center', className)}>
                 <Clock className="mx-auto h-8 w-8 text-surface-300" />
                 <p className="mt-2 text-sm text-surface-400">Nenhuma atividade registrada</p>
             </div>
@@ -66,7 +66,7 @@ export function CustomerTimeline({ activities, className, compact = false }: Pro
                                         <Icon className={cn('h-3 w-3', cfg.color)} />
                                     </div>
 
-                                    <div className="rounded-lg border border-default/60 bg-surface-0 dark:bg-surface-800 p-3 shadow-sm hover:shadow-card transition-shadow">
+                                    <div className="rounded-lg border border-default/60 bg-surface-0 p-3 shadow-sm hover:shadow-card transition-shadow">
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <p className="text-sm font-medium text-surface-800">{act.title}</p>

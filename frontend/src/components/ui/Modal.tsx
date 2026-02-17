@@ -43,8 +43,10 @@ export function Modal({
             <DialogContent size={size}>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
-                    {description && (
+                    {description ? (
                         <DialogDescription>{description}</DialogDescription>
+                    ) : (
+                        <DialogDescription className="sr-only">{title}</DialogDescription>
                     )}
                 </DialogHeader>
                 <DialogBody>

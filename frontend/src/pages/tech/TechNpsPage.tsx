@@ -16,7 +16,7 @@ const NPS_LABELS: Record<number, string> = {
 }
 
 function getScoreClass(score: number, selected: boolean): string {
-    if (!selected) return 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+    if (!selected) return 'bg-surface-100 text-surface-600'
     if (score <= 6) return 'bg-red-500 text-white'
     if (score <= 8) return 'bg-amber-500 text-white'
     return 'bg-emerald-500 text-white'
@@ -91,7 +91,7 @@ export default function TechNpsPage() {
                 <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col items-center justify-center gap-4">
                     <CheckCircle2 className="w-16 h-16 text-emerald-500" />
                     <div className="text-center">
-                        <h2 className="text-xl font-bold text-surface-900 dark:text-surface-50">Avaliação registrada!</h2>
+                        <h2 className="text-xl font-bold text-foreground">Avaliação registrada!</h2>
                         <p className="text-sm text-surface-500 mt-1">Obrigado pelo feedback.</p>
                     </div>
                     <button
@@ -111,29 +111,29 @@ export default function TechNpsPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(`/tech/os/${id}`)}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Avaliação do Cliente</h1>
+                    <h1 className="text-lg font-bold text-foreground">Avaliação do Cliente</h1>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-1">
                         <Star className="w-4 h-4 text-amber-500" />
-                        <span className="font-semibold text-surface-900 dark:text-surface-50">{customerName}</span>
+                        <span className="font-semibold text-foreground">{customerName}</span>
                     </div>
                     <p className="text-xs text-surface-500">OS {osNumber}</p>
                 </div>
 
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                    <p className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">
+                <div className="bg-card rounded-xl p-4">
+                    <p className="text-sm font-medium text-surface-700 mb-3">
                         De 0 a 10, qual a probabilidade de indicar nosso serviço?
                     </p>
                     <div className="flex flex-wrap gap-2 justify-between">
@@ -158,8 +158,8 @@ export default function TechNpsPage() {
                     )}
                 </div>
 
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                    <label className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                <div className="bg-card rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-medium text-surface-700 mb-2">
                         <MessageSquare className="w-4 h-4" />
                         O que motivou sua nota?
                     </label>
@@ -168,12 +168,12 @@ export default function TechNpsPage() {
                         onChange={(e) => setComment(e.target.value)}
                         placeholder="Comentário opcional..."
                         rows={3}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 dark:bg-surface-700 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
+                        className="w-full px-3 py-2.5 rounded-lg bg-surface-100 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none resize-none"
                     />
                 </div>
 
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                    <p className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                <div className="bg-card rounded-xl p-4">
+                    <p className="text-sm font-medium text-surface-700 mb-2">
                         Categorias (opcional)
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -186,7 +186,7 @@ export default function TechNpsPage() {
                                     'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
                                     tags.includes(cat)
                                         ? 'bg-brand-600 text-white'
-                                        : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+                                        : 'bg-surface-100 text-surface-600'
                                 )}
                             >
                                 {cat}

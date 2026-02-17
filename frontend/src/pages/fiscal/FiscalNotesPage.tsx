@@ -178,7 +178,7 @@ export default function FiscalNotesPage() {
                         placeholder="Buscar por número, chave ou cliente..."
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-card text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                     />
                 </div>
 
@@ -186,7 +186,7 @@ export default function FiscalNotesPage() {
                     value={typeFilter}
                     onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
                     aria-label="Filtrar por tipo"
-                    className="px-3 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm min-w-[140px]"
+                    className="px-3 py-2.5 rounded-lg border border-border bg-card text-sm min-w-[140px]"
                 >
                     <option value="">Todos os tipos</option>
                     <option value="nfe">NF-e</option>
@@ -197,7 +197,7 @@ export default function FiscalNotesPage() {
                     value={statusFilter}
                     onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
                     aria-label="Filtrar por status"
-                    className="px-3 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm min-w-[160px]"
+                    className="px-3 py-2.5 rounded-lg border border-border bg-card text-sm min-w-[160px]"
                 >
                     <option value="">Todos os status</option>
                     <option value="authorized">Autorizada</option>
@@ -213,13 +213,13 @@ export default function FiscalNotesPage() {
             {isLoading ? (
                 <div className="space-y-3">
                     {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-16 bg-surface-100 dark:bg-surface-800 rounded-lg animate-pulse" />
+                        <div key={i} className="h-16 bg-surface-100 rounded-lg animate-pulse" />
                     ))}
                 </div>
             ) : notes.length === 0 ? (
                 <div className="text-center py-16">
                     <FileText className="w-16 h-16 text-surface-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-surface-700 dark:text-surface-300">
+                    <h3 className="text-lg font-semibold text-surface-700">
                         Nenhuma nota fiscal encontrada
                     </h3>
                     <p className="text-surface-500 mt-1">
@@ -229,11 +229,11 @@ export default function FiscalNotesPage() {
                     </p>
                 </div>
             ) : (
-                <div className="bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden">
+                <div className="bg-card rounded-xl border border-border overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50">
+                                <tr className="border-b border-border bg-surface-50">
                                     <th className="text-left px-4 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Tipo</th>
                                     <th className="text-left px-4 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Número</th>
                                     <th className="text-left px-4 py-3 text-xs font-semibold text-surface-500 uppercase tracking-wider">Cliente</th>
@@ -325,7 +325,7 @@ export default function FiscalNotesPage() {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-surface-200 dark:border-surface-700">
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
                             <span className="text-sm text-surface-500">
                                 Página {page} de {totalPages} ({total} registros)
                             </span>

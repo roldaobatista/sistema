@@ -85,15 +85,15 @@ export default function TechDashboardPage() {
     if (loading) {
         return (
             <div className="flex flex-col h-full">
-                <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+                <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}
                             className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                            <ArrowLeft className="w-5 h-5 text-surface-600" />
                         </button>
-                        <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <h1 className="text-lg font-bold text-foreground">
                             Dashboard
                         </h1>
                     </div>
@@ -108,15 +108,15 @@ export default function TechDashboardPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Dashboard
                     </h1>
                 </div>
@@ -126,34 +126,34 @@ export default function TechDashboardPage() {
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {/* Summary Cards Row */}
                 <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                    <div className="bg-card rounded-xl p-3">
                         <div className="flex items-center gap-2 mb-1">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            <span className="text-xs text-surface-500 dark:text-surface-400">OS Concluídas</span>
+                            <span className="text-xs text-surface-500">OS Concluídas</span>
                         </div>
-                        <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <p className="text-lg font-bold text-foreground">
                             {productivityData?.completed_this_month ?? 0}
                         </p>
                         <p className="text-[10px] text-surface-400">este mês</p>
                     </div>
 
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                    <div className="bg-card rounded-xl p-3">
                         <div className="flex items-center gap-2 mb-1">
                             <Clock className="w-4 h-4 text-blue-500" />
-                            <span className="text-xs text-surface-500 dark:text-surface-400">Tempo Médio</span>
+                            <span className="text-xs text-surface-500">Tempo Médio</span>
                         </div>
-                        <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <p className="text-lg font-bold text-foreground">
                             {productivityData?.average_time_hours ? `${productivityData.average_time_hours.toFixed(1)}h` : 'N/A'}
                         </p>
                         <p className="text-[10px] text-surface-400">por OS</p>
                     </div>
 
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                    <div className="bg-card rounded-xl p-3">
                         <div className="flex items-center gap-2 mb-1">
                             <Star className="w-4 h-4 text-amber-500" />
-                            <span className="text-xs text-surface-500 dark:text-surface-400">NPS Pessoal</span>
+                            <span className="text-xs text-surface-500">NPS Pessoal</span>
                         </div>
-                        <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                        <p className="text-lg font-bold text-foreground">
                             {productivityData?.nps_score ? productivityData.nps_score.toFixed(1) : 'N/A'}
                         </p>
                         <p className="text-[10px] text-surface-400">avaliação</p>
@@ -181,10 +181,10 @@ export default function TechDashboardPage() {
                 </div>
 
                 {/* Weekly Chart */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4">
                         <BarChart3 className="w-5 h-5 text-brand-600" />
-                        <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                        <h3 className="text-sm font-semibold text-foreground">
                             OS Concluídas por Semana
                         </h3>
                     </div>
@@ -192,10 +192,10 @@ export default function TechDashboardPage() {
                         {weeklyData.map((week, idx) => (
                             <div key={idx} className="space-y-1">
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-surface-600 dark:text-surface-400">{week.week}</span>
-                                    <span className="font-semibold text-surface-900 dark:text-surface-50">{week.count}</span>
+                                    <span className="text-surface-600">{week.week}</span>
+                                    <span className="font-semibold text-foreground">{week.count}</span>
                                 </div>
-                                <div className="h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
+                                <div className="h-3 bg-surface-100 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-brand-600 rounded-full transition-all"
                                         style={{ width: `${(week.count / maxCount) * 100}%` }}
@@ -208,42 +208,42 @@ export default function TechDashboardPage() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <Clock className="w-4 h-4 text-amber-500" />
-                            <span className="text-xs text-surface-500 dark:text-surface-400">OS Pendentes</span>
+                            <span className="text-xs text-surface-500">OS Pendentes</span>
                         </div>
-                        <p className="text-xl font-bold text-surface-900 dark:text-surface-50">
+                        <p className="text-xl font-bold text-foreground">
                             {productivityData?.pending_count ?? 0}
                         </p>
                     </div>
 
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <Wrench className="w-4 h-4 text-blue-500" />
-                            <span className="text-xs text-surface-500 dark:text-surface-400">OS em Andamento</span>
+                            <span className="text-xs text-surface-500">OS em Andamento</span>
                         </div>
-                        <p className="text-xl font-bold text-surface-900 dark:text-surface-50">
+                        <p className="text-xl font-bold text-foreground">
                             {productivityData?.in_progress_count ?? 0}
                         </p>
                     </div>
 
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <Target className="w-4 h-4 text-emerald-500" />
-                            <span className="text-xs text-surface-500 dark:text-surface-400">Taxa de Conclusão</span>
+                            <span className="text-xs text-surface-500">Taxa de Conclusão</span>
                         </div>
-                        <p className="text-xl font-bold text-surface-900 dark:text-surface-50">
+                        <p className="text-xl font-bold text-foreground">
                             {productivityData?.completion_rate ? `${productivityData.completion_rate.toFixed(0)}%` : 'N/A'}
                         </p>
                     </div>
 
-                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                    <div className="bg-card rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <TrendingUp className="w-4 h-4 text-purple-500" />
-                            <span className="text-xs text-surface-500 dark:text-surface-400">Horas Trabalhadas</span>
+                            <span className="text-xs text-surface-500">Horas Trabalhadas</span>
                         </div>
-                        <p className="text-xl font-bold text-surface-900 dark:text-surface-50">
+                        <p className="text-xl font-bold text-foreground">
                             {productivityData?.hours_worked_month ? `${productivityData.hours_worked_month.toFixed(1)}h` : 'N/A'}
                         </p>
                         <p className="text-[10px] text-surface-400">este mês</p>
@@ -251,10 +251,10 @@ export default function TechDashboardPage() {
                 </div>
 
                 {/* Badges & Conquistas */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4">
                         <Award className="w-5 h-5 text-amber-500" />
-                        <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                        <h3 className="text-sm font-semibold text-foreground">
                             Conquistas
                         </h3>
                     </div>
@@ -265,14 +265,14 @@ export default function TechDashboardPage() {
                                 className={cn(
                                     'flex flex-col items-center gap-1.5 p-3 rounded-xl text-center',
                                     badge.earned
-                                        ? 'bg-amber-50 dark:bg-amber-900/20'
-                                        : 'bg-surface-50 dark:bg-surface-800 opacity-40'
+                                        ? 'bg-amber-50'
+                                        : 'bg-surface-50 opacity-40'
                                 )}
                             >
                                 <span className="text-2xl">{badge.emoji}</span>
                                 <span className={cn(
                                     'text-[10px] font-medium leading-tight',
-                                    badge.earned ? 'text-amber-700 dark:text-amber-400' : 'text-surface-400'
+                                    badge.earned ? 'text-amber-700' : 'text-surface-400'
                                 )}>
                                     {badge.label}
                                 </span>
@@ -295,7 +295,7 @@ export default function TechDashboardPage() {
                 </div>
 
                 {/* Atalhos Rápidos */}
-                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
+                <div className="bg-card rounded-xl p-4">
                     <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wide mb-3">Atalhos Rápidos</h3>
                     <div className="grid grid-cols-2 gap-2">
                         {[
@@ -307,12 +307,12 @@ export default function TechDashboardPage() {
                             <button
                                 key={link.path}
                                 onClick={() => navigate(link.path)}
-                                className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-50 dark:bg-surface-900 active:scale-[0.98] transition-transform"
+                                className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-50 active:scale-[0.98] transition-transform"
                             >
                                 <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', link.color)}>
                                     <link.icon className="w-4 h-4" />
                                 </div>
-                                <span className="text-xs font-medium text-surface-700 dark:text-surface-300">{link.label}</span>
+                                <span className="text-xs font-medium text-surface-700">{link.label}</span>
                             </button>
                         ))}
                     </div>

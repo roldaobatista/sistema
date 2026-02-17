@@ -210,7 +210,7 @@ export default function TechCertificatePage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         type="button"
@@ -218,9 +218,9 @@ export default function TechCertificatePage() {
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         aria-label="Voltar"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Certificado de Calibração
                     </h1>
                 </div>
@@ -235,7 +235,7 @@ export default function TechCertificatePage() {
                 ) : (
                     <>
                         <div>
-                            <h2 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2 flex items-center gap-2">
+                            <h2 className="text-sm font-medium text-surface-700 mb-2 flex items-center gap-2">
                                 <Award className="w-4 h-4" />
                                 Selecione o equipamento
                             </h2>
@@ -245,7 +245,7 @@ export default function TechCertificatePage() {
                                         key={eq.id}
                                         onClick={() => handleSelectEquipment(eq)}
                                         className={cn(
-                                            'bg-white dark:bg-surface-800/80 rounded-xl p-4 text-left transition-colors',
+                                            'bg-card rounded-xl p-4 text-left transition-colors',
                                             selectedEquipment?.id === eq.id
                                                 ? 'ring-2 ring-brand-500'
                                                 : 'hover:bg-surface-50 dark:hover:bg-surface-700/80'
@@ -254,7 +254,7 @@ export default function TechCertificatePage() {
                                         <div className="flex items-center gap-2">
                                             <FileText className="w-5 h-5 text-brand-500" />
                                             <div>
-                                                <p className="font-medium text-surface-900 dark:text-surface-50">
+                                                <p className="font-medium text-foreground">
                                                     {eq.code || eq.name || `Equipamento #${eq.id}`}
                                                 </p>
                                                 {eq.serial_number && (
@@ -271,8 +271,8 @@ export default function TechCertificatePage() {
 
                         {selectedEquipment && (
                             <>
-                                <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                    <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                                <div className="bg-card rounded-xl p-4">
+                                    <h3 className="text-sm font-medium text-surface-700 mb-2">
                                         Resumo da Calibração
                                     </h3>
                                     {latestCalibration ? (
@@ -316,9 +316,9 @@ export default function TechCertificatePage() {
                                 </div>
 
                                 {templates.length > 0 && (
-                                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                        <h3 className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                                            Modelo de Certificado
+                                    <div className="bg-card rounded-xl p-4">
+<h3 className="text-sm font-medium text-surface-700 mb-2">
+                                        Modelo de Certificado
                                         </h3>
                                         <div className="space-y-2">
                                             {templates.map((t) => (
@@ -328,8 +328,8 @@ export default function TechCertificatePage() {
                                                     className={cn(
                                                         'w-full flex items-center gap-2 p-3 rounded-lg text-left transition-colors',
                                                         selectedTemplateId === t.id
-                                                            ? 'bg-brand-100 dark:bg-brand-900/30 ring-1 ring-brand-500'
-                                                            : 'bg-surface-50 dark:bg-surface-700/50 hover:bg-surface-100 dark:hover:bg-surface-700'
+                                                            ? 'bg-brand-100 ring-1 ring-brand-500'
+                                                            : 'bg-surface-50 hover:bg-surface-100 dark:hover:bg-surface-700'
                                                     )}
                                                 >
                                                     <FileText className="w-4 h-4 text-surface-500" />
@@ -385,7 +385,7 @@ export default function TechCertificatePage() {
                                 </div>
 
                                 {certificate && (
-                                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 space-y-3">
+                                    <div className="bg-emerald-50 rounded-xl p-4 space-y-3">
                                         <div className="flex items-center gap-3">
                                             <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                                             <div>
@@ -400,21 +400,21 @@ export default function TechCertificatePage() {
                                         <div className="flex flex-wrap gap-2">
                                             <button
                                                 onClick={handleViewPdf}
-                                                className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-surface-800 rounded-lg text-sm font-medium hover:bg-surface-50 dark:hover:bg-surface-700"
+                                                className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg text-sm font-medium hover:bg-surface-50 dark:hover:bg-surface-700"
                                             >
                                                 <Eye className="w-4 h-4" />
                                                 Visualizar PDF
                                             </button>
                                             <button
                                                 onClick={handlePrint}
-                                                className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-surface-800 rounded-lg text-sm font-medium hover:bg-surface-50 dark:hover:bg-surface-700"
+                                                className="flex items-center gap-2 px-3 py-2 bg-card rounded-lg text-sm font-medium hover:bg-surface-50 dark:hover:bg-surface-700"
                                             >
                                                 <Printer className="w-4 h-4" />
                                                 Imprimir
                                             </button>
                                         </div>
-                                        <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800">
-                                            <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-2">
+                                        <div className="pt-2 border-t border-emerald-200">
+                                            <p className="text-xs font-medium text-surface-600 mb-2">
                                                 Enviar por e-mail
                                             </p>
                                             <div className="flex gap-2">
@@ -425,7 +425,7 @@ export default function TechCertificatePage() {
                                                     onChange={(e) =>
                                                         setEmailForm((p) => ({ ...p, email: e.target.value }))
                                                     }
-                                                    className="flex-1 px-3 py-2.5 rounded-lg bg-white dark:bg-surface-800 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                                    className="flex-1 px-3 py-2.5 rounded-lg bg-card border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                                 />
                                                 <button
                                                     onClick={handleSendEmail}

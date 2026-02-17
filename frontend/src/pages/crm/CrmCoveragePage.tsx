@@ -35,7 +35,7 @@ export function CrmCoveragePage() {
                                     <span className="text-sm font-medium">{name}</span>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-muted-foreground">{s.visited}/{s.total}</span>
-                                        <div className="w-24 h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${s.coverage}%` }} /></div>
+                                        <div className="w-24 h-2 bg-surface-200 rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${s.coverage}%` }} /></div>
                                         <Badge variant={s.coverage >= 80 ? 'secondary' : s.coverage >= 50 ? 'outline' : 'destructive'} className="text-xs w-14 justify-center">{s.coverage}%</Badge>
                                     </div>
                                 </div>
@@ -48,7 +48,7 @@ export function CrmCoveragePage() {
                                     <Badge variant="outline">{rating || 'Sem rating'}</Badge>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-muted-foreground">{s.visited}/{s.total}</span>
-                                        <div className="w-24 h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${s.coverage}%` }} /></div>
+                                        <div className="w-24 h-2 bg-surface-200 rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${s.coverage}%` }} /></div>
                                         <Badge variant={s.coverage >= 80 ? 'secondary' : 'outline'} className="text-xs w-14 justify-center">{s.coverage}%</Badge>
                                     </div>
                                 </div>

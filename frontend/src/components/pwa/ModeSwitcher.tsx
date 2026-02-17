@@ -29,7 +29,7 @@ export function ModeSwitcher() {
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="gap-2 min-w-0 text-surface-700 dark:text-surface-200 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800"
+                    className="gap-2 min-w-0 text-surface-700 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800"
                 >
                     <CurrentIcon className="h-4 w-4 shrink-0" />
                     <span className="truncate max-w-[100px] sm:max-w-[140px] font-medium">
@@ -40,7 +40,7 @@ export function ModeSwitcher() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={6} className="min-w-[240px] p-2 shadow-lg">
-                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400 border-b border-border dark:border-surface-700 mb-1.5">
+                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-surface-500 border-b border-border dark:border-surface-700 mb-1.5">
                     Trocar modo
                 </div>
                 {availableModes.map((mode) => {

@@ -123,7 +123,7 @@ export default function CertificateTemplatesPage() {
                                     )}
                                 </div>
                                 {t.is_default && (
-                                    <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30">
                                         <CheckCircle2 className="h-3 w-3" /> Padrão
                                     </span>
                                 )}

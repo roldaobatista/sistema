@@ -1,0 +1,106 @@
+# Production Gotchas (REGRA OBRIGATÓRIA)
+
+## Contexto
+
+Erros recorrentes em produção causados por padrões frágeis. Estas regras previnem falhas silenciosas no deploy.
+
+---
+
+## 1. Nginx Config: SEM placeholders de variável
+
+O deploy usa `git reset --hard origin/main`, que restaura TODOS os arquivos versionados. Qualquer substituição via `sed` ou `envsubst` é desfeita.
+
+```nginx
+# ❌ ERRADO: placeholder será restaurado pelo git reset e nginx não inicia
+ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+
+# ✅ CORRETO: domínio hardcodado, sobrevive ao git reset
+ssl_certificate /etc/letsencrypt/live/app.balancassolution.com/fullchain.pem;
+```
+
+**Regra:** NUNCA usar `${VARIAVEL}` ou qualquer placeholder em arquivos nginx versionados no git. Hardcodar valores de produção diretamente.
+
+---
+
+## 2. Nginx Config: TODO upstream deve existir no compose
+
+Nginx resolve hostnames de upstream no startup. Se o serviço não existe na rede Docker, nginx falha com `[emerg] host not found in upstream` e NÃO inicia.
+
+```nginx
+# ❌ ERRADO: go2rtc não existe no docker-compose.prod.yml → nginx morre
+location /go2rtc/ {
+    proxy_pass http://go2rtc:1984/;
+}
+
+# ✅ CORRETO: só adicionar location se o serviço existir no compose
+```
+
+**Regra:** Antes de adicionar `proxy_pass http://SERVIÇO:PORTA` no nginx config, verificar que:
+1. O serviço existe no `docker-compose.prod.yml`
+2. O serviço está na mesma network (`kalibrium`)
+3. A porta exposta corresponde à do `proxy_pass`
+
+---
+
+## 3. Frontend Dockerfile: SEMPRE gerar `.env.production`
+
+O Vite (v7+) NÃO lê `process.env` de forma confiável para substituir `import.meta.env.VITE_*` no build. Ele prioriza arquivos `.env` sobre variáveis de ambiente do sistema. Como o `COPY . .` copia o `.env` local (com valores de desenvolvimento), os Docker build args são ignorados.
+
+```dockerfile
+# ❌ ERRADO: Vite ignora o ENV do Docker, usa o .env copiado pelo COPY
+ENV VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY
+COPY . .
+RUN npm run build:deploy
+
+# ✅ CORRETO: gerar .env.production APÓS o COPY, ANTES do build
+COPY . .
+RUN printf "VITE_API_URL=%s\nVITE_WS_URL=%s\n..." \
+    "$VITE_API_URL" "$VITE_WS_URL" ... \
+    > .env.production
+RUN npm run build:deploy
+```
+
+**Regra:** Se adicionar uma nova variável `VITE_*` ao frontend:
+1. Adicionar o `ARG` no Dockerfile
+2. Adicionar no `printf` que gera `.env.production`
+3. Adicionar nos `args:` do `docker-compose.prod.yml`
+4. Adicionar no `.env` raiz do servidor
+
+Todos os 4 passos são obrigatórios. Se faltar qualquer um, a variável será vazia no build.
+
+---
+
+## 4. WebSocket: Reverb = protocolo Pusher ONLY
+
+O Laravel Reverb fala exclusivamente protocolo Pusher. Conexões raw WebSocket (`new WebSocket(url)`) ao endpoint `/app/{key}` do Reverb **NÃO funcionam**.
+
+```typescript
+// ❌ ERRADO: raw WebSocket direto ao Reverb — protocolo incompatível
+const ws = new WebSocket('wss://app.balancassolution.com/app');
+ws.send(JSON.stringify({ event: 'subscribe', channel: 'notifications' }));
+
+// ✅ CORRETO: usar Laravel Echo (que fala protocolo Pusher)
+import Echo from 'laravel-echo';
+const echo = new Echo({ broadcaster: 'reverb', key: '...', ... });
+echo.channel('notifications').listen('NewNotification', callback);
+
+// ✅ TAMBÉM CORRETO: usar polling como fallback quando Echo não está configurado
+const { data } = useQuery({ queryKey: ['notifications'], refetchInterval: 30_000 });
+```
+
+**Regra:** Para features que precisam de tempo real:
+- **Com Reverb configurado:** usar Echo via `@/lib/echo.ts` (ex: `useTvDashboard`)
+- **Sem Reverb / fallback:** usar polling com `refetchInterval` do React Query
+- **NUNCA** usar `new WebSocket()` direto apontando para o Reverb
+
+---
+
+## Checklist antes de alterar infraestrutura
+
+Antes de modificar `nginx/*.conf`, `Dockerfile`, `docker-compose.prod.yml` ou `.env`:
+
+- [ ] Nginx: nenhum `${PLACEHOLDER}` em arquivos versionados
+- [ ] Nginx: todo `proxy_pass` tem serviço correspondente no compose
+- [ ] Dockerfile frontend: `.env.production` inclui TODAS as variáveis `VITE_*`
+- [ ] WebSocket: nenhum `new WebSocket()` apontando para Reverb
+- [ ] Testar localmente com `docker compose config` para verificar resolução de variáveis

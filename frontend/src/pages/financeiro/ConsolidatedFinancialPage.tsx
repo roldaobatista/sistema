@@ -189,7 +189,7 @@ export function ConsolidatedFinancialPage() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="bg-surface-50 dark:bg-surface-800">
+                                    <tr className="bg-surface-50">
                                         <th className="text-left px-4 py-3 font-medium text-content-secondary">Empresa</th>
                                         <th className="text-left px-4 py-3 font-medium text-content-secondary">CNPJ</th>
                                         <th className="text-right px-4 py-3 font-medium text-content-secondary">A Receber</th>
@@ -214,7 +214,7 @@ export function ConsolidatedFinancialPage() {
                                 </tbody>
                                 {perTenant.length > 1 && (
                                     <tfoot>
-                                        <tr className="bg-surface-100 dark:bg-surface-700 font-semibold">
+                                        <tr className="bg-surface-100 font-semibold">
                                             <td className="px-4 py-3" colSpan={2}>TOTAL</td>
                                             <td className="px-4 py-3 text-right text-green-600">{formatCurrency(totals.receivables_open)}</td>
                                             <td className="px-4 py-3 text-right text-amber-600">{formatCurrency(totals.receivables_overdue)}</td>

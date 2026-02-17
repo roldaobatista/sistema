@@ -183,9 +183,9 @@ export default function TechToolInventoryPage() {
 
     const StatusBadge = ({ status }: { status: 'valid' | 'expiring' | 'expired' }) => {
         const config = {
-            valid: { label: 'Calibrado', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400', Icon: CheckCircle2 },
-            expiring: { label: 'Vencendo', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400', Icon: AlertTriangle },
-            expired: { label: 'Vencido', className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400', Icon: XCircle },
+            valid: { label: 'Calibrado', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40', Icon: CheckCircle2 },
+            expiring: { label: 'Vencendo', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40', Icon: AlertTriangle },
+            expired: { label: 'Vencido', className: 'bg-red-100 text-red-700 dark:bg-red-900/40', Icon: XCircle },
         }[status]
         return (
             <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', config.className)}>
@@ -197,29 +197,29 @@ export default function TechToolInventoryPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/tech')}
                         className="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
+                        <ArrowLeft className="w-5 h-5 text-surface-600" />
                     </button>
-                    <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                    <h1 className="text-lg font-bold text-foreground">
                         Minhas Ferramentas
                     </h1>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                <div className="flex gap-2 p-1 bg-surface-100 dark:bg-surface-800 rounded-xl">
+                <div className="flex gap-2 p-1 bg-surface-100 rounded-xl">
                     <button
                         onClick={() => setTab('tools')}
                         className={cn(
                             'flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
                             tab === 'tools'
-                                ? 'bg-white dark:bg-surface-700 shadow-sm text-surface-900 dark:text-surface-50'
-                                : 'text-surface-600 dark:text-surface-400'
+                                ? 'bg-card shadow-sm text-foreground'
+                                : 'text-surface-600'
                         )}
                     >
                         <Wrench className="w-4 h-4" />
@@ -230,8 +230,8 @@ export default function TechToolInventoryPage() {
                         className={cn(
                             'flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors',
                             tab === 'weights'
-                                ? 'bg-white dark:bg-surface-700 shadow-sm text-surface-900 dark:text-surface-50'
-                                : 'text-surface-600 dark:text-surface-400'
+                                ? 'bg-card shadow-sm text-foreground'
+                                : 'text-surface-600'
                         )}
                     >
                         <Scale className="w-4 h-4" />
@@ -247,9 +247,9 @@ export default function TechToolInventoryPage() {
                                 <p className="text-sm text-surface-500">Carregando ferramentas...</p>
                             </div>
                         ) : toolsApiError ? (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-6 text-center">
+                            <div className="bg-card rounded-xl p-6 text-center">
                                 <Shield className="w-12 h-12 text-surface-400 mx-auto mb-2" />
-                                <p className="text-sm text-surface-600 dark:text-surface-400">
+                                <p className="text-sm text-surface-600">
                                     Funcionalidade em configuração
                                 </p>
                                 <p className="text-xs text-surface-500 mt-1">
@@ -259,16 +259,16 @@ export default function TechToolInventoryPage() {
                         ) : (
                             <>
                                 <div className="grid grid-cols-3 gap-3">
-                                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                        <p className="text-xs text-surface-500 dark:text-surface-400">Total</p>
-                                        <p className="text-lg font-bold text-surface-900 dark:text-surface-50">{totalTools}</p>
+                                    <div className="bg-card rounded-xl p-4">
+                                        <p className="text-xs text-surface-500">Total</p>
+                                        <p className="text-lg font-bold text-foreground">{totalTools}</p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                        <p className="text-xs text-surface-500 dark:text-surface-400">Calibradas</p>
+                                    <div className="bg-card rounded-xl p-4">
+                                        <p className="text-xs text-surface-500">Calibradas</p>
                                         <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{calibratedCount}</p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-4">
-                                        <p className="text-xs text-surface-500 dark:text-surface-400">Vencidas</p>
+                                    <div className="bg-card rounded-xl p-4">
+                                        <p className="text-xs text-surface-500">Vencidas</p>
                                         <p className="text-lg font-bold text-red-600 dark:text-red-400">{expiredCount}</p>
                                     </div>
                                 </div>
@@ -280,14 +280,14 @@ export default function TechToolInventoryPage() {
                                         placeholder="Buscar ferramenta..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white dark:bg-surface-800 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-card border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                                     />
                                 </div>
 
                                 {filteredTools.length === 0 ? (
-                                    <div className="bg-white dark:bg-surface-800/80 rounded-xl p-8 text-center">
-                                        <Package className="w-12 h-12 text-surface-300 dark:text-surface-500 mx-auto mb-2" />
-                                        <p className="text-sm text-surface-600 dark:text-surface-400">
+                                    <div className="bg-card rounded-xl p-8 text-center">
+                                        <Package className="w-12 h-12 text-surface-300 mx-auto mb-2" />
+                                        <p className="text-sm text-surface-600">
                                             Nenhuma ferramenta atribuída
                                         </p>
                                     </div>
@@ -296,11 +296,11 @@ export default function TechToolInventoryPage() {
                                         {filteredTools.map((tool) => (
                                             <div
                                                 key={tool.id}
-                                                className="bg-white dark:bg-surface-800/80 rounded-xl p-4"
+                                                className="bg-card rounded-xl p-4"
                                             >
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-surface-900 dark:text-surface-50 truncate">
+                                                        <p className="font-medium text-foreground truncate">
                                                             {tool.tool_name}
                                                         </p>
                                                         <p className="text-xs text-surface-500 flex items-center gap-1 mt-0.5">
@@ -321,7 +321,7 @@ export default function TechToolInventoryPage() {
                                                 </div>
                                                 <button
                                                     onClick={handleRequestReplacement}
-                                                    className="mt-3 w-full py-2 rounded-lg border border-surface-200 dark:border-surface-600 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+                                                    className="mt-3 w-full py-2 rounded-lg border border-surface-200 text-sm font-medium text-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
                                                 >
                                                     Solicitar Substituição
                                                 </button>
@@ -342,16 +342,16 @@ export default function TechToolInventoryPage() {
                                 <p className="text-sm text-surface-500">Carregando pesos padrão...</p>
                             </div>
                         ) : weightsApiError ? (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-6 text-center">
+                            <div className="bg-card rounded-xl p-6 text-center">
                                 <Shield className="w-12 h-12 text-surface-400 mx-auto mb-2" />
-                                <p className="text-sm text-surface-600 dark:text-surface-400">
+                                <p className="text-sm text-surface-600">
                                     Funcionalidade em configuração
                                 </p>
                             </div>
                         ) : weights.length === 0 ? (
-                            <div className="bg-white dark:bg-surface-800/80 rounded-xl p-8 text-center">
-                                <Scale className="w-12 h-12 text-surface-300 dark:text-surface-500 mx-auto mb-2" />
-                                <p className="text-sm text-surface-600 dark:text-surface-400">
+                            <div className="bg-card rounded-xl p-8 text-center">
+                                <Scale className="w-12 h-12 text-surface-300 mx-auto mb-2" />
+                                <p className="text-sm text-surface-600">
                                     Nenhum peso padrão atribuído
                                 </p>
                             </div>
@@ -373,10 +373,10 @@ export default function TechToolInventoryPage() {
                                     {weights.map((w) => (
                                         <div
                                             key={w.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-4"
+                                            className="bg-card rounded-xl p-4"
                                         >
                                             <div className="flex items-start justify-between gap-2">
-                                                <p className="font-medium text-surface-900 dark:text-surface-50">
+                                                <p className="font-medium text-foreground">
                                                     {w.value} {w.unit ?? 'kg'}
                                                 </p>
                                                 <StatusBadge status={w.status ?? 'valid'} />

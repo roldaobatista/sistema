@@ -149,11 +149,11 @@ export default function TechTimeEntriesPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white dark:bg-surface-900 px-4 pt-3 pb-4 border-b border-surface-200 dark:border-surface-700">
-                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 mb-2">
+            <div className="bg-card px-4 pt-3 pb-4 border-b border-border">
+                <button onClick={() => navigate('/tech')} className="flex items-center gap-1 text-sm text-brand-600 mb-2">
                     <ArrowLeft className="w-4 h-4" /> Voltar
                 </button>
-                <h1 className="text-lg font-bold text-surface-900 dark:text-surface-50">Apontamento de Horas</h1>
+                <h1 className="text-lg font-bold text-foreground">Apontamento de Horas</h1>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -162,7 +162,7 @@ export default function TechTimeEntriesPage() {
                     'rounded-2xl p-5 text-center',
                     activeClock
                         ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white'
-                        : 'bg-white dark:bg-surface-800/80'
+                        : 'bg-card'
                 )}>
                     <div className="flex items-center justify-center gap-2 mb-2">
                         <Timer className={cn('w-5 h-5', activeClock ? 'text-white/80' : 'text-surface-400')} />
@@ -171,7 +171,7 @@ export default function TechTimeEntriesPage() {
                         </span>
                     </div>
 
-                    <p className={cn('text-4xl font-bold font-mono', activeClock ? 'text-white' : 'text-surface-300 dark:text-surface-600')}>
+                    <p className={cn('text-4xl font-bold font-mono', activeClock ? 'text-white' : 'text-surface-300')}>
                         {elapsed}
                     </p>
 
@@ -209,10 +209,10 @@ export default function TechTimeEntriesPage() {
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-surface-800 border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
+                        className="flex-1 px-3 py-2 rounded-lg bg-card border-0 text-sm focus:ring-2 focus:ring-brand-500/30 focus:outline-none"
                     />
                     {totalMinutes > 0 && (
-                        <span className="px-2.5 py-1 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 text-xs font-medium">
+                        <span className="px-2.5 py-1 rounded-full bg-brand-100 text-brand-700 text-xs font-medium">
                             Total: {formatDuration(totalMinutes)}
                         </span>
                     )}
@@ -231,7 +231,7 @@ export default function TechTimeEntriesPage() {
                 ) : (
                     <div className="space-y-2">
                         {entries.map(entry => (
-                            <div key={entry.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
+                            <div key={entry.id} className="bg-card rounded-xl p-3">
                                 <div className="flex items-center gap-3">
                                     <div className={cn(
                                         'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
@@ -244,7 +244,7 @@ export default function TechTimeEntriesPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                            <span className="text-sm font-medium text-foreground">
                                                 {new Date(entry.clock_in).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                 {entry.clock_out && ` — ${new Date(entry.clock_out).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
                                             </span>
@@ -256,7 +256,7 @@ export default function TechTimeEntriesPage() {
                                             <p className="text-xs text-surface-400 truncate">{entry.notes}</p>
                                         )}
                                     </div>
-                                    <span className="text-sm font-bold text-surface-700 dark:text-surface-300 flex-shrink-0">
+                                    <span className="text-sm font-bold text-surface-700 flex-shrink-0">
                                         {formatDuration(entry.duration_minutes)}
                                     </span>
                                 </div>
