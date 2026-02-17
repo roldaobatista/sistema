@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageHeader } from '@/components/ui/pageheader';
 import {
     Package, Loader2, Search, Eye, Check, RotateCcw, Trash2,
     ChevronLeft, ChevronRight, AlertTriangle, Filter,

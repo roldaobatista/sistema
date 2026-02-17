@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageHeader } from '@/components/ui/pageheader';
 import {
     QrCode, Loader2, Search, Plus, Eye,
     ChevronLeft, ChevronRight, Filter, Package,
