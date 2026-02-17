@@ -48,19 +48,19 @@ return [
 
         'apps' => [
             [
-                'key' => env('REVERB_APP_KEY'),
-                'secret' => env('REVERB_APP_SECRET'),
-                'app_id' => env('REVERB_APP_ID'),
+                'key' => env('REVERB_APP_KEY', ''),
+                'secret' => env('REVERB_APP_SECRET', ''),
+                'app_id' => env('REVERB_APP_ID', 'kalibrium'),
                 'options' => [
-                    'host' => env('REVERB_HOST'),
-                    'port' => env('REVERB_PORT', 443),
-                    'scheme' => env('REVERB_SCHEME', 'https'),
-                    'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
+                    'host' => env('REVERB_HOST', '0.0.0.0'),
+                    'port' => (int) env('REVERB_PORT', 8080),
+                    'scheme' => env('REVERB_SCHEME', 'http'),
+                    'useTLS' => env('REVERB_SCHEME', 'http') === 'https',
                 ],
                 'allowed_origins' => ['*'],
-                'ping_interval' => env('REVERB_APP_PING_INTERVAL', 60),
-                'activity_timeout' => env('REVERB_APP_ACTIVITY_TIMEOUT', 30),
-                'max_message_size' => env('REVERB_APP_MAX_MESSAGE_SIZE', 10_000),
+                'ping_interval' => (int) env('REVERB_APP_PING_INTERVAL', 60),
+                'activity_timeout' => (int) env('REVERB_APP_ACTIVITY_TIMEOUT', 30),
+                'max_message_size' => (int) env('REVERB_APP_MAX_MESSAGE_SIZE', 10_000),
             ],
         ],
 

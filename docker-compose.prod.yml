@@ -86,10 +86,15 @@ services:
     container_name: kalibrium_reverb
     restart: unless-stopped
     env_file: ./backend/.env
+    environment:
+      REDIS_HOST: redis
+      DB_HOST: mysql
     command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
     expose:
       - "8080"
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
