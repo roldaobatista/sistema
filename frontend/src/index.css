@@ -8,40 +8,45 @@
 /* ── shadcn/ui Token Bridge ──
    Maps shadcn's expected CSS variables to Kalibrium tokens.
    This allows shadcn components to use our design system. */
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.20 0.008 260);
+:root,
+.light {
+  --background: oklch(0.985 0.002 260);
+  --foreground: oklch(0.22 0.008 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.20 0.008 260);
+  --card-foreground: oklch(0.22 0.008 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.20 0.008 260);
+  --popover-foreground: oklch(0.22 0.008 260);
   --primary: oklch(0.47 0.18 245);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.965 0.005 260);
-  --secondary-foreground: oklch(0.20 0.008 260);
-  --muted: oklch(0.965 0.005 260);
-  --muted-foreground: oklch(0.55 0.008 260);
-  --accent: oklch(0.965 0.005 260);
-  --accent-foreground: oklch(0.20 0.008 260);
-  --destructive: oklch(0.55 0.20 27);
+  --secondary: oklch(0.97 0.004 260);
+  --secondary-foreground: oklch(0.22 0.008 260);
+  --muted: oklch(0.97 0.004 260);
+  --muted-foreground: oklch(0.50 0.008 260);
+  --accent: oklch(0.97 0.01 245);
+  --accent-foreground: oklch(0.28 0.08 245);
+  --destructive: oklch(0.52 0.20 27);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0 0 0 / 0.09);
-  --input: oklch(0 0 0 / 0.09);
-  --ring: oklch(0.55 0.18 245);
+  --border: oklch(0 0 0 / 0.08);
+  --input: oklch(0 0 0 / 0.08);
+  --ring: oklch(0.47 0.18 245);
   --radius: 0.5rem;
   --chart-1: oklch(0.55 0.18 245);
   --chart-2: oklch(0.60 0.17 145);
   --chart-3: oklch(0.75 0.15 75);
   --chart-4: oklch(0.60 0.15 245);
   --chart-5: oklch(0.55 0.20 27);
-  --sidebar-background: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.20 0.008 260);
+  --sidebar-background: oklch(0.99 0.001 260);
+  --sidebar-foreground: oklch(0.22 0.008 260);
   --sidebar-primary: oklch(0.47 0.18 245);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.965 0.005 260);
-  --sidebar-accent-foreground: oklch(0.20 0.008 260);
+  --sidebar-accent: oklch(0.96 0.008 260);
+  --sidebar-accent-foreground: oklch(0.22 0.008 260);
   --sidebar-border: oklch(0 0 0 / 0.06);
-  --sidebar-ring: oklch(0.55 0.18 245);
+  --sidebar-ring: oklch(0.47 0.18 245);
+}
+
+.light {
+  color-scheme: light;
 }
 
 /* ── Dark Mode ── */
@@ -194,6 +199,27 @@
 
 @utility border-default {
   border-color: oklch(0 0 0 / 0.09);
+}
+
+.light .border-subtle {
+  border-color: oklch(0 0 0 / 0.05);
+}
+
+.light .border-default {
+  border-color: oklch(0 0 0 / 0.07);
+}
+
+.light .shadow-card {
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+}
+
+.light [data-sidebar],
+.light [data-header] {
+  background-color: var(--sidebar-background);
+}
+
+.light .bg-surface-50 {
+  background-color: var(--background);
 }
 
 @utility border-emphasis {
@@ -443,6 +469,10 @@
     background: linear-gradient(to right, transparent, oklch(0.985 0.003 260));
     opacity: 0;
     transition: opacity 0.15s ease;
+  }
+
+  .light .table-scroll-fade::after {
+    background: linear-gradient(to right, transparent, var(--background));
   }
 
   .dark .table-scroll-fade::after {

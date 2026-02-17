@@ -125,22 +125,22 @@ export function DashboardPage() {
             </div>
 
             {isEmpty && (
-                <div className="rounded-xl border-2 border-dashed border-surface-200 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-800 p-10 text-center animate-fade-in">
-                    <Rocket className="mx-auto h-10 w-10 text-brand-400 mb-3" />
+                <div className="rounded-xl border border-surface-200 dark:border-surface-700 bg-gradient-to-br from-brand-50/80 to-surface-0 dark:from-brand-950/40 dark:to-surface-800 p-10 text-center animate-fade-in shadow-card">
+                    <Rocket className="mx-auto h-10 w-10 text-brand-500 dark:text-brand-400 mb-3" />
                     <h2 className="text-subtitle text-surface-900 dark:text-surface-50">Bem-vindo ao Kalibrium!</h2>
-                    <p className="mt-1 text-sm text-surface-500 dark:text-surface-400 max-w-md mx-auto">
+                    <p className="mt-1 text-sm text-surface-600 dark:text-surface-400 max-w-md mx-auto">
                         Comece cadastrando seus clientes e criando sua primeira ordem de serviço.
                     </p>
                     <div className="mt-5 flex justify-center gap-3">
                         <button
                             onClick={() => navigate('/cadastros/clientes/novo')}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-surface-100 dark:bg-surface-700 px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 dark:border-transparent bg-surface-0 dark:bg-surface-700 px-4 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-surface-600 transition-colors shadow-sm"
                         >
                             <Users className="h-4 w-4" /> Cadastrar Cliente
                         </button>
                         <button
                             onClick={() => navigate('/os/nova')}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-500 transition-colors"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-500 transition-colors shadow-sm"
                         >
                             <Plus className="h-4 w-4" /> Criar OS
                         </button>
@@ -154,7 +154,7 @@ export function DashboardPage() {
                 </div>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="sm:col-span-2 rounded-xl border border-brand-200/50 dark:border-brand-500/30 bg-gradient-to-br from-brand-50 to-surface-0 dark:from-brand-950/40 dark:to-surface-800 p-5 shadow-card animate-fade-in">
+                    <div className="sm:col-span-2 rounded-xl border border-brand-200/60 dark:border-brand-500/30 bg-gradient-to-br from-brand-50 to-surface-0 dark:from-brand-950/40 dark:to-surface-800 p-5 shadow-card animate-fade-in">
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-label text-brand-600/70 dark:text-brand-400/80">Faturamento do Mês</span>
                             <DollarSign className="h-5 w-5 text-brand-400" />
@@ -176,7 +176,7 @@ export function DashboardPage() {
 
                     <div className="rounded-xl border border-default bg-surface-0 dark:bg-surface-800 p-5 shadow-card animate-fade-in stagger-1">
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-label text-surface-400 dark:text-surface-500">OS Abertas</span>
+                            <span className="text-label text-surface-500 dark:text-surface-500">OS Abertas</span>
                             <FileText className="h-4 w-4 text-surface-300 dark:text-surface-500" />
                         </div>
                         <div className="flex items-end gap-2">
@@ -192,7 +192,7 @@ export function DashboardPage() {
 
                     <div className="rounded-xl border border-default bg-surface-0 dark:bg-surface-800 p-5 shadow-card animate-fade-in stagger-2">
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-label text-surface-400 dark:text-surface-500">Concluídas</span>
+                            <span className="text-label text-surface-500 dark:text-surface-500">Concluídas</span>
                             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                         </div>
                         <div className="flex items-end gap-2">

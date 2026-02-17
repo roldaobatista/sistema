@@ -41,8 +41,15 @@ export function useAppMode() {
 
     const availableModes = useMemo(() => getAvailableModes(hasRole), [hasRole])
     const currentMode = useMemo(() => {
-        const fromPath = pathToMode(location.pathname, availableModes)
-        return fromPath
+        try {
+            const saved = localStorage.getItem(MODE_STORAGE_KEY) as AppMode | null
+            if (saved && availableModes.includes(saved)) {
+                return saved
+            }
+        } catch {
+            // ignore
+        }
+        return pathToMode(location.pathname, availableModes)
     }, [location.pathname, availableModes])
 
     useEffect(() => {

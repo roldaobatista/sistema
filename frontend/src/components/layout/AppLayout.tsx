@@ -442,6 +442,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
 
             <aside
+                data-sidebar
                 className={cn(
                     'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-default bg-surface-0 transition-[width,transform] duration-200 ease-out',
                     'lg:relative lg:z-auto',
@@ -624,7 +625,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 )}
 
-                <header className="flex h-[var(--topbar-height)] items-center justify-between border-b border-default bg-surface-0 px-4 lg:px-5">
+                <header data-header className="flex h-[var(--topbar-height)] items-center justify-between border-b border-default bg-surface-0 px-4 lg:px-5">
                     <div className="flex items-center gap-2">
                         <button
                             onClick={toggleMobileSidebar}

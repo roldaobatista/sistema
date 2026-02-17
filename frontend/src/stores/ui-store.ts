@@ -1,6 +1,17 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+function applyThemeToDOM(theme: 'light' | 'dark' | 'system') {
+    const root = document.documentElement
+    root.classList.remove('light', 'dark')
+    if (theme === 'system') {
+        const prefersDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+        root.classList.add(prefersDark ? 'dark' : 'light')
+    } else {
+        root.classList.add(theme)
+    }
+}
+
 interface UIState {
     sidebarCollapsed: boolean
     sidebarMobileOpen: boolean
@@ -29,16 +40,7 @@ export const useUIStore = create<UIState>()(
                 set((state) => ({ sidebarMobileOpen: !state.sidebarMobileOpen })),
 
             setTheme: (theme) => {
-                const root = document.documentElement
-                root.classList.remove('light', 'dark')
-
-                if (theme === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-                    root.classList.add(prefersDark ? 'dark' : 'light')
-                } else {
-                    root.classList.add(theme)
-                }
-
+                applyThemeToDOM(theme)
                 set({ theme })
             },
         }),
@@ -48,6 +50,9 @@ export const useUIStore = create<UIState>()(
                 sidebarCollapsed: state.sidebarCollapsed,
                 theme: state.theme,
             }),
+            onRehydrateStorage: () => (state) => {
+                if (state?.theme) applyThemeToDOM(state.theme)
+            },
         }
     )
 )
