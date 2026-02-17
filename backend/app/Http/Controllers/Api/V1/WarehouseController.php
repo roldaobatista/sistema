@@ -32,11 +32,9 @@ class WarehouseController extends Controller
             $query->where('is_active', true);
         }
 
-        $warehouses = $query->orderBy('name')->get();
+        $warehouses = $query->orderBy('name')->paginate($request->integer('per_page', 50));
 
-        return response()->json([
-            'data' => $warehouses
-        ]);
+        return response()->json($warehouses);
     }
 
     public function store(Request $request): JsonResponse

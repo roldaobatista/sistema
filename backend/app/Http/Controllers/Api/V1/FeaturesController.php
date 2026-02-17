@@ -772,6 +772,32 @@ class FeaturesController extends Controller
         return response()->json(ToolCalibration::create($data), 201);
     }
 
+    public function updateToolCalibration(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'tool_inventory_id' => 'nullable|exists:tool_inventories,id',
+            'calibration_date' => 'nullable|date',
+            'next_due_date' => 'nullable|date|after:calibration_date',
+            'certificate_number' => 'nullable|string',
+            'laboratory' => 'nullable|string',
+            'result' => 'nullable|in:approved,rejected,adjusted',
+            'cost' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        $calibration = ToolCalibration::findOrFail($id);
+        $calibration->update(array_filter($data, fn ($v) => $v !== null));
+
+        return response()->json($calibration);
+    }
+
+    public function destroyToolCalibration(int $id): JsonResponse
+    {
+        ToolCalibration::findOrFail($id)->delete();
+
+        return response()->json(null, 204);
+    }
+
     public function expiringToolCalibrations(Request $request): JsonResponse
     {
         $days = (int) $request->input('days', 30);

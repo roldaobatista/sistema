@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import React, { useState, useEffect, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
     ClipboardList, Users, DollarSign, Award, TrendingUp,
     Calendar, ArrowRight, FileText, Phone, Wallet, Target, Scale, Download,
-    Truck, Package, UserCheck, FileX,
+    Truck, Package, UserCheck, FileX, Building2,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -15,20 +15,20 @@ const fmtHours = (min: number) => { const m = Number(min) || 0; return `${Math.f
 
 type Tab = 'os' | 'productivity' | 'financial' | 'commissions' | 'profitability' | 'quotes' | 'service_calls' | 'technician_cash' | 'crm' | 'equipments' | 'suppliers' | 'stock' | 'customers'
 
-const tabs: { key: Tab; label: string; icon: any }[] = [
-    { key: 'os', label: 'Ordens', icon: ClipboardList },
-    { key: 'productivity', label: 'Produtividade', icon: Users },
-    { key: 'financial', label: 'Financeiro', icon: DollarSign },
-    { key: 'commissions', label: 'Comissões', icon: Award },
-    { key: 'profitability', label: 'Margem', icon: TrendingUp },
-    { key: 'quotes', label: 'Orçamentos', icon: FileText },
-    { key: 'service_calls', label: 'Chamados', icon: Phone },
-    { key: 'technician_cash', label: 'Caixa', icon: Wallet },
-    { key: 'crm', label: 'CRM', icon: Target },
-    { key: 'equipments', label: 'Equipamentos', icon: Scale },
-    { key: 'suppliers', label: 'Fornecedores', icon: Truck },
-    { key: 'stock', label: 'Estoque', icon: Package },
-    { key: 'customers', label: 'Clientes', icon: UserCheck },
+const tabs: { key: Tab; label: string; icon: any; permission: string }[] = [
+    { key: 'os', label: 'Ordens', icon: ClipboardList, permission: 'reports.os_report.view' },
+    { key: 'productivity', label: 'Produtividade', icon: Users, permission: 'reports.productivity_report.view' },
+    { key: 'financial', label: 'Financeiro', icon: DollarSign, permission: 'reports.financial_report.view' },
+    { key: 'commissions', label: 'Comissões', icon: Award, permission: 'reports.commission_report.view' },
+    { key: 'profitability', label: 'Margem', icon: TrendingUp, permission: 'reports.margin_report.view' },
+    { key: 'quotes', label: 'Orçamentos', icon: FileText, permission: 'reports.quotes_report.view' },
+    { key: 'service_calls', label: 'Chamados', icon: Phone, permission: 'reports.service_calls_report.view' },
+    { key: 'technician_cash', label: 'Caixa', icon: Wallet, permission: 'reports.technician_cash_report.view' },
+    { key: 'crm', label: 'CRM', icon: Target, permission: 'reports.crm_report.view' },
+    { key: 'equipments', label: 'Equipamentos', icon: Scale, permission: 'reports.equipments_report.view' },
+    { key: 'suppliers', label: 'Fornecedores', icon: Truck, permission: 'reports.suppliers_report.view' },
+    { key: 'stock', label: 'Estoque', icon: Package, permission: 'reports.stock_report.view' },
+    { key: 'customers', label: 'Clientes', icon: UserCheck, permission: 'reports.customers_report.view' },
 ]
 
 const statusLabels: Record<string, string> = {
@@ -49,16 +49,34 @@ const priorityLabels: Record<string, string> = {
 export function ReportsPage() {
     const { hasPermission } = useAuthStore()
 
-    const [tab, setTab] = useState<Tab>('os')
+    const visibleTabs = useMemo(
+        () => tabs.filter(t => hasPermission(t.permission)),
+        [hasPermission]
+    )
+
+    const [tab, setTab] = useState<Tab>(() => visibleTabs[0]?.key ?? 'os')
     const today = new Date().toISOString().split('T')[0]
     const monthStart = today.slice(0, 7) + '-01'
     const [from, setFrom] = useState(monthStart)
     const [to, setTo] = useState(today)
     const [osNumber, setOsNumber] = useState('')
+    const [branchId, setBranchId] = useState('')
     const [isExporting, setIsExporting] = useState(false)
     const [exportError, setExportError] = useState('')
-    const queryClient = useQueryClient()
     const isFinancialTab = ['financial', 'commissions', 'profitability', 'technician_cash'].includes(tab)
+
+    const { data: branchesRes } = useQuery({
+        queryKey: ['branches-list'],
+        queryFn: () => api.get('/branches'),
+        staleTime: 5 * 60 * 1000,
+    })
+    const branches: { id: number; name: string }[] = branchesRes?.data ?? []
+
+    useEffect(() => {
+        if (visibleTabs.length > 0 && !visibleTabs.some(t => t.key === tab)) {
+            setTab(visibleTabs[0].key)
+        }
+    }, [visibleTabs, tab])
 
     const endpoint: Record<Tab, string> = {
         os: '/reports/work-orders',
@@ -92,14 +110,16 @@ export function ReportsPage() {
     }
 
     const { data: res, isLoading, isError } = useQuery({
-        queryKey: ['report', tab, from, to, isFinancialTab ? osNumber : ''],
+        queryKey: ['report', tab, from, to, isFinancialTab ? osNumber : '', branchId],
         queryFn: () => api.get(endpoint[tab], {
             params: {
                 from,
                 to,
                 ...(isFinancialTab && osNumber.trim() ? { os_number: osNumber.trim() } : {}),
+                ...(branchId ? { branch_id: branchId } : {}),
             },
         }),
+        enabled: visibleTabs.some(t => t.key === tab),
     })
 
     useEffect(() => {
@@ -117,6 +137,7 @@ export function ReportsPage() {
                     from,
                     to,
                     ...(isFinancialTab && osNumber.trim() ? { os_number: osNumber.trim() } : {}),
+                    ...(branchId ? { branch_id: branchId } : {}),
                 },
                 responseType: 'blob',
             })
@@ -125,7 +146,7 @@ export function ReportsPage() {
             const url = window.URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = `relatório-${reportType}-${from}-${to}.csv`
+            link.download = `relatorio-${reportType}-${from}-${to}.csv`
             document.body.appendChild(link)
             link.click()
             link.remove()
@@ -143,6 +164,15 @@ export function ReportsPage() {
         }
     }
 
+    if (visibleTabs.length === 0) {
+        return (
+            <div className="flex flex-col items-center gap-3 py-20 text-surface-400">
+                <FileX className="h-12 w-12" />
+                <p className="text-sm font-medium">Você não possui permissão para acessar nenhum relatório.</p>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-5">
             <div>
@@ -152,7 +182,7 @@ export function ReportsPage() {
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap rounded-lg border border-default bg-surface-50 p-0.5">
-                    {tabs.map(t => {
+                    {visibleTabs.map(t => {
                         const Icon = t.icon
                         return (
                             <button key={t.key} onClick={() => setTab(t.key)}
@@ -163,13 +193,29 @@ export function ReportsPage() {
                         )
                     })}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    {branches.length > 1 && (
+                        <div className="flex items-center gap-1.5">
+                            <Building2 className="h-4 w-4 text-surface-400" />
+                            <select
+                                value={branchId}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBranchId(e.target.value)}
+                                aria-label="Filtrar por filial"
+                                className="rounded-lg border border-default bg-surface-50 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
+                            >
+                                <option value="">Todas filiais</option>
+                                {branches.map(b => (
+                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     {isFinancialTab && (
                         <input
                             value={osNumber}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOsNumber(e.target.value)}
-                            placeholder="Filtrar por OS física (os_number)"
-                            className="w-64 rounded-lg border border-default bg-surface-50 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
+                            placeholder="Filtrar por OS física"
+                            className="w-52 rounded-lg border border-default bg-surface-50 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
                         />
                     )}
                     <Calendar className="h-4 w-4 text-surface-400" />
@@ -214,7 +260,7 @@ export function ReportsPage() {
             )}
             {isError && <div className="py-12 text-center text-sm text-red-600">Erro ao carregar relatório. Verifique sua conexão e tente novamente.</div>}
 
-            {tab === 'os' && !isLoading && (
+            {tab === 'os' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {(data.by_status ?? []).map((s: any) => (
@@ -269,7 +315,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'productivity' && !isLoading && (
+            {tab === 'productivity' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">
                         <table className="w-full">
@@ -316,7 +362,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'financial' && !isLoading && (
+            {tab === 'financial' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
@@ -337,6 +383,7 @@ export function ReportsPage() {
                             <div className="space-y-2">
                                 <div className="flex justify-between"><span className="text-sm text-surface-500">Total</span><span className="text-sm font-bold">{fmtBRL(Number(data.payable?.total ?? 0))}</span></div>
                                 <div className="flex justify-between"><span className="text-sm text-surface-500">Pago</span><span className="text-sm font-bold text-emerald-600">{fmtBRL(Number(data.payable?.total_paid ?? 0))}</span></div>
+                                <div className="flex justify-between"><span className="text-sm text-surface-500">Vencido</span><span className="text-sm font-bold text-red-600">{fmtBRL(Number(data.payable?.overdue ?? 0))}</span></div>
                                 <div className="flex justify-between"><span className="text-sm text-surface-500">Contas</span><span className="text-sm font-bold">{data.payable?.count ?? 0}</span></div>
                             </div>
                         </div>
@@ -386,7 +433,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'commissions' && !isLoading && (
+            {tab === 'commissions' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {(data.by_status ?? []).map((s: any) => (
@@ -426,7 +473,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'profitability' && !isLoading && (
+            {tab === 'profitability' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -470,39 +517,39 @@ export function ReportsPage() {
                         </div>
                     </div>
 
-                    {(data.revenue ?? 0) > 0 && (
+                    {(data.total_costs ?? 0) > 0 && (
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
                             <h3 className="mb-3 text-sm font-semibold text-surface-700">Composição dos Custos</h3>
                             <div className="flex h-8 overflow-hidden rounded-full bg-surface-100">
-                                {data.costs > 0 && (
+                                {(data.costs ?? 0) > 0 && (
                                     <div className="flex items-center justify-center bg-red-500 text-xs font-bold text-white"
-                                        style={{ width: `${(data.costs / (data.total_costs || 1)) * 100}%` }}>AP</div>
+                                        style={{ width: `${((data.costs ?? 0) / (data.total_costs || 1)) * 100}%` }}>AP</div>
                                 )}
-                                {data.expenses > 0 && (
+                                {(data.expenses ?? 0) > 0 && (
                                     <div className="flex items-center justify-center bg-amber-500 text-xs font-bold text-white"
-                                        style={{ width: `${(data.expenses / (data.total_costs || 1)) * 100}%` }}>Desp</div>
+                                        style={{ width: `${((data.expenses ?? 0) / (data.total_costs || 1)) * 100}%` }}>Desp</div>
                                 )}
-                                {data.commissions > 0 && (
+                                {(data.commissions ?? 0) > 0 && (
                                     <div className="flex items-center justify-center bg-sky-500 text-xs font-bold text-white"
-                                        style={{ width: `${(data.commissions / (data.total_costs || 1)) * 100}%` }}>Com</div>
+                                        style={{ width: `${((data.commissions ?? 0) / (data.total_costs || 1)) * 100}%` }}>Com</div>
                                 )}
-                                {data.item_costs > 0 && (
+                                {(data.item_costs ?? 0) > 0 && (
                                     <div className="flex items-center justify-center bg-violet-500 text-xs font-bold text-white"
-                                        style={{ width: `${(data.item_costs / (data.total_costs || 1)) * 100}%` }}>Peças</div>
+                                        style={{ width: `${((data.item_costs ?? 0) / (data.total_costs || 1)) * 100}%` }}>Peças</div>
                                 )}
                             </div>
                             <div className="mt-2 flex flex-wrap gap-4 text-xs text-surface-500">
-                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />AP {((data.costs / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
-                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Despesas {((data.expenses / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
-                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-500" />Comissões {((data.commissions / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
-                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-500" />Peças {((data.item_costs / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
+                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />AP {(((data.costs ?? 0) / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
+                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Despesas {(((data.expenses ?? 0) / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
+                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-500" />Comissões {(((data.commissions ?? 0) / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
+                                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-500" />Peças {(((data.item_costs ?? 0) / (data.total_costs || 1)) * 100).toFixed(0)}%</span>
                             </div>
                         </div>
                     )}
                 </div>
             )}
 
-            {tab === 'quotes' && !isLoading && (
+            {tab === 'quotes' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-3">
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-center">
@@ -545,7 +592,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'service_calls' && !isLoading && (
+            {tab === 'service_calls' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-center">
@@ -586,8 +633,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {/* Technician Cash Report */}
-            {tab === 'technician_cash' && !isLoading && (
+            {tab === 'technician_cash' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-3">
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card text-center">
@@ -630,7 +676,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'crm' && !isLoading && (
+            {tab === 'crm' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {(data.deals_by_status ?? []).map((s: any) => (
@@ -643,11 +689,11 @@ export function ReportsPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
-                            <h3 className="mb-3 text-sm font-semibold text-surface-700">Por Vendedor</h3>
+                            <h3 className="mb-3 text-sm font-semibold text-surface-700">Por Responsável</h3>
                             <div className="space-y-2">
                                 {(data.deals_by_seller ?? []).map((s: any) => (
                                     <div key={s.owner_id ?? 'unassigned'} className="flex items-center justify-between rounded-lg bg-surface-50 p-3">
-                                        <span className="text-sm font-medium">{s.owner_name ?? `#${s.owner_id}`}</span>
+                                        <span className="text-sm font-medium">{s.owner_name ?? 'Sem responsável'}</span>
                                         <div><span className="text-sm font-bold">{s.count}</span><span className="ml-2 text-xs text-surface-500">{fmtBRL(Number(s.value ?? 0))}</span></div>
                                     </div>
                                 ))}
@@ -684,7 +730,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'equipments' && !isLoading && (
+            {tab === 'equipments' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -732,7 +778,7 @@ export function ReportsPage() {
                     </div>
                     {(data.due_alerts ?? []).length > 0 && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-card">
-                            <h3 className="mb-3 text-sm font-semibold text-amber-800">⚠ Calibrações a Vencer (30 dias)</h3>
+                            <h3 className="mb-3 text-sm font-semibold text-amber-800">Calibrações a Vencer (30 dias)</h3>
                             <div className="space-y-2">
                                 {data.due_alerts.map((a: any) => (
                                     <div key={a.id} className="flex items-center justify-between text-sm">
@@ -746,7 +792,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'suppliers' && !isLoading && (
+            {tab === 'suppliers' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -790,7 +836,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'stock' && !isLoading && (
+            {tab === 'stock' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">
@@ -878,7 +924,7 @@ export function ReportsPage() {
                 </div>
             )}
 
-            {tab === 'customers' && !isLoading && (
+            {tab === 'customers' && !isLoading && !isError && (
                 <div className="space-y-5">
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-xl border border-default bg-surface-0 p-4 shadow-card">

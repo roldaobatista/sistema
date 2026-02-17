@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\PerformanceReview;
 use App\Models\ContinuousFeedback;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 
 class PerformanceReviewController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     // Reviews
     public function indexReviews(): JsonResponse
     {
@@ -51,7 +54,7 @@ class PerformanceReviewController extends Controller
             ]);
 
             $review = PerformanceReview::create($validated + [
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
                 'status' => 'draft'
             ]);
 
@@ -173,7 +176,7 @@ class PerformanceReviewController extends Controller
 
             $feedback = ContinuousFeedback::create($validated + [
                 'from_user_id' => auth()->id(),
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
             ]);
 
             DB::commit();

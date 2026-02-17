@@ -223,8 +223,7 @@ class QuoteService
                 'custom_description', 'quantity', 'original_price', 'unit_price', 'discount_percentage',
             ]));
 
-            $quote = $item->quoteEquipment?->quote;
-            $quote?->recalculateTotal();
+            // recalculateTotal() é chamado automaticamente pelo evento saved do QuoteItem
 
             return $item->fresh(['product', 'service']);
         });
@@ -251,6 +250,15 @@ class QuoteService
 
         if ($existingWorkOrder) {
             throw new \App\Exceptions\QuoteAlreadyConvertedException($existingWorkOrder);
+        }
+
+        $existingCall = \App\Models\ServiceCall::query()
+            ->where('tenant_id', $quote->tenant_id)
+            ->where('quote_id', $quote->id)
+            ->first();
+
+        if ($existingCall) {
+            throw new \DomainException("Orçamento já convertido no chamado #{$existingCall->call_number}. Não é possível criar OS.");
         }
 
         return DB::transaction(function () use ($quote, $userId) {
@@ -314,6 +322,16 @@ class QuoteService
     {
         if ($quote->status !== Quote::STATUS_APPROVED) {
             throw new \DomainException('Orçamento precisa estar aprovado para converter em chamado');
+        }
+
+        $existingWo = WorkOrder::query()
+            ->where('tenant_id', $quote->tenant_id)
+            ->where('quote_id', $quote->id)
+            ->first();
+
+        if ($existingWo) {
+            $woNumber = $existingWo->os_number ?? $existingWo->number;
+            throw new \DomainException("Orçamento já convertido na OS #{$woNumber}. Não é possível criar chamado.");
         }
 
         $existingCall = \App\Models\ServiceCall::query()

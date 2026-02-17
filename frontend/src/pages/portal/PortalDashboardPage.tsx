@@ -61,7 +61,7 @@ export function PortalDashboardPage() {
     const cards = [
         { label: 'OS Abertas', value: openOS, icon: FileText, color: 'text-brand-600 bg-brand-50', link: '/portal/os' },
         { label: 'OS Concluídas', value: completedOS, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50', link: '/portal/os' },
-        { label: 'Orçamentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orçamentos' },
+        { label: 'Orçamentos', value: pendingQuotes, icon: Package, color: 'text-amber-600 bg-amber-50', link: '/portal/orcamentos' },
         { label: 'Faturas', value: fmtBRL(totalPending), icon: DollarSign, color: 'text-red-600 bg-red-50', link: '/portal/financeiro' },
     ]
 

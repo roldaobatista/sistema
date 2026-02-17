@@ -9,14 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('work_orders', function (Blueprint $t) {
-            $t->unsignedBigInteger('quote_id')->nullable()->after('customer_id');
-            $t->unsignedBigInteger('service_call_id')->nullable()->after('quote_id');
-            $t->unsignedBigInteger('seller_id')->nullable()->after('service_call_id');
-            $t->unsignedBigInteger('driver_id')->nullable()->after('seller_id');
-            $t->string('os_number', 30)->nullable()->after('id');
-            $t->string('origin_type', 20)->nullable()->after('driver_id'); // quote, service_call, direct
-            $t->decimal('discount_percentage', 5, 2)->default(0)->after('total');
-            $t->decimal('discount_amount', 12, 2)->default(0)->after('discount_percentage');
+            $t->unsignedBigInteger('quote_id')->nullable();
+            $t->unsignedBigInteger('service_call_id')->nullable();
+            $t->unsignedBigInteger('seller_id')->nullable();
+            $t->unsignedBigInteger('driver_id')->nullable();
+            $t->string('os_number', 30)->nullable();
+            $t->string('origin_type', 20)->nullable(); // quote, service_call, direct
+            $t->decimal('discount_percentage', 5, 2)->default(0);
+            $t->decimal('discount_amount', 12, 2)->default(0);
 
             $t->foreign('quote_id')->references('id')->on('quotes')->nullOnDelete();
             $t->foreign('service_call_id')->references('id')->on('service_calls')->nullOnDelete();

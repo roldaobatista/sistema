@@ -32,7 +32,7 @@ class StoreExpenseRequest extends FormRequest
             'description' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0.01',
             'expense_date' => 'required|date|before_or_equal:today',
-            'payment_method' => ['nullable', Rule::in(['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'boleto', 'transferencia'])],
+            'payment_method' => ['nullable', Rule::in(['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'boleto', 'transferencia', 'corporate_card'])],
             'notes' => 'nullable|string',
             'affects_technician_cash' => 'boolean',
             'affects_net_value' => 'boolean',

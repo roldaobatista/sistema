@@ -10,26 +10,35 @@ abstract class ExternalApiService
 {
     protected function fetch(string $url, string $cacheKey, int $cacheTtlSeconds): ?array
     {
-        return Cache::remember($cacheKey, $cacheTtlSeconds, function () use ($url, $cacheKey) {
-            try {
-                $response = Http::timeout(5)->retry(2, 200)->get($url);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
-                if ($response->failed()) {
-                    Log::warning('External API request failed', [
-                        'url' => $url,
-                        'status' => $response->status(),
-                    ]);
-                    return null;
-                }
+        try {
+            $response = Http::timeout(8)->retry(2, 300)->get($url);
 
-                return $response->json();
-            } catch (\Exception $e) {
-                Log::error('External API request exception', [
+            if ($response->failed()) {
+                Log::warning('External API request failed', [
                     'url' => $url,
-                    'error' => $e->getMessage(),
+                    'status' => $response->status(),
                 ]);
                 return null;
             }
-        });
+
+            $data = $response->json();
+
+            if ($data !== null) {
+                Cache::put($cacheKey, $data, $cacheTtlSeconds);
+            }
+
+            return $data;
+        } catch (\Exception $e) {
+            Log::error('External API request exception', [
+                'url' => $url,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
 }

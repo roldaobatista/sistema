@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('work_orders', function (Blueprint $table) {
-            $table->foreignId('parent_id')->nullable()->after('tenant_id')->constrained('work_orders')->cascadeOnDelete();
-            $table->boolean('is_master')->default(false)->after('parent_id');
+            $table->foreignId('parent_id')->nullable()->constrained('work_orders')->cascadeOnDelete();
+            $table->boolean('is_master')->default(false);
         });
     }
 

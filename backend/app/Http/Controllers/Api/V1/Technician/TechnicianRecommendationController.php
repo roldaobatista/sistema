@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Technician;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\User;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 
 class TechnicianRecommendationController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     private const WEIGHT_AVAILABILITY = 100;
     private const WEIGHT_SKILL_MATCH = 10;
     private const WEIGHT_PROXIMITY_CITY = 20;
@@ -20,7 +23,7 @@ class TechnicianRecommendationController extends Controller
     public function recommend(Request $request): JsonResponse
     {
         try {
-            $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
+            $tenantId = $this->resolvedTenantId();
 
             $validated = $request->validate([
                 'service_id' => 'nullable|exists:services,id',

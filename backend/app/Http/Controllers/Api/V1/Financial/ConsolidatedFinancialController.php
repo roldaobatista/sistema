@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Financial;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\AccountPayable;
 use App\Models\AccountReceivable;
 use App\Models\Expense;
@@ -15,13 +16,15 @@ use Illuminate\Support\Facades\Log;
 
 class ConsolidatedFinancialController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     private function userTenantIds(Request $request): array
     {
         $user = $request->user();
         $ids = $user->tenants()->pluck('tenants.id')->toArray();
 
-        if (empty($ids) && $user->tenant_id) {
-            $ids = [(int) $user->tenant_id];
+        if (empty($ids)) {
+            $ids = [$this->resolvedTenantId()];
         }
 
         return $ids;
@@ -52,9 +55,9 @@ class ConsolidatedFinancialController extends Controller
             // Receivables summary per tenant
             $receivablesByTenant = AccountReceivable::whereIn('tenant_id', $tenantIds)
                 ->select('tenant_id')
-                ->selectRaw("SUM(CASE WHEN status NOT IN ('paid','cancelled') THEN net_amount ELSE 0 END) as open_total")
-                ->selectRaw("SUM(CASE WHEN status NOT IN ('paid','cancelled') AND due_date < ? THEN net_amount ELSE 0 END) as overdue_total", [$today])
-                ->selectRaw("SUM(CASE WHEN status = 'paid' AND paid_at >= ? AND paid_at <= ? THEN net_amount ELSE 0 END) as received_month", [$startMonth, $endMonth])
+                ->selectRaw("SUM(CASE WHEN status NOT IN ('paid','cancelled') THEN (amount - amount_paid) ELSE 0 END) as open_total")
+                ->selectRaw("SUM(CASE WHEN status NOT IN ('paid','cancelled') AND due_date < ? THEN (amount - amount_paid) ELSE 0 END) as overdue_total", [$today])
+                ->selectRaw("SUM(CASE WHEN status = 'paid' AND paid_at >= ? AND paid_at <= ? THEN amount ELSE 0 END) as received_month", [$startMonth, $endMonth])
                 ->groupBy('tenant_id')
                 ->get()
                 ->keyBy('tenant_id');

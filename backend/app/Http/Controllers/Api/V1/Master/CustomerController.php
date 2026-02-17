@@ -173,12 +173,12 @@ class CustomerController extends Controller
         }
 
         try {
-        DB::transaction(fn () => $customer->delete());
-        return response()->json(null, 204);
-    } catch (\Throwable $e) {
-        \Illuminate\Support\Facades\Log::error('Customer destroy failed', ['id' => $customer->id, 'error' => $e->getMessage()]);
-        return response()->json(['message' => 'Erro ao excluir cliente'], 500);
-    }
+            DB::transaction(fn () => $customer->delete());
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('Customer destroy failed', ['id' => $customer->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir cliente'], 500);
+        }
     }
 
     /**

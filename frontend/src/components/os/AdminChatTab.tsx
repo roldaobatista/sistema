@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, User, Clock, Paperclip, Loader2, FileText, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -79,6 +80,7 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
             setNewMessage('')
         } catch (error) {
             console.error('Failed to send message:', error)
+            toast.error('Erro ao enviar mensagem')
         } finally {
             setSending(false)
         }
@@ -100,7 +102,8 @@ export default function AdminChatTab({ workOrderId }: AdminChatTabProps) {
             })
             setMessages([...messages, response.data])
         } catch (error) {
-            // Erro ao fazer upload do arquivo
+            console.error('Failed to upload file:', error)
+            toast.error('Erro ao enviar arquivo')
         } finally {
             setSending(false)
         }

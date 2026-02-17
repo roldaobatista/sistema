@@ -21,21 +21,21 @@ return new class extends Migration
     {
         // GAP-01: Quote internal approval
         Schema::table('quotes', function (Blueprint $table) {
-            $table->unsignedBigInteger('internal_approved_by')->nullable()->after('internal_notes');
-            $table->timestamp('internal_approved_at')->nullable()->after('internal_approved_by');
+            $table->unsignedBigInteger('internal_approved_by')->nullable();
+            $table->timestamp('internal_approved_at')->nullable();
             $table->foreign('internal_approved_by')->references('id')->on('users')->onDelete('set null');
         });
 
         // GAP-02: WorkOrder dispatch authorization
         Schema::table('work_orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('dispatch_authorized_by')->nullable()->after('sla_responded_at');
-            $table->timestamp('dispatch_authorized_at')->nullable()->after('dispatch_authorized_by');
+            $table->unsignedBigInteger('dispatch_authorized_by')->nullable();
+            $table->timestamp('dispatch_authorized_at')->nullable();
             $table->foreign('dispatch_authorized_by')->references('id')->on('users')->onDelete('set null');
         });
 
         // GAP-03: Quote commercial source
         Schema::table('quotes', function (Blueprint $table) {
-            $table->string('source', 50)->nullable()->after('seller_id');
+            $table->string('source', 50)->nullable();
         });
 
         // GAP-09: Fueling log for drivers
@@ -68,9 +68,9 @@ return new class extends Migration
 
         // GAP-10: Km rodado fields on expenses
         Schema::table('expenses', function (Blueprint $table) {
-            $table->decimal('km_quantity', 10, 1)->nullable()->after('amount');
-            $table->decimal('km_rate', 8, 4)->nullable()->after('km_quantity');
-            $table->boolean('km_billed_to_client')->default(false)->after('km_rate');
+            $table->decimal('km_quantity', 10, 1)->nullable();
+            $table->decimal('km_rate', 8, 4)->nullable();
+            $table->boolean('km_billed_to_client')->default(false);
         });
 
         // GAP-14: Commission goals (drop first — supersedes simpler version in advanced migration)
@@ -94,25 +94,25 @@ return new class extends Migration
 
         // GAP-19: CommissionEvent payment tracking
         Schema::table('commission_events', function (Blueprint $table) {
-            $table->unsignedBigInteger('account_receivable_id')->nullable()->after('work_order_id');
-            $table->decimal('proportion', 5, 4)->default(1.0000)->after('commission_amount');
+            $table->unsignedBigInteger('account_receivable_id')->nullable();
+            $table->decimal('proportion', 5, 4)->default(1.0000);
             $table->foreign('account_receivable_id')->references('id')->on('accounts_receivable')->onDelete('set null');
         });
 
         // GAP-20: Expense review step (Alessandra confere → Roldão aprova)
         Schema::table('expenses', function (Blueprint $table) {
-            $table->unsignedBigInteger('reviewed_by')->nullable()->after('status');
-            $table->timestamp('reviewed_at')->nullable()->after('reviewed_by');
+            $table->unsignedBigInteger('reviewed_by')->nullable();
+            $table->timestamp('reviewed_at')->nullable();
             $table->foreign('reviewed_by')->references('id')->on('users')->onDelete('set null');
         });
 
         // GAP-25: Commission settlement workflow
         Schema::table('commission_settlements', function (Blueprint $table) {
-            $table->unsignedBigInteger('closed_by')->nullable()->after('status');
-            $table->timestamp('closed_at')->nullable()->after('closed_by');
-            $table->unsignedBigInteger('approved_by')->nullable()->after('closed_at');
-            $table->timestamp('approved_at')->nullable()->after('approved_by');
-            $table->text('rejection_reason')->nullable()->after('approved_at');
+            $table->unsignedBigInteger('closed_by')->nullable();
+            $table->timestamp('closed_at')->nullable();
+            $table->unsignedBigInteger('approved_by')->nullable();
+            $table->timestamp('approved_at')->nullable();
+            $table->text('rejection_reason')->nullable();
             $table->foreign('closed_by')->references('id')->on('users')->onDelete('set null');
             $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
         });

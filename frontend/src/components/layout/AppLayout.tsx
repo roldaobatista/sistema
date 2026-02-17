@@ -186,6 +186,7 @@ const navigationSections: NavSection[] = [
                 label: 'Estoque', icon: Warehouse, path: '/estoque', permission: 'estoque.movement.view',
                 children: [
                     { label: 'Dashboard', icon: BarChart3, path: '/estoque' },
+                    { label: 'Produtos', icon: Package, path: '/cadastros/produtos', permission: 'cadastros.product.view' },
                     { label: 'Movimentações', icon: ArrowLeftRight, path: '/estoque/movimentacoes' },
                     { label: 'Armazéns', icon: Warehouse, path: '/estoque/armazens' },
                     { label: 'Inventário', icon: ClipboardCheck, path: '/estoque/inventarios' },
@@ -651,7 +652,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 aria-label="Selecionar empresa"
                                 className="hidden appearance-none rounded-md border border-default bg-surface-0 px-2.5 py-1 text-xs font-medium text-surface-700 sm:block focus:outline-none focus:ring-2 focus:ring-brand-500/15 cursor-pointer"
                             >
-                                {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                {tenants.map(t => <option key={t.id} value={t.id} disabled={t.status === 'inactive'}>{t.name}{t.status === 'inactive' ? ' (Inativa)' : t.status === 'trial' ? ' (Teste)' : ''}</option>)}
                             </select>
                         ) : (
                             <span className="hidden items-center gap-1.5 rounded-md border border-subtle bg-surface-50 px-2.5 py-1 text-xs font-medium text-surface-600 sm:flex">

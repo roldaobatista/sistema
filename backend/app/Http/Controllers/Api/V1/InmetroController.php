@@ -648,7 +648,7 @@ class InmetroController extends Controller
             return response()->json(['message' => 'Owner deleted successfully']);
         } catch (\Exception $e) {
             Log::error('INMETRO owner delete failed', ['id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Failed to delete owner: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao excluir proprietário'], 500);
         }
     }
 

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class UserController extends Controller
 {
@@ -73,7 +74,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'nullable|string|max:20',
-            'password' => 'required|string|min:8',
+            'password' => ['required', PasswordRule::min(8)->mixedCase()->numbers()],
             'roles' => 'array',
             'roles.*' => ['integer', Rule::exists('roles', 'id')->where(function ($q) use ($tenantId) {
                 $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id');
@@ -133,7 +134,7 @@ class UserController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
             'phone' => 'nullable|string|max:20',
-            'password' => 'nullable|string|min:8',
+            'password' => ['nullable', PasswordRule::min(8)->mixedCase()->numbers()],
             'roles' => 'array',
             'roles.*' => ['integer', Rule::exists('roles', 'id')->where(function ($q) use ($tenantId) {
                 $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id');
@@ -263,7 +264,7 @@ class UserController extends Controller
         $this->resolveTenantUser($user, $tenantId);
 
         $validated = $request->validate([
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
 
         try {
@@ -333,6 +334,11 @@ class UserController extends Controller
     {
         $this->resolveTenantUser($user, $this->tenantId($request));
 
+        $viewingOwnSessions = $request->user()->id === $user->id;
+        $currentTokenId = $viewingOwnSessions
+            ? $request->user()->currentAccessToken()?->id
+            : null;
+
         $tokens = $user->tokens()
             ->select('id', 'name', 'last_used_at', 'created_at')
             ->orderByDesc('last_used_at')
@@ -342,7 +348,7 @@ class UserController extends Controller
                 'name' => $token->name,
                 'last_used_at' => $token->last_used_at,
                 'created_at' => $token->created_at,
-                'is_current' => $request->user()->currentAccessToken()?->id === $token->id,
+                'is_current' => $currentTokenId !== null && $currentTokenId === $token->id,
             ]);
 
         return response()->json(['data' => $tokens]);
@@ -391,19 +397,27 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            $affected = User::whereIn('id', $userIds)
+            $affectedUsers = User::whereIn('id', $userIds)
                 ->whereHas('tenants', fn ($q) => $q->where('tenants.id', $tenantId))
+                ->get();
+
+            $affected = $affectedUsers->count();
+            User::whereIn('id', $affectedUsers->pluck('id')->toArray())
                 ->update(['is_active' => $validated['is_active']]);
 
             // Revoke tokens for deactivated users
             if (!$validated['is_active']) {
                 DB::table('personal_access_tokens')
-                    ->whereIn('tokenable_id', $userIds)
+                    ->whereIn('tokenable_id', $affectedUsers->pluck('id')->toArray())
                     ->where('tokenable_type', User::class)
                     ->delete();
             }
 
             DB::commit();
+
+            $action = $validated['is_active'] ? 'ativados' : 'desativados';
+            $names = $affectedUsers->pluck('name')->implode(', ');
+            AuditLog::log('status_changed', "{$affected} usuário(s) {$action} em lote: {$names}");
 
             return response()->json([
                 'message' => "{$affected} usuário(s) " . ($validated['is_active'] ? 'ativado(s)' : 'desativado(s)') . ".",

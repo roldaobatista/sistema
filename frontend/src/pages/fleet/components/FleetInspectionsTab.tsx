@@ -34,6 +34,8 @@ export function FleetInspectionsTab() {
   const queryClient = useQueryClient()
   const { hasPermission } = useAuthStore()
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
   const [statusFilter, setStatusFilter] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
@@ -78,7 +80,7 @@ export function FleetInspectionsTab() {
   })
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id)
+    setConfirmDeleteId(id)
   }
 
   const closeForm = () => {

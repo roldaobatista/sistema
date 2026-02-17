@@ -27,7 +27,7 @@ import GeoCheckinButton from '@/components/os/GeoCheckinButton'
 import SatisfactionTab from '@/components/os/SatisfactionTab'
 import { QrScannerModal } from '@/components/qr/QrScannerModal'
 
-const MAX_ATTACHMENT_SIZE_MB = 10
+const MAX_ATTACHMENT_SIZE_MB = 50
 
 const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
     open: { label: 'Aberta', variant: 'info', icon: Clock },
@@ -105,7 +105,17 @@ export function WorkOrderDetailPage() {
         queryKey: ['wo-checklist', id],
         queryFn: () => api.get(`/work-orders/${id}/checklist-responses`),
     })
-    const checklistItems: any[] = checklistRes?.data?.data ?? []
+    const checklistResponses: any[] = checklistRes?.data?.data ?? []
+
+    const { data: checklistTemplateRes } = useQuery({
+        queryKey: ['wo-checklist-template', order?.checklist_id],
+        queryFn: () => api.get(`/service-checklists/${order?.checklist_id}`),
+        enabled: !!order?.checklist_id,
+    })
+    const checklistTemplate = checklistTemplateRes?.data?.data ?? checklistTemplateRes?.data ?? null
+    const checklistTemplateItems: any[] = checklistTemplate?.items ?? []
+
+    const [checklistForm, setChecklistForm] = useState<Record<number, { value: string; notes: string }>>({})
 
     const order = res?.data
     const products = productsRes?.data?.data ?? []
@@ -418,7 +428,7 @@ export function WorkOrderDetailPage() {
                         <p className="text-sm text-surface-500">Criada em {formatDate(order.created_at)}</p>
                         <div className="mt-1 flex items-center gap-2">
                             {order.quote_id && (
-                                <button onClick={() => navigate(`/orçamentos/${order.quote_id}`)}
+                                <button onClick={() => navigate(`/orcamentos/${order.quote_id}`)}
                                     className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors">
                                     <LinkIcon className="h-3 w-3" /> Orçamento #{order.quote?.number ?? order.quote_id}
                                 </button>
@@ -531,6 +541,131 @@ export function WorkOrderDetailPage() {
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2 space-y-5">
+                    {activeTab === 'checklist' && (
+                        <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                            <h3 className="text-sm font-semibold text-surface-900 mb-4 flex items-center gap-2">
+                                <ClipboardList className="h-4 w-4 text-brand-500" />
+                                Checklist de Serviço
+                            </h3>
+                            {!order.checklist_id ? (
+                                <p className="py-8 text-center text-sm text-surface-400">
+                                    Nenhum checklist vinculado a esta OS.
+                                </p>
+                            ) : checklistTemplateItems.length === 0 ? (
+                                <div className="py-8 text-center">
+                                    <div className="animate-pulse space-y-2">
+                                        <div className="h-4 w-40 mx-auto rounded bg-surface-200" />
+                                        <div className="h-4 w-56 mx-auto rounded bg-surface-100" />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {checklistTemplateItems.map((item: any) => {
+                                        const existing = checklistResponses.find((r: any) => r.checklist_item_id === item.id)
+                                        const currentVal = checklistForm[item.id]?.value ?? existing?.value ?? ''
+                                        const currentNotes = checklistForm[item.id]?.notes ?? existing?.notes ?? ''
+                                        const isAnswered = !!existing?.value || !!checklistForm[item.id]?.value
+
+                                        const updateField = (field: 'value' | 'notes', val: string) => {
+                                            setChecklistForm(prev => ({
+                                                ...prev,
+                                                [item.id]: {
+                                                    value: field === 'value' ? val : (prev[item.id]?.value ?? existing?.value ?? ''),
+                                                    notes: field === 'notes' ? val : (prev[item.id]?.notes ?? existing?.notes ?? ''),
+                                                },
+                                            }))
+                                        }
+
+                                        return (
+                                            <div key={item.id} className={cn(
+                                                'rounded-lg border p-4 transition-colors',
+                                                isAnswered ? 'border-emerald-200 bg-emerald-50/30' : 'border-default'
+                                            )}>
+                                                <div className="flex items-start gap-3">
+                                                    <div className={cn(
+                                                        'mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold',
+                                                        isAnswered ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-500'
+                                                    )}>
+                                                        {isAnswered ? '✓' : item.order_index + 1}
+                                                    </div>
+                                                    <div className="flex-1 space-y-2">
+                                                        <p className="text-sm font-medium text-surface-800">
+                                                            {item.description}
+                                                            {item.is_required && <span className="ml-1 text-red-500">*</span>}
+                                                        </p>
+                                                        {item.type === 'check' || item.type === 'yes_no' ? (
+                                                            <div className="flex gap-2">
+                                                                {(item.type === 'yes_no' ? ['Sim', 'Não'] : ['OK', 'NOK', 'N/A']).map(opt => (
+                                                                    <button key={opt} type="button"
+                                                                        onClick={() => canUpdate ? updateField('value', opt) : undefined}
+                                                                        className={cn(
+                                                                            'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
+                                                                            currentVal === opt
+                                                                                ? opt === 'OK' || opt === 'Sim' ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                                                    : opt === 'NOK' || opt === 'Não' ? 'border-red-400 bg-red-50 text-red-700'
+                                                                                        : 'border-surface-400 bg-surface-100 text-surface-700'
+                                                                                : 'border-default text-surface-500 hover:border-surface-400',
+                                                                            !canUpdate && 'opacity-70 cursor-default'
+                                                                        )}
+                                                                    >
+                                                                        {opt}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        ) : item.type === 'number' ? (
+                                                            <input type="number" step="0.01" value={currentVal}
+                                                                onChange={e => updateField('value', e.target.value)}
+                                                                readOnly={!canUpdate}
+                                                                placeholder="Valor numérico..."
+                                                                className="w-40 rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                                        ) : (
+                                                            <input type="text" value={currentVal}
+                                                                onChange={e => updateField('value', e.target.value)}
+                                                                readOnly={!canUpdate}
+                                                                placeholder="Resposta..."
+                                                                className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                                        )}
+                                                        <input type="text" value={currentNotes}
+                                                            onChange={e => updateField('notes', e.target.value)}
+                                                            readOnly={!canUpdate}
+                                                            placeholder="Observações (opcional)..."
+                                                            className="w-full rounded-lg border border-default bg-surface-50 px-3 py-1.5 text-xs text-surface-500 focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    {canUpdate && (
+                                        <div className="flex justify-end pt-2">
+                                            <Button
+                                                onClick={() => {
+                                                    const responses = Object.entries(checklistForm).map(([itemId, data]) => ({
+                                                        checklist_item_id: Number(itemId),
+                                                        value: data.value,
+                                                        notes: data.notes,
+                                                    }))
+                                                    if (responses.length === 0) {
+                                                        toast.info('Preencha ao menos um item do checklist.')
+                                                        return
+                                                    }
+                                                    saveChecklistMut.mutate(responses)
+                                                }}
+                                                loading={saveChecklistMut.isPending}
+                                                icon={<Save className="h-4 w-4" />}
+                                            >
+                                                Salvar Checklist
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-2 text-xs text-surface-400 pt-2 border-t border-subtle">
+                                        <span>{checklistResponses.length} / {checklistTemplateItems.length} respondidos</span>
+                                        {checklistTemplate?.name && <span>· {checklistTemplate.name}</span>}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {activeTab === 'chat' && (
                         <AdminChatTab workOrderId={Number(id)} />
                     )}
@@ -1030,8 +1165,14 @@ export function WorkOrderDetailPage() {
                                     Assinatura Registrada
                                 </h3>
                                 <div className="space-y-2">
-                                    <img src={order.signature_path} alt="Assinatura" className="max-h-24 rounded-lg border border-default" />
-                                    {order.signed_by_name && <p className="text-sm text-surface-600">{order.signed_by_name}</p>}
+                                    <img
+                                        src={order.signature_path.startsWith('http') ? order.signature_path : `${(api.defaults.baseURL ?? '').replace(/\/api\/?$/, '')}/storage/${order.signature_path}`}
+                                        alt="Assinatura"
+                                        className="max-h-24 rounded-lg border border-default"
+                                    />
+                                    {(order.signature_signer || order.signed_by_name) && (
+                                        <p className="text-sm text-surface-600">{order.signature_signer || order.signed_by_name}</p>
+                                    )}
                                     {order.signature_at && <p className="text-xs text-surface-400">{formatDate(order.signature_at)}</p>}
                                 </div>
                             </div>
@@ -1189,7 +1330,7 @@ export function WorkOrderDetailPage() {
                         <Button variant="outline" onClick={() => setDeleteAttachId(null)}>Cancelar</Button>
                         <Button
                             variant="danger"
-                            onClick={() => { if (deleteAttachId) { if (window.confirm('Deseja realmente excluir este registro?')) deleteAttachmentMut.mutate(deleteAttachId) } }}
+                            onClick={() => { if (deleteAttachId) { deleteAttachmentMut.mutate(deleteAttachId) } }}
                             loading={deleteAttachmentMut.isPending}
                         >
                             Remover

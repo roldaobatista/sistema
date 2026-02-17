@@ -76,7 +76,7 @@ class BrasilApiService extends ExternalApiService
             60 * 60 * 24 * 7
         );
 
-        if (!$raw || isset($raw['status']) && $raw['status'] !== 200) {
+        if (!$raw || (isset($raw['status']) && $raw['status'] !== 200)) {
             return null;
         }
 
@@ -123,6 +123,7 @@ class BrasilApiService extends ExternalApiService
             'address_neighborhood' => $raw['bairro'] ?? null,
             'address_city' => $raw['municipio'] ?? null,
             'address_state' => $raw['uf'] ?? null,
+            'codigo_municipio_ibge' => $raw['codigo_municipio_ibge'] ?? null,
             // Dados enriquecidos
             'company_status' => $raw['descricao_situacao_cadastral'] ?? null,
             'company_status_date' => $raw['data_situacao_cadastral'] ?? null,

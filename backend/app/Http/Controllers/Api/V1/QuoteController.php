@@ -45,6 +45,18 @@ class QuoteController extends Controller
         return null;
     }
 
+    private function ensureCanApplyDiscount(Request $request, float $discountPercentage): ?JsonResponse
+    {
+        if ($discountPercentage > 0
+            && !$request->user()->can('quotes.quote.apply_discount')
+            && !$request->user()->can('os.work_order.apply_discount')
+        ) {
+            return response()->json(['message' => 'Apenas gerentes/admin podem aplicar descontos.'], 403);
+        }
+
+        return null;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Quote::with(['customer:id,name', 'seller:id,name'])
@@ -87,7 +99,7 @@ class QuoteController extends Controller
             $quote = $this->service->createQuote($request->validated(), $tenantId, (int) auth()->id());
 
             return response()->json(
-                $quote->load(['customer', 'seller', 'equipments.equipment', 'equipments.items']),
+                $quote->load(['customer', 'seller', 'equipments.equipment', 'equipments.items.product', 'equipments.items.service']),
                 201
             );
         } catch (\Exception $e) {
@@ -116,8 +128,13 @@ class QuoteController extends Controller
             return $error;
         }
 
+        $validated = $request->validated();
+        if ($error = $this->ensureCanApplyDiscount($request, (float) ($validated['discount_percentage'] ?? 0))) {
+            return $error;
+        }
+
         try {
-            $updatedQuote = $this->service->updateQuote($quote, $request->validated());
+            $updatedQuote = $this->service->updateQuote($quote, $validated);
             return response()->json($updatedQuote->fresh(['customer', 'seller', 'equipments.items']));
         } catch (\Exception $e) {
             report($e);
@@ -399,9 +416,8 @@ class QuoteController extends Controller
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        // GAP-24: Gate de desconto
-        if ((float) ($validated['discount_percentage'] ?? 0) > 0 && !$request->user()->can('os.work_order.apply_discount')) {
-            return response()->json(['message' => 'Apenas gerentes/admin podem aplicar descontos.'], 403);
+        if ($error = $this->ensureCanApplyDiscount($request, (float) ($validated['discount_percentage'] ?? 0))) {
+            return $error;
         }
 
         try {
@@ -438,9 +454,8 @@ class QuoteController extends Controller
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        // GAP-24: Gate de desconto
-        if ((float) ($validated['discount_percentage'] ?? 0) > 0 && !request()->user()->can('os.work_order.apply_discount')) {
-            return response()->json(['message' => 'Apenas gerentes/admin podem aplicar descontos.'], 403);
+        if ($error = $this->ensureCanApplyDiscount(request(), (float) ($validated['discount_percentage'] ?? 0))) {
+            return $error;
         }
 
         try {
@@ -556,6 +571,7 @@ class QuoteController extends Controller
     {
         $logs = AuditLog::where('auditable_type', Quote::class)
             ->where('auditable_id', $quote->id)
+            ->where('tenant_id', $this->currentTenantId())
             ->orderByDesc('created_at')
             ->limit(50)
             ->get(['id', 'action', 'description', 'user_id', 'created_at']);

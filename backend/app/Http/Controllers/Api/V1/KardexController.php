@@ -34,8 +34,8 @@ class KardexController extends Controller
             );
 
             return response()->json([
-                'product' => $product->only(['id', 'name', 'sku']),
-                'warehouse' => Warehouse::find($validated['warehouse_id'])->only(['id', 'name']),
+                'product' => $product->only(['id', 'name', 'code']),
+                'warehouse' => Warehouse::findOrFail($validated['warehouse_id'])->only(['id', 'name']),
                 'data' => $kardex
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {

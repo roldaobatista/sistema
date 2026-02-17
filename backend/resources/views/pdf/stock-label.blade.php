@@ -8,6 +8,8 @@
         body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #111; }
         .label-page { width: {{ $widthMm }}mm; height: {{ $heightMm }}mm; padding: 3mm; border: 1px solid #eee; page-break-after: always; }
         .label-page:last-child { page-break-after: auto; }
+        .label-logo { height: 8mm; max-width: 25mm; margin-bottom: 1mm; overflow: hidden; }
+        .label-logo img { max-height: 8mm; max-width: 25mm; object-fit: contain; }
         .label-name { font-weight: bold; font-size: 11px; margin-bottom: 2px; word-break: break-word; }
         .label-line { font-size: 9px; color: #333; margin-bottom: 1px; }
         .label-qr { float: right; width: 28mm; height: 28mm; text-align: right; }
@@ -24,6 +26,9 @@
 @if($perPage <= 1)
     @foreach($labels as $item)
         <div class="label-page">
+            @if(!empty($company_logo_path))
+                <div class="label-logo"><img src="{{ $company_logo_path }}" alt=""></div>
+            @endif
             <div class="label-qr">@if(!empty($item['qr_image_src']))<img src="{{ $item['qr_image_src'] }}" alt="">@endif</div>
             <div class="label-body">
                 <div class="label-name">{{ $item['product']->name }}</div>
@@ -45,6 +50,9 @@
                     <tr>
                         @foreach($row as $item)
                             <td style="width:50%; padding:4mm; vertical-align:top; border:1px solid #eee;">
+                                @if(!empty($company_logo_path))
+                                    <div class="label-logo"><img src="{{ $company_logo_path }}" alt="" style="max-height:8mm;max-width:25mm;object-fit:contain;"></div>
+                                @endif
                                 <div class="label-qr" style="float:right;">@if(!empty($item['qr_image_src']))<img src="{{ $item['qr_image_src'] }}" alt="" style="width:24mm;height:24mm;">@endif</div>
                                 <div class="label-body">
                                     <div class="label-name">{{ $item['product']->name }}</div>
@@ -63,3 +71,4 @@
 @endif
 </body>
 </html>
+

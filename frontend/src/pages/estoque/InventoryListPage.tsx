@@ -1,11 +1,10 @@
-import { useState , useMemo } from 'react'
-import { toast } from 'sonner'
+import { useState } from 'react'
 import {
-    PackageSearch, Plus, Search, Filter,
-    Calendar, Warehouse, User, ChevronRight,
+    PackageSearch, Plus, Filter,
+    Calendar, Warehouse, User,
     CheckCircle2, Clock, XCircle, Loader2
 } from 'lucide-react'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -14,18 +13,7 @@ import { ptBR } from 'date-fns/locale'
 import { useAuthStore } from '@/stores/auth-store'
 
 export default function InventoryListPage() {
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/inventory-list/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['inventory-list'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
-
     const navigate = useNavigate()
     const [statusFilter, setStatusFilter] = useState('')
     const [warehouseFilter, setWarehouseFilter] = useState('')

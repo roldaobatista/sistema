@@ -10,6 +10,8 @@ import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import { QrScannerModal } from '@/components/qr/QrScannerModal'
+import { parseLabelQrPayload } from '@/lib/labelQr'
 
 export default function InventoryExecutionPage() {
   const { hasPermission } = useAuthStore()
@@ -19,6 +21,23 @@ export default function InventoryExecutionPage() {
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
     const [counts, setCounts] = useState<Record<number, string>>({})
+    const [showQrScanner, setShowQrScanner] = useState(false)
+
+    const handleQrScanned = (raw: string) => {
+        const productId = parseLabelQrPayload(raw)
+        if (!productId) {
+            toast.error('Código QR inválido.')
+            return
+        }
+        const items = inventory?.items || []
+        const found = items.find((item: any) => item.product?.id === productId || item.product_id === productId)
+        if (!found) {
+            toast.error('Produto não encontrado neste inventário.')
+            return
+        }
+        setSearch(found.product?.name || '')
+        setShowQrScanner(false)
+    }
 
     const { data: invRes, isLoading } = useQuery({
         queryKey: ['inventory-detail', id],
@@ -126,6 +145,7 @@ export default function InventoryExecutionPage() {
                     />
                     <button
                         title="Escanear Código de Barras"
+                        onClick={() => setShowQrScanner(true)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-surface-100 rounded-xl"
                     >
                         <ScanLine className="w-5 h-5 text-surface-400" />
@@ -201,10 +221,18 @@ export default function InventoryExecutionPage() {
                 </div>
                 <div className="h-1.5 w-full bg-surface-100 rounded-full overflow-hidden">
                     <div
-                        className={`h-full bg-brand-500 transition-all duration-500 w-[${Math.round(((inventory?.items.length - itemsPending) / (inventory?.items.length || 1)) * 100)}%]`}
+                        className="h-full bg-brand-500 transition-all duration-500"
+                        style={{ width: `${Math.round(((inventory?.items.length - itemsPending) / (inventory?.items.length || 1)) * 100)}%` }}
                     />
                 </div>
             </div>
+
+            <QrScannerModal
+                open={showQrScanner}
+                onClose={() => setShowQrScanner(false)}
+                onScan={handleQrScanned}
+                title="Escanear etiqueta do produto"
+            />
         </div>
     )
 }

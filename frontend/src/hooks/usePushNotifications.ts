@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import api from '@/lib/api'
 
 type PushPermission = 'default' | 'granted' | 'denied' | 'unsupported'
@@ -93,6 +94,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
             setIsSubscribed(true)
         } catch (error) {
             console.error('Push subscribe error:', error)
+            toast.error('Erro ao ativar notificações push')
         } finally {
             setIsLoading(false)
         }
@@ -114,6 +116,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
             setIsSubscribed(false)
         } catch (error) {
             console.error('Push unsubscribe error:', error)
+            toast.error('Erro ao desativar notificações')
         } finally {
             setIsLoading(false)
         }
@@ -124,6 +127,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
             await api.post('/push/test')
         } catch (error) {
             console.error('Push test error:', error)
+            toast.error('Erro ao enviar notificação de teste')
         }
     }, [])
 

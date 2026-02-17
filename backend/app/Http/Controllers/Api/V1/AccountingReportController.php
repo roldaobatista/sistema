@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\JourneyEntry;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -12,11 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class AccountingReportController extends Controller
 {
-    private function tenantId(): int
-    {
-        $user = auth()->user();
-        return (int) ($user->current_tenant_id ?? $user->tenant_id);
-    }
+    use ResolvesCurrentTenant;
 
     public function index(Request $request): JsonResponse
     {
@@ -27,7 +24,7 @@ class AccountingReportController extends Controller
             ]);
 
             $query = JourneyEntry::with('user')
-                ->where('tenant_id', $this->tenantId())
+                ->where('tenant_id', $this->resolvedTenantId())
                 ->whereBetween('date', [$request->start_date, $request->end_date]);
 
             if ($request->has('user_id')) {
@@ -53,7 +50,7 @@ class AccountingReportController extends Controller
             ]);
 
             $entries = JourneyEntry::with('user')
-                ->where('tenant_id', $this->tenantId())
+                ->where('tenant_id', $this->resolvedTenantId())
                 ->whereBetween('date', [$request->start_date, $request->end_date])
                 ->get();
 

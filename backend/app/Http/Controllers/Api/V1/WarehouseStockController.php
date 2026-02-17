@@ -15,7 +15,9 @@ class WarehouseStockController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = WarehouseStock::with(['warehouse', 'product', 'batch']);
+            $tenantId = app('current_tenant_id');
+            $query = WarehouseStock::with(['warehouse', 'product', 'batch'])
+                ->whereHas('warehouse', fn ($q) => $q->where('tenant_id', $tenantId));
 
             if ($request->filled('warehouse_id')) {
                 $query->where('warehouse_id', $request->warehouse_id);
@@ -42,9 +44,14 @@ class WarehouseStockController extends Controller
         }
     }
 
-    public function byWarehouse(Warehouse $warehouse): JsonResponse
+    public function byWarehouse(Request $request, Warehouse $warehouse): JsonResponse
     {
         try {
+            $tenantId = app('current_tenant_id');
+            if ($warehouse->tenant_id !== $tenantId) {
+                return response()->json(['message' => 'Armazém não encontrado'], 404);
+            }
+
             $stocks = WarehouseStock::where('warehouse_id', $warehouse->id)
                 ->with(['product:id,name,code,unit', 'batch'])
                 ->where('quantity', '>', 0)
@@ -60,10 +67,16 @@ class WarehouseStockController extends Controller
         }
     }
 
-    public function byProduct(Product $product): JsonResponse
+    public function byProduct(Request $request, Product $product): JsonResponse
     {
         try {
+            $tenantId = app('current_tenant_id');
+            if ($product->tenant_id !== $tenantId) {
+                return response()->json(['message' => 'Produto não encontrado'], 404);
+            }
+
             $stocks = WarehouseStock::where('product_id', $product->id)
+                ->whereHas('warehouse', fn ($q) => $q->where('tenant_id', $tenantId))
                 ->with(['warehouse:id,name,type', 'batch'])
                 ->where('quantity', '>', 0)
                 ->get();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\FollowUp;
 use App\Models\PriceTable;
 use App\Models\PriceTableItem;
@@ -18,11 +19,12 @@ use Illuminate\Support\Facades\Log;
 
 class AdvancedFeaturesController extends Controller
 {
+    use ResolvesCurrentTenant;
     // ─── FOLLOW-UPS ──────────────────────────────────────────────
 
     public function indexFollowUps(Request $request): JsonResponse
     {
-        $query = FollowUp::where('tenant_id', $request->user()->tenant_id)
+        $query = FollowUp::where('tenant_id', $this->resolvedTenantId())
             ->with(['assignedTo:id,name', 'followable']);
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -47,7 +49,7 @@ class AdvancedFeaturesController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $followUp = FollowUp::create($validated);
             DB::commit();
             return response()->json(['message' => 'Follow-up agendado', 'data' => $followUp], 201);
@@ -86,7 +88,7 @@ class AdvancedFeaturesController extends Controller
     public function indexPriceTables(Request $request): JsonResponse
     {
         return response()->json(
-            PriceTable::where('tenant_id', $request->user()->tenant_id)
+            PriceTable::where('tenant_id', $this->resolvedTenantId())
                 ->withCount('items')
                 ->orderBy('name')
                 ->paginate($request->input('per_page', 20))
@@ -107,7 +109,7 @@ class AdvancedFeaturesController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
 
             if ($validated['is_default'] ?? false) {
                 PriceTable::where('tenant_id', $validated['tenant_id'])->update(['is_default' => false]);
@@ -174,7 +176,7 @@ class AdvancedFeaturesController extends Controller
     public function indexCustomerDocuments(Request $request, int $customerId): JsonResponse
     {
         return response()->json(
-            CustomerDocument::where('tenant_id', $request->user()->tenant_id)
+            CustomerDocument::where('tenant_id', $this->resolvedTenantId())
                 ->where('customer_id', $customerId)
                 ->with('uploader:id,name')
                 ->orderByDesc('created_at')
@@ -184,7 +186,7 @@ class AdvancedFeaturesController extends Controller
 
     public function indexCustomerDocumentsGlobal(Request $request): JsonResponse
     {
-        $query = CustomerDocument::where('tenant_id', $request->user()->tenant_id)
+        $query = CustomerDocument::where('tenant_id', $this->resolvedTenantId())
             ->with(['uploader:id,name', 'customer:id,name']);
 
         if ($request->filled('search')) {
@@ -218,7 +220,7 @@ class AdvancedFeaturesController extends Controller
             $path = $file->store("customer-documents/{$customerId}", 'public');
 
             $doc = CustomerDocument::create([
-                'tenant_id' => $request->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
                 'customer_id' => $customerId,
                 'title' => $validated['title'],
                 'type' => $validated['type'] ?? 'other',
@@ -258,7 +260,7 @@ class AdvancedFeaturesController extends Controller
     public function indexCostCenters(Request $request): JsonResponse
     {
         return response()->json(
-            CostCenter::where('tenant_id', $request->user()->tenant_id)
+            CostCenter::where('tenant_id', $this->resolvedTenantId())
                 ->with('children')
                 ->whereNull('parent_id')
                 ->orderBy('code')
@@ -276,7 +278,7 @@ class AdvancedFeaturesController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $center = CostCenter::create($validated);
             DB::commit();
             return response()->json(['message' => 'Centro de custo criado', 'data' => $center], 201);
@@ -328,7 +330,7 @@ class AdvancedFeaturesController extends Controller
     public function indexCollectionRules(Request $request): JsonResponse
     {
         return response()->json(
-            CollectionRule::where('tenant_id', $request->user()->tenant_id)
+            CollectionRule::where('tenant_id', $this->resolvedTenantId())
                 ->orderBy('name')
                 ->paginate($request->input('per_page', 20))
         );
@@ -346,7 +348,7 @@ class AdvancedFeaturesController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $rule = CollectionRule::create($validated);
             DB::commit();
             return response()->json(['message' => 'Régua de cobrança criada', 'data' => $rule], 201);
@@ -379,7 +381,7 @@ class AdvancedFeaturesController extends Controller
 
     public function indexRoutePlans(Request $request): JsonResponse
     {
-        $query = RoutePlan::where('tenant_id', $request->user()->tenant_id)
+        $query = RoutePlan::where('tenant_id', $this->resolvedTenantId())
             ->with('technician:id,name');
 
         if ($request->filled('technician_id')) $query->where('technician_id', $request->technician_id);
@@ -400,7 +402,7 @@ class AdvancedFeaturesController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $plan = RoutePlan::create($validated);
             DB::commit();
             return response()->json(['message' => 'Rota planejada', 'data' => $plan], 201);
@@ -415,7 +417,7 @@ class AdvancedFeaturesController extends Controller
     public function indexRatings(Request $request): JsonResponse
     {
         $query = WorkOrderRating::query()
-            ->whereHas('workOrder', fn ($workOrderQuery) => $workOrderQuery->where('tenant_id', $request->user()->tenant_id))
+            ->whereHas('workOrder', fn ($workOrderQuery) => $workOrderQuery->where('tenant_id', $this->resolvedTenantId()))
             ->with([
                 'workOrder:id,number,os_number,customer_id',
                 'customer:id,name',

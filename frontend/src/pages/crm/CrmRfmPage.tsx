@@ -12,7 +12,7 @@ const segmentColors: Record<string, string> = {
     champions: 'bg-green-100 text-green-800', loyal: 'bg-emerald-100 text-emerald-800', potential_loyal: 'bg-teal-100 text-teal-800',
     new_customers: 'bg-blue-100 text-blue-800', promising: 'bg-cyan-100 text-cyan-800', needs_attention: 'bg-amber-100 text-amber-800',
     about_to_sleep: 'bg-orange-100 text-orange-800', at_risk: 'bg-red-100 text-red-800', cant_lose: 'bg-rose-100 text-rose-800',
-    hibernating: 'bg-gray-100 text-gray-600', lost: 'bg-gray-200 text-gray-500',
+    hibernating: 'bg-surface-100 text-surface-600', lost: 'bg-surface-200 text-surface-500',
 }
 
 export function CrmRfmPage() {
@@ -37,7 +37,7 @@ export function CrmRfmPage() {
                             return (
                                 <Card key={seg}>
                                     <CardContent className="py-3 text-center">
-                                        <Badge className={segmentColors[seg] ?? 'bg-gray-100'}>{(segments as Record<string, string>)[seg] ?? seg}</Badge>
+                                        <Badge className={segmentColors[seg] ?? 'bg-surface-100'}>{(segments as Record<string, string>)[seg] ?? seg}</Badge>
                                         <p className="text-xl font-bold mt-1">{s.count}</p>
                                         <p className="text-xs text-muted-foreground">{fmtMoney(s.total_revenue)}</p>
                                     </CardContent>
@@ -58,7 +58,7 @@ export function CrmRfmPage() {
                                             <td className="text-center"><Badge variant="outline">{s.frequency_score as number}</Badge></td>
                                             <td className="text-center"><Badge variant="outline">{s.monetary_score as number}</Badge></td>
                                             <td className="text-center font-bold">{s.total_score as number}</td>
-                                            <td className="text-center"><Badge className={segmentColors[s.rfm_segment as string] ?? 'bg-gray-100'}>{(segments as Record<string, string>)[s.rfm_segment as string] ?? s.rfm_segment}</Badge></td>
+                                            <td className="text-center"><Badge className={segmentColors[s.rfm_segment as string] ?? 'bg-surface-100'}>{(segments as Record<string, string>)[s.rfm_segment as string] ?? s.rfm_segment}</Badge></td>
                                             <td className="text-right">{fmtMoney(s.total_revenue as number)}</td>
                                         </tr>
                                     ))}

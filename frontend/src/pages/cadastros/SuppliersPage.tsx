@@ -398,7 +398,7 @@ export function SuppliersPage() {
                         ) : (
                             <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
                                 onClick={() => {
-                                    if (showConfirmDelete && window.confirm('Deseja realmente excluir este registro?')) {
+                                    if (showConfirmDelete) {
                                         deleteMut.mutate(showConfirmDelete.id)
                                     }
                                 }}>

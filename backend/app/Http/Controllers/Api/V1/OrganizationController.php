@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Position;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Log;
 
 class OrganizationController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     // Departments
     public function indexDepartments(): JsonResponse
     {
@@ -39,7 +42,7 @@ class OrganizationController extends Controller
                 'cost_center' => 'nullable|string',
             ]);
 
-            $dept = Department::create($validated + ['tenant_id' => auth()->user()->tenant_id]);
+            $dept = Department::create($validated + ['tenant_id' => $this->resolvedTenantId()]);
 
             DB::commit();
             return response()->json(['message' => 'Departamento criado', 'data' => $dept], 201);
@@ -118,7 +121,7 @@ class OrganizationController extends Controller
                 'description' => 'nullable|string',
             ]);
 
-            $pos = Position::create($validated + ['tenant_id' => auth()->user()->tenant_id]);
+            $pos = Position::create($validated + ['tenant_id' => $this->resolvedTenantId()]);
 
             DB::commit();
             return response()->json(['message' => 'Cargo criado', 'data' => $pos], 201);

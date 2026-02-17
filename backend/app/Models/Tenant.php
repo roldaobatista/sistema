@@ -26,10 +26,21 @@ class Tenant extends Model
 
     protected $fillable = [
         'name',
+        'trade_name',
         'document',
         'email',
         'phone',
         'status',
+        'website',
+        'state_registration',
+        'city_registration',
+        'address_street',
+        'address_number',
+        'address_complement',
+        'address_neighborhood',
+        'address_city',
+        'address_state',
+        'address_zip',
         'inmetro_config',
     ];
 
@@ -40,6 +51,8 @@ class Tenant extends Model
             'inmetro_config' => 'array',
         ];
     }
+
+    /* ── Relationships ── */
 
     public function branches(): HasMany
     {
@@ -61,5 +74,61 @@ class Tenant extends Model
     public function numberingSequences(): HasMany
     {
         return $this->hasMany(NumberingSequence::class);
+    }
+
+    /* ── Status Helpers ── */
+
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isInactive(): bool
+    {
+        return $this->status === self::STATUS_INACTIVE;
+    }
+
+    public function isTrial(): bool
+    {
+        return $this->status === self::STATUS_TRIAL;
+    }
+
+    public function isAccessible(): bool
+    {
+        return $this->status !== self::STATUS_INACTIVE;
+    }
+
+    /* ── Accessors ── */
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->trade_name ?: $this->name;
+    }
+
+    public function getFullAddressAttribute(): ?string
+    {
+        $parts = array_filter([
+            $this->address_street,
+            $this->address_number ? "nº {$this->address_number}" : null,
+            $this->address_complement,
+            $this->address_neighborhood,
+            $this->address_city ? "{$this->address_city}/{$this->address_state}" : null,
+        ]);
+
+        if (empty($parts)) {
+            return null;
+        }
+
+        $address = implode(', ', $parts);
+        if ($this->address_zip) {
+            $address .= " — CEP {$this->address_zip}";
+        }
+
+        return $address;
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::STATUSES[$this->status] ?? $this->status;
     }
 }

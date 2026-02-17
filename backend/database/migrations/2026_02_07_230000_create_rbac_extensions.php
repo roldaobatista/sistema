@@ -18,10 +18,9 @@ return new class extends Migration {
 
         // Adiciona campos extras à tabela permissions do Spatie
         Schema::table('permissions', function (Blueprint $table) {
-            $table->foreignId('group_id')->nullable()->after('guard_name')
+            $table->foreignId('group_id')->nullable()
                 ->constrained('permission_groups')->nullOnDelete();
-            $table->enum('criticality', ['LOW', 'MED', 'HIGH'])->default('MED')
-                ->after('group_id');
+            $table->enum('criticality', ['LOW', 'MED', 'HIGH'])->default('MED');
         });
 
         // Audit logs

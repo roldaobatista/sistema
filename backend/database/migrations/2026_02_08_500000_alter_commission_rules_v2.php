@@ -10,15 +10,15 @@ return new class extends Migration
     {
         Schema::table('commission_rules', function (Blueprint $t) {
             // Substitui type (percentage/fixed) por calculation_type (10+ opções)
-            $t->string('calculation_type', 40)->default('percent_gross')->after('type');
+            $t->string('calculation_type', 40)->default('percent_gross');
             // Para quem: técnico, vendedor, motorista
-            $t->string('applies_to_role', 20)->default('technician')->after('applies_to');
+            $t->string('applies_to_role', 20)->default('technician');
             // Quando disparar: os_concluida, parcela_paga, os_faturada
-            $t->string('applies_when', 20)->default('os_completed')->after('applies_to_role');
+            $t->string('applies_when', 20)->default('os_completed');
             // Dados extras (faixas escalonadas, fórmulas custom)
-            $t->json('tiers')->nullable()->after('applies_when');
+            $t->json('tiers')->nullable();
             // Prioridade de aplicação
-            $t->integer('priority')->default(0)->after('tiers');
+            $t->integer('priority')->default(0);
         });
     }
 

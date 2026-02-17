@@ -19,13 +19,15 @@ class AuvoExportService
     }
 
     /**
-     * Export a Customer to Auvo (Upsert).
+     * Export a Customer to Auvo (create or update).
      */
     public function exportCustomer(Customer $customer): array
     {
-        // Auvo Use "Upsert" logic via PUT.
-        // We use our internal ID as externalId to ensure idempotency.
-        
+        $mapping = AuvoIdMapping::where('entity_type', 'customers')
+            ->where('local_id', $customer->id)
+            ->where('tenant_id', $customer->tenant_id)
+            ->first();
+
         $payload = [
             'externalId' => (string) $customer->id,
             'name' => $customer->name,
@@ -40,18 +42,28 @@ class AuvoExportService
             'zipCode' => $customer->address_zip,
             'email' => $customer->email ? [$customer->email] : [],
             'phoneNumber' => $customer->phone ? [$customer->phone] : [],
-            'isActive' => $customer->is_active,
+            'isActive' => $customer->is_active ?? true,
         ];
 
-        // PUT /customers/ performs an Upsert based on externalId (if provided) or ID
-        $response = $this->client->put('customers', $payload);
+        if ($mapping) {
+            $patch = [
+                ['op' => 'replace', 'path' => '/name', 'value' => $customer->name],
+                ['op' => 'replace', 'path' => '/description', 'value' => $customer->trade_name ?? $customer->name],
+                ['op' => 'replace', 'path' => '/cpfCnpj', 'value' => $customer->document ?? ''],
+                ['op' => 'replace', 'path' => '/address', 'value' => $customer->address_street ?? ''],
+                ['op' => 'replace', 'path' => '/city', 'value' => $customer->address_city ?? ''],
+                ['op' => 'replace', 'path' => '/state', 'value' => $customer->address_state ?? ''],
+            ];
+            $response = $this->client->patch("customers/{$mapping->auvo_id}", $patch);
+            return $response['result'] ?? $response;
+        }
 
-        // Auvo returns the created/updated object in 'result'
+        $response = $this->client->post('customers', $payload);
         $auvoData = $response['result'] ?? $response;
         $auvoId = $auvoData['id'] ?? null;
 
         if ($auvoId) {
-            AuvoIdMapping::mapOrCreate('customers', (int)$auvoId, $customer->id, $customer->tenant_id);
+            AuvoIdMapping::mapOrCreate('customers', (int) $auvoId, $customer->id, $customer->tenant_id);
         }
 
         return $auvoData;
@@ -113,16 +125,16 @@ class AuvoExportService
         $payload = [
             'description' => $service->name,
             'name' => $service->name,
-            // 'value' => (float) $service->default_price, // Services in Auvo might not have direct value field in easy create, checking docs... usually yes.
+            'value' => (float) ($service->default_price ?? 0),
         ];
 
         if ($mapping) {
-             // Update via PATCH
-             $patch = [
+            $patch = [
                 ['op' => 'replace', 'path' => '/name', 'value' => $service->name],
                 ['op' => 'replace', 'path' => '/description', 'value' => $service->name],
+                ['op' => 'replace', 'path' => '/value', 'value' => (float) ($service->default_price ?? 0)],
             ];
-            
+
             $response = $this->client->patch("services/{$mapping->auvo_id}", $patch);
             return $response['result'] ?? $response;
         } else {
@@ -140,11 +152,15 @@ class AuvoExportService
 
     /**
      * Export a Quote (Orçamento) as an Auvo Proposal/Quotation.
-     * This acts as the "Invoice" or "Venda" export requested.
      */
     public function exportQuote(Quote $quote): array
     {
         $quote->loadMissing('customer', 'items');
+
+        $customer = $quote->customer;
+        if (!$customer) {
+            throw new \RuntimeException('Orçamento sem cliente associado.');
+        }
 
         // Resolve Customer Auvo ID
         $customerMapping = AuvoIdMapping::where('entity_type', 'customers')
@@ -153,10 +169,6 @@ class AuvoExportService
             ->first();
 
         if (!$customerMapping) {
-            $customer = $quote->customer;
-            if (!$customer) {
-                throw new \RuntimeException('Orçamento sem cliente associado.');
-            }
             $auvoCustomer = $this->exportCustomer($customer);
             $customerAuvoId = $auvoCustomer['id'] ?? null;
             if (!$customerAuvoId) {
@@ -166,22 +178,38 @@ class AuvoExportService
             $customerAuvoId = $customerMapping->auvo_id;
         }
 
+        // Check if quote already exported
+        $quoteMapping = AuvoIdMapping::where('entity_type', 'quotations')
+            ->where('local_id', $quote->id)
+            ->where('tenant_id', $quote->tenant_id)
+            ->first();
+
         $payload = [
             'customerId' => (int) $customerAuvoId,
-            'title' => "Orçamento #{$quote->quote_number} - {$quote->customer->name}",
+            'title' => "Orçamento #{$quote->quote_number} - {$customer->name}",
             'status' => 'Pending',
-            'date' => $quote->created_at->format('Y-m-d'),
+            'date' => $quote->created_at?->format('Y-m-d') ?? now()->format('Y-m-d'),
             'expirationDate' => $quote->valid_until?->format('Y-m-d'),
-            'observation' => $quote->observations ?? $quote->internal_notes,
-            'totalValue' => (float) $quote->total,
+            'observation' => $quote->observations ?? $quote->internal_notes ?? '',
+            'totalValue' => (float) ($quote->total ?? 0),
         ];
+
+        if ($quoteMapping) {
+            $patch = [
+                ['op' => 'replace', 'path' => '/title', 'value' => $payload['title']],
+                ['op' => 'replace', 'path' => '/totalValue', 'value' => $payload['totalValue']],
+                ['op' => 'replace', 'path' => '/observation', 'value' => $payload['observation']],
+            ];
+            $response = $this->client->patch("quotations/{$quoteMapping->auvo_id}", $patch);
+            return $response['result'] ?? $response;
+        }
 
         $response = $this->client->post('quotations', $payload);
         $auvoData = $response['result'] ?? $response;
         $auvoId = $auvoData['id'] ?? null;
 
         if ($auvoId) {
-            AuvoIdMapping::mapOrCreate('quotations', (int)$auvoId, $quote->id, $quote->tenant_id);
+            AuvoIdMapping::mapOrCreate('quotations', (int) $auvoId, $quote->id, $quote->tenant_id);
         }
 
         return $auvoData;

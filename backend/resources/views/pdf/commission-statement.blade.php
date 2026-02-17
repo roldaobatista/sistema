@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; }
-        h1 { margin: 0 0 8px; font-size: 18px; }
-        .meta { margin-bottom: 16px; color: #4b5563; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; margin: 20px; }
+        h1 { margin: 0 0 8px; font-size: 18px; color: #111827; }
+        .meta { margin-bottom: 16px; color: #4b5563; line-height: 1.6; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { border: 1px solid #d1d5db; padding: 6px 8px; }
-        th { background: #f3f4f6; text-align: left; font-size: 11px; }
+        th { background: #f3f4f6; text-align: left; font-size: 11px; text-transform: uppercase; }
         td.num, th.num { text-align: right; }
-        .footer { margin-top: 12px; font-size: 12px; color: #111827; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .footer { margin-top: 16px; font-size: 12px; color: #111827; padding-top: 8px; border-top: 2px solid #e5e7eb; }
+        .status-pending { color: #d97706; }
+        .status-approved { color: #2563eb; }
+        .status-paid { color: #059669; }
+        .status-cancelled, .status-rejected { color: #dc2626; }
     </style>
 </head>
 <body>
@@ -38,15 +43,26 @@
             </tr>
         </thead>
         <tbody>
+            @php
+                $statusLabels = [
+                    'pending' => 'Pendente',
+                    'approved' => 'Aprovado',
+                    'paid' => 'Pago',
+                    'cancelled' => 'Cancelado',
+                    'rejected' => 'Rejeitado',
+                    'reversed' => 'Estornado',
+                ];
+                $calcLabels = \App\Models\CommissionRule::CALCULATION_TYPES;
+            @endphp
             @foreach($events as $event)
                 <tr>
                     <td>{{ optional($event->created_at)->format('d/m/Y') }}</td>
                     <td>{{ $event->workOrder?->os_number ?? $event->workOrder?->number ?? '-' }}</td>
                     <td>{{ $event->rule?->name ?? '-' }}</td>
-                    <td>{{ $event->rule?->calculation_type ?? '-' }}</td>
+                    <td>{{ $calcLabels[$event->rule?->calculation_type] ?? $event->rule?->calculation_type ?? '-' }}</td>
                     <td class="num">R$ {{ number_format((float) $event->base_amount, 2, ',', '.') }}</td>
                     <td class="num">R$ {{ number_format((float) $event->commission_amount, 2, ',', '.') }}</td>
-                    <td>{{ $event->status }}</td>
+                    <td class="status-{{ $event->status }}">{{ $statusLabels[$event->status] ?? ucfirst($event->status) }}</td>
                 </tr>
             @endforeach
         </tbody>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\AutomationRule;
 use App\Models\Webhook;
 use App\Models\WebhookLog;
@@ -14,11 +15,13 @@ use Illuminate\Support\Facades\Log;
 
 class AutomationController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     // ─── AUTOMATION RULES ────────────────────────────────────────
 
     public function indexRules(Request $request): JsonResponse
     {
-        $query = AutomationRule::where('tenant_id', $request->user()->tenant_id);
+        $query = AutomationRule::where('tenant_id', $this->resolvedTenantId());
         if ($request->boolean('active_only')) $query->where('is_active', true);
 
         return response()->json($query->orderBy('name')->paginate($request->input('per_page', 20)));
@@ -36,7 +39,7 @@ class AutomationController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['created_by'] = $request->user()->id;
             $rule = AutomationRule::create($validated);
             DB::commit();
@@ -131,7 +134,7 @@ class AutomationController extends Controller
     public function indexWebhooks(Request $request): JsonResponse
     {
         return response()->json(
-            Webhook::where('tenant_id', $request->user()->tenant_id)
+            Webhook::where('tenant_id', $this->resolvedTenantId())
                 ->withCount('logs')
                 ->orderBy('name')
                 ->paginate($request->input('per_page', 20))
@@ -149,7 +152,7 @@ class AutomationController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $webhook = Webhook::create($validated);
             DB::commit();
             return response()->json(['message' => 'Webhook criado', 'data' => $webhook], 201);
@@ -205,7 +208,7 @@ class AutomationController extends Controller
     public function indexScheduledReports(Request $request): JsonResponse
     {
         return response()->json(
-            ScheduledReport::where('tenant_id', $request->user()->tenant_id)
+            ScheduledReport::where('tenant_id', $this->resolvedTenantId())
                 ->with('creator:id,name')
                 ->orderBy('report_type')
                 ->paginate($request->input('per_page', 20))
@@ -215,7 +218,8 @@ class AutomationController extends Controller
     public function storeScheduledReport(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'report_type' => 'required|in:financial,productivity,commissions,certificates,aging,fleet',
+            'name' => 'required|string|max:255',
+            'report_type' => 'required|in:work-orders,productivity,financial,commissions,profitability,quotes,service-calls,technician-cash,crm,equipments,suppliers,stock,customers',
             'frequency' => 'required|in:daily,weekly,monthly',
             'recipients' => 'required|array|min:1',
             'recipients.*' => 'email',
@@ -225,7 +229,7 @@ class AutomationController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['created_by'] = $request->user()->id;
             $validated['next_send_at'] = now()->addDay();
             $report = ScheduledReport::create($validated);
@@ -240,6 +244,7 @@ class AutomationController extends Controller
     public function updateScheduledReport(Request $request, ScheduledReport $report): JsonResponse
     {
         $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
             'frequency' => 'sometimes|in:daily,weekly,monthly',
             'recipients' => 'sometimes|array|min:1',
             'recipients.*' => 'email',

@@ -26,6 +26,35 @@ const emptyItem: ItemForm = {
     quantity: '1', unit_price: '0', discount: '0',
 }
 
+function EquipmentSelector({ customerId, selectedIds, onToggle }: {
+    customerId: string | number; selectedIds: number[];
+    onToggle: (id: number) => void;
+}) {
+    const { data: eqRes, isLoading } = useQuery({
+        queryKey: ['customer-equipments', customerId],
+        queryFn: () => api.get('/equipments', { params: { customer_id: customerId, per_page: 50 } }),
+        enabled: !!customerId,
+    })
+    const equipments: any[] = eqRes?.data?.data ?? []
+
+    if (isLoading) return <div className="animate-pulse h-8 w-full rounded bg-surface-100" />
+    if (equipments.length === 0) return <p className="text-xs text-surface-400">Nenhum equipamento cadastrado para este cliente.</p>
+
+    return (
+        <div className="flex flex-wrap gap-2">
+            {equipments.map((eq: any) => (
+                <button key={eq.id} type="button" onClick={() => onToggle(eq.id)}
+                    className={cn('rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
+                        selectedIds.includes(eq.id)
+                            ? 'border-brand-500 bg-brand-50 text-brand-700'
+                            : 'border-default text-surface-600 hover:border-surface-400')}>
+                    {eq.type} {eq.brand ?? ''} {eq.model ?? ''} {eq.serial_number ? `(S/N: ${eq.serial_number})` : ''}
+                </button>
+            ))}
+        </div>
+    )
+}
+
 export function WorkOrderCreatePage() {
   const { hasPermission } = useAuthStore()
   const { canViewPrices } = usePriceGate()
@@ -53,6 +82,9 @@ export function WorkOrderCreatePage() {
         discount_percentage: '0',
         displacement_value: '0',
         is_warranty: false,
+        initial_status: 'open',
+        received_at: '',
+        completed_at: '',
     })
     const [selectedTechIds, setSelectedTechIds] = useState<number[]>([])
     const [selectedEquipIds, setSelectedEquipIds] = useState<number[]>([])
@@ -80,25 +112,34 @@ export function WorkOrderCreatePage() {
         enabled: customerSearch.length >= 2,
     })
 
+    const [productSearch, setProductSearch] = useState('')
+    const [serviceSearch, setServiceSearch] = useState('')
+
     const { data: productsRes } = useQuery({
-        queryKey: ['products-select'],
-        queryFn: () => api.get('/products', { params: { per_page: 100, is_active: true } }),
+        queryKey: ['products-select', productSearch],
+        queryFn: () => api.get('/products', { params: { per_page: 30, is_active: true, search: productSearch || undefined } }),
     })
 
     const { data: servicesRes } = useQuery({
-        queryKey: ['services-select'],
-        queryFn: () => api.get('/services', { params: { per_page: 100, is_active: true } }),
+        queryKey: ['services-select', serviceSearch],
+        queryFn: () => api.get('/services', { params: { per_page: 30, is_active: true, search: serviceSearch || undefined } }),
     })
 
     const { data: techsRes } = useQuery({
-        queryKey: ['technicians'],
-        queryFn: () => api.get('/users', { params: { per_page: 50 } }),
+        queryKey: ['technicians-by-role'],
+        queryFn: () => api.get('/users/by-role/tecnico', { params: { per_page: 100 } }),
+    })
+
+    const { data: allUsersRes } = useQuery({
+        queryKey: ['users-for-selectors'],
+        queryFn: () => api.get('/users', { params: { per_page: 100 } }),
     })
 
     const customers = customersRes?.data?.data ?? []
     const products = productsRes?.data?.data ?? []
     const services = servicesRes?.data?.data ?? []
-    const technicians = techsRes?.data?.data ?? []
+    const technicians = techsRes?.data?.data ?? techsRes?.data ?? []
+    const allUsers = allUsersRes?.data?.data ?? []
 
     const saveMut = useMutation({
         mutationFn: (data: any) => api.post('/work-orders', data),
@@ -238,6 +279,30 @@ export function WorkOrderCreatePage() {
                         </div>
 
                         <div>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Status Inicial</label>
+                            <select value={form.initial_status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('initial_status', e.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                                <option value="open">Aberta</option>
+                                <option value="completed">Concluída (retroativo)</option>
+                                <option value="delivered">Entregue (retroativo)</option>
+                                <option value="invoiced">Faturada (retroativo)</option>
+                            </select>
+                        </div>
+
+                        {form.initial_status !== 'open' && (
+                            <>
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-surface-700">Data Recebimento</label>
+                                    <Input type="date" value={form.received_at} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('received_at', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-surface-700">Data Conclusão</label>
+                                    <Input type="date" value={form.completed_at} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('completed_at', e.target.value)} />
+                                </div>
+                            </>
+                        )}
+
+                        <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico</label>
                             <select value={form.assigned_to} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('assigned_to', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
@@ -275,7 +340,7 @@ export function WorkOrderCreatePage() {
                             <select value={form.seller_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('seller_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
-                                {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                {allUsers.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                             </select>
                         </div>
                         <div>
@@ -283,7 +348,7 @@ export function WorkOrderCreatePage() {
                             <select value={form.driver_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('driver_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
-                                {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                {allUsers.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                             </select>
                         </div>
                     </div>
@@ -303,11 +368,21 @@ export function WorkOrderCreatePage() {
 
                 <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-semibold text-surface-900">Equipamento</h2>
+                        <h2 className="text-sm font-semibold text-surface-900">Equipamentos</h2>
                         <Button variant="ghost" size="sm" type="button" onClick={() => setShowNewEquip(!showNewEquip)}>
-                            {showNewEquip ? 'Cancelar' : '+ Novo Equipamento'}
+                            {showNewEquip ? 'Cancelar novo' : '+ Novo Equipamento'}
                         </Button>
                     </div>
+                    {form.customer_id && (
+                        <EquipmentSelector
+                            customerId={form.customer_id}
+                            selectedIds={selectedEquipIds}
+                            onToggle={(eqId) => setSelectedEquipIds(prev => prev.includes(eqId) ? prev.filter(id => id !== eqId) : [...prev, eqId])}
+                        />
+                    )}
+                    {!form.customer_id && !showNewEquip && (
+                        <p className="text-sm text-surface-400 text-center py-3">Selecione um cliente para ver os equipamentos cadastrados.</p>
+                    )}
                     {showNewEquip && (
                         <div className="grid gap-3 sm:grid-cols-4">
                             <Input label="Tipo *" value={newEquip.type} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEquip(p => ({ ...p, type: e.target.value }))} placeholder="Ex: Impressora" />
@@ -354,7 +429,7 @@ export function WorkOrderCreatePage() {
                                                 ))}
                                             </select>
                                         </div>
-                                        <Button variant="ghost" size="sm" type="button" onClick={() => { if (window.confirm('Deseja realmente excluir?')) removeItem(i) }}>
+                                        <Button variant="ghost" size="sm" type="button" onClick={() => removeItem(i)}>
                                             <Trash2 className="h-4 w-4 text-red-500" />
                                         </Button>
                                     </div>
@@ -405,7 +480,7 @@ export function WorkOrderCreatePage() {
                                 className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
                         </div>
                         {parseFloat(form.discount) > 0 && parseFloat(form.discount_percentage) > 0 && (
-                            <p className="text-xs text-amber-600">âš  Apenas um tipo de desconto pode ser aplicado. O desconto percentual terá prioridade.</p>
+                            <p className="text-xs text-amber-600">Apenas um tipo de desconto pode ser aplicado. O desconto percentual terá prioridade.</p>
                         )}
                         <div className="flex items-center justify-between gap-4 text-sm">
                             <span className="text-surface-600">Valor Deslocamento (R$)</span>

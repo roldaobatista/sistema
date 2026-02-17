@@ -13,9 +13,11 @@ class XmlImportController extends Controller
 
     public function import(Request $request): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $request->validate([
-            'xml_file' => 'required|file|mimes:xml',
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'xml_file' => 'required|file|mimes:xml|max:10240',
+            'warehouse_id' => "required|exists:warehouses,id,tenant_id,{$tenantId}",
         ]);
 
         try {
@@ -28,7 +30,7 @@ class XmlImportController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Erro ao processar XML: ' . $e->getMessage()
+                'message' => 'Erro ao processar o arquivo XML.'
             ], 422);
         }
     }

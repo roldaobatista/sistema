@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
 
 class InvoiceController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     private const NON_CANCELLED_STATUSES = [
         Invoice::STATUS_DRAFT,
         Invoice::STATUS_ISSUED,
@@ -27,11 +30,6 @@ class InvoiceController extends Controller
         Invoice::STATUS_SENT => [Invoice::STATUS_CANCELLED],
         Invoice::STATUS_CANCELLED => [],
     ];
-
-    private function tenantId(Request $request): int
-    {
-        return (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
-    }
 
     private function canTransition(string $from, string $to): bool
     {
@@ -130,7 +128,7 @@ class InvoiceController extends Controller
     public function metadata(Request $request): JsonResponse
     {
         try {
-            $tenantId = $this->tenantId($request);
+            $tenantId = $this->resolvedTenantId();
             return response()->json($this->invoiceMetadataPayload($tenantId));
         } catch (\Throwable $e) {
             Log::error('Invoice metadata failed', ['error' => $e->getMessage()]);
@@ -154,7 +152,7 @@ class InvoiceController extends Controller
         }
 
         try {
-            $tenantId = $this->tenantId($request);
+            $tenantId = $this->resolvedTenantId();
             $query = Invoice::query()
                 ->where('tenant_id', $tenantId)
                 ->with(['customer:id,name', 'workOrder:id,number,os_number', 'creator:id,name']);
@@ -187,7 +185,7 @@ class InvoiceController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
         $userId = (int) $request->user()->id;
 
         $validated = $request->validate([
@@ -283,7 +281,7 @@ class InvoiceController extends Controller
 
     public function show(Request $request, Invoice $invoice): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
         $ownershipError = $this->ensureTenantOwnership($invoice, $tenantId);
         if ($ownershipError) {
             return $ownershipError;
@@ -294,7 +292,7 @@ class InvoiceController extends Controller
 
     public function update(Request $request, Invoice $invoice): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
         $userId = (int) $request->user()->id;
         $ownershipError = $this->ensureTenantOwnership($invoice, $tenantId);
         if ($ownershipError) {
@@ -348,7 +346,7 @@ class InvoiceController extends Controller
 
     public function destroy(Request $request, Invoice $invoice): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
         $userId = (int) $request->user()->id;
         $ownershipError = $this->ensureTenantOwnership($invoice, $tenantId);
         if ($ownershipError) {

@@ -132,7 +132,7 @@ export function NotificationsPage() {
                         {f.label}
                         <span className={cn(
                             'rounded-full px-1.5 py-0.5 text-xs font-bold',
-                            filter === f.key ? 'bg-white/20' : 'bg-surface-200'
+                            filter === f.key ? 'bg-surface-0/20 dark:bg-surface-800/20' : 'bg-surface-200'
                         )}>{f.count}</span>
                     </button>
                 ))}

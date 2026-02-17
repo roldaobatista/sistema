@@ -297,10 +297,14 @@ class AuvoImportController extends Controller
         $apiKey = $credentials['api_key'] ?? config('services.auvo.api_key', '');
         $apiToken = $credentials['api_token'] ?? config('services.auvo.api_token', '');
 
+        $mask = fn(string $v): string => strlen($v) <= 6
+            ? str_repeat('*', strlen($v))
+            : substr($v, 0, 3) . str_repeat('*', strlen($v) - 6) . substr($v, -3);
+
         return response()->json([
             'has_credentials' => !empty($apiKey) && !empty($apiToken),
-            'api_key' => $apiKey,
-            'api_token' => $apiToken,
+            'api_key_masked' => $apiKey ? $mask($apiKey) : '',
+            'api_token_masked' => $apiToken ? $mask($apiToken) : '',
         ]);
     }
 
@@ -310,35 +314,40 @@ class AuvoImportController extends Controller
     public function syncStatus(Request $request): JsonResponse
     {
         $tenantId = $request->user()->current_tenant_id;
+        $entityTypes = array_keys(AuvoImport::ENTITY_TYPES);
+
+        // Batch: last successful import per entity (1 query)
+        $lastImports = AuvoImport::where('tenant_id', $tenantId)
+            ->where('status', AuvoImport::STATUS_DONE)
+            ->whereIn('entity_type', $entityTypes)
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('entity_type')
+            ->map(fn($group) => $group->first());
+
+        // Batch: mapping counts per entity (1 query)
+        $mappingCounts = AuvoIdMapping::where('tenant_id', $tenantId)
+            ->selectRaw('entity_type, COUNT(*) as cnt')
+            ->groupBy('entity_type')
+            ->pluck('cnt', 'entity_type');
 
         $statuses = [];
         foreach (AuvoImport::ENTITY_TYPES as $entity => $label) {
-            $lastImport = AuvoImport::where('tenant_id', $tenantId)
-                ->where('entity_type', $entity)
-                ->where('status', AuvoImport::STATUS_DONE)
-                ->orderByDesc('created_at')
-                ->first();
-
-            $mappingCount = AuvoIdMapping::where('tenant_id', $tenantId)
-                ->where('entity_type', $entity)
-                ->count();
-
+            $lastImport = $lastImports->get($entity);
             $statuses[$entity] = [
                 'label' => $label,
                 'last_import_at' => $lastImport?->completed_at ?? $lastImport?->last_synced_at,
                 'total_imported' => $lastImport?->total_imported ?? 0,
                 'total_updated' => $lastImport?->total_updated ?? 0,
                 'total_errors' => $lastImport?->total_errors ?? 0,
-                'total_mapped' => $mappingCount,
+                'total_mapped' => $mappingCounts->get($entity, 0),
                 'status' => $lastImport?->status ?? 'never',
             ];
         }
 
-        $totalMappings = AuvoIdMapping::where('tenant_id', $tenantId)->count();
-
         return response()->json([
             'entities' => $statuses,
-            'total_mappings' => $totalMappings,
+            'total_mappings' => $mappingCounts->sum(),
         ]);
     }
 

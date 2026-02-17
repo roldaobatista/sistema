@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\GeofenceLocation;
 use App\Models\TimeClockAdjustment;
@@ -25,6 +26,7 @@ use Illuminate\Validation\ValidationException;
 
 class HRAdvancedController extends Controller
 {
+    use ResolvesCurrentTenant;
     public function __construct(
         private TimeClockService $timeClockService,
         private JourneyCalculationService $journeyService,
@@ -121,7 +123,7 @@ class HRAdvancedController extends Controller
 
     public function pendingClockEntries(Request $request): JsonResponse
     {
-        $entries = TimeClockEntry::where('tenant_id', $request->user()->tenant_id)
+        $entries = TimeClockEntry::where('tenant_id', $this->resolvedTenantId())
             ->where('approval_status', 'pending')
             ->with('user:id,name')
             ->orderByDesc('clock_in')
@@ -134,7 +136,7 @@ class HRAdvancedController extends Controller
 
     public function indexGeofences(Request $request): JsonResponse
     {
-        $query = GeofenceLocation::where('tenant_id', $request->user()->tenant_id);
+        $query = GeofenceLocation::where('tenant_id', $this->resolvedTenantId());
         if ($request->boolean('active_only')) $query->active();
 
         return response()->json($query->orderBy('name')->paginate($request->input('per_page', 50)));
@@ -153,7 +155,7 @@ class HRAdvancedController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $geofence = GeofenceLocation::create($validated);
             DB::commit();
             return response()->json(['message' => 'Geofence criado', 'data' => $geofence], 201);
@@ -196,7 +198,7 @@ class HRAdvancedController extends Controller
 
     public function indexAdjustments(Request $request): JsonResponse
     {
-        $query = TimeClockAdjustment::where('tenant_id', $request->user()->tenant_id)
+        $query = TimeClockAdjustment::where('tenant_id', $this->resolvedTenantId())
             ->with(['requester:id,name', 'approver:id,name', 'entry:id,clock_in,clock_out']);
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -253,7 +255,7 @@ class HRAdvancedController extends Controller
     public function indexJourneyRules(Request $request): JsonResponse
     {
         return response()->json(
-            JourneyRule::where('tenant_id', $request->user()->tenant_id)->get()
+            JourneyRule::where('tenant_id', $this->resolvedTenantId())->get()
         );
     }
 
@@ -276,7 +278,7 @@ class HRAdvancedController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
 
             // If setting as default, unset previous defaults
             if (!empty($validated['is_default'])) {
@@ -342,7 +344,7 @@ class HRAdvancedController extends Controller
         ]);
 
         try {
-            $this->journeyService->calculateMonth($validated['user_id'], $validated['year_month'], $request->user()->tenant_id);
+            $this->journeyService->calculateMonth($validated['user_id'], $validated['year_month'], $this->resolvedTenantId());
             $summary = $this->journeyService->getMonthSummary($validated['user_id'], $validated['year_month']);
             return response()->json(['message' => 'Jornada calculada', 'data' => $summary]);
         } catch (\Exception $e) {
@@ -379,7 +381,7 @@ class HRAdvancedController extends Controller
 
     public function indexHolidays(Request $request): JsonResponse
     {
-        $query = Holiday::where('tenant_id', $request->user()->tenant_id);
+        $query = Holiday::where('tenant_id', $this->resolvedTenantId());
         if ($request->filled('year')) $query->whereYear('date', $request->year);
 
         return response()->json($query->orderBy('date')->get());
@@ -396,7 +398,7 @@ class HRAdvancedController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $holiday = Holiday::create($validated);
             DB::commit();
             return response()->json(['message' => 'Feriado cadastrado', 'data' => $holiday], 201);
@@ -433,7 +435,7 @@ class HRAdvancedController extends Controller
         ]);
 
         $year = (int) $validated['year'];
-        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
+        $tenantId = $this->resolvedTenantId();
 
         $fixedHolidays = [
             ['Confraternização Universal', "$year-01-01"],
@@ -492,7 +494,7 @@ class HRAdvancedController extends Controller
 
     public function indexLeaves(Request $request): JsonResponse
     {
-        $query = LeaveRequest::where('tenant_id', $request->user()->tenant_id)
+        $query = LeaveRequest::where('tenant_id', $this->resolvedTenantId())
             ->with('user:id,name');
 
         if ($request->filled('user_id')) $query->where('user_id', $request->user_id);
@@ -521,7 +523,7 @@ class HRAdvancedController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['days_count'] = \Carbon\Carbon::parse($validated['start_date'])
                 ->diffInDays(\Carbon\Carbon::parse($validated['end_date'])) + 1;
             $validated['status'] = 'pending';
@@ -592,7 +594,7 @@ class HRAdvancedController extends Controller
 
     public function vacationBalances(Request $request): JsonResponse
     {
-        $query = VacationBalance::where('tenant_id', $request->user()->tenant_id)
+        $query = VacationBalance::where('tenant_id', $this->resolvedTenantId())
             ->with('user:id,name');
 
         if ($request->filled('user_id')) $query->where('user_id', $request->user_id);
@@ -606,7 +608,7 @@ class HRAdvancedController extends Controller
 
     public function indexDocuments(Request $request): JsonResponse
     {
-        $query = EmployeeDocument::where('tenant_id', $request->user()->tenant_id)
+        $query = EmployeeDocument::where('tenant_id', $this->resolvedTenantId())
             ->with('user:id,name');
 
         if ($request->filled('user_id')) $query->where('user_id', $request->user_id);
@@ -636,7 +638,7 @@ class HRAdvancedController extends Controller
             $path = $file->store("hr/documents/{$validated['user_id']}", 'local');
 
             $doc = EmployeeDocument::create([
-                'tenant_id' => $request->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
                 'user_id' => $validated['user_id'],
                 'category' => $validated['category'],
                 'name' => $validated['name'],
@@ -669,7 +671,7 @@ class HRAdvancedController extends Controller
     public function expiringDocuments(Request $request): JsonResponse
     {
         $days = $request->input('days', 30);
-        $docs = EmployeeDocument::where('tenant_id', $request->user()->tenant_id)
+        $docs = EmployeeDocument::where('tenant_id', $this->resolvedTenantId())
             ->expiring($days)
             ->with('user:id,name')
             ->orderBy('expiry_date')
@@ -684,7 +686,7 @@ class HRAdvancedController extends Controller
 
     public function indexTemplates(Request $request): JsonResponse
     {
-        $query = OnboardingTemplate::where('tenant_id', $request->user()->tenant_id);
+        $query = OnboardingTemplate::where('tenant_id', $this->resolvedTenantId());
         if ($request->filled('type')) $query->where('type', $request->type);
         return response()->json($query->orderBy('name')->get());
     }
@@ -701,7 +703,7 @@ class HRAdvancedController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $template = OnboardingTemplate::create($validated);
             DB::commit();
             return response()->json(['message' => 'Template criado', 'data' => $template], 201);
@@ -723,7 +725,7 @@ class HRAdvancedController extends Controller
             $template = OnboardingTemplate::findOrFail($validated['template_id']);
 
             $checklist = OnboardingChecklist::create([
-                'tenant_id' => $request->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
                 'user_id' => $validated['user_id'],
                 'onboarding_template_id' => $template->id,
                 'started_at' => now(),
@@ -751,7 +753,7 @@ class HRAdvancedController extends Controller
 
     public function indexChecklists(Request $request): JsonResponse
     {
-        $query = OnboardingChecklist::where('tenant_id', $request->user()->tenant_id)
+        $query = OnboardingChecklist::where('tenant_id', $this->resolvedTenantId())
             ->with(['user:id,name', 'template:id,name,type', 'items']);
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -788,7 +790,7 @@ class HRAdvancedController extends Controller
 
     public function advancedDashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
 
         $pendingClockApprovals = TimeClockEntry::where('tenant_id', $tenantId)
             ->where('approval_status', 'pending')->count();

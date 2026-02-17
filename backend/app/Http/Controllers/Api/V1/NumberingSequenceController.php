@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\NumberingSequence;
 use Illuminate\Http\JsonResponse;
@@ -11,9 +12,11 @@ use Illuminate\Support\Facades\Log;
 
 class NumberingSequenceController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->current_tenant_id ?? $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
 
         $sequences = NumberingSequence::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
@@ -26,7 +29,7 @@ class NumberingSequenceController extends Controller
     public function update(Request $request, NumberingSequence $numberingSequence): JsonResponse
     {
         try {
-            $tenantId = $request->user()->current_tenant_id ?? $request->user()->tenant_id;
+            $tenantId = $this->resolvedTenantId();
 
             if ($numberingSequence->tenant_id !== $tenantId) {
                 return response()->json(['message' => 'Acesso negado'], 403);
@@ -51,7 +54,7 @@ class NumberingSequenceController extends Controller
 
     public function preview(Request $request, NumberingSequence $numberingSequence): JsonResponse
     {
-        $tenantId = $request->user()->current_tenant_id ?? $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
 
         if ($numberingSequence->tenant_id !== $tenantId) {
             return response()->json(['message' => 'Acesso negado'], 403);

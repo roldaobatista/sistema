@@ -1,9 +1,8 @@
-import { useState , useMemo } from 'react'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ArrowDownRight, ArrowRight, ArrowUpRight, DollarSign, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
@@ -40,19 +39,6 @@ type DreComparativePayload = {
 const fmtBRL = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CashFlowPage() {
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/cash-flow/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['cash-flow'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-
-  // MVP: Search
-  const [searchTerm, setSearchTerm] = useState('')
     const { hasPermission, hasRole } = useAuthStore()
     const isSuperAdmin = hasRole('super_admin')
     const canViewDre = isSuperAdmin || hasPermission('finance.dre.view')

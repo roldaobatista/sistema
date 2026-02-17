@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -9,19 +9,24 @@ import { useAuthStore } from '@/stores/auth-store'
 
 export default function PeopleAnalyticsPage() {
 
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/people-analytics/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['people-analytics'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+    // MVP: Delete mutation
+    const queryClient = useQueryClient()
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/people-analytics/${id}`),
+        onSuccess: () => {
+            toast.success('Removido com sucesso');
+            queryClient.invalidateQueries({ queryKey: ['people-analytics'] }); setConfirmDeleteId(null)
+        },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover'); setConfirmDeleteId(null) },
+    })
+    const handleDelete = (id: number) => { setConfirmDeleteId(id) }
+    const confirmDelete = () => { if (confirmDeleteId !== null) deleteMutation.mutate(confirmDeleteId) }
+    const cancelDelete = () => { setConfirmDeleteId(null) }
 
-  // MVP: Search
-  const [searchTerm, setSearchTerm] = useState('')
-  const { hasPermission } = useAuthStore()
+    // MVP: Search
+    const [searchTerm, setSearchTerm] = useState('')
+    const { hasPermission } = useAuthStore()
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['hr-analytics'],

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('work_orders', function (Blueprint $table) {
-            $table->decimal('displacement_value', 10, 2)->default(0)->after('discount_amount')
+            $table->decimal('displacement_value', 10, 2)->default(0)
                 ->comment('Valor do deslocamento para cálculo de comissão');
         });
     }

@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -912,7 +912,7 @@ export default function ImportPage() {
                                 <button
                                     onClick={downloadSampleCsv}
                                     disabled={isDownloadingSample}
-                                    className="flex items-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-2 rounded-lg border border-blue-300 bg-surface-0 dark:bg-surface-800 px-4 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
                                 >
                                     {isDownloadingSample ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                                     Baixar Modelo CSV
@@ -921,7 +921,7 @@ export default function ImportPage() {
                                     <button
                                         onClick={exportEntityData}
                                         disabled={isExporting}
-                                        className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                                        className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-surface-0 dark:bg-surface-800 px-4 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50"
                                     >
                                         {isExporting ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
                                         Exportar Dados
@@ -1275,7 +1275,7 @@ export default function ImportPage() {
                                 <h3 className="mb-3 font-semibold text-red-800">Erros encontrados</h3>
                                 <div className="max-h-60 space-y-1 overflow-auto text-sm">
                                     {result.error_log.map((e, i) => (
-                                        <div key={i} className="rounded bg-white p-2">
+                                        <div key={i} className="rounded bg-surface-0 dark:bg-surface-800 p-2">
                                             <span className="font-medium text-red-700">Linha {e.line}:</span>{' '}
                                             <span className="text-surface-700">{e.message}</span>
                                         </div>
@@ -1306,7 +1306,7 @@ export default function ImportPage() {
             {
                 confirmDialog.open && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}>
-                        <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+                        <div className="w-full max-w-sm rounded-xl bg-surface-0 dark:bg-surface-800 p-6 shadow-xl" onClick={e => e.stopPropagation()}>
                             <h3 className="mb-2 text-lg font-semibold text-surface-900">{confirmDialog.title}</h3>
                             <p className="mb-5 text-sm text-surface-600">{confirmDialog.message}</p>
                             <div className="flex justify-end gap-3">

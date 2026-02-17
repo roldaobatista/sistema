@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api\V1\Financial;
 use App\Http\Controllers\Controller;
 use App\Models\AccountReceivable;
 use App\Models\AccountPayable;
+use App\Models\Expense;
+use App\Models\FinancialCheck;
 use App\Models\Supplier;
+use App\Models\SupplierContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -29,10 +32,7 @@ class FinancialAdvancedController extends Controller
      */
     public function supplierContracts(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId();
-
-        $contracts = DB::table('supplier_contracts')
-            ->where('tenant_id', $tenantId)
+        $contracts = SupplierContract::with('supplier:id,name')
             ->when($request->input('status'), fn($q, $s) => $q->where('status', $s))
             ->when($request->input('supplier_id'), fn($q, $s) => $q->where('supplier_id', $s))
             ->orderByDesc('end_date')
@@ -57,16 +57,16 @@ class FinancialAdvancedController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $validated['tenant_id'] = $this->tenantId();
-        $validated['status'] = 'active';
-        $validated['created_at'] = now();
-        $validated['updated_at'] = now();
-
         try {
-            $id = DB::table('supplier_contracts')->insertGetId($validated);
+            $contract = SupplierContract::create([
+                ...$validated,
+                'tenant_id' => $this->tenantId(),
+                'status' => 'active',
+            ]);
+
             return response()->json([
                 'message' => 'Contrato criado com sucesso',
-                'data' => DB::table('supplier_contracts')->find($id),
+                'data' => $contract->load('supplier:id,name'),
             ], 201);
         } catch (\Exception $e) {
             Log::error('Supplier contract creation failed', ['error' => $e->getMessage()]);
@@ -147,23 +147,24 @@ class FinancialAdvancedController extends Controller
 
     /**
      * GET /financial/expense-reimbursements
-     * Lists pending and processed expense reimbursements.
+     * Lists expenses eligible for reimbursement (approved status).
      */
     public function expenseReimbursements(Request $request): JsonResponse
     {
         $tenantId = $this->tenantId();
-        $status = $request->input('status', 'pending');
+        $statusFilter = $request->input('status', 'approved');
 
-        $expenses = DB::table('expenses')
-            ->where('expenses.tenant_id', $tenantId)
-            ->where('expenses.reimbursement_status', $status)
-            ->where('expenses.payment_source', 'own_money')
-            ->join('users', 'expenses.user_id', '=', 'users.id')
-            ->select(
-                'expenses.*',
-                'users.name as user_name'
-            )
-            ->orderByDesc('expenses.created_at')
+        $statusMap = [
+            'pending' => Expense::STATUS_APPROVED,
+            'approved' => Expense::STATUS_REIMBURSED,
+        ];
+
+        $expenseStatus = $statusMap[$statusFilter] ?? $statusFilter;
+
+        $expenses = Expense::where('tenant_id', $tenantId)
+            ->where('status', $expenseStatus)
+            ->with(['creator:id,name', 'category:id,name,color'])
+            ->orderByDesc('created_at')
             ->paginate(20);
 
         return response()->json($expenses);
@@ -171,33 +172,38 @@ class FinancialAdvancedController extends Controller
 
     /**
      * POST /financial/expense-reimbursements/{expense}/approve
+     * Marks an approved expense as reimbursed.
      */
     public function approveReimbursement(Request $request, int $expense): JsonResponse
     {
         $tenantId = $this->tenantId();
 
         try {
-            DB::beginTransaction();
-
-            $updated = DB::table('expenses')
-                ->where('id', $expense)
+            $expenseModel = Expense::where('id', $expense)
                 ->where('tenant_id', $tenantId)
-                ->update([
-                    'reimbursement_status' => 'approved',
-                    'approved_by' => auth()->id(),
-                    'approved_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                ->where('status', Expense::STATUS_APPROVED)
+                ->first();
 
-            if (!$updated) {
-                DB::rollBack();
-                return response()->json(['message' => 'Despesa não encontrada'], 404);
+            if (!$expenseModel) {
+                return response()->json(['message' => 'Despesa não encontrada ou não está aprovada'], 404);
             }
 
-            DB::commit();
+            DB::transaction(function () use ($expenseModel) {
+                $expenseModel->forceFill([
+                    'status' => Expense::STATUS_REIMBURSED,
+                ])->save();
+
+                \App\Models\ExpenseStatusHistory::create([
+                    'expense_id' => $expenseModel->id,
+                    'changed_by' => auth()->id(),
+                    'from_status' => Expense::STATUS_APPROVED,
+                    'to_status' => Expense::STATUS_REIMBURSED,
+                    'reason' => 'Reembolso aprovado via painel financeiro',
+                ]);
+            });
+
             return response()->json(['message' => 'Reembolso aprovado com sucesso']);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Expense reimbursement approval failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao aprovar reembolso'], 500);
         }
@@ -212,10 +218,7 @@ class FinancialAdvancedController extends Controller
      */
     public function checks(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId();
-
-        $checks = DB::table('financial_checks')
-            ->where('tenant_id', $tenantId)
+        $checks = FinancialCheck::query()
             ->when($request->input('status'), fn($q, $s) => $q->where('status', $s))
             ->when($request->input('type'), fn($q, $t) => $q->where('type', $t))
             ->orderByDesc('due_date')
@@ -240,16 +243,16 @@ class FinancialAdvancedController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $validated['tenant_id'] = $this->tenantId();
-        $validated['status'] = $validated['status'] ?? 'pending';
-        $validated['created_at'] = now();
-        $validated['updated_at'] = now();
-
         try {
-            $id = DB::table('financial_checks')->insertGetId($validated);
+            $check = FinancialCheck::create([
+                ...$validated,
+                'tenant_id' => $this->tenantId(),
+                'status' => $validated['status'] ?? 'pending',
+            ]);
+
             return response()->json([
                 'message' => 'Cheque registrado com sucesso',
-                'data' => DB::table('financial_checks')->find($id),
+                'data' => $check,
             ], 201);
         } catch (\Exception $e) {
             Log::error('Check creation failed', ['error' => $e->getMessage()]);
@@ -266,26 +269,16 @@ class FinancialAdvancedController extends Controller
             'status' => 'required|in:pending,deposited,compensated,returned,custody',
         ]);
 
+        $record = FinancialCheck::find($check);
+
+        if (!$record) {
+            return response()->json(['message' => 'Cheque não encontrado'], 404);
+        }
+
         try {
-            DB::beginTransaction();
-
-            $updated = DB::table('financial_checks')
-                ->where('id', $check)
-                ->where('tenant_id', $this->tenantId())
-                ->update([
-                    'status' => $validated['status'],
-                    'updated_at' => now(),
-                ]);
-
-            if (!$updated) {
-                DB::rollBack();
-                return response()->json(['message' => 'Cheque não encontrado'], 404);
-            }
-
-            DB::commit();
+            $record->update(['status' => $validated['status']]);
             return response()->json(['message' => 'Status atualizado com sucesso']);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Check status update failed', ['error' => $e->getMessage(), 'check_id' => $check]);
             return response()->json(['message' => 'Erro ao atualizar status do cheque'], 500);
         }
@@ -313,27 +306,28 @@ class FinancialAdvancedController extends Controller
         $receivables = AccountReceivable::where('tenant_id', $tenantId)
             ->where('status', 'pending')
             ->where('due_date', '>', now())
-            ->when($minAmount > 0, fn($q) => $q->where('net_amount', '>=', $minAmount))
+            ->when($minAmount > 0, fn($q) => $q->whereRaw('(amount - amount_paid) >= ?', [$minAmount]))
             ->orderBy('due_date')
             ->get();
 
         $results = $receivables->map(function ($r) use ($monthlyRate) {
+            $faceValue = round((float) $r->amount - (float) $r->amount_paid, 2);
             $daysToMaturity = max(1, now()->diffInDays($r->due_date));
             $monthsToMaturity = $daysToMaturity / 30;
             $discountFactor = pow(1 + $monthlyRate, $monthsToMaturity);
-            $presentValue = round((float) $r->net_amount / $discountFactor, 2);
-            $discount = round((float) $r->net_amount - $presentValue, 2);
+            $presentValue = round($faceValue / $discountFactor, 2);
+            $discount = round($faceValue - $presentValue, 2);
 
             return [
                 'id' => $r->id,
                 'customer' => $r->customer?->name ?? 'N/A',
                 'due_date' => $r->due_date,
                 'days_to_maturity' => $daysToMaturity,
-                'face_value' => (float) $r->net_amount,
+                'face_value' => $faceValue,
                 'present_value' => $presentValue,
                 'discount' => $discount,
-                'effective_rate' => (float) $r->net_amount > 0
-                    ? round(($discount / (float) $r->net_amount) * 100, 2) : 0,
+                'effective_rate' => $faceValue > 0
+                    ? round(($discount / $faceValue) * 100, 2) : 0,
             ];
         });
 
@@ -374,10 +368,11 @@ class FinancialAdvancedController extends Controller
             ->get()
             ->map(function ($r) {
                 $daysOverdue = now()->diffInDays($r->due_date);
+                $outstanding = round((float) $r->amount - (float) $r->amount_paid, 2);
                 return [
                     'id' => $r->id,
                     'customer' => $r->customer,
-                    'amount' => (float) $r->net_amount,
+                    'amount' => $outstanding,
                     'due_date' => $r->due_date,
                     'days_overdue' => $daysOverdue,
                     'collection_stage' => match (true) {
@@ -452,12 +447,12 @@ class FinancialAdvancedController extends Controller
 
             $advance = AccountPayable::create([
                 'tenant_id' => $this->tenantId(),
+                'created_by' => auth()->id(),
                 'supplier_id' => $validated['supplier_id'],
-                'description' => $validated['description'],
-                'gross_amount' => $validated['amount'],
-                'net_amount' => $validated['amount'],
+                'description' => '[Adiantamento] ' . $validated['description'],
+                'amount' => $validated['amount'],
+                'amount_paid' => 0,
                 'due_date' => $validated['due_date'],
-                'type' => 'advance',
                 'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
             ]);

@@ -48,6 +48,7 @@ class Product extends Model
             'sell_price' => 'decimal:2',
             'stock_qty' => 'decimal:2',
             'stock_min' => 'decimal:2',
+            'track_stock' => 'boolean',
             'is_active' => 'boolean',
             'is_kit' => 'boolean',
             'track_batch' => 'boolean',

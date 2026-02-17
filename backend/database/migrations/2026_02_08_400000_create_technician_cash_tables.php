@@ -38,7 +38,7 @@ return new class extends Migration
 
         // Adicionar campo no expenses
         Schema::table('expenses', function (Blueprint $t) {
-            $t->boolean('affects_technician_cash')->default(false)->after('receipt_path');
+            $t->boolean('affects_technician_cash')->default(false);
         });
     }
 

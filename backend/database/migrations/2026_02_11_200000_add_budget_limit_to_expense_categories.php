@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('expense_categories', function (Blueprint $table) {
             if (!Schema::hasColumn('expense_categories', 'budget_limit')) {
-                $table->decimal('budget_limit', 12, 2)->nullable()->after('color');
+                $table->decimal('budget_limit', 12, 2)->nullable();
             }
         });
     }

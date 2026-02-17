@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/stores/auth-store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import api from '@/lib/api'
 
 /**
@@ -20,16 +21,17 @@ export function useCurrentTenant() {
         mutationFn: (tenantId: number) => api.post('/switch-tenant', { tenant_id: tenantId }),
         onSuccess: async () => {
             await fetchMe()
-            qc.invalidateQueries({ queryKey: ['my-tenants'] })
-            qc.invalidateQueries({ queryKey: ['tenants'] })
-            qc.invalidateQueries({ queryKey: ['tenants-stats'] })
-            qc.invalidateQueries({ queryKey: ['branches'] })
+            qc.removeQueries({ predicate: () => true })
+            toast.success('Empresa alterada com sucesso!')
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message ?? 'Erro ao trocar de empresa.')
         },
     })
 
     return {
         currentTenant: tenant,
-        tenants: (tenantsRes?.data ?? []) as Array<{ id: number; name: string; document: string | null }>,
+        tenants: (tenantsRes?.data ?? []) as Array<{ id: number; name: string; document: string | null; status: string }>,
         switchTenant: switchMut.mutate,
         isSwitching: switchMut.isPending,
     }

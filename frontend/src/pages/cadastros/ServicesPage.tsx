@@ -195,14 +195,16 @@ export function ServicesPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-end gap-1">
-                                        <IconButton
-                                            icon={<UploadCloud className="h-4 w-4" />}
-                                            aria-label="Exportar para Auvo"
-                                            tooltip="Exportar para Auvo"
-                                            onClick={() => exportService.mutate(s.id)}
-                                            className="hover:text-blue-600 hover:bg-blue-50"
-                                            disabled={exportService.isPending}
-                                        />
+                                        {hasPermission('auvo.export.execute') && (
+                                            <IconButton
+                                                icon={<UploadCloud className="h-4 w-4" />}
+                                                aria-label="Exportar para Auvo"
+                                                tooltip="Exportar para Auvo"
+                                                onClick={() => exportService.mutate(s.id)}
+                                                className="hover:text-blue-600 hover:bg-blue-50"
+                                                disabled={exportService.isPending}
+                                            />
+                                        )}
                                         <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(s)} className="hover:text-brand-600" />
                                         <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />} onClick={() => {
                                             setShowConfirmDelete(s)
@@ -297,7 +299,7 @@ export function ServicesPage() {
                         ) : (
                             <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
                                 onClick={() => {
-                                    if (showConfirmDelete && window.confirm('Deseja realmente excluir este registro?')) {
+                                    if (showConfirmDelete) {
                                         deleteMut.mutate(showConfirmDelete.id)
                                     }
                                 }}>

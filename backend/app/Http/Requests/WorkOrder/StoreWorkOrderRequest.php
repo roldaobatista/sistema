@@ -57,6 +57,11 @@ class StoreWorkOrderRequest extends FormRequest
             'items.*.quantity' => 'sometimes|numeric|min:0.01',
             'items.*.unit_price' => 'sometimes|numeric|min:0',
             'items.*.discount' => 'sometimes|numeric|min:0',
+            'items.*.cost_price' => 'sometimes|numeric|min:0',
+            'initial_status' => 'sometimes|in:open,completed,delivered,invoiced',
+            'completed_at' => 'nullable|date',
+            'started_at' => 'nullable|date',
+            'delivered_at' => 'nullable|date',
         ];
     }
 

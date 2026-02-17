@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    Building2, Plus, Pencil, Trash2, Phone, Mail, MapPin, X, Check,
+    Building2, Plus, Pencil, Trash2, Phone, Mail, MapPin,
     AlertTriangle, XCircle, Search, RefreshCw, Loader2,
 } from 'lucide-react'
 import { useViaCep } from '@/hooks/useViaCep'
@@ -260,6 +260,7 @@ export function BranchesPage() {
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Cidade</label>
                             <select value={form.address_city} onChange={e => setForm(f => ({ ...f, address_city: e.target.value }))}
+                                aria-label="Cidade"
                                 className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                                 disabled={!form.address_state}>
                                 <option value="">{form.address_state ? 'Selecione' : 'Selecione o UF primeiro'}</option>
@@ -269,6 +270,7 @@ export function BranchesPage() {
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">UF</label>
                             <select value={form.address_state} onChange={e => setForm(f => ({ ...f, address_state: e.target.value, address_city: '' }))}
+                                aria-label="UF"
                                 className="w-full rounded-md border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
                                 <option value="">Selecione</option>
                                 {ibgeStates.map(s => <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>)}
@@ -329,7 +331,7 @@ export function BranchesPage() {
                                 </Button>
                             ) : (
                                 <Button className="bg-red-600 hover:bg-red-700 text-white" loading={deleteMut.isPending}
-                                    onClick={() => { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(showConfirmDelete.id) }}>
+                                    onClick={() => { deleteMut.mutate(showConfirmDelete.id); }}>
                                     Excluir Filial
                                 </Button>
                             )}

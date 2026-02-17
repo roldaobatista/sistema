@@ -21,7 +21,7 @@ export function CustomerHealthScore({ score, breakdown, className }: HealthScore
     const config = getScoreColor(score)
 
     return (
-        <div className={cn('rounded-xl border border-default bg-white p-5 shadow-card', className)}>
+        <div className={cn('rounded-xl border border-default bg-surface-0 dark:bg-surface-800 p-5 shadow-card', className)}>
             {/* Score Circle */}
             <div className="flex items-center gap-5 mb-5">
                 <div className={cn('relative flex h-20 w-20 items-center justify-center rounded-full ring-4', config.ring)}>

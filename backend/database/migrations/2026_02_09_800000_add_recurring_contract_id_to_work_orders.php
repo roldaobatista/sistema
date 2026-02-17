@@ -12,7 +12,6 @@ return new class extends Migration
             if (!Schema::hasColumn('work_orders', 'recurring_contract_id')) {
                 $table->foreignId('recurring_contract_id')
                     ->nullable()
-                    ->after('service_call_id')
                     ->constrained('recurring_contracts')
                     ->nullOnDelete();
             }

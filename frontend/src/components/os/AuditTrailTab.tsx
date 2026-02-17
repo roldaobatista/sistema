@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Clock, User, Pencil, Plus, Trash2, Package, ArrowRightLeft, Loader2, Shield } from 'lucide-react'
+import { toast } from 'sonner'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
@@ -65,6 +66,7 @@ export default function AuditTrailTab({ workOrderId }: AuditTrailTabProps) {
                 setEntries(res.data?.data ?? [])
             } catch (error) {
                 console.error('Failed to fetch audit trail:', error)
+                toast.error('Erro ao carregar trilha de auditoria')
             } finally {
                 setLoading(false)
             }

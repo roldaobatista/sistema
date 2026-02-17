@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 
 return new class extends Migration
@@ -156,7 +157,15 @@ return new class extends Migration
             $role = \Spatie\Permission\Models\Role::where('name', $roleName)->where('guard_name', 'web')->first();
             if ($role) {
                 foreach ($financialPerms as $perm) {
-                    try { $role->givePermissionTo($perm); } catch (\Exception $e) {}
+                    try {
+                        $role->givePermissionTo($perm);
+                    } catch (\Exception $e) {
+                        Log::warning('Permission assignment skipped in migration', [
+                            'role' => $roleName,
+                            'permission' => $perm,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
         }

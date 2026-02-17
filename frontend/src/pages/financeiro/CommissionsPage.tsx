@@ -280,7 +280,7 @@ function CommissionRules() {
                         </div>
 
                         <div className='flex justify-between items-start mb-2 pr-12'>
-                            <Badge variant='secondary' className='uppercase text-xs'>{rule.applies_to_role}</Badge>
+                            <Badge variant='secondary' className='uppercase text-xs'>{{ tecnico: 'Técnico', vendedor: 'Vendedor', motorista: 'Motorista' }[rule.applies_to_role as string] ?? rule.applies_to_role}</Badge>
                         </div>
 
                         <h3 className='font-bold text-base text-surface-900 mb-1 truncate' title={rule.name}>{rule.name}</h3>
@@ -307,12 +307,18 @@ function CommissionRules() {
                             </div>
                             <div className='col-span-2'>
                                 <span className='block text-xs uppercase text-surface-400 font-semibold'>Quando</span>
-                                {rule.applies_when?.replace(/_/g, ' ')}
+                                {{ os_completed: 'Ao Concluir OS', installment_paid: 'Ao Receber Pagamento', os_invoiced: 'Ao Faturar OS' }[rule.applies_when as string] ?? rule.applies_when?.replace(/_/g, ' ')}
                             </div>
                             <div className='col-span-2'>
                                 <span className='block text-xs uppercase text-surface-400 font-semibold'>Beneficiário</span>
                                 {rule.user?.name ?? 'Todos do cargo'}
                             </div>
+                            {rule.source_filter && (
+                                <div className='col-span-2'>
+                                    <span className='block text-xs uppercase text-surface-400 font-semibold'>Filtro de Origem</span>
+                                    {rule.source_filter}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -331,9 +337,10 @@ function CommissionRules() {
                         calculation_type: fd.get('calculation_type'),
                         value: fd.get('value'),
                         priority: fd.get('priority'),
-                        applies_to: 'all',
+                        applies_to: fd.get('applies_to'),
                         applies_when: fd.get('applies_when'),
-                        active: true
+                        source_filter: fd.get('source_filter') || null,
+                        active: editing ? (fd.get('active') === 'true') : true
                     })
                 }} className='space-y-4'>
                     <Input label='Nome da Regra' name='name' defaultValue={editing?.name} required placeholder='Ex: Comissão Vendas Padrão' />
@@ -341,7 +348,7 @@ function CommissionRules() {
                     <div className='grid grid-cols-2 gap-4'>
                         <div>
                             <label className='text-xs font-medium text-surface-700 mb-1 block'>Papel (Cargo)</label>
-                            <select name='applies_to_role' defaultValue={editing?.applies_to_role} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
+                            <select name='applies_to_role' title='Papel (Cargo)' defaultValue={editing?.applies_to_role} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
                                 <option value='tecnico'>Técnico</option>
                                 <option value='vendedor'>Vendedor</option>
                                 <option value='motorista'>Motorista</option>
@@ -349,7 +356,7 @@ function CommissionRules() {
                         </div>
                         <div>
                             <label className='text-xs font-medium text-surface-700 mb-1 block'>Usuário Específico (Opcional)</label>
-                            <select name='user_id' defaultValue={editing?.user_id} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
+                            <select name='user_id' title='Usuário Específico' defaultValue={editing?.user_id} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
                                 <option value=''>Todos do cargo</option>
                                 {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                             </select>
@@ -359,7 +366,7 @@ function CommissionRules() {
                     <div className='grid grid-cols-2 gap-4'>
                         <div>
                             <label className='text-xs font-medium text-surface-700 mb-1 block'>Tipo de Cálculo</label>
-                            <select name='calculation_type' defaultValue={editing?.calculation_type} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
+                            <select name='calculation_type' title='Tipo de Cálculo' defaultValue={editing?.calculation_type} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
                                 {Object.keys(calcTypes).length > 0 ? (
                                     Object.entries(calcTypes).map(([key, label]) => (
                                         <option key={key} value={key}>{label}</option>
@@ -381,14 +388,39 @@ function CommissionRules() {
                         <Input label='Prioridade (Maior = Executa Primeiro)' name='priority' type='number' defaultValue={editing?.priority ?? 0} />
                     </div>
 
-                    <div>
-                        <label className='text-xs font-medium text-surface-700 mb-1 block'>Quando Disparar</label>
-                        <select name='applies_when' defaultValue={editing?.applies_when ?? 'os_completed'} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
-                            <option value='os_completed'>Ao Concluir OS</option>
-                            <option value='installment_paid'>Ao Receber Pagamento</option>
-                            <option value='os_invoiced'>Ao Faturar OS</option>
-                        </select>
+                    <div className='grid grid-cols-2 gap-4'>
+                        <div>
+                            <label className='text-xs font-medium text-surface-700 mb-1 block'>Quando Disparar</label>
+                            <select name='applies_when' title='Quando Disparar' defaultValue={editing?.applies_when ?? 'os_completed'} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
+                                <option value='os_completed'>Ao Concluir OS</option>
+                                <option value='installment_paid'>Ao Receber Pagamento</option>
+                                <option value='os_invoiced'>Ao Faturar OS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className='text-xs font-medium text-surface-700 mb-1 block'>Aplica-se a</label>
+                            <select name='applies_to' title='Aplica-se a' defaultValue={editing?.applies_to ?? 'all'} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
+                                <option value='all'>Todos os Itens</option>
+                                <option value='products'>Somente Produtos</option>
+                                <option value='services'>Somente Serviços</option>
+                            </select>
+                        </div>
                     </div>
+
+                    <div>
+                        <Input label='Filtro de Origem (Opcional)' name='source_filter' defaultValue={editing?.source_filter ?? ''} placeholder='Ex: site, indicação, telemarketing' />
+                        <p className='text-[10px] text-surface-400 mt-1'>Aplica regra somente a OS originadas desta fonte</p>
+                    </div>
+
+                    {editing && (
+                        <div className='flex items-center gap-2'>
+                            <label className='text-xs font-medium text-surface-700'>Status</label>
+                            <select name='active' title='Status da Regra' defaultValue={editing?.active ? 'true' : 'false'} className='rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500'>
+                                <option value='true'>Ativa</option>
+                                <option value='false'>Inativa</option>
+                            </select>
+                        </div>
+                    )}
 
                     {saveError && <p className='text-sm text-red-600 bg-red-50 rounded-lg p-3'>{saveError}</p>}
 
@@ -486,7 +518,14 @@ function CommissionEvents() {
         }
     }
 
-    const handleExport = () => { window.open(`${api.defaults.baseURL}/commission-events/export?${new URLSearchParams(params).toString()}`, '_blank') }
+    const handleExport = async () => {
+        try {
+            const res = await api.get('/commission-events/export', { params, responseType: 'blob' })
+            const url = window.URL.createObjectURL(new Blob([res.data]))
+            const a = document.createElement('a'); a.href = url; a.download = 'comissoes_eventos.csv'; a.click()
+            window.URL.revokeObjectURL(url)
+        } catch { toast.error('Erro ao exportar eventos') }
+    }
 
     const splitMut = useMutation({
         mutationFn: ({ eventId, splits }: { eventId: number; splits: any[] }) => api.post(`/commission-events/${eventId}/splits`, { splits }),
@@ -719,92 +758,174 @@ function CommissionSettlements() {
     const qc = useQueryClient()
     const { hasPermission } = useAuthStore()
     const canManage = hasPermission('commissions.settlement.create')
+    const canApprove = hasPermission('commissions.settlement.approve')
 
     const [closePeriod, setClosePeriod] = useState(new Date().toISOString().slice(0, 7))
     const [closeUserId, setCloseUserId] = useState('')
+    const [balanceUserId, setBalanceUserId] = useState('')
 
     const { data: settRes, isLoading } = useQuery({ queryKey: ['commission-settlements'], queryFn: () => api.get('/commission-settlements') })
-    const settlements = settRes?.data ?? []
+    const settlements = settRes?.data?.data ?? settRes?.data ?? []
 
     const { data: usersRes } = useQuery({ queryKey: ['users-select'], queryFn: () => api.get('/users') })
     const users = usersRes?.data ?? []
 
+    const { data: balanceRes } = useQuery({
+        queryKey: ['commission-balance', balanceUserId],
+        queryFn: () => api.get('/commission-settlements/balance-summary', { params: { user_id: balanceUserId } }),
+        enabled: !!balanceUserId,
+    })
+    const balance = balanceRes?.data ?? null
+
     const [payError, setPayError] = useState<string | null>(null)
-    const [confirmAction, setConfirmAction] = useState<{ type: 'pay' | 'reopen'; id: number } | null>(null)
+    const [confirmAction, setConfirmAction] = useState<{ type: 'reopen' | 'approve'; id: number } | null>(null)
+    const [payModal, setPayModal] = useState<{ id: number; total_amount: number } | null>(null)
+    const [payAmount, setPayAmount] = useState('')
+    const [payNotes, setPayNotes] = useState('')
+    const [rejectModal, setRejectModal] = useState<{ id: number } | null>(null)
+    const [rejectReason, setRejectReason] = useState('')
+
+    const [batchModal, setBatchModal] = useState(false)
+    const [batchUserId, setBatchUserId] = useState('')
+    const [batchDateFrom, setBatchDateFrom] = useState('')
+    const [batchDateTo, setBatchDateTo] = useState('')
+
+    const invalidateAll = () => {
+        qc.invalidateQueries({ queryKey: ['commission-settlements'] })
+        qc.invalidateQueries({ queryKey: ['commission-events'] })
+        qc.invalidateQueries({ queryKey: ['commission-overview'] })
+        qc.invalidateQueries({ queryKey: ['commission-balance'] })
+    }
 
     const closeMut = useMutation({
         mutationFn: (data: any) => api.post('/commission-settlements/close', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] });
-                qc.invalidateQueries({ queryKey: ['commission-events'] });
-                qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Período fechado com sucesso') },
+        onSuccess: () => { invalidateAll(); toast.success('Período fechado com sucesso') },
         onError: (err: any) => { toast.error(err?.response?.data?.message ?? 'Erro ao fechar período') }
     })
 
     const payMut = useMutation({
-        mutationFn: (id: number) => api.post(`/commission-settlements/${id}/pay`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] });
-                qc.invalidateQueries({ queryKey: ['commission-events'] });
-                qc.invalidateQueries({ queryKey: ['commission-overview'] }); setPayError(null); toast.success('Pagamento registrado') },
+        mutationFn: ({ id, paid_amount, payment_notes }: { id: number; paid_amount: number; payment_notes: string }) =>
+            api.post(`/commission-settlements/${id}/pay`, { paid_amount, payment_notes }),
+        onSuccess: () => { invalidateAll(); setPayError(null); setPayModal(null); setPayAmount(''); setPayNotes(''); toast.success('Pagamento registrado') },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao pagar fechamento'; setPayError(msg); toast.error(msg) }
     })
 
     const reopenMut = useMutation({
         mutationFn: (id: number) => api.post(`/commission-settlements/${id}/reopen`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-settlements'] });
-                qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success('Fechamento reaberto') },
+        onSuccess: () => { invalidateAll(); toast.success('Fechamento reaberto') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao reabrir fechamento')
     })
 
-    const handleExportSettlements = () => { window.open(`${api.defaults.baseURL}/commission-settlements/export`, '_blank') }
-    const handleDownloadStatement = (userId: number, period: string) => { window.open(`${api.defaults.baseURL}/commission-statement/pdf?user_id=${userId}&period=${period}`, '_blank') }
+    const approveMut = useMutation({
+        mutationFn: (id: number) => api.post(`/commission-settlements/${id}/approve`),
+        onSuccess: () => { invalidateAll(); toast.success('Fechamento aprovado') },
+        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao aprovar fechamento')
+    })
+
+    const rejectMut = useMutation({
+        mutationFn: ({ id, rejection_reason }: { id: number; rejection_reason: string }) => api.post(`/commission-settlements/${id}/reject`, { rejection_reason }),
+        onSuccess: () => { invalidateAll(); setRejectModal(null); setRejectReason(''); toast.success('Fechamento rejeitado') },
+        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao rejeitar fechamento')
+    })
+
+    const batchMut = useMutation({
+        mutationFn: (data: any) => api.post('/commission-events/batch-generate', data),
+        onSuccess: (res: any) => {
+            const d = res?.data?.data ?? res?.data
+            toast.success(d?.message ?? `${d?.generated ?? 0} comissões geradas`)
+            invalidateAll()
+            setBatchModal(false)
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao gerar em lote')
+    })
+
+    const handleExportSettlements = async () => {
+        try {
+            const res = await api.get('/commission-settlements/export', { responseType: 'blob' })
+            const url = window.URL.createObjectURL(new Blob([res.data]))
+            const a = document.createElement('a'); a.href = url; a.download = 'fechamentos.csv'; a.click()
+            window.URL.revokeObjectURL(url)
+        } catch { toast.error('Erro ao exportar') }
+    }
+    const handleDownloadStatement = async (userId: number, period: string) => {
+        try {
+            const res = await api.get(`/commission-statement/pdf`, { params: { user_id: userId, period }, responseType: 'blob' })
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+            const a = document.createElement('a'); a.href = url; a.download = `extrato-${period}-${userId}.pdf`; a.click()
+            window.URL.revokeObjectURL(url)
+        } catch { toast.error('Erro ao baixar PDF') }
+    }
+
+    const statusLabel = (s: string) => {
+        const map: Record<string, string> = { open: 'Aberto', closed: 'Fechado', approved: 'Aprovado', rejected: 'Rejeitado', pending_approval: 'Aguard. Aprovação', paid: 'Pago' }
+        return map[s] ?? s
+    }
+    const statusVariant = (s: string) => {
+        const map: Record<string, string> = { open: 'secondary', closed: 'default', approved: 'success', rejected: 'danger', pending_approval: 'warning', paid: 'success' }
+        return (map[s] ?? 'secondary') as any
+    }
 
     return (
         <div className='space-y-4'>
+            {/* Saldo Acumulado */}
+            <div className='bg-surface-0 border border-default rounded-xl p-4 shadow-card space-y-4'>
+                <h2 className='font-semibold text-surface-900'>Saldo Acumulado</h2>
+                <div className='flex flex-wrap gap-3 items-end'>
+                    <div>
+                        <label className='text-xs font-medium text-surface-700 mb-1 block'>Beneficiário</label>
+                        <select value={balanceUserId} onChange={(e) => setBalanceUserId(e.target.value)} className='w-48 rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500 h-9 px-2'>
+                            <option value=''>Selecione...</option>
+                            {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                        </select>
+                    </div>
+                </div>
+                {balance && (
+                    <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
+                        <div className='rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center'>
+                            <p className='text-xl font-bold text-emerald-700'>{fmtBRL(balance.total_earned)}</p>
+                            <p className='text-xs font-medium text-emerald-600 mt-0.5'>Total Calculado</p>
+                        </div>
+                        <div className='rounded-xl border border-sky-200 bg-sky-50 p-3 text-center'>
+                            <p className='text-xl font-bold text-sky-700'>{fmtBRL(balance.total_paid)}</p>
+                            <p className='text-xs font-medium text-sky-600 mt-0.5'>Total Pago</p>
+                        </div>
+                        <div className='rounded-xl border border-amber-200 bg-amber-50 p-3 text-center'>
+                            <p className='text-xl font-bold text-amber-700'>{fmtBRL(balance.balance)}</p>
+                            <p className='text-xs font-medium text-amber-600 mt-0.5'>Saldo a Receber</p>
+                        </div>
+                        <div className='rounded-xl border border-surface-200 bg-surface-50 p-3 text-center'>
+                            <p className='text-xl font-bold text-surface-700'>{fmtBRL(balance.pending_unsettled)}</p>
+                            <p className='text-xs font-medium text-surface-600 mt-0.5'>Pendente (sem fechamento)</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Fechar Período + Gerar em Lote */}
             <div className='bg-surface-0 border border-default rounded-xl p-4 shadow-card space-y-4'>
                 <h2 className='font-semibold text-surface-900'>Fechar Período</h2>
                 <div className='flex flex-wrap gap-3 items-end'>
                     <div>
                         <label className='text-xs font-medium text-surface-700 mb-1 block'>Período</label>
-                        <Input
-                            type='month'
-                            value={closePeriod}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClosePeriod(e.target.value)}
-                            className='w-40'
-                        />
+                        <Input type='month' value={closePeriod} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClosePeriod(e.target.value)} className='w-40' />
                     </div>
                     <div>
                         <label className='text-xs font-medium text-surface-700 mb-1 block'>Usuário</label>
-                        <select
-                            value={closeUserId}
-                            onChange={(e) => setCloseUserId(e.target.value)}
-                            className='w-48 rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500 h-9 px-2'
-                        >
+                        <select value={closeUserId} onChange={(e) => setCloseUserId(e.target.value)} className='w-48 rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500 h-9 px-2'>
                             <option value=''>Selecione...</option>
                             {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </select>
                     </div>
-                    <Button
-                        onClick={() => {
-                            if (!closeUserId) return alert('Selecione um usuário')
-                            closeMut.mutate({ user_id: closeUserId, period: closePeriod })
-                        }}
-                        loading={closeMut.isPending}
-                        icon={<Calendar className='h-4 w-4' />}
-                    >
-                        Fechar Período
-                    </Button>
+                    <Button onClick={() => { if (!closeUserId) return toast.error('Selecione um usuário'); closeMut.mutate({ user_id: closeUserId, period: closePeriod }) }} loading={closeMut.isPending} icon={<Calendar className='h-4 w-4' />}>Fechar Período</Button>
+                    {canManage && <Button variant='outline' onClick={() => setBatchModal(true)} icon={<RefreshCw className='h-4 w-4' />}>Gerar Comissões em Lote</Button>}
                 </div>
-                {closeMut.isError && <p className='text-sm text-red-600 bg-red-50 rounded-lg p-3'>Erro: {(closeMut.error as any)?.response?.data?.message || 'Falha ao fechar'}</p>}
-                {closeMut.isSuccess && <p className='text-sm text-emerald-600 bg-emerald-50 rounded-lg p-3'>Período fechado com sucesso!</p>}
                 {payError && <p className='text-sm text-red-600 bg-red-50 rounded-lg p-3'>{payError} <button className='underline ml-2' onClick={() => setPayError(null)}>Fechar</button></p>}
             </div>
 
             <div className='bg-surface-0 border border-default rounded-xl overflow-hidden shadow-card'>
                 <div className='p-4 border-b border-default flex justify-between items-center'>
                     <h2 className='font-semibold text-surface-900'>Fechamentos Realizados</h2>
-                    <div className='flex gap-2'>
-                        <Button variant='outline' size='sm' onClick={handleExportSettlements} icon={<Download className='h-3 w-3' />}>Exportar CSV</Button>
-                    </div>
+                    <Button variant='outline' size='sm' onClick={handleExportSettlements} icon={<Download className='h-3 w-3' />}>Exportar CSV</Button>
                 </div>
                 <div className='overflow-x-auto'>
                     <table className='w-full text-sm'>
@@ -813,7 +934,9 @@ function CommissionSettlements() {
                                 <th className='px-4 py-3 text-left font-medium'>Período</th>
                                 <th className='px-4 py-3 text-left font-medium'>Beneficiário</th>
                                 <th className='px-4 py-3 text-right font-medium'>Eventos</th>
-                                <th className='px-4 py-3 text-right font-medium'>Total</th>
+                                <th className='px-4 py-3 text-right font-medium'>Calculado</th>
+                                <th className='px-4 py-3 text-right font-medium'>Pago</th>
+                                <th className='px-4 py-3 text-right font-medium'>Saldo</th>
                                 <th className='px-4 py-3 text-center font-medium'>Status</th>
                                 <th className='px-4 py-3 text-center font-medium'>Pago Em</th>
                                 <th className='px-4 py-3 text-right font-medium'>Ações</th>
@@ -821,37 +944,37 @@ function CommissionSettlements() {
                         </thead>
                         <tbody className='divide-y divide-subtle'>
                             {isLoading ? (
-                                <tr><td colSpan={7} className='p-8 text-center text-surface-500'>Carregando...</td></tr>
+                                <tr><td colSpan={9} className='p-8 text-center text-surface-500'>Carregando...</td></tr>
                             ) : settlements.length === 0 ? (
-                                <tr><td colSpan={7} className='p-12 text-center'><Calendar className='h-8 w-8 mx-auto text-surface-300 mb-2' /><p className='text-surface-500'>Nenhum fechamento realizado.</p></td></tr>
+                                <tr><td colSpan={9} className='p-12 text-center'><Calendar className='h-8 w-8 mx-auto text-surface-300 mb-2' /><p className='text-surface-500'>Nenhum fechamento realizado.</p></td></tr>
                             ) : settlements.map((s: any) => (
                                 <tr key={s.id} className='hover:bg-surface-50 transition-colors'>
                                     <td className='px-4 py-3 font-medium text-surface-900'>{s.period}</td>
                                     <td className='px-4 py-3 text-surface-700'>{s.user?.name}</td>
                                     <td className='px-4 py-3 text-right text-surface-600'>{s.events_count}</td>
                                     <td className='px-4 py-3 text-right font-semibold text-emerald-600'>{fmtBRL(s.total_amount)}</td>
+                                    <td className='px-4 py-3 text-right font-semibold text-sky-600'>{s.paid_amount != null ? fmtBRL(s.paid_amount) : '—'}</td>
+                                    <td className='px-4 py-3 text-right font-semibold'><span className={Number(s.balance ?? 0) > 0 ? 'text-amber-600' : 'text-surface-400'}>{s.balance != null ? fmtBRL(s.balance) : '—'}</span></td>
                                     <td className='px-4 py-3 text-center'>
-                                        <Badge variant={s.status === 'paid' ? 'success' : s.status === 'closed' ? 'default' : 'secondary'}>
-                                            {s.status === 'paid' ? 'Pago' : s.status === 'closed' ? 'Fechado' : 'Aberto'}
-                                        </Badge>
+                                        <Badge variant={statusVariant(s.status)}>{statusLabel(s.status)}</Badge>
+                                        {s.rejection_reason && <p className='text-xs text-red-500 mt-1' title={s.rejection_reason}>Motivo: {s.rejection_reason.slice(0, 30)}...</p>}
+                                        {s.payment_notes && <p className='text-xs text-surface-500 mt-1' title={s.payment_notes}>Obs: {s.payment_notes.slice(0, 30)}{s.payment_notes.length > 30 ? '...' : ''}</p>}
                                     </td>
-                                    <td className='px-4 py-3 text-center text-surface-500'>
-                                        {s.paid_at ? fmtDate(s.paid_at) : '—'}
-                                    </td>
+                                    <td className='px-4 py-3 text-center text-surface-500'>{s.paid_at ? fmtDate(s.paid_at) : '—'}</td>
                                     <td className='px-4 py-3 text-right'>
-                                        <div className='flex justify-end gap-1'>
-                                            <Button size='sm' variant='outline' className='h-7 text-xs px-2'
-                                                onClick={() => handleDownloadStatement(s.user_id, s.period)}
-                                                icon={<Download className='h-3 w-3' />}>PDF</Button>
-                                            {canManage && s.status === 'closed' && (
+                                        <div className='flex justify-end gap-1 flex-wrap'>
+                                            <Button size='sm' variant='outline' className='h-7 text-xs px-2' onClick={() => handleDownloadStatement(s.user_id, s.period)} icon={<Download className='h-3 w-3' />}>PDF</Button>
+                                            {canApprove && s.status === 'closed' && (
                                                 <>
-                                                    <Button size='sm' className='bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs px-2'
-                                                        onClick={() => setConfirmAction({ type: 'pay', id: s.id })}
-                                                        loading={payMut.isPending} icon={<Wallet className='h-3 w-3' />}>Pagar</Button>
-                                                    <Button size='sm' variant='outline' className='h-7 text-xs px-2'
-                                                        onClick={() => setConfirmAction({ type: 'reopen', id: s.id })}
-                                                        loading={reopenMut.isPending} icon={<RotateCcw className='h-3 w-3' />}>Reabrir</Button>
+                                                    <Button size='sm' className='bg-sky-600 hover:bg-sky-700 text-white h-7 text-xs px-2' onClick={() => setConfirmAction({ type: 'approve', id: s.id })} loading={approveMut.isPending} icon={<CheckCircle className='h-3 w-3' />}>Aprovar</Button>
+                                                    <Button size='sm' variant='outline' className='text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs px-2' onClick={() => setRejectModal({ id: s.id })} icon={<XCircle className='h-3 w-3' />}>Rejeitar</Button>
                                                 </>
+                                            )}
+                                            {canManage && (s.status === 'closed' || s.status === 'approved') && (
+                                                <Button size='sm' className='bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs px-2' onClick={() => { setPayModal({ id: s.id, total_amount: Number(s.total_amount) }); setPayAmount(String(Number(s.total_amount).toFixed(2))) }} loading={payMut.isPending} icon={<Wallet className='h-3 w-3' />}>Pagar</Button>
+                                            )}
+                                            {canManage && ['closed', 'approved', 'rejected'].includes(s.status) && (
+                                                <Button size='sm' variant='outline' className='h-7 text-xs px-2' onClick={() => setConfirmAction({ type: 'reopen', id: s.id })} loading={reopenMut.isPending} icon={<RotateCcw className='h-3 w-3' />}>Reabrir</Button>
                                             )}
                                         </div>
                                     </td>
@@ -862,24 +985,89 @@ function CommissionSettlements() {
                 </div>
             </div>
 
-            {/* Confirm Modal */}
-            <Modal open={!!confirmAction} onOpenChange={() => setConfirmAction(null)} title={confirmAction?.type === 'pay' ? 'Confirmar Pagamento' : 'Confirmar Reabertura'}>
+            {/* Pay Modal */}
+            <Modal open={!!payModal} onOpenChange={() => { setPayModal(null); setPayAmount(''); setPayNotes('') }} title='Registrar Pagamento'>
+                <div className='space-y-4'>
+                    <p className='text-sm text-surface-600'>Informe o valor efetivamente pago. O valor calculado é <strong>{payModal ? fmtBRL(payModal.total_amount) : ''}</strong>.</p>
+                    <div>
+                        <label className='text-xs font-medium text-surface-700 mb-1 block'>Valor Pago (R$)</label>
+                        <Input type='number' step='0.01' min='0' value={payAmount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPayAmount(e.target.value)} placeholder='0.00' />
+                    </div>
+                    <div>
+                        <label className='text-xs font-medium text-surface-700 mb-1 block'>Observações</label>
+                        <textarea value={payNotes} onChange={e => setPayNotes(e.target.value)} className='w-full rounded-lg border-default text-sm p-3 min-h-[60px]' placeholder='Ex: Pago via PIX em 15/03/2025...' />
+                    </div>
+                    <div className='flex justify-end gap-2 pt-4 border-t border-surface-100'>
+                        <Button variant='outline' onClick={() => { setPayModal(null); setPayAmount(''); setPayNotes('') }}>Cancelar</Button>
+                        <Button className='bg-emerald-600 hover:bg-emerald-700 text-white' loading={payMut.isPending}
+                            onClick={() => { if (payModal) payMut.mutate({ id: payModal.id, paid_amount: parseFloat(payAmount) || 0, payment_notes: payNotes }) }}>Confirmar Pagamento</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Confirm Modal (approve/reopen) */}
+            <Modal open={!!confirmAction} onOpenChange={() => setConfirmAction(null)} title={confirmAction?.type === 'approve' ? 'Confirmar Aprovação' : 'Confirmar Reabertura'}>
                 <p className='text-sm text-surface-600 py-2'>
-                    {confirmAction?.type === 'pay'
-                        ? 'Deseja marcar este fechamento como pago? Todos os eventos serão marcados como pagos.'
+                    {confirmAction?.type === 'approve' ? 'Deseja aprovar este fechamento? Após aprovação, poderá ser marcado como pago.'
                         : 'Deseja reabrir este fechamento? Os eventos voltarão ao status pendente.'}
                 </p>
                 <div className='flex justify-end gap-2 pt-4 border-t border-surface-100'>
                     <Button variant='outline' onClick={() => setConfirmAction(null)}>Cancelar</Button>
                     <Button
-                        className={confirmAction?.type === 'pay' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}
-                        loading={confirmAction?.type === 'pay' ? payMut.isPending : reopenMut.isPending}
+                        className={confirmAction?.type === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}
+                        loading={confirmAction?.type === 'approve' ? approveMut.isPending : reopenMut.isPending}
                         onClick={() => {
-                            if (confirmAction?.type === 'pay') payMut.mutate(confirmAction.id)
+                            if (confirmAction?.type === 'approve') approveMut.mutate(confirmAction.id)
                             else if (confirmAction) reopenMut.mutate(confirmAction.id)
                             setConfirmAction(null)
                         }}
-                    >{confirmAction?.type === 'pay' ? 'Confirmar Pagamento' : 'Confirmar Reabertura'}</Button>
+                    >{confirmAction?.type === 'approve' ? 'Confirmar Aprovação' : 'Confirmar Reabertura'}</Button>
+                </div>
+            </Modal>
+
+            {/* Reject Modal */}
+            <Modal open={!!rejectModal} onOpenChange={() => { setRejectModal(null); setRejectReason('') }} title='Rejeitar Fechamento'>
+                <div className='space-y-4'>
+                    <p className='text-sm text-surface-600'>Informe o motivo da rejeição. O fechamento voltará para status "aberto".</p>
+                    <div>
+                        <label className='text-xs font-medium text-surface-700 mb-1 block'>Motivo da Rejeição</label>
+                        <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} className='w-full rounded-lg border-default text-sm p-3 min-h-[80px]' placeholder='Ex: Valores divergem do relatório...' required />
+                    </div>
+                    <div className='flex justify-end gap-2 pt-4 border-t border-surface-100'>
+                        <Button variant='outline' onClick={() => { setRejectModal(null); setRejectReason('') }}>Cancelar</Button>
+                        <Button className='bg-red-600 hover:bg-red-700 text-white' loading={rejectMut.isPending} disabled={rejectReason.length < 5}
+                            onClick={() => { if (rejectModal) rejectMut.mutate({ id: rejectModal.id, rejection_reason: rejectReason }) }}>Rejeitar Fechamento</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Batch Generate Modal */}
+            <Modal open={batchModal} onOpenChange={() => setBatchModal(false)} title='Gerar Comissões em Lote'>
+                <div className='space-y-4'>
+                    <p className='text-sm text-surface-600'>Selecione o técnico e o período. O sistema gerará comissões para todas as OS que ainda não possuem comissão.</p>
+                    <div>
+                        <label className='text-xs font-medium text-surface-700 mb-1 block'>Técnico</label>
+                        <select value={batchUserId} onChange={(e) => setBatchUserId(e.target.value)} className='w-full rounded-lg border-default text-sm focus:ring-brand-500 focus:border-brand-500 h-9 px-2'>
+                            <option value=''>Todos</option>
+                            {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                        </select>
+                    </div>
+                    <div className='grid grid-cols-2 gap-3'>
+                        <div>
+                            <label className='text-xs font-medium text-surface-700 mb-1 block'>Data Início</label>
+                            <Input type='date' value={batchDateFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBatchDateFrom(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className='text-xs font-medium text-surface-700 mb-1 block'>Data Fim</label>
+                            <Input type='date' value={batchDateTo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBatchDateTo(e.target.value)} />
+                        </div>
+                    </div>
+                    <div className='flex justify-end gap-2 pt-4 border-t border-surface-100'>
+                        <Button variant='outline' onClick={() => setBatchModal(false)}>Cancelar</Button>
+                        <Button className='bg-brand-600 hover:bg-brand-700 text-white' loading={batchMut.isPending}
+                            disabled={!batchDateFrom || !batchDateTo}
+                            onClick={() => batchMut.mutate({ user_id: batchUserId || undefined, date_from: batchDateFrom, date_to: batchDateTo })}>Gerar Comissões</Button>
+                    </div>
                 </div>
             </Modal>
         </div>
@@ -892,8 +1080,13 @@ function CommissionDisputes() {
     const canCreate = hasPermission('commissions.dispute.create')
     const canResolve = hasPermission('commissions.dispute.resolve')
     const [showModal, setShowModal] = useState(false)
+    const [resolveModal, setResolveModal] = useState<any>(null)
+    const [resolveNotes, setResolveNotes] = useState('')
+    const [resolveStatus, setResolveStatus] = useState<'accepted' | 'rejected'>('accepted')
+    const [resolveNewAmount, setResolveNewAmount] = useState('')
+
     const { data: res, isLoading } = useQuery({ queryKey: ['commission-disputes'], queryFn: () => api.get('/commission-disputes') })
-    const disputes = res?.data ?? []
+    const disputes = res?.data?.data ?? res?.data ?? []
     const { data: eventsRes } = useQuery({ queryKey: ['commission-events'], queryFn: () => api.get('/commission-events') })
     const events = eventsRes?.data?.data ?? []
 
@@ -904,10 +1097,21 @@ function CommissionDisputes() {
     })
     const resolveMut = useMutation({
         mutationFn: ({ id, data }: any) => api.put(`/commission-disputes/${id}/resolve`, data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-disputes'] });
-                qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success('Contestação resolvida') },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['commission-disputes'] })
+            qc.invalidateQueries({ queryKey: ['commission-events'] })
+            setResolveModal(null); setResolveNotes(''); setResolveNewAmount('')
+            toast.success('Contestação resolvida')
+        },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao resolver')
     })
+
+    const openResolve = (dispute: any, status: 'accepted' | 'rejected') => {
+        setResolveModal(dispute)
+        setResolveStatus(status)
+        setResolveNotes('')
+        setResolveNewAmount('')
+    }
 
     return (
         <div className='space-y-4'>
@@ -927,16 +1131,21 @@ function CommissionDisputes() {
                                     : disputes.map((d: any) => (
                                         <tr key={d.id} className='hover:bg-surface-50 transition-colors'>
                                             <td className='px-4 py-3 text-surface-600'>{fmtDate(d.created_at)}</td>
-                                            <td className='px-4 py-3 font-medium text-surface-900'>{d.user_name}</td>
+                                            <td className='px-4 py-3 font-medium text-surface-900'>{d.user_name ?? d.user?.name}</td>
                                             <td className='px-4 py-3 text-surface-600 max-w-xs truncate' title={d.reason}>{d.reason}</td>
-                                            <td className='px-4 py-3 text-right font-semibold text-emerald-600'>{fmtBRL(d.commission_amount)}</td>
+                                            <td className='px-4 py-3 text-right font-semibold text-emerald-600'>{fmtBRL(d.commission_amount ?? d.commission_event?.commission_amount ?? 0)}</td>
                                             <td className='px-4 py-3 text-center'><Badge variant={d.status === 'accepted' ? 'success' : d.status === 'rejected' ? 'danger' : 'secondary'}>{d.status === 'accepted' ? 'Aceita' : d.status === 'rejected' ? 'Rejeitada' : 'Aberta'}</Badge></td>
                                             <td className='px-4 py-3 text-right'>
                                                 {d.status === 'open' && canResolve && (
                                                     <div className='flex justify-end gap-1'>
-                                                        <Button size='sm' className='bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs px-2' onClick={() => resolveMut.mutate({ id: d.id, data: { status: 'accepted', resolution_notes: 'Aceita via painel' } })}>Aceitar</Button>
-                                                        <Button size='sm' variant='outline' className='text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs px-2' onClick={() => resolveMut.mutate({ id: d.id, data: { status: 'rejected', resolution_notes: 'Rejeitada via painel' } })}>Rejeitar</Button>
+                                                        <Button size='sm' className='bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs px-2' onClick={() => openResolve(d, 'accepted')}>Aceitar</Button>
+                                                        <Button size='sm' variant='outline' className='text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs px-2' onClick={() => openResolve(d, 'rejected')}>Rejeitar</Button>
                                                     </div>
+                                                )}
+                                                {d.status !== 'open' && d.resolution_notes && (
+                                                    <span className='text-xs text-surface-500' title={d.resolution_notes}>
+                                                        {d.resolution_notes.slice(0, 25)}{d.resolution_notes.length > 25 ? '...' : ''}
+                                                    </span>
                                                 )}
                                             </td>
                                         </tr>
@@ -945,6 +1154,8 @@ function CommissionDisputes() {
                     </table>
                 </div>
             </div>
+
+            {/* New Dispute Modal */}
             <Modal open={showModal} onOpenChange={setShowModal} title='Nova Contestação'>
                 <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); storeMut.mutate({ commission_event_id: fd.get('commission_event_id'), reason: fd.get('reason') }) }} className='space-y-4'>
                     <div><label className='text-xs font-medium text-surface-700 mb-1 block'>Evento</label>
@@ -959,6 +1170,45 @@ function CommissionDisputes() {
                         <Button type='submit' loading={storeMut.isPending}>Registrar</Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Resolve Dispute Modal */}
+            <Modal open={!!resolveModal} onOpenChange={() => { setResolveModal(null); setResolveNotes(''); setResolveNewAmount('') }}
+                title={resolveStatus === 'accepted' ? 'Aceitar Contestação' : 'Rejeitar Contestação'}>
+                <div className='space-y-4'>
+                    {resolveModal && (
+                        <div className='bg-surface-50 rounded-lg p-3 text-sm'>
+                            <p><strong>Usuário:</strong> {resolveModal.user_name ?? resolveModal.user?.name}</p>
+                            <p><strong>Motivo:</strong> {resolveModal.reason}</p>
+                            <p><strong>Valor Atual:</strong> {fmtBRL(resolveModal.commission_amount ?? resolveModal.commission_event?.commission_amount ?? 0)}</p>
+                        </div>
+                    )}
+                    <div>
+                        <label className='text-xs font-medium text-surface-700 mb-1 block'>Notas de Resolução (min 5 caracteres)</label>
+                        <textarea value={resolveNotes} onChange={e => setResolveNotes(e.target.value)} className='w-full rounded-lg border-default text-sm p-3 min-h-[80px]' placeholder='Descreva a justificativa da decisão...' />
+                    </div>
+                    {resolveStatus === 'accepted' && (
+                        <div>
+                            <label className='text-xs font-medium text-surface-700 mb-1 block'>Novo Valor (opcional — deixe vazio para estornar)</label>
+                            <Input type='number' step='0.01' min='0' value={resolveNewAmount} onChange={(e: any) => setResolveNewAmount(e.target.value)} placeholder='Ex: 150.00' />
+                            <p className='text-xs text-surface-400 mt-1'>Se preenchido, o valor da comissão será ajustado. Se vazio, o evento será estornado.</p>
+                        </div>
+                    )}
+                    <div className='flex justify-end gap-2 pt-4 border-t border-surface-100'>
+                        <Button variant='outline' onClick={() => { setResolveModal(null); setResolveNotes(''); setResolveNewAmount('') }}>Cancelar</Button>
+                        <Button
+                            className={resolveStatus === 'accepted' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}
+                            loading={resolveMut.isPending}
+                            disabled={resolveNotes.length < 5}
+                            onClick={() => {
+                                if (!resolveModal) return
+                                const data: any = { status: resolveStatus, resolution_notes: resolveNotes }
+                                if (resolveStatus === 'accepted' && resolveNewAmount) data.new_amount = Number(resolveNewAmount)
+                                resolveMut.mutate({ id: resolveModal.id, data })
+                            }}
+                        >{resolveStatus === 'accepted' ? 'Confirmar Aceitação' : 'Confirmar Rejeição'}</Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     )
@@ -1007,7 +1257,10 @@ function CommissionGoals() {
                                 {canCreate && <Button size='icon' variant='ghost' className='h-7 w-7' onClick={() => refreshMut.mutate(g.id)}><RefreshCw className='h-3.5 w-3.5' /></Button>}
                                 {canDelete && <Button size='icon' variant='ghost' className='h-7 w-7 text-red-600' onClick={() => setDeleteGoalId(g.id)}><Trash2 className='h-3.5 w-3.5' /></Button>}
                             </div>
-                            <p className='text-sm font-bold text-surface-900'>{g.user_name}</p>
+                            <div className='flex justify-between items-start'>
+                                <p className='text-sm font-bold text-surface-900'>{g.user_name}</p>
+                                <Badge variant='outline' className='text-xs'>{g.type === 'os_count' ? 'Nº OS' : g.type === 'new_clients' ? 'Novos Clientes' : 'Faturamento'}</Badge>
+                            </div>
                             <p className='text-xs text-surface-500 mb-3'>{g.period}</p>
                             <div className='flex justify-between text-xs mb-1'><span>Alcançado: {fmtBRL(g.achieved_amount)}</span><span>Meta: {fmtBRL(g.target_amount)}</span></div>
                             <div className='h-2 rounded-full bg-surface-100'><div className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400')} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
@@ -1017,10 +1270,29 @@ function CommissionGoals() {
                 })}
             </div>
             <Modal open={showModal} onOpenChange={setShowModal} title='Nova Meta'>
-                <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); storeMut.mutate({ user_id: fd.get('user_id'), period: fd.get('period'), target_amount: fd.get('target_amount') }) }} className='space-y-4'>
-                    <div><label className='text-xs font-medium text-surface-700 mb-1 block'>Usuário</label><select name='user_id' required className='w-full rounded-lg border-default text-sm'><option value=''>Selecione...</option>{users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></div>
-                    <Input label='Período (YYYY-MM)' name='period' required defaultValue={new Date().toISOString().slice(0, 7)} />
-                    <Input label='Meta (R$)' name='target_amount' type='number' step='0.01' required />
+                <form onSubmit={(e) => {
+                    e.preventDefault(); const fd = new FormData(e.currentTarget)
+                    storeMut.mutate({
+                        user_id: fd.get('user_id'), period: fd.get('period'),
+                        target_amount: fd.get('target_amount'), type: fd.get('type'),
+                        bonus_percentage: fd.get('bonus_percentage') || null,
+                        bonus_amount: fd.get('bonus_amount') || null,
+                        notes: fd.get('notes') || null,
+                    })
+                }} className='space-y-4'>
+                    <div className='grid grid-cols-2 gap-4'>
+                        <div><label className='text-xs font-medium text-surface-700 mb-1 block'>Usuário</label><select name='user_id' required className='w-full rounded-lg border-default text-sm'><option value=''>Selecione...</option>{users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></div>
+                        <div><label className='text-xs font-medium text-surface-700 mb-1 block'>Tipo de Meta</label><select name='type' className='w-full rounded-lg border-default text-sm'><option value='revenue'>Faturamento (R$)</option><option value='os_count'>Nº de OS</option><option value='new_clients'>Novos Clientes</option></select></div>
+                    </div>
+                    <div className='grid grid-cols-2 gap-4'>
+                        <Input label='Período' name='period' type='month' required defaultValue={new Date().toISOString().slice(0, 7)} />
+                        <Input label='Meta (valor)' name='target_amount' type='number' step='0.01' required />
+                    </div>
+                    <div className='grid grid-cols-2 gap-4'>
+                        <Input label='Bônus (% se atingir)' name='bonus_percentage' type='number' step='0.01' min='0' max='100' placeholder='Ex: 5' />
+                        <Input label='Bônus Fixo (R$)' name='bonus_amount' type='number' step='0.01' min='0' placeholder='Ex: 500' />
+                    </div>
+                    <Input label='Observações' name='notes' placeholder='Observações sobre a meta...' />
                     <div className='flex justify-end gap-2 pt-4 border-t border-surface-100'><Button variant='outline' type='button' onClick={() => setShowModal(false)}>Cancelar</Button><Button type='submit' loading={storeMut.isPending}>Criar Meta</Button></div>
                 </form>
             </Modal>
@@ -1123,7 +1395,7 @@ function CommissionRecurring() {
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao atualizar status')
     })
     const processMut = useMutation({
-        mutationFn: () => api.post('/recurring-commissions/process'),
+        mutationFn: () => api.post('/recurring-commissions/process-monthly'),
         onSuccess: (res: any) => { qc.invalidateQueries({ queryKey: ['recurring-commissions'] });
                 qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success(res?.data?.message ?? 'Processamento concluído') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao processar')

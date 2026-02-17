@@ -53,7 +53,7 @@ export function AgingReceivablesPage() {
         },
     })
 
-    const buckets = data?.buckets ?? {}
+    const buckets = data?.buckets ?? ({} as Partial<Record<BucketKey, Bucket>>)
     const totalOverdue = data?.total_overdue ?? 0
     const totalOutstanding = data?.total_outstanding ?? 0
 

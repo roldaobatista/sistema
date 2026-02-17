@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Operational;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\NpsResponse;
 use App\Models\WorkOrder;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class NpsController extends Controller
 {
+    use ResolvesCurrentTenant;
     /**
      * Store a new NPS response.
      */
@@ -55,7 +57,7 @@ class NpsController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
         
         $responses = NpsResponse::where('tenant_id', $tenantId)->get();
         $total = $responses->count();

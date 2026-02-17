@@ -136,7 +136,7 @@ export function QuoteDetailPage() {
 
     const duplicateMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/duplicate`),
-        onSuccess: (res: any) => { toast.success('Orçamento duplicado!'); navigate(`/orçamentos/${res.data.id}`) },
+        onSuccess: (res: any) => { toast.success('Orçamento duplicado!'); navigate(`/orcamentos/${res.data.id}`) },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao duplicar'),
     })
 
@@ -221,7 +221,7 @@ export function QuoteDetailPage() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                     {canUpdate && isMutable && (
-                        <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orçamentos/${id}/editar`)}>Editar</Button>
+                        <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => navigate(`/orcamentos/${id}/editar`)}>Editar</Button>
                     )}
                     {canSend && isDraft && (
                         <Button size="sm" variant="outline" icon={<Send className="h-4 w-4" />} onClick={() => requestInternalApprovalMut.mutate()} disabled={requestInternalApprovalMut.isPending}>
@@ -316,6 +316,12 @@ export function QuoteDetailPage() {
                                 <span className="font-medium">- {formatCurrency(quote.discount_amount)}</span>
                             </div>
                         )}
+                        {parseFloat(String(quote.displacement_value)) > 0 && (
+                            <div className="flex justify-between text-content-secondary">
+                                <span className="text-sm">Deslocamento</span>
+                                <span className="font-medium">+ {formatCurrency(quote.displacement_value)}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between border-t border-default pt-2">
                             <span className="font-semibold">Total</span>
                             <span className="text-xl font-bold text-brand-600">{formatCurrency(quote.total)}</span>
@@ -330,6 +336,9 @@ export function QuoteDetailPage() {
                         {quote.source && <div className="flex justify-between"><span className="text-content-secondary">Origem</span><span className="capitalize">{quote.source.replace('_', ' ')}</span></div>}
                         <div className="flex justify-between"><span className="text-content-secondary">Validade</span><span>{quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('pt-BR') : '—'}</span></div>
                         <div className="flex justify-between"><span className="text-content-secondary">Criado em</span><span>{quote.created_at ? new Date(quote.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
+                        {quote.internal_approved_at && (
+                            <div className="flex justify-between"><span className="text-content-secondary">Aprovação interna</span><span>{new Date(quote.internal_approved_at).toLocaleDateString('pt-BR')}</span></div>
+                        )}
                         {quote.sent_at && <div className="flex justify-between"><span className="text-content-secondary">Enviado em</span><span>{new Date(quote.sent_at).toLocaleDateString('pt-BR')}</span></div>}
                         {quote.approved_at && <div className="flex justify-between"><span className="text-content-secondary">Aprovado em</span><span>{new Date(quote.approved_at).toLocaleDateString('pt-BR')}</span></div>}
                     </div>

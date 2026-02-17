@@ -18,16 +18,18 @@ class StockTransfer extends Model
     public const STATUS_COMPLETED = 'completed';
 
     protected $fillable = [
-        'tenant_id', 'reference', 'from_warehouse_id', 'to_warehouse_id',
-        'status', 'notes', 'transferred_by', 'transferred_at', 'created_by',
+        'tenant_id', 'from_warehouse_id', 'to_warehouse_id',
+        'status', 'notes', 'created_by',
         'to_user_id', 'accepted_at', 'accepted_by', 'rejected_at', 'rejected_by', 'rejection_reason',
     ];
 
-    protected $casts = [
-        'transferred_at' => 'datetime',
-        'accepted_at' => 'datetime',
-        'rejected_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'accepted_at' => 'datetime',
+            'rejected_at' => 'datetime',
+        ];
+    }
 
     public function fromWarehouse(): BelongsTo
     {
@@ -52,6 +54,11 @@ class StockTransfer extends Model
     public function rejectedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items(): HasMany

@@ -99,6 +99,7 @@ class CommissionController extends Controller
             'tiers' => 'nullable|array',
             'priority' => 'sometimes|integer',
             'active' => 'sometimes|boolean',
+            'source_filter' => 'nullable|string|max:100',
         ]);
 
         try {
@@ -132,6 +133,7 @@ class CommissionController extends Controller
             'tiers' => 'nullable|array',
             'priority' => 'sometimes|integer',
             'active' => 'sometimes|boolean',
+            'source_filter' => 'nullable|string|max:100',
         ]);
 
         try {
@@ -254,14 +256,7 @@ class CommissionController extends Controller
         $oldStatus = $commissionEvent->status;
         $newStatus = $validated['status'];
 
-        // Validate status transitions
-        $validTransitions = [
-            CommissionEvent::STATUS_PENDING => [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_REVERSED],
-            CommissionEvent::STATUS_APPROVED => [CommissionEvent::STATUS_PAID, CommissionEvent::STATUS_REVERSED],
-            CommissionEvent::STATUS_PAID => [CommissionEvent::STATUS_REVERSED],
-            CommissionEvent::STATUS_REVERSED => [CommissionEvent::STATUS_PENDING],
-        ];
-        if (!in_array($newStatus, $validTransitions[$oldStatus] ?? [])) {
+        if (!in_array($newStatus, CommissionEvent::VALID_TRANSITIONS[$oldStatus] ?? [])) {
             return response()->json(['message' => "Transição de status inválida: {$oldStatus} → {$newStatus}"], 422);
         }
 
@@ -296,20 +291,13 @@ class CommissionController extends Controller
             ->whereIn('id', $validated['ids'])
             ->get();
 
-        $validTransitions = [
-            CommissionEvent::STATUS_PENDING => [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_REVERSED],
-            CommissionEvent::STATUS_APPROVED => [CommissionEvent::STATUS_PAID, CommissionEvent::STATUS_REVERSED],
-            CommissionEvent::STATUS_PAID => [CommissionEvent::STATUS_REVERSED],
-            CommissionEvent::STATUS_REVERSED => [CommissionEvent::STATUS_PENDING],
-        ];
-
         try {
             $updated = 0;
             $skipped = 0;
 
-            DB::transaction(function () use ($events, $validated, $validTransitions, &$updated, &$skipped) {
+            DB::transaction(function () use ($events, $validated, &$updated, &$skipped) {
                 foreach ($events as $event) {
-                    if (!in_array($validated['status'], $validTransitions[$event->status] ?? [])) {
+                    if (!in_array($validated['status'], CommissionEvent::VALID_TRANSITIONS[$event->status] ?? [])) {
                         $skipped++;
                         continue;
                     }
@@ -407,7 +395,7 @@ class CommissionController extends Controller
             $query->where('user_id', $userId);
         }
 
-        return response()->json($query->orderByDesc('period')->get());
+        return response()->json($query->orderByDesc('period')->paginate($request->get('per_page', 50)));
     }
 
     public function closeSettlement(Request $request): JsonResponse
@@ -424,11 +412,20 @@ class CommissionController extends Controller
             return $this->error('Não é permitido fechar períodos futuros', 422);
         }
 
-        $query = CommissionEvent::where('tenant_id', $tenantId)
-            ->where('user_id', $validated['user_id'])
-            ->where('status', CommissionEvent::STATUS_APPROVED);
-        $this->wherePeriod($query, 'created_at', $validated['period']);
-        $events = $query->get();
+        $query = CommissionEvent::where('commission_events.tenant_id', $tenantId)
+            ->where('commission_events.user_id', $validated['user_id'])
+            ->where('commission_events.status', CommissionEvent::STATUS_APPROVED)
+            ->whereNull('commission_events.settlement_id')
+            ->leftJoin('work_orders', 'commission_events.work_order_id', '=', 'work_orders.id');
+
+        $period = $validated['period'];
+        if (DB::getDriverName() === 'sqlite') {
+            $query->whereRaw("strftime('%Y-%m', COALESCE(work_orders.completed_at, work_orders.received_at, commission_events.created_at)) = ?", [$period]);
+        } else {
+            $query->whereRaw("DATE_FORMAT(COALESCE(work_orders.completed_at, work_orders.received_at, commission_events.created_at), '%Y-%m') = ?", [$period]);
+        }
+
+        $events = $query->select('commission_events.*')->get();
 
         if ($events->isEmpty()) {
             return $this->error('Nenhum evento aprovado para este período', 422);
@@ -481,14 +478,22 @@ class CommissionController extends Controller
             return $this->error('Somente fechamentos com status FECHADO ou APROVADO podem ser pagos', 422);
         }
 
+        $validated = $request->validate([
+            'paid_amount' => 'nullable|numeric|min:0',
+            'payment_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $paidAmount = $validated['paid_amount'] ?? $commissionSettlement->total_amount;
+
         DB::beginTransaction();
         try {
             $commissionSettlement->update([
                 'status' => CommissionSettlement::STATUS_PAID,
                 'paid_at' => now(),
+                'paid_amount' => $paidAmount,
+                'payment_notes' => $validated['payment_notes'] ?? null,
             ]);
 
-            // Marcar eventos vinculados a este settlement como pagos
             CommissionEvent::where('settlement_id', $commissionSettlement->id)
                 ->where('status', CommissionEvent::STATUS_APPROVED)
                 ->update(['status' => CommissionEvent::STATUS_PAID]);
@@ -793,5 +798,187 @@ class CommissionController extends Controller
         } catch (\Throwable) {
             // Notifications are non-critical
         }
+    }
+
+    // ── Batch Generate ──
+
+    public function batchGenerateForWorkOrders(Request $request): JsonResponse
+    {
+        $tenantId = $this->tenantId();
+
+        $validated = $request->validate([
+            'user_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'date_from' => 'required|date',
+            'date_to' => 'required|date|after_or_equal:date_from',
+        ]);
+
+        $query = \App\Models\WorkOrder::where('tenant_id', $tenantId)
+            ->where(function ($q) use ($validated) {
+                $q->where(function ($q2) use ($validated) {
+                    $q2->whereDate('completed_at', '>=', $validated['date_from'])
+                        ->whereDate('completed_at', '<=', $validated['date_to']);
+                })->orWhere(function ($q2) use ($validated) {
+                    $q2->whereNull('completed_at')
+                        ->whereDate('received_at', '>=', $validated['date_from'])
+                        ->whereDate('received_at', '<=', $validated['date_to']);
+                });
+            })
+            ->whereNotIn('status', ['cancelled'])
+            ->where(function ($q) {
+                $q->where('total', '>', 0)->where(function ($q2) {
+                    $q2->whereNull('is_warranty')->orWhere('is_warranty', false);
+                });
+            });
+
+        if (!empty($validated['user_id'])) {
+            $userId = $validated['user_id'];
+            $query->where(function ($q) use ($userId) {
+                $q->where('assigned_to', $userId)
+                    ->orWhereHas('technicians', fn ($t) => $t->where('user_id', $userId));
+            });
+        }
+
+        $workOrders = $query->get();
+
+        $generated = 0;
+        $skipped = 0;
+        $errors = [];
+
+        foreach ($workOrders as $wo) {
+            try {
+                $events = $this->commissionService->calculateAndGenerateAnyTrigger($wo);
+                if (count($events) > 0) {
+                    $generated++;
+                    $this->notifyCommissionGenerated($events);
+                } else {
+                    $skipped++;
+                }
+            } catch (\Exception $e) {
+                if (str_contains($e->getMessage(), 'já geradas')) {
+                    $skipped++;
+                } else {
+                    $errors[] = "OS #{$wo->business_number}: {$e->getMessage()}";
+                }
+            }
+        }
+
+        $message = "{$generated} comissões geradas, {$skipped} ignoradas (já existiam ou sem regra)";
+        if (count($errors) > 0) {
+            $message .= ". " . count($errors) . " erro(s)";
+        }
+
+        return $this->success([
+            'total_orders' => $workOrders->count(),
+            'generated' => $generated,
+            'skipped' => $skipped,
+            'errors' => $errors,
+        ], $message, 200);
+    }
+
+    // ── Balance Summary ──
+
+    public function balanceSummary(Request $request): JsonResponse
+    {
+        $tenantId = $this->tenantId();
+
+        $validated = $request->validate([
+            'user_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+        ]);
+
+        $settlements = CommissionSettlement::where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->orderBy('period')
+            ->get();
+
+        $totalEarned = 0;
+        $totalPaid = 0;
+        $details = [];
+
+        foreach ($settlements as $s) {
+            $earned = (float) $s->total_amount;
+            $paid = (float) ($s->paid_amount ?? 0);
+            $totalEarned += $earned;
+            $totalPaid += $paid;
+
+            $details[] = [
+                'id' => $s->id,
+                'period' => $s->period,
+                'total_amount' => $earned,
+                'paid_amount' => $paid,
+                'balance' => round($earned - $paid, 2),
+                'status' => $s->status,
+                'paid_at' => $s->paid_at?->format('Y-m-d'),
+                'payment_notes' => $s->payment_notes,
+            ];
+        }
+
+        $pendingEvents = CommissionEvent::where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->whereNull('settlement_id')
+            ->whereIn('status', [CommissionEvent::STATUS_PENDING, CommissionEvent::STATUS_APPROVED])
+            ->sum('commission_amount');
+
+        return response()->json([
+            'total_earned' => round($totalEarned, 2),
+            'total_paid' => round($totalPaid, 2),
+            'balance' => round($totalEarned - $totalPaid, 2),
+            'pending_unsettled' => (float) $pendingEvents,
+            'settlements' => $details,
+        ]);
+    }
+
+    // ── My Commissions (para técnicos/vendedores verem suas próprias) ──
+
+    public function myEvents(Request $request): JsonResponse
+    {
+        $userId = auth()->id();
+        $query = CommissionEvent::where('tenant_id', $this->tenantId())
+            ->where('user_id', $userId)
+            ->with(['workOrder:id,number,os_number', 'rule:id,name,calculation_type']);
+
+        if ($status = $request->get('status')) {
+            $query->where('status', $status);
+        }
+        if ($period = $request->get('period')) {
+            $this->wherePeriod($query, 'created_at', $period);
+        }
+
+        return response()->json($query->orderByDesc('created_at')->paginate($request->get('per_page', 50)));
+    }
+
+    public function mySettlements(Request $request): JsonResponse
+    {
+        $userId = auth()->id();
+        $query = CommissionSettlement::where('tenant_id', $this->tenantId())
+            ->where('user_id', $userId);
+
+        if ($period = $request->get('period')) {
+            $query->where('period', $period);
+        }
+
+        return response()->json($query->orderByDesc('period')->paginate($request->get('per_page', 50)));
+    }
+
+    public function mySummary(): JsonResponse
+    {
+        $userId = auth()->id();
+        $tenantId = $this->tenantId();
+        $period = now()->format('Y-m');
+
+        $events = CommissionEvent::where('tenant_id', $tenantId)
+            ->where('user_id', $userId);
+
+        $periodEvents = (clone $events);
+        $this->wherePeriod($periodEvents, 'created_at', $period);
+
+        $totalMonth = (clone $periodEvents)->sum('commission_amount');
+        $pending = (clone $periodEvents)->whereIn('status', [CommissionEvent::STATUS_PENDING, CommissionEvent::STATUS_APPROVED])->sum('commission_amount');
+        $paid = (clone $periodEvents)->where('status', CommissionEvent::STATUS_PAID)->sum('commission_amount');
+
+        return response()->json([
+            'total_month' => (float) $totalMonth,
+            'pending' => (float) $pending,
+            'paid' => (float) $paid,
+        ]);
     }
 }

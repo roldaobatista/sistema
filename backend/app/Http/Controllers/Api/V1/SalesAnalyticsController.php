@@ -181,7 +181,7 @@ class SalesAnalyticsController extends Controller
             $customers = AccountReceivable::where('tenant_id', $tenantId)
                 ->where('status', 'paid')
                 ->where('paid_at', '>=', now()->subMonths($months))
-                ->select('customer_id', DB::raw('COALESCE(SUM(net_amount), 0) as revenue'), DB::raw('COUNT(*) as transactions'))
+                ->select('customer_id', DB::raw('COALESCE(SUM(amount), 0) as revenue'), DB::raw('COUNT(*) as transactions'))
                 ->groupBy('customer_id')
                 ->orderByDesc('revenue')
                 ->get();

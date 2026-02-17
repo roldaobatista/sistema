@@ -102,7 +102,9 @@ export default function QualityPage() {
         onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }); queryClient.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }) },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao remover'),
     })
-    const handleDelete = (entity: string, id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate({ entity, id }) }
+    const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{ entity: string; id: number } | null>(null)
+    const handleDelete = (entity: string, id: number) => { setConfirmDeleteTarget({ entity, id }) }
+    const confirmDelete = () => { if (confirmDeleteTarget) { deleteMutation.mutate(confirmDeleteTarget); setConfirmDeleteTarget(null) } }
 
     const { data: proceduresData, isLoading: loadingProc, isError: errorProc } = useQuery({
         queryKey: ['quality-procedures', search, page],
@@ -497,6 +499,20 @@ export default function QualityPage() {
                                 <button type="submit" disabled={saveComplaint.isPending} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">{saveComplaint.isPending ? 'Salvando...' : 'Salvar'}</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Delete Dialog */}
+            {confirmDeleteTarget && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-surface-0 rounded-xl shadow-xl p-6 max-w-sm mx-4 border border-default">
+                        <h3 className="text-lg font-semibold text-surface-900 mb-2">Confirmar Exclusão</h3>
+                        <p className="text-sm text-surface-600 mb-4">Tem certeza que deseja remover este registro?</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2 rounded-lg border border-default text-sm font-medium text-surface-700 hover:bg-surface-50" onClick={() => setConfirmDeleteTarget(null)}>Cancelar</button>
+                            <button className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700" onClick={confirmDelete}>Remover</button>
+                        </div>
                     </div>
                 </div>
             )}

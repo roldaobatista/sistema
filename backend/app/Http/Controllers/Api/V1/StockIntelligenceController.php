@@ -22,11 +22,13 @@ class StockIntelligenceController extends Controller
             $months = (int) ($request->months ?? 12);
             $since = now()->subMonths($months);
 
+            $tenantId = app('current_tenant_id');
             $items = DB::table('stock_movements')
                 ->join('products', 'stock_movements.product_id', '=', 'products.id')
                 ->where('stock_movements.type', 'exit')
                 ->where('stock_movements.created_at', '>=', $since)
-                ->where('products.tenant_id', $request->user()->current_tenant_id)
+                ->where('stock_movements.tenant_id', $tenantId)
+                ->where('products.tenant_id', $tenantId)
                 ->select(
                     'products.id',
                     'products.name',
@@ -88,11 +90,12 @@ class StockIntelligenceController extends Controller
 
             $months = (int) ($request->months ?? 12);
             $since = now()->subMonths($months);
-            $tenantId = $request->user()->current_tenant_id;
+            $tenantId = app('current_tenant_id');
 
             $items = DB::table('products')
-                ->leftJoin('stock_movements', function ($join) use ($since) {
+                ->leftJoin('stock_movements', function ($join) use ($since, $tenantId) {
                     $join->on('stock_movements.product_id', '=', 'products.id')
+                        ->where('stock_movements.tenant_id', $tenantId)
                         ->where('stock_movements.type', 'exit')
                         ->where('stock_movements.created_at', '>=', $since);
                 })
@@ -157,11 +160,12 @@ class StockIntelligenceController extends Controller
     public function averageCost(Request $request): JsonResponse
     {
         try {
-            $tenantId = $request->user()->current_tenant_id;
+            $tenantId = app('current_tenant_id');
 
             $items = DB::table('products')
-                ->leftJoin('stock_movements', function ($join) {
+                ->leftJoin('stock_movements', function ($join) use ($tenantId) {
                     $join->on('stock_movements.product_id', '=', 'products.id')
+                        ->where('stock_movements.tenant_id', $tenantId)
                         ->where('stock_movements.type', 'entry')
                         ->where('stock_movements.unit_cost', '>', 0);
                 })
@@ -212,13 +216,15 @@ class StockIntelligenceController extends Controller
     public function reorderPoints(Request $request): JsonResponse
     {
         try {
-            $tenantId = $request->user()->current_tenant_id;
+            $request->validate(['months' => 'nullable|integer|min:1|max:24']);
+            $tenantId = app('current_tenant_id');
             $months = (int) ($request->months ?? 3);
             $since = now()->subMonths($months);
 
             $items = DB::table('products')
-                ->leftJoin('stock_movements', function ($join) use ($since) {
+                ->leftJoin('stock_movements', function ($join) use ($since, $tenantId) {
                     $join->on('stock_movements.product_id', '=', 'products.id')
+                        ->where('stock_movements.tenant_id', $tenantId)
                         ->where('stock_movements.type', 'exit')
                         ->where('stock_movements.created_at', '>=', $since);
                 })
@@ -294,26 +300,26 @@ class StockIntelligenceController extends Controller
     public function reservations(Request $request): JsonResponse
     {
         try {
-            $tenantId = $request->user()->current_tenant_id;
+            $tenantId = app('current_tenant_id');
 
             $reservations = StockMovement::with(['product:id,name,code,unit', 'workOrder:id,number', 'warehouse:id,name'])
-                ->whereHas('product', fn ($q) => $q->where('tenant_id', $tenantId))
+                ->where('tenant_id', $tenantId)
                 ->where('type', 'reserve')
                 ->orderByDesc('created_at')
-                ->limit(200)
-                ->get()
-                ->map(fn ($m) => [
-                    'id' => $m->id,
-                    'product' => $m->product ? ['id' => $m->product->id, 'name' => $m->product->name, 'code' => $m->product->code] : null,
-                    'warehouse' => $m->warehouse ? ['id' => $m->warehouse->id, 'name' => $m->warehouse->name] : null,
-                    'work_order' => $m->workOrder ? ['id' => $m->workOrder->id, 'number' => $m->workOrder->number] : null,
-                    'quantity' => abs((float) $m->quantity),
-                    'reference' => $m->reference,
-                    'notes' => $m->notes,
-                    'created_at' => $m->created_at->toISOString(),
-                ]);
+                ->paginate($request->integer('per_page', 50));
 
-            return response()->json(['data' => $reservations]);
+            $reservations->getCollection()->transform(fn ($m) => [
+                'id' => $m->id,
+                'product' => $m->product ? ['id' => $m->product->id, 'name' => $m->product->name, 'code' => $m->product->code] : null,
+                'warehouse' => $m->warehouse ? ['id' => $m->warehouse->id, 'name' => $m->warehouse->name] : null,
+                'work_order' => $m->workOrder ? ['id' => $m->workOrder->id, 'number' => $m->workOrder->number] : null,
+                'quantity' => abs((float) $m->quantity),
+                'reference' => $m->reference,
+                'notes' => $m->notes,
+                'created_at' => $m->created_at->toISOString(),
+            ]);
+
+            return response()->json($reservations);
         } catch (\Exception $e) {
             Log::error('StockIntelligence reservations failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao listar reservas'], 500);

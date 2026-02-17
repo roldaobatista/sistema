@@ -118,7 +118,7 @@ export function QuoteEditPage() {
     useEffect(() => {
         if (quote && !isMutable) {
             toast.error('Orçamento não pode ser editado neste status')
-            navigate(`/orçamentos/${id}`)
+            navigate(`/orcamentos/${id}`)
         }
     }, [quote, isMutable, navigate, id])
 
@@ -147,7 +147,7 @@ export function QuoteEditPage() {
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={() => navigate(`/orçamentos/${id}`)}>
+                <Button variant="ghost" size="icon" onClick={() => navigate(`/orcamentos/${id}`)}>
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <h1 className="text-2xl font-bold text-content-primary">
@@ -355,7 +355,7 @@ function EditableItemRow({ item, onSave, onRemove, saving }: {
             </div>
             <div className="flex gap-2 justify-end mt-2">
                 <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Cancelar</Button>
-                <Button size="sm" disabled={saving} onClick={() => { onSave({ quantity: qty, unit_price: price, discount_percentage: disc } as any); setEditing(false) }}>
+                <Button size="sm" disabled={saving} onClick={() => { onSave({ quantity: qty, unit_price: price, discount_percentage: disc }); setEditing(false) }}>
                     Salvar
                 </Button>
             </div>

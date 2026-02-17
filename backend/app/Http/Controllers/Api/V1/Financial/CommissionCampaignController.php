@@ -14,11 +14,17 @@ class CommissionCampaignController extends Controller
 {
     use ApiResponseTrait;
 
+    private function tenantId(): int
+    {
+        $user = auth()->user();
+        return (int) ($user->current_tenant_id ?? $user->tenant_id);
+    }
+
     public function index(Request $request): JsonResponse
     {
-        $query = CommissionCampaign::query();
+        $query = CommissionCampaign::where('tenant_id', $this->tenantId());
 
-        if ($request->get('active_only')) {
+        if ($request->get('active_only') || $request->get('active')) {
             $query->active();
         }
 
@@ -40,6 +46,7 @@ class CommissionCampaignController extends Controller
             $campaign = DB::transaction(function () use ($validated) {
                 return CommissionCampaign::create([
                     ...$validated,
+                    'tenant_id' => $this->tenantId(),
                     'active' => true,
                 ]);
             });
@@ -53,6 +60,12 @@ class CommissionCampaignController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
+        $campaign = CommissionCampaign::where('tenant_id', $this->tenantId())->find($id);
+
+        if (!$campaign) {
+            return $this->error('Campanha não encontrada', 404);
+        }
+
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'multiplier' => 'sometimes|numeric|min:1.01|max:5.00',
@@ -62,12 +75,6 @@ class CommissionCampaignController extends Controller
             'ends_at' => 'sometimes|date|after_or_equal:starts_at',
             'active' => 'sometimes|boolean',
         ]);
-
-        $campaign = CommissionCampaign::find($id);
-
-        if (!$campaign) {
-            return $this->error('Campanha não encontrada', 404);
-        }
 
         try {
             DB::transaction(function () use ($campaign, $validated) {
@@ -83,7 +90,7 @@ class CommissionCampaignController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $campaign = CommissionCampaign::find($id);
+        $campaign = CommissionCampaign::where('tenant_id', $this->tenantId())->find($id);
 
         if (!$campaign) {
             return $this->error('Campanha não encontrada', 404);

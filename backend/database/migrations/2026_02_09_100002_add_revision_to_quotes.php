@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('quotes', function (Blueprint $table) {
-            $table->unsignedSmallInteger('revision')->default(1)->after('quote_number');
+            $table->unsignedSmallInteger('revision')->default(1);
         });
     }
 

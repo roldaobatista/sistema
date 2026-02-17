@@ -26,12 +26,22 @@ class CommissionEvent extends Model
     public const STATUS_APPROVED = 'approved';
     public const STATUS_PAID = 'paid';
     public const STATUS_REVERSED = 'reversed';
+    public const STATUS_CANCELLED = 'cancelled';
 
     public const STATUSES = [
         self::STATUS_PENDING => ['label' => 'Pendente', 'color' => 'warning'],
         self::STATUS_APPROVED => ['label' => 'Aprovado', 'color' => 'info'],
         self::STATUS_PAID => ['label' => 'Pago', 'color' => 'success'],
         self::STATUS_REVERSED => ['label' => 'Estornado', 'color' => 'danger'],
+        self::STATUS_CANCELLED => ['label' => 'Cancelado', 'color' => 'danger'],
+    ];
+
+    public const VALID_TRANSITIONS = [
+        self::STATUS_PENDING => [self::STATUS_APPROVED, self::STATUS_CANCELLED],
+        self::STATUS_APPROVED => [self::STATUS_PAID, self::STATUS_REVERSED, self::STATUS_PENDING],
+        self::STATUS_PAID => [self::STATUS_REVERSED],
+        self::STATUS_REVERSED => [],
+        self::STATUS_CANCELLED => [],
     ];
 
     public function rule(): BelongsTo

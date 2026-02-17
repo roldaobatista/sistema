@@ -135,9 +135,13 @@ class EquipmentController extends Controller
             }
         }
 
-        $equipment->update($data);
-
-        return response()->json(['equipment' => $equipment->fresh('customer:id,name')]);
+        try {
+            DB::transaction(fn () => $equipment->update($data));
+            return response()->json(['equipment' => $equipment->fresh('customer:id,name')]);
+        } catch (\Throwable $e) {
+            Log::error('Equipment update failed', ['id' => $equipment->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar equipamento'], 500);
+        }
     }
 
     /**

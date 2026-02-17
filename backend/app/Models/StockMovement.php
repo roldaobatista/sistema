@@ -54,6 +54,31 @@ class StockMovement extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    public function targetWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'target_warehouse_id');
+    }
+
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(Batch::class);
+    }
+
+    public function productSerial(): BelongsTo
+    {
+        return $this->belongsTo(ProductSerial::class, 'product_serial_id');
+    }
+
     protected static function booted(): void
     {
         static::created(function (StockMovement $movement) {
@@ -72,7 +97,7 @@ class StockMovement extends Model
             return;
         }
 
-        \DB::transaction(function () use ($product) {
+        DB::transaction(function () use ($product) {
             if ($this->type === StockMovementType::Transfer) {
                 $this->handleTransfer();
             } else {

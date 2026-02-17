@@ -1,4 +1,5 @@
-import { useState , useMemo } from 'react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, LogIn, Loader2, Shield } from 'lucide-react'
@@ -62,7 +63,7 @@ export function LoginPage() {
                     {/* Feature pills */}
                     <div className="flex flex-wrap gap-1.5 mt-8">
                         {['Ordens de Serviço', 'Financeiro', 'CRM', 'Estoque', 'Portal Cliente'].map(f => (
-                            <span key={f} className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white/60">
+                            <span key={f} className="rounded-md border border-white/10 bg-surface-0/5 dark:bg-surface-800/5 px-2.5 py-1 text-[11px] font-medium text-white/60">
                                 {f}
                             </span>
                         ))}
@@ -156,6 +157,15 @@ export function LoginPage() {
                                         {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                                     </button>
                                 </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <Link
+                                    to="/esqueci-senha"
+                                    className="text-[12px] font-medium text-brand-600 hover:text-brand-500 transition-colors"
+                                >
+                                    Esqueceu sua senha?
+                                </Link>
                             </div>
 
                             <button

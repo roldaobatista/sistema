@@ -55,6 +55,7 @@ export function QuotesListPage() {
     const canDelete = hasPermission('quotes.quote.delete')
     const canSend = hasPermission('quotes.quote.send')
     const canApprove = hasPermission('quotes.quote.approve')
+    const canConvert = hasPermission('quotes.quote.convert')
     const canInternalApprove = hasPermission('quotes.quote.internal_approve')
 
     useEffect(() => {
@@ -309,7 +310,7 @@ export function QuotesListPage() {
                                     const isMutable = isDraft || isRejected
 
                                     return (
-                                        <tr key={q.id} className="hover:bg-surface-50 transition-colors duration-100 cursor-pointer" onClick={() => navigate(`/orçamentos/${q.id}`)}>
+                                        <tr key={q.id} className="hover:bg-surface-50 transition-colors duration-100 cursor-pointer" onClick={() => navigate(`/orcamentos/${q.id}`)}>
                                             <td className="px-4 py-3">
                                                 <span className="font-medium text-brand-600">{q.quote_number}</span>
                                                 {q.revision > 1 && <span className="text-xs text-content-tertiary ml-1">rev.{q.revision}</span>}
@@ -338,15 +339,17 @@ export function QuotesListPage() {
                                                             <Send className="h-4 w-4" />
                                                         </button>
                                                     )}
-                                                    <button title="Exportar para Auvo" onClick={() => exportQuote.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-cyan-600" disabled={exportQuote.isPending}>
-                                                        <UploadCloud className="h-4 w-4" />
-                                                    </button>
+                                                    {hasPermission('auvo.export.execute') && (
+                                                        <button title="Exportar para Auvo" onClick={() => exportQuote.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-cyan-600" disabled={exportQuote.isPending}>
+                                                            <UploadCloud className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                     {canApprove && isSent && (
                                                         <button title="Aprovar" onClick={() => approveMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-green-600">
                                                             <CheckCircle className="h-4 w-4" />
                                                         </button>
                                                     )}
-                                                    {canUpdate && isApproved && (
+                                                    {canConvert && isApproved && (
                                                         <button title="Converter em OS" onClick={() => convertMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-violet-600">
                                                             <ArrowRightLeft className="h-4 w-4" />
                                                         </button>

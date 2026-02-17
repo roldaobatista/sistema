@@ -18,7 +18,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
     cancelled: { label: 'Cancelado', variant: 'outline', icon: Clock },
 }
 const responsibleIcons: Record<string, React.ElementType> = { us: Building2, client: User, both: Handshake }
-const priorityColors: Record<string, string> = { low: 'bg-gray-100', normal: 'bg-blue-100', high: 'bg-orange-100', urgent: 'bg-red-100' }
+const priorityColors: Record<string, string> = { low: 'bg-surface-100', normal: 'bg-blue-100 dark:bg-blue-900/40', high: 'bg-orange-100 dark:bg-orange-900/40', urgent: 'bg-red-100 dark:bg-red-900/40' }
 
 export function CrmCommitmentsPage() {
     const qc = useQueryClient()

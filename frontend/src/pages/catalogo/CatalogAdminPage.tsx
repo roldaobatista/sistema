@@ -87,14 +87,18 @@ export function CatalogAdminPage() {
   })
 
   const itemMut = useMutation({
-    mutationFn: (d: typeof itemForm & { sort_order?: number }) =>
-      editingItem
-        ? catalogApi.updateItem(selectedCatalog!.id, editingItem.id, d)
+    mutationFn: (d: typeof itemForm & { sort_order?: number }) => {
+      const payload = {
+        ...d,
+        service_id: d.service_id ? parseInt(d.service_id, 10) : null,
+      }
+      return editingItem
+        ? catalogApi.updateItem(selectedCatalog!.id, editingItem.id, payload)
         : catalogApi.storeItem(selectedCatalog!.id, {
-            ...d,
-            service_id: d.service_id ? parseInt(d.service_id, 10) : null,
-            sort_order: items.length,
-          }),
+          ...payload,
+          sort_order: items.length,
+        })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['catalogs', selectedCatalog?.id, 'items'] })
       setShowItemForm(false)
@@ -164,7 +168,7 @@ export function CatalogAdminPage() {
     const arr = [...items]
     const j = dir === 'up' ? index - 1 : index + 1
     if (j < 0 || j >= arr.length) return
-    ;[arr[index], arr[j]] = [arr[j], arr[index]]
+      ;[arr[index], arr[j]] = [arr[j], arr[index]]
     reorderMut.mutate(arr.map((i) => i.id))
   }
 
@@ -188,9 +192,8 @@ export function CatalogAdminPage() {
               <button
                 key={c.id}
                 onClick={() => setSelectedCatalog(c)}
-                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
-                  selectedCatalog?.id === c.id ? 'bg-brand-50 text-brand-700' : 'hover:bg-surface-100 text-surface-700'
-                }`}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${selectedCatalog?.id === c.id ? 'bg-brand-50 text-brand-700' : 'hover:bg-surface-100 text-surface-700'
+                  }`}
               >
                 <span className="truncate">{c.name}</span>
                 <div className="flex items-center shrink-0 gap-1">
@@ -374,6 +377,7 @@ export function CatalogAdminPage() {
           <div>
             <label className="mb-1.5 block text-sm font-medium text-surface-700">Descrição do cabeçalho</label>
             <textarea
+              aria-label="Descrição do cabeçalho"
               value={catalogForm.header_description}
               onChange={(e) => setCatalogForm((p) => ({ ...p, header_description: e.target.value }))}
               rows={2}
@@ -430,6 +434,7 @@ export function CatalogAdminPage() {
           <div>
             <label className="mb-1.5 block text-sm font-medium text-surface-700">Descrição</label>
             <textarea
+              aria-label="Descrição do item"
               value={itemForm.description}
               onChange={(e) => setItemForm((p) => ({ ...p, description: e.target.value }))}
               rows={3}

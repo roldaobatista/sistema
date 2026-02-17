@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\FleetVehicle;
 use App\Models\VehicleInspection;
 use App\Models\TrafficFine;
@@ -14,11 +15,13 @@ use Illuminate\Support\Facades\Log;
 
 class FleetController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     // ─── VEHICLES ────────────────────────────────────────────────
 
     public function indexVehicles(Request $request): JsonResponse
     {
-        $query = FleetVehicle::where('tenant_id', $request->user()->tenant_id)
+        $query = FleetVehicle::where('tenant_id', $this->resolvedTenantId())
             ->with('assignedUser:id,name');
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -57,7 +60,7 @@ class FleetController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $vehicle = FleetVehicle::create($validated);
             DB::commit();
             return response()->json(['message' => 'Veículo cadastrado com sucesso', 'data' => $vehicle], 201);
@@ -124,7 +127,7 @@ class FleetController extends Controller
 
     public function dashboardFleet(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
         $vehicles = FleetVehicle::where('tenant_id', $tenantId);
 
         return response()->json(['data' => [
@@ -162,7 +165,7 @@ class FleetController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['inspector_id'] = $request->user()->id;
             $validated['fleet_vehicle_id'] = $vehicle->id;
 
@@ -185,7 +188,7 @@ class FleetController extends Controller
 
     public function indexFines(Request $request): JsonResponse
     {
-        $query = TrafficFine::where('tenant_id', $request->user()->tenant_id)
+        $query = TrafficFine::where('tenant_id', $this->resolvedTenantId())
             ->with(['vehicle:id,plate,brand,model', 'driver:id,name']);
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -208,7 +211,7 @@ class FleetController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $fine = TrafficFine::create($validated);
             DB::commit();
             return response()->json(['message' => 'Multa registrada com sucesso', 'data' => $fine], 201);
@@ -240,7 +243,7 @@ class FleetController extends Controller
 
     public function indexTools(Request $request): JsonResponse
     {
-        $query = ToolInventory::where('tenant_id', $request->user()->tenant_id)
+        $query = ToolInventory::where('tenant_id', $this->resolvedTenantId())
             ->with(['assignedTo:id,name', 'vehicle:id,plate']);
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -270,7 +273,7 @@ class FleetController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $tool = ToolInventory::create($validated);
             DB::commit();
             return response()->json(['message' => 'Ferramenta cadastrada', 'data' => $tool], 201);

@@ -12,6 +12,15 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PdfGeneratorService
 {
+    /**
+     * Retorna o path absoluto do logo da empresa no disco, ou null se não existir.
+     * Reutiliza a mesma lógica de resolução de company_logo_url → path local.
+     */
+    public function getCompanyLogoPath(int $tenantId): ?string
+    {
+        return $this->getCompanySettings($tenantId)['company_logo_path'];
+    }
+
     private function getCompanySettings(int $tenantId): array
     {
         $logoUrl = SystemSetting::withoutGlobalScope('tenant')

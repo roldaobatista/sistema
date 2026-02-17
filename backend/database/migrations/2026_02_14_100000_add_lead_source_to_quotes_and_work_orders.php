@@ -12,13 +12,13 @@ return new class extends Migration
         // Valores: prospeccao, retorno, contato_direto, indicacao
         if (Schema::hasTable('quotes') && !Schema::hasColumn('quotes', 'source')) {
             Schema::table('quotes', function (Blueprint $table) {
-                $table->string('source', 30)->nullable()->after('status');
+                $table->string('source', 30)->nullable();
             });
         }
 
         if (Schema::hasTable('work_orders') && !Schema::hasColumn('work_orders', 'lead_source')) {
             Schema::table('work_orders', function (Blueprint $table) {
-                $table->string('lead_source', 30)->nullable()->after('origin_type');
+                $table->string('lead_source', 30)->nullable();
             });
         }
     }

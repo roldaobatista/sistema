@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventoryItem extends Model
 {
+    public function getTenantIdAttribute(): ?int
+    {
+        return $this->inventory?->tenant_id;
+    }
+
     protected $fillable = [
         'inventory_id',
         'product_id',
@@ -47,10 +52,14 @@ class InventoryItem extends Model
         return $this->belongsTo(ProductSerial::class);
     }
 
-    /** Calcula a divergência */
+    protected $appends = ['discrepancy'];
+
     public function getDiscrepancyAttribute(): float
     {
-        if ($this->counted_quantity === null) return 0;
-        return $this->counted_quantity - $this->expected_quantity;
+        if ($this->counted_quantity === null) {
+            return 0;
+        }
+
+        return (float) $this->counted_quantity - (float) ($this->expected_quantity ?? 0);
     }
 }

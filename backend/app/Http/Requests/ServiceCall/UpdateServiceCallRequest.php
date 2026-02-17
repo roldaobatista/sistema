@@ -19,8 +19,8 @@ class UpdateServiceCallRequest extends FormRequest
 
         return [
             'customer_id' => ['sometimes', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'technician_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'technician_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true))],
+            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true))],
             'priority' => ['nullable', Rule::in(array_keys(ServiceCall::PRIORITIES))],
             'scheduled_date' => 'nullable|date',
             'address' => 'nullable|string',

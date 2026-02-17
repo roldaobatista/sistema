@@ -93,8 +93,13 @@ class ProductController extends Controller
             'storage_location' => 'nullable|string|max:100',
         ]);
 
-        $product->update($validated);
-        return response()->json($product->load('category:id,name'));
+        try {
+            DB::transaction(fn () => $product->update($validated));
+            return response()->json($product->load('category:id,name'));
+        } catch (\Throwable $e) {
+            Log::error('Product update failed', ['id' => $product->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar produto'], 500);
+        }
     }
 
     public function destroy(Product $product): JsonResponse

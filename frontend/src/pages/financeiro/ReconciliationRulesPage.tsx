@@ -18,6 +18,8 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
 import { useAuthStore } from '@/stores/auth-store'
@@ -67,10 +69,10 @@ const MATCH_OPERATORS = [
 ]
 
 const ACTIONS = [
-    { value: 'match_receivable', label: 'Conciliar com A/R', color: 'text-green-400' },
-    { value: 'match_payable', label: 'Conciliar com A/P', color: 'text-blue-400' },
-    { value: 'ignore', label: 'Ignorar', color: 'text-yellow-400' },
-    { value: 'categorize', label: 'Categorizar', color: 'text-purple-400' },
+    { value: 'match_receivable', label: 'Conciliar com A/R', color: 'text-green-600 dark:text-green-400' },
+    { value: 'match_payable', label: 'Conciliar com A/P', color: 'text-blue-600 dark:text-blue-400' },
+    { value: 'ignore', label: 'Ignorar', color: 'text-yellow-600 dark:text-yellow-400' },
+    { value: 'categorize', label: 'Categorizar', color: 'text-purple-600 dark:text-purple-400' },
 ]
 
 const emptyForm = {
@@ -86,8 +88,8 @@ const emptyForm = {
     is_active: true,
 }
 
-export default function ReconciliationRulesPage() {
-  const { hasPermission } = useAuthStore()
+export function ReconciliationRulesPage() {
+    const { hasPermission } = useAuthStore()
 
     const queryClient = useQueryClient()
     const [search, setSearch] = useState('')
@@ -96,6 +98,7 @@ export default function ReconciliationRulesPage() {
     const [form, setForm] = useState(emptyForm)
     const [testResult, setTestResult] = useState<TestResult | null>(null)
     const [showTestPanel, setShowTestPanel] = useState(false)
+    const [deleteTarget, setDeleteTarget] = useState<ReconciliationRule | null>(null)
 
     const { data: rulesData, isLoading } = useQuery({
         queryKey: ['reconciliation-rules', search],
@@ -113,7 +116,7 @@ export default function ReconciliationRulesPage() {
         mutationFn: (data: Record<string, unknown>) => api.post('/reconciliation-rules', data),
         onSuccess: () => {
             toast.success(editingId ? 'Regra atualizada' : 'Regra criada')
-                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
             resetForm()
         },
         onError: (err: any) => {
@@ -130,7 +133,7 @@ export default function ReconciliationRulesPage() {
             api.put(`/reconciliation-rules/${id}`, data),
         onSuccess: () => {
             toast.success('Regra atualizada')
-                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
             resetForm()
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao atualizar'),
@@ -140,7 +143,8 @@ export default function ReconciliationRulesPage() {
         mutationFn: (id: number) => api.delete(`/reconciliation-rules/${id}`),
         onSuccess: () => {
             toast.success('Regra excluída')
-                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+            setDeleteTarget(null)
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao excluir'),
     })
@@ -149,7 +153,7 @@ export default function ReconciliationRulesPage() {
         mutationFn: (id: number) => api.post(`/reconciliation-rules/${id}/toggle`),
         onSuccess: (res) => {
             toast.success(res.data?.message || 'Status alterado')
-                queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
+            queryClient.invalidateQueries({ queryKey: ['reconciliation-rules'] })
         },
         onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao alternar'),
     })
@@ -220,33 +224,29 @@ export default function ReconciliationRulesPage() {
         })
     }
 
-    function handleDelete(id: number) {
-        if (confirm('Tem certeza que deseja excluir esta regra?')) {
-            deleteMutation.mutate(id)
-        }
-    }
-
     const isSaving = storeMutation.isPending || updateMutation.isPending
+
+    const inputClasses = 'w-full px-3 py-2 bg-surface-0 border border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50'
+    const selectClasses = inputClasses
+    const labelClasses = 'block text-sm font-medium text-content-primary mb-1'
 
     return (
         <div className="space-y-6">
             <PageHeader
                 title="Regras de Conciliação Automática"
-                description="Configure regras para conciliar e categorizar lançamentos automaticamente"
+                subtitle="Configure regras para conciliar e categorizar lançamentos automaticamente"
             />
 
             {/* Toolbar */}
             <div className="flex items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-                    <input
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-secondary" />
+                    <Input
                         type="text"
                         placeholder="Buscar regras..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg
-                                   text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none
-                                   focus:ring-2 focus:ring-blue-500/50"
+                        className="pl-10"
                     />
                 </div>
                 <Button
@@ -260,12 +260,12 @@ export default function ReconciliationRulesPage() {
 
             {/* Create/Edit Form */}
             {showForm && (
-                <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-6">
+                <div className="rounded-xl border border-default bg-surface-0 p-6 shadow-card">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-zinc-100">
+                        <h3 className="text-lg font-semibold">
                             {editingId ? 'Editar Regra' : 'Nova Regra'}
                         </h3>
-                        <button onClick={resetForm} className="text-zinc-400 hover:text-zinc-200">
+                        <button onClick={resetForm} className="text-content-secondary hover:text-content-primary">
                             <X className="h-5 w-5" />
                         </button>
                     </div>
@@ -273,46 +273,37 @@ export default function ReconciliationRulesPage() {
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* Name */}
                         <div className="lg:col-span-2">
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                Nome da Regra *
-                            </label>
+                            <label className={labelClasses}>Nome da Regra *</label>
                             <input
                                 type="text"
                                 required
                                 value={form.name}
                                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                                 placeholder="Ex: PIX Recebidos - Cliente XYZ"
-                                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                           text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className={inputClasses}
                             />
                         </div>
 
                         {/* Priority */}
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                Prioridade (1-100)
-                            </label>
+                            <label className={labelClasses}>Prioridade (1-100)</label>
                             <input
                                 type="number"
                                 min="1"
                                 max="100"
                                 value={form.priority}
                                 onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                           text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className={inputClasses}
                             />
                         </div>
 
                         {/* Match Field */}
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                Campo de Matching *
-                            </label>
+                            <label className={labelClasses}>Campo de Matching *</label>
                             <select
                                 value={form.match_field}
                                 onChange={(e) => setForm({ ...form, match_field: e.target.value })}
-                                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                           text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className={selectClasses}
                             >
                                 {MATCH_FIELDS.map((f) => (
                                     <option key={f.value} value={f.value}>{f.label}</option>
@@ -322,14 +313,11 @@ export default function ReconciliationRulesPage() {
 
                         {/* Match Operator */}
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                Operador *
-                            </label>
+                            <label className={labelClasses}>Operador *</label>
                             <select
                                 value={form.match_operator}
                                 onChange={(e) => setForm({ ...form, match_operator: e.target.value })}
-                                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                           text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className={selectClasses}
                             >
                                 {MATCH_OPERATORS.map((op) => (
                                     <option key={op.value} value={op.value}>{op.label}</option>
@@ -339,16 +327,13 @@ export default function ReconciliationRulesPage() {
 
                         {/* Match Value */}
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                Valor/Padrão
-                            </label>
+                            <label className={labelClasses}>Valor/Padrão</label>
                             <input
                                 type="text"
                                 value={form.match_value}
                                 onChange={(e) => setForm({ ...form, match_value: e.target.value })}
                                 placeholder={form.match_operator === 'regex' ? '^PIX.*RECEBIDO' : 'texto para buscar'}
-                                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                           text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className={inputClasses}
                             />
                         </div>
 
@@ -356,29 +341,23 @@ export default function ReconciliationRulesPage() {
                         {(form.match_field === 'amount' || form.match_field === 'combined') && (
                             <>
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                        Valor Mínimo
-                                    </label>
+                                    <label className={labelClasses}>Valor Mínimo</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={form.match_amount_min}
                                         onChange={(e) => setForm({ ...form, match_amount_min: e.target.value })}
-                                        className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                                   text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        className={inputClasses}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                        Valor Máximo
-                                    </label>
+                                    <label className={labelClasses}>Valor Máximo</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={form.match_amount_max}
                                         onChange={(e) => setForm({ ...form, match_amount_max: e.target.value })}
-                                        className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                                   text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        className={inputClasses}
                                     />
                                 </div>
                             </>
@@ -386,14 +365,11 @@ export default function ReconciliationRulesPage() {
 
                         {/* Action */}
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                Ação *
-                            </label>
+                            <label className={labelClasses}>Ação *</label>
                             <select
                                 value={form.action}
                                 onChange={(e) => setForm({ ...form, action: e.target.value })}
-                                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                           text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className={selectClasses}
                             >
                                 {ACTIONS.map((a) => (
                                     <option key={a.value} value={a.value}>{a.label}</option>
@@ -403,16 +379,13 @@ export default function ReconciliationRulesPage() {
 
                         {/* Category */}
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-1">
-                                Categoria
-                            </label>
+                            <label className={labelClasses}>Categoria</label>
                             <input
                                 type="text"
                                 value={form.category}
                                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                                 placeholder="Ex: Receita PIX, Tarifa Bancária"
-                                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg
-                                           text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className={inputClasses}
                             />
                         </div>
 
@@ -425,18 +398,18 @@ export default function ReconciliationRulesPage() {
                                     onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                                     className="sr-only peer"
                                 />
-                                <div className="w-9 h-5 bg-zinc-600 peer-checked:bg-green-500 rounded-full
+                                <div className="w-9 h-5 bg-surface-300 peer-checked:bg-green-500 rounded-full
                                                 transition-colors after:content-[''] after:absolute after:top-[2px]
                                                 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4
                                                 after:transition-all peer-checked:after:translate-x-full" />
                             </label>
-                            <span className="text-sm text-zinc-300">
+                            <span className="text-sm text-content-secondary">
                                 {form.is_active ? 'Ativa' : 'Inativa'}
                             </span>
                         </div>
 
                         {/* Actions */}
-                        <div className="lg:col-span-3 flex items-center gap-3 pt-4 border-t border-zinc-700">
+                        <div className="lg:col-span-3 flex items-center gap-3 pt-4 border-t border-default">
                             <Button type="submit" disabled={isSaving} className="flex items-center gap-2">
                                 {isSaving ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -469,40 +442,40 @@ export default function ReconciliationRulesPage() {
 
                     {/* Test Results */}
                     {showTestPanel && testResult && (
-                        <div className="mt-4 p-4 bg-zinc-900/50 border border-zinc-600 rounded-lg">
-                            <h4 className="text-sm font-semibold text-zinc-200 mb-2 flex items-center gap-2">
-                                <Beaker className="h-4 w-4 text-blue-400" />
+                        <div className="mt-4 p-4 bg-surface-50 border border-default rounded-lg">
+                            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                <Beaker className="h-4 w-4 text-brand-500" />
                                 Resultado do Teste
                             </h4>
                             <div className="grid grid-cols-2 gap-4 mb-3">
-                                <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                                    <p className="text-2xl font-bold text-zinc-100">{testResult.total_tested}</p>
-                                    <p className="text-xs text-zinc-400">Testados</p>
+                                <div className="text-center p-3 bg-surface-0 rounded-lg border border-default">
+                                    <p className="text-2xl font-bold">{testResult.total_tested}</p>
+                                    <p className="text-xs text-content-secondary">Testados</p>
                                 </div>
-                                <div className="text-center p-3 bg-zinc-800 rounded-lg">
+                                <div className="text-center p-3 bg-surface-0 rounded-lg border border-default">
                                     <p className={cn(
                                         'text-2xl font-bold',
-                                        testResult.total_matched > 0 ? 'text-green-400' : 'text-zinc-400'
+                                        testResult.total_matched > 0 ? 'text-green-600 dark:text-green-400' : 'text-content-secondary'
                                     )}>
                                         {testResult.total_matched}
                                     </p>
-                                    <p className="text-xs text-zinc-400">Correspondem</p>
+                                    <p className="text-xs text-content-secondary">Correspondem</p>
                                 </div>
                             </div>
                             {testResult.sample.length > 0 && (
                                 <div className="space-y-1">
-                                    <p className="text-xs text-zinc-400 mb-1">Exemplos de correspondência:</p>
+                                    <p className="text-xs text-content-secondary mb-1">Exemplos de correspondência:</p>
                                     {testResult.sample.map((s) => (
-                                        <div key={s.id} className="flex items-center gap-3 text-xs text-zinc-300
-                                                                    bg-zinc-800/50 px-3 py-1.5 rounded">
+                                        <div key={s.id} className="flex items-center gap-3 text-xs bg-surface-0
+                                                                    px-3 py-1.5 rounded border border-default">
                                             <span className={cn(
                                                 'font-mono',
-                                                s.type === 'credit' ? 'text-green-400' : 'text-red-400'
+                                                s.type === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                                             )}>
                                                 R$ {s.amount.toFixed(2)}
                                             </span>
                                             <span className="truncate flex-1">{s.description}</span>
-                                            <span className="text-zinc-500">{s.date}</span>
+                                            <span className="text-content-secondary">{s.date}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -515,7 +488,7 @@ export default function ReconciliationRulesPage() {
             {/* Rules Table */}
             {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+                    <Loader2 className="h-8 w-8 animate-spin text-content-secondary" />
                 </div>
             ) : rules.length === 0 ? (
                 <EmptyState
@@ -530,36 +503,36 @@ export default function ReconciliationRulesPage() {
                     }
                 />
             ) : (
-                <div className="bg-zinc-800/40 border border-zinc-700 rounded-xl overflow-hidden">
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card overflow-hidden">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-zinc-700">
-                                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase">
+                            <tr className="border-b border-default">
+                                <th className="text-left px-4 py-3 text-xs font-medium text-content-secondary uppercase">
                                     Status
                                 </th>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase">
+                                <th className="text-left px-4 py-3 text-xs font-medium text-content-secondary uppercase">
                                     <span className="flex items-center gap-1">
                                         <ArrowUpDown className="h-3 w-3" /> Pri
                                     </span>
                                 </th>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase">
+                                <th className="text-left px-4 py-3 text-xs font-medium text-content-secondary uppercase">
                                     Nome
                                 </th>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase">
+                                <th className="text-left px-4 py-3 text-xs font-medium text-content-secondary uppercase">
                                     Matching
                                 </th>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase">
+                                <th className="text-left px-4 py-3 text-xs font-medium text-content-secondary uppercase">
                                     Ação
                                 </th>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase">
+                                <th className="text-left px-4 py-3 text-xs font-medium text-content-secondary uppercase">
                                     Usos
                                 </th>
-                                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-400 uppercase">
+                                <th className="text-right px-4 py-3 text-xs font-medium text-content-secondary uppercase">
                                     Ações
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-700/50">
+                        <tbody className="divide-y divide-default">
                             {rules.map((rule) => {
                                 const actionMeta = ACTIONS.find((a) => a.value === rule.action)
                                 const fieldMeta = MATCH_FIELDS.find((f) => f.value === rule.match_field)
@@ -567,7 +540,7 @@ export default function ReconciliationRulesPage() {
 
                                 return (
                                     <tr key={rule.id} className={cn(
-                                        'hover:bg-zinc-800/60 transition-colors',
+                                        'hover:bg-surface-50 transition-colors',
                                         !rule.is_active && 'opacity-50'
                                     )}>
                                         <td className="px-4 py-3">
@@ -576,8 +549,8 @@ export default function ReconciliationRulesPage() {
                                                 className={cn(
                                                     'p-1.5 rounded-lg transition-colors',
                                                     rule.is_active
-                                                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                                        : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
+                                                        ? 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30'
+                                                        : 'bg-surface-100 text-content-secondary hover:bg-surface-200'
                                                 )}
                                                 title={rule.is_active ? 'Desativar' : 'Ativar'}
                                             >
@@ -589,29 +562,29 @@ export default function ReconciliationRulesPage() {
                                             </button>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className="text-sm font-mono text-zinc-300">{rule.priority}</span>
+                                            <span className="text-sm font-mono">{rule.priority}</span>
                                         </td>
                                         <td className="px-4 py-3">
                                             <div>
-                                                <p className="text-sm font-medium text-zinc-100">{rule.name}</p>
+                                                <p className="text-sm font-medium">{rule.name}</p>
                                                 {rule.category && (
-                                                    <span className="inline-flex mt-1 text-xs px-2 py-0.5 bg-purple-500/20
-                                                                     text-purple-300 rounded-full">
+                                                    <span className="inline-flex mt-1 text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-500/20
+                                                                     text-purple-700 dark:text-purple-300 rounded-full">
                                                         {rule.category}
                                                     </span>
                                                 )}
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <div className="text-xs text-zinc-400 space-y-0.5">
+                                            <div className="text-xs text-content-secondary space-y-0.5">
                                                 <p>{fieldMeta?.label} {operatorMeta?.label}</p>
                                                 {rule.match_value && (
-                                                    <p className="text-zinc-300 font-mono truncate max-w-[200px]">
-                                                        "{rule.match_value}"
+                                                    <p className="font-mono truncate max-w-[200px]">
+                                                        &ldquo;{rule.match_value}&rdquo;
                                                     </p>
                                                 )}
                                                 {rule.match_amount_min != null && rule.match_amount_max != null && (
-                                                    <p className="text-zinc-300 font-mono">
+                                                    <p className="font-mono">
                                                         R$ {rule.match_amount_min} ~ R$ {rule.match_amount_max}
                                                     </p>
                                                 )}
@@ -623,20 +596,20 @@ export default function ReconciliationRulesPage() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className="text-sm text-zinc-300">{rule.times_applied}×</span>
+                                            <span className="text-sm">{rule.times_applied}×</span>
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-1">
                                                 <button
                                                     onClick={() => startEdit(rule)}
-                                                    className="p-1.5 text-zinc-400 hover:text-blue-400 transition-colors"
+                                                    className="p-1.5 text-content-secondary hover:text-brand-500 transition-colors"
                                                     title="Editar"
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(rule.id)}
-                                                    className="p-1.5 text-zinc-400 hover:text-red-400 transition-colors"
+                                                    onClick={() => setDeleteTarget(rule)}
+                                                    className="p-1.5 text-content-secondary hover:text-red-500 transition-colors"
                                                     title="Excluir"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -650,6 +623,26 @@ export default function ReconciliationRulesPage() {
                     </table>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Regra" size="sm">
+                <p className="text-sm text-content-secondary">
+                    Tem certeza que deseja excluir a regra <strong>{deleteTarget?.name}</strong>?
+                    Esta ação não pode ser desfeita.
+                </p>
+                <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" type="button" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+                    <Button
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        loading={deleteMutation.isPending}
+                        onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+                    >
+                        Excluir
+                    </Button>
+                </div>
+            </Modal>
         </div>
     )
 }
+
+export default ReconciliationRulesPage

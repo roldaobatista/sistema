@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-    Receipt, Plus, Search, CheckCircle, XCircle,
+    Receipt, Plus, Search, CheckCircle, XCircle, ClipboardCheck,
     Clock, Eye, Trash2, Tag, RefreshCw, Pencil, RotateCcw, Settings, Download, DollarSign,
     BarChart3, ChevronDown, Copy, History, AlertTriangle,
 } from 'lucide-react'
@@ -29,8 +29,9 @@ const isEditableExpenseStatus = (status: string): status is 'pending' | 'rejecte
     status === EXPENSE_STATUS.PENDING || status === EXPENSE_STATUS.REJECTED
 
 const paymentMethods: Record<string, string> = {
-    dinheiro: 'Dinheiro', pix: 'PIX', cartao_crédito: 'Cartão Crédito',
-    cartao_débito: 'Cartão Débito', boleto: 'Boleto', transferencia: 'Transferência',
+    dinheiro: 'Dinheiro', pix: 'PIX', cartao_credito: 'Cartão Crédito',
+    cartao_debito: 'Cartão Débito', boleto: 'Boleto', transferencia: 'Transferência',
+    corporate_card: 'Cartão Corporativo',
 }
 
 interface Exp {
@@ -42,6 +43,9 @@ interface Exp {
     rejection_reason?: string | null
     affects_technician_cash?: boolean
     affects_net_value?: boolean
+    km_quantity?: string | null
+    km_rate?: string | null
+    km_billed_to_client?: boolean
     category: { id: number; name: string; color: string } | null
     creator: { id: number; name: string }
     work_order: { id: number; number: string; os_number?: string | null; business_number?: string | null } | null
@@ -69,6 +73,7 @@ export function ExpensesPage() {
     const canCreate = hasPermission('expenses.expense.create')
     const canUpdate = hasPermission('expenses.expense.update')
     const canApprove = hasPermission('expenses.expense.approve')
+    const canReview = hasPermission('expenses.expense.review')
     const canDelete = hasPermission('expenses.expense.delete')
 
     const [search, setSearch] = useState('')
@@ -79,7 +84,7 @@ export function ExpensesPage() {
     const [showDetail, setShowDetail] = useState<Exp | null>(null)
     const [showCatForm, setShowCatForm] = useState(false)
     const [showCatManager, setShowCatManager] = useState(false)
-    const [catForm, setCatForm] = useState({ name: '', color: '#6b7280' })
+    const [catForm, setCatForm] = useState({ name: '', color: '#6b7280', budget_limit: '' as string, default_affects_net_value: false, default_affects_technician_cash: false })
     const [editingCatId, setEditingCatId] = useState<number | null>(null)
     const [deleteCatTarget, setDeleteCatTarget] = useState<number | null>(null)
     const [editingId, setEditingId] = useState<number | null>(null)
@@ -166,6 +171,12 @@ export function ExpensesPage() {
         queryFn: () => api.get('/work-orders', { params: { per_page: 50 } }),
         enabled: showForm,
     })
+
+    const { data: usersRes } = useQuery({
+        queryKey: ['users-select-expenses'],
+        queryFn: () => api.get('/users', { params: { per_page: 200, active: 1 } }),
+    })
+    const allUsers: { id: number; name: string }[] = usersRes?.data?.data ?? usersRes?.data ?? []
 
     const saveMut = useMutation({
         mutationFn: (data: typeof form) => {
@@ -313,6 +324,22 @@ export function ExpensesPage() {
         },
     })
 
+    const reviewMut = useMutation({
+        mutationFn: (id: number) => api.post(`/expenses/${id}/review`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['expenses'] })
+            qc.invalidateQueries({ queryKey: ['expense-summary'] })
+            toast.success('Despesa conferida com sucesso')
+        },
+        onError: (err: any) => {
+            if (err?.response?.status === 403) {
+                toast.error(err?.response?.data?.message ?? 'Você não tem permissão para conferir')
+            } else {
+                toast.error(err?.response?.data?.message ?? 'Erro ao conferir despesa')
+            }
+        },
+    })
+
     const { data: historyRes } = useQuery({
         queryKey: ['expense-history', showHistory],
         queryFn: () => api.get(`/expenses/${showHistory}/history`),
@@ -351,19 +378,18 @@ export function ExpensesPage() {
     }
 
     const toggleSelectAll = () => {
-        const pendingIds = records.filter(r => r.status === EXPENSE_STATUS.PENDING).map(r => r.id)
-        if (pendingIds.length > 0 && pendingIds.every(id => selectedIds.has(id))) {
+        const eligibleIds = records.filter(r => r.status === EXPENSE_STATUS.PENDING || r.status === EXPENSE_STATUS.REVIEWED).map(r => r.id)
+        if (eligibleIds.length > 0 && eligibleIds.every(id => selectedIds.has(id))) {
             setSelectedIds(new Set())
         } else {
-            setSelectedIds(new Set(pendingIds))
+            setSelectedIds(new Set(eligibleIds))
         }
     }
 
-    const pendingRecords = records.filter(r => r.status === EXPENSE_STATUS.PENDING)
-    const allPendingSelected = pendingRecords.length > 0 && pendingRecords.every(r => selectedIds.has(r.id))
+    const eligibleRecords = records.filter(r => r.status === EXPENSE_STATUS.PENDING || r.status === EXPENSE_STATUS.REVIEWED)
+    const allEligibleSelected = eligibleRecords.length > 0 && eligibleRecords.every(r => selectedIds.has(r.id))
 
-    // Unique creators from current data for filter
-    const uniqueCreators = Array.from(new Map(records.map(r => [r.creator.id, r.creator])).values())
+    const filterUsers = allUsers.length > 0 ? allUsers : Array.from(new Map(records.map(r => [r.creator.id, r.creator])).values())
 
     const delCatMut = useMutation({
         mutationFn: (id: number) => api.delete(`/expense-categories/${id}`),
@@ -421,9 +447,9 @@ export function ExpensesPage() {
             affects_technician_cash: !!exp.affects_technician_cash,
             affects_net_value: exp.affects_net_value !== false,
             receipt: null,
-            km_quantity: (exp as any).km_quantity ?? '',
-            km_rate: (exp as any).km_rate ?? '',
-            km_billed_to_client: !!(exp as any).km_billed_to_client,
+            km_quantity: exp.km_quantity ?? '',
+            km_rate: exp.km_rate ?? '',
+            km_billed_to_client: !!exp.km_billed_to_client,
         })
         setShowForm(true)
     }
@@ -573,11 +599,11 @@ export function ExpensesPage() {
                     <option value="">Todas categorias</option>
                     {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                {uniqueCreators.length > 1 && (
+                {filterUsers.length > 1 && (
                     <select value={creatorFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCreatorFilter(e.target.value)}
                         className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                         <option value="">Todos responsáveis</option>
-                        {uniqueCreators.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {filterUsers.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 )}
             </div>
@@ -615,9 +641,9 @@ export function ExpensesPage() {
                         <tr className="border-b border-subtle bg-surface-50">
                             {canApprove && (
                                 <th className="w-10 px-3 py-2.5">
-                                    <input type="checkbox" checked={allPendingSelected && pendingRecords.length > 0} onChange={toggleSelectAll}
+                                    <input type="checkbox" checked={allEligibleSelected && eligibleRecords.length > 0} onChange={toggleSelectAll}
                                         className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500"
-                                        title="Selecionar todas pendentes" />
+                                        title="Selecionar pendentes e conferidas" />
                                 </th>
                             )}
                             <th className="px-3.5 py-2.5 text-left text-xs font-semibold uppercase text-surface-600">Descrição</th>
@@ -659,7 +685,7 @@ export function ExpensesPage() {
                             <tr key={r.id} className={`hover:bg-surface-50 transition-colors duration-100 ${selectedIds.has(r.id) ? 'bg-brand-50/30' : ''}`}>
                                 {canApprove && (
                                     <td className="px-3 py-3">
-                                        {r.status === EXPENSE_STATUS.PENDING ? (
+                                        {(r.status === EXPENSE_STATUS.PENDING || r.status === EXPENSE_STATUS.REVIEWED) ? (
                                             <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)}
                                                 className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
                                         ) : <div className="h-4 w-4" />}
@@ -687,7 +713,10 @@ export function ExpensesPage() {
                                         {canUpdate && isEditableExpenseStatus(r.status) && (
                                             <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(r)} className="hover:text-brand-600" />
                                         )}
-                                        {canApprove && r.status === EXPENSE_STATUS.PENDING && (
+                                        {canReview && r.status === EXPENSE_STATUS.PENDING && (
+                                            <IconButton label="Conferir" icon={<ClipboardCheck className="h-4 w-4" />} onClick={() => reviewMut.mutate(r.id)} className="hover:text-blue-600" />
+                                        )}
+                                        {canApprove && (r.status === EXPENSE_STATUS.PENDING || r.status === EXPENSE_STATUS.REVIEWED) && (
                                             <>
                                                 <IconButton label="Aprovar" icon={<CheckCircle className="h-4 w-4" />} onClick={() => statusMut.mutate({ id: r.id, status: EXPENSE_STATUS.APPROVED })} className="hover:text-sky-600" />
                                                 <IconButton label="Rejeitar" icon={<XCircle className="h-4 w-4" />} onClick={() => {
@@ -852,7 +881,7 @@ export function ExpensesPage() {
             <Modal open={showCatManager} onOpenChange={setShowCatManager} title="Gerenciar Categorias" size="lg">
                 <div className="space-y-4">
                     <div className="flex justify-end">
-                        <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => { setEditingCatId(null); setCatForm({ name: '', color: '#6b7280' }); setShowCatForm(true) }}>Nova Categoria</Button>
+                        <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => { setEditingCatId(null); setCatForm({ name: '', color: '#6b7280', budget_limit: '', default_affects_net_value: false, default_affects_technician_cash: false }); setShowCatForm(true) }}>Nova Categoria</Button>
                     </div>
                     {categories.length === 0 ? (
                         <div className="py-8 text-center">
@@ -871,7 +900,7 @@ export function ExpensesPage() {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <IconButton label="Editar categoria" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => { setEditingCatId(c.id); setCatForm({ name: c.name, color: c.color }); setShowCatForm(true) }} className="hover:text-brand-600" />
+                                        <IconButton label="Editar categoria" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => { setEditingCatId(c.id); setCatForm({ name: c.name, color: c.color, budget_limit: c.budget_limit ?? '', default_affects_net_value: !!c.default_affects_net_value, default_affects_technician_cash: !!c.default_affects_technician_cash }); setShowCatForm(true) }} className="hover:text-brand-600" />
                                         <IconButton label="Excluir categoria" icon={<Trash2 className="h-3.5 w-3.5" />} onClick={() => setDeleteCatTarget(c.id)} className="hover:text-red-600" />
                                     </div>
                                 </div>
@@ -884,12 +913,31 @@ export function ExpensesPage() {
             <Modal open={showCatForm} onOpenChange={(v) => { setShowCatForm(v); if (!v) setEditingCatId(null) }} title={editingCatId ? 'Editar Categoria' : 'Nova Categoria de Despesa'}>
                 <form onSubmit={e => { e.preventDefault(); saveCatMut.mutate(catForm) }} className="space-y-4">
                     <Input label="Nome *" value={catForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, name: e.target.value }))} required />
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Cor</label>
-                        <div className="flex items-center gap-3">
-                            <input type="color" value={catForm.color} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, color: e.target.value }))}
-                                className="h-10 w-14 cursor-pointer rounded-lg border border-default" />
-                            <span className="text-sm text-surface-500">{catForm.color}</span>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Cor</label>
+                            <div className="flex items-center gap-3">
+                                <input type="color" value={catForm.color} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, color: e.target.value }))}
+                                    className="h-10 w-14 cursor-pointer rounded-lg border border-default" />
+                                <span className="text-sm text-surface-500">{catForm.color}</span>
+                            </div>
+                        </div>
+                        <Input label="Limite orçamentário mensal (R$)" type="number" step="0.01" value={catForm.budget_limit}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, budget_limit: e.target.value }))}
+                            placeholder="Sem limite" />
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
+                        <div className="flex items-center gap-2">
+                            <input type="checkbox" id="cat_default_net" checked={catForm.default_affects_net_value}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, default_affects_net_value: e.target.checked }))}
+                                className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
+                            <label htmlFor="cat_default_net" className="text-sm font-medium text-surface-700">Padrão: deduz do líquido</label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input type="checkbox" id="cat_default_cash" checked={catForm.default_affects_technician_cash}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, default_affects_technician_cash: e.target.checked }))}
+                                className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
+                            <label htmlFor="cat_default_cash" className="text-sm font-medium text-surface-700">Padrão: impacta caixa técnico</label>
                         </div>
                     </div>
                     <div className="flex justify-end gap-2 border-t pt-4">
@@ -937,6 +985,13 @@ export function ExpensesPage() {
                             {showDetail.reviewer && <div><span className="text-xs text-surface-500">Conferido por</span><p className="text-sm">{showDetail.reviewer.name}</p></div>}
                             {showDetail.affects_technician_cash && <div><span className="text-xs text-surface-500">Caixa do Técnico</span><Badge variant="info">Impacta caixa</Badge></div>}
                             {showDetail.affects_net_value && <div><span className="text-xs text-surface-500">Valor Líquido</span><Badge variant="warning">Deduz do líquido</Badge></div>}
+                            {showDetail.km_quantity && Number(showDetail.km_quantity) > 0 && (
+                                <div><span className="text-xs text-surface-500">Km Rodados</span><p className="text-sm font-medium">{Number(showDetail.km_quantity).toLocaleString('pt-BR', { minimumFractionDigits: 1 })} km</p></div>
+                            )}
+                            {showDetail.km_rate && Number(showDetail.km_rate) > 0 && (
+                                <div><span className="text-xs text-surface-500">Valor por Km</span><p className="text-sm font-medium">{fmtBRL(showDetail.km_rate)}</p></div>
+                            )}
+                            {showDetail.km_billed_to_client && <div><span className="text-xs text-surface-500">Km cobrado do cliente</span><Badge variant="info">Sim</Badge></div>}
                             {showDetail.receipt_path && <div><span className="text-xs text-surface-500">Comprovante</span><p className="text-sm text-brand-600 underline"><a href={`${api.defaults.baseURL?.replace('/api', '')}${showDetail.receipt_path}`} target="_blank" rel="noreferrer">Ver comprovante</a></p></div>}
                             {showDetail.rejection_reason && <div className="col-span-2"><span className="text-xs text-surface-500">Motivo da rejeição</span><p className="text-sm text-red-600">{showDetail.rejection_reason}</p></div>}
                             {showDetail.notes && <div className="col-span-2"><span className="text-xs text-surface-500">Obs</span><p className="text-sm text-surface-600">{showDetail.notes}</p></div>}

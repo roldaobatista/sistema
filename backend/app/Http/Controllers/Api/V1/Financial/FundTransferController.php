@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Financial;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\AccountPayable;
 use App\Models\BankAccount;
@@ -17,14 +18,11 @@ use Illuminate\Validation\ValidationException;
 
 class FundTransferController extends Controller
 {
-    private function tenantId(Request $request): int
-    {
-        return (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
-    }
+    use ResolvesCurrentTenant;
 
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         $query = FundTransfer::where('tenant_id', $tenantId)
             ->with([
@@ -70,7 +68,7 @@ class FundTransferController extends Controller
 
     public function show(Request $request, FundTransfer $fundTransfer): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         if ((int) $fundTransfer->tenant_id !== $tenantId) {
             return response()->json(['message' => 'Transferência não encontrada'], 404);
@@ -89,7 +87,7 @@ class FundTransferController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         $validated = $request->validate([
             'bank_account_id' => [
@@ -192,7 +190,7 @@ class FundTransferController extends Controller
 
     public function cancel(Request $request, FundTransfer $fundTransfer): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         if ((int) $fundTransfer->tenant_id !== $tenantId) {
             return response()->json(['message' => 'Transferência não encontrada'], 404);
@@ -251,7 +249,7 @@ class FundTransferController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         $monthTotal = FundTransfer::where('tenant_id', $tenantId)
             ->where('status', FundTransfer::STATUS_COMPLETED)

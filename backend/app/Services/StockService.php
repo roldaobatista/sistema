@@ -10,6 +10,7 @@ use App\Models\WorkOrder;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class StockService
 {
@@ -99,6 +100,72 @@ class StockService
         );
     }
 
+    public function manualExit(
+        Product $product,
+        float $qty,
+        int $warehouseId,
+        ?int $batchId = null,
+        ?int $serialId = null,
+        ?string $notes = null,
+        ?User $user = null
+    ): StockMovement {
+        return $this->createMovement(
+            product: $product,
+            type: StockMovementType::Exit,
+            quantity: $qty,
+            warehouseId: $warehouseId,
+            batchId: $batchId,
+            serialId: $serialId,
+            notes: $notes,
+            user: $user,
+            reference: 'Saída manual',
+        );
+    }
+
+    public function manualReturn(
+        Product $product,
+        float $qty,
+        int $warehouseId,
+        ?int $batchId = null,
+        ?int $serialId = null,
+        ?string $notes = null,
+        ?User $user = null
+    ): StockMovement {
+        return $this->createMovement(
+            product: $product,
+            type: StockMovementType::Return,
+            quantity: $qty,
+            warehouseId: $warehouseId,
+            batchId: $batchId,
+            serialId: $serialId,
+            notes: $notes,
+            user: $user,
+            reference: 'Devolução manual',
+        );
+    }
+
+    public function manualReserve(
+        Product $product,
+        float $qty,
+        int $warehouseId,
+        ?int $batchId = null,
+        ?int $serialId = null,
+        ?string $notes = null,
+        ?User $user = null
+    ): StockMovement {
+        return $this->createMovement(
+            product: $product,
+            type: StockMovementType::Reserve,
+            quantity: $qty,
+            warehouseId: $warehouseId,
+            batchId: $batchId,
+            serialId: $serialId,
+            notes: $notes,
+            user: $user,
+            reference: 'Reserva manual',
+        );
+    }
+
     public function manualAdjustment(
         Product $product,
         float $qty,
@@ -176,29 +243,38 @@ class StockService
                 'unit_cost' => $unitCost,
                 'reference' => $reference,
                 'notes' => $notes,
-                'user_id' => $user?->id ?? (Auth::check() ? Auth::id() : null),
                 'created_by' => $user?->id ?? (Auth::check() ? Auth::id() : null),
             ]);
 
-            // Chamada ao método de aplicação automática definido no modelo refatorado
-            $movement->applyToProductStock();
-
-            // Explosão de Kit (apenas para Saídas e Ajustes Negativos)
-            if ($product->is_kit && in_array($type, [StockMovementType::Exit, StockMovementType::Adjustment]) && $quantity > 0) {
-                $this->explodeKit($product, $quantity, $warehouseId, $type, $notes, $user);
+            if ($product->is_kit && $type === StockMovementType::Exit) {
+                $this->explodeKit($product, $quantity, $warehouseId, StockMovementType::Exit, $notes, $user);
+            } elseif ($product->is_kit && $type === StockMovementType::Entry) {
+                $this->explodeKit($product, $quantity, $warehouseId, StockMovementType::Entry, $notes, $user);
+            } elseif ($product->is_kit && $type === StockMovementType::Adjustment) {
+                $childType = $quantity > 0 ? StockMovementType::Entry : StockMovementType::Exit;
+                $this->explodeKit($product, abs($quantity), $warehouseId, $childType, $notes, $user);
             }
 
             return $movement;
         });
     }
 
-    private function explodeKit(Product $kit, float $quantity, int $warehouseId, StockMovementType $type, ?string $notes = null, ?User $user = null): void
+    private function explodeKit(Product $kit, float $quantity, int $warehouseId, StockMovementType $type, ?string $notes = null, ?User $user = null, int $depth = 0): void
     {
-        $items = $kit->kitItems()->get();
-        
+        if ($depth > 5) {
+            Log::warning('Kit explosion exceeded max depth', ['kit_id' => $kit->id, 'depth' => $depth]);
+            return;
+        }
+
+        $items = $kit->kitItems()->with('child')->get();
+
         foreach ($items as $item) {
+            if (!$item->child) {
+                continue;
+            }
+
             $childQty = $item->quantity * $quantity;
-            
+
             $this->createMovement(
                 product: $item->child,
                 type: $type,
@@ -216,12 +292,37 @@ class StockService
      */
     public function getKardex(int $productId, int $warehouseId, ?string $dateFrom = null, ?string $dateTo = null)
     {
-        $tenantId = app('current_tenant_id');
+        $tenantId = app()->bound('current_tenant_id') ? (int) app('current_tenant_id') : null;
+
+        if (!$tenantId) {
+            return collect();
+        }
+
+        $runningBalance = 0;
+
+        if ($dateFrom) {
+            $priorBalance = StockMovement::where('tenant_id', $tenantId)
+                ->where('product_id', $productId)
+                ->where('warehouse_id', $warehouseId)
+                ->where('created_at', '<', $dateFrom)
+                ->selectRaw("
+                    SUM(CASE
+                        WHEN type = 'adjustment' THEN quantity
+                        WHEN type IN ('entry','return') THEN quantity
+                        WHEN type IN ('exit','reserve') THEN -quantity
+                        WHEN type = 'transfer' AND warehouse_id = ? THEN -quantity
+                        ELSE 0
+                    END) as balance
+                ", [$warehouseId])
+                ->value('balance');
+
+            $runningBalance = (float) ($priorBalance ?? 0);
+        }
 
         $query = StockMovement::where('tenant_id', $tenantId)
             ->where('product_id', $productId)
             ->where('warehouse_id', $warehouseId)
-            ->with(['batch', 'serial', 'user:id,name'])
+            ->with(['batch', 'productSerial', 'user:id,name'])
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc');
 
@@ -233,17 +334,12 @@ class StockService
         }
 
         $movements = $query->get();
-        $runningBalance = 0;
-
-        // Se houver saldo anterior (Kardex retroativo), precisaríamos buscá-lo aqui
-        // Mas para simplificação do MVP Calibrium, estamos pegando o histórico completo do período inicial
 
         return $movements->map(function ($movement) use (&$runningBalance) {
-            $type = StockMovementType::from($movement->type);
+            $type = $movement->type;
             $qty = (float) $movement->quantity;
             $sign = $type->affectsStock();
-            
-            // Especial para Ajuste: o sinal está no qty (positivo = entrada, negativo = saída)
+
             if ($type === StockMovementType::Adjustment) {
                 $runningBalance += $qty;
             } else {
@@ -257,10 +353,10 @@ class StockService
                 'type_label' => $type->label(),
                 'quantity' => $qty,
                 'batch' => $movement->batch?->code,
-                'serial' => $movement->serial?->serial_number,
+                'serial' => $movement->productSerial?->serial_number,
                 'notes' => $movement->notes,
                 'user' => $movement->user?->name,
-                'balance' => $runningBalance,
+                'balance' => round($runningBalance, 2),
             ];
         });
     }

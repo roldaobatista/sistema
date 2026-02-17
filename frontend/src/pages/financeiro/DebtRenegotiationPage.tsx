@@ -125,6 +125,7 @@ export default function DebtRenegotiationPage() {
       toast.success('Renegociação aprovada! Novas parcelas geradas.')
       qc.invalidateQueries({ queryKey: ['renegotiations'] })
     },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao aprovar renegociação'),
   })
 
   const rejectMut = useMutation({
@@ -133,6 +134,7 @@ export default function DebtRenegotiationPage() {
       toast.info('Renegociação rejeitada.')
       qc.invalidateQueries({ queryKey: ['renegotiations'] })
     },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao rejeitar renegociação'),
   })
 
   const handleSubmit = () => {
@@ -149,7 +151,7 @@ export default function DebtRenegotiationPage() {
       interest_amount: parseFloat(form.interest_amount) || 0,
       fine_amount: parseFloat(form.fine_amount) || 0,
       new_installments: parseInt(form.new_installments, 10) || 1,
-      first_due_date: form.first_due_date || undefined!,
+      first_due_date: form.first_due_date,
       notes: form.notes,
     })
   }

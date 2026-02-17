@@ -26,17 +26,17 @@ return new class extends Migration
 
         // Add chart_of_account_id to financial tables
         Schema::table('accounts_receivable', function (Blueprint $table) {
-            $table->unsignedBigInteger('chart_of_account_id')->nullable()->after('notes');
+            $table->unsignedBigInteger('chart_of_account_id')->nullable();
             $table->foreign('chart_of_account_id')->references('id')->on('chart_of_accounts')->nullOnDelete();
         });
 
         Schema::table('accounts_payable', function (Blueprint $table) {
-            $table->unsignedBigInteger('chart_of_account_id')->nullable()->after('notes');
+            $table->unsignedBigInteger('chart_of_account_id')->nullable();
             $table->foreign('chart_of_account_id')->references('id')->on('chart_of_accounts')->nullOnDelete();
         });
 
         Schema::table('expenses', function (Blueprint $table) {
-            $table->unsignedBigInteger('chart_of_account_id')->nullable()->after('notes');
+            $table->unsignedBigInteger('chart_of_account_id')->nullable();
             $table->foreign('chart_of_account_id')->references('id')->on('chart_of_accounts')->nullOnDelete();
         });
     }

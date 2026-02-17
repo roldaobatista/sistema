@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -39,7 +39,9 @@ export default function EquipmentCalendarPage() {
                 queryClient.invalidateQueries({ queryKey: ['equipment-calendar'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const handleDelete = (id: number) => { setConfirmDeleteId(id) }
+  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
   const { hasPermission } = useAuthStore()
 
     const [currentDate, setCurrentDate] = useState(new Date())
@@ -147,7 +149,7 @@ export default function EquipmentCalendarPage() {
                                 <div
                                     key={day}
                                     className={cn(
-                                        'min-h-[90px] bg-white p-1.5 transition-colors',
+                                        'min-h-[90px] bg-surface-0 dark:bg-surface-800 p-1.5 transition-colors',
                                         isToday && 'bg-brand-50/40'
                                     )}
                                 >
@@ -189,7 +191,7 @@ export default function EquipmentCalendarPage() {
                 {/* Sidebar: Alerts */}
                 <div className="space-y-4">
                     {/* Overdue */}
-                    <div className="rounded-xl border border-red-200 bg-white p-4 shadow-card">
+                    <div className="rounded-xl border border-red-200 dark:border-red-800 bg-surface-0 dark:bg-surface-800 p-4 shadow-card">
                         <div className="mb-3 flex items-center gap-2">
                             <AlertTriangle size={16} className="text-red-600" />
                             <h3 className="text-sm font-semibold text-red-700">
@@ -220,7 +222,7 @@ export default function EquipmentCalendarPage() {
                     </div>
 
                     {/* Upcoming */}
-                    <div className="rounded-xl border border-amber-200 bg-white p-4 shadow-card">
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-surface-0 dark:bg-surface-800 p-4 shadow-card">
                         <div className="mb-3 flex items-center gap-2">
                             <Clock size={16} className="text-amber-600" />
                             <h3 className="text-sm font-semibold text-amber-700">

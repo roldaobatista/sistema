@@ -143,7 +143,7 @@ export default function NotificationPanel() {
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-2 w-96 overflow-hidden rounded-xl border border-default bg-white shadow-elevated z-50">
+                <div className="absolute right-0 top-full mt-2 w-96 overflow-hidden rounded-xl border border-default bg-surface-0 dark:bg-surface-800 shadow-elevated z-50">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-subtle px-4 py-3">
                         <h3 className="text-sm font-semibold text-surface-900">

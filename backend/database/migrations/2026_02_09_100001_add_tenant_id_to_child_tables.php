@@ -28,7 +28,7 @@ return new class extends Migration
         foreach ($this->childTables as $table => $relation) {
             if (!Schema::hasColumn($table, 'tenant_id')) {
                 Schema::table($table, function (Blueprint $t) {
-                    $t->unsignedBigInteger('tenant_id')->nullable()->after('id');
+                    $t->unsignedBigInteger('tenant_id')->nullable();
                     $t->index('tenant_id');
                 });
 

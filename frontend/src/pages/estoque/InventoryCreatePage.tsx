@@ -7,23 +7,19 @@ import {
 import { useQuery, useMutation } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
-
 export default function InventoryCreatePage() {
-  const { hasPermission } = useAuthStore()
-
     const navigate = useNavigate()
     const [warehouseId, setWarehouseId] = useState('')
     const [reference, setReference] = useState('')
 
     const { data: warehousesRes, isLoading: loadingWarehouses } = useQuery({
         queryKey: ['warehouses'],
-        queryFn: () => api.get('/inventory/warehouses')
+        queryFn: () => api.get('/stock/warehouses')
     })
-    const warehouses = warehousesRes?.data || []
+    const warehouses = warehousesRes?.data?.data ?? warehousesRes?.data ?? []
 
     const createMut = useMutation({
-        mutationFn: (data: any) => api.post('/inventory/inventories', data),
+        mutationFn: (data: { warehouse_id: string; reference: string }) => api.post('/stock/inventories', data),
         onSuccess: (res) => {
             toast.success('Sessão de inventário iniciada!')
                 navigate(`/estoque/inventarios/${res.data.data.id}`)
@@ -103,7 +99,7 @@ export default function InventoryCreatePage() {
                     <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3">
                         <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                         <p className="text-xs text-amber-700 leading-relaxed">
-                            Ao iniciar, o sistema tirará uma foto instantly do estoque atual. Qualquer movimentação realizada após o início não será considerada na expectativa original desta auditoria.
+                            Ao iniciar, o sistema tirará uma foto instantânea do estoque atual. Qualquer movimentação realizada após o início não será considerada na expectativa original desta auditoria.
                         </p>
                     </div>
 

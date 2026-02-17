@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Search, Trash2, UserCheck, UserX, KeyRound, Download, CheckSquare, Square, Monitor, LogOut, Users, UserPlus, UserMinus, AlertCircle, History } from 'lucide-react'
+import { Plus, Search, Trash2, UserCheck, UserX, KeyRound, Download, CheckSquare, Square, Monitor, LogOut, Users, UserPlus, UserMinus, AlertCircle, History, ShieldCheck, ShieldOff, ShieldAlert } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -70,6 +70,8 @@ export function UsersPage() {
     const [deleteConfirmUser, setDeleteConfirmUser] = useState<User | null>(null)
     const [sessionsUser, setSessionsUser] = useState<User | null>(null)
     const [auditTrailUser, setAuditTrailUser] = useState<User | null>(null)
+    const [permissionsUser, setPermissionsUser] = useState<User | null>(null)
+    const canManagePermissions = hasPermission('iam.permission.manage')
 
     const debouncedSearch = useCallback(
         (() => {
@@ -285,7 +287,7 @@ export function UsersPage() {
                 subtitle="Gerencie os usuários do sistema"
                 count={totalUsers}
                 actions={[
-                    ...(canView ? [{ label: 'Exportar CSV', onClick: handleExportCsv, icon: <Download className="h-4 w-4" />, variant: 'outline' as const }] : []),
+                    ...((hasPermission('iam.user.export') || canView) ? [{ label: 'Exportar CSV', onClick: handleExportCsv, icon: <Download className="h-4 w-4" />, variant: 'outline' as const }] : []),
                     ...(canCreate ? [{ label: 'Novo Usuário', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []),
                 ]}
             />
@@ -531,6 +533,16 @@ export function UsersPage() {
                                                 title="Sessões Ativas"
                                             >
                                                 <Monitor className="h-4 w-4 text-blue-500" />
+                                            </Button>
+                                        )}
+                                        {canManagePermissions && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setPermissionsUser(user)}
+                                                title="Permissões Individuais"
+                                            >
+                                                <ShieldCheck className="h-4 w-4 text-indigo-500" />
                                             </Button>
                                         )}
                                         {canUpdate && (
@@ -825,6 +837,7 @@ export function UsersPage() {
             </Modal>
 
             <AuditTrailModal user={auditTrailUser} onClose={() => setAuditTrailUser(null)} />
+            <UserPermissionsModal user={permissionsUser} onClose={() => setPermissionsUser(null)} />
         </div>
     )
 }
@@ -844,6 +857,9 @@ function AuditTrailModal({ user, onClose }: { user: User | null; onClose: () => 
         login: 'bg-purple-100 text-purple-700',
         logout: 'bg-orange-100 text-orange-700',
         status_changed: 'bg-amber-100 text-amber-700',
+        commented: 'bg-sky-100 text-sky-700',
+        tenant_switch: 'bg-indigo-100 text-indigo-700',
+        password_reset: 'bg-rose-100 text-rose-700',
     }
 
     const actionLabels: Record<string, string> = {
@@ -853,6 +869,9 @@ function AuditTrailModal({ user, onClose }: { user: User | null; onClose: () => 
         login: 'Login',
         logout: 'Logout',
         status_changed: 'Status',
+        commented: 'Comentário',
+        tenant_switch: 'Empresa',
+        password_reset: 'Senha',
     }
 
     return (
@@ -907,6 +926,226 @@ function AuditTrailModal({ user, onClose }: { user: User | null; onClose: () => 
                 <Button variant="outline" onClick={onClose}>
                     Fechar
                 </Button>
+            </div>
+        </Modal>
+    )
+}
+
+interface PermGroup {
+    id: number
+    name: string
+    permissions: { id: number; name: string; criticality?: string }[]
+}
+
+function UserPermissionsModal({ user, onClose }: { user: User | null; onClose: () => void }) {
+    const queryClient = useQueryClient()
+    const [tab, setTab] = useState<'direct' | 'denied'>('direct')
+    const [search, setSearch] = useState('')
+
+    const { data: permData, isLoading: permLoading } = useQuery({
+        queryKey: ['user-permissions', user?.id],
+        queryFn: () => api.get(`/users/${user!.id}/permissions`).then(r => r.data),
+        enabled: !!user,
+    })
+
+    const { data: permGroupsData } = useQuery({
+        queryKey: ['permissions'],
+        queryFn: () => api.get('/permissions').then(r => r.data),
+        enabled: !!user,
+    })
+
+    const permissionGroups: PermGroup[] = Array.isArray(permGroupsData) ? permGroupsData : permGroupsData?.data ?? []
+
+    const directPermissions: string[] = permData?.direct_permissions ?? []
+    const deniedPermissions: string[] = permData?.denied_permissions ?? []
+    const rolePermissions: string[] = permData?.role_permissions ?? []
+
+    const syncDirectMut = useMutation({
+        mutationFn: (permissions: string[]) =>
+            api.put(`/users/${user!.id}/permissions`, { permissions }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['user-permissions', user?.id] })
+            toast.success('Permissões diretas atualizadas!')
+        },
+        onError: (err: any) => toast.error(err.response?.data?.message ?? 'Erro ao atualizar permissões.'),
+    })
+
+    const syncDeniedMut = useMutation({
+        mutationFn: (denied_permissions: string[]) =>
+            api.put(`/users/${user!.id}/denied-permissions`, { denied_permissions }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['user-permissions', user?.id] })
+            toast.success('Permissões negadas atualizadas!')
+        },
+        onError: (err: any) => toast.error(err.response?.data?.message ?? 'Erro ao atualizar permissões negadas.'),
+    })
+
+    const toggleDirect = (permName: string) => {
+        const updated = directPermissions.includes(permName)
+            ? directPermissions.filter(p => p !== permName)
+            : [...directPermissions, permName]
+        syncDirectMut.mutate(updated)
+    }
+
+    const toggleDenied = (permName: string) => {
+        const updated = deniedPermissions.includes(permName)
+            ? deniedPermissions.filter(p => p !== permName)
+            : [...deniedPermissions, permName]
+        syncDeniedMut.mutate(updated)
+    }
+
+    const filteredGroups = permissionGroups
+        .map(g => ({
+            ...g,
+            permissions: g.permissions.filter(p =>
+                !search || p.name.toLowerCase().includes(search.toLowerCase())
+            ),
+        }))
+        .filter(g => g.permissions.length > 0)
+
+    return (
+        <Modal
+            open={!!user}
+            onOpenChange={(open) => { if (!open) { onClose(); setSearch(''); setTab('direct') } }}
+            title={`Permissões: ${user?.name ?? ''}`}
+            size="xl"
+        >
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 rounded-lg border border-default bg-surface-50 p-1">
+                        <button
+                            onClick={() => setTab('direct')}
+                            className={cn(
+                                'rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+                                tab === 'direct'
+                                    ? 'bg-surface-0 text-surface-900 shadow-sm'
+                                    : 'text-surface-500 hover:text-surface-700'
+                            )}
+                        >
+                            <ShieldCheck className="h-3.5 w-3.5 inline mr-1" />
+                            Diretas ({directPermissions.length})
+                        </button>
+                        <button
+                            onClick={() => setTab('denied')}
+                            className={cn(
+                                'rounded-md px-3 py-1.5 text-xs font-medium transition-all',
+                                tab === 'denied'
+                                    ? 'bg-surface-0 text-red-700 shadow-sm'
+                                    : 'text-surface-500 hover:text-surface-700'
+                            )}
+                        >
+                            <ShieldOff className="h-3.5 w-3.5 inline mr-1" />
+                            Negadas ({deniedPermissions.length})
+                        </button>
+                    </div>
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface-400" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Filtrar permissões..."
+                            className="w-full rounded-lg border border-default bg-surface-50 py-2 pl-9 pr-3 text-xs focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                        />
+                    </div>
+                </div>
+
+                {tab === 'direct' && (
+                    <div className="rounded-lg border border-brand-200 bg-brand-50/30 px-3 py-2">
+                        <p className="text-xs text-brand-700 flex items-center gap-1.5">
+                            <ShieldAlert className="h-3.5 w-3.5" />
+                            Permissões diretas são adicionadas <strong>além</strong> das permissões herdadas pelas roles do usuário.
+                        </p>
+                    </div>
+                )}
+                {tab === 'denied' && (
+                    <div className="rounded-lg border border-red-200 bg-red-50/30 px-3 py-2">
+                        <p className="text-xs text-red-700 flex items-center gap-1.5">
+                            <ShieldAlert className="h-3.5 w-3.5" />
+                            Permissões negadas <strong>removem</strong> o acesso mesmo que concedido pelas roles.
+                        </p>
+                    </div>
+                )}
+
+                <div className="max-h-96 overflow-y-auto space-y-3 rounded-lg border border-default p-3">
+                    {permLoading ? (
+                        <div className="space-y-3 py-2">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="h-6 w-full rounded bg-surface-200 animate-pulse" />
+                            ))}
+                        </div>
+                    ) : filteredGroups.length === 0 ? (
+                        <p className="text-center text-sm text-surface-500 py-4">
+                            {search ? 'Nenhuma permissão encontrada.' : 'Não há permissões cadastradas.'}
+                        </p>
+                    ) : filteredGroups.map((group) => (
+                        <div key={group.id}>
+                            <h4 className="text-xs font-medium uppercase tracking-wider text-surface-500 mb-1.5">
+                                {group.name}
+                            </h4>
+                            <div className="flex flex-wrap gap-1.5">
+                                {group.permissions.map((perm) => {
+                                    const isDirect = directPermissions.includes(perm.name)
+                                    const isDenied = deniedPermissions.includes(perm.name)
+                                    const isFromRole = rolePermissions.includes(perm.name)
+                                    const isLoading = syncDirectMut.isPending || syncDeniedMut.isPending
+
+                                    if (tab === 'direct') {
+                                        return (
+                                            <button
+                                                key={perm.id}
+                                                type="button"
+                                                disabled={isLoading}
+                                                onClick={() => toggleDirect(perm.name)}
+                                                className={cn(
+                                                    'rounded-md border px-2 py-1 text-xs font-medium transition-all disabled:opacity-50',
+                                                    isDirect
+                                                        ? 'border-brand-400 bg-brand-50 text-brand-700'
+                                                        : isFromRole
+                                                            ? 'border-emerald-300 bg-emerald-50/50 text-emerald-600'
+                                                            : 'border-default text-surface-500 hover:border-surface-400'
+                                                )}
+                                                title={isDirect ? 'Concedida diretamente (clique para remover)' : isFromRole ? 'Herdada da role' : 'Clique para conceder'}
+                                            >
+                                                {perm.name.split('.').slice(1).join('.')}
+                                                {isFromRole && !isDirect && <span className="ml-1 text-[10px] opacity-60">role</span>}
+                                            </button>
+                                        )
+                                    }
+
+                                    return (
+                                        <button
+                                            key={perm.id}
+                                            type="button"
+                                            disabled={isLoading}
+                                            onClick={() => toggleDenied(perm.name)}
+                                            className={cn(
+                                                'rounded-md border px-2 py-1 text-xs font-medium transition-all disabled:opacity-50',
+                                                isDenied
+                                                    ? 'border-red-400 bg-red-50 text-red-700 line-through'
+                                                    : 'border-default text-surface-500 hover:border-surface-400'
+                                            )}
+                                            title={isDenied ? 'Negada (clique para permitir)' : 'Clique para negar'}
+                                        >
+                                            {perm.name.split('.').slice(1).join('.')}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex items-center justify-between border-t border-subtle pt-4">
+                    <div className="flex items-center gap-3 text-xs text-surface-500">
+                        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-brand-200 border border-brand-400" /> Direta</span>
+                        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-100 border border-emerald-300" /> Via Role</span>
+                        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-red-100 border border-red-400" /> Negada</span>
+                    </div>
+                    <Button variant="outline" onClick={() => { onClose(); setSearch(''); setTab('direct') }}>
+                        Fechar
+                    </Button>
+                </div>
             </div>
         </Modal>
     )

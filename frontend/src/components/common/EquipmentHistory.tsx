@@ -49,7 +49,7 @@ export const EquipmentHistory: React.FC<EquipmentHistoryProps> = ({ equipmentId 
 
     if (history.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+            <div className="flex flex-col items-center justify-center p-8 text-surface-400 border-2 border-dashed border-surface-200 rounded-xl">
                 <FileText size={48} className="mb-2 opacity-20" />
                 <p>Nenhum histórico encontrado para este equipamento.</p>
             </div>
@@ -68,14 +68,14 @@ export const EquipmentHistory: React.FC<EquipmentHistoryProps> = ({ equipmentId 
 
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                                <h4 className="font-semibold text-slate-900 truncate">{item.title}</h4>
-                                <span className="text-xs text-slate-500 whitespace-nowrap flex items-center gap-1">
+                                <h4 className="font-semibold text-surface-900 truncate">{item.title}</h4>
+                                <span className="text-xs text-surface-500 whitespace-nowrap flex items-center gap-1">
                                     <Calendar size={12} />
                                     {format(new Date(item.date), "dd/MM/yyyy", { locale: ptBR })}
                                 </span>
                             </div>
 
-                            <p className="text-sm text-slate-600 mb-2 line-clamp-2">
+                            <p className="text-sm text-surface-600 mb-2 line-clamp-2">
                                 {item.details.notes || item.details.description || 'Sem observações registradas.'}
                             </p>
 
@@ -87,12 +87,12 @@ export const EquipmentHistory: React.FC<EquipmentHistoryProps> = ({ equipmentId 
                                 )}
 
                                 {item.work_order && (
-                                    <Badge variant="outline" className="text-slate-500 border-slate-200">
+                                    <Badge variant="outline" className="text-surface-500 border-surface-200">
                                         OS #{item.work_order.os_number || item.work_order.number}
                                     </Badge>
                                 )}
 
-                                <span className="text-xs text-slate-400 ml-auto italic">
+                                <span className="text-xs text-surface-400 ml-auto italic">
                                     Por: {item.performer || 'Sistema'}
                                 </span>
                             </div>

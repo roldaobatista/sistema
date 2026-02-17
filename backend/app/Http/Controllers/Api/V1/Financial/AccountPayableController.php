@@ -22,38 +22,43 @@ class AccountPayableController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
-        $query = AccountPayable::query()
-            ->where('tenant_id', $tenantId)
-            ->with(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'chartOfAccount:id,code,name,type', 'creator:id,name']);
+        try {
+            $tenantId = $this->tenantId($request);
+            $query = AccountPayable::query()
+                ->where('tenant_id', $tenantId)
+                ->with(['supplierRelation:id,name', 'categoryRelation:id,name,color', 'chartOfAccount:id,code,name,type', 'creator:id,name']);
 
-        if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                  ->orWhereHas('supplierRelation', fn ($sq) => $sq->where('name', 'like', "%{$search}%"));
-            });
+            if ($search = $request->get('search')) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('description', 'like', "%{$search}%")
+                      ->orWhereHas('supplierRelation', fn ($sq) => $sq->where('name', 'like', "%{$search}%"));
+                });
+            }
+
+            if ($status = $request->get('status')) {
+                $query->where('status', $status);
+            }
+
+            if ($category = $request->get('category')) {
+                $query->where('category_id', $category);
+            }
+
+            if ($from = $request->get('due_from')) {
+                $query->where('due_date', '>=', $from);
+            }
+
+            if ($to = $request->get('due_to')) {
+                $query->where('due_date', '<=', $to);
+            }
+
+            $records = $query->orderBy('due_date')
+                ->paginate($request->get('per_page', 30));
+
+            return response()->json($records);
+        } catch (\Throwable $e) {
+            Log::error('AP index failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao listar contas a pagar'], 500);
         }
-
-        if ($status = $request->get('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($category = $request->get('category')) {
-            $query->where('category_id', $category);
-        }
-
-        if ($from = $request->get('due_from')) {
-            $query->where('due_date', '>=', $from);
-        }
-
-        if ($to = $request->get('due_to')) {
-            $query->where('due_date', '<=', $to);
-        }
-
-        $records = $query->orderBy('due_date')
-            ->paginate($request->get('per_page', 30));
-
-        return response()->json($records);
     }
 
     public function store(Request $request): JsonResponse
@@ -87,8 +92,12 @@ class AccountPayableController extends Controller
         }
     }
 
-    public function show(AccountPayable $accountPayable): JsonResponse
+    public function show(Request $request, AccountPayable $accountPayable): JsonResponse
     {
+        if ($accountPayable->tenant_id !== $this->tenantId($request)) {
+            return response()->json(['message' => 'Acesso negado'], 403);
+        }
+
         return response()->json($accountPayable->load([
             'supplierRelation:id,name',
             'categoryRelation:id,name,color',
@@ -100,11 +109,15 @@ class AccountPayableController extends Controller
 
     public function update(Request $request, AccountPayable $accountPayable): JsonResponse
     {
+        $tenantId = $this->tenantId($request);
+
+        if ($accountPayable->tenant_id !== $tenantId) {
+            return response()->json(['message' => 'Acesso negado'], 403);
+        }
+
         if (in_array($accountPayable->status, [AccountPayable::STATUS_CANCELLED, AccountPayable::STATUS_PAID])) {
             return response()->json(['message' => 'Título cancelado ou pago não pode ser editado'], 422);
         }
-
-        $tenantId = $this->tenantId($request);
 
         $validated = $request->validate([
             'supplier_id' => ['nullable', Rule::exists('suppliers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
@@ -139,8 +152,12 @@ class AccountPayableController extends Controller
         }
     }
 
-    public function destroy(AccountPayable $accountPayable): JsonResponse
+    public function destroy(Request $request, AccountPayable $accountPayable): JsonResponse
     {
+        if ($accountPayable->tenant_id !== $this->tenantId($request)) {
+            return response()->json(['message' => 'Acesso negado'], 403);
+        }
+
         if ($accountPayable->payments()->exists()) {
             return response()->json(['message' => 'Não é possível excluir título com pagamentos vinculados'], 409);
         }
@@ -156,6 +173,10 @@ class AccountPayableController extends Controller
 
     public function pay(Request $request, AccountPayable $accountPayable): JsonResponse
     {
+        if ($accountPayable->tenant_id !== $this->tenantId($request)) {
+            return response()->json(['message' => 'Acesso negado'], 403);
+        }
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'payment_method' => 'required|string|max:30',
@@ -239,6 +260,69 @@ class AccountPayableController extends Controller
         } catch (\Throwable $e) {
             Log::error('AP summary failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao gerar resumo'], 500);
+        }
+    }
+
+    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+    {
+        try {
+            $tenantId = $this->tenantId($request);
+            $query = AccountPayable::with(['supplierRelation:id,name', 'categoryRelation:id,name', 'chartOfAccount:id,code,name', 'creator:id,name'])
+                ->where('tenant_id', $tenantId);
+
+            if ($status = $request->get('status')) {
+                $query->where('status', $status);
+            }
+            if ($category = $request->get('category')) {
+                $query->where('category_id', $category);
+            }
+            if ($from = $request->get('due_from')) {
+                $query->where('due_date', '>=', $from);
+            }
+            if ($to = $request->get('due_to')) {
+                $query->where('due_date', '<=', $to);
+            }
+
+            $records = $query->orderBy('due_date')->get();
+
+            $statusLabels = [
+                AccountPayable::STATUS_PENDING => 'Pendente',
+                AccountPayable::STATUS_PARTIAL => 'Parcial',
+                AccountPayable::STATUS_PAID => 'Pago',
+                AccountPayable::STATUS_OVERDUE => 'Vencido',
+                AccountPayable::STATUS_CANCELLED => 'Cancelado',
+            ];
+
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="contas_pagar_' . now()->format('Y-m-d') . '.csv"',
+            ];
+
+            return response()->stream(function () use ($records, $statusLabels) {
+                $out = fopen('php://output', 'w');
+                fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
+                fputcsv($out, ['ID', 'Descricao', 'Fornecedor', 'Categoria', 'Conta Contabil', 'Valor', 'Valor Pago', 'Vencimento', 'Status', 'Responsavel', 'Observacoes'], ';');
+
+                foreach ($records as $rec) {
+                    fputcsv($out, [
+                        $rec->id,
+                        $rec->description,
+                        $rec->supplierRelation?->name ?? '',
+                        $rec->categoryRelation?->name ?? '',
+                        $rec->chartOfAccount ? trim(($rec->chartOfAccount->code ?? '') . ' - ' . ($rec->chartOfAccount->name ?? ''), ' -') : '',
+                        number_format((float) $rec->amount, 2, ',', '.'),
+                        number_format((float) $rec->amount_paid, 2, ',', '.'),
+                        $rec->due_date?->format('d/m/Y'),
+                        $statusLabels[$rec->status] ?? $rec->status,
+                        $rec->creator?->name ?? '',
+                        $rec->notes ?? '',
+                    ], ';');
+                }
+                fclose($out);
+            }, 200, $headers);
+        } catch (\Throwable $e) {
+            Log::error('AP export failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao exportar contas a pagar'], 500);
         }
     }
 }

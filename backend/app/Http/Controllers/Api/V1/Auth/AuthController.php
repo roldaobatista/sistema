@@ -65,6 +65,13 @@ class AuthController extends Controller
             // Atualiza último login
             $user->update(['last_login_at' => now()]);
 
+            // Registra login no audit log
+            $tenantId = $user->current_tenant_id ?? $user->tenant_id;
+            if ($tenantId) {
+                app()->instance('current_tenant_id', $tenantId);
+            }
+            \App\Models\AuditLog::log('login', "Login realizado por {$user->name} ({$user->email})", $user);
+
             // Revogar tokens API anteriores para evitar acúmulo ilimitado
             $user->tokens()->where('name', 'api')->delete();
 
@@ -78,6 +85,30 @@ class AuthController extends Controller
                 $user->refresh();
             }
 
+            // Se o tenant atual está inativo, tenta trocar para um ativo
+            $activeTenant = null;
+            if ($user->current_tenant_id) {
+                $currentTenant = \App\Models\Tenant::find($user->current_tenant_id);
+                if ($currentTenant && $currentTenant->isInactive()) {
+                    $activeTenant = $user->tenants()
+                        ->where('tenants.status', '!=', \App\Models\Tenant::STATUS_INACTIVE)
+                        ->first();
+                    if ($activeTenant) {
+                        $user->update(['current_tenant_id' => $activeTenant->id]);
+                        $user->refresh();
+                    }
+                } else {
+                    $activeTenant = $currentTenant;
+                }
+            }
+
+            $finalTenant = $activeTenant ?? $defaultTenant;
+
+            if ($user->current_tenant_id) {
+                app()->instance('current_tenant_id', $user->current_tenant_id);
+                setPermissionsTeamId($user->current_tenant_id);
+            }
+
             return response()->json([
                 'token' => $token,
                 'user' => [
@@ -85,7 +116,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'tenant_id' => $user->current_tenant_id,
-                    'tenant' => $defaultTenant,
+                    'tenant' => $finalTenant,
                     'permissions' => $user->getEffectivePermissions()->pluck('name')->values(),
                     'roles' => $user->getRoleNames(),
                     'role_details' => $user->roles->map(fn ($r) => [
@@ -155,7 +186,7 @@ class AuthController extends Controller
     /** Lista tenants disponíveis para o usuário */
     public function myTenants(Request $request): JsonResponse
     {
-        $tenants = $request->user()->tenants()->get(['tenants.id', 'tenants.name', 'tenants.document']);
+        $tenants = $request->user()->tenants()->get(['tenants.id', 'tenants.name', 'tenants.document', 'tenants.status']);
         return response()->json($tenants);
     }
 
@@ -165,15 +196,30 @@ class AuthController extends Controller
         $validated = $request->validate(['tenant_id' => 'required|integer']);
         $user = $request->user();
 
-        // Verifica se o user pertence a este tenant
         if (!$user->tenants()->where('tenants.id', $validated['tenant_id'])->exists()) {
             return response()->json(['message' => 'Acesso negado a esta empresa.'], 403);
         }
 
+        $tenant = \App\Models\Tenant::find($validated['tenant_id']);
+
+        if (!$tenant) {
+            return response()->json(['message' => 'Empresa não encontrada.'], 404);
+        }
+
+        if ($tenant->isInactive()) {
+            return response()->json(['message' => 'Esta empresa está inativa. Contate o administrador.'], 403);
+        }
+
+        $previousTenantId = $user->current_tenant_id;
         $user->update(['current_tenant_id' => $validated['tenant_id']]);
 
-        // Invalidate Spatie permission cache to load new tenant permissions
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        \App\Models\AuditLog::log(
+            'tenant_switch',
+            "Usuário {$user->name} trocou de empresa: #{$previousTenantId} → #{$tenant->id} ({$tenant->name})",
+            $tenant
+        );
 
         return response()->json(['message' => 'Empresa alterada.', 'tenant_id' => $validated['tenant_id']]);
     }

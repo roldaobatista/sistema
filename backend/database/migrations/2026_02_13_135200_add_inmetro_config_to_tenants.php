@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->json('inmetro_config')->nullable()->after('status');
-        });
+        if (!Schema::hasColumn('tenants', 'inmetro_config')) {
+            Schema::table('tenants', function (Blueprint $table) {
+                $table->json('inmetro_config')->nullable();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->dropColumn('inmetro_config');
-        });
+        if (Schema::hasColumn('tenants', 'inmetro_config')) {
+            Schema::table('tenants', function (Blueprint $table) {
+                $table->dropColumn('inmetro_config');
+            });
+        }
     }
 };

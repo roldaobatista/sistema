@@ -16,24 +16,24 @@ return new class extends Migration
 
         // Add competitor link to inmetro_history (who repaired it?)
         Schema::table('inmetro_history', function (Blueprint $table) {
-            $table->foreignId('competitor_id')->nullable()->after('executor')
+            $table->foreignId('competitor_id')->nullable()
                 ->constrained('inmetro_competitors')->onUpdate('cascade')->onDelete('set null');
         });
 
         // Add estimated_revenue and total_instruments to owners for ranking
         Schema::table('inmetro_owners', function (Blueprint $table) {
-            $table->decimal('estimated_revenue', 10, 2)->default(0)->after('notes');
-            $table->unsignedInteger('total_instruments')->default(0)->after('estimated_revenue');
+            $table->decimal('estimated_revenue', 10, 2)->default(0);
+            $table->unsignedInteger('total_instruments')->default(0);
         });
 
         // Enhance competitors with capacity, classes, repair tracking
         Schema::table('inmetro_competitors', function (Blueprint $table) {
-            $table->string('max_capacity', 50)->nullable()->after('mechanics');
-            $table->json('accuracy_classes')->nullable()->after('max_capacity');
-            $table->date('authorization_valid_until')->nullable()->after('accuracy_classes');
-            $table->unsignedInteger('total_repairs_done')->default(0)->after('authorization_valid_until');
-            $table->date('last_repair_date')->nullable()->after('total_repairs_done');
-            $table->string('website', 255)->nullable()->after('last_repair_date');
+            $table->string('max_capacity', 50)->nullable();
+            $table->json('accuracy_classes')->nullable();
+            $table->date('authorization_valid_until')->nullable();
+            $table->unsignedInteger('total_repairs_done')->default(0);
+            $table->date('last_repair_date')->nullable();
+            $table->string('website', 255)->nullable();
         });
 
         // Pivot table: which competitor repaired which instrument

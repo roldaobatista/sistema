@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\QualityProcedure;
 use App\Models\CorrectiveAction;
 use App\Models\CustomerComplaint;
@@ -14,11 +15,12 @@ use Illuminate\Support\Facades\Log;
 
 class QualityController extends Controller
 {
+    use ResolvesCurrentTenant;
     // ─── PROCEDURES ──────────────────────────────────────────────
 
     public function indexProcedures(Request $request): JsonResponse
     {
-        $query = QualityProcedure::where('tenant_id', $request->user()->tenant_id);
+        $query = QualityProcedure::where('tenant_id', $this->resolvedTenantId());
 
         if ($request->filled('status')) $query->where('status', $request->status);
         if ($request->filled('category')) $query->where('category', $request->category);
@@ -43,7 +45,7 @@ class QualityController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $procedure = QualityProcedure::create($validated);
             DB::commit();
             return response()->json(['message' => 'Procedimento criado', 'data' => $procedure], 201);
@@ -121,7 +123,7 @@ class QualityController extends Controller
 
     public function indexCorrectiveActions(Request $request): JsonResponse
     {
-        $query = CorrectiveAction::where('tenant_id', $request->user()->tenant_id)
+        $query = CorrectiveAction::where('tenant_id', $this->resolvedTenantId())
             ->with('responsible:id,name');
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -146,7 +148,7 @@ class QualityController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $action = CorrectiveAction::create($validated);
             DB::commit();
             return response()->json(['message' => 'Ação registrada', 'data' => $action], 201);
@@ -201,7 +203,7 @@ class QualityController extends Controller
 
     public function indexComplaints(Request $request): JsonResponse
     {
-        $query = CustomerComplaint::where('tenant_id', $request->user()->tenant_id)
+        $query = CustomerComplaint::where('tenant_id', $this->resolvedTenantId())
             ->with(['customer:id,name', 'assignedTo:id,name']);
 
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -225,7 +227,7 @@ class QualityController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $complaint = CustomerComplaint::create($validated);
             DB::commit();
             return response()->json(['message' => 'Reclamação registrada', 'data' => $complaint], 201);
@@ -281,7 +283,7 @@ class QualityController extends Controller
 
     public function indexSurveys(Request $request): JsonResponse
     {
-        $query = SatisfactionSurvey::where('tenant_id', $request->user()->tenant_id)
+        $query = SatisfactionSurvey::where('tenant_id', $this->resolvedTenantId())
             ->with(['customer:id,name', 'workOrder:id,number']);
 
         return response()->json($query->orderByDesc('created_at')->paginate($request->input('per_page', 20)));
@@ -302,7 +304,7 @@ class QualityController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $survey = SatisfactionSurvey::create($validated);
             DB::commit();
             return response()->json(['message' => 'Pesquisa registrada', 'data' => $survey], 201);
@@ -314,7 +316,7 @@ class QualityController extends Controller
 
     public function npsDashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
         $surveys = SatisfactionSurvey::where('tenant_id', $tenantId)
             ->whereNotNull('nps_score');
 
@@ -347,7 +349,7 @@ class QualityController extends Controller
 
     public function dashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
 
         return response()->json(['data' => [
             'active_procedures' => QualityProcedure::where('tenant_id', $tenantId)->where('status', 'active')->count(),

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
     ArrowLeft,
     Calendar,
@@ -19,15 +18,15 @@ import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useAuthStore } from '@/stores/auth-store'
+import { serviceCallStatus, getStatusEntry } from '@/lib/status-config'
 
-const statusLabels: Record<string, { label: string; variant: any; color: string }> = {
-    [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', color: '#3b82f6' },
-    [SERVICE_CALL_STATUS.SCHEDULED]: { label: 'Agendado', variant: 'warning', color: '#f59e0b' },
-    [SERVICE_CALL_STATUS.IN_TRANSIT]: { label: 'Em Transito', variant: 'info', color: '#06b6d4' },
-    [SERVICE_CALL_STATUS.IN_PROGRESS]: { label: 'Em Atendimento', variant: 'danger', color: '#f97316' },
-    [SERVICE_CALL_STATUS.COMPLETED]: { label: 'Concluido', variant: 'success', color: '#22c55e' },
-    [SERVICE_CALL_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'default', color: '#6b7280' },
+const statusDotColors: Record<string, string> = {
+    [SERVICE_CALL_STATUS.OPEN]: '#3b82f6',
+    [SERVICE_CALL_STATUS.SCHEDULED]: '#f59e0b',
+    [SERVICE_CALL_STATUS.IN_TRANSIT]: '#06b6d4',
+    [SERVICE_CALL_STATUS.IN_PROGRESS]: '#f97316',
+    [SERVICE_CALL_STATUS.COMPLETED]: '#22c55e',
+    [SERVICE_CALL_STATUS.CANCELLED]: '#6b7280',
 }
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
@@ -50,18 +49,6 @@ function formatDate(date: Date) {
 }
 
 export function TechnicianAgendaPage() {
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/technician-agenda/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['technician-agenda'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const navigate = useNavigate()
     const [selectedTech, setSelectedTech] = useState<string>('')
     const [weekOffset, setWeekOffset] = useState(0)
@@ -234,7 +221,8 @@ export function TechnicianAgendaPage() {
                                         <p className="py-3 text-center text-xs text-surface-300">-</p>
                                     ) : (
                                         dayCalls.map((call) => {
-                                            const status = statusLabels[call.status] ?? statusLabels[SERVICE_CALL_STATUS.OPEN]
+                                            const status = getStatusEntry(serviceCallStatus, call.status)
+                                            const dotColor = statusDotColors[call.status] ?? '#6b7280'
 
                                             return (
                                                 <div
@@ -247,7 +235,7 @@ export function TechnicianAgendaPage() {
                                                     title={`${call.customer?.name ?? '-'} - ${status.label}`}
                                                 >
                                                     <div className="mb-0.5 flex items-center gap-1">
-                                                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: status.color }} />
+                                                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: dotColor }} />
                                                         <Badge variant={status.variant} className="px-1 py-0 text-xs leading-tight">{status.label}</Badge>
                                                         {call.priority === 'urgent' && <AlertTriangle className="ml-auto h-2.5 w-2.5 flex-shrink-0 text-red-500" />}
                                                     </div>
@@ -303,7 +291,7 @@ export function TechnicianAgendaPage() {
                         return (
                             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                 {dayCalls.map((call) => {
-                                    const status = statusLabels[call.status] ?? statusLabels[SERVICE_CALL_STATUS.OPEN]
+                                    const status = getStatusEntry(serviceCallStatus, call.status)
                                     return (
                                         <div
                                             key={`detail-${call.id}`}

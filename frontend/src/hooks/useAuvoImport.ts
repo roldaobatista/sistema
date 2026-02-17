@@ -91,8 +91,8 @@ export interface AuvoMapping {
 
 export interface AuvoConfig {
     has_credentials: boolean
-    api_key: string
-    api_token: string
+    api_key_masked: string
+    api_token_masked: string
 }
 
 export function useAuvoGetConfig() {
@@ -128,10 +128,15 @@ export function useAuvoPreview(entity: string | null) {
     })
 }
 
-export function useAuvoHistory() {
-    return useQuery<AuvoImportHistory>({
-        queryKey: ['auvo', 'history'],
-        queryFn: () => api.get('/auvo/history').then(r => r.data),
+export function useAuvoHistory(filters?: { entity?: string; status?: string; page?: number }) {
+    const params = new URLSearchParams()
+    if (filters?.entity) params.set('entity', filters.entity)
+    if (filters?.status) params.set('status', filters.status)
+    if (filters?.page) params.set('page', String(filters.page))
+    const qs = params.toString()
+    return useQuery<AuvoImportHistory & { current_page?: number; last_page?: number }>({
+        queryKey: ['auvo', 'history', qs],
+        queryFn: () => api.get(`/auvo/history${qs ? `?${qs}` : ''}`).then(r => r.data),
     })
 }
 
@@ -216,6 +221,7 @@ export function useAuvoConfig() {
                 toast.warning(data.message || 'Credenciais salvas; verifique a conexão nas configurações.')
             }
             qc.invalidateQueries({ queryKey: ['auvo', 'status'] })
+            qc.invalidateQueries({ queryKey: ['auvo', 'config'] })
         },
         onError: handleMutationError,
     })

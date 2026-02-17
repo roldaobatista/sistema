@@ -24,6 +24,8 @@ export function VehiclesTab() {
   const queryClient = useQueryClient()
   const { hasPermission } = useAuthStore()
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
@@ -139,7 +141,7 @@ export function VehiclesTab() {
   }
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id)
+    setConfirmDeleteId(id)
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending

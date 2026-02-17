@@ -13,6 +13,8 @@ import { Toaster } from '@/components/ui/sonner'
 
 // --- Lazy-loaded pages (code splitting) ---
 const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const UsersPage = lazy(() => import('@/pages/iam/UsersPage').then(m => ({ default: m.UsersPage })))
 const RolesPage = lazy(() => import('@/pages/iam/RolesPage').then(m => ({ default: m.RolesPage })))
@@ -279,34 +281,34 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/cadastros/clientes/fusao', permission: 'cadastros.customer.update' },
   { match: '/cadastros/clientes', permission: 'cadastros.customer.view' },
   { match: '/cadastros/produtos', permission: 'cadastros.product.view' },
-  { match: '/cadastros/serviços', permission: 'cadastros.service.view' },
+  { match: '/cadastros/servicos', permission: 'cadastros.service.view' },
   { match: '/catalogo', permission: 'catalog.view' },
-  { match: '/cadastros/histórico-precos', permission: 'cadastros.product.view' },
-  { match: '/cadastros/exportação-lote', permission: 'cadastros.customer.view' },
+  { match: '/cadastros/historico-precos', permission: 'cadastros.product.view' },
+  { match: '/cadastros/exportacao-lote', permission: 'cadastros.customer.view' },
   { match: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
-  { match: '/orçamentos/novo', permission: 'quotes.quote.create' },
+  { match: '/orcamentos/novo', permission: 'quotes.quote.create' },
   { match: '/chamados/novo', permission: 'service_calls.service_call.create' },
   { match: '/equipamentos/novo', permission: 'equipments.equipment.create' },
   { match: '/inmetro/instrumentos', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/mapa', permission: 'inmetro.intelligence.view' },
-  { match: '/inmetro/importação', permission: 'inmetro.intelligence.import' },
+  { match: '/inmetro/importacao', permission: 'inmetro.intelligence.import' },
   { match: '/inmetro/prospeccao', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/executivo', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/compliance', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro/webhooks', permission: 'inmetro.intelligence.view' },
-  { match: '/orçamentos/', permission: 'quotes.quote.view' },
-  { match: '/orçamentos', permission: 'quotes.quote.view' },
+  { match: '/orcamentos/', permission: 'quotes.quote.view' },
+  { match: '/orcamentos', permission: 'quotes.quote.view' },
   { match: '/chamados', permission: 'service_calls.service_call.view' },
   { match: '/os/nova', permission: 'os.work_order.create' },
   { match: '/os', permission: 'os.work_order.view' },
-  { match: '/técnicos/agenda', permission: 'technicians.schedule.view' },
-  { match: '/técnicos/apontamentos', permission: 'technicians.time_entry.view' },
-  { match: '/técnicos/caixa', permission: 'technicians.cashbox.view' },
+  { match: '/tecnicos/agenda', permission: 'technicians.schedule.view' },
+  { match: '/tecnicos/apontamentos', permission: 'technicians.time_entry.view' },
+  { match: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
   { match: '/financeiro', permission: 'financeiro.view' },
   { match: '/financeiro/receber', permission: 'finance.receivable.view' },
   { match: '/financeiro/pagar', permission: 'finance.payable.view' },
-  { match: '/financeiro/comissões/dashboard', permission: 'commissions.rule.view' },
-  { match: '/financeiro/comissões', permission: 'commissions.rule.view' },
+  { match: '/financeiro/comissoes/dashboard', permission: 'commissions.rule.view' },
+  { match: '/financeiro/comissoes', permission: 'commissions.rule.view' },
   { match: '/financeiro/despesas', permission: 'expenses.expense.view' },
   { match: '/financeiro/pagamentos', permission: 'finance.receivable.view|finance.payable.view' },
   { match: '/financeiro/formas-pagamento', permission: 'finance.payable.view' },
@@ -320,34 +322,34 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/financeiro/plano-contas', permission: 'finance.chart.view' },
   { match: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
   { match: '/financeiro/contas-bancarias', permission: 'financial.bank_account.view' },
-  { match: '/financeiro/transferencias-técnicos', permission: 'financial.fund_transfer.view' },
+  { match: '/financeiro/transferencias-tecnicos', permission: 'financial.fund_transfer.view' },
   { match: '/fiscal/notas', permission: 'fiscal.note.view' },
   { match: '/estoque/movimentacoes', permission: 'estoque.movement.view' },
   { match: '/estoque/armazens', permission: 'estoque.warehouse.view' },
   { match: '/estoque/inventario-pwa', permission: 'estoque.view' },
   { match: '/estoque/etiquetas', permission: 'estoque.label.print' },
   { match: '/estoque', permission: 'estoque.movement.view' },
-  { match: '/relatórios', permission: 'reports.os_report.view' },
-  { match: '/notificações', permission: 'notifications.notification.view' },
-  { match: '/importação', permission: 'import.data.view' },
-  { match: '/integração/auvo', permission: 'auvo.import.view' },
-  { match: '/emails/configurações', permission: 'email.account.view' },
+  { match: '/relatorios', permission: 'reports.os_report.view' },
+  { match: '/notificacoes', permission: 'notifications.notification.view' },
+  { match: '/importacao', permission: 'import.data.view' },
+  { match: '/integracao/auvo', permission: 'auvo.import.view' },
+  { match: '/emails/configuracoes', permission: 'email.account.view' },
   { match: '/emails/compose', permission: 'email.inbox.send' },
   { match: '/emails', permission: 'email.inbox.view' },
   { match: '/inmetro/selos', permission: 'inmetro.intelligence.view' },
   { match: '/inmetro', permission: 'inmetro.intelligence.view' },
   { match: '/equipamentos/modelos', permission: 'equipments.equipment_model.view' },
-  { match: '/equipamentos/pesos-padrão', permission: 'equipments.standard_weight.view' },
+  { match: '/equipamentos/pesos-padrao', permission: 'equipments.standard_weight.view' },
   { match: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
   { match: '/equipamentos', permission: 'equipments.equipment.view' },
   { match: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
-  { match: '/calibração/leituras', permission: 'calibration.reading.view' },
+  { match: '/calibracao/leituras', permission: 'calibration.reading.view' },
   { match: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
-  { match: '/configurações/filiais', permission: 'platform.branch.view' },
-  { match: '/configurações/empresas', permission: 'platform.tenant.view' },
-  { match: '/configurações/whatsapp', permission: 'whatsapp.config.view' },
-  { match: '/configurações/auditoria', permission: 'iam.audit_log.view' },
-  { match: '/configurações', permission: 'platform.settings.view' },
+  { match: '/configuracoes/filiais', permission: 'platform.branch.view' },
+  { match: '/configuracoes/empresas', permission: 'platform.tenant.view' },
+  { match: '/configuracoes/whatsapp', permission: 'whatsapp.config.view' },
+  { match: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
+  { match: '/configuracoes', permission: 'platform.settings.view' },
   { match: '/financeiro/regua-cobranca', permission: 'finance.receivable.view' },
   { match: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
   { match: '/alertas', permission: 'alerts.alert.view' },
@@ -534,6 +536,22 @@ export default function App() {
               element={
                 <GuestRoute>
                   <LoginPage />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/esqueci-senha"
+              element={
+                <GuestRoute>
+                  <ForgotPasswordPage />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/redefinir-senha"
+              element={
+                <GuestRoute>
+                  <ResetPasswordPage />
                 </GuestRoute>
               }
             />

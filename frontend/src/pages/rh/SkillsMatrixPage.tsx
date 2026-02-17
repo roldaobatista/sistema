@@ -31,6 +31,7 @@ export default function SkillsMatrixPage() {
     const [assessModalOpen, setAssessModalOpen] = useState(false)
     const [selectedUser, setSelectedUser] = useState<any>(null)
     const [assessForm, setAssessForm] = useState<{ [skillId: number]: number }>({})
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
     const handleEditSkill = (skill: Skill) => {
         setEditingSkill(skill)
@@ -216,7 +217,7 @@ export default function SkillsMatrixPage() {
                                                 <Button size="icon" variant="ghost" onClick={() => handleEditSkill(skill)}>
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => { if (window.confirm('Deseja realmente excluir este registro?')) deleteSkill.mutate(skill.id) }}>
+                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => setConfirmDeleteId(skill.id)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>

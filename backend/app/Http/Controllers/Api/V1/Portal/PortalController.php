@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Portal;
 
 use App\Events\QuoteApproved;
 use App\Events\ServiceCallCreated;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\AccountReceivable;
 use App\Models\ClientPortalUser;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 
 class PortalController extends Controller
 {
+    use ResolvesCurrentTenant;
     private function portalUser(Request $request): ClientPortalUser
     {
         $user = $request->user();
@@ -34,7 +36,7 @@ class PortalController extends Controller
     {
         $user = $this->portalUser($request);
 
-        $workOrders = \App\Models\WorkOrder::where('tenant_id', $user->tenant_id)
+        $workOrders = \App\Models\WorkOrder::where('tenant_id', $this->resolvedTenantId())
             ->where('customer_id', $user->customer_id)
             ->with(['customer:id,name,latitude,longitude', 'equipment', 'items', 'statusHistory'])
             ->orderByDesc('created_at')
@@ -50,7 +52,7 @@ class PortalController extends Controller
     {
         $user = $this->portalUser($request);
 
-        $quotes = \App\Models\Quote::where('tenant_id', $user->tenant_id)
+        $quotes = \App\Models\Quote::where('tenant_id', $this->resolvedTenantId())
             ->where('customer_id', $user->customer_id)
             ->with([
                 'seller:id,name',
@@ -71,7 +73,7 @@ class PortalController extends Controller
     {
         $user = $this->portalUser($request);
 
-        $quote = \App\Models\Quote::where('tenant_id', $user->tenant_id)
+        $quote = \App\Models\Quote::where('tenant_id', $this->resolvedTenantId())
             ->where('customer_id', $user->customer_id)
             ->findOrFail($id);
 
@@ -120,7 +122,7 @@ class PortalController extends Controller
     {
         $user = $this->portalUser($request);
 
-        $financials = \App\Models\AccountReceivable::where('tenant_id', $user->tenant_id)
+        $financials = \App\Models\AccountReceivable::where('tenant_id', $this->resolvedTenantId())
             ->where('customer_id', $user->customer_id)
             ->whereIn('status', [AccountReceivable::STATUS_PENDING, AccountReceivable::STATUS_PARTIAL])
             ->orderBy('due_date')
@@ -144,7 +146,7 @@ class PortalController extends Controller
 
         // Verifica se equipamento pertence ao cliente no mesmo tenant.
         if (!empty($validated['equipment_id'])) {
-            $exists = \App\Models\Equipment::where('tenant_id', $user->tenant_id)
+            $exists = \App\Models\Equipment::where('tenant_id', $this->resolvedTenantId())
                 ->where('id', $validated['equipment_id'])
                 ->where('customer_id', $user->customer_id)
                 ->exists();
@@ -156,14 +158,14 @@ class PortalController extends Controller
 
         try {
             $fallbackUserId = User::query()
-                ->where('tenant_id', $user->tenant_id)
+                ->where('tenant_id', $this->resolvedTenantId())
                 ->orderBy('id')
                 ->value('id');
 
             $serviceCall = DB::transaction(function () use ($user, $validated, $fallbackUserId) {
                 $serviceCall = ServiceCall::create([
-                    'tenant_id' => $user->tenant_id,
-                    'call_number' => ServiceCall::nextNumber($user->tenant_id),
+                    'tenant_id' => $this->resolvedTenantId(),
+                    'call_number' => ServiceCall::nextNumber($this->resolvedTenantId()),
                     'customer_id' => $user->customer_id,
                     'created_by' => $fallbackUserId,
                     'status' => ServiceCall::STATUS_OPEN,

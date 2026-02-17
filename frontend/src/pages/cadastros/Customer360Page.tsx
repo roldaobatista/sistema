@@ -51,6 +51,7 @@ export function Customer360Page() {
     const { hasPermission, hasRole } = useAuthStore()
     const [nowTs] = useState(() => Date.now())
     const [activityFormOpen, setActivityFormOpen] = useState(false)
+    const [confirmDeleteNoteId, setConfirmDeleteNoteId] = useState<number | null>(null)
     const [sendMessageOpen, setSendMessageOpen] = useState(false)
 
     // MVP: Delete mutation
@@ -61,7 +62,7 @@ export function Customer360Page() {
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
     })
     const handleDeleteActivity = (noteId: number) => {
-        if (window.confirm('Tem certeza que deseja remover esta atividade?')) deleteMutation.mutate(noteId)
+        setConfirmDeleteNoteId(noteId)
     }
 
     // Travas de Permissão do Negócio
@@ -287,7 +288,7 @@ export function Customer360Page() {
                                     <Tabs.Trigger
                                         key={tab.value}
                                         value={tab.value}
-                                        className="group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-surface-500 whitespace-nowrap transition-all data-[state=active]:text-brand-600 rounded-lg hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                                        className="group relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-surface-500 whitespace-nowrap transition-all data-[state=active]:text-brand-600 rounded-lg hover:bg-surface-0 dark:hover:bg-surface-800 data-[state=active]:bg-surface-0 dark:data-[state=active]:bg-surface-800 data-[state=active]:shadow-sm"
                                     >
                                         <tab.icon className="h-4 w-4" />
                                         {tab.label}
@@ -782,6 +783,20 @@ export function Customer360Page() {
             {/* Modais de Ação */}
             <ActivityForm open={activityFormOpen} onClose={() => setActivityFormOpen(false)} customerId={customerId} />
             <SendMessageModal open={sendMessageOpen} onClose={() => setSendMessageOpen(false)} customerId={customerId} customerName={customer.name} customerPhone={customer.phone} customerEmail={customer.email} />
+
+            {/* Confirm Delete Note Dialog */}
+            {confirmDeleteNoteId !== null && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-surface-0 rounded-xl shadow-xl p-6 max-w-sm mx-4 border border-default">
+                        <h3 className="text-lg font-semibold text-surface-900 mb-2">Confirmar Exclusão</h3>
+                        <p className="text-sm text-surface-600 mb-4">Tem certeza que deseja remover esta atividade?</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2 rounded-lg border border-default text-sm" onClick={() => setConfirmDeleteNoteId(null)}>Cancelar</button>
+                            <button className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm" onClick={() => { deleteMutation.mutate(confirmDeleteNoteId); setConfirmDeleteNoteId(null) }}>Remover</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -810,7 +825,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any, label: strin
     return (
         <div className={cn("rounded-2xl border p-4 shadow-sm", colors[color])}>
             <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/50 p-2">
+                <div className="rounded-xl bg-surface-0/50 dark:bg-surface-800/50 p-2">
                     <Icon className="h-5 w-5" />
                 </div>
                 <div>

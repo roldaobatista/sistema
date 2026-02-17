@@ -14,27 +14,27 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
     { match: '/cadastros/clientes/fusao', permission: 'cadastros.customer.update' },
     { match: '/cadastros/clientes', permission: 'cadastros.customer.view' },
     { match: '/cadastros/produtos', permission: 'cadastros.product.view' },
-    { match: '/cadastros/serviços', permission: 'cadastros.service.view' },
-    { match: '/cadastros/histórico-precos', permission: 'cadastros.product.view' },
-    { match: '/cadastros/exportação-lote', permission: 'cadastros.customer.view' },
+    { match: '/cadastros/servicos', permission: 'cadastros.service.view' },
+    { match: '/cadastros/historico-precos', permission: 'cadastros.product.view' },
+    { match: '/cadastros/exportacao-lote', permission: 'cadastros.customer.view' },
     { match: '/cadastros/fornecedores', permission: 'cadastros.supplier.view' },
-    { match: '/orçamentos/novo', permission: 'quotes.quote.create' },
+    { match: '/orcamentos/novo', permission: 'quotes.quote.create' },
     { match: '/chamados/novo', permission: 'service_calls.service_call.create' },
     { match: '/equipamentos/novo', permission: 'equipments.equipment.create' },
     { match: '/inmetro/instrumentos', permission: 'inmetro.intelligence.view' },
-    { match: '/inmetro/importação', permission: 'inmetro.intelligence.import' },
-    { match: '/orçamentos/', permission: 'quotes.quote.view' },
-    { match: '/orçamentos', permission: 'quotes.quote.view' },
+    { match: '/inmetro/importacao', permission: 'inmetro.intelligence.import' },
+    { match: '/orcamentos/', permission: 'quotes.quote.view' },
+    { match: '/orcamentos', permission: 'quotes.quote.view' },
     { match: '/chamados', permission: 'service_calls.service_call.view' },
     { match: '/os/nova', permission: 'os.work_order.create' },
     { match: '/os', permission: 'os.work_order.view' },
-    { match: '/técnicos/agenda', permission: 'technicians.schedule.view' },
-    { match: '/técnicos/apontamentos', permission: 'technicians.time_entry.view' },
-    { match: '/técnicos/caixa', permission: 'technicians.cashbox.view' },
+    { match: '/tecnicos/agenda', permission: 'technicians.schedule.view' },
+    { match: '/tecnicos/apontamentos', permission: 'technicians.time_entry.view' },
+    { match: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
     { match: '/financeiro/receber', permission: 'finance.receivable.view' },
     { match: '/financeiro/pagar', permission: 'finance.payable.view' },
-    { match: '/financeiro/comissões/dashboard', permission: 'commissions.rule.view' },
-    { match: '/financeiro/comissões', permission: 'commissions.rule.view' },
+    { match: '/financeiro/comissoes/dashboard', permission: 'commissions.rule.view' },
+    { match: '/financeiro/comissoes', permission: 'commissions.rule.view' },
     { match: '/financeiro/despesas', permission: 'expenses.expense.view' },
     { match: '/financeiro/pagamentos', permission: 'finance.receivable.view|finance.payable.view' },
     { match: '/financeiro/formas-pagamento', permission: 'finance.payable.view' },
@@ -44,16 +44,16 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
     { match: '/financeiro/plano-contas', permission: 'finance.chart.view' },
     { match: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
     { match: '/estoque', permission: 'estoque.movement.view' },
-    { match: '/relatórios', permission: 'reports.os_report.view' },
-    { match: '/notificações', permission: 'notifications.notification.view' },
-    { match: '/importação', permission: 'import.data.view' },
+    { match: '/relatorios', permission: 'reports.os_report.view' },
+    { match: '/notificacoes', permission: 'notifications.notification.view' },
+    { match: '/importacao', permission: 'import.data.view' },
     { match: '/inmetro', permission: 'inmetro.intelligence.view' },
     { match: '/equipamentos', permission: 'equipments.equipment.view' },
     { match: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
-    { match: '/configurações/filiais', permission: 'platform.branch.view' },
-    { match: '/configurações/empresas', permission: 'platform.tenant.view' },
-    { match: '/configurações/auditoria', permission: 'iam.audit_log.view' },
-    { match: '/configurações', permission: 'platform.settings.view' },
+    { match: '/configuracoes/filiais', permission: 'platform.branch.view' },
+    { match: '/configuracoes/empresas', permission: 'platform.tenant.view' },
+    { match: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
+    { match: '/configuracoes', permission: 'platform.settings.view' },
     { match: '/crm/pipeline', permission: 'crm.pipeline.view' },
     { match: '/crm/clientes', permission: 'crm.deal.view' },
     { match: '/crm/templates', permission: 'crm.message.view' },
@@ -98,7 +98,7 @@ describe('resolveRequiredPermission', () => {
         expect(resolveRequiredPermission('/cadastros/clientes')).toBe('cadastros.customer.view')
         expect(resolveRequiredPermission('/os')).toBe('os.work_order.view')
         expect(resolveRequiredPermission('/financeiro/receber')).toBe('finance.receivable.view')
-        expect(resolveRequiredPermission('/relatórios')).toBe('reports.os_report.view')
+        expect(resolveRequiredPermission('/relatorios')).toBe('reports.os_report.view')
     })
 
     it('returns null for /perfil (public authenticated route)', () => {
@@ -132,24 +132,24 @@ describe('resolveRequiredPermission', () => {
         expect(resolveRequiredPermission('/central')).toBe('central.item.view')
     })
 
-    it('resolves /financeiro/comissões/dashboard before /financeiro/comissões', () => {
-        expect(resolveRequiredPermission('/financeiro/comissões/dashboard')).toBe('commissions.rule.view')
-        expect(resolveRequiredPermission('/financeiro/comissões')).toBe('commissions.rule.view')
+    it('resolves /financeiro/comissoes/dashboard before /financeiro/comissoes', () => {
+        expect(resolveRequiredPermission('/financeiro/comissoes/dashboard')).toBe('commissions.rule.view')
+        expect(resolveRequiredPermission('/financeiro/comissoes')).toBe('commissions.rule.view')
     })
 
     it('resolves /cadastros/clientes/fusao before /cadastros/clientes', () => {
         expect(resolveRequiredPermission('/cadastros/clientes/fusao')).toBe('cadastros.customer.update')
     })
 
-    it('resolves /orçamentos/novo (create) vs /orçamentos (view)', () => {
-        expect(resolveRequiredPermission('/orçamentos/novo')).toBe('quotes.quote.create')
-        expect(resolveRequiredPermission('/orçamentos')).toBe('quotes.quote.view')
+    it('resolves /orcamentos/novo (create) vs /orcamentos (view)', () => {
+        expect(resolveRequiredPermission('/orcamentos/novo')).toBe('quotes.quote.create')
+        expect(resolveRequiredPermission('/orcamentos')).toBe('quotes.quote.view')
     })
 
     it('resolves all INMETRO routes correctly', () => {
         expect(resolveRequiredPermission('/inmetro')).toBe('inmetro.intelligence.view')
         expect(resolveRequiredPermission('/inmetro/instrumentos')).toBe('inmetro.intelligence.view')
-        expect(resolveRequiredPermission('/inmetro/importação')).toBe('inmetro.intelligence.import')
+        expect(resolveRequiredPermission('/inmetro/importacao')).toBe('inmetro.intelligence.import')
     })
 
     it('resolves all equipment routes', () => {
@@ -159,9 +159,9 @@ describe('resolveRequiredPermission', () => {
     })
 
     it('resolves all settings routes', () => {
-        expect(resolveRequiredPermission('/configurações')).toBe('platform.settings.view')
-        expect(resolveRequiredPermission('/configurações/filiais')).toBe('platform.branch.view')
-        expect(resolveRequiredPermission('/configurações/empresas')).toBe('platform.tenant.view')
+        expect(resolveRequiredPermission('/configuracoes')).toBe('platform.settings.view')
+        expect(resolveRequiredPermission('/configuracoes/filiais')).toBe('platform.branch.view')
+        expect(resolveRequiredPermission('/configuracoes/empresas')).toBe('platform.tenant.view')
     })
 })
 

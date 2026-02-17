@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,10 +11,12 @@ use Illuminate\Support\Facades\Log;
 
 class TollIntegrationController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
         $query = DB::table('toll_records')
-            ->where('toll_records.tenant_id', $request->user()->tenant_id)
+            ->where('toll_records.tenant_id', $this->resolvedTenantId())
             ->join('fleet_vehicles', 'toll_records.fleet_vehicle_id', '=', 'fleet_vehicles.id')
             ->select(
                 'toll_records.*',
@@ -50,7 +53,7 @@ class TollIntegrationController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $validated['tenant_id'] = $request->user()->tenant_id;
+        $validated['tenant_id'] = $this->resolvedTenantId();
         $validated['created_at'] = now();
         $validated['updated_at'] = now();
 
@@ -74,7 +77,7 @@ class TollIntegrationController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
 
         $summary = DB::table('toll_records')
             ->where('toll_records.tenant_id', $tenantId)
@@ -105,7 +108,7 @@ class TollIntegrationController extends Controller
     {
         $record = DB::table('toll_records')
             ->where('id', $id)
-            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('tenant_id', $this->resolvedTenantId())
             ->first();
 
         if (!$record) abort(404);

@@ -351,20 +351,20 @@ return new class extends Migration
         // ─── Add fields to crm_deals for loss reasons ─────
         if (!Schema::hasColumn('crm_deals', 'loss_reason_id')) {
             Schema::table('crm_deals', function (Blueprint $table) {
-                $table->foreignId('loss_reason_id')->nullable()->after('lost_reason')
+                $table->foreignId('loss_reason_id')->nullable()
                     ->constrained('crm_loss_reasons')->nullOnDelete();
-                $table->string('competitor_name')->nullable()->after('loss_reason_id');
-                $table->decimal('competitor_price', 12, 2)->nullable()->after('competitor_name');
+                $table->string('competitor_name')->nullable();
+                $table->decimal('competitor_price', 12, 2)->nullable();
             });
         }
 
         // ─── Add territory to customers ────────────────────
         if (!Schema::hasColumn('customers', 'territory_id')) {
             Schema::table('customers', function (Blueprint $table) {
-                $table->foreignId('territory_id')->nullable()->after('assigned_seller_id')
+                $table->foreignId('territory_id')->nullable()
                     ->constrained('crm_territories')->nullOnDelete();
-                $table->integer('lead_score')->default(0)->after('health_score');
-                $table->string('lead_grade')->nullable()->after('lead_score');
+                $table->integer('lead_score')->default(0);
+                $table->string('lead_grade')->nullable();
             });
         }
     }

@@ -18,7 +18,7 @@ const priorityConfig: Record<string, { label: string; color: string; bgClass: st
     critical: { label: 'Crítico', color: 'destructive', bgClass: 'bg-red-50', textClass: 'text-red-700', borderClass: 'border-red-200', icon: AlertCircle },
     high: { label: 'Alto', color: 'warning', bgClass: 'bg-orange-50', textClass: 'text-orange-700', borderClass: 'border-orange-200', icon: AlertTriangle },
     medium: { label: 'Médio', color: 'secondary', bgClass: 'bg-amber-50', textClass: 'text-amber-700', borderClass: 'border-amber-200', icon: Info },
-    low: { label: 'Baixo', color: 'outline', bgClass: 'bg-gray-50', textClass: 'text-gray-600', borderClass: 'border-gray-200', icon: Info },
+    low: { label: 'Baixo', color: 'outline', bgClass: 'bg-surface-50 dark:bg-surface-800', textClass: 'text-surface-600', borderClass: 'border-surface-200', icon: Info },
 }
 
 const statusLabels: Record<string, string> = {

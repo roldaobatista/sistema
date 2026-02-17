@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Services\AIAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class AIAnalyticsController extends Controller
 {
+    use ResolvesCurrentTenant;
     public function __construct(private AIAnalyticsService $service)
     {
     }
@@ -18,7 +20,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->predictiveMaintenance(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -32,7 +34,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->expenseOcrAnalysis(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -46,7 +48,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->triageSuggestions(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -60,7 +62,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->sentimentAnalysis(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -74,7 +76,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->dynamicPricing(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -88,7 +90,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->financialAnomalies(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -102,7 +104,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->voiceCommandSuggestions(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -116,7 +118,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->naturalLanguageReport(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['period'])
             );
             return response()->json($data);
@@ -130,7 +132,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->customerClustering(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -144,7 +146,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->equipmentImageAnalysis(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -158,7 +160,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->demandForecast(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -172,7 +174,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->aiRouteOptimization(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -186,7 +188,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->smartTicketLabeling(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -200,7 +202,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->churnPrediction(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->only(['limit'])
             );
             return response()->json($data);
@@ -214,7 +216,7 @@ class AIAnalyticsController extends Controller
     {
         try {
             $data = $this->service->serviceSummary(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $workOrderId
             );
             return response()->json($data);

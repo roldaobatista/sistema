@@ -11,7 +11,6 @@ use App\Models\ExpenseCategory;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Service;
-use App\Models\ServiceCategory;
 use App\Models\WorkOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -122,11 +121,13 @@ class AuvoImportService
             if (count($records) >= $limit) break;
         }
 
+        $visibleFields = array_values(array_filter($fieldMap, fn($v) => !str_starts_with($v, '_')));
+
         return [
             'entity' => $entity,
             'total' => count($records),
             'sample' => $records,
-            'mapped_fields' => array_values($fieldMap),
+            'mapped_fields' => $visibleFields,
         ];
     }
 
@@ -151,51 +152,56 @@ class AuvoImportService
 
         $deleted = 0;
         $failed = 0;
+        $failedIds = [];
 
-        DB::beginTransaction();
-        try {
-            foreach ($importedIds as $id) {
+        // Delete each record individually - continue on failure to maximize rollback
+        foreach ($importedIds as $id) {
+            try {
+                DB::beginTransaction();
                 $record = $modelClass::where('id', $id)
                     ->where('tenant_id', $import->tenant_id)
                     ->first();
 
                 if ($record) {
-                    try {
-                        $record->delete();
-                        $deleted++;
-                    } catch (\Throwable $e) {
-                        $failed++;
-                        Log::warning('Auvo rollback failed for record', [
-                            'import_id' => $import->id,
-                            'record_id' => $id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
+                    $record->delete();
+                    $deleted++;
                 }
+                DB::commit();
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                $failed++;
+                $failedIds[] = $id;
+                Log::warning('Auvo rollback failed for record', [
+                    'import_id' => $import->id,
+                    'record_id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
             }
+        }
 
-            // Also remove ID mappings
+        // Remove mappings for successfully deleted IDs
+        $deletedIds = array_diff($importedIds, $failedIds);
+        if (!empty($deletedIds)) {
             AuvoIdMapping::deleteMappingsForLocalIds(
                 $import->entity_type,
-                $importedIds,
+                $deletedIds,
                 $import->tenant_id
             );
-
-            $import->update([
-                'status' => AuvoImport::STATUS_ROLLED_BACK,
-                'imported_ids' => [],
-            ]);
-
-            DB::commit();
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
         }
+
+        $newStatus = empty($failedIds)
+            ? AuvoImport::STATUS_ROLLED_BACK
+            : AuvoImport::STATUS_DONE;
+
+        $import->update([
+            'status' => $newStatus,
+            'imported_ids' => $failedIds ?: [],
+        ]);
 
         return [
             'deleted' => $deleted,
             'failed' => $failed,
-            'status' => AuvoImport::STATUS_ROLLED_BACK,
+            'status' => $newStatus,
             'total' => count($importedIds),
         ];
     }
@@ -526,7 +532,8 @@ class AuvoImportService
 
                 // For generic entities we just store the mapping
                 if ($auvoId) {
-                    AuvoIdMapping::mapOrCreate($entity, $auvoId, null, $import->tenant_id);
+                    $mapping = AuvoIdMapping::mapOrCreate($entity, $auvoId, null, $import->tenant_id);
+                    $mapping->update(['import_id' => $import->id]);
                 }
 
                 $imported++;

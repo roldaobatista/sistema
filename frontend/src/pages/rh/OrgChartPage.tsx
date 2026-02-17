@@ -30,6 +30,8 @@ export default function OrgChartPage() {
     const [posModalOpen, setPosModalOpen] = useState(false)
     const [editingPos, setEditingPos] = useState<Position | null>(null)
     const [posForm, setPosForm] = useState<Partial<Position>>({})
+    const [confirmDeleteDeptId, setConfirmDeleteDeptId] = useState<number | null>(null)
+    const [confirmDeletePosId, setConfirmDeletePosId] = useState<number | null>(null)
 
     const handleEditDept = (dept: Department) => {
         setEditingDept(dept)
@@ -237,7 +239,7 @@ export default function OrgChartPage() {
                                                 <Button size="icon" variant="ghost" onClick={() => handleEditDept(dept)}>
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => { if (window.confirm(`Deseja realmente excluir o departamento "${dept.name}"?`)) deleteDept.mutate(dept.id) }}>
+                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => setConfirmDeleteDeptId(dept.id)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
@@ -287,7 +289,7 @@ export default function OrgChartPage() {
                                                 <Button size="icon" variant="ghost" onClick={() => handleEditPos(pos)}>
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => { if (window.confirm(`Deseja realmente excluir o cargo "${pos.name}"?`)) deletePosition.mutate(pos.id) }}>
+                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => setConfirmDeletePosId(pos.id)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
@@ -395,6 +397,34 @@ export default function OrgChartPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Confirm Delete Department Dialog */}
+            {confirmDeleteDeptId !== null && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-surface-0 rounded-xl shadow-xl p-6 max-w-sm mx-4 border border-default">
+                        <h3 className="text-lg font-semibold text-surface-900 mb-2">Confirmar Exclusão</h3>
+                        <p className="text-sm text-surface-600 mb-4">Deseja realmente excluir este departamento?</p>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setConfirmDeleteDeptId(null)}>Cancelar</Button>
+                            <Button variant="destructive" onClick={() => { deleteDept.mutate(confirmDeleteDeptId); setConfirmDeleteDeptId(null) }}>Excluir</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Delete Position Dialog */}
+            {confirmDeletePosId !== null && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-surface-0 rounded-xl shadow-xl p-6 max-w-sm mx-4 border border-default">
+                        <h3 className="text-lg font-semibold text-surface-900 mb-2">Confirmar Exclusão</h3>
+                        <p className="text-sm text-surface-600 mb-4">Deseja realmente excluir este cargo?</p>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setConfirmDeletePosId(null)}>Cancelar</Button>
+                            <Button variant="destructive" onClick={() => { deletePosition.mutate(confirmDeletePosId); setConfirmDeletePosId(null) }}>Excluir</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

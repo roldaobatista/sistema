@@ -23,7 +23,7 @@ const GRADE_CONFIG: Record<string, { label: string; icon: typeof Flame; variant:
     A: { label: 'Hot', icon: Flame, variant: 'danger', color: 'text-red-600' },
     B: { label: 'Warm', icon: Thermometer, variant: 'warning', color: 'text-orange-600' },
     C: { label: 'Cold', icon: Snowflake, variant: 'info', color: 'text-sky-600' },
-    D: { label: 'Ice', icon: CloudSnow, variant: 'default', color: 'text-gray-500' },
+    D: { label: 'Ice', icon: CloudSnow, variant: 'default', color: 'text-surface-500' },
 }
 
 const OPERATORS = ['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'not_contains']

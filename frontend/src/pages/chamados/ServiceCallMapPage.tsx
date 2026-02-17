@@ -1,19 +1,16 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { toast } from 'sonner'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
-    ArrowLeft, MapPin, Phone, Clock, AlertTriangle, User, Navigation,
+    ArrowLeft, MapPin, Phone, Clock, User, Navigation,
     Layers, Filter, X, ChevronRight, Zap, RefreshCcw,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { useAuthStore } from '@/stores/auth-store'
 
 /* ─── Config ─── */
 
@@ -117,18 +114,6 @@ function CallCard({ call, isSelected, onClick }: { call: any; isSelected: boolea
 /* ─── Main Page ─── */
 
 export function ServiceCallMapPage() {
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/service-call-map/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['service-call-map'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
-  const { hasPermission } = useAuthStore()
-
     const navigate = useNavigate()
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [priorityFilter, setPriorityFilter] = useState<string>('')

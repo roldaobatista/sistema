@@ -50,10 +50,10 @@ const SLACountdown: React.FC<SLACountdownProps> = ({ dueAt, status }) => {
     if (!dueAt) return null;
 
     const bgColors = {
-        success: 'bg-green-100 text-green-800 border-green-200',
-        warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        danger: 'bg-red-100 text-red-800 border-red-200',
-        neutral: 'bg-gray-100 text-gray-800 border-gray-200',
+        success: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800',
+        warning: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800',
+        danger: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800',
+        neutral: 'bg-surface-100 text-surface-800 border-surface-200',
     };
 
     return (

@@ -34,10 +34,11 @@ class StockAdvancedController extends Controller
 
     public function storePurchaseQuotation(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
         $validated = $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
+            'supplier_id' => ['required', \Illuminate\Validation\Rule::exists('suppliers', 'id')->where('tenant_id', $tenantId)],
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
@@ -112,16 +113,16 @@ class StockAdvancedController extends Controller
                 ws2.warehouse_id as to_warehouse,
                 w2.name as to_warehouse_name,
                 ws2.quantity as to_quantity,
-                LEAST(ws1.quantity - p.minimum_stock, p.minimum_stock - ws2.quantity) as suggested_qty
+                LEAST(ws1.quantity - p.stock_min, p.stock_min - ws2.quantity) as suggested_qty
             FROM warehouse_stocks ws1
             JOIN warehouse_stocks ws2 ON ws1.product_id = ws2.product_id AND ws1.warehouse_id != ws2.warehouse_id
             JOIN products p ON p.id = ws1.product_id
             JOIN warehouses w1 ON w1.id = ws1.warehouse_id
             JOIN warehouses w2 ON w2.id = ws2.warehouse_id
-            WHERE ws1.tenant_id = ?
-              AND ws1.quantity > COALESCE(p.minimum_stock, 0) * 1.5
-              AND ws2.quantity < COALESCE(p.minimum_stock, 0)
-            ORDER BY (p.minimum_stock - ws2.quantity) DESC
+            WHERE w1.tenant_id = ?
+              AND ws1.quantity > COALESCE(p.stock_min, 0) * 1.5
+              AND ws2.quantity < COALESCE(p.stock_min, 0)
+            ORDER BY (COALESCE(p.stock_min, 0) - ws2.quantity) DESC
             LIMIT 20
         ", [$tenantId]);
 
@@ -130,11 +131,12 @@ class StockAdvancedController extends Controller
 
     public function storeTransfer(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
         $validated = $request->validate([
-            'from_warehouse_id' => 'required|exists:warehouses,id',
-            'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
+            'from_warehouse_id' => ['required', \Illuminate\Validation\Rule::exists('warehouses', 'id')->where('tenant_id', $tenantId)],
+            'to_warehouse_id' => ['required', 'different:from_warehouse_id', \Illuminate\Validation\Rule::exists('warehouses', 'id')->where('tenant_id', $tenantId)],
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
             'items.*.quantity' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string',
         ]);
@@ -161,22 +163,45 @@ class StockAdvancedController extends Controller
                     'created_at' => now(),
                 ]);
 
-                // Decrease from source
+                $sourceStock = DB::table('warehouse_stocks')
+                    ->where('warehouse_id', $validated['from_warehouse_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
+
+                $currentQty = $sourceStock ? (float) $sourceStock->quantity : 0;
+                if ($currentQty < $item['quantity']) {
+                    DB::rollBack();
+                    $productName = DB::table('products')->where('id', $item['product_id'])->value('name') ?? $item['product_id'];
+                    return response()->json([
+                        'message' => "Saldo insuficiente para o produto \"{$productName}\". Disponível: {$currentQty}, Solicitado: {$item['quantity']}",
+                    ], 422);
+                }
+
                 DB::table('warehouse_stocks')
                     ->where('warehouse_id', $validated['from_warehouse_id'])
                     ->where('product_id', $item['product_id'])
                     ->decrement('quantity', $item['quantity']);
 
                 // Increase at destination
-                DB::table('warehouse_stocks')
-                    ->updateOrInsert(
-                        [
-                            'warehouse_id' => $validated['to_warehouse_id'],
-                            'product_id' => $item['product_id'],
-                            'tenant_id' => $this->tenantId(),
-                        ],
-                        ['quantity' => DB::raw("quantity + {$item['quantity']}")]
-                    );
+                $destinationStock = DB::table('warehouse_stocks')
+                    ->where('warehouse_id', $validated['to_warehouse_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
+
+                if ($destinationStock) {
+                    DB::table('warehouse_stocks')
+                        ->where('warehouse_id', $validated['to_warehouse_id'])
+                        ->where('product_id', $item['product_id'])
+                        ->increment('quantity', $item['quantity']);
+                } else {
+                    DB::table('warehouse_stocks')->insert([
+                        'warehouse_id' => $validated['to_warehouse_id'],
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
 
             DB::commit();
@@ -207,8 +232,9 @@ class StockAdvancedController extends Controller
 
     public function storeSerialNumber(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
             'serial' => 'required|string|max:100',
             'status' => 'nullable|in:available,in_use,returned,defective',
             'notes' => 'nullable|string',
@@ -262,10 +288,11 @@ class StockAdvancedController extends Controller
 
     public function storeMaterialRequest(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
         $validated = $request->validate([
-            'work_order_id' => 'nullable|exists:work_orders,id',
+            'work_order_id' => ['nullable', \Illuminate\Validation\Rule::exists('work_orders', 'id')->where('tenant_id', $tenantId)],
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
             'items.*.quantity' => 'required|numeric|min:0.01',
             'urgency' => 'nullable|in:low,normal,high,critical',
             'notes' => 'nullable|string',
@@ -344,11 +371,12 @@ class StockAdvancedController extends Controller
 
     public function storeRma(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
             'serial_number' => 'nullable|string|max:100',
-            'customer_id' => 'nullable|exists:customers,id',
-            'work_order_id' => 'nullable|exists:work_orders,id',
+            'customer_id' => ['nullable', \Illuminate\Validation\Rule::exists('customers', 'id')->where('tenant_id', $tenantId)],
+            'work_order_id' => ['nullable', \Illuminate\Validation\Rule::exists('work_orders', 'id')->where('tenant_id', $tenantId)],
             'reason' => 'required|string|max:500',
             'quantity' => 'required|integer|min:1',
             'action' => 'required|in:replace,repair,refund',
@@ -433,9 +461,10 @@ class StockAdvancedController extends Controller
 
     public function storeAssetTag(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'tag_code' => 'required|string|max:100|unique:asset_tags,tag_code',
+            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
+            'tag_code' => ['required', 'string', 'max:100', \Illuminate\Validation\Rule::unique('asset_tags', 'tag_code')->where('tenant_id', $tenantId)],
             'tag_type' => 'required|in:rfid,qr,barcode',
             'location' => 'nullable|string|max:255',
         ]);
@@ -512,8 +541,9 @@ class StockAdvancedController extends Controller
 
     public function storeEcologicalDisposal(Request $request): JsonResponse
     {
+        $tenantId = $this->tenantId();
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
             'quantity' => 'required|numeric|min:0.01',
             'disposal_method' => 'required|in:recycling,incineration,donation,return_to_supplier,special_waste',
             'disposal_company' => 'nullable|string|max:255',

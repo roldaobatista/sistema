@@ -12,7 +12,7 @@ return new class extends Migration
         if (Schema::hasTable('equipment_calibrations')) {
             Schema::table('equipment_calibrations', function (Blueprint $table) {
                 if (!Schema::hasColumn('equipment_calibrations', 'certificate_pdf_path')) {
-                    $table->string('certificate_pdf_path', 255)->nullable()->after('notes');
+                    $table->string('certificate_pdf_path', 255)->nullable();
                 }
                 if (!Schema::hasColumn('equipment_calibrations', 'standard_used')) {
                     $table->string('standard_used', 255)->nullable();

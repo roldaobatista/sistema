@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Financial;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use Illuminate\Http\JsonResponse;
@@ -12,14 +13,11 @@ use Illuminate\Validation\Rule;
 
 class BankAccountController extends Controller
 {
-    private function tenantId(Request $request): int
-    {
-        return (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
-    }
+    use ResolvesCurrentTenant;
 
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         $query = BankAccount::where('tenant_id', $tenantId)
             ->with('creator:id,name')
@@ -42,7 +40,7 @@ class BankAccountController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -81,7 +79,7 @@ class BankAccountController extends Controller
 
     public function show(Request $request, BankAccount $bankAccount): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         if ((int) $bankAccount->tenant_id !== $tenantId) {
             return response()->json(['message' => 'Conta não encontrada'], 404);
@@ -94,7 +92,7 @@ class BankAccountController extends Controller
 
     public function update(Request $request, BankAccount $bankAccount): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         if ((int) $bankAccount->tenant_id !== $tenantId) {
             return response()->json(['message' => 'Conta não encontrada'], 404);
@@ -128,7 +126,7 @@ class BankAccountController extends Controller
 
     public function destroy(Request $request, BankAccount $bankAccount): JsonResponse
     {
-        $tenantId = $this->tenantId($request);
+        $tenantId = $this->resolvedTenantId();
 
         if ((int) $bankAccount->tenant_id !== $tenantId) {
             return response()->json(['message' => 'Conta não encontrada'], 404);

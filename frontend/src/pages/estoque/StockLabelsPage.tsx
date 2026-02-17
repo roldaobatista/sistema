@@ -32,6 +32,7 @@ export default function StockLabelsPage() {
     const [quantityByProduct, setQuantityByProduct] = useState<Record<number, number>>({})
     const [formatKey, setFormatKey] = useState('')
     const [quantity, setQuantity] = useState(1)
+    const [showLogo, setShowLogo] = useState(true)
     const [search, setSearch] = useState('')
     const [categoryId, setCategoryId] = useState<string>('')
     const [storageLocation, setStorageLocation] = useState('')
@@ -67,7 +68,7 @@ export default function StockLabelsPage() {
     const previewMut = useMutation({
         mutationFn: async (productId: number) => {
             const res = await api.get('/stock/labels/preview', {
-                params: { product_id: productId, format_key: formatKey },
+                params: { product_id: productId, format_key: formatKey, show_logo: showLogo ? '1' : '0' },
                 responseType: 'blob',
             })
             return res.data as Blob
@@ -75,6 +76,7 @@ export default function StockLabelsPage() {
         onSuccess: (data) => {
             const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
             window.open(url, '_blank')
+            setTimeout(() => URL.revokeObjectURL(url), 60000)
             toast.success('Preview aberto em nova aba.')
         },
         onError: async (err: any) => {
@@ -103,7 +105,7 @@ export default function StockLabelsPage() {
             }))
             const res = await api.post(
                 '/stock/labels/generate',
-                { items, format_key: formatKey },
+                { items, format_key: formatKey, show_logo: showLogo },
                 { responseType: 'blob' }
             )
             return { data: res.data as Blob, output: format?.output ?? 'pdf' }
@@ -121,6 +123,7 @@ export default function StockLabelsPage() {
             } else {
                 const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
                 window.open(url, '_blank')
+                setTimeout(() => URL.revokeObjectURL(url), 60000)
                 toast.success('PDF aberto em nova aba. Use Imprimir do navegador.')
             }
         },
@@ -277,6 +280,18 @@ export default function StockLabelsPage() {
                             placeholder="1"
                         />
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={showLogo}
+                            onChange={(e) => setShowLogo(e.target.checked)}
+                            className="rounded border-default text-brand-600"
+                        />
+                        <span className="text-sm text-surface-700">Exibir logo da empresa</span>
+                    </label>
+                    {formats.find((f) => f.key === formatKey)?.output === 'zpl' && (
+                        <p className="text-xs text-amber-600">⚠ Logo aparece apenas em etiquetas PDF, não em ZPL.</p>
+                    )}
                     <div className="flex gap-2">
                         <Button
                             variant="outline"

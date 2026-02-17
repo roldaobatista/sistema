@@ -1,13 +1,10 @@
-import { useState } from 'react'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 import { Package, AlertTriangle, TrendingDown, DollarSign, ArrowRight, Warehouse, Tag, ClipboardCheck, ScrollText, ArrowLeftRight, BarChart3, QrCode } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/pageheader'
-import { useAuthStore } from '@/stores/auth-store'
 
 interface StockSummary {
     total_products: number
@@ -27,21 +24,13 @@ interface LowStockProduct {
 }
 
 export function StockDashboardPage() {
-
-  // MVP: Action feedback
-  const handleAction = () => { toast.success('Ação realizada com sucesso') }
-
-  // MVP: Search
-  const [searchTerm, setSearchTerm] = useState('')
-  const { hasPermission } = useAuthStore()
-
-    const { data: summaryRes, isLoading: loadingSummary } = useQuery({
+    const { data: summaryRes, isLoading: loadingSummary, isError: summaryError } = useQuery({
         queryKey: ['stock-summary'],
         queryFn: () => api.get('/stock/summary'),
     })
     const summary: StockSummary = summaryRes?.data?.stats ?? { total_products: 0, total_value: 0, low_stock_count: 0, out_of_stock_count: 0 }
 
-    const { data: alertsRes, isLoading: loadingAlerts } = useQuery({
+    const { data: alertsRes, isLoading: loadingAlerts, isError: alertsError } = useQuery({
         queryKey: ['stock-low-alerts'],
         queryFn: () => api.get('/stock/low-alerts'),
     })
@@ -80,7 +69,7 @@ export function StockDashboardPage() {
                             <div>
                                 <p className="text-xs font-medium text-surface-500">{card.label}</p>
                                 <p className="text-xl font-bold text-surface-900">
-                                    {loadingSummary ? '—' : card.value}
+                                    {loadingSummary ? '—' : summaryError ? 'Erro' : card.value}
                                 </p>
                             </div>
                         </div>
@@ -174,6 +163,8 @@ export function StockDashboardPage() {
                         <tbody className="divide-y divide-subtle">
                             {loadingAlerts ? (
                                 <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
+                            ) : alertsError ? (
+                                <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-red-500">Erro ao carregar alertas. Tente recarregar a página.</td></tr>
                             ) : alerts.length === 0 ? (
                                 <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-surface-500">
                                     <div className="flex flex-col items-center gap-2">

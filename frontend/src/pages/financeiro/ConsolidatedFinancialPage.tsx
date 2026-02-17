@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { PageHeader } from '@/components/ui/pageheader'
 import { Card } from '@/components/ui/card'
-import { Building2, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Receipt, CreditCard, FileText } from 'lucide-react'
+import { Building2, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Receipt, CreditCard, FileText, ShieldAlert } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -39,13 +40,36 @@ interface ConsolidatedData {
 }
 
 export function ConsolidatedFinancialPage() {
+    const { hasRole } = useAuthStore()
+    const isSuperAdmin = hasRole('super_admin')
+
     const { data, isLoading, isError } = useQuery<ConsolidatedData>({
         queryKey: ['financial-consolidated'],
         queryFn: () => api.get('/financial/consolidated').then(r => r.data),
+        enabled: isSuperAdmin,
     })
 
     const totals = data?.totals
     const perTenant = data?.per_tenant ?? []
+
+    if (!isSuperAdmin) {
+        return (
+            <div className="space-y-6">
+                <PageHeader
+                    title="Financeiro Consolidado"
+                    subtitle="Visão unificada de todas as empresas"
+                    icon={<Building2 className="h-6 w-6" />}
+                />
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <ShieldAlert className="h-12 w-12 text-amber-400 mb-3" />
+                    <p className="text-sm font-medium">Acesso restrito</p>
+                    <p className="text-sm text-content-secondary mt-1">
+                        Esta página está disponível apenas para administradores do sistema.
+                    </p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">

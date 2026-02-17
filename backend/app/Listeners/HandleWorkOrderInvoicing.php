@@ -39,9 +39,9 @@ class HandleWorkOrderInvoicing implements ShouldQueue
         // 3. Baixa de estoque já realizada na criação dos itens (via WorkOrderItem observer)
         // Apenas para fins de consistência, poderíamos confirmar a saída, mas o movimento de reserva já baixou o saldo.
 
-        // 4. Gerar comissões
+        // 4. Gerar comissões (regras com applies_when = os_invoiced)
         try {
-            $this->commissionService->calculateAndGenerate($wo);
+            $this->commissionService->calculateAndGenerate($wo, \App\Models\CommissionRule::WHEN_OS_INVOICED);
         } catch (\Exception) {
             // Comissões já geradas ou sem regras — não impede faturamento
         }

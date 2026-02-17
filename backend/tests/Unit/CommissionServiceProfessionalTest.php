@@ -62,7 +62,7 @@ class CommissionServiceProfessionalTest extends TestCase
         ], $overrides));
     }
 
-    private function createRule(User $user, string $calcType, float $value, string $role = 'technician', array $extra = []): CommissionRule
+    private function createRule(User $user, string $calcType, float $value, string $role = 'tecnico', array $extra = []): CommissionRule
     {
         return CommissionRule::create(array_merge([
             'tenant_id' => $this->tenant->id,

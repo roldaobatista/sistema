@@ -44,7 +44,7 @@ return new class extends Migration
         });
 
         Schema::table('work_orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('checklist_id')->nullable()->after('status');
+            $table->unsignedBigInteger('checklist_id')->nullable();
             $table->foreign('checklist_id')->references('id')->on('service_checklists')->nullOnDelete();
         });
     }

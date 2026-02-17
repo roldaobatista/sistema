@@ -32,6 +32,7 @@ export function CentralRulesPage() {
 
     const qc = useQueryClient()
     const [showForm, setShowForm] = useState(false)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
     const [editingId, setEditingId] = useState<number | null>(null)
     const [form, setForm] = useState({ ...emptyForm })
 
@@ -145,7 +146,7 @@ export function CentralRulesPage() {
                         const AcaoIcon = acao.icon
                         return (
                             <div key={rule.id}
-                                className={`rounded-xl border bg-white p-4 shadow-card transition-all hover:shadow-md ${rule.ativo ? 'border-surface-200' : 'border-surface-100 opacity-60'}`}>
+                                className={`rounded-xl border bg-surface-0 dark:bg-surface-800 p-4 shadow-card transition-all hover:shadow-md ${rule.ativo ? 'border-surface-200' : 'border-surface-100 opacity-60'}`}>
                                 <div className="flex items-center gap-4">
                                     {/* Toggle */}
                                     <button onClick={() => toggleMut.mutate({ id: rule.id, ativo: !rule.ativo })}
@@ -183,7 +184,7 @@ export function CentralRulesPage() {
                                             className="rounded p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-700 transition-colors">
                                             <Edit2 className="h-4 w-4" />
                                         </button>
-                                        <button onClick={() => { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(rule.id) }}
+                                        <button onClick={() => setConfirmDeleteId(rule.id)}
                                             className="rounded p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600 transition-colors">
                                             <Trash2 className="h-4 w-4" />
                                         </button>
@@ -297,6 +298,20 @@ export function CentralRulesPage() {
                     </div>
                 </div>
             </Modal>
+
+            {/* Confirm Delete Dialog */}
+            {confirmDeleteId !== null && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-surface-0 rounded-xl shadow-xl p-6 max-w-sm mx-4 border border-default">
+                        <h3 className="text-lg font-semibold text-surface-900 mb-2">Confirmar Exclusão</h3>
+                        <p className="text-sm text-surface-600 mb-4">Deseja realmente excluir esta regra?</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2 rounded-lg border border-default text-sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</button>
+                            <button className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm" onClick={() => { deleteMut.mutate(confirmDeleteId); setConfirmDeleteId(null) }}>Excluir</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

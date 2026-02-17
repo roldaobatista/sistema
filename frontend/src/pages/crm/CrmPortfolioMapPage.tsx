@@ -16,7 +16,7 @@ const alertConfig: Record<string, { label: string; color: string; icon: React.El
     critical: { label: 'Crítico', color: 'text-red-600', icon: AlertCircle },
 }
 
-const ratingColors: Record<string, string> = { A: 'bg-green-100 text-green-800', B: 'bg-blue-100 text-blue-800', C: 'bg-amber-100 text-amber-800', D: 'bg-gray-100 text-gray-600' }
+const ratingColors: Record<string, string> = { A: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', B: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300', C: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300', D: 'bg-surface-100 text-surface-600' }
 
 export function CrmPortfolioMapPage() {
     const [ratingFilter, setRatingFilter] = useState('all')
@@ -39,7 +39,7 @@ export function CrmPortfolioMapPage() {
 
             <div className="grid grid-cols-5 gap-3">
                 {[
-                    { key: 'total', label: 'Total', value: stats.total, className: 'bg-white' },
+                    { key: 'total', label: 'Total', value: stats.total, className: 'bg-surface-0 dark:bg-surface-800' },
                     { key: 'ok', label: 'Em Dia', value: stats.ok, className: 'bg-green-50 border-green-200' },
                     { key: 'attention', label: 'Atenção', value: stats.attention, className: 'bg-amber-50 border-amber-200' },
                     { key: 'warning', label: 'Alerta', value: stats.warning, className: 'bg-orange-50 border-orange-200' },

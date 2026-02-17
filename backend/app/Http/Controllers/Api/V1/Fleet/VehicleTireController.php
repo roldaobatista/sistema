@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\Fleet\VehicleTire;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -11,10 +12,12 @@ use Illuminate\Validation\Rule;
 
 class VehicleTireController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = VehicleTire::where('tenant_id', $request->user()->tenant_id)
+            $query = VehicleTire::where('tenant_id', $this->resolvedTenantId())
                 ->with('vehicle:id,plate,model');
 
             if ($request->filled('fleet_vehicle_id')) {
@@ -59,7 +62,7 @@ class VehicleTireController extends Controller
                 'status' => ['required', Rule::in(['active', 'retired', 'warehouse'])],
             ]);
 
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
 
             $tire = VehicleTire::create($validated);
 
@@ -78,7 +81,7 @@ class VehicleTireController extends Controller
     public function show(VehicleTire $tire): JsonResponse
     {
         try {
-            if ($tire->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($tire->tenant_id != $this->resolvedTenantId()) abort(403);
             return response()->json($tire->load('vehicle'));
         } catch (\Exception $e) {
             Log::error('VehicleTire show failed', ['error' => $e->getMessage()]);
@@ -91,7 +94,7 @@ class VehicleTireController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($tire->tenant_id != $request->user()->tenant_id) abort(403);
+            if ($tire->tenant_id != $this->resolvedTenantId()) abort(403);
 
             $validated = $request->validate([
                 'serial_number' => 'nullable|string',
@@ -122,7 +125,7 @@ class VehicleTireController extends Controller
     public function destroy(VehicleTire $tire): JsonResponse
     {
         try {
-            if ($tire->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($tire->tenant_id != $this->resolvedTenantId()) abort(403);
             $tire->delete();
             return response()->json(['message' => 'Pneu excluído']);
         } catch (\Exception $e) {

@@ -34,6 +34,7 @@ export function ServiceChecklistsPage() {
 
     const qc = useQueryClient()
     const [editing, setEditing] = useState<Checklist | null>(null)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
     const [showForm, setShowForm] = useState(false)
     const [formName, setFormName] = useState('')
     const [formDesc, setFormDesc] = useState('')
@@ -209,12 +210,26 @@ export function ServiceChecklistsPage() {
                                 <button onClick={() => openEdit(c)} className="flex-1 text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center justify-center gap-1">
                                     <Edit className="h-3.5 w-3.5" /> Editar
                                 </button>
-                                <button onClick={() => { if (window.confirm('Deseja realmente excluir este registro?')) deleteMut.mutate(c.id) }} className="flex-1 text-sm text-red-500 hover:text-red-700 font-medium flex items-center justify-center gap-1">
+                                <button onClick={() => setConfirmDeleteId(c.id)} className="flex-1 text-sm text-red-500 hover:text-red-700 font-medium flex items-center justify-center gap-1">
                                     <Trash2 className="h-3.5 w-3.5" /> Excluir
                                 </button>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Confirm Delete Dialog */}
+            {confirmDeleteId !== null && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-surface-0 rounded-xl shadow-xl p-6 max-w-sm mx-4 border border-default">
+                        <h3 className="text-lg font-semibold text-surface-900 mb-2">Confirmar Exclusão</h3>
+                        <p className="text-sm text-surface-600 mb-4">Deseja realmente excluir este checklist?</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-2 rounded-lg border border-default text-sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</button>
+                            <button className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm" onClick={() => { deleteMut.mutate(confirmDeleteId); setConfirmDeleteId(null) }}>Excluir</button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, MapPin, Truck, Edit2, Trash2, MoreVertical, Package, CheckCircle2, XCircle } from 'lucide-react'
 import api from '@/lib/api'
@@ -29,13 +30,18 @@ const emptyForm = {
 }
 
 export function WarehousesPage() {
-  const { hasPermission } = useAuthStore()
+    const navigate = useNavigate()
+    const { hasPermission } = useAuthStore()
+    const canCreate = hasPermission('estoque.warehouse.create')
+    const canUpdate = hasPermission('estoque.warehouse.update')
+    const canDelete = hasPermission('estoque.warehouse.delete')
 
     const qc = useQueryClient()
     const [search, setSearch] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [editing, setEditing] = useState<Warehouse | null>(null)
     const [form, setForm] = useState(emptyForm)
+    const [deleteConfirm, setDeleteConfirm] = useState<Warehouse | null>(null)
 
     const { data: res, isLoading } = useQuery({
         queryKey: ['warehouses', search],
@@ -82,10 +88,8 @@ export function WarehousesPage() {
         setShowForm(true)
     }
 
-    const handleDelete = (id: number) => {
-        if (confirm('Tem certeza que deseja excluir este armazém?')) {
-            deleteMut.mutate(id)
-        }
+    const handleDeleteConfirm = (w: Warehouse) => {
+        setDeleteConfirm(w)
     }
 
     const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
@@ -96,13 +100,13 @@ export function WarehousesPage() {
             <PageHeader
                 title="Gestão de Armazéns"
                 subtitle="Cadastre depósitos fixos ou veículos para controle de estoque"
-                actions={[
+                actions={canCreate ? [
                     {
                         label: 'Novo Armazém',
                         icon: <Plus className="h-4 w-4" />,
                         onClick: () => { setEditing(null); setForm(emptyForm); setShowForm(true) },
                     },
-                ]}
+                ] : []}
             />
 
             <div className="flex flex-wrap gap-3">
@@ -135,21 +139,27 @@ export function WarehousesPage() {
                                 <Badge variant={w.is_active ? 'emerald' : 'surface'}>
                                     {w.is_active ? 'Ativo' : 'Inativo'}
                                 </Badge>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleEdit(w)}>
-                                            <Edit2 className="mr-2 h-4 w-4" /> Editar
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleDelete(w.id)} className="text-red-600">
-                                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                {(canUpdate || canDelete) && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            {canUpdate && (
+                                                <DropdownMenuItem onClick={() => handleEdit(w)}>
+                                                    <Edit2 className="mr-2 h-4 w-4" /> Editar
+                                                </DropdownMenuItem>
+                                            )}
+                                            {canDelete && (
+                                                <DropdownMenuItem onClick={() => handleDeleteConfirm(w)} className="text-red-600">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                                </DropdownMenuItem>
+                                            )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
                             </div>
                         </div>
 
@@ -159,10 +169,13 @@ export function WarehousesPage() {
                         </div>
 
                         <div className="mt-4 flex items-center justify-between border-t border-subtle pt-4">
-                            <div className="flex items-center gap-2 text-xs text-surface-500 font-medium">
+                            <button
+                                onClick={() => navigate(`/estoque/movimentacoes?warehouse_id=${w.id}`)}
+                                className="flex items-center gap-2 text-xs text-brand-600 font-medium hover:text-brand-700 transition-colors"
+                            >
                                 <Package className="h-3.5 w-3.5" />
                                 <span>Ver Estoque</span>
-                            </div>
+                            </button>
                             <span className="text-xs text-surface-400">Criado em {new Date(w.created_at).toLocaleDateString()}</span>
                         </div>
                     </div>
@@ -216,6 +229,28 @@ export function WarehousesPage() {
                         <Button type="submit" loading={saveMut.isPending}>{editing ? 'Atualizar' : 'Criar Armazém'}</Button>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)} title="Confirmar Exclusão" size="sm">
+                <div className="space-y-4 pt-2">
+                    <p className="text-sm text-surface-600">
+                        Tem certeza que deseja excluir o armazém <strong>{deleteConfirm?.name}</strong>? Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
+                        <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancelar</Button>
+                        <Button
+                            variant="destructive"
+                            loading={deleteMut.isPending}
+                            onClick={() => {
+                                if (deleteConfirm) {
+                                    deleteMut.mutate(deleteConfirm.id, { onSuccess: () => setDeleteConfirm(null) })
+                                }
+                            }}
+                        >
+                            Excluir
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     )

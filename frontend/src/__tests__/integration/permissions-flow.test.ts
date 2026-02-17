@@ -176,7 +176,7 @@ describe('Permission — Route Protection', () => {
     const routePermissions = [
         { route: '/cadastros/clientes', permission: 'cadastros.customer.view' },
         { route: '/os', permission: 'os.work_order.view' },
-        { route: '/orçamentos', permission: 'quotes.quote.view' },
+        { route: '/orcamentos', permission: 'quotes.quote.view' },
         { route: '/financeiro/receber', permission: 'finance.receivable.view' },
         { route: '/financeiro/pagar', permission: 'finance.payable.view' },
         { route: '/financeiro/despesas', permission: 'expenses.expense.view' },

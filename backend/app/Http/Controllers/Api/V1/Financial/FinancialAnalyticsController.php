@@ -38,7 +38,7 @@ class FinancialAnalyticsController extends Controller
             $receivables = AccountReceivable::where('tenant_id', $tenantId)
                 ->whereBetween('due_date', [$from, $to])
                 ->whereNotIn('status', ['paid', 'cancelled'])
-                ->selectRaw('COALESCE(SUM(net_amount), 0) as total, COUNT(*) as count')
+                ->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total, COUNT(*) as count')
                 ->first();
 
             $payables = AccountPayable::where('tenant_id', $tenantId)
@@ -75,7 +75,7 @@ class FinancialAnalyticsController extends Controller
         $revenue = AccountReceivable::where('tenant_id', $tenantId)
             ->where('status', 'paid')
             ->whereBetween('paid_at', [$from, $to])
-            ->sum('net_amount');
+            ->sum('amount');
 
         // COGS (custo dos serviços)
         $cogs = WorkOrder::where('tenant_id', $tenantId)
@@ -262,36 +262,56 @@ class FinancialAnalyticsController extends Controller
 
     /**
      * POST /financial/batch-payment-approval
-     * Approves multiple payables at once.
+     * Processes batch payment for multiple payables at once.
      */
     public function approveBatchPayment(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'integer|exists:account_payables,id',
+            'ids.*' => 'integer|exists:accounts_payable,id',
+            'payment_method' => 'nullable|string|max:30',
         ]);
 
         $tenantId = $this->tenantId();
+        $paymentMethod = $validated['payment_method'] ?? 'transferencia';
 
         DB::beginTransaction();
         try {
-            $count = AccountPayable::where('tenant_id', $tenantId)
+            $payables = AccountPayable::where('tenant_id', $tenantId)
                 ->whereIn('id', $validated['ids'])
                 ->where('status', 'pending')
-                ->update([
-                    'status' => 'approved',
-                    'updated_at' => now(),
+                ->get();
+
+            $count = 0;
+            foreach ($payables as $payable) {
+                $remaining = round((float) $payable->amount - (float) $payable->amount_paid, 2);
+                if ($remaining <= 0) {
+                    continue;
+                }
+
+                \App\Models\Payment::create([
+                    'tenant_id' => $tenantId,
+                    'payable_type' => AccountPayable::class,
+                    'payable_id' => $payable->id,
+                    'received_by' => auth()->id(),
+                    'amount' => $remaining,
+                    'payment_method' => $paymentMethod,
+                    'payment_date' => now()->toDateString(),
+                    'notes' => 'Pagamento em lote',
                 ]);
+
+                $count++;
+            }
 
             DB::commit();
 
             return response()->json([
-                'message' => "{$count} pagamento(s) aprovado(s) com sucesso",
-                'approved_count' => $count,
+                'message' => "{$count} pagamento(s) processado(s) com sucesso",
+                'processed_count' => $count,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Erro ao aprovar pagamentos'], 500);
+            return response()->json(['message' => 'Erro ao processar pagamentos em lote'], 500);
         }
     }
 

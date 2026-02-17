@@ -1,17 +1,26 @@
-import { useState, useMemo } from 'react'
-import { Fuel, Plus, Search, CheckCircle, XCircle, Clock, Trash2, Loader2, Car, MapPin } from 'lucide-react'
-import { useFuelingLogs, useCreateFuelingLog, useApproveFuelingLog, useDeleteFuelingLog, FUEL_TYPES, type FuelingLogFormData } from '@/hooks/useFuelingLogs'
+import { useState } from 'react'
+import {
+    Fuel, Plus, Search, CheckCircle, XCircle, Clock, Trash2, Loader2, Car, MapPin,
+    Pencil, RotateCcw, Eye,
+} from 'lucide-react'
+import {
+    useFuelingLogs, useCreateFuelingLog, useUpdateFuelingLog, useApproveFuelingLog,
+    useDeleteFuelingLog, useResubmitFuelingLog, FUEL_TYPES,
+    type FuelingLogFormData,
+} from '@/hooks/useFuelingLogs'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
+import { IconButton } from '@/components/ui/iconbutton'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
+import api from '@/lib/api'
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
-    approved: { label: 'Aprovado', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle },
-    rejected: { label: 'Rejeitado', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
+const statusConfig: Record<string, { label: string; variant: any; icon: React.ElementType }> = {
+    pending: { label: 'Pendente', variant: 'warning', icon: Clock },
+    approved: { label: 'Aprovado', variant: 'success', icon: CheckCircle },
+    rejected: { label: 'Rejeitado', variant: 'danger', icon: XCircle },
 }
 
 const emptyForm: FuelingLogFormData = {
@@ -24,32 +33,72 @@ export function FuelingLogsPage() {
     const { hasPermission } = useAuthStore()
 
     const canCreate = hasPermission('expenses.fueling_log.create')
+    const canUpdate = hasPermission('expenses.fueling_log.update')
     const canApprove = hasPermission('expenses.fueling_log.approve')
     const canDelete = hasPermission('expenses.fueling_log.delete')
 
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
     const [page, setPage] = useState(1)
-    const [createOpen, setCreateOpen] = useState(false)
+    const [formOpen, setFormOpen] = useState(false)
+    const [editingId, setEditingId] = useState<number | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+    const [rejectTarget, setRejectTarget] = useState<number | null>(null)
+    const [rejectReason, setRejectReason] = useState('')
+    const [detailTarget, setDetailTarget] = useState<any>(null)
     const [form, setForm] = useState<FuelingLogFormData>({ ...emptyForm })
 
     const { data, isLoading } = useFuelingLogs({ search, status: statusFilter, page, per_page: 25 })
     const createMutation = useCreateFuelingLog()
+    const updateMutation = useUpdateFuelingLog()
     const approveMutation = useApproveFuelingLog()
     const deleteMutation = useDeleteFuelingLog()
+    const resubmitMutation = useResubmitFuelingLog()
 
     const logs = data?.data ?? []
     const pagination = data ? { current_page: data.current_page, last_page: data.last_page, total: data.total } : null
 
-    const handleCreate = () => {
-        createMutation.mutate(form, {
-            onSuccess: () => {
-                toast.success('Operação realizada com sucesso')
-                setCreateOpen(false)
-                setForm({ ...emptyForm })
-            },
+    const openCreate = () => {
+        setEditingId(null)
+        setForm({ ...emptyForm })
+        setFormOpen(true)
+    }
+
+    const openEdit = (log: any) => {
+        setEditingId(log.id)
+        setForm({
+            vehicle_plate: log.vehicle_plate,
+            odometer_km: Number(log.odometer_km),
+            fuel_type: log.fuel_type,
+            liters: Number(log.liters),
+            price_per_liter: Number(log.price_per_liter),
+            total_amount: Number(log.total_amount),
+            date: log.fueling_date || log.date || '',
+            gas_station: log.gas_station_name || '',
+            notes: log.notes || '',
+            work_order_id: log.work_order_id,
         })
+        setFormOpen(true)
+    }
+
+    const handleSubmit = () => {
+        if (editingId) {
+            updateMutation.mutate({ id: editingId, ...form } as any, {
+                onSuccess: () => { setFormOpen(false); setEditingId(null) },
+            })
+        } else {
+            createMutation.mutate(form, {
+                onSuccess: () => { setFormOpen(false); setForm({ ...emptyForm }) },
+            })
+        }
+    }
+
+    const handleReject = () => {
+        if (!rejectTarget || !rejectReason.trim()) return
+        approveMutation.mutate(
+            { id: rejectTarget, action: 'reject', rejection_reason: rejectReason.trim() },
+            { onSuccess: () => { setRejectTarget(null); setRejectReason('') } },
+        )
     }
 
     const handleLitersChange = (liters: number) => {
@@ -62,9 +111,10 @@ export function FuelingLogsPage() {
         setForm(f => ({ ...f, price_per_liter: price, total_amount: total }))
     }
 
+    const fmtBRL = (v: number | string) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-bold text-surface-900 flex items-center gap-2">
@@ -75,29 +125,24 @@ export function FuelingLogsPage() {
                     </p>
                 </div>
                 {canCreate && (
-                    <Button onClick={() => setCreateOpen(true)}>
+                    <Button onClick={openCreate}>
                         <Plus className="mr-1.5 h-4 w-4" /> Novo Abastecimento
                     </Button>
                 )}
             </div>
 
-            {/* Filtros */}
             <Card>
                 <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
-                            <input
-                                type="text" placeholder="Buscar por placa ou posto..."
+                            <input type="text" placeholder="Buscar por placa ou posto..."
                                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
-                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-surface-200 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                            />
+                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-surface-200 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
                         </div>
-                        <select
-                            value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+                        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
                             title="Filtrar por status"
-                            className="px-3 py-2 rounded-lg border border-surface-200 text-sm"
-                        >
+                            className="px-3 py-2 rounded-lg border border-surface-200 text-sm">
                             <option value="">Todos os status</option>
                             <option value="pending">Pendente</option>
                             <option value="approved">Aprovado</option>
@@ -107,7 +152,6 @@ export function FuelingLogsPage() {
                 </CardContent>
             </Card>
 
-            {/* Tabela */}
             <Card>
                 <CardContent className="p-0">
                     {isLoading ? (
@@ -120,7 +164,7 @@ export function FuelingLogsPage() {
                             <Fuel className="h-12 w-12 text-surface-300 mx-auto" />
                             <p className="text-surface-500 mt-3 font-medium">Nenhum abastecimento registrado</p>
                             {canCreate && (
-                                <Button variant="outline" size="sm" className="mt-3" onClick={() => setCreateOpen(true)}>
+                                <Button variant="outline" size="sm" className="mt-3" onClick={openCreate}>
                                     <Plus className="mr-1 h-4 w-4" /> Registrar primeiro abastecimento
                                 </Button>
                             )}
@@ -145,57 +189,44 @@ export function FuelingLogsPage() {
                                 <tbody className="divide-y divide-surface-100">
                                     {logs.map((log: any) => {
                                         const sc = statusConfig[log.status] || statusConfig.pending
-                                        const StatusIcon = sc.icon
                                         return (
                                             <tr key={log.id} className="hover:bg-surface-50 transition-colors">
-                                                <td className="px-4 py-3 whitespace-nowrap">{new Date(log.fueling_date || log.date).toLocaleDateString('pt-BR')}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{new Date((log.fueling_date || log.date) + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
                                                 <td className="px-4 py-3">{log.user?.name || '—'}</td>
                                                 <td className="px-4 py-3 font-mono text-xs">{log.vehicle_plate}</td>
                                                 <td className="px-4 py-3">{FUEL_TYPES.find(f => f.value === log.fuel_type)?.label || log.fuel_type}</td>
                                                 <td className="px-4 py-3 text-right">{Number(log.liters).toFixed(2)}</td>
                                                 <td className="px-4 py-3 text-right">{Number(log.price_per_liter).toFixed(4)}</td>
-                                                <td className="px-4 py-3 text-right font-semibold">
-                                                    {Number(log.total_amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                                </td>
+                                                <td className="px-4 py-3 text-right font-semibold">{fmtBRL(log.total_amount)}</td>
                                                 <td className="px-4 py-3 text-right">{Number(log.odometer_km).toLocaleString('pt-BR')}</td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <Badge className={sc.color}>
-                                                        <StatusIcon className="mr-1 h-3 w-3" /> {sc.label}
-                                                    </Badge>
+                                                    <Badge variant={sc.variant}>{sc.label}</Badge>
                                                 </td>
-                                                <td className="px-4 py-3 text-right">
+                                                <td className="px-4 py-3">
                                                     <div className="flex items-center justify-end gap-1">
+                                                        <IconButton label="Ver detalhes" icon={<Eye className="h-4 w-4" />} onClick={() => setDetailTarget(log)} />
+                                                        {canUpdate && log.status === 'pending' && (
+                                                            <IconButton label="Editar" icon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(log)} className="hover:text-brand-600" />
+                                                        )}
                                                         {canApprove && log.status === 'pending' && (
                                                             <>
-                                                                <Button
-                                                                    variant="ghost" size="sm"
+                                                                <IconButton label="Aprovar" icon={<CheckCircle className="h-4 w-4" />}
                                                                     onClick={() => approveMutation.mutate({ id: log.id, action: 'approve' })}
-                                                                    disabled={approveMutation.isPending}
-                                                                    className="text-green-600 hover:bg-green-50"
-                                                                    title="Aprovar"
-                                                                >
-                                                                    <CheckCircle className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost" size="sm"
-                                                                    onClick={() => approveMutation.mutate({ id: log.id, action: 'reject' })}
-                                                                    disabled={approveMutation.isPending}
-                                                                    className="text-red-600 hover:bg-red-50"
-                                                                    title="Rejeitar"
-                                                                >
-                                                                    <XCircle className="h-4 w-4" />
-                                                                </Button>
+                                                                    className="hover:text-emerald-600" />
+                                                                <IconButton label="Rejeitar" icon={<XCircle className="h-4 w-4" />}
+                                                                    onClick={() => { setRejectTarget(log.id); setRejectReason('') }}
+                                                                    className="hover:text-red-600" />
                                                             </>
                                                         )}
+                                                        {log.status === 'rejected' && (canUpdate || canApprove) && (
+                                                            <IconButton label="Resubmeter" icon={<RotateCcw className="h-4 w-4" />}
+                                                                onClick={() => resubmitMutation.mutate(log.id)}
+                                                                className="hover:text-amber-600" />
+                                                        )}
                                                         {canDelete && log.status === 'pending' && (
-                                                            <Button
-                                                                variant="ghost" size="sm"
+                                                            <IconButton label="Excluir" icon={<Trash2 className="h-4 w-4" />}
                                                                 onClick={() => setDeleteTarget(log.id)}
-                                                                className="text-red-600 hover:bg-red-50"
-                                                                title="Excluir"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                                className="hover:text-red-600" />
                                                         )}
                                                     </div>
                                                 </td>
@@ -207,27 +238,22 @@ export function FuelingLogsPage() {
                         </div>
                     )}
 
-                    {/* Paginação */}
                     {pagination && pagination.last_page > 1 && (
                         <div className="flex items-center justify-between p-4 border-t border-surface-200">
                             <p className="text-sm text-surface-500">
-                                Página {pagination.current_page} de {pagination.last_page}
+                                Página {pagination.current_page} de {pagination.last_page} ({pagination.total} registros)
                             </p>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                                    Anterior
-                                </Button>
-                                <Button variant="outline" size="sm" disabled={page === pagination.last_page} onClick={() => setPage(p => p + 1)}>
-                                    Próxima
-                                </Button>
+                                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</Button>
+                                <Button variant="outline" size="sm" disabled={page === pagination.last_page} onClick={() => setPage(p => p + 1)}>Próxima</Button>
                             </div>
                         </div>
                     )}
                 </CardContent>
             </Card>
 
-            {/* Modal Criar */}
-            <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Registrar Abastecimento">
+            {/* Modal Criar/Editar */}
+            <Modal open={formOpen} onOpenChange={(v) => { setFormOpen(v); if (!v) setEditingId(null) }} title={editingId ? 'Editar Abastecimento' : 'Registrar Abastecimento'} size="lg">
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -298,29 +324,77 @@ export function FuelingLogsPage() {
                             className="w-full px-3 py-2 rounded-lg border border-surface-200 text-sm resize-none" />
                     </div>
                     <div className="flex justify-end gap-3 pt-2">
-                        <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleCreate} disabled={createMutation.isPending || !form.vehicle_plate || !form.liters}>
-                            {createMutation.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
-                            Registrar
+                        <Button variant="outline" onClick={() => { setFormOpen(false); setEditingId(null) }}>Cancelar</Button>
+                        <Button onClick={handleSubmit}
+                            disabled={createMutation.isPending || updateMutation.isPending || !form.vehicle_plate || !form.liters}>
+                            {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                            {editingId ? 'Salvar' : 'Registrar'}
                         </Button>
                     </div>
                 </div>
             </Modal>
 
+            {/* Modal Detalhes */}
+            <Modal open={!!detailTarget} onOpenChange={() => setDetailTarget(null)} title="Detalhes do Abastecimento" size="lg">
+                {detailTarget && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div><span className="text-xs text-surface-500">Motorista</span><p className="text-sm font-medium">{detailTarget.user?.name ?? '—'}</p></div>
+                        <div><span className="text-xs text-surface-500">Placa</span><p className="text-sm font-mono font-medium">{detailTarget.vehicle_plate}</p></div>
+                        <div><span className="text-xs text-surface-500">Data</span><p className="text-sm">{new Date((detailTarget.fueling_date || detailTarget.date) + 'T00:00:00').toLocaleDateString('pt-BR')}</p></div>
+                        <div><span className="text-xs text-surface-500">Combustível</span><p className="text-sm">{FUEL_TYPES.find(f => f.value === detailTarget.fuel_type)?.label}</p></div>
+                        <div><span className="text-xs text-surface-500">Litros</span><p className="text-sm">{Number(detailTarget.liters).toFixed(2)}</p></div>
+                        <div><span className="text-xs text-surface-500">R$/Litro</span><p className="text-sm">{Number(detailTarget.price_per_liter).toFixed(4)}</p></div>
+                        <div><span className="text-xs text-surface-500">Total</span><p className="text-sm font-bold">{fmtBRL(detailTarget.total_amount)}</p></div>
+                        <div><span className="text-xs text-surface-500">Odômetro</span><p className="text-sm">{Number(detailTarget.odometer_km).toLocaleString('pt-BR')} km</p></div>
+                        {detailTarget.gas_station_name && <div><span className="text-xs text-surface-500">Posto</span><p className="text-sm">{detailTarget.gas_station_name}</p></div>}
+                        <div><span className="text-xs text-surface-500">Status</span><Badge variant={statusConfig[detailTarget.status]?.variant}>{statusConfig[detailTarget.status]?.label}</Badge></div>
+                        {detailTarget.approver && <div><span className="text-xs text-surface-500">Aprovado por</span><p className="text-sm">{detailTarget.approver.name}</p></div>}
+                        {detailTarget.rejection_reason && (
+                            <div className="col-span-2"><span className="text-xs text-surface-500">Motivo da rejeição</span><p className="text-sm text-red-600">{detailTarget.rejection_reason}</p></div>
+                        )}
+                        {detailTarget.receipt_path && (
+                            <div><span className="text-xs text-surface-500">Comprovante</span>
+                                <p className="text-sm text-brand-600 underline">
+                                    <a href={`${api.defaults.baseURL?.replace('/api', '')}${detailTarget.receipt_path}`} target="_blank" rel="noreferrer">Ver comprovante</a>
+                                </p>
+                            </div>
+                        )}
+                        {detailTarget.notes && <div className="col-span-2"><span className="text-xs text-surface-500">Observações</span><p className="text-sm text-surface-600">{detailTarget.notes}</p></div>}
+                        {detailTarget.work_order && <div><span className="text-xs text-surface-500">OS</span><p className="text-sm text-brand-600 font-medium">{detailTarget.work_order.os_number}</p></div>}
+                    </div>
+                )}
+            </Modal>
+
+            {/* Modal Rejeitar */}
+            <Modal open={rejectTarget !== null} onOpenChange={() => setRejectTarget(null)} title="Rejeitar Abastecimento">
+                <form onSubmit={e => { e.preventDefault(); handleReject() }} className="space-y-4">
+                    <div>
+                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Motivo da rejeição *</label>
+                        <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3} required
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                            placeholder="Informe o motivo da rejeição..." />
+                    </div>
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button variant="outline" type="button" onClick={() => setRejectTarget(null)}>Cancelar</Button>
+                        <Button type="submit" className="bg-red-600 hover:bg-red-700" loading={approveMutation.isPending} disabled={approveMutation.isPending || !rejectReason.trim()}>Rejeitar</Button>
+                    </div>
+                </form>
+            </Modal>
+
             {/* Modal Excluir */}
-            <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Excluir Registro?">
-                <p className="text-sm text-surface-600 mb-4">Tem certeza que deseja excluir este registro de abastecimento? Esta ação não pode ser desfeita.</p>
-                <div className="flex justify-end gap-3">
-                    <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
-                    <Button variant="danger" onClick={() => { if (deleteTarget) { deleteMutation.mutate(deleteTarget, { onSuccess: () => setDeleteTarget(null) }) } }}
-                        disabled={deleteMutation.isPending}>
-                        {deleteMutation.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1.5 h-4 w-4" />}
-                        Excluir
-                    </Button>
+            <Modal open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)} title="Excluir Registro?">
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir este registro de abastecimento? Esta ação não pode ser desfeita.</p>
+                    <div className="flex justify-end gap-3 border-t pt-4">
+                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+                        <Button className="bg-red-600 hover:bg-red-700"
+                            onClick={() => { if (deleteTarget) { deleteMutation.mutate(deleteTarget, { onSuccess: () => setDeleteTarget(null) }) } }}
+                            disabled={deleteMutation.isPending} loading={deleteMutation.isPending}>
+                            Excluir
+                        </Button>
+                    </div>
                 </div>
             </Modal>
         </div>
     )
 }
-
-export default FuelingLogsPage

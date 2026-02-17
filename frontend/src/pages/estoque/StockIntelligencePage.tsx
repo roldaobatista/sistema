@@ -1,10 +1,9 @@
-import { useState , useMemo } from 'react';
-import { toast } from 'sonner'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
     BarChart3, TrendingUp, DollarSign, AlertTriangle, Loader2,
-    Package, ArrowDown, ArrowUp, Search
+    Package, ArrowDown, ArrowUp, Search, Download
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -40,53 +39,87 @@ const urgencyColors: Record<string, { label: string; color: string }> = {
 const formatBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function StockIntelligencePage() {
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/stock-intelligence/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['stock-intelligence'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
 
     const [activeTab, setActiveTab] = useState<Tab>('abc');
     const [months, setMonths] = useState(12);
     const [search, setSearch] = useState('');
 
-    const { data: abcData, isLoading: abcLoading } = useQuery({
+    const { data: abcData, isLoading: abcLoading, isError: abcError, refetch: abcRefetch } = useQuery({
         queryKey: ['stock-intelligence-abc', months],
-        queryFn: () => api.get('/api/v1/stock/intelligence/abc-curve', { params: { months } }).then(r => r.data),
+        queryFn: () => api.get('/stock/intelligence/abc-curve', { params: { months } }).then(r => r.data),
         enabled: activeTab === 'abc',
     });
 
-    const { data: turnoverData, isLoading: turnoverLoading } = useQuery({
+    const { data: turnoverData, isLoading: turnoverLoading, isError: turnoverError, refetch: turnoverRefetch } = useQuery({
         queryKey: ['stock-intelligence-turnover', months],
-        queryFn: () => api.get('/api/v1/stock/intelligence/turnover', { params: { months } }).then(r => r.data),
+        queryFn: () => api.get('/stock/intelligence/turnover', { params: { months } }).then(r => r.data),
         enabled: activeTab === 'turnover',
     });
 
-    const { data: costData, isLoading: costLoading } = useQuery({
+    const { data: costData, isLoading: costLoading, isError: costError, refetch: costRefetch } = useQuery({
         queryKey: ['stock-intelligence-cost'],
-        queryFn: () => api.get('/api/v1/stock/intelligence/average-cost').then(r => r.data),
+        queryFn: () => api.get('/stock/intelligence/average-cost').then(r => r.data),
         enabled: activeTab === 'cost',
     });
 
-    const { data: reorderData, isLoading: reorderLoading } = useQuery({
+    const { data: reorderData, isLoading: reorderLoading, isError: reorderError, refetch: reorderRefetch } = useQuery({
         queryKey: ['stock-intelligence-reorder'],
-        queryFn: () => api.get('/api/v1/stock/intelligence/reorder-points').then(r => r.data),
+        queryFn: () => api.get('/stock/intelligence/reorder-points').then(r => r.data),
         enabled: activeTab === 'reorder',
     });
+
+    const hasError = abcError || turnoverError || costError || reorderError;
+    const refetchAll = () => {
+        abcRefetch();
+        turnoverRefetch();
+        costRefetch();
+        reorderRefetch();
+    };
 
     const filterBySearch = (items: any[]) =>
         items.filter(i => !search || i.name?.toLowerCase().includes(search.toLowerCase()) || i.code?.toLowerCase().includes(search.toLowerCase()));
 
     const isLoading = (activeTab === 'abc' && abcLoading) || (activeTab === 'turnover' && turnoverLoading) || (activeTab === 'cost' && costLoading) || (activeTab === 'reorder' && reorderLoading);
 
+    const exportCsv = (data: any[], columns: { key: string; label: string }[], filename: string) => {
+        if (!data || data.length === 0) return;
+        const headers = columns.map(c => c.label);
+        const rows = data.map(item => columns.map(c => {
+            const val = item[c.key];
+            return typeof val === 'number' ? val.toFixed(2) : String(val ?? '');
+        }));
+        const csv = [headers.join(';'), ...rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(';'))].join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    if (!hasPermission('estoque.intelligence.view')) {
+        return (
+            <div className="p-6">
+                <div className="rounded-xl border border-default bg-surface-0 p-8 text-center shadow-card">
+                    <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-surface-300" />
+                    <p className="text-base font-semibold text-surface-900">Sem permissão</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-6 space-y-6">
+            {hasError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3">
+                    <span>Erro ao carregar dados. Tente novamente.</span>
+                    <button onClick={refetchAll} className="font-medium text-red-800 hover:text-red-900 underline shrink-0">
+                        Tentar novamente
+                    </button>
+                </div>
+            )}
             <div className="flex items-center gap-3">
                 <BarChart3 className="h-7 w-7 text-indigo-600" />
                 <h1 className="text-2xl font-bold text-surface-900">Inteligência de Estoque</h1>
@@ -119,6 +152,22 @@ export default function StockIntelligencePage() {
                     className="w-full pl-10 pr-4 py-2 border border-default rounded-lg focus:ring-2 focus:ring-indigo-500"
                 />
                 </div>
+                <button
+                    onClick={() => {
+                        const cols = activeTab === 'abc'
+                            ? [{ key: 'name', label: 'Produto' }, { key: 'code', label: 'Código' }, { key: 'total_qty', label: 'Qtd Saída' }, { key: 'total_value', label: 'Valor' }, { key: 'percentage', label: '%' }, { key: 'class', label: 'Classe' }]
+                            : activeTab === 'turnover'
+                            ? [{ key: 'name', label: 'Produto' }, { key: 'stock_qty', label: 'Estoque' }, { key: 'total_exits', label: 'Saídas' }, { key: 'turnover_rate', label: 'Giro' }, { key: 'coverage_days', label: 'Cobertura' }, { key: 'classification', label: 'Classe' }]
+                            : activeTab === 'cost'
+                            ? [{ key: 'name', label: 'Produto' }, { key: 'stock_qty', label: 'Estoque' }, { key: 'current_cost', label: 'Custo Cadastro' }, { key: 'average_cost', label: 'Custo Médio' }, { key: 'stock_value', label: 'Valor Estoque' }]
+                            : [{ key: 'name', label: 'Produto' }, { key: 'stock_qty', label: 'Atual' }, { key: 'stock_min', label: 'Mínimo' }, { key: 'daily_consumption', label: 'Consumo/dia' }, { key: 'days_until_min', label: 'Dias até mín.' }, { key: 'urgency', label: 'Urgência' }]
+                        const rawData = activeTab === 'abc' ? abcData?.data : activeTab === 'turnover' ? turnoverData?.data : activeTab === 'cost' ? costData?.data : reorderData?.all
+                        exportCsv(filterBySearch(rawData ?? []), cols, `estoque_${activeTab}`)
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 border border-default rounded-lg text-sm text-emerald-600 hover:bg-emerald-50 transition-colors"
+                >
+                    <Download className="h-4 w-4" /> Exportar CSV
+                </button>
                 {(activeTab === 'abc' || activeTab === 'turnover') && (
                     <select
                         title="Período em meses"
@@ -281,7 +330,7 @@ function DataTable({ items, columns }: { items: any[]; columns: Column[] }) {
                 <thead className="bg-surface-50">
                     <tr>
                         {columns.map(col => (
-                            <th key={col.key} className={`px-4 py-3 text-xs font-medium text-surface-500 uppercase text-${col.align ?? 'left'}`}>
+                            <th key={col.key} className={`px-4 py-3 text-xs font-medium text-surface-500 uppercase ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                                 {col.label}
                             </th>
                         ))}
@@ -297,7 +346,7 @@ function DataTable({ items, columns }: { items: any[]; columns: Column[] }) {
                     {items.map((item, idx) => (
                         <tr key={item.id ?? idx} className="hover:bg-surface-50">
                             {columns.map(col => (
-                                <td key={col.key} className={`px-4 py-3 text-sm text-${col.align ?? 'left'}`}>
+                                <td key={col.key} className={`px-4 py-3 text-sm ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                                     {col.render ? col.render(item) : item[col.key]}
                                 </td>
                             ))}

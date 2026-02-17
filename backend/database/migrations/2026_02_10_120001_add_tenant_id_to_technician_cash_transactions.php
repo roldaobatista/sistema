@@ -14,7 +14,7 @@ return new class extends Migration
         }
 
         Schema::table('technician_cash_transactions', function (Blueprint $t) {
-            $t->unsignedBigInteger('tenant_id')->after('fund_id')->nullable();
+            $t->unsignedBigInteger('tenant_id')->nullable();
         });
 
         // Subquery compatível com SQLite e MySQL

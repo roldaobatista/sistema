@@ -37,8 +37,8 @@ class CommissionGoalController extends Controller
         if ($period = $request->get('period')) {
             $query->where('commission_goals.period', $period);
         }
-        if ($status = $request->get('status')) {
-            $query->where('commission_goals.status', $status);
+        if ($type = $request->get('type')) {
+            $query->where('commission_goals.type', $type);
         }
 
         $goals = $query->orderByDesc('commission_goals.period')->get()->map(function ($goal) {
@@ -65,15 +65,17 @@ class CommissionGoalController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Check uniqueness
+        $goalType = $validated['type'] ?? 'revenue';
+
         $existing = DB::table('commission_goals')
             ->where('tenant_id', $tenantId)
             ->where('user_id', $validated['user_id'])
             ->where('period', $validated['period'])
+            ->where('type', $goalType)
             ->exists();
 
         if ($existing) {
-            return $this->error('Já existe uma meta para este usuário e período', 422);
+            return $this->error('Já existe uma meta deste tipo para este usuário e período', 422);
         }
 
         try {

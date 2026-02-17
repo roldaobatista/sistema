@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Skill;
 use App\Models\SkillRequirement;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 
 class SkillsController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(): JsonResponse
     {
         try {
@@ -34,7 +37,7 @@ class SkillsController extends Controller
                 'description' => 'nullable|string',
             ]);
 
-            $skill = Skill::create($validated + ['tenant_id' => auth()->user()->tenant_id]);
+            $skill = Skill::create($validated + ['tenant_id' => $this->resolvedTenantId()]);
 
             DB::commit();
             return response()->json(['message' => 'Competência criada', 'data' => $skill], 201);
@@ -85,7 +88,7 @@ class SkillsController extends Controller
     public function matrix(): JsonResponse
     {
         try {
-            $users = \App\Models\User::where('tenant_id', auth()->user()->tenant_id)
+            $users = \App\Models\User::where('tenant_id', $this->resolvedTenantId())
                 ->with(['position.skillRequirements.skill', 'skills'])
                 ->get()
                 ->map(function ($user) {

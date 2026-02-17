@@ -19,6 +19,7 @@ class FuelingLog extends Model
         'gas_station_lat', 'gas_station_lng', 'fuel_type',
         'liters', 'price_per_liter', 'total_amount',
         'receipt_path', 'notes', 'status', 'approved_by', 'approved_at',
+        'rejection_reason', 'affects_technician_cash',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class FuelingLog extends Model
             'price_per_liter' => 'decimal:4',
             'total_amount' => 'decimal:2',
             'approved_at' => 'datetime',
+            'affects_technician_cash' => 'boolean',
         ];
     }
 

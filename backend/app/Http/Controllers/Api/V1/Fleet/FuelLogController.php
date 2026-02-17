@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\Fleet\FuelLog;
 use App\Models\FleetVehicle;
 use Illuminate\Http\Request;
@@ -12,10 +13,12 @@ use Illuminate\Validation\Rule;
 
 class FuelLogController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = FuelLog::where('tenant_id', $request->user()->tenant_id)
+            $query = FuelLog::where('tenant_id', $this->resolvedTenantId())
                 ->with(['vehicle:id,plate,model', 'driver:id,name']);
 
             if ($request->filled('fleet_vehicle_id')) {
@@ -54,7 +57,7 @@ class FuelLogController extends Controller
                 'receipt_path' => 'nullable|string',
             ]);
 
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['driver_id'] = $request->user()->id;
 
             $previousLog = FuelLog::where('fleet_vehicle_id', $validated['fleet_vehicle_id'])
@@ -88,7 +91,7 @@ class FuelLogController extends Controller
     public function show(FuelLog $log): JsonResponse
     {
         try {
-            if ($log->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($log->tenant_id != $this->resolvedTenantId()) abort(403);
             return response()->json($log->load(['vehicle', 'driver']));
         } catch (\Exception $e) {
             Log::error('FuelLog show failed', ['error' => $e->getMessage()]);
@@ -101,7 +104,7 @@ class FuelLogController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($log->tenant_id != $request->user()->tenant_id) abort(403);
+            if ($log->tenant_id != $this->resolvedTenantId()) abort(403);
 
             $validated = $request->validate([
                 'date' => 'sometimes|date',
@@ -131,7 +134,7 @@ class FuelLogController extends Controller
     public function destroy(FuelLog $log): JsonResponse
     {
         try {
-            if ($log->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($log->tenant_id != $this->resolvedTenantId()) abort(403);
             $log->delete();
             return response()->json(null, 204);
         } catch (\Exception $e) {

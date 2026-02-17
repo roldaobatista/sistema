@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Receipt, Loader2, Filter, Calendar, TrendingUp, Download } from 'lucide-react'
+import { ArrowLeft, Receipt, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
 interface Expense {
     id: number
-    category: string
-    description: string | null
-    amount: number
+    description: string
+    category?: { id: number; name: string; color: string } | null
+    amount: number | string
     work_order_id: number | null
-    work_order_number?: string
+    work_order?: { id: number; number: string; os_number?: string | null } | null
     status: string
+    expense_date: string
     created_at: string
-    receipt_url?: string | null
+    notes?: string | null
+    receipt_path?: string | null
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -29,6 +31,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    reviewed: { label: 'Conferida', color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' },
     approved: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
     rejected: { label: 'Rejeitada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
     reimbursed: { label: 'Reembolsada', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -48,15 +51,15 @@ export default function TechExpensesOverviewPage() {
     async function fetchExpenses() {
         setLoading(true)
         try {
-            const params: Record<string, string> = { my: '1' }
+            const params: Record<string, string> = { my: '1', per_page: '200' }
             if (period === 'week') {
                 const d = new Date()
                 d.setDate(d.getDate() - 7)
-                params.from = d.toISOString().slice(0, 10)
+                params.date_from = d.toISOString().slice(0, 10)
             } else if (period === 'month') {
                 const d = new Date()
                 d.setDate(1)
-                params.from = d.toISOString().slice(0, 10)
+                params.date_from = d.toISOString().slice(0, 10)
             }
             const { data } = await api.get('/expenses', { params })
             setExpenses(data.data ?? data ?? [])
@@ -71,14 +74,15 @@ export default function TechExpensesOverviewPage() {
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
     const filtered = categoryFilter
-        ? expenses.filter(e => e.category === categoryFilter)
+        ? expenses.filter(e => (e.category?.name ?? 'Outros') === categoryFilter)
         : expenses
 
-    const totalAmount = filtered.reduce((sum, e) => sum + (e.amount || 0), 0)
-    const pendingAmount = filtered.filter(e => e.status === 'pending').reduce((sum, e) => sum + (e.amount || 0), 0)
-    const approvedAmount = filtered.filter(e => e.status === 'approved' || e.status === 'reimbursed').reduce((sum, e) => sum + (e.amount || 0), 0)
+    const toNum = (v: number | string) => Number(v) || 0
+    const totalAmount = filtered.reduce((sum, e) => sum + toNum(e.amount), 0)
+    const pendingAmount = filtered.filter(e => e.status === 'pending' || e.status === 'reviewed').reduce((sum, e) => sum + toNum(e.amount), 0)
+    const approvedAmount = filtered.filter(e => e.status === 'approved' || e.status === 'reimbursed').reduce((sum, e) => sum + toNum(e.amount), 0)
 
-    const categories = [...new Set(expenses.map(e => e.category))].sort()
+    const categories = [...new Set(expenses.map(e => e.category?.name ?? 'Outros'))].sort()
 
     return (
         <div className="flex flex-col h-full">
@@ -165,8 +169,10 @@ export default function TechExpensesOverviewPage() {
                 ) : (
                     <div className="space-y-2">
                         {filtered.map((exp) => {
-                            const catColor = CATEGORY_ICONS[exp.category] || CATEGORY_ICONS['Outros']
+                            const catName = exp.category?.name ?? 'Outros'
+                            const catColor = CATEGORY_ICONS[catName] || CATEGORY_ICONS['Outros']
                             const statusInfo = STATUS_LABELS[exp.status] || STATUS_LABELS.pending
+                            const woLabel = exp.work_order?.os_number ?? exp.work_order?.number
                             return (
                                 <div key={exp.id} className="bg-white dark:bg-surface-800/80 rounded-xl p-3">
                                     <div className="flex items-center gap-3">
@@ -175,21 +181,21 @@ export default function TechExpensesOverviewPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{exp.category}</p>
+                                                <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{exp.description}</p>
                                                 <span className={cn('px-1.5 py-0.5 rounded-full text-[10px] font-medium', statusInfo.color)}>
                                                     {statusInfo.label}
                                                 </span>
                                             </div>
-                                            {exp.description && (
-                                                <p className="text-xs text-surface-500 truncate">{exp.description}</p>
+                                            {catName && (
+                                                <p className="text-xs text-surface-500 truncate">{catName}</p>
                                             )}
                                             <div className="flex items-center gap-2 mt-0.5 text-[10px] text-surface-400">
-                                                {exp.work_order_number && <span>OS: {exp.work_order_number}</span>}
-                                                <span>{new Date(exp.created_at).toLocaleDateString('pt-BR')}</span>
+                                                {woLabel && <span>OS: {woLabel}</span>}
+                                                <span>{new Date(exp.expense_date + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
                                             </div>
                                         </div>
                                         <p className="text-sm font-bold text-surface-900 dark:text-surface-50 flex-shrink-0">
-                                            {formatCurrency(exp.amount)}
+                                            {formatCurrency(toNum(exp.amount))}
                                         </p>
                                     </div>
                                 </div>

@@ -63,6 +63,8 @@ export interface Quote {
     total: number;
     observations: string | null;
     internal_notes: string | null;
+    internal_approved_by: number | null;
+    internal_approved_at: string | null;
     sent_at: string | null;
     approved_at: string | null;
     rejected_at: string | null;

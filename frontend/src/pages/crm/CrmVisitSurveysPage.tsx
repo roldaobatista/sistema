@@ -40,7 +40,7 @@ export function CrmVisitSurveysPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {s.rating && <div className="flex gap-0.5">{[1, 2, 3, 4, 5].map(n => <Star key={n} className={`h-4 w-4 ${n <= s.rating! ? 'text-amber-500 fill-amber-500' : 'text-gray-300'}`} />)}</div>}
+                                            {s.rating && <div className="flex gap-0.5">{[1, 2, 3, 4, 5].map(n => <Star key={n} className={`h-4 w-4 ${n <= s.rating! ? 'text-amber-500 fill-amber-500' : 'text-surface-300'}`} />)}</div>}
                                             <Badge variant={sc.variant}>{sc.label}</Badge>
                                         </div>
                                     </div>

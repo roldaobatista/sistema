@@ -7,6 +7,8 @@ use App\Models\EquipmentModel;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EquipmentModelController extends Controller
 {
@@ -50,8 +52,14 @@ class EquipmentModelController extends Controller
             'category' => 'nullable|string|max:40',
         ]);
         $validated['tenant_id'] = $this->tenantId($request);
-        $model = EquipmentModel::create($validated);
-        return response()->json(['equipment_model' => $model], 201);
+
+        try {
+            $model = DB::transaction(fn () => EquipmentModel::create($validated));
+            return response()->json(['equipment_model' => $model], 201);
+        } catch (\Throwable $e) {
+            Log::error('EquipmentModel store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar modelo de equipamento'], 500);
+        }
     }
 
     public function update(Request $request, EquipmentModel $equipmentModel): JsonResponse
@@ -62,8 +70,14 @@ class EquipmentModelController extends Controller
             'brand' => 'nullable|string|max:100',
             'category' => 'nullable|string|max:40',
         ]);
-        $equipmentModel->update($validated);
-        return response()->json(['equipment_model' => $equipmentModel->fresh()]);
+
+        try {
+            DB::transaction(fn () => $equipmentModel->update($validated));
+            return response()->json(['equipment_model' => $equipmentModel->fresh()]);
+        } catch (\Throwable $e) {
+            Log::error('EquipmentModel update failed', ['id' => $equipmentModel->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar modelo de equipamento'], 500);
+        }
     }
 
     public function destroy(Request $request, EquipmentModel $equipmentModel): JsonResponse
@@ -75,8 +89,14 @@ class EquipmentModelController extends Controller
                 'message' => "Não é possível excluir: {$count} equipamento(s) vinculado(s) a este modelo.",
             ], 422);
         }
-        $equipmentModel->delete();
-        return response()->json(['message' => 'Modelo excluído.']);
+
+        try {
+            DB::transaction(fn () => $equipmentModel->delete());
+            return response()->json(['message' => 'Modelo excluído.']);
+        } catch (\Throwable $e) {
+            Log::error('EquipmentModel destroy failed', ['id' => $equipmentModel->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir modelo de equipamento'], 500);
+        }
     }
 
     public function syncProducts(Request $request, EquipmentModel $equipmentModel): JsonResponse

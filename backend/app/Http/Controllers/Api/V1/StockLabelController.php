@@ -2,17 +2,23 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Services\LabelGeneratorService;
+use App\Services\PdfGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class StockLabelController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function __construct(
-        private LabelGeneratorService $labelService
+        private LabelGeneratorService $labelService,
+        private PdfGeneratorService $pdfService,
     ) {}
 
     public function formats(): \Illuminate\Http\JsonResponse
@@ -36,32 +42,42 @@ class StockLabelController extends Controller
         $validated = $request->validate([
             'product_id' => 'required|integer|exists:products,id',
             'format_key' => 'required|string|max:50',
+            'show_logo' => 'sometimes|in:0,1,true,false',
         ]);
 
-        $tenantId = (int) (auth()->user()->current_tenant_id ?? auth()->user()->tenant_id);
-        $product = Product::where('tenant_id', $tenantId)->find($validated['product_id']);
-        if (!$product) {
-            return response()->json(['message' => 'Produto não encontrado.'], 404);
-        }
-        if (!$product->is_active) {
-            return response()->json(['message' => 'Produto inativo não pode gerar etiqueta.'], 422);
-        }
+        try {
+            $tenantId = $this->resolvedTenantId();
+            $product = Product::where('tenant_id', $tenantId)->find($validated['product_id']);
+            if (!$product) {
+                return response()->json(['message' => 'Produto não encontrado.'], 404);
+            }
+            if (!$product->is_active) {
+                return response()->json(['message' => 'Produto inativo não pode gerar etiqueta.'], 422);
+            }
 
-        $formats = $this->labelService->getFormats();
-        if (!isset($formats[$validated['format_key']])) {
-            return response()->json(['message' => 'Formato de etiqueta inválido.'], 422);
-        }
+            $formats = $this->labelService->getFormats();
+            if (!isset($formats[$validated['format_key']])) {
+                return response()->json(['message' => 'Formato de etiqueta inválido.'], 422);
+            }
 
-        $expanded = new Collection([$product]);
-        $path = $this->labelService->generatePdf($expanded, $validated['format_key']);
-        return response()->file($path, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="etiqueta-preview.pdf"',
-        ])->deleteFileAfterSend(true);
+            $showLogo = filter_var($validated['show_logo'] ?? true, FILTER_VALIDATE_BOOLEAN);
+            $companyLogoPath = $showLogo ? $this->pdfService->getCompanyLogoPath($tenantId) : null;
+
+            $expanded = new Collection([$product]);
+            $path = $this->labelService->generatePdf($expanded, $validated['format_key'], $companyLogoPath);
+            return response()->file($path, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="etiqueta-preview.pdf"',
+            ])->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            Log::error('Label preview failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao gerar preview da etiqueta.'], 500);
+        }
     }
 
     public function generate(Request $request): Response|\Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse
     {
+        try {
         $validated = $request->validate([
             'product_ids' => 'required_without:items|array|min:1',
             'product_ids.*' => 'integer|exists:products,id',
@@ -70,6 +86,7 @@ class StockLabelController extends Controller
             'items.*.quantity' => 'required|integer|min:1|max:100',
             'format_key' => 'required|string|max:50',
             'quantity' => 'sometimes|integer|min:1|max:100',
+            'show_logo' => 'sometimes|boolean',
         ]);
 
         $formatKey = $validated['format_key'];
@@ -78,7 +95,7 @@ class StockLabelController extends Controller
             return response()->json(['message' => 'Formato de etiqueta inválido.'], 422);
         }
 
-        $tenantId = (int) (auth()->user()->current_tenant_id ?? auth()->user()->tenant_id);
+        $tenantId = $this->resolvedTenantId();
 
         if (!empty($validated['items'])) {
             $expanded = new Collection;
@@ -127,10 +144,18 @@ class StockLabelController extends Controller
             ]);
         }
 
-        $path = $this->labelService->generatePdf($expanded, $formatKey);
+        $showLogo = filter_var($validated['show_logo'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $companyLogoPath = $showLogo ? $this->pdfService->getCompanyLogoPath($tenantId) : null;
+        $path = $this->labelService->generatePdf($expanded, $formatKey, $companyLogoPath);
         return response()->file($path, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="etiquetas-estoque.pdf"',
         ])->deleteFileAfterSend(true);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Label generation failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao gerar etiquetas.'], 500);
+        }
     }
 }

@@ -696,7 +696,7 @@ function CompanyLogoUpload({ currentUrl, onUploaded }: { currentUrl: string; onU
                         <img
                             src={displayUrl}
                             alt="Logo da empresa"
-                            className="h-16 w-16 rounded-lg border border-default object-contain bg-white p-1"
+                            className="h-16 w-16 rounded-lg border border-default object-contain bg-surface-0 dark:bg-surface-800 p-1"
                         />
                         <button
                             type="button"

@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
+import { Modal } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Wrench, Plus, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Wrench, Plus, AlertTriangle, CheckCircle2, Pencil, Trash2, Search } from 'lucide-react'
 
 interface ToolCalibration {
     id: number
@@ -19,47 +22,144 @@ interface ToolCalibration {
     item_name?: string
 }
 
+interface Product {
+    id: number
+    name: string
+}
+
+type ResultFilter = 'all' | 'approved' | 'rejected'
+
+const emptyForm = {
+    inventory_item_id: '',
+    calibration_date: new Date().toISOString().split('T')[0],
+    next_due_date: '',
+    certificate_number: '',
+    laboratory: '',
+    result: 'approved',
+    cost: '',
+    notes: '',
+}
+
 export default function ToolCalibrationsPage() {
     const queryClient = useQueryClient()
-    const [showDialog, setShowDialog] = useState(false)
-    const [form, setForm] = useState({
-        inventory_item_id: '',
-        calibration_date: new Date().toISOString().split('T')[0],
-        next_due_date: '',
-        certificate_number: '',
-        laboratory: '',
-        result: 'approved',
-        cost: '',
-        notes: '',
-    })
+    const [showFormModal, setShowFormModal] = useState(false)
+    const [editingId, setEditingId] = useState<number | null>(null)
+    const [deleteTarget, setDeleteTarget] = useState<ToolCalibration | null>(null)
+    const [search, setSearch] = useState('')
+    const [resultFilter, setResultFilter] = useState<ResultFilter>('all')
+    const [form, setForm] = useState(emptyForm)
 
     const { data, isLoading } = useQuery<ToolCalibration[]>({
         queryKey: ['tool-calibrations'],
-        queryFn: () => api.get('/api/v1/tool-calibrations').then(r => r.data.data ?? r.data),
+        queryFn: () => api.get('/tool-calibrations').then(r => r.data.data ?? r.data),
     })
 
     const { data: expiringData } = useQuery<ToolCalibration[]>({
         queryKey: ['tool-calibrations-expiring'],
-        queryFn: () => api.get('/api/v1/tool-calibrations/expiring').then(r => r.data.data ?? r.data),
+        queryFn: () => api.get('/tool-calibrations/expiring').then(r => r.data.data ?? r.data),
     })
 
+    const { data: productsData } = useQuery<Product[]>({
+        queryKey: ['products-for-calibration'],
+        queryFn: () => api.get('/products', { params: { per_page: 200 } }).then(r => r.data.data ?? r.data),
+    })
+
+    const products = productsData ?? []
+
+    const invalidateCalibrations = () => {
+        queryClient.invalidateQueries({ queryKey: ['tool-calibrations'] })
+        queryClient.invalidateQueries({ queryKey: ['tool-calibrations-expiring'] })
+    }
+
+    const resetAndCloseForm = () => {
+        setShowFormModal(false)
+        setEditingId(null)
+        setForm(emptyForm)
+    }
+
     const createMutation = useMutation({
-        mutationFn: (payload: typeof form) => api.post('/api/v1/tool-calibrations', payload),
+        mutationFn: (payload: typeof form) => api.post('/tool-calibrations', payload),
         onSuccess: () => {
             toast.success('Calibração registrada com sucesso')
-            queryClient.invalidateQueries({ queryKey: ['tool-calibrations'] })
-            queryClient.invalidateQueries({ queryKey: ['tool-calibrations-expiring'] })
-            setShowDialog(false)
-            setForm({
-                inventory_item_id: '', calibration_date: new Date().toISOString().split('T')[0],
-                next_due_date: '', certificate_number: '', laboratory: '', result: 'approved', cost: '', notes: '',
-            })
+            invalidateCalibrations()
+            resetAndCloseForm()
         },
         onError: () => toast.error('Erro ao registrar calibração'),
     })
 
+    const updateMutation = useMutation({
+        mutationFn: ({ id, payload }: { id: number; payload: typeof form }) =>
+            api.put(`/tool-calibrations/${id}`, payload),
+        onSuccess: () => {
+            toast.success('Calibração atualizada com sucesso')
+            invalidateCalibrations()
+            resetAndCloseForm()
+        },
+        onError: () => toast.error('Erro ao atualizar calibração'),
+    })
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/tool-calibrations/${id}`),
+        onSuccess: () => {
+            toast.success('Calibração excluída com sucesso')
+            invalidateCalibrations()
+            setDeleteTarget(null)
+        },
+        onError: () => toast.error('Erro ao excluir calibração'),
+    })
+
+    const handleSubmit = () => {
+        if (editingId) {
+            updateMutation.mutate({ id: editingId, payload: form })
+        } else {
+            createMutation.mutate(form)
+        }
+    }
+
+    const handleEdit = (c: ToolCalibration) => {
+        setEditingId(c.id)
+        setForm({
+            inventory_item_id: String(c.inventory_item_id),
+            calibration_date: c.calibration_date?.split('T')[0] ?? '',
+            next_due_date: c.next_due_date?.split('T')[0] ?? '',
+            certificate_number: c.certificate_number ?? '',
+            laboratory: c.laboratory ?? '',
+            result: c.result,
+            cost: c.cost ? String(c.cost) : '',
+            notes: c.notes ?? '',
+        })
+        setShowFormModal(true)
+    }
+
+    const handleOpenCreate = () => {
+        setEditingId(null)
+        setForm(emptyForm)
+        setShowFormModal(true)
+    }
+
+    const isSaving = createMutation.isPending || updateMutation.isPending
+
     const calibrations = data ?? []
     const expiring = expiringData ?? []
+
+    const filteredCalibrations = useMemo(() => {
+        let list = calibrations
+
+        if (resultFilter !== 'all') {
+            list = list.filter(c => c.result === resultFilter)
+        }
+
+        if (search.trim()) {
+            const q = search.toLowerCase()
+            list = list.filter(c =>
+                (c.item_name ?? '').toLowerCase().includes(q) ||
+                (c.certificate_number ?? '').toLowerCase().includes(q) ||
+                (c.laboratory ?? '').toLowerCase().includes(q)
+            )
+        }
+
+        return list
+    }, [calibrations, resultFilter, search])
 
     return (
         <div className="space-y-6">
@@ -67,16 +167,12 @@ export default function ToolCalibrationsPage() {
                 title="Calibração de Ferramentas"
                 subtitle="Registro de calibrações de ferramentas e instrumentos do estoque"
                 action={
-                    <button
-                        onClick={() => setShowDialog(true)}
-                        className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                        <Plus className="h-4 w-4" /> Registrar Calibração
-                    </button>
+                    <Button onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>
+                        Registrar Calibração
+                    </Button>
                 }
             />
 
-            {/* Alertas de vencimento */}
             {expiring.length > 0 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
                     <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
@@ -96,7 +192,6 @@ export default function ToolCalibrationsPage() {
                 </div>
             )}
 
-            {/* Resumo */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border bg-card p-4">
                     <div className="text-sm text-muted-foreground">Total Calibrações</div>
@@ -118,14 +213,44 @@ export default function ToolCalibrationsPage() {
                 </div>
             </div>
 
-            {/* Tabela */}
+            {/* Search and filters */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="relative max-w-sm flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+                    <Input
+                        placeholder="Buscar por ferramenta, certificado ou laboratório..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="pl-9"
+                    />
+                </div>
+                <div className="flex gap-1.5">
+                    {([
+                        { key: 'all', label: 'Todos' },
+                        { key: 'approved', label: 'Aprovados' },
+                        { key: 'rejected', label: 'Reprovados' },
+                    ] as const).map(f => (
+                        <Button
+                            key={f.key}
+                            variant={resultFilter === f.key ? 'primary' : 'outline'}
+                            size="sm"
+                            onClick={() => setResultFilter(f.key)}
+                        >
+                            {f.label}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+
             {isLoading ? (
                 <div className="flex justify-center py-12 text-muted-foreground">Carregando...</div>
-            ) : calibrations.length === 0 ? (
+            ) : filteredCalibrations.length === 0 ? (
                 <EmptyState
                     icon={Wrench}
                     title="Nenhuma calibração"
-                    description="Nenhuma calibração de ferramenta foi registrada."
+                    description={search || resultFilter !== 'all'
+                        ? 'Nenhuma calibração encontrada com os filtros aplicados.'
+                        : 'Nenhuma calibração de ferramenta foi registrada.'}
                 />
             ) : (
                 <div className="overflow-x-auto rounded-xl border bg-card">
@@ -139,10 +264,11 @@ export default function ToolCalibrationsPage() {
                                 <th className="p-3 text-left font-medium">Laboratório</th>
                                 <th className="p-3 text-center font-medium">Resultado</th>
                                 <th className="p-3 text-right font-medium">Custo</th>
+                                <th className="p-3 text-center font-medium">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
-                            {calibrations.map(c => {
+                            {filteredCalibrations.map(c => {
                                 const isExpiring = c.next_due_date && new Date(c.next_due_date) < new Date(Date.now() + 30 * 86400000)
                                 return (
                                     <tr key={c.id}>
@@ -169,6 +295,27 @@ export default function ToolCalibrationsPage() {
                                         <td className="p-3 text-right text-xs">
                                             {c.cost ? `R$ ${Number(c.cost).toFixed(2).replace('.', ',')}` : '—'}
                                         </td>
+                                        <td className="p-3">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleEdit(c)}
+                                                    title="Editar"
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setDeleteTarget(c)}
+                                                    title="Excluir"
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 )
                             })}
@@ -177,103 +324,123 @@ export default function ToolCalibrationsPage() {
                 </div>
             )}
 
-            {/* Dialog */}
-            {showDialog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowDialog(false)}>
-                    <div className="w-full max-w-lg rounded-xl bg-card p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-semibold">Registrar Calibração de Ferramenta</h3>
-                        <div className="mt-4 grid grid-cols-2 gap-4">
-                            <div className="col-span-2">
-                                <label className="mb-1 block text-sm font-medium">ID do Item do Estoque</label>
-                                <input
-                                    type="number"
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.inventory_item_id}
-                                    onChange={e => setForm(p => ({ ...p, inventory_item_id: e.target.value }))}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Data da Calibração</label>
-                                <input
-                                    type="date"
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.calibration_date}
-                                    onChange={e => setForm(p => ({ ...p, calibration_date: e.target.value }))}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Próximo Vencimento</label>
-                                <input
-                                    type="date"
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.next_due_date}
-                                    onChange={e => setForm(p => ({ ...p, next_due_date: e.target.value }))}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Nº Certificado</label>
-                                <input
-                                    type="text"
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.certificate_number}
-                                    onChange={e => setForm(p => ({ ...p, certificate_number: e.target.value }))}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Laboratório</label>
-                                <input
-                                    type="text"
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.laboratory}
-                                    onChange={e => setForm(p => ({ ...p, laboratory: e.target.value }))}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Resultado</label>
-                                <select
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.result}
-                                    onChange={e => setForm(p => ({ ...p, result: e.target.value }))}
-                                >
-                                    <option value="approved">Aprovado</option>
-                                    <option value="rejected">Reprovado</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Custo (R$)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.cost}
-                                    onChange={e => setForm(p => ({ ...p, cost: e.target.value }))}
-                                />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="mb-1 block text-sm font-medium">Observações</label>
-                                <textarea
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                                    value={form.notes}
-                                    onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                                    rows={2}
-                                />
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end gap-3">
-                            <button onClick={() => setShowDialog(false)} className="rounded-lg border px-4 py-2 text-sm hover:bg-muted">
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={() => createMutation.mutate(form)}
-                                disabled={createMutation.isPending || !form.inventory_item_id}
-                                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                            >
-                                {createMutation.isPending ? 'Salvando...' : 'Registrar'}
-                            </button>
-                        </div>
+            {/* Form Modal (Create / Edit) */}
+            <Modal
+                open={showFormModal}
+                onClose={resetAndCloseForm}
+                title={editingId ? 'Editar Calibração' : 'Registrar Calibração de Ferramenta'}
+                size="lg"
+                footer={
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={resetAndCloseForm}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={handleSubmit}
+                            loading={isSaving}
+                            disabled={!form.inventory_item_id}
+                        >
+                            {editingId ? 'Salvar Alterações' : 'Registrar'}
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2 space-y-1.5">
+                        <label htmlFor="cal-product" className="block text-[13px] font-medium text-surface-700">Produto / Ferramenta</label>
+                        <select
+                            id="cal-product"
+                            className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400 transition-all duration-150"
+                            value={form.inventory_item_id}
+                            onChange={e => setForm(p => ({ ...p, inventory_item_id: e.target.value }))}
+                        >
+                            <option value="">Selecione um produto...</option>
+                            {products.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <Input
+                        label="Data da Calibração"
+                        type="date"
+                        value={form.calibration_date}
+                        onChange={e => setForm(p => ({ ...p, calibration_date: e.target.value }))}
+                    />
+                    <Input
+                        label="Próximo Vencimento"
+                        type="date"
+                        value={form.next_due_date}
+                        onChange={e => setForm(p => ({ ...p, next_due_date: e.target.value }))}
+                    />
+                    <Input
+                        label="Nº Certificado"
+                        value={form.certificate_number}
+                        onChange={e => setForm(p => ({ ...p, certificate_number: e.target.value }))}
+                    />
+                    <Input
+                        label="Laboratório"
+                        value={form.laboratory}
+                        onChange={e => setForm(p => ({ ...p, laboratory: e.target.value }))}
+                    />
+                    <div className="space-y-1.5">
+                        <label htmlFor="cal-result" className="block text-[13px] font-medium text-surface-700">Resultado</label>
+                        <select
+                            id="cal-result"
+                            className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400 transition-all duration-150"
+                            value={form.result}
+                            onChange={e => setForm(p => ({ ...p, result: e.target.value }))}
+                        >
+                            <option value="approved">Aprovado</option>
+                            <option value="rejected">Reprovado</option>
+                        </select>
+                    </div>
+                    <Input
+                        label="Custo (R$)"
+                        type="number"
+                        step="0.01"
+                        value={form.cost}
+                        onChange={e => setForm(p => ({ ...p, cost: e.target.value }))}
+                    />
+                    <div className="col-span-2 space-y-1.5">
+                        <label htmlFor="cal-notes" className="block text-[13px] font-medium text-surface-700">Observações</label>
+                        <textarea
+                            id="cal-notes"
+                            className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400 transition-all duration-150"
+                            value={form.notes}
+                            onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                            rows={2}
+                        />
                     </div>
                 </div>
-            )}
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                open={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                title="Confirmar Exclusão"
+                size="sm"
+                footer={
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="danger"
+                            loading={deleteMutation.isPending}
+                            onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+                        >
+                            Excluir
+                        </Button>
+                    </div>
+                }
+            >
+                <p className="text-sm text-surface-600">
+                    Tem certeza que deseja excluir a calibração de{' '}
+                    <strong>{deleteTarget?.item_name ?? `Item #${deleteTarget?.inventory_item_id}`}</strong>?
+                    Esta ação não pode ser desfeita.
+                </p>
+            </Modal>
         </div>
     )
 }

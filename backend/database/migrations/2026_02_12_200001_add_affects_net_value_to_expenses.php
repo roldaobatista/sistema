@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::table('expenses', function (Blueprint $table) {
             $table->boolean('affects_net_value')->default(true)
-                ->after('affects_technician_cash')
                 ->comment('Se true, esta despesa é descontada do valor líquido da OS para cálculo de comissão');
         });
     }

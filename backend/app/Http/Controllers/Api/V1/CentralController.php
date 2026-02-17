@@ -88,9 +88,13 @@ class CentralController extends Controller
             'tags' => 'nullable|array',
         ]);
 
-        $updated = $this->service->atualizar($centralItem, $validated);
-
-        return response()->json($updated);
+        try {
+            $updated = $this->service->atualizar($centralItem, $validated);
+            return response()->json($updated);
+        } catch (\Throwable $e) {
+            Log::error('Central update failed', ['id' => $centralItem->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar item'], 500);
+        }
     }
 
     public function comment(Request $request, CentralItem $centralItem): JsonResponse

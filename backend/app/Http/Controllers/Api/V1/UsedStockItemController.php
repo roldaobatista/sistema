@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\UsedStockItem;
@@ -13,13 +14,15 @@ use Illuminate\Support\Facades\DB;
 
 class UsedStockItemController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function __construct(
         private readonly StockService $stockService
     ) {}
 
     public function index(Request $request): JsonResponse
     {
-        $tenantId = (int) (auth()->user()->current_tenant_id ?? auth()->user()->tenant_id);
+        $tenantId = $this->resolvedTenantId();
 
         $query = UsedStockItem::with(['workOrder:id,os_number,number', 'product:id,name,code', 'technicianWarehouse.user:id,name'])
             ->where('tenant_id', $tenantId);
@@ -125,7 +128,7 @@ class UsedStockItemController extends Controller
 
     protected function authorizeTenant(UsedStockItem $item): void
     {
-        $tenantId = (int) (auth()->user()->current_tenant_id ?? auth()->user()->tenant_id);
+        $tenantId = $this->resolvedTenantId();
         if ($item->tenant_id !== $tenantId) {
             abort(404);
         }

@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('imports', function (Blueprint $t) {
-            $t->string('separator', 10)->default(';')->after('file_name');
+            $t->string('separator', 10)->default(';');
         });
     }
 

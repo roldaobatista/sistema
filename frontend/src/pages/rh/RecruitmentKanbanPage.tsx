@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
 const STAGES = [
-    { id: 'applied', label: 'Aplicado', color: 'bg-slate-100 border-slate-200' },
+    { id: 'applied', label: 'Aplicado', color: 'bg-surface-100 border-surface-200' },
     { id: 'screening', label: 'Triagem', color: 'bg-blue-50 border-blue-200' },
     { id: 'interview', label: 'Entrevista', color: 'bg-indigo-50 border-indigo-200' },
     { id: 'technical_test', label: 'Teste Téc.', color: 'bg-purple-50 border-purple-200' },

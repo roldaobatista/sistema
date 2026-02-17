@@ -35,6 +35,8 @@ class AuditLog extends Model
         'logout' => 'Logout',
         'status_changed' => 'Status Alterado',
         'commented' => 'Comentário',
+        'tenant_switch' => 'Troca de Empresa',
+        'password_reset' => 'Senha Resetada',
     ];
 
     public function user(): BelongsTo

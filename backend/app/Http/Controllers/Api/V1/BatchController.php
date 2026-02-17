@@ -7,6 +7,7 @@ use App\Models\Batch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BatchController extends Controller
 {
@@ -59,6 +60,7 @@ class BatchController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Batch creation failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao criar lote'], 500);
         }
     }
@@ -81,12 +83,17 @@ class BatchController extends Controller
             'supplier_id' => "nullable|exists:suppliers,id,tenant_id,{$tenantId}",
         ]);
 
-        $batch->update($validated);
+        try {
+            $batch->update($validated);
 
-        return response()->json([
-            'message' => 'Lote atualizado com sucesso',
-            'data' => $batch->load('product'),
-        ]);
+            return response()->json([
+                'message' => 'Lote atualizado com sucesso',
+                'data' => $batch->load('product'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Batch update failed', ['id' => $batch->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar lote'], 500);
+        }
     }
 
     public function destroy(Batch $batch): JsonResponse
@@ -97,9 +104,13 @@ class BatchController extends Controller
             return response()->json(['message' => 'Não é possível excluir um lote com estoque ativo'], 422);
         }
 
-        $batch->delete();
-
-        return response()->json(['message' => 'Lote excluído com sucesso']);
+        try {
+            $batch->delete();
+            return response()->json(['message' => 'Lote excluído com sucesso']);
+        } catch (\Exception $e) {
+            Log::error('Batch deletion failed', ['id' => $batch->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir lote'], 500);
+        }
     }
 
     private function authorizeTenant(Batch $batch)

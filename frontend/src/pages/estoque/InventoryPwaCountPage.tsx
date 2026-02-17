@@ -47,9 +47,13 @@ export default function InventoryPwaCountPage() {
     })
 
     const handleSubmit = () => {
+        if (!allFilled) {
+            toast.error('Preencha a contagem de todos os itens antes de enviar.')
+            return
+        }
         const items = products.map((p) => ({
             product_id: p.product_id,
-            counted_quantity: Number(counts[p.product_id] ?? p.expected_quantity) || 0,
+            counted_quantity: Number(counts[p.product_id]) || 0,
         }))
         submitMut.mutate({ warehouse_id: id, items })
     }

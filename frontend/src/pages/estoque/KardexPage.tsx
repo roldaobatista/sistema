@@ -1,10 +1,9 @@
-import { useState , useMemo } from 'react';
-import { toast } from 'sonner'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
     ScrollText, Search, Loader2, ArrowUpCircle, ArrowDownCircle,
-    RefreshCw, Calendar, Warehouse as WarehouseIcon
+    RefreshCw, Calendar, Warehouse as WarehouseIcon, Download
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -42,18 +41,7 @@ const typeIcons: Record<string, { icon: typeof ArrowUpCircle; color: string }> =
 };
 
 export default function KardexPage() {
-
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/kardex/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['kardex'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
   const { hasPermission } = useAuthStore()
-
     const [productId, setProductId] = useState('');
     const [warehouseId, setWarehouseId] = useState('');
     const [dateFrom, setDateFrom] = useState('');
@@ -62,18 +50,18 @@ export default function KardexPage() {
 
     const { data: products } = useQuery({
         queryKey: ['products-list'],
-        queryFn: () => api.get('/api/v1/products', { params: { per_page: 500 } }).then(r => r.data?.data || r.data),
+        queryFn: () => api.get('/products', { params: { per_page: 500 } }).then(r => r.data?.data || r.data),
     });
 
     const { data: warehouses } = useQuery({
         queryKey: ['warehouses'],
-        queryFn: () => api.get('/api/v1/stock/warehouses').then(r => r.data?.data || r.data),
+        queryFn: () => api.get('/stock/warehouses').then(r => r.data?.data || r.data),
     });
 
-    const { data: kardex, isLoading, refetch, isRefetching } = useQuery({
+    const { data: kardex, isLoading, isError, refetch, isRefetching } = useQuery({
         queryKey: ['kardex', productId, warehouseId, dateFrom, dateTo],
         queryFn: () =>
-            api.get(`/api/v1/stock/products/${productId}/kardex`, {
+            api.get(`/stock/products/${productId}/kardex`, {
                 params: { warehouse_id: warehouseId, date_from: dateFrom || undefined, date_to: dateTo || undefined },
             }).then(r => r.data),
         enabled: !!productId && !!warehouseId,
@@ -84,6 +72,36 @@ export default function KardexPage() {
     );
 
     const entries: KardexEntry[] = kardex?.data || [];
+    const canView = hasPermission('estoque.movement.view');
+
+    const exportCsv = () => {
+        if (entries.length === 0) return;
+        const headers = ['Data', 'Tipo', 'Quantidade', 'Saldo', 'Lote', 'Usuário', 'Observação'];
+        const rows = entries.map(e => [
+            e.date, e.type_label, e.quantity.toFixed(2), e.balance.toFixed(2),
+            e.batch || '', e.user || '', (e.notes || '').replace(/"/g, '""'),
+        ]);
+        const csv = [headers.join(';'), ...rows.map(r => r.map(c => `"${c}"`).join(';'))].join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kardex_${productId}_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    if (!canView) {
+        return (
+            <div className="p-6">
+                <div className="rounded-xl border border-default bg-surface-0 p-8 text-center shadow-card">
+                    <ScrollText className="mx-auto mb-3 h-10 w-10 text-surface-300" />
+                    <h1 className="text-base font-semibold text-surface-900">Sem acesso ao Kardex</h1>
+                    <p className="mt-1 text-sm text-surface-500">Você não possui permissão para visualizar este módulo.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 space-y-6">
@@ -173,13 +191,22 @@ export default function KardexPage() {
                                 <span>Produto: <strong>{kardex.product.name}</strong> | Depósito: <strong>{kardex.warehouse?.name}</strong></span>
                             )}
                         </p>
-                        <button
-                            onClick={() => refetch()}
-                            disabled={isRefetching}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-800"
-                        >
-                            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} /> Atualizar
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={exportCsv}
+                                disabled={entries.length === 0}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm text-emerald-600 hover:text-emerald-800 disabled:opacity-40"
+                            >
+                                <Download className="h-4 w-4" /> Exportar CSV
+                            </button>
+                            <button
+                                onClick={() => refetch()}
+                                disabled={isRefetching}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-800"
+                            >
+                                <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} /> Atualizar
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -188,6 +215,16 @@ export default function KardexPage() {
                 <div className="bg-surface-0 rounded-xl shadow-card p-12 text-center text-surface-400">
                     <ScrollText className="h-12 w-12 mx-auto mb-3 text-surface-300" />
                     <p>Selecione um <strong>produto</strong> e um <strong>depósito</strong> para visualizar o Kardex.</p>
+                </div>
+            ) : isError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+                    <p className="text-sm font-medium text-red-800">Erro ao carregar o Kardex. Tente novamente.</p>
+                    <button
+                        onClick={() => refetch()}
+                        className="mt-2 px-3 py-1.5 text-sm text-red-700 hover:text-red-900 underline"
+                    >
+                        Tentar novamente
+                    </button>
                 </div>
             ) : isLoading ? (
                 <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>

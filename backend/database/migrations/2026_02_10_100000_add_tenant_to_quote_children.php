@@ -15,7 +15,7 @@ return new class extends Migration
                 // We add nullable first to populate, then change to not null if needed, 
                 // but for now we'll just add it. Given the existing data might exist,
                 // we should cascade from quotes.
-                $table->unsignedBigInteger('tenant_id')->after('id')->nullable();
+                $table->unsignedBigInteger('tenant_id')->nullable();
                 $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
             });
 
@@ -35,7 +35,7 @@ return new class extends Migration
         // Add tenant_id to quote_items if not exists
         if (!Schema::hasColumn('quote_items', 'tenant_id')) {
             Schema::table('quote_items', function (Blueprint $table) {
-                $table->unsignedBigInteger('tenant_id')->after('id')->nullable();
+                $table->unsignedBigInteger('tenant_id')->nullable();
                 $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
             });
 
@@ -55,7 +55,7 @@ return new class extends Migration
         // Add tenant_id to quote_photos if not exists
         if (!Schema::hasColumn('quote_photos', 'tenant_id')) {
             Schema::table('quote_photos', function (Blueprint $table) {
-                $table->unsignedBigInteger('tenant_id')->after('id')->nullable();
+                $table->unsignedBigInteger('tenant_id')->nullable();
                 $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
             });
 

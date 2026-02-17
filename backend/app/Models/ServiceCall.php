@@ -20,7 +20,7 @@ class ServiceCall extends Model
         'technician_id', 'driver_id', 'created_by', 'status', 'priority',
         'scheduled_date', 'started_at', 'completed_at',
         'latitude', 'longitude', 'address', 'city', 'state', 'observations',
-        'resolution_notes',
+        'resolution_notes', 'reschedule_count', 'reschedule_reason',
     ];
 
     protected $appends = [
@@ -119,7 +119,11 @@ class ServiceCall extends Model
 
     public static function nextNumber(int $tenantId): string
     {
-        $last = static::withTrashed()->where('tenant_id', $tenantId)->orderByDesc('id')->value('call_number');
+        $last = static::withTrashed()
+            ->where('tenant_id', $tenantId)
+            ->lockForUpdate()
+            ->orderByDesc('id')
+            ->value('call_number');
         $num = $last ? ((int) preg_replace('/\D/', '', $last)) + 1 : 1;
         return 'CT-' . str_pad($num, 5, '0', STR_PAD_LEFT);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\WorkSchedule;
 use App\Models\TimeClockEntry;
 use App\Models\Training;
@@ -16,11 +17,12 @@ use Illuminate\Support\Facades\Log;
 
 class HRController extends Controller
 {
+    use ResolvesCurrentTenant;
     // ─── WORK SCHEDULES ──────────────────────────────────────────
 
     public function indexSchedules(Request $request): JsonResponse
     {
-        $query = WorkSchedule::where('tenant_id', $request->user()->tenant_id)
+        $query = WorkSchedule::where('tenant_id', $this->resolvedTenantId())
             ->with('user:id,name');
 
         if ($request->filled('user_id')) $query->where('user_id', $request->user_id);
@@ -44,7 +46,7 @@ class HRController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $schedule = WorkSchedule::updateOrCreate(
                 ['user_id' => $validated['user_id'], 'date' => $validated['date']],
                 $validated
@@ -72,7 +74,7 @@ class HRController extends Controller
 
         try {
             DB::beginTransaction();
-            $tenantId = $request->user()->tenant_id;
+            $tenantId = $this->resolvedTenantId();
             foreach ($validated['schedules'] as $data) {
                 $data['tenant_id'] = $tenantId;
                 WorkSchedule::updateOrCreate(
@@ -109,7 +111,7 @@ class HRController extends Controller
         try {
             DB::beginTransaction();
             $entry = TimeClockEntry::create([
-                'tenant_id' => $request->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
                 'user_id' => $request->user()->id,
                 'clock_in' => now(),
                 'latitude_in' => $validated['latitude'] ?? null,
@@ -167,7 +169,7 @@ class HRController extends Controller
 
     public function allClockEntries(Request $request): JsonResponse
     {
-        $query = TimeClockEntry::where('tenant_id', $request->user()->tenant_id)
+        $query = TimeClockEntry::where('tenant_id', $this->resolvedTenantId())
             ->with('user:id,name');
 
         if ($request->filled('user_id')) $query->where('user_id', $request->user_id);
@@ -181,7 +183,7 @@ class HRController extends Controller
 
     public function indexTrainings(Request $request): JsonResponse
     {
-        $query = Training::where('tenant_id', $request->user()->tenant_id)
+        $query = Training::where('tenant_id', $this->resolvedTenantId())
             ->with('user:id,name');
 
         if ($request->filled('user_id')) $query->where('user_id', $request->user_id);
@@ -207,7 +209,7 @@ class HRController extends Controller
 
         try {
             DB::beginTransaction();
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $training = Training::create($validated);
             DB::commit();
             return response()->json(['message' => 'Treinamento registrado', 'data' => $training], 201);
@@ -267,7 +269,7 @@ class HRController extends Controller
 
     public function dashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
 
         $expiringTrainings = Training::where('tenant_id', $tenantId)
             ->whereNotNull('expiry_date')

@@ -18,8 +18,13 @@
     }
   </script>
   <script>
-    // Dark mode — apply before first paint to avoid FOUC
-    try { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); } catch(e) {}
+    // Dark mode — apply before first paint to avoid FOUC (localStorage may be unavailable in private mode)
+    try {
+      var t = localStorage.getItem('theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    } catch (e) { /* ignore */ }
   </script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />

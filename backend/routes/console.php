@@ -176,6 +176,12 @@ Schedule::job(new \App\Jobs\ProcessCrmSequences)
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/crm-sequences.log'));
 
+// ─── Relatórios Agendados (diário às 07:10) ───
+Schedule::command('reports:send-scheduled')
+    ->dailyAt('07:10')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/scheduled-reports.log'));
+
 // ─── CRM: Gerar Alertas Inteligentes (diário às 07:20) ───
 Schedule::job(new \App\Jobs\GenerateCrmSmartAlerts)
     ->dailyAt('07:20')

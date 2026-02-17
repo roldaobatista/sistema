@@ -174,12 +174,15 @@ class WorkOrder extends Model
 
     public static function nextNumber(int $tenantId): string
     {
-        $last = static::withTrashed()
-            ->where('tenant_id', $tenantId)
-            ->lockForUpdate()
-            ->max('number');
-        $seq = $last ? (int) str_replace('OS-', '', $last) + 1 : 1;
-        return 'OS-' . str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($tenantId) {
+            $last = static::withTrashed()
+                ->withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->lockForUpdate()
+                ->max('number');
+            $seq = $last ? (int) str_replace('OS-', '', $last) + 1 : 1;
+            return 'OS-' . str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
+        });
     }
 
     public function recalculateTotal(): void

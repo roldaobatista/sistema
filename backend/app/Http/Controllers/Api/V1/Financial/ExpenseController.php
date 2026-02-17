@@ -32,6 +32,9 @@ class ExpenseController extends Controller
             $query = Expense::with(['category:id,name,color', 'creator:id,name', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type', 'reviewer:id,name'])
                 ->where('tenant_id', $tenantId);
 
+            if ($request->get('my')) {
+                $query->where('created_by', $request->user()->id);
+            }
             if ($search = $request->get('search')) {
                 $query->where(function ($q) use ($search) {
                     $q->where('description', 'like', "%{$search}%")
@@ -380,6 +383,8 @@ class ExpenseController extends Controller
                 'name' => ['required', 'string', 'max:100', Rule::unique('expense_categories')->where(fn ($q) => $q->where('tenant_id', $tenantId)->whereNull('deleted_at'))],
                 'color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
                 'budget_limit' => 'nullable|numeric|min:0',
+                'default_affects_net_value' => 'boolean',
+                'default_affects_technician_cash' => 'boolean',
             ]);
 
             $category = DB::transaction(fn () => ExpenseCategory::create([
@@ -413,6 +418,8 @@ class ExpenseController extends Controller
                 'color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
                 'active' => 'boolean',
                 'budget_limit' => 'nullable|numeric|min:0',
+                'default_affects_net_value' => 'boolean',
+                'default_affects_technician_cash' => 'boolean',
             ]);
 
             DB::transaction(fn () => $category->update($validated));
@@ -518,6 +525,7 @@ class ExpenseController extends Controller
 
             $statusLabels = [
                 Expense::STATUS_PENDING => 'Pendente',
+                Expense::STATUS_REVIEWED => 'Conferido',
                 Expense::STATUS_APPROVED => 'Aprovado',
                 Expense::STATUS_REJECTED => 'Rejeitado',
                 Expense::STATUS_REIMBURSED => 'Reembolsado',
@@ -531,7 +539,7 @@ class ExpenseController extends Controller
             return response()->stream(function () use ($expenses, $statusLabels) {
                 $out = fopen('php://output', 'w');
                 fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
-                fputcsv($out, ['ID', 'Descricao', 'Valor', 'Data', 'Status', 'Categoria', 'Conta Contabil', 'Responsavel', 'Aprovador', 'OS', 'Forma Pgto', 'Observacoes'], ';');
+                fputcsv($out, ['ID', 'Descricao', 'Valor', 'Data', 'Status', 'Categoria', 'Conta Contabil', 'Responsavel', 'Aprovador', 'OS', 'Forma Pgto', 'Km Qtde', 'Km Valor', 'Km Cobrado Cliente', 'Observacoes'], ';');
 
                 foreach ($expenses as $exp) {
                     fputcsv($out, [
@@ -546,6 +554,9 @@ class ExpenseController extends Controller
                         $exp->approver?->name ?? '',
                         $exp->workOrder?->os_number ?? $exp->workOrder?->number ?? '',
                         $exp->payment_method ?? '',
+                        $exp->km_quantity ? number_format((float) $exp->km_quantity, 1, ',', '.') : '',
+                        $exp->km_rate ? number_format((float) $exp->km_rate, 4, ',', '.') : '',
+                        $exp->km_billed_to_client ? 'Sim' : '',
                         $exp->notes ?? '',
                     ], ';');
                 }
@@ -765,6 +776,7 @@ class ExpenseController extends Controller
                     'tenant_id' => $expense->tenant_id,
                     'expense_category_id' => $expense->expense_category_id,
                     'work_order_id' => $expense->work_order_id,
+                    'chart_of_account_id' => $expense->chart_of_account_id,
                     'created_by' => $request->user()->id,
                     'description' => $expense->description,
                     'amount' => $expense->amount,
@@ -772,6 +784,10 @@ class ExpenseController extends Controller
                     'payment_method' => $expense->payment_method,
                     'notes' => $expense->notes,
                     'affects_technician_cash' => $expense->affects_technician_cash,
+                    'affects_net_value' => $expense->affects_net_value,
+                    'km_quantity' => $expense->km_quantity,
+                    'km_rate' => $expense->km_rate,
+                    'km_billed_to_client' => $expense->km_billed_to_client,
                 ]);
                 $clone->forceFill(['status' => Expense::STATUS_PENDING]);
                 $clone->save();

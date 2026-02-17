@@ -110,11 +110,15 @@ class TimeEntryController extends Controller
             ], 409);
         }
 
-        $entry = DB::transaction(function () use ($validated, $tenantId) {
-            return TimeEntry::create([...$validated, 'tenant_id' => $tenantId]);
-        });
-
-        return response()->json($entry->load(['technician:id,name', 'workOrder:id,number,os_number']), 201);
+        try {
+            $entry = DB::transaction(function () use ($validated, $tenantId) {
+                return TimeEntry::create([...$validated, 'tenant_id' => $tenantId]);
+            });
+            return response()->json($entry->load(['technician:id,name', 'workOrder:id,number,os_number']), 201);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('TimeEntry store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar apontamento'], 500);
+        }
     }
 
     public function update(Request $request, TimeEntry $timeEntry): JsonResponse
@@ -128,8 +132,13 @@ class TimeEntryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $timeEntry->update($validated);
-        return response()->json($timeEntry->fresh()->load(['technician:id,name', 'workOrder:id,number,os_number']));
+        try {
+            $timeEntry->update($validated);
+            return response()->json($timeEntry->fresh()->load(['technician:id,name', 'workOrder:id,number,os_number']));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('TimeEntry update failed', ['id' => $timeEntry->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar apontamento'], 500);
+        }
     }
 
     public function destroy(Request $request, TimeEntry $timeEntry): JsonResponse

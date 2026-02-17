@@ -72,7 +72,7 @@ export function SendMessageModal({ customerId, customerName, customerPhone, cust
         <>
             <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div className="w-full max-w-lg rounded-2xl border border-default bg-white shadow-modal animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-full max-w-lg rounded-2xl border border-default bg-surface-0 dark:bg-surface-800 shadow-modal animate-in fade-in zoom-in-95 duration-200">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-subtle px-5 py-4">
                         <div>
@@ -169,7 +169,7 @@ export function SendMessageModal({ customerId, customerName, customerPhone, cust
                                     value={subject}
                                     onChange={e => setSubject(e.target.value)}
                                     placeholder="Assunto do e-mail..."
-                                    className="w-full rounded-lg border border-default bg-white px-3 py-2 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                    className="w-full rounded-lg border border-default bg-surface-0 dark:bg-surface-800 px-3 py-2 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                                 />
                             </div>
                         )}
@@ -182,7 +182,7 @@ export function SendMessageModal({ customerId, customerName, customerPhone, cust
                                 onChange={e => setBody(e.target.value)}
                                 placeholder={channel === 'whatsapp' ? 'Digite sua mensagem...' : 'Conteúdo do e-mail...'}
                                 rows={5}
-                                className="w-full rounded-lg border border-default bg-white px-3 py-2.5 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none"
+                                className="w-full rounded-lg border border-default bg-surface-0 dark:bg-surface-800 px-3 py-2.5 text-sm text-surface-900 placeholder:text-surface-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none"
                             />
                             <p className="mt-1 text-xs text-surface-400">{body.length} caracteres</p>
                         </div>

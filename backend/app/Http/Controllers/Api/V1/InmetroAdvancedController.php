@@ -12,10 +12,12 @@ use App\Services\InmetroWebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 
 class InmetroAdvancedController extends Controller
 {
+    use ResolvesCurrentTenant;
     public function __construct(
         private InmetroProspectionService $prospection,
         private InmetroTerritorialService $territorial,
@@ -34,7 +36,7 @@ class InmetroAdvancedController extends Controller
     {
         try {
             $result = $this->prospection->generateDailyQueue(
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->input('assigned_to'),
                 $request->input('max_items', 20),
             );
@@ -47,7 +49,7 @@ class InmetroAdvancedController extends Controller
     public function getContactQueue(Request $request): JsonResponse
     {
         $result = $this->prospection->getContactQueue(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('date'),
         );
         return response()->json($result);
@@ -58,7 +60,7 @@ class InmetroAdvancedController extends Controller
         $request->validate(['status' => 'required|in:contacted,skipped,converted']);
 
         try {
-            $item = $this->prospection->markQueueItem($queueId, $request->input('status'), $request->user()->tenant_id);
+            $item = $this->prospection->markQueueItem($queueId, $request->input('status'), $this->resolvedTenantId());
             return response()->json(['message' => 'Queue item updated', 'data' => $item]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to update queue item', 'error' => $e->getMessage()], 500);
@@ -67,15 +69,15 @@ class InmetroAdvancedController extends Controller
 
     public function followUps(Request $request): JsonResponse
     {
-        $result = $this->prospection->scheduleFollowUps($request->user()->tenant_id);
+        $result = $this->prospection->scheduleFollowUps($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function calculateLeadScore(Request $request, int $ownerId): JsonResponse
     {
         try {
-            $owner = \App\Models\InmetroOwner::where('tenant_id', $request->user()->tenant_id)->findOrFail($ownerId);
-            $score = $this->prospection->calculateLeadScore($owner, $request->user()->tenant_id);
+            $owner = \App\Models\InmetroOwner::where('tenant_id', $this->resolvedTenantId())->findOrFail($ownerId);
+            $score = $this->prospection->calculateLeadScore($owner, $this->resolvedTenantId());
             return response()->json(['message' => 'Score calculated', 'data' => $score]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to calculate score', 'error' => $e->getMessage()], 500);
@@ -85,7 +87,7 @@ class InmetroAdvancedController extends Controller
     public function recalculateAllScores(Request $request): JsonResponse
     {
         try {
-            $count = $this->prospection->recalculateAllScores($request->user()->tenant_id);
+            $count = $this->prospection->recalculateAllScores($this->resolvedTenantId());
             return response()->json(['message' => "Scores recalculated for {$count} owners"]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to recalculate scores', 'error' => $e->getMessage()], 500);
@@ -95,7 +97,7 @@ class InmetroAdvancedController extends Controller
     public function detectChurn(Request $request): JsonResponse
     {
         $result = $this->prospection->detectChurnedCustomers(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('inactive_months', 6),
         );
         return response()->json($result);
@@ -104,7 +106,7 @@ class InmetroAdvancedController extends Controller
     public function newRegistrations(Request $request): JsonResponse
     {
         $result = $this->prospection->detectNewRegistrations(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('since_days', 7),
         );
         return response()->json($result);
@@ -113,7 +115,7 @@ class InmetroAdvancedController extends Controller
     public function suggestNextCalibrations(Request $request): JsonResponse
     {
         $result = $this->prospection->suggestNextCalibrations(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('days', 90),
         );
         return response()->json($result);
@@ -122,7 +124,7 @@ class InmetroAdvancedController extends Controller
     public function classifySegments(Request $request): JsonResponse
     {
         try {
-            $count = $this->prospection->classifySegments($request->user()->tenant_id);
+            $count = $this->prospection->classifySegments($this->resolvedTenantId());
             return response()->json(['message' => "{$count} owners classified"]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to classify segments', 'error' => $e->getMessage()], 500);
@@ -131,20 +133,20 @@ class InmetroAdvancedController extends Controller
 
     public function segmentDistribution(Request $request): JsonResponse
     {
-        $result = $this->prospection->getSegmentDistribution($request->user()->tenant_id);
+        $result = $this->prospection->getSegmentDistribution($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function rejectAlerts(Request $request): JsonResponse
     {
-        $result = $this->prospection->getRejectAlerts($request->user()->tenant_id);
+        $result = $this->prospection->getRejectAlerts($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function conversionRanking(Request $request): JsonResponse
     {
         $result = $this->prospection->getConversionRanking(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('period'),
         );
         return response()->json($result);
@@ -163,7 +165,7 @@ class InmetroAdvancedController extends Controller
         try {
             $interaction = $this->prospection->logInteraction(
                 $request->only(['owner_id', 'channel', 'result', 'notes', 'next_follow_up_at']),
-                $request->user()->tenant_id,
+                $this->resolvedTenantId(),
                 $request->user()->id,
             );
             return response()->json(['message' => 'Interaction logged', 'data' => $interaction], 201);
@@ -174,7 +176,7 @@ class InmetroAdvancedController extends Controller
 
     public function interactionHistory(Request $request, int $ownerId): JsonResponse
     {
-        $result = $this->prospection->getInteractionHistory($ownerId, $request->user()->tenant_id);
+        $result = $this->prospection->getInteractionHistory($ownerId, $this->resolvedTenantId());
         return response()->json($result);
     }
 
@@ -185,7 +187,7 @@ class InmetroAdvancedController extends Controller
     public function layeredMapData(Request $request): JsonResponse
     {
         $layers = $request->input('layers', ['instruments', 'competitors', 'leads']);
-        $result = $this->territorial->getLayeredMapData($request->user()->tenant_id, $layers);
+        $result = $this->territorial->getLayeredMapData($this->resolvedTenantId(), $layers);
         return response()->json($result);
     }
 
@@ -198,7 +200,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         $result = $this->territorial->optimizeRoute(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             (float)$request->input('base_lat'),
             (float)$request->input('base_lng'),
             $request->input('owner_ids'),
@@ -208,13 +210,13 @@ class InmetroAdvancedController extends Controller
 
     public function competitorZones(Request $request): JsonResponse
     {
-        $result = $this->territorial->getCompetitorZones($request->user()->tenant_id);
+        $result = $this->territorial->getCompetitorZones($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function coverageVsPotential(Request $request): JsonResponse
     {
-        $result = $this->territorial->getCoverageVsPotential($request->user()->tenant_id);
+        $result = $this->territorial->getCoverageVsPotential($this->resolvedTenantId());
         return response()->json($result);
     }
 
@@ -226,7 +228,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         $result = $this->territorial->getDensityViability(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             (float)$request->input('base_lat'),
             (float)$request->input('base_lng'),
             (float)$request->input('cost_per_km', 1.30),
@@ -242,7 +244,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         $result = $this->territorial->getNearbyLeads(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             (float)$request->input('lat'),
             (float)$request->input('lng'),
             (float)$request->input('radius_km', 50),
@@ -257,7 +259,7 @@ class InmetroAdvancedController extends Controller
     public function snapshotMarketShare(Request $request): JsonResponse
     {
         try {
-            $snapshot = $this->competitorTracking->snapshotMarketShare($request->user()->tenant_id);
+            $snapshot = $this->competitorTracking->snapshotMarketShare($this->resolvedTenantId());
             return response()->json(['message' => 'Market share snapshot created', 'data' => $snapshot]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to create snapshot', 'error' => $e->getMessage()], 500);
@@ -267,7 +269,7 @@ class InmetroAdvancedController extends Controller
     public function marketShareTimeline(Request $request): JsonResponse
     {
         $result = $this->competitorTracking->getMarketShareTimeline(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('months', 12),
         );
         return response()->json($result);
@@ -275,20 +277,20 @@ class InmetroAdvancedController extends Controller
 
     public function competitorMovements(Request $request): JsonResponse
     {
-        $result = $this->competitorTracking->detectCompetitorMovements($request->user()->tenant_id);
+        $result = $this->competitorTracking->detectCompetitorMovements($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function estimatePricing(Request $request): JsonResponse
     {
-        $result = $this->competitorTracking->estimatePricing($request->user()->tenant_id);
+        $result = $this->competitorTracking->estimatePricing($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function competitorProfile(Request $request, int $competitorId): JsonResponse
     {
         try {
-            $result = $this->competitorTracking->getCompetitorProfile($request->user()->tenant_id, $competitorId);
+            $result = $this->competitorTracking->getCompetitorProfile($this->resolvedTenantId(), $competitorId);
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Competitor not found', 'error' => $e->getMessage()], 404);
@@ -308,7 +310,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         try {
-            $record = $this->competitorTracking->recordWinLoss($data, $request->user()->tenant_id);
+            $record = $this->competitorTracking->recordWinLoss($data, $this->resolvedTenantId());
             return response()->json(['message' => 'Win/Loss recorded', 'data' => $record], 201);
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Failed to record win/loss', 'error' => $e->getMessage()], 500);
@@ -318,7 +320,7 @@ class InmetroAdvancedController extends Controller
     public function winLossAnalysis(Request $request): JsonResponse
     {
         $result = $this->competitorTracking->getWinLossAnalysis(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('period'),
         );
         return response()->json($result);
@@ -330,7 +332,7 @@ class InmetroAdvancedController extends Controller
 
     public function suggestLinkedEquipments(Request $request, int $customerId): JsonResponse
     {
-        $result = $this->operational->suggestLinkedEquipments($request->user()->tenant_id, $customerId);
+        $result = $this->operational->suggestLinkedEquipments($this->resolvedTenantId(), $customerId);
         return response()->json($result);
     }
 
@@ -365,7 +367,7 @@ class InmetroAdvancedController extends Controller
     public function instrumentTimeline(Request $request, int $instrumentId): JsonResponse
     {
         try {
-            $result = $this->operational->getInstrumentTimeline($instrumentId, $request->user()->tenant_id);
+            $result = $this->operational->getInstrumentTimeline($instrumentId, $this->resolvedTenantId());
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Instrument not found', 'error' => $e->getMessage()], 404);
@@ -375,7 +377,7 @@ class InmetroAdvancedController extends Controller
     public function compareCalibrations(Request $request, int $instrumentId): JsonResponse
     {
         try {
-            $result = $this->operational->compareCalibrationResults($instrumentId, $request->user()->tenant_id);
+            $result = $this->operational->compareCalibrationResults($instrumentId, $this->resolvedTenantId());
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Instrument not found', 'error' => $e->getMessage()], 404);
@@ -388,14 +390,14 @@ class InmetroAdvancedController extends Controller
 
     public function executiveDashboard(Request $request): JsonResponse
     {
-        $result = $this->reporting->getExecutiveDashboard($request->user()->tenant_id);
+        $result = $this->reporting->getExecutiveDashboard($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function revenueForecast(Request $request): JsonResponse
     {
         $result = $this->reporting->getRevenueForecast(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('months', 6),
         );
         return response()->json($result);
@@ -403,19 +405,19 @@ class InmetroAdvancedController extends Controller
 
     public function conversionFunnel(Request $request): JsonResponse
     {
-        $result = $this->reporting->getConversionFunnel($request->user()->tenant_id);
+        $result = $this->reporting->getConversionFunnel($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function exportData(Request $request): JsonResponse
     {
-        $result = $this->reporting->getExportData($request->user()->tenant_id);
+        $result = $this->reporting->getExportData($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function yearOverYear(Request $request): JsonResponse
     {
-        $result = $this->reporting->getYearOverYear($request->user()->tenant_id);
+        $result = $this->reporting->getYearOverYear($this->resolvedTenantId());
         return response()->json($result);
     }
 
@@ -426,7 +428,7 @@ class InmetroAdvancedController extends Controller
     public function complianceChecklists(Request $request): JsonResponse
     {
         $result = $this->compliance->getChecklists(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('instrument_type'),
         );
         return response()->json($result);
@@ -442,7 +444,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         try {
-            $checklist = $this->compliance->createChecklist($data, $request->user()->tenant_id);
+            $checklist = $this->compliance->createChecklist($data, $this->resolvedTenantId());
             return response()->json(['message' => 'Checklist created', 'data' => $checklist], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to create checklist', 'error' => $e->getMessage()], 500);
@@ -458,7 +460,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         try {
-            $checklist = $this->compliance->updateChecklist($id, $data, $request->user()->tenant_id);
+            $checklist = $this->compliance->updateChecklist($id, $data, $this->resolvedTenantId());
             return response()->json(['message' => 'Checklist updated', 'data' => $checklist]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to update checklist', 'error' => $e->getMessage()], 500);
@@ -468,7 +470,7 @@ class InmetroAdvancedController extends Controller
     public function regulatoryTraceability(Request $request, int $instrumentId): JsonResponse
     {
         try {
-            $result = $this->compliance->getRegulatoryTraceability($instrumentId, $request->user()->tenant_id);
+            $result = $this->compliance->getRegulatoryTraceability($instrumentId, $this->resolvedTenantId());
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Instrument not found', 'error' => $e->getMessage()], 404);
@@ -483,31 +485,31 @@ class InmetroAdvancedController extends Controller
             'affected_types' => 'nullable|array',
         ]);
 
-        $result = $this->compliance->simulateRegulatoryImpact($request->user()->tenant_id, $data);
+        $result = $this->compliance->simulateRegulatoryImpact($this->resolvedTenantId(), $data);
         return response()->json($result);
     }
 
     public function corporateGroups(Request $request): JsonResponse
     {
-        $result = $this->compliance->detectCorporateGroups($request->user()->tenant_id);
+        $result = $this->compliance->detectCorporateGroups($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function instrumentTypes(Request $request): JsonResponse
     {
-        $result = $this->compliance->getInstrumentTypes($request->user()->tenant_id);
+        $result = $this->compliance->getInstrumentTypes($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function detectAnomalies(Request $request): JsonResponse
     {
-        $result = $this->compliance->detectAnomalies($request->user()->tenant_id);
+        $result = $this->compliance->detectAnomalies($this->resolvedTenantId());
         return response()->json($result);
     }
 
     public function renewalProbability(Request $request): JsonResponse
     {
-        $result = $this->compliance->getRenewalProbability($request->user()->tenant_id);
+        $result = $this->compliance->getRenewalProbability($this->resolvedTenantId());
         return response()->json($result);
     }
 
@@ -518,7 +520,7 @@ class InmetroAdvancedController extends Controller
     public function publicInstrumentData(Request $request): JsonResponse
     {
         $result = $this->webhooks->getPublicInstrumentData(
-            $request->user()->tenant_id,
+            $this->resolvedTenantId(),
             $request->input('city'),
         );
         return response()->json($result);
@@ -526,7 +528,7 @@ class InmetroAdvancedController extends Controller
 
     public function listWebhooks(Request $request): JsonResponse
     {
-        $result = $this->webhooks->listWebhooks($request->user()->tenant_id);
+        $result = $this->webhooks->listWebhooks($this->resolvedTenantId());
         return response()->json($result);
     }
 
@@ -539,7 +541,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         try {
-            $webhook = $this->webhooks->createWebhook($data, $request->user()->tenant_id);
+            $webhook = $this->webhooks->createWebhook($data, $this->resolvedTenantId());
             return response()->json(['message' => 'Webhook created', 'data' => $webhook], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to create webhook', 'error' => $e->getMessage()], 500);
@@ -554,7 +556,7 @@ class InmetroAdvancedController extends Controller
         ]);
 
         try {
-            $webhook = $this->webhooks->updateWebhook($id, $data, $request->user()->tenant_id);
+            $webhook = $this->webhooks->updateWebhook($id, $data, $this->resolvedTenantId());
             return response()->json(['message' => 'Webhook updated', 'data' => $webhook]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to update webhook', 'error' => $e->getMessage()], 500);
@@ -564,7 +566,7 @@ class InmetroAdvancedController extends Controller
     public function deleteWebhook(Request $request, int $id): JsonResponse
     {
         try {
-            $this->webhooks->deleteWebhook($id, $request->user()->tenant_id);
+            $this->webhooks->deleteWebhook($id, $this->resolvedTenantId());
             return response()->json(['message' => 'Webhook deleted']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to delete webhook', 'error' => $e->getMessage()], 500);

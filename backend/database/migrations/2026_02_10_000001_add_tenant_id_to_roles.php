@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -19,7 +20,7 @@ return new class extends Migration
 
         Schema::table($tableNames['roles'], function (Blueprint $table) use ($tableNames) {
             if (!Schema::hasColumn($tableNames['roles'], 'tenant_id')) {
-                $table->foreignId('tenant_id')->nullable()->after('guard_name')
+                $table->foreignId('tenant_id')->nullable()
                     ->constrained('tenants')->nullOnDelete();
             }
             
@@ -31,15 +32,14 @@ return new class extends Migration
             try {
                 $table->dropUnique(['name', 'guard_name']);
             } catch (\Exception $e) {
-                // Índice pode já ter sido removido ou não existir
+                Log::warning('add_tenant_id_to_roles: dropUnique skipped', ['error' => $e->getMessage()]);
             }
-            
+
             // Adiciona nova unique constraint (tenant_id, name, guard_name)
-            // Permitindo múltiplos NULLs no tenant_id para roles globais
             try {
                 $table->unique(['name', 'guard_name', 'tenant_id']);
             } catch (\Exception $e) {
-                // Índice pode já existir
+                Log::warning('add_tenant_id_to_roles: unique constraint skipped', ['error' => $e->getMessage()]);
             }
         });
     }

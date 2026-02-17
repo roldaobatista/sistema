@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('work_order_items', function (Blueprint $table) {
             if (!Schema::hasColumn('work_order_items', 'tenant_id')) {
-                $table->unsignedBigInteger('tenant_id')->nullable()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable();
                 $table->index('tenant_id');
             }
         });

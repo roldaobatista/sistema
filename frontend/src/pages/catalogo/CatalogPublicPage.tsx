@@ -40,10 +40,10 @@ export default function CatalogPublicPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-stone-600" />
-          <p className="text-sm text-stone-500">Carregando catálogo...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface-300 border-t-surface-600" />
+          <p className="text-sm text-surface-500">Carregando catálogo...</p>
         </div>
       </div>
     )
@@ -51,11 +51,11 @@ export default function CatalogPublicPage() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4">
-        <div className="max-w-md w-full rounded-2xl bg-white p-8 shadow-sm border border-stone-200 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950 p-4">
+        <div className="max-w-md w-full rounded-2xl bg-surface-0 dark:bg-surface-800 p-8 shadow-sm border border-surface-200 dark:border-surface-700 text-center">
           <AlertTriangle className="mx-auto h-12 w-12 text-amber-500" />
-          <h1 className="mt-4 text-xl font-semibold text-stone-900">Não encontrado</h1>
-          <p className="mt-2 text-stone-600">{error}</p>
+          <h1 className="mt-4 text-xl font-semibold text-surface-900">Não encontrado</h1>
+          <p className="mt-2 text-surface-600">{error}</p>
         </div>
       </div>
     )
@@ -64,25 +64,25 @@ export default function CatalogPublicPage() {
   const { catalog, tenant, items } = data
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="border-b border-stone-200/80 bg-white/90 backdrop-blur-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-950">
+      <header className="border-b border-surface-200/80 dark:border-surface-700 bg-surface-0/90 dark:bg-surface-900/90 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto max-w-5xl px-6 py-5">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-stone-900">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-surface-900">
                 {catalog.name}
               </h1>
               {catalog.subtitle && (
-                <p className="mt-0.5 text-stone-500 text-sm">{catalog.subtitle}</p>
+                <p className="mt-0.5 text-surface-500 text-sm">{catalog.subtitle}</p>
               )}
               {tenant && (
-                <p className="mt-1 text-xs text-stone-400">{tenant.name}</p>
+                <p className="mt-1 text-xs text-surface-400">{tenant.name}</p>
               )}
             </div>
-            <Scale className="hidden sm:block h-8 w-8 text-stone-300" aria-hidden />
+            <Scale className="hidden sm:block h-8 w-8 text-surface-300" aria-hidden />
           </div>
           {catalog.header_description && (
-            <p className="mt-4 text-stone-600 text-sm leading-relaxed max-w-2xl">
+            <p className="mt-4 text-surface-600 text-sm leading-relaxed max-w-2xl">
               {catalog.header_description}
             </p>
           )}
@@ -91,19 +91,19 @@ export default function CatalogPublicPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-10 sm:py-14">
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-stone-200 bg-white p-12 text-center">
-            <p className="text-stone-500">Este catálogo ainda não possui itens.</p>
+          <div className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-800 p-12 text-center">
+            <p className="text-surface-500">Este catálogo ainda não possui itens.</p>
           </div>
         ) : (
           <div className="grid gap-8 sm:gap-12">
             {items.map((item, idx) => (
               <article
                 key={item.id}
-                className="group rounded-2xl overflow-hidden bg-white border border-stone-200/80 shadow-sm hover:shadow-md transition-shadow duration-300"
+                className="group rounded-2xl overflow-hidden bg-surface-0 dark:bg-surface-800 border border-surface-200/80 dark:border-surface-700 shadow-sm hover:shadow-md transition-shadow duration-300"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
                 <div className="flex flex-col sm:flex-row">
-                  <div className="sm:w-[42%] aspect-[4/3] sm:aspect-square bg-stone-100 relative overflow-hidden shrink-0">
+                  <div className="sm:w-[42%] aspect-[4/3] sm:aspect-square bg-surface-100 dark:bg-surface-900 relative overflow-hidden shrink-0">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -112,25 +112,25 @@ export default function CatalogPublicPage() {
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Scale className="h-12 w-12 text-stone-300" />
+                        <Scale className="h-12 w-12 text-surface-300" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
-                    <h2 className="text-xl sm:text-2xl font-semibold text-stone-900 tracking-tight">
+                    <h2 className="text-xl sm:text-2xl font-semibold text-surface-900 tracking-tight">
                       {item.title}
                     </h2>
                     {item.description && (
-                      <p className="mt-3 text-stone-600 text-sm leading-relaxed">
+                      <p className="mt-3 text-surface-600 text-sm leading-relaxed">
                         {item.description}
                       </p>
                     )}
                     {item.service && (
-                      <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-between">
-                        <span className="text-xs uppercase tracking-wider text-stone-400 font-medium">
+                      <div className="mt-4 pt-4 border-t border-surface-100 dark:border-surface-700 flex items-center justify-between">
+                        <span className="text-xs uppercase tracking-wider text-surface-400 font-medium">
                           {item.service.code ? `#${item.service.code}` : 'Serviço'}
                         </span>
-                        <span className="text-base font-semibold text-stone-800 tabular-nums">
+                        <span className="text-base font-semibold text-surface-800 tabular-nums">
                           {formatBRL(item.service.default_price)}
                         </span>
                       </div>
@@ -142,7 +142,7 @@ export default function CatalogPublicPage() {
           </div>
         )}
 
-        <footer className="mt-16 pt-8 border-t border-stone-200/80 text-center text-xs text-stone-400">
+        <footer className="mt-16 pt-8 border-t border-surface-200/80 dark:border-surface-700 text-center text-xs text-surface-400">
           Catálogo gerado automaticamente
         </footer>
       </main>

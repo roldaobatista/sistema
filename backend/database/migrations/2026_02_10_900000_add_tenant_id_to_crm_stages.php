@@ -11,7 +11,7 @@ return new class extends Migration
     {
         if (!Schema::hasColumn('crm_pipeline_stages', 'tenant_id')) {
             Schema::table('crm_pipeline_stages', function (Blueprint $table) {
-                $table->foreignId('tenant_id')->nullable()->after('id')->constrained()->cascadeOnDelete();
+                $table->foreignId('tenant_id')->nullable()->constrained()->cascadeOnDelete();
             });
         }
 

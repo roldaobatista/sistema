@@ -16,6 +16,7 @@ use App\Models\ExpenseCategory;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\ServiceCall;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\TechnicianCashFund;
 use App\Models\TechnicianCashTransaction;
@@ -524,7 +525,7 @@ class ReportTest extends TestCase
 
     public function test_stock_report_returns_products_and_summary(): void
     {
-        Product::create([
+        $product = Product::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Sensor Carga',
             'code' => 'SENS-001',
@@ -544,12 +545,30 @@ class ReportTest extends TestCase
             'sell_price' => 60,
         ]);
 
+        StockMovement::create([
+            'tenant_id' => $this->tenant->id,
+            'product_id' => $product->id,
+            'type' => 'entry',
+            'quantity' => 10,
+            'reference' => 'Compra inicial',
+            'created_by' => $this->user->id,
+        ]);
+
         $response = $this->getJson('/api/v1/reports/stock');
 
         $response->assertOk()
-            ->assertJsonStructure(['summary' => ['total_products', 'out_of_stock', 'low_stock', 'total_cost_value', 'total_sale_value'], 'products', 'recent_movements'])
+            ->assertJsonStructure([
+                'summary' => ['total_products', 'out_of_stock', 'low_stock', 'total_cost_value', 'total_sale_value'],
+                'products',
+                'recent_movements' => [['id', 'product_name', 'quantity', 'type', 'movement_type', 'reference', 'created_at']],
+            ])
             ->assertJsonPath('summary.total_products', 2)
             ->assertJsonPath('summary.out_of_stock', 1);
+
+        $movements = $response->json('recent_movements');
+        $this->assertCount(1, $movements);
+        $this->assertSame('in', $movements[0]['type']);
+        $this->assertSame('entry', $movements[0]['movement_type']);
     }
 
     public function test_technician_cash_report_returns_fund_data(): void

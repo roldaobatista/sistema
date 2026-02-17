@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Download, Printer, FileSpreadsheet, Loader2, CheckSquare, Square, Package, Users, Wrench, HardDrive, ClipboardList, FileText } from 'lucide-react'
@@ -124,7 +124,7 @@ export function BatchExportPage() {
 
             {/* Field Selection */}
             {currentEntity && (
-                <div className="bg-white rounded-xl border border-surface-200 p-5">
+                <div className="bg-surface-0 dark:bg-surface-800 rounded-xl border border-surface-200 p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-surface-900">
                             Campos para exportar — {currentEntity.label}

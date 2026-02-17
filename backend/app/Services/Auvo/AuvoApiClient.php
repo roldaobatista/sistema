@@ -251,9 +251,13 @@ class AuvoApiClient
             'segments' => 'segments',
             'customer_groups' => 'customerGroups',
             'equipments' => 'equipments',
-            'tasks' => 'tasks',
             'products' => 'products',
             'services' => 'services',
+            'tasks' => 'tasks',
+            'expenses' => 'expenses',
+            'quotations' => 'quotations',
+            'users' => 'users',
+            'teams' => 'teams',
         ];
 
         $counts = [];
@@ -341,7 +345,7 @@ class AuvoApiClient
                     return true;
                 }, throw: false)
                 ->withToken($token)
-                ->get($url, $params);
+                ->$method($url, $params);
         } catch (\Exception $e) {
             Log::warning('Auvo: request exception', ['url' => $url, 'error' => $e->getMessage()]);
             return null;
@@ -353,9 +357,9 @@ class AuvoApiClient
             $token = $this->authenticate();
 
             try {
-                $response = Http::timeout(self::TIMEOUT_SECONDS)
+                $response = Http::timeout($timeout)
                     ->withToken($token)
-                    ->get($url, $params);
+                    ->$method($url, $params);
             } catch (\Exception $e) {
                 Log::warning('Auvo: retry after 401 failed', ['url' => $url, 'error' => $e->getMessage()]);
                 return null;

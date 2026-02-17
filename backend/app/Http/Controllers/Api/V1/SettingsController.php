@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\SystemSetting;
@@ -14,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     // ── Configurações ──
 
     public function index(Request $request): JsonResponse
@@ -78,7 +81,7 @@ class SettingsController extends Controller
         ]);
 
         try {
-            $tenantId = auth()->user()->current_tenant_id ?? auth()->user()->tenant_id;
+            $tenantId = $this->resolvedTenantId();
 
             $oldLogo = SystemSetting::getValue('company_logo_url');
             if ($oldLogo) {

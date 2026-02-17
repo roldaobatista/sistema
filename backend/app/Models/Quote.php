@@ -104,6 +104,16 @@ class Quote extends Model
         return $this->hasMany(QuoteEquipment::class)->orderBy('sort_order');
     }
 
+    public function workOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class);
+    }
+
+    public function serviceCalls(): HasMany
+    {
+        return $this->hasMany(ServiceCall::class);
+    }
+
     public function recalculateTotal(): void
     {
         $this->load('equipments.items');

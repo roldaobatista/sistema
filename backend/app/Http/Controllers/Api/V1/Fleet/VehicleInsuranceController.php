@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\Fleet\VehicleInsurance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,9 +13,11 @@ use Illuminate\Validation\Rule;
 
 class VehicleInsuranceController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
-        $query = VehicleInsurance::where('tenant_id', $request->user()->tenant_id)
+        $query = VehicleInsurance::where('tenant_id', $this->resolvedTenantId())
             ->with('vehicle:id,plate,model,brand');
 
         if ($request->filled('fleet_vehicle_id')) {
@@ -45,7 +48,7 @@ class VehicleInsuranceController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $validated['tenant_id'] = $request->user()->tenant_id;
+        $validated['tenant_id'] = $this->resolvedTenantId();
 
         try {
             DB::beginTransaction();
@@ -62,13 +65,13 @@ class VehicleInsuranceController extends Controller
 
     public function show(VehicleInsurance $insurance): JsonResponse
     {
-        if ($insurance->tenant_id != auth()->user()->tenant_id) abort(403);
+        if ($insurance->tenant_id != $this->resolvedTenantId()) abort(403);
         return response()->json($insurance->load('vehicle'));
     }
 
     public function update(Request $request, VehicleInsurance $insurance): JsonResponse
     {
-        if ($insurance->tenant_id != $request->user()->tenant_id) abort(403);
+        if ($insurance->tenant_id != $this->resolvedTenantId()) abort(403);
 
         $validated = $request->validate([
             'insurer' => 'sometimes|string|max:150',
@@ -98,14 +101,14 @@ class VehicleInsuranceController extends Controller
 
     public function destroy(VehicleInsurance $insurance): JsonResponse
     {
-        if ($insurance->tenant_id != auth()->user()->tenant_id) abort(403);
+        if ($insurance->tenant_id != $this->resolvedTenantId()) abort(403);
         $insurance->delete();
         return response()->json(null, 204);
     }
 
     public function alerts(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = $this->resolvedTenantId();
 
         $expiringSoon = VehicleInsurance::where('tenant_id', $tenantId)
             ->where('status', 'active')

@@ -10,13 +10,13 @@ return new class extends Migration
     {
         // ── Extend inmetro_owners with scoring, segmentation, CRM tracking ──
         Schema::table('inmetro_owners', function (Blueprint $table) {
-            $table->unsignedTinyInteger('lead_score')->default(0)->after('priority');
-            $table->string('segment', 50)->nullable()->after('lead_score');
-            $table->string('cnpj_root', 8)->nullable()->after('segment');
-            $table->timestamp('last_contacted_at')->nullable()->after('cnpj_root');
-            $table->unsignedInteger('contact_count')->default(0)->after('last_contacted_at');
-            $table->timestamp('next_contact_at')->nullable()->after('contact_count');
-            $table->boolean('churn_risk')->default(false)->after('next_contact_at');
+            $table->unsignedTinyInteger('lead_score')->default(0);
+            $table->string('segment', 50)->nullable();
+            $table->string('cnpj_root', 8)->nullable();
+            $table->timestamp('last_contacted_at')->nullable();
+            $table->unsignedInteger('contact_count')->default(0);
+            $table->timestamp('next_contact_at')->nullable();
+            $table->boolean('churn_risk')->default(false);
             $table->index('lead_score');
             $table->index('segment');
             $table->index('cnpj_root');
@@ -25,7 +25,7 @@ return new class extends Migration
 
         // ── Extend inmetro_instruments with equipment link ──
         Schema::table('inmetro_instruments', function (Blueprint $table) {
-            $table->unsignedBigInteger('linked_equipment_id')->nullable()->after('source');
+            $table->unsignedBigInteger('linked_equipment_id')->nullable();
             $table->index('linked_equipment_id');
         });
 

@@ -81,16 +81,29 @@
 .dark .bg-surface-0 { background-color: oklch(0.18 0.008 260) !important; }
 .dark .bg-surface-50 { background-color: oklch(0.20 0.008 260) !important; }
 .dark .bg-surface-100 { background-color: oklch(0.22 0.008 260) !important; }
+.dark .bg-surface-200 { background-color: oklch(0.25 0.008 260) !important; }
+.dark .bg-surface-300 { background-color: oklch(0.30 0.008 260) !important; }
 .dark .text-surface-900 { color: oklch(0.93 0.005 260) !important; }
 .dark .text-surface-800 { color: oklch(0.87 0.008 260) !important; }
 .dark .text-surface-700 { color: oklch(0.80 0.008 260) !important; }
 .dark .text-surface-600 { color: oklch(0.70 0.008 260) !important; }
 .dark .text-surface-500 { color: oklch(0.60 0.008 260) !important; }
 .dark .text-surface-400 { color: oklch(0.55 0.008 260) !important; }
+.dark .text-surface-300 { color: oklch(0.50 0.008 260) !important; }
+.dark .border-surface-100 { border-color: oklch(1 0 0 / 0.06) !important; }
+.dark .border-surface-200 { border-color: oklch(1 0 0 / 0.08) !important; }
+.dark .border-surface-300 { border-color: oklch(1 0 0 / 0.12) !important; }
+.dark .divide-surface-100 > :not(:last-child) { border-color: oklch(1 0 0 / 0.06) !important; }
+.dark .divide-surface-200 > :not(:last-child) { border-color: oklch(1 0 0 / 0.08) !important; }
 .dark .border-default { border-color: oklch(1 0 0 / 0.08) !important; }
 .dark .border-subtle { border-color: oklch(1 0 0 / 0.06) !important; }
+.dark .border-emphasis { border-color: oklch(1 0 0 / 0.14) !important; }
+.dark .border-strong { border-color: oklch(1 0 0 / 0.20) !important; }
 .dark .shadow-card { box-shadow: 0 1px 3px oklch(0 0 0 / 0.3) !important; }
+.dark .shadow-elevated { box-shadow: 0 2px 8px oklch(0 0 0 / 0.3), 0 1px 2px oklch(0 0 0 / 0.2) !important; }
 .dark .bg-brand-50 { background-color: oklch(0.22 0.05 245) !important; }
+.dark .bg-brand-100 { background-color: oklch(0.25 0.06 245) !important; }
+.dark .text-brand-600 { color: oklch(0.60 0.18 245) !important; }
 .dark .text-brand-700 { color: oklch(0.70 0.14 245) !important; }
 
 @theme {
@@ -196,6 +209,9 @@
   backdrop-filter: blur(16px) saturate(180%);
   background-color: oklch(1 0 0 / 0.78);
 }
+.dark .glass {
+  background-color: oklch(0.18 0.008 260 / 0.78) !important;
+}
 
 /* ── Focus Ring ── */
 @utility focus-ring {
@@ -267,6 +283,22 @@
   animation: slide-up 0.3s var(--ease-out) both;
 }
 
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@utility animate-slide-in-right {
+  animation: slide-in-right 0.3s var(--ease-out) both;
+}
+
 @utility animate-scale-in {
   animation: scale-in 0.2s var(--ease-out) both;
 }
@@ -275,6 +307,10 @@
   background: linear-gradient(90deg, oklch(0.96 0 0) 25%, oklch(0.92 0 0) 50%, oklch(0.96 0 0) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+.dark .animate-shimmer {
+  background: linear-gradient(90deg, oklch(0.22 0.008 260) 25%, oklch(0.18 0.008 260) 50%, oklch(0.22 0.008 260) 75%) !important;
+  background-size: 200% 100%;
 }
 
 @utility animate-pulse-soft {
@@ -354,12 +390,19 @@
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-md);
 }
+.dark .skeleton {
+  background: linear-gradient(90deg, oklch(0.22 0.008 260) 25%, oklch(0.26 0.008 260) 50%, oklch(0.22 0.008 260) 75%) !important;
+  background-size: 200% 100%;
+}
 
 /* ── Scrollbar (thin, professional) ── */
 @layer base {
   * {
     scrollbar-width: thin;
     scrollbar-color: oklch(0.80 0.005 260) transparent;
+  }
+  .dark * {
+    scrollbar-color: oklch(0.35 0.008 260) transparent;
   }
 }
 
@@ -400,6 +443,10 @@
     background: linear-gradient(to right, transparent, oklch(0.985 0.003 260));
     opacity: 0;
     transition: opacity 0.15s ease;
+  }
+
+  .dark .table-scroll-fade::after {
+    background: linear-gradient(to right, transparent, oklch(0.14 0.008 260));
   }
 
   .table-scroll-fade[data-has-scroll="true"]::after {

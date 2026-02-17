@@ -11,7 +11,7 @@ class ScheduledReport extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'report_type', 'frequency', 'recipients',
+        'tenant_id', 'name', 'report_type', 'frequency', 'recipients',
         'filters', 'format', 'is_active', 'last_sent_at', 'next_send_at', 'created_by',
     ];
 

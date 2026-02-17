@@ -38,7 +38,9 @@ export default function TechWidgetPage() {
                 queryClient.invalidateQueries({ queryKey: ['tech-widget'] }) },
     onError: (err: unknown) => { toast.error(getApiErrorMessage(err, 'Erro ao remover')) },
   })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const handleDelete = (id: number) => { setConfirmDeleteId(id) }
+  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
 
   // MVP: Search
   const [searchTerm, setSearchTerm] = useState('')

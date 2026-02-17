@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('imports', function (Blueprint $table) {
-            $table->string('original_name')->nullable()->after('file_name');
+            $table->string('original_name')->nullable();
         });
     }
 

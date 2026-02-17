@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\WarrantyTracking;
 use Illuminate\Http\JsonResponse;
@@ -9,9 +10,11 @@ use Illuminate\Http\Request;
 
 class WarrantyTrackingController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
-        $tenantId = (int) (auth()->user()->current_tenant_id ?? auth()->user()->tenant_id);
+        $tenantId = $this->resolvedTenantId();
 
         $query = WarrantyTracking::with(['workOrder:id,os_number,number', 'customer:id,name', 'equipment:id,code', 'product:id,name,code'])
             ->where('tenant_id', $tenantId);

@@ -9,13 +9,13 @@ return new class extends Migration {
     {
         // Adiciona campos ao users para multi-tenant e RBAC
         Schema::table('users', function (Blueprint $table) {
-            $table->string('phone', 20)->nullable()->after('email');
-            $table->boolean('is_active')->default(true)->after('password');
-            $table->foreignId('tenant_id')->nullable()->after('is_active')
+            $table->string('phone', 20)->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->foreignId('tenant_id')->nullable()
                 ->constrained()->nullOnDelete();
-            $table->foreignId('current_tenant_id')->nullable()->after('tenant_id')
+            $table->foreignId('current_tenant_id')->nullable()
                 ->constrained('tenants')->nullOnDelete();
-            $table->timestamp('last_login_at')->nullable()->after('remember_token');
+            $table->timestamp('last_login_at')->nullable();
         });
     }
 

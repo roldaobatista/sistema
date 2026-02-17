@@ -12,6 +12,7 @@ use App\Observers\WorkOrderObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -51,6 +52,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Tech Status Automation
         \App\Models\TimeEntry::observe(\App\Observers\TimeEntryObserver::class);
+
+        // URL de reset de senha aponta para o frontend
+        ResetPassword::createUrlUsing(function ($user, string $token) {
+            $frontendUrl = rtrim(env('FRONTEND_URL', config('app.url')), '/');
+            return $frontendUrl . '/redefinir-senha?token=' . $token . '&email=' . urlencode($user->getEmailForPasswordReset());
+        });
     }
 
     private function handleCrmActivity($activity)

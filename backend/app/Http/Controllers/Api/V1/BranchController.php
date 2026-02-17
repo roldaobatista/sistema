@@ -13,12 +13,22 @@ use Illuminate\Validation\Rule;
 class BranchController extends Controller
 {
     /**
-     * Lista filiais do tenant atual.
-     * Nota: O filtro por tenant_id é aplicado automaticamente pelo global scope BelongsToTenant.
+     * Lista filiais do tenant atual com busca opcional.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $branches = Branch::orderBy('name')->get();
+        $query = Branch::orderBy('name');
+
+        if ($request->filled('search')) {
+            $term = '%' . $request->search . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', $term)
+                  ->orWhere('code', 'like', $term)
+                  ->orWhere('address_city', 'like', $term);
+            });
+        }
+
+        $branches = $query->get();
         return response()->json($branches);
     }
 
@@ -69,12 +79,18 @@ class BranchController extends Controller
 
     public function update(Request $request, Branch $branch): JsonResponse
     {
+        if (!app()->bound('current_tenant_id')) {
+            return response()->json(['message' => 'Nenhuma empresa selecionada.'], 403);
+        }
+
+        $tenantId = app('current_tenant_id');
+
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'code' => [
                 'nullable', 'string', 'max:20',
                 Rule::unique('branches', 'code')
-                    ->where('tenant_id', app('current_tenant_id'))
+                    ->where('tenant_id', $tenantId)
                     ->ignore($branch->id),
             ],
             'address_street' => 'nullable|string|max:255',

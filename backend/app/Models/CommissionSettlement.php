@@ -15,17 +15,28 @@ class CommissionSettlement extends Model
 
     protected $fillable = [
         'tenant_id', 'user_id', 'period', 'total_amount', 'events_count', 'status',
-        'closed_by', 'closed_at', 'approved_by', 'approved_at', 'rejection_reason', 'paid_at',
+        'closed_by', 'closed_at', 'approved_by', 'approved_at', 'rejection_reason',
+        'paid_at', 'paid_amount', 'payment_notes',
     ];
+
+    protected $appends = ['balance'];
 
     protected function casts(): array
     {
         return [
             'total_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
             'paid_at' => 'date',
             'closed_at' => 'datetime',
             'approved_at' => 'datetime',
         ];
+    }
+
+    public function getBalanceAttribute(): float
+    {
+        $total = (float) ($this->total_amount ?? 0);
+        $paid = (float) ($this->paid_amount ?? 0);
+        return round($total - $paid, 2);
     }
 
     public const STATUS_OPEN = 'open';
@@ -79,5 +90,22 @@ class CommissionSettlement extends Model
                     $q->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$this->period]);
                 }
             });
+    }
+
+    /**
+     * Recalcular total_amount e events_count a partir dos eventos vinculados.
+     */
+    public function recalculateTotals(): self
+    {
+        $events = CommissionEvent::where('settlement_id', $this->id)
+            ->whereIn('status', [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])
+            ->get();
+
+        $this->update([
+            'total_amount' => $events->sum('commission_amount'),
+            'events_count' => $events->count(),
+        ]);
+
+        return $this;
     }
 }

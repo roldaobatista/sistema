@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\Equipment;
 use App\Models\EquipmentCalibration;
 use App\Models\ServiceChecklist;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Storage;
 
 class TechSyncController extends Controller
 {
+    use ResolvesCurrentTenant;
     /**
      * Pull updated data for the authenticated technician.
      * GET /api/tech/sync?since=ISO_TIMESTAMP
@@ -240,7 +242,7 @@ class TechSyncController extends Controller
     private function processExpense(array $data, int &$processed, array &$conflicts): void
     {
         Expense::create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => $this->resolvedTenantId(),
             'work_order_id' => $data['work_order_id'],
             'category' => $data['category'] ?? null,
             'description' => $data['description'],

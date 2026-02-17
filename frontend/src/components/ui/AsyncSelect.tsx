@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 
@@ -73,6 +74,7 @@ export function AsyncSelect({
             setOptions(mapped);
         } catch (error) {
             console.error('Error fetching options', error);
+            toast.error('Erro ao carregar opções');
             setOptions([]);
         } finally {
             setLoading(false);
@@ -109,7 +111,7 @@ export function AsyncSelect({
 
     return (
         <div className="relative" ref={containerRef}>
-            {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+            {label && <label className="block text-sm font-medium text-surface-700 mb-1">{label}</label>}
             <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={cn(

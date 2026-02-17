@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Equipment;
 use App\Models\EquipmentCalibration;
@@ -20,10 +21,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PdfController extends Controller
 {
-    private function tenant(Request $request): ?Tenant
+    use ResolvesCurrentTenant;
+
+    private function tenant(): ?Tenant
     {
-        $tenantId = $request->user()->current_tenant_id ?? $request->user()->tenant_id;
-        return Tenant::find($tenantId);
+        return Tenant::find($this->resolvedTenantId());
     }
 
     public function workOrder(Request $request, WorkOrder $workOrder): Response
@@ -39,7 +41,7 @@ class PdfController extends Controller
 
         $pdf = Pdf::loadView('pdf.work-order', [
             'workOrder' => $workOrder,
-            'tenant' => $this->tenant($request),
+            'tenant' => $this->tenant(),
         ]);
 
         $pdf->setPaper('A4', 'portrait');
@@ -58,7 +60,7 @@ class PdfController extends Controller
 
         $pdf = Pdf::loadView('pdf.quote', [
             'quote' => $quote,
-            'tenant' => $this->tenant($request),
+            'tenant' => $this->tenant(),
         ]);
 
         $pdf->setPaper('A4', 'portrait');
@@ -229,6 +231,7 @@ class PdfController extends Controller
                 $multi('by_class', $data['by_class'] ?? []),
                 $multi('top_brands', $data['top_brands'] ?? []),
                 $multi('due_alerts', $data['due_alerts'] ?? []),
+                $multi('calibrations_period', $data['calibrations_period'] ?? []),
                 $single('summary', [
                     'total_active' => $data['total_active'] ?? 0,
                     'total_inactive' => $data['total_inactive'] ?? 0,

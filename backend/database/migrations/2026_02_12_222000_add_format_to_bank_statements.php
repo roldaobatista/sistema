@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bank_statements', function (Blueprint $table) {
-            $table->string('format', 20)->default('ofx')->after('filename');
+            $table->string('format', 20)->default('ofx');
         });
     }
 

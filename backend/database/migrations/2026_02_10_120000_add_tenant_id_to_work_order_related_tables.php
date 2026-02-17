@@ -12,7 +12,7 @@ return new class extends Migration
         // 1. work_order_attachments
         if (!Schema::hasColumn('work_order_attachments', 'tenant_id')) {
             Schema::table('work_order_attachments', function (Blueprint $table) {
-                $table->foreignId('tenant_id')->nullable()->after('id')->constrained('tenants')->cascadeOnDelete();
+                $table->foreignId('tenant_id')->nullable()->constrained('tenants')->cascadeOnDelete();
             });
 
             // Subquery compatível com SQLite e MySQL
@@ -30,7 +30,7 @@ return new class extends Migration
         // 2. work_order_status_history
         if (!Schema::hasColumn('work_order_status_history', 'tenant_id')) {
             Schema::table('work_order_status_history', function (Blueprint $table) {
-                $table->foreignId('tenant_id')->nullable()->after('id')->constrained('tenants')->cascadeOnDelete();
+                $table->foreignId('tenant_id')->nullable()->constrained('tenants')->cascadeOnDelete();
             });
 
             DB::statement('
@@ -47,7 +47,7 @@ return new class extends Migration
         // 3. work_order_checklist_responses
         if (!Schema::hasColumn('work_order_checklist_responses', 'tenant_id')) {
             Schema::table('work_order_checklist_responses', function (Blueprint $table) {
-                $table->foreignId('tenant_id')->nullable()->after('id')->constrained('tenants')->cascadeOnDelete();
+                $table->foreignId('tenant_id')->nullable()->constrained('tenants')->cascadeOnDelete();
             });
 
             DB::statement('

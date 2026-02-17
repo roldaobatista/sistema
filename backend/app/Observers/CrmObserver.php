@@ -4,12 +4,13 @@ namespace App\Observers;
 
 use App\Models\AccountReceivable;
 use App\Models\CommissionEvent;
-use App\Models\CommissionRule;
 use App\Models\CrmActivity;
 use App\Models\CrmDeal;
 use App\Models\Notification;
 use App\Models\Quote;
+use App\Services\CommissionService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\WorkOrder;
 
 class CrmObserver
@@ -95,36 +96,15 @@ class CrmObserver
                 ]);
             }
 
-            // Auto-generate commission (multi-technician).
+            // Auto-generate commission via CommissionService (handles campaigns, splits, source filter, applies_when).
             if ($wo->total > 0 && !CommissionEvent::where('work_order_id', $wo->id)->exists()) {
-                $technicianIds = $wo->technicians()->pluck('users.id');
-                if ($technicianIds->isEmpty() && $wo->assigned_to) {
-                    $technicianIds = collect([$wo->assigned_to]);
-                }
-
-                foreach ($technicianIds as $techId) {
-                    $rules = CommissionRule::where('tenant_id', $wo->tenant_id)
-                        ->where('active', true)
-                        ->where(function ($q) use ($techId) {
-                            $q->whereNull('user_id')->orWhere('user_id', $techId);
-                        })
-                        ->get();
-
-                    foreach ($rules as $rule) {
-                        $amount = $rule->calculate($wo);
-                        if ($amount > 0) {
-                            CommissionEvent::create([
-                                'tenant_id' => $wo->tenant_id,
-                                'user_id' => $techId,
-                                'work_order_id' => $wo->id,
-                                'commission_rule_id' => $rule->id,
-                                'base_amount' => $wo->total,
-                                'commission_amount' => $amount,
-                                'status' => CommissionEvent::STATUS_PENDING,
-                            ]);
-                            break; // primeira regra aplicavel por tecnico
-                        }
-                    }
+                try {
+                    app(CommissionService::class)->calculateAndGenerate($wo);
+                } catch (\Throwable $e) {
+                    Log::warning('CrmObserver: falha ao gerar comissões', [
+                        'work_order_id' => $wo->id,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
         }

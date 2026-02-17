@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_kit')->default(false)->after('track_stock');
-            $table->boolean('track_batch')->default(false)->after('is_kit');
-            $table->boolean('track_serial')->default(false)->after('track_batch');
-            $table->decimal('min_repo_point', 15, 2)->nullable()->after('stock_min');
+            $table->boolean('is_kit')->default(false);
+            $table->boolean('track_batch')->default(false);
+            $table->boolean('track_serial')->default(false);
+            $table->decimal('min_repo_point', 15, 2)->nullable();
         });
     }
 

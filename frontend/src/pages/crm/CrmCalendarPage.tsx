@@ -295,7 +295,7 @@ export function CrmCalendarPage() {
                                                     key={ev.id}
                                                     className={cn(
                                                         'truncate rounded px-1 py-0.5 text-[10px] font-medium text-white',
-                                                        typeColors[ev.type] ?? 'bg-gray-500',
+                                                        typeColors[ev.type] ?? 'bg-surface-500',
                                                     )}
                                                     title={`${ev.title} - ${fmtTime(ev.start_at)}`}
                                                 >
@@ -396,7 +396,7 @@ export function CrmCalendarPage() {
                             <span className="font-medium">Legenda:</span>
                             {Object.entries(typeLabels).map(([k, v]) => (
                                 <span key={k} className="flex items-center gap-1.5">
-                                    <span className={cn('inline-block h-3 w-3 rounded', typeColors[k] ?? 'bg-gray-500')} />
+                                    <span className={cn('inline-block h-3 w-3 rounded', typeColors[k] ?? 'bg-surface-500')} />
                                     {v}
                                 </span>
                             ))}

@@ -35,7 +35,7 @@ function getProgressColor(pct: number): string {
 
 function getRankBadge(index: number) {
     if (index === 0) return <Medal className="h-5 w-5 text-amber-500" />
-    if (index === 1) return <Medal className="h-5 w-5 text-gray-400" />
+    if (index === 1) return <Medal className="h-5 w-5 text-surface-400" />
     if (index === 2) return <Medal className="h-5 w-5 text-amber-700" />
     return <span className="flex h-5 w-5 items-center justify-center text-xs font-bold text-muted-foreground">{index + 1}</span>
 }

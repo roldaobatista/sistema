@@ -41,14 +41,14 @@ export const ExpressWorkOrderForm: React.FC<ExpressWorkOrderFormProps> = ({ onSu
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-surface-0 dark:bg-surface-800 rounded-xl border border-surface-200 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
                 <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
                     <Rocket size={18} />
                 </div>
                 <div>
-                    <h3 className="font-bold text-slate-900">OS Express</h3>
-                    <p className="text-xs text-slate-500">Criação rápida de serviço em campo</p>
+                    <h3 className="font-bold text-surface-900">OS Express</h3>
+                    <p className="text-xs text-surface-500">Criação rápida de serviço em campo</p>
                 </div>
             </div>
 

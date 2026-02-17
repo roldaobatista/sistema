@@ -8,28 +8,12 @@ import {
     Send, AlertTriangle, RotateCcw, MessageSquare, Pencil, History,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { SERVICE_CALL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
-
-const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
-    [SERVICE_CALL_STATUS.OPEN]: { label: 'Aberto', variant: 'info', icon: AlertCircle },
-    [SERVICE_CALL_STATUS.SCHEDULED]: { label: 'Agendado', variant: 'warning', icon: Clock },
-    [SERVICE_CALL_STATUS.IN_TRANSIT]: { label: 'Em Trânsito', variant: 'info', icon: Truck },
-    [SERVICE_CALL_STATUS.IN_PROGRESS]: { label: 'Em Atendimento', variant: 'warning', icon: ArrowRight },
-    [SERVICE_CALL_STATUS.COMPLETED]: { label: 'Concluído', variant: 'success', icon: CheckCircle },
-    [SERVICE_CALL_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'danger', icon: XCircle },
-}
-
-const priorityConfig: Record<string, { label: string; variant: any }> = {
-    low: { label: 'Baixa', variant: 'default' },
-    normal: { label: 'Normal', variant: 'info' },
-    high: { label: 'Alta', variant: 'warning' },
-    urgent: { label: 'Urgente', variant: 'danger' },
-}
+import { serviceCallStatus, priorityConfig, getStatusEntry } from '@/lib/status-config'
 
 // Must stay in sync with ServiceCall::ALLOWED_TRANSITIONS on backend
 const statusTransitions: Record<string, string[]> = {
@@ -211,9 +195,9 @@ export function ServiceCallDetailPage() {
         )
     }
 
-    const sc = statusConfig[call.status]
+    const sc = getStatusEntry(serviceCallStatus, call.status)
     const pc = priorityConfig[call.priority]
-    const StatusIcon = sc?.icon || AlertCircle
+    const StatusIcon = sc.icon
     const transitions = statusTransitions[call.status] || []
     const technicians = assigneesRes?.technicians ?? []
     const drivers = assigneesRes?.drivers ?? []
@@ -253,9 +237,9 @@ export function ServiceCallDetailPage() {
                     <div>
                         <h1 className="text-xl font-bold text-surface-900 flex items-center gap-2">
                             Chamado {call.call_number}
-                            <Badge variant={sc?.variant || 'default'}>
+                            <Badge variant={sc.variant}>
                                 <StatusIcon className="w-3 h-3 mr-1" />
-                                {sc?.label || call.status}
+                                {sc.label}
                             </Badge>
                             {pc && <Badge variant={pc.variant}>{pc.label}</Badge>}
                             {call.sla_breached && (
@@ -293,8 +277,8 @@ export function ServiceCallDetailPage() {
             {canUpdate && transitions.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {transitions.map((t) => {
-                        const tc = statusConfig[t]
-                        const TIcon = tc?.icon || ArrowRight
+                        const tc = getStatusEntry(serviceCallStatus, t)
+                        const TIcon = tc.icon
                         const isCancel = t === 'cancelled'
                         const isReopen = t === 'open'
                         return (
@@ -306,7 +290,7 @@ export function ServiceCallDetailPage() {
                                 onClick={() => handleStatusChange(t)}
                             >
                                 {isReopen ? <RotateCcw className="w-4 h-4 mr-1" /> : <TIcon className="w-4 h-4 mr-1" />}
-                                {isReopen ? 'Reabrir' : tc?.label || t}
+                                {isReopen ? 'Reabrir' : tc.label}
                             </Button>
                         )
                     })}
@@ -438,7 +422,7 @@ export function ServiceCallDetailPage() {
                                 <div className="flex justify-between">
                                     <span className="text-surface-500">Orçamento</span>
                                     <button
-                                        onClick={() => navigate(`/orçamentos/${call.quote.id}`)}
+                                        onClick={() => navigate(`/orcamentos/${call.quote.id}`)}
                                         className="font-medium text-primary-600 hover:underline"
                                     >
                                         {call.quote.quote_number || `#${call.quote.id}`}

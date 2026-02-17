@@ -25,7 +25,7 @@ interface RoleMatrixEntry {
 export function PermissionsMatrixPage() {
     const queryClient = useQueryClient()
     const { hasPermission } = useAuthStore()
-    const canEditRoles = hasPermission('iam.role.update')
+    const canEditRoles = hasPermission('iam.permission.manage')
     const [searchFilter, setSearchFilter] = useState('')
     const [togglingCell, setTogglingCell] = useState<string | null>(null)
 

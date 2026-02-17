@@ -70,10 +70,8 @@ class InventoryController extends Controller
                     'created_by' => Auth::id(),
                 ]);
 
-                // Snapshot do estoque atual para os itens que serão contados
-                // Por padrão, pega todos os produtos que já tiveram movimentação ou estão no depósito
-                $stocks = WarehouseStock::where('tenant_id', $tenantId)
-                    ->where('warehouse_id', $validated['warehouse_id'])
+                $stocks = WarehouseStock::where('warehouse_id', $validated['warehouse_id'])
+                    ->whereHas('product', fn ($q) => $q->where('tenant_id', $tenantId))
                     ->get();
 
                 foreach ($stocks as $stock) {
@@ -91,7 +89,8 @@ class InventoryController extends Controller
                 ], 201);
             });
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao iniciar inventário: ' . $e->getMessage()], 500);
+            \Illuminate\Support\Facades\Log::error('Inventory store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao iniciar inventário'], 500);
         }
     }
 
@@ -206,7 +205,11 @@ class InventoryController extends Controller
                 ]);
             });
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro ao finalizar inventário: ' . $e->getMessage()], 500);
+            \Illuminate\Support\Facades\Log::error('Inventory completion failed', [
+                'inventory_id' => $inventory->id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Erro ao finalizar inventário. Tente novamente.'], 500);
         }
     }
 

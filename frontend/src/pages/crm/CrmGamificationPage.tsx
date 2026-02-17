@@ -16,7 +16,7 @@ export function CrmGamificationPage() {
 
     const leaderboard = data?.leaderboard ?? []
     const rankIcons = [Trophy, Medal, Star]
-    const rankColors = ['text-amber-500', 'text-gray-400', 'text-amber-700']
+    const rankColors = ['text-amber-500', 'text-surface-400', 'text-amber-700']
 
     return (
         <div className="space-y-6">

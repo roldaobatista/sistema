@@ -12,25 +12,27 @@ import { useOfflineCache } from '@/hooks/useOfflineCache'
 interface ServiceCall {
     id: number
     call_number: string
-    customer_name?: string
-    customer_phone?: string
-    customer_address?: string
-    subject?: string
-    description?: string
+    customer?: { id: number; name?: string; phone?: string } | null
+    observations?: string | null
+    address?: string | null
+    city?: string | null
+    state?: string | null
     status: string
     priority: string
     created_at: string
-    sla_deadline?: string
+    sla_breached?: boolean
+    sla_remaining_minutes?: number | null
     latitude?: number
     longitude?: number
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
-    open: { label: 'Aberto', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    in_progress: { label: 'Em Andamento', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    resolved: { label: 'Resolvido', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    open: { label: 'Aberto', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+    scheduled: { label: 'Agendado', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    in_transit: { label: 'Em Trânsito', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
+    in_progress: { label: 'Em Atendimento', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+    completed: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
     cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    waiting: { label: 'Aguardando', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -53,7 +55,10 @@ export default function TechServiceCallsPage() {
         const { data } = await api.get('/service-calls', {
             params: { my: '1', per_page: 50 },
         })
-        return (data.data || []) as ServiceCall[]
+        return (data.data || []).map((c: any) => ({
+            ...c,
+            customer: c.customer ?? null,
+        })) as ServiceCall[]
     }, [])
     const { data: callsData, loading, error, refresh } = useOfflineCache(fetchCalls, { key: 'tech-service-calls' })
     const calls = callsData ?? []
@@ -70,16 +75,13 @@ export default function TechServiceCallsPage() {
         return calls.filter((call) => {
             const matchesSearch = !search || [
                 call.call_number,
-                call.customer_name,
-                call.subject,
-                call.description,
+                call.customer?.name,
+                call.observations,
             ].some((field) => field?.toLowerCase().includes(search.toLowerCase()))
 
             const matchesStatus =
                 statusFilter === 'all' ||
-                (statusFilter === 'open' && call.status === 'open') ||
-                (statusFilter === 'in_progress' && call.status === 'in_progress') ||
-                (statusFilter === 'resolved' && call.status === 'resolved')
+                call.status === statusFilter
 
             return matchesSearch && matchesStatus
         })
@@ -88,8 +90,8 @@ export default function TechServiceCallsPage() {
     const handleAccept = async (id: number) => {
         try {
             setUpdatingStatus(id)
-            await api.put(`/service-calls/${id}/status`, { status: 'in_progress' })
-            toast.success('Chamado aceito com sucesso')
+            await api.put(`/service-calls/${id}/status`, { status: 'scheduled' })
+            toast.success('Chamado aceito e agendado')
             refresh()
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -117,8 +119,9 @@ export default function TechServiceCallsPage() {
         if (call.latitude && call.longitude) {
             const url = `https://www.google.com/maps/dir/?api=1&destination=${call.latitude},${call.longitude}`
             window.open(url, '_blank')
-        } else if (call.customer_address) {
-            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(call.customer_address)}`
+        } else if (call.address || call.city) {
+            const addr = [call.address, call.city, call.state].filter(Boolean).join(', ')
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`
             window.open(url, '_blank')
         } else {
             toast.error('Endereço não disponível')
@@ -128,8 +131,10 @@ export default function TechServiceCallsPage() {
     const statusFilters = [
         { key: 'all', label: 'Todos' },
         { key: 'open', label: 'Abertos' },
-        { key: 'in_progress', label: 'Em Andamento' },
-        { key: 'resolved', label: 'Resolvidos' },
+        { key: 'scheduled', label: 'Agendados' },
+        { key: 'in_transit', label: 'Em Trânsito' },
+        { key: 'in_progress', label: 'Em Atendimento' },
+        { key: 'completed', label: 'Concluídos' },
     ]
 
     return (
@@ -232,11 +237,11 @@ export default function TechServiceCallsPage() {
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-surface-500 dark:text-surface-400 truncate">
-                                                    {call.customer_name || 'Cliente não informado'}
+                                                    {call.customer?.name || 'Cliente não informado'}
                                                 </p>
-                                                {(call.subject || call.description) && (
+                                                {call.observations && (
                                                     <p className="text-xs text-surface-400 line-clamp-1 mt-0.5">
-                                                        {call.subject || call.description}
+                                                        {call.observations}
                                                     </p>
                                                 )}
                                                 <div className="flex items-center gap-3 mt-2 text-[11px] text-surface-400 dark:text-surface-500">
@@ -244,10 +249,16 @@ export default function TechServiceCallsPage() {
                                                         <Clock className="w-3 h-3" />
                                                         {new Date(call.created_at).toLocaleDateString('pt-BR')}
                                                     </span>
-                                                    {call.sla_deadline && (
+                                                    {call.sla_breached && (
+                                                        <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            SLA Estourado
+                                                        </span>
+                                                    )}
+                                                    {!call.sla_breached && call.sla_remaining_minutes != null && call.sla_remaining_minutes < 120 && (
                                                         <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                                                             <AlertCircle className="w-3 h-3" />
-                                                            SLA: {new Date(call.sla_deadline).toLocaleDateString('pt-BR')}
+                                                            SLA: {Math.floor(call.sla_remaining_minutes / 60)}h{call.sla_remaining_minutes % 60}min
                                                         </span>
                                                     )}
                                                 </div>
@@ -264,32 +275,32 @@ export default function TechServiceCallsPage() {
                                     {/* Expanded details */}
                                     {isExpanded && (
                                         <div className="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700 space-y-3">
-                                            {call.description && (
+                                            {call.observations && (
                                                 <div>
                                                     <p className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-1">
-                                                        Descrição
+                                                        Observações
                                                     </p>
                                                     <p className="text-sm text-surface-900 dark:text-surface-50">
-                                                        {call.description}
+                                                        {call.observations}
                                                     </p>
                                                 </div>
                                             )}
-                                            {call.customer_phone && (
+                                            {call.customer?.phone && (
                                                 <div className="flex items-center gap-2">
                                                     <Phone className="w-4 h-4 text-surface-400" />
                                                     <a
-                                                        href={`tel:${call.customer_phone}`}
+                                                        href={`tel:${call.customer.phone}`}
                                                         className="text-sm text-brand-600 dark:text-brand-400"
                                                     >
-                                                        {call.customer_phone}
+                                                        {call.customer.phone}
                                                     </a>
                                                 </div>
                                             )}
-                                            {call.customer_address && (
+                                            {(call.address || call.city) && (
                                                 <div className="flex items-start gap-2">
                                                     <MapPin className="w-4 h-4 text-surface-400 mt-0.5" />
                                                     <p className="text-sm text-surface-900 dark:text-surface-50 flex-1">
-                                                        {call.customer_address}
+                                                        {[call.address, call.city, call.state].filter(Boolean).join(', ')}
                                                     </p>
                                                 </div>
                                             )}
@@ -315,24 +326,26 @@ export default function TechServiceCallsPage() {
                                                         )}
                                                     </button>
                                                 )}
-                                                <button
-                                                    onClick={() => handleConvertToOS(call.id)}
-                                                    disabled={updatingStatus === call.id}
-                                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
-                                                >
-                                                    {updatingStatus === call.id ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                            Convertendo...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <ArrowRightCircle className="w-4 h-4" />
-                                                            Converter em OS
-                                                        </>
-                                                    )}
-                                                </button>
-                                                {(call.latitude || call.customer_address) && (
+                                                {['completed', 'in_progress'].includes(call.status) && (
+                                                    <button
+                                                        onClick={() => handleConvertToOS(call.id)}
+                                                        disabled={updatingStatus === call.id}
+                                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                                                    >
+                                                        {updatingStatus === call.id ? (
+                                                            <>
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                                Convertendo...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <ArrowRightCircle className="w-4 h-4" />
+                                                                Converter em OS
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
+                                                {(call.latitude || call.address) && (
                                                     <button
                                                         onClick={() => handleNavigate(call)}
                                                         className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium"

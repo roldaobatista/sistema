@@ -11,6 +11,17 @@ import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/ui/pageheader'
 import { useAuthStore } from '@/stores/auth-store'
 
+interface ProductOption {
+    id: number
+    name: string
+    code?: string | null
+}
+
+interface WarehouseOption {
+    id: number
+    name: string
+}
+
 interface StockMovement {
     id: number
     product: { id: number; name: string; code: string | null }
@@ -35,10 +46,12 @@ const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; colo
 const woIdentifier = (wo?: { number: string; os_number?: string | null; business_number?: string | null } | null) =>
     wo?.business_number ?? wo?.os_number ?? wo?.number ?? '—'
 
+type MovementFormType = 'entry' | 'exit' | 'reserve' | 'return' | 'adjustment'
+
 const emptyForm = {
     product_id: '' as string | number,
     warehouse_id: '' as string | number,
-    type: 'entry' as 'entry' | 'adjustment',
+    type: 'entry' as MovementFormType,
     quantity: '',
     unit_cost: '0',
     notes: '',
@@ -52,7 +65,6 @@ export function StockMovementsPage() {
     const [typeFilter, setTypeFilter] = useState('')
     const [showForm, setShowForm] = useState(false)
     const [showXmlModal, setShowXmlModal] = useState(false)
-    const [importingXml, setImportingXml] = useState(false)
     const [form, setForm] = useState(emptyForm)
     const [page, setPage] = useState(1)
     const [xmlFile, setXmlFile] = useState<File | null>(null)
@@ -69,13 +81,13 @@ export function StockMovementsPage() {
         queryKey: ['products-select'],
         queryFn: () => api.get('/products', { params: { per_page: 200 } }),
     })
-    const products = productsRes?.data?.data ?? []
+    const products: ProductOption[] = productsRes?.data?.data ?? []
 
     const { data: warehousesRes } = useQuery({
         queryKey: ['warehouses-select'],
         queryFn: () => api.get('/warehouses'),
     })
-    const warehouses = warehousesRes?.data?.data ?? []
+    const warehouses: WarehouseOption[] = warehousesRes?.data?.data ?? []
 
     const saveMut = useMutation({
         mutationFn: (data: typeof form) => api.post('/stock/movements', data),
@@ -126,7 +138,10 @@ export function StockMovementsPage() {
         setForm(prev => ({ ...prev, [k]: v }))
 
     const formatDate = (d: string) => new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
-    const formatBRL = (v: string) => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    const formatBRL = (v: string) => {
+        const num = parseFloat(v)
+        return isNaN(num) ? 'R$ 0,00' : num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    }
 
     return (
         <div className="space-y-5">
@@ -138,12 +153,14 @@ export function StockMovementsPage() {
                         label: 'Importar XML',
                         icon: <FileUp className="h-4 w-4" />,
                         onClick: () => setShowXmlModal(true),
-                        variant: 'outline'
+                        variant: 'outline',
+                        permission: hasPermission('estoque.movement.create'),
                     },
                     {
                         label: 'Nova Movimentação',
                         icon: <Plus className="h-4 w-4" />,
                         onClick: () => { setForm(emptyForm); setShowForm(true) },
+                        permission: hasPermission('estoque.movement.create'),
                     },
                 ]}
             />
@@ -161,6 +178,7 @@ export function StockMovementsPage() {
                 <select
                     value={typeFilter}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setTypeFilter(e.target.value); setPage(1) }}
+                    title="Filtrar por tipo de movimentação"
                     className="rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                 >
                     <option value="">Todos os tipos</option>
@@ -188,9 +206,9 @@ export function StockMovementsPage() {
                     </thead>
                     <tbody className="divide-y divide-subtle">
                         {isLoading ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
+                            <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-surface-500">Carregando...</td></tr>
                         ) : movements.length === 0 ? (
-                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-surface-500">
+                            <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-surface-500">
                                 <div className="flex flex-col items-center gap-2">
                                     <Package className="h-8 w-8 text-surface-300" />
                                     Nenhuma movimentação encontrada
@@ -265,10 +283,11 @@ export function StockMovementsPage() {
                             value={form.product_id}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('product_id', e.target.value)}
                             required
+                            title="Produto"
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                         >
                             <option value="">Selecione um produto</option>
-                            {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` (#${p.code})` : ''}</option>)}
+                            {products.map((p) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` (#${p.code})` : ''}</option>)}
                         </select>
                     </div>
                     <div>
@@ -277,10 +296,11 @@ export function StockMovementsPage() {
                             value={form.warehouse_id}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('warehouse_id', e.target.value)}
                             required
+                            title="Depósito / Veículo"
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                         >
                             <option value="">Selecione um local</option>
-                            {warehouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -288,10 +308,14 @@ export function StockMovementsPage() {
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo</label>
                             <select
                                 value={form.type}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('type', e.target.value as 'entry' | 'adjustment')}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('type', e.target.value as MovementFormType)}
+                                title="Tipo de movimentação"
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                             >
                                 <option value="entry">Entrada</option>
+                                <option value="exit">Saída</option>
+                                <option value="reserve">Reserva</option>
+                                <option value="return">Devolução</option>
                                 <option value="adjustment">Ajuste</option>
                             </select>
                         </div>
@@ -327,6 +351,7 @@ export function StockMovementsPage() {
                         <input
                             type="file"
                             accept=".xml"
+                            title="Arquivo XML da NF-e"
                             onChange={(e) => setXmlFile(e.target.files?.[0] || null)}
                             required
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none"
@@ -338,10 +363,11 @@ export function StockMovementsPage() {
                             value={xmlWarehouseId}
                             onChange={(e) => setXmlWarehouseId(e.target.value)}
                             required
+                            title="Depósito para entrada"
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
                         >
                             <option value="">Selecione um local</option>
-                            {warehouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
                     </div>
                     <div className="rounded-lg bg-surface-50 p-3 text-xs text-surface-500 italic">

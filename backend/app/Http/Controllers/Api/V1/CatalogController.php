@@ -9,6 +9,7 @@ use App\Models\ServiceCatalogItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -96,8 +97,13 @@ class CatalogController extends Controller
         $validated['slug'] = ServiceCatalog::generateSlug($base);
         $validated['tenant_id'] = $this->tenantId($request);
 
-        $catalog = ServiceCatalog::create($validated);
-        return response()->json($catalog->loadCount('items'), 201);
+        try {
+            $catalog = DB::transaction(fn () => ServiceCatalog::create($validated));
+            return response()->json($catalog->loadCount('items'), 201);
+        } catch (\Throwable $e) {
+            Log::error('ServiceCatalog store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar catálogo'], 500);
+        }
     }
 
     /** Admin — atualizar catálogo */
@@ -117,8 +123,13 @@ class CatalogController extends Controller
             $validated['slug'] = Str::slug($validated['slug']);
         }
 
-        $catalog->update($validated);
-        return response()->json($catalog->loadCount('items'));
+        try {
+            $catalog->update($validated);
+            return response()->json($catalog->loadCount('items'));
+        } catch (\Throwable $e) {
+            Log::error('ServiceCatalog update failed', ['id' => $catalog->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar catálogo'], 500);
+        }
     }
 
     /** Admin — excluir catálogo */
@@ -126,17 +137,21 @@ class CatalogController extends Controller
     {
         app()->instance('current_tenant_id', $this->tenantId(request()));
 
-        DB::transaction(function () use ($catalog) {
-            foreach ($catalog->items as $item) {
-                if ($item->image_path) {
-                    Storage::disk('public')->delete($item->image_path);
+        try {
+            DB::transaction(function () use ($catalog) {
+                foreach ($catalog->items as $item) {
+                    if ($item->image_path) {
+                        Storage::disk('public')->delete($item->image_path);
+                    }
                 }
-            }
-            $catalog->items()->delete();
-            $catalog->delete();
-        });
-
-        return response()->json(null, 204);
+                $catalog->items()->delete();
+                $catalog->delete();
+            });
+            return response()->json(null, 204);
+        } catch (\Throwable $e) {
+            Log::error('ServiceCatalog destroy failed', ['id' => $catalog->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir catálogo'], 500);
+        }
     }
 
     /** Admin — listar itens do catálogo */

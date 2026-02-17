@@ -10,7 +10,7 @@ import { Loader2, FileText, User, Phone, Mail, MapPin, Calendar, Wrench, Handsha
 import api from '@/lib/api'
 
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('pt-BR') : '-'
-const ratingColors: Record<string, string> = { A: 'bg-green-100 text-green-800', B: 'bg-blue-100 text-blue-800', C: 'bg-amber-100 text-amber-800', D: 'bg-gray-100 text-gray-600' }
+const ratingColors: Record<string, string> = { A: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', B: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300', C: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300', D: 'bg-surface-100 text-surface-600' }
 
 export function CrmClientSummaryPage() {
     const [customerId, setCustomerId] = useState<number | null>(null)

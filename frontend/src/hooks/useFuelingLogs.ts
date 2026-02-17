@@ -22,10 +22,12 @@ export interface FuelingLog {
     status: 'pending' | 'approved' | 'rejected'
     approved_by: number | null
     approved_at: string | null
+    rejection_reason: string | null
+    affects_technician_cash: boolean
     created_at: string
     user?: { id: number; name: string }
     work_order?: { id: number; os_number: string }
-    approved_by_user?: { id: number; name: string }
+    approver?: { id: number; name: string }
 }
 
 export interface FuelingLogFilters {
@@ -132,8 +134,8 @@ export function useUpdateFuelingLog() {
 export function useApproveFuelingLog() {
     const qc = useQueryClient()
     return useMutation({
-        mutationFn: async ({ id, action }: { id: number; action: 'approve' | 'reject' }) => {
-            const { data } = await api.post(`/fueling-logs/${id}/approve`, { action })
+        mutationFn: async ({ id, action, rejection_reason }: { id: number; action: 'approve' | 'reject'; rejection_reason?: string }) => {
+            const { data } = await api.post(`/fueling-logs/${id}/approve`, { action, rejection_reason })
             return data
         },
         onSuccess: (_: any, vars: { id: number; action: 'approve' | 'reject' }) => {
@@ -141,6 +143,21 @@ export function useApproveFuelingLog() {
             qc.invalidateQueries({ queryKey: ['fueling-logs'] })
         },
         onError: (err: any) => handleError(err, 'Erro ao aprovar/rejeitar'),
+    })
+}
+
+export function useResubmitFuelingLog() {
+    const qc = useQueryClient()
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const { data } = await api.post(`/fueling-logs/${id}/resubmit`)
+            return data
+        },
+        onSuccess: () => {
+            toast.success('Abastecimento resubmetido como pendente')
+            qc.invalidateQueries({ queryKey: ['fueling-logs'] })
+        },
+        onError: (err: any) => handleError(err, 'Erro ao resubmeter abastecimento'),
     })
 }
 

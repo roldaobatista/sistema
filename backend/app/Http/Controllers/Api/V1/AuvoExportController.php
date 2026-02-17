@@ -11,10 +11,11 @@ use App\Services\Auvo\AuvoApiClient;
 use App\Services\Auvo\AuvoExportService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class AuvoExportController extends Controller
 {
-    private function exportService(Request $request): AuvoExportService
+    private function getExportService(Request $request): AuvoExportService
     {
         $client = AuvoApiClient::forTenant($request->user()->current_tenant_id);
 
@@ -27,53 +28,62 @@ class AuvoExportController extends Controller
 
     public function exportCustomer(Request $request, Customer $customer): JsonResponse
     {
-        try {
-            $result = $this->exportService($request)->exportCustomer($customer);
-            return response()->json([
-                'message' => 'Cliente exportado com sucesso para o Auvo.',
-                'data' => $result,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['message' => 'Erro ao exportar cliente: ' . $e->getMessage()], 500);
-        }
+        return $this->handleExport($request, 'Cliente', function (AuvoExportService $svc) use ($customer) {
+            return $svc->exportCustomer($customer);
+        });
     }
 
     public function exportProduct(Request $request, Product $product): JsonResponse
     {
-        try {
-            $result = $this->exportService($request)->exportProduct($product);
-            return response()->json([
-                'message' => 'Produto exportado com sucesso para o Auvo.',
-                'data' => $result,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['message' => 'Erro ao exportar produto: ' . $e->getMessage()], 500);
-        }
+        return $this->handleExport($request, 'Produto', function (AuvoExportService $svc) use ($product) {
+            return $svc->exportProduct($product);
+        });
     }
 
     public function exportServiceEntity(Request $request, Service $service): JsonResponse
     {
-        try {
-            $result = $this->exportService($request)->exportService($service);
-            return response()->json([
-                'message' => 'Serviço exportado com sucesso para o Auvo.',
-                'data' => $result,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['message' => 'Erro ao exportar serviço: ' . $e->getMessage()], 500);
-        }
+        return $this->handleExport($request, 'Serviço', function (AuvoExportService $svc) use ($service) {
+            return $svc->exportService($service);
+        });
     }
 
     public function exportQuote(Request $request, Quote $quote): JsonResponse
     {
+        return $this->handleExport($request, 'Orçamento', function (AuvoExportService $svc) use ($quote) {
+            return $svc->exportQuote($quote);
+        });
+    }
+
+    private function handleExport(Request $request, string $entityLabel, callable $action): JsonResponse
+    {
         try {
-            $result = $this->exportService($request)->exportQuote($quote);
+            $svc = $this->getExportService($request);
+            $result = $action($svc);
+
             return response()->json([
-                'message' => 'Orçamento exportado com sucesso para o Auvo.',
+                'message' => "{$entityLabel} exportado(a) com sucesso para o Auvo.",
                 'data' => $result,
             ]);
+        } catch (\RuntimeException $e) {
+            $isCredentialError = str_contains($e->getMessage(), 'Credenciais');
+            $status = $isCredentialError ? 422 : 500;
+
+            if (!$isCredentialError) {
+                Log::error("Auvo export {$entityLabel} failed", ['error' => $e->getMessage()]);
+            }
+
+            return response()->json([
+                'message' => "Erro ao exportar {$entityLabel}: " . $e->getMessage(),
+            ], $status);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Erro ao exportar orçamento: ' . $e->getMessage()], 500);
+            Log::error("Auvo export {$entityLabel} failed", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => "Erro ao exportar {$entityLabel}: " . $e->getMessage(),
+            ], 500);
         }
     }
 }

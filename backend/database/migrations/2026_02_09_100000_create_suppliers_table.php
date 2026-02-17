@@ -36,7 +36,7 @@ return new class extends Migration
         });
 
         Schema::table('accounts_payable', function (Blueprint $t) {
-            $t->foreignId('supplier_id')->nullable()->after('created_by')
+            $t->foreignId('supplier_id')->nullable()
                 ->constrained('suppliers')->nullOnDelete();
         });
     }

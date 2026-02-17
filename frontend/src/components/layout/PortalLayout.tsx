@@ -38,7 +38,7 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-surface-50">
             {/* Topbar */}
-            <header className="bg-white border-b border-subtle sticky top-0 z-30">
+            <header className="bg-surface-0 dark:bg-surface-900 border-b border-subtle sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex">
@@ -91,7 +91,7 @@ export function PortalLayout({ children }: { children: React.ReactNode }) {
 
                 {/* Mobile Menu */}
                 {mobileMenuOpen && (
-                    <div className="sm:hidden bg-white border-t border-subtle">
+                    <div className="sm:hidden bg-surface-0 dark:bg-surface-900 border-t border-subtle">
                         <div className="pt-2 pb-4 space-y-1">
                             {navigation.map((item) => (
                                 <Link

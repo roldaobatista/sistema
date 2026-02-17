@@ -49,8 +49,11 @@ interface CommissionSettlement {
     id: number
     period: string
     total_amount: number
+    paid_amount?: number
+    balance?: number
     status: string
     paid_at?: string
+    payment_notes?: string
 }
 
 interface CommissionDispute {
@@ -141,19 +144,18 @@ export default function TechCommissionsPage() {
                 if (period) params.period = period
 
                 const [eventsRes, settlementsRes, disputesRes] = await Promise.all([
-                    api.get('/commission-events', { params: { ...params, user_id: userId } }).catch(() => ({ data: { data: [] } })),
-                    api.get('/commission-settlements', { params: { ...params, user_id: userId } }).catch(() => ({ data: [] })),
-                    api.get('/commission-disputes', { params: { user_id: userId } }).catch(() => ({ data: [] })),
+                    api.get('/my/commission-events', { params }).catch(() => ({ data: { data: [] } })),
+                    api.get('/my/commission-settlements', { params }).catch(() => ({ data: { data: [] } })),
+                    api.get('/commission-disputes', { params: { user_id: userId } }).catch(() => ({ data: { data: [] } })),
                 ])
 
-                const evData = eventsRes.data?.data ?? eventsRes.data ?? []
-                const eventsArr = Array.isArray(evData) ? evData : evData.data ?? []
+                const eventsArr = eventsRes.data?.data ?? (Array.isArray(eventsRes.data) ? eventsRes.data : [])
                 setEvents(eventsArr)
 
-                const setData = Array.isArray(settlementsRes.data) ? settlementsRes.data : settlementsRes.data?.data ?? []
+                const setData = settlementsRes.data?.data ?? (Array.isArray(settlementsRes.data) ? settlementsRes.data : [])
                 setSettlements(setData)
 
-                const dispData = Array.isArray(disputesRes.data) ? disputesRes.data : disputesRes.data?.data ?? []
+                const dispData = disputesRes.data?.data ?? (Array.isArray(disputesRes.data) ? disputesRes.data : [])
                 setDisputes(dispData)
 
                 localStorage.setItem(cacheKey('events'), JSON.stringify({ data: eventsArr, timestamp: Date.now() }))
@@ -270,6 +272,20 @@ export default function TechCommissionsPage() {
                             </div>
                         </div>
 
+                        {/* Saldo acumulado total */}
+                        {settlements.length > 0 && (() => {
+                            const totalEarned = settlements.reduce((s: number, st: CommissionSettlement) => s + Number(st.total_amount || 0), 0)
+                            const totalPaid = settlements.reduce((s: number, st: CommissionSettlement) => s + Number(st.paid_amount || 0), 0)
+                            const totalBalance = totalEarned - totalPaid
+                            return totalBalance > 0 ? (
+                                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Saldo acumulado a receber</p>
+                                    <p className="text-xl font-bold text-amber-700 dark:text-amber-300 mt-1">{formatCurrency(totalBalance)}</p>
+                                    <p className="text-[10px] text-amber-600/70 dark:text-amber-500/70 mt-1">Calculado: {formatCurrency(totalEarned)} - Recebido: {formatCurrency(totalPaid)}</p>
+                                </div>
+                            ) : null
+                        })()}
+
                         <div className="flex gap-2">
                             {(['current', 'previous', 'all'] as const).map((pf) => (
                                 <button
@@ -351,38 +367,60 @@ export default function TechCommissionsPage() {
                                 {settlements.length === 0 ? (
                                     <p className="text-sm text-surface-500 text-center py-6">Nenhum fechamento</p>
                                 ) : (
-                                    settlements.map((s) => (
-                                        <div
-                                            key={s.id}
-                                            className="bg-white dark:bg-surface-800/80 rounded-xl p-3"
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
-                                                        {s.period.replace(/-/, '/')}
-                                                    </p>
-                                                    <p className="text-xs text-surface-500">
-                                                        {formatCurrency(Number(s.total_amount || 0))}
-                                                    </p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span
-                                                        className={cn(
-                                                            'inline-block px-2 py-0.5 rounded text-[10px] font-medium',
-                                                            STATUS_BADGES[s.status] ?? 'bg-surface-100 text-surface-600'
-                                                        )}
-                                                    >
-                                                        {STATUS_LABELS[s.status] ?? s.status}
-                                                    </span>
-                                                    {s.paid_at && (
-                                                        <p className="text-[10px] text-surface-400 mt-1">
-                                                            Pago em {new Date(s.paid_at).toLocaleDateString('pt-BR')}
+                                    settlements.map((s) => {
+                                        const earned = Number(s.total_amount || 0)
+                                        const paid = Number(s.paid_amount || 0)
+                                        const bal = earned - paid
+                                        return (
+                                            <div
+                                                key={s.id}
+                                                className="bg-white dark:bg-surface-800/80 rounded-xl p-3"
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+                                                            {s.period.replace(/-/, '/')}
                                                         </p>
-                                                    )}
+                                                        <p className="text-xs text-surface-500">
+                                                            Calculado: {formatCurrency(earned)}
+                                                        </p>
+                                                        {s.status === 'paid' && (
+                                                            <>
+                                                                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                                                    Recebido: {formatCurrency(paid)}
+                                                                </p>
+                                                                {bal > 0.01 && (
+                                                                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                                                        Saldo: {formatCurrency(bal)}
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span
+                                                            className={cn(
+                                                                'inline-block px-2 py-0.5 rounded text-[10px] font-medium',
+                                                                STATUS_BADGES[s.status] ?? 'bg-surface-100 text-surface-600'
+                                                            )}
+                                                        >
+                                                            {STATUS_LABELS[s.status] ?? s.status}
+                                                        </span>
+                                                        {s.paid_at && (
+                                                            <p className="text-[10px] text-surface-400 mt-1">
+                                                                Pago em {new Date(s.paid_at).toLocaleDateString('pt-BR')}
+                                                            </p>
+                                                        )}
+                                                        {s.payment_notes && (
+                                                            <p className="text-[10px] text-surface-400 mt-1">
+                                                                {s.payment_notes.length > 40 ? s.payment_notes.slice(0, 40) + '...' : s.payment_notes}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        )
+                                    })
                                 )}
                             </div>
                         )}

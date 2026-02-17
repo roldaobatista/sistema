@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\Fleet\VehiclePoolRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -11,10 +12,12 @@ use Illuminate\Validation\Rule;
 
 class VehiclePoolController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = VehiclePoolRequest::where('tenant_id', $request->user()->tenant_id)
+            $query = VehiclePoolRequest::where('tenant_id', $this->resolvedTenantId())
                 ->with(['user:id,name', 'vehicle:id,plate,model']);
 
             if ($request->filled('status')) {
@@ -44,7 +47,7 @@ class VehiclePoolController extends Controller
                 'purpose' => 'nullable|string',
             ]);
 
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['user_id'] = $request->user()->id;
             $validated['status'] = 'pending';
 
@@ -65,7 +68,7 @@ class VehiclePoolController extends Controller
     public function show(VehiclePoolRequest $requestModel): JsonResponse
     {
         try {
-            if ($requestModel->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($requestModel->tenant_id != $this->resolvedTenantId()) abort(403);
             return response()->json($requestModel->load(['user', 'vehicle']));
         } catch (\Exception $e) {
             Log::error('VehiclePool show failed', ['error' => $e->getMessage()]);
@@ -78,7 +81,7 @@ class VehiclePoolController extends Controller
         try {
             DB::beginTransaction();
 
-            $poolRequest = VehiclePoolRequest::where('tenant_id', $request->user()->tenant_id)
+            $poolRequest = VehiclePoolRequest::where('tenant_id', $this->resolvedTenantId())
                 ->findOrFail($id);
 
             $validated = $request->validate([
@@ -105,7 +108,7 @@ class VehiclePoolController extends Controller
     public function destroy($id): JsonResponse
     {
         try {
-            $poolRequest = VehiclePoolRequest::where('tenant_id', auth()->user()->tenant_id)
+            $poolRequest = VehiclePoolRequest::where('tenant_id', $this->resolvedTenantId())
                 ->findOrFail($id);
 
             if ($poolRequest->status != 'pending') {

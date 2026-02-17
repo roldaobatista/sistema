@@ -1,3 +1,4 @@
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\WorkOrderSignature;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -6,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class WorkOrderSignatureController extends Controller
 {
+    use ResolvesCurrentTenant;
     public function index(Request $request): JsonResponse
     {
         $request->validate([
@@ -34,7 +36,7 @@ class WorkOrderSignatureController extends Controller
 
             $signature = WorkOrderSignature::create([
                 ...$validated,
-                'tenant_id' => $request->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
                 'signed_at' => now(),
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),

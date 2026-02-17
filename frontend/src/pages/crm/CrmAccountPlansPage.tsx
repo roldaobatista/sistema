@@ -17,7 +17,7 @@ import api from '@/lib/api'
 
 const fmtDate = (d: string | null) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '-'
 const fmtMoney = (v: number | null) => v ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) : '-'
-const statusColors: Record<string, string> = { active: 'bg-green-100 text-green-800', completed: 'bg-blue-100 text-blue-800', paused: 'bg-amber-100 text-amber-800', cancelled: 'bg-gray-100 text-gray-600' }
+const statusColors: Record<string, string> = { active: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', completed: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300', paused: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300', cancelled: 'bg-surface-100 text-surface-600' }
 
 export function CrmAccountPlansPage() {
     const qc = useQueryClient()

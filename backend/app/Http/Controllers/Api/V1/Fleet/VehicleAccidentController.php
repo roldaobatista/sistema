@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\Fleet\VehicleAccident;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -11,10 +12,12 @@ use Illuminate\Validation\Rule;
 
 class VehicleAccidentController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = VehicleAccident::where('tenant_id', $request->user()->tenant_id)
+            $query = VehicleAccident::where('tenant_id', $this->resolvedTenantId())
                 ->with(['vehicle:id,plate,model', 'driver:id,name']);
 
             if ($request->filled('fleet_vehicle_id')) {
@@ -50,7 +53,7 @@ class VehicleAccidentController extends Controller
                 'status' => ['required', Rule::in(['investigating', 'insurance_claim', 'repaired', 'loss'])],
             ]);
 
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['driver_id'] = $request->user()->id;
 
             $accident = VehicleAccident::create($validated);
@@ -70,7 +73,7 @@ class VehicleAccidentController extends Controller
     public function show(VehicleAccident $accident): JsonResponse
     {
         try {
-            if ($accident->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($accident->tenant_id != $this->resolvedTenantId()) abort(403);
             return response()->json($accident->load(['vehicle', 'driver']));
         } catch (\Exception $e) {
             Log::error('VehicleAccident show failed', ['error' => $e->getMessage()]);
@@ -83,7 +86,7 @@ class VehicleAccidentController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($accident->tenant_id != $request->user()->tenant_id) abort(403);
+            if ($accident->tenant_id != $this->resolvedTenantId()) abort(403);
 
             $validated = $request->validate([
                 'occurrence_date' => 'sometimes|date',
@@ -114,7 +117,7 @@ class VehicleAccidentController extends Controller
     public function destroy(VehicleAccident $accident): JsonResponse
     {
         try {
-            if ($accident->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($accident->tenant_id != $this->resolvedTenantId()) abort(403);
             $accident->delete();
             return response()->json(['message' => 'Acidente excluído']);
         } catch (\Exception $e) {

@@ -1,29 +1,17 @@
-﻿import { useState, useMemo } from 'react'
-import { toast } from 'sonner'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
     BarChart3, TrendingUp, Trophy, Award, Users, PieChart, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/pageheader'
 import { useAuthStore } from '@/stores/auth-store'
 
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function CommissionDashboardPage() {
-    const queryClient = useQueryClient()
     const { hasPermission } = useAuthStore()
-
-    // MVP: Delete mutation
-    const deleteMutation = useMutation({
-        mutationFn: (id: number) => api.delete(`/commissions/${id}`),
-        onSuccess: () => { toast.success('Comissão removida com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['commission-overview'] }) },
-        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover comissão') },
-    })
-    const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover esta comissão?')) deleteMutation.mutate(id) }
 
     const [months, setMonths] = useState(6)
 
@@ -50,11 +38,11 @@ export function CommissionDashboardPage() {
     const calcTypeLabels: Record<string, string> = {
         percent_gross: '% Bruto', percent_net: '% Líquido', fixed_per_os: 'Fixo/OS',
         percent_services_only: '% Serviços', percent_products_only: '% Produtos',
-        percent_profit: '% Lucro', percent_gross_minus_displacement: '% (Bâˆ’D)',
-        percent_gross_minus_expenses: '% (Bâˆ’Desp)', tiered_gross: 'Escalonado', custom_formula: 'Fórmula',
+        percent_profit: '% Lucro', percent_gross_minus_displacement: '% (B−D)',
+        percent_gross_minus_expenses: '% (B−Desp)', tiered_gross: 'Escalonado', custom_formula: 'Fórmula',
     }
-    const roleLabels: Record<string, string> = { technician: 'Técnico', seller: 'Vendedor', driver: 'Motorista' }
-    const roleColor: Record<string, string> = { technician: '#3B82F6', seller: '#10B981', driver: '#F59E0B' }
+    const roleLabels: Record<string, string> = { technician: 'Técnico', tecnico: 'Técnico', seller: 'Vendedor', vendedor: 'Vendedor', driver: 'Motorista', motorista: 'Motorista' }
+    const roleColor: Record<string, string> = { technician: '#3B82F6', tecnico: '#3B82F6', seller: '#10B981', vendedor: '#10B981', driver: '#F59E0B', motorista: '#F59E0B' }
 
     if (isLoading) {
         return (

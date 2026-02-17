@@ -46,7 +46,7 @@ const ALL_TRIGGER_EVENTS = Object.keys(TRIGGER_EVENT_LABELS)
 const ALL_ACTION_TYPES = Object.keys(ACTION_TYPE_LABELS)
 
 const emptyWebhook = { name: '', url: '', events: '', secret: '', is_active: true }
-const emptyReport = { name: '', report_type: 'os_summary', frequency: 'daily', recipients: '', is_active: true }
+const emptyReport = { name: '', report_type: 'work-orders', frequency: 'daily', recipients: '', is_active: true }
 
 // =============================================================================
 // Toggle Component
@@ -67,7 +67,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
             )}
         >
             <span className={cn(
-                'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200',
+                'pointer-events-none inline-block h-5 w-5 rounded-full bg-surface-0 shadow-sm ring-0 transition-transform duration-200',
                 checked ? 'translate-x-5' : 'translate-x-0',
             )} />
         </button>
@@ -245,7 +245,7 @@ export default function AutomationPage() {
             const payload = { ...data, recipients: data.recipients.split(',').map(e => e.trim()).filter(Boolean) }
             return editingReportId ? api.put(`/automation/reports/${editingReportId}`, payload) : api.post('/automation/reports', payload)
         },
-        onSuccess: () => { toast.success(editingReportId ? 'Relatório atualizado' : 'Relatório criado'); setReportModal(false); queryClient.invalidateQueries({ queryKey: ['automation-reports'] }) },
+        onSuccess: () => { toast.success(editingReportId ? 'Relatório atualizado' : 'Relatório criado'); setReportModal(false); setEditingReportId(null); setReportForm(emptyReport); queryClient.invalidateQueries({ queryKey: ['automation-reports'] }) },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar relatório'),
     })
 
@@ -262,7 +262,7 @@ export default function AutomationPage() {
     const handleTemplateToggle = (template: AutomationTemplate) => {
         const existingRule = activeTemplateMap.get(template.id)
         if (existingRule) {
-            if (window.confirm(`Desativar a automação "${template.name}"?`)) {
+            {
                 deactivateTemplateMut.mutate(existingRule.id)
             }
         } else {
@@ -301,7 +301,7 @@ export default function AutomationPage() {
 
     const openEditReport = (r: any) => {
         setEditingReportId(r.id)
-        setReportForm({ name: r.name || '', report_type: r.report_type || 'os_summary', frequency: r.frequency || 'daily', recipients: Array.isArray(r.recipients) ? r.recipients.join(', ') : r.recipients || '', is_active: r.is_active ?? true })
+        setReportForm({ name: r.name || '', report_type: r.report_type || 'work-orders', frequency: r.frequency || 'daily', recipients: Array.isArray(r.recipients) ? r.recipients.join(', ') : r.recipients || '', is_active: r.is_active ?? true })
         setReportModal(true)
     }
 
@@ -598,7 +598,7 @@ export default function AutomationPage() {
                                                     <Pencil size={14} />
                                                 </button>
                                                 <button
-                                                    onClick={() => { if (window.confirm('Remover esta regra?')) deleteRuleMut.mutate(r.id) }}
+                                                    onClick={() => deleteRuleMut.mutate(r.id)}
                                                     className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600"
                                                     title="Excluir"
                                                 >
@@ -679,7 +679,7 @@ export default function AutomationPage() {
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex items-center justify-end gap-1">
                                                 <button onClick={() => openEditWebhook(w)} className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-brand-600"><Pencil size={14} /></button>
-                                                <button onClick={() => { if (window.confirm('Remover webhook?')) deleteWebhookMut.mutate(w.id) }} className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
+                                                <button onClick={() => deleteWebhookMut.mutate(w.id)} className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -730,7 +730,7 @@ export default function AutomationPage() {
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex items-center justify-end gap-1">
                                                 <button onClick={() => openEditReport(r)} className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-brand-600"><Pencil size={14} /></button>
-                                                <button onClick={() => { if (window.confirm('Remover relatório?')) deleteReportMut.mutate(r.id) }} className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
+                                                <button onClick={() => deleteReportMut.mutate(r.id)} className="rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -759,9 +759,9 @@ export default function AutomationPage() {
                                     <h4 className="font-medium text-surface-900">{configTemplate.name}</h4>
                                     <p className="text-xs text-surface-600 mt-1">{configTemplate.description}</p>
                                     <div className="flex items-center gap-2 mt-3 text-xs text-surface-500">
-                                        <span className="rounded bg-white/60 px-2 py-0.5">{configTemplate.trigger_label}</span>
+                                        <span className="rounded bg-surface-0/60 dark:bg-surface-700/60 px-2 py-0.5">{configTemplate.trigger_label}</span>
                                         <ArrowRight size={10} />
-                                        <span className="rounded bg-white/60 px-2 py-0.5">{configTemplate.action_label}</span>
+                                        <span className="rounded bg-surface-0/60 dark:bg-surface-700/60 px-2 py-0.5">{configTemplate.action_label}</span>
                                     </div>
                                 </div>
                             </div>
@@ -951,12 +951,19 @@ export default function AutomationPage() {
                                     <label className="block text-sm font-medium text-surface-700 mb-1">Tipo</label>
                                     <select value={reportForm.report_type} onChange={e => setReportForm({ ...reportForm, report_type: e.target.value })}
                                         className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
-                                        <option value="os_summary">Resumo de OS</option>
+                                        <option value="work-orders">Ordens de Serviço</option>
+                                        <option value="productivity">Produtividade</option>
                                         <option value="financial">Financeiro</option>
-                                        <option value="stock">Estoque</option>
-                                        <option value="performance">Desempenho</option>
                                         <option value="commissions">Comissões</option>
-                                        <option value="equipment">Equipamentos</option>
+                                        <option value="profitability">Lucratividade</option>
+                                        <option value="quotes">Orçamentos</option>
+                                        <option value="service-calls">Chamados</option>
+                                        <option value="technician-cash">Caixa Técnico</option>
+                                        <option value="crm">CRM</option>
+                                        <option value="equipments">Equipamentos</option>
+                                        <option value="suppliers">Fornecedores</option>
+                                        <option value="stock">Estoque</option>
+                                        <option value="customers">Clientes</option>
                                     </select>
                                 </div>
                                 <div>

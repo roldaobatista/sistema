@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('service_calls', function (Blueprint $t) {
-            $t->text('resolution_notes')->nullable()->after('observations');
+            $t->text('resolution_notes')->nullable();
         });
 
         Schema::create('service_call_comments', function (Blueprint $t) {

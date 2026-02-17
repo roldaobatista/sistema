@@ -96,7 +96,10 @@ class WorkOrderController extends Controller
         }
 
         if ($assignedTo = $request->get('assigned_to')) {
-            $query->where('assigned_to', $assignedTo);
+            $query->where(function ($q) use ($assignedTo) {
+                $q->where('assigned_to', $assignedTo)
+                    ->orWhereHas('technicians', fn ($t) => $t->where('user_id', $assignedTo));
+            });
         }
 
         if ($customerId = $request->get('customer_id')) {
@@ -178,12 +181,25 @@ class WorkOrderController extends Controller
                 $validated['equipment_id'] = $equip->id;
             }
 
+            $initialStatus = $validated['initial_status'] ?? WorkOrder::STATUS_OPEN;
+            $orderData = collect($validated)->except(['items', 'new_equipment', 'technician_ids', 'equipment_ids', 'initial_status'])->toArray();
+
+            if ($initialStatus !== WorkOrder::STATUS_OPEN) {
+                $orderData['started_at'] = $orderData['started_at'] ?? ($orderData['received_at'] ?? now());
+                if (in_array($initialStatus, [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_DELIVERED, WorkOrder::STATUS_INVOICED])) {
+                    $orderData['completed_at'] = $orderData['completed_at'] ?? now();
+                }
+                if (in_array($initialStatus, [WorkOrder::STATUS_DELIVERED, WorkOrder::STATUS_INVOICED])) {
+                    $orderData['delivered_at'] = $orderData['delivered_at'] ?? now();
+                }
+            }
+
             $order = WorkOrder::create([
-                ...collect($validated)->except(['items', 'new_equipment', 'technician_ids', 'equipment_ids'])->toArray(),
+                ...$orderData,
                 'number' => WorkOrder::nextNumber($tenantId),
                 'tenant_id' => $tenantId,
                 'created_by' => $request->user()->id,
-                'status' => WorkOrder::STATUS_OPEN,
+                'status' => $initialStatus,
             ]);
 
             // Pivô técnicos
@@ -213,8 +229,8 @@ class WorkOrderController extends Controller
                 'tenant_id' => $tenantId,
                 'user_id' => $request->user()->id,
                 'from_status' => null,
-                'to_status' => WorkOrder::STATUS_OPEN,
-                'notes' => 'OS criada',
+                'to_status' => $initialStatus,
+                'notes' => $initialStatus !== WorkOrder::STATUS_OPEN ? 'OS criada (lançamento retroativo)' : 'OS criada',
             ]);
 
             return $order;
@@ -235,8 +251,16 @@ class WorkOrderController extends Controller
         ], 201);
     }
 
+    private function ensureTenantOwnership(WorkOrder $workOrder): void
+    {
+        if ((int) $workOrder->tenant_id !== $this->currentTenantId()) {
+            abort(403, 'Acesso negado: OS não pertence ao tenant atual.');
+        }
+    }
+
     public function show(WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
         $workOrder->load([
             'customer:id,name',
             'equipment:id,name,serial_number',
@@ -271,6 +295,7 @@ class WorkOrderController extends Controller
 
     public function update(UpdateWorkOrderRequest $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
         $tenantId = $this->currentTenantId();
 
         $validated = $request->validated();
@@ -306,6 +331,8 @@ class WorkOrderController extends Controller
 
     public function destroy(WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         if (in_array($workOrder->status, [WorkOrder::STATUS_COMPLETED, WorkOrder::STATUS_DELIVERED, WorkOrder::STATUS_INVOICED])) {
             return response()->json(['message' => 'Não é possível excluir OS concluída, entregue ou faturada'], 422);
         }
@@ -338,6 +365,8 @@ class WorkOrderController extends Controller
     // --- Status Transition ---
     public function updateStatus(Request $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         $validated = $request->validate([
             'status' => 'required|in:' . implode(',', array_keys(WorkOrder::STATUSES)),
             'notes' => 'nullable|string',
@@ -443,6 +472,7 @@ class WorkOrderController extends Controller
     // --- Itens CRUD ---
     public function storeItem(Request $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
         $tenantId = $this->currentTenantId();
 
         $validated = $request->validate([
@@ -481,6 +511,8 @@ class WorkOrderController extends Controller
 
     public function updateItem(Request $request, WorkOrder $workOrder, WorkOrderItem $item): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         if ($item->work_order_id !== $workOrder->id) {
             return response()->json(['message' => 'Item não pertence a esta OS'], 403);
         }
@@ -521,6 +553,8 @@ class WorkOrderController extends Controller
 
     public function destroyItem(WorkOrder $workOrder, WorkOrderItem $item): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         if ($item->work_order_id !== $workOrder->id) {
             return response()->json(['message' => 'Item não pertence a esta OS'], 403);
         }
@@ -556,6 +590,8 @@ class WorkOrderController extends Controller
 
     public function storeAttachment(Request $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         $request->validate([
             'file' => [
                 'required',
@@ -594,6 +630,8 @@ class WorkOrderController extends Controller
 
     public function destroyAttachment(WorkOrder $workOrder, \App\Models\WorkOrderAttachment $attachment): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         if ($attachment->work_order_id !== $workOrder->id) {
             return response()->json(['message' => 'Anexo não pertence a esta OS'], 403);
         }
@@ -618,6 +656,8 @@ class WorkOrderController extends Controller
      */
     public function storeSignature(WorkOrder $workOrder, Request $request): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         $validated = $request->validate([
             'signature' => 'required|string', // base64 PNG
             'signer_name' => 'required|string|max:255',
@@ -664,6 +704,7 @@ class WorkOrderController extends Controller
 
     public function attachEquipment(Request $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
         $tenantId = $this->currentTenantId();
 
         $validated = $request->validate([
@@ -689,6 +730,8 @@ class WorkOrderController extends Controller
 
     public function detachEquipment(WorkOrder $workOrder, Equipment $equipment): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         if ($equipment->tenant_id !== $workOrder->tenant_id) {
             return response()->json(['message' => 'Equipamento não pertence a este tenant'], 403);
         }
@@ -710,6 +753,7 @@ class WorkOrderController extends Controller
 
     public function duplicate(Request $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
         $tenantId = $this->currentTenantId();
 
         try {
@@ -760,7 +804,10 @@ class WorkOrderController extends Controller
 
     public function exportCsv(Request $request)
     {
+        $tenantId = $this->currentTenantId();
+
         $query = WorkOrder::with(['customer:id,name', 'assignee:id,name'])
+            ->where('tenant_id', $tenantId)
             ->orderByDesc('created_at');
 
         if ($status = $request->get('status')) {
@@ -768,6 +815,12 @@ class WorkOrderController extends Controller
         }
         if ($priority = $request->get('priority')) {
             $query->where('priority', $priority);
+        }
+        if ($assignedTo = $request->get('assigned_to')) {
+            $query->where(function ($q) use ($assignedTo) {
+                $q->where('assigned_to', $assignedTo)
+                    ->orWhereHas('technicians', fn ($t) => $t->where('user_id', $assignedTo));
+            });
         }
         if ($from = $request->get('date_from')) {
             $query->whereDate('created_at', '>=', $from);
@@ -804,11 +857,218 @@ class WorkOrderController extends Controller
         ]);
     }
 
+    // --- Import CSV ---
+
+    public function importCsv(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $tenantId = $this->currentTenantId();
+        $userId = auth()->id();
+
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        $header = fgetcsv($handle, 0, ';');
+        if (!$header) {
+            fclose($handle);
+            return response()->json(['message' => 'Arquivo CSV vazio ou inválido'], 422);
+        }
+
+        $header = array_map(fn ($h) => mb_strtolower(trim($h)), $header);
+
+        $requiredColumns = ['cliente', 'descricao', 'valor_total'];
+        $missing = array_diff($requiredColumns, $header);
+        if (!empty($missing)) {
+            fclose($handle);
+            return response()->json([
+                'message' => 'Colunas obrigatórias faltando: ' . implode(', ', $missing),
+                'expected_columns' => $this->importCsvTemplate(),
+            ], 422);
+        }
+
+        $created = 0;
+        $errors = [];
+        $row = 1;
+
+        while (($data = fgetcsv($handle, 0, ';')) !== false) {
+            $row++;
+            $line = array_combine($header, array_pad($data, count($header), ''));
+            if (!$line) {
+                $errors[] = "Linha {$row}: formato inválido";
+                continue;
+            }
+
+            try {
+                $customerName = trim($line['cliente'] ?? '');
+                if (!$customerName) {
+                    $errors[] = "Linha {$row}: cliente vazio";
+                    continue;
+                }
+
+                $customer = \App\Models\Customer::where('tenant_id', $tenantId)
+                    ->where('name', 'like', "%{$customerName}%")
+                    ->first();
+
+                if (!$customer) {
+                    $errors[] = "Linha {$row}: cliente '{$customerName}' não encontrado";
+                    continue;
+                }
+
+                $techName = trim($line['tecnico'] ?? '');
+                $techId = null;
+                if ($techName) {
+                    $tech = \App\Models\User::where('tenant_id', $tenantId)
+                        ->where('name', 'like', "%{$techName}%")
+                        ->first();
+                    $techId = $tech?->id;
+                }
+
+                $total = $this->parseBrlNumber($line['valor_total'] ?? '0');
+                $status = trim($line['status'] ?? 'completed');
+                if (!array_key_exists($status, WorkOrder::STATUSES)) {
+                    $status = 'completed';
+                }
+
+                $receivedAt = $this->parseDate($line['data'] ?? $line['data_recebimento'] ?? $line['received_at'] ?? '');
+                $completedAt = $this->parseDate($line['data_conclusao'] ?? $line['completed_at'] ?? '') ?: $receivedAt;
+
+                DB::transaction(function () use ($tenantId, $userId, $customer, $techId, $line, $total, $status, $receivedAt, $completedAt, &$created) {
+                    $order = WorkOrder::create([
+                        'tenant_id' => $tenantId,
+                        'customer_id' => $customer->id,
+                        'assigned_to' => $techId,
+                        'description' => trim($line['descricao'] ?? 'Serviço'),
+                        'os_number' => trim($line['numero_os'] ?? $line['os_number'] ?? '') ?: null,
+                        'priority' => trim($line['prioridade'] ?? 'normal'),
+                        'number' => WorkOrder::nextNumber($tenantId),
+                        'created_by' => $userId,
+                        'status' => $status,
+                        'total' => $total,
+                        'received_at' => $receivedAt,
+                        'started_at' => $receivedAt,
+                        'completed_at' => $completedAt,
+                        'displacement_value' => $this->parseBrlNumber($line['deslocamento'] ?? '0'),
+                        'discount' => $this->parseBrlNumber($line['desconto'] ?? '0'),
+                    ]);
+
+                    $order->statusHistory()->create([
+                        'tenant_id' => $tenantId,
+                        'user_id' => $userId,
+                        'from_status' => null,
+                        'to_status' => $status,
+                        'notes' => 'Importação CSV retroativa',
+                    ]);
+
+                    $itemDesc = trim($line['item_descricao'] ?? '');
+                    $itemPrice = $this->parseBrlNumber($line['item_valor'] ?? $line['valor_total'] ?? '0');
+                    $itemCost = $this->parseBrlNumber($line['item_custo'] ?? $line['custo'] ?? '0');
+                    $itemType = trim($line['item_tipo'] ?? 'service');
+
+                    if ($itemDesc || $itemPrice > 0) {
+                        $order->items()->create([
+                            'tenant_id' => $tenantId,
+                            'type' => in_array($itemType, ['product', 'service']) ? $itemType : 'service',
+                            'description' => $itemDesc ?: trim($line['descricao'] ?? 'Serviço'),
+                            'quantity' => max(1, (float) ($line['item_qtd'] ?? 1)),
+                            'unit_price' => $itemPrice,
+                            'cost_price' => $itemCost,
+                            'total' => $itemPrice * max(1, (float) ($line['item_qtd'] ?? 1)),
+                        ]);
+                    }
+
+                    $expenseAmount = $this->parseBrlNumber($line['despesa_valor'] ?? '0');
+                    if ($expenseAmount > 0) {
+                        \App\Models\Expense::create([
+                            'tenant_id' => $tenantId,
+                            'work_order_id' => $order->id,
+                            'description' => trim($line['despesa_descricao'] ?? 'Despesa da OS'),
+                            'amount' => $expenseAmount,
+                            'expense_date' => $receivedAt ?? now(),
+                            'status' => 'approved',
+                            'affects_net_value' => true,
+                            'created_by' => $userId,
+                        ]);
+                    }
+
+                    $created++;
+                });
+            } catch (\Exception $e) {
+                $errors[] = "Linha {$row}: {$e->getMessage()}";
+            }
+        }
+
+        fclose($handle);
+
+        return response()->json([
+            'message' => "{$created} OS importadas com sucesso" . (count($errors) > 0 ? ". " . count($errors) . " erro(s)" : ''),
+            'created' => $created,
+            'errors' => array_slice($errors, 0, 50),
+        ]);
+    }
+
+    public function importCsvTemplate(): JsonResponse
+    {
+        $columns = [
+            ['column' => 'cliente', 'required' => true, 'description' => 'Nome do cliente (busca parcial)'],
+            ['column' => 'descricao', 'required' => true, 'description' => 'Descrição do serviço'],
+            ['column' => 'valor_total', 'required' => true, 'description' => 'Valor total da OS (ex: 1500,00)'],
+            ['column' => 'tecnico', 'required' => false, 'description' => 'Nome do técnico (busca parcial)'],
+            ['column' => 'data', 'required' => false, 'description' => 'Data da OS (dd/mm/yyyy)'],
+            ['column' => 'data_conclusao', 'required' => false, 'description' => 'Data de conclusão (dd/mm/yyyy)'],
+            ['column' => 'numero_os', 'required' => false, 'description' => 'Número da OS original'],
+            ['column' => 'status', 'required' => false, 'description' => 'Status: open, completed, delivered, invoiced (padrão: completed)'],
+            ['column' => 'prioridade', 'required' => false, 'description' => 'Prioridade: low, normal, high, urgent'],
+            ['column' => 'deslocamento', 'required' => false, 'description' => 'Valor de deslocamento'],
+            ['column' => 'desconto', 'required' => false, 'description' => 'Valor de desconto'],
+            ['column' => 'item_descricao', 'required' => false, 'description' => 'Descrição do item/serviço'],
+            ['column' => 'item_tipo', 'required' => false, 'description' => 'Tipo: product ou service (padrão: service)'],
+            ['column' => 'item_valor', 'required' => false, 'description' => 'Valor unitário do item'],
+            ['column' => 'item_qtd', 'required' => false, 'description' => 'Quantidade do item'],
+            ['column' => 'item_custo', 'required' => false, 'description' => 'Custo do item (para cálculo de comissão)'],
+            ['column' => 'despesa_valor', 'required' => false, 'description' => 'Valor da despesa vinculada à OS'],
+            ['column' => 'despesa_descricao', 'required' => false, 'description' => 'Descrição da despesa'],
+        ];
+
+        return response()->json([
+            'separator' => ';',
+            'columns' => $columns,
+            'example' => 'cliente;descricao;valor_total;tecnico;data;numero_os;item_custo;despesa_valor' . "\n"
+                . 'João Silva;Manutenção preventiva;1500,00;Rodolfo;15/03/2025;OS-001;200,00;50,00',
+        ]);
+    }
+
+    private function parseBrlNumber(string $value): float
+    {
+        $value = trim($value);
+        if ($value === '') return 0;
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+        return (float) $value;
+    }
+
+    private function parseDate(string $value): ?string
+    {
+        $value = trim($value);
+        if (!$value) return null;
+
+        if (preg_match('#^(\d{2})/(\d{2})/(\d{4})$#', $value, $m)) {
+            return "{$m[3]}-{$m[2]}-{$m[1]}";
+        }
+        if (preg_match('#^\d{4}-\d{2}-\d{2}#', $value)) {
+            return substr($value, 0, 10);
+        }
+        return null;
+    }
+
     // --- Dashboard Stats ---
 
     public function dashboardStats(Request $request): JsonResponse
     {
-        $base = WorkOrder::query();
+        $tenantId = $this->currentTenantId();
+        $base = WorkOrder::where('tenant_id', $tenantId);
 
         // Status counts
         $statusCounts = (clone $base)
@@ -862,6 +1122,8 @@ class WorkOrderController extends Controller
 
     public function reopen(Request $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         if ($workOrder->status !== WorkOrder::STATUS_CANCELLED) {
             return response()->json(['message' => 'Apenas OS canceladas podem ser reabertas'], 422);
         }
@@ -898,6 +1160,8 @@ class WorkOrderController extends Controller
      */
     public function authorizeDispatch(Request $request, WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         $allowedStatuses = [WorkOrder::STATUS_OPEN, WorkOrder::STATUS_IN_PROGRESS];
         if (!in_array($workOrder->status, $allowedStatuses, true)) {
             return response()->json([
@@ -943,6 +1207,8 @@ class WorkOrderController extends Controller
      */
     public function auditTrail(WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         $logs = \App\Models\AuditLog::with('user:id,name')
             ->where(function ($q) use ($workOrder) {
                 // Direct WO changes
@@ -1005,6 +1271,8 @@ class WorkOrderController extends Controller
 
     public function satisfaction(WorkOrder $workOrder): JsonResponse
     {
+        $this->ensureTenantOwnership($workOrder);
+
         $survey = \App\Models\SatisfactionSurvey::where('work_order_id', $workOrder->id)->first();
 
         if (!$survey) {

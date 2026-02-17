@@ -68,7 +68,9 @@ export function QuoteCreatePage() {
     const [discountPercentage, setDiscountPercentage] = useState(0)
     const [displacementValue, setDisplacementValue] = useState(0)
     const [observations, setObservations] = useState('')
+    const [internalNotes, setInternalNotes] = useState('')
     const [source, setSource] = useState<string>('')
+    const [sellerId, setSellerId] = useState<number | null>(null)
     const [blocks, setBlocks] = useState<EquipmentBlock[]>([])
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
@@ -98,6 +100,12 @@ export function QuoteCreatePage() {
         enabled: !!customerId,
     })
     const customerEquipments = equipmentsRes?.data?.equipments ?? []
+
+    const { data: usersRes } = useQuery({
+        queryKey: ['users-sellers'],
+        queryFn: () => api.get('/users', { params: { per_page: 200 } }),
+    })
+    const sellers = usersRes?.data?.data ?? (Array.isArray(usersRes?.data) ? usersRes.data : [])
 
     const { data: productsRes } = useQuery({
         queryKey: ['products-all'],
@@ -152,11 +160,13 @@ export function QuoteCreatePage() {
             setErrorMsg(null)
             return api.post('/quotes', {
                 customer_id: customerId,
+                seller_id: sellerId || undefined,
                 source: source || null,
                 valid_until: validUntil || null,
                 discount_percentage: discountPercentage,
                 displacement_value: displacementValue,
-                observations,
+                observations: observations || null,
+                internal_notes: internalNotes || null,
                 equipments: blocks.map(b => ({
                     equipment_id: b.equipment_id,
                     description: b.description,
@@ -277,6 +287,16 @@ export function QuoteCreatePage() {
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
                         </div>
                         <div>
+                            <label className="block text-sm font-medium text-surface-700 mb-1">Vendedor</label>
+                            <select value={sellerId ?? ''} onChange={e => setSellerId(e.target.value ? Number(e.target.value) : null)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                                <option value="">Usuário atual (padrão)</option>
+                                {sellers.map((u: { id: number; name: string }) => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
                             <label className="block text-sm font-medium text-surface-700 mb-1">Origem Comercial</label>
                             <select value={source} onChange={e => setSource(e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
@@ -286,6 +306,12 @@ export function QuoteCreatePage() {
                                 <option value="contato_direto">Contato Direto</option>
                                 <option value="indicacao">Indicação</option>
                             </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-surface-700 mb-1">Notas Internas</label>
+                            <textarea value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={2}
+                                placeholder="Notas visíveis apenas internamente..."
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
                         </div>
                         <div className="flex justify-end pt-4">
                             <Button onClick={handleNext} disabled={!customerId} icon={<ArrowRight className="h-4 w-4" />}>
@@ -347,7 +373,7 @@ export function QuoteCreatePage() {
                                             <span className="w-24 text-right font-medium text-surface-900">
                                                 {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
                                             </span>
-                                            <button onClick={() => { if (window.confirm('Deseja realmente excluir?')) removeItem(bIdx, iIdx) }} className="text-surface-400 hover:text-red-500">
+                                            <button onClick={() => removeItem(bIdx, iIdx)} className="text-surface-400 hover:text-red-500">
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
                                         </div>

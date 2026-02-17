@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('recurring_contracts', function (Blueprint $table) {
-            $table->string('billing_type', 20)->default('per_os')->after('frequency');
-            $table->decimal('monthly_value', 10, 2)->default(0)->after('billing_type');
+            $table->string('billing_type', 20)->default('per_os');
+            $table->decimal('monthly_value', 10, 2)->default(0);
         });
     }
 

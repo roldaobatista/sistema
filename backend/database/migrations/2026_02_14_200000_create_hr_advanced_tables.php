@@ -14,18 +14,18 @@ return new class extends Migration
     {
         // ─── UPGRADE TIME CLOCK ENTRIES (Ponto Digital Avançado) ─────
         Schema::table('time_clock_entries', function (Blueprint $table) {
-            $table->string('selfie_path')->nullable()->after('notes');
-            $table->decimal('liveness_score', 3, 2)->nullable()->after('selfie_path');
-            $table->boolean('liveness_passed')->default(false)->after('liveness_score');
-            $table->unsignedBigInteger('geofence_location_id')->nullable()->after('liveness_passed');
-            $table->integer('geofence_distance_meters')->nullable()->after('geofence_location_id');
-            $table->json('device_info')->nullable()->after('geofence_distance_meters');
-            $table->string('ip_address', 45)->nullable()->after('device_info');
-            $table->string('clock_method', 30)->default('selfie')->after('ip_address'); // selfie, qrcode, manual, auto_os
-            $table->string('approval_status', 30)->default('auto_approved')->after('clock_method'); // auto_approved, pending, approved, rejected
-            $table->foreignId('approved_by')->nullable()->after('approval_status')->constrained('users')->onUpdate('cascade')->onDelete('set null');
-            $table->text('rejection_reason')->nullable()->after('approved_by');
-            $table->foreignId('work_order_id')->nullable()->after('rejection_reason')->constrained()->onUpdate('cascade')->onDelete('set null');
+            $table->string('selfie_path')->nullable();
+            $table->decimal('liveness_score', 3, 2)->nullable();
+            $table->boolean('liveness_passed')->default(false);
+            $table->unsignedBigInteger('geofence_location_id')->nullable();
+            $table->integer('geofence_distance_meters')->nullable();
+            $table->json('device_info')->nullable();
+            $table->string('ip_address', 45)->nullable();
+            $table->string('clock_method', 30)->default('selfie'); // selfie, qrcode, manual, auto_os
+            $table->string('approval_status', 30)->default('auto_approved'); // auto_approved, pending, approved, rejected
+            $table->foreignId('approved_by')->nullable()->constrained('users')->onUpdate('cascade')->onDelete('set null');
+            $table->text('rejection_reason')->nullable();
+            $table->foreignId('work_order_id')->nullable()->constrained()->onUpdate('cascade')->onDelete('set null');
         });
 
         // ─── GEOFENCE LOCATIONS ─────────────────────────────────────

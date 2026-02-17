@@ -12,7 +12,7 @@ const urgencyConfig: Record<string, { label: string; color: string; bgClass: str
     critical: { label: '+90 dias', color: 'destructive', bgClass: 'bg-red-50 border-red-200' },
     high: { label: '60-90 dias', color: 'warning', bgClass: 'bg-orange-50 border-orange-200' },
     medium: { label: '30-60 dias', color: 'secondary', bgClass: 'bg-amber-50 border-amber-200' },
-    low: { label: '<30 dias', color: 'outline', bgClass: 'bg-gray-50' },
+    low: { label: '<30 dias', color: 'outline', bgClass: 'bg-surface-50 dark:bg-surface-800' },
 }
 
 export function CrmForgottenClientsPage() {

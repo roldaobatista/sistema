@@ -49,6 +49,7 @@ export function RolesPage() {
     const [deleteConfirmRole, setDeleteConfirmRole] = useState<Role | null>(null)
     const [cloneRole, setCloneRole] = useState<Role | null>(null)
     const [cloneName, setCloneName] = useState('')
+    const [cloneDisplayName, setCloneDisplayName] = useState('')
 
     const { data: rolesData, isLoading, isError, refetch } = useQuery({
         queryKey: ['roles'],
@@ -90,12 +91,13 @@ export function RolesPage() {
     })
 
     const cloneMutation = useMutation({
-        mutationFn: ({ roleId, name }: { roleId: number; name: string }) =>
-            api.post(`/roles/${roleId}/clone`, { name }),
+        mutationFn: ({ roleId, name, display_name }: { roleId: number; name: string; display_name?: string }) =>
+            api.post(`/roles/${roleId}/clone`, { name, ...(display_name ? { display_name } : {}) }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] })
             setCloneRole(null)
             setCloneName('')
+            setCloneDisplayName('')
             toast.success('Role clonada com sucesso!')
         },
         onError: (err: any) => {
@@ -105,7 +107,11 @@ export function RolesPage() {
 
     const handleCloneSubmit = () => {
         if (cloneRole && cloneName.trim()) {
-            cloneMutation.mutate({ roleId: cloneRole.id, name: cloneName.trim() })
+            cloneMutation.mutate({
+                roleId: cloneRole.id,
+                name: cloneName.trim(),
+                display_name: cloneDisplayName.trim() || undefined,
+            })
         }
     }
 
@@ -365,24 +371,34 @@ export function RolesPage() {
 
             <Modal
                 open={!!cloneRole}
-                onOpenChange={(open) => { if (!open) { setCloneRole(null); setCloneName('') } }}
+                onOpenChange={(open) => { if (!open) { setCloneRole(null); setCloneName(''); setCloneDisplayName('') } }}
                 title={`Clonar Role: ${cloneRole?.name ?? ''}`}
                 size="sm"
             >
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-surface-700 mb-1">
-                            Nome da nova role <span className="text-red-500">*</span>
+                            Identificador (interno) <span className="text-red-500">*</span>
                         </label>
                         <Input
                             value={cloneName}
                             onChange={(e) => setCloneName(e.target.value)}
-                            placeholder="Ex: Gerente (cópia)"
+                            placeholder="ex: supervisor_campo"
                             autoFocus
                         />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-surface-700 mb-1">
+                            Nome de Exibição
+                        </label>
+                        <Input
+                            value={cloneDisplayName}
+                            onChange={(e) => setCloneDisplayName(e.target.value)}
+                            placeholder="ex: Supervisor de Campo"
+                        />
+                    </div>
                     <div className="flex items-center justify-end gap-3 border-t border-subtle pt-4">
-                        <Button variant="outline" onClick={() => { setCloneRole(null); setCloneName('') }}>
+                        <Button variant="outline" onClick={() => { setCloneRole(null); setCloneName(''); setCloneDisplayName('') }}>
                             Cancelar
                         </Button>
                         <Button

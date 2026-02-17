@@ -10,10 +10,10 @@ return new class extends Migration
     {
         // #30 — Assinatura digital na OS
         Schema::table('work_orders', function (Blueprint $table) {
-            $table->string('signature_path')->nullable()->after('total');
-            $table->string('signature_signer')->nullable()->after('signature_path');
-            $table->timestamp('signature_at')->nullable()->after('signature_signer');
-            $table->string('signature_ip', 45)->nullable()->after('signature_at');
+            $table->string('signature_path')->nullable();
+            $table->string('signature_signer')->nullable();
+            $table->timestamp('signature_at')->nullable();
+            $table->string('signature_ip', 45)->nullable();
         });
 
         // #24 — Recorrência de OS (contratos preventivos)

@@ -1,14 +1,12 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, Plus, Receipt, Loader2, CheckCircle2,
     Trash2, Camera,
 } from 'lucide-react'
-import { useOfflineStore } from '@/hooks/useOfflineStore'
-import { offlinePost } from '@/lib/syncEngine'
-import { generateUlid } from '@/lib/offlineDb'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import api from '@/lib/api'
 
 const CATEGORIES = [
     'Transporte',
@@ -24,17 +22,24 @@ export default function TechExpensePage() {
 
     const { id: woId } = useParams<{ id: string }>()
     const navigate = useNavigate()
-    const { items: savedExpenses, put: putExpense, remove } = useOfflineStore('expenses')
-    const { put: putPhoto } = useOfflineStore('photos')
+    const [woExpenses, setWoExpenses] = useState<any[]>([])
     const [category, setCategory] = useState('')
     const [description, setDescription] = useState('')
     const [amount, setAmount] = useState('')
-    const [photo, setPhoto] = useState<Blob | null>(null)
+    const [photo, setPhoto] = useState<File | null>(null)
     const [photoPreview, setPhotoPreview] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const [showForm, setShowForm] = useState(false)
+    const [loading, setLoading] = useState(true)
 
-    const woExpenses = savedExpenses.filter((e: any) => e.work_order_id === Number(woId))
+    useEffect(() => {
+        if (!woId) return
+        setLoading(true)
+        api.get('/expenses', { params: { work_order_id: woId, my: 1, per_page: 100 } })
+            .then(res => setWoExpenses(res.data?.data ?? []))
+            .catch(() => {})
+            .finally(() => setLoading(false))
+    }, [woId])
 
     const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -50,62 +55,51 @@ export default function TechExpensePage() {
         setSaving(true)
 
         try {
-            const expenseId = generateUlid()
-            const expenseData = {
-                id: expenseId,
-                work_order_id: Number(woId),
-                category,
-                description,
-                amount: parseFloat(amount),
-                affects_technician_cash: true,
-                affects_net_value: true,
-                synced: false,
-                created_at: new Date().toISOString(),
-            }
+            const formData = new FormData()
+            formData.append('work_order_id', woId)
+            formData.append('description', description || category)
+            formData.append('amount', amount)
+            formData.append('expense_date', new Date().toISOString().slice(0, 10))
+            formData.append('affects_technician_cash', '1')
+            formData.append('affects_net_value', '1')
+            formData.append('notes', `Categoria: ${category}`)
+            if (photo) formData.append('receipt', photo)
 
-            await putExpense(expenseData as any)
-
-            // Save photo if present
-            if (photo) {
-                const photoId = generateUlid()
-                await putPhoto({
-                    id: photoId,
-                    work_order_id: Number(woId),
-                    entity_type: 'expense',
-                    entity_id: expenseId,
-                    blob: photo,
-                    synced: false,
-                    created_at: new Date().toISOString(),
-                } as any)
-            }
-
-            // Queue for sync
-            await offlinePost('/tech/sync/batch', {
-                mutations: [{
-                    type: 'expense',
-                    data: expenseData,
-                }],
+            const { data } = await api.post('/expenses', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
             })
 
-            // Reset form
+            setWoExpenses(prev => [data, ...prev])
+
             setCategory('')
             setDescription('')
             setAmount('')
             setPhoto(null)
             setPhotoPreview(null)
             setShowForm(false)
-            toast.success('Despesa salva para sincronização')
+            toast.success('Despesa registrada com sucesso')
         } catch {
-            toast.error('Não foi possível salvar a despesa agora. Tente novamente.')
+            toast.error('Não foi possível salvar a despesa. Tente novamente.')
         } finally {
             setSaving(false)
         }
-    }, [category, description, amount, photo, woId, putExpense, putPhoto])
+    }, [category, description, amount, photo, woId])
+
+    const handleRemove = async (expenseId: number) => {
+        if (!confirm('Deseja remover esta despesa?')) return
+        try {
+            await api.delete(`/expenses/${expenseId}`)
+            setWoExpenses(prev => prev.filter(e => e.id !== expenseId))
+            toast.success('Despesa removida')
+        } catch {
+            toast.error('Não foi possível remover a despesa')
+        }
+    }
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
-    const total = woExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
+    const total = woExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
 
     return (
         <div className="flex flex-col h-full">
@@ -243,32 +237,51 @@ export default function TechExpensePage() {
                                     <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{exp.category}</p>
-                                    {exp.description && (
-                                        <p className="text-xs text-surface-500 truncate">{exp.description}</p>
+                                    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{exp.description}</p>
+                                    {exp.notes && (
+                                        <p className="text-xs text-surface-500 truncate">{exp.notes}</p>
+                                    )}
+                                    {exp.status && (
+                                        <span className={cn(
+                                            'inline-block mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium',
+                                            exp.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                            exp.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                            exp.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                            'bg-blue-100 text-blue-700'
+                                        )}>
+                                            {exp.status === 'pending' ? 'Pendente' : exp.status === 'approved' ? 'Aprovada' :
+                                             exp.status === 'rejected' ? 'Rejeitada' : exp.status === 'reviewed' ? 'Conferida' :
+                                             exp.status === 'reimbursed' ? 'Reembolsada' : exp.status}
+                                        </span>
                                     )}
                                 </div>
                                 <div className="text-right flex-shrink-0">
                                     <p className="text-sm font-bold text-surface-900 dark:text-surface-50">
-                                        {formatCurrency(exp.amount)}
+                                        {formatCurrency(Number(exp.amount))}
                                     </p>
-                                    {!exp.synced && (
-                                        <span className="text-[10px] text-amber-500 font-medium">pendente</span>
-                                    )}
                                 </div>
-                                <button
-                                    onClick={() => { if (confirm('Deseja remover esta despesa?')) remove(exp.id) }}
-                                    aria-label="Remover despesa"
-                                    className="w-7 h-7 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {exp.status === 'pending' && (
+                                    <button
+                                        onClick={() => handleRemove(exp.id)}
+                                        aria-label="Remover despesa"
+                                        className="w-7 h-7 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
                 )}
 
-                {!showForm && woExpenses.length === 0 && (
+                {loading && (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+                        <p className="text-sm text-surface-500">Carregando despesas...</p>
+                    </div>
+                )}
+
+                {!loading && !showForm && woExpenses.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 gap-3">
                         <Receipt className="w-12 h-12 text-surface-300" />
                         <p className="text-sm text-surface-500">Nenhuma despesa registrada</p>

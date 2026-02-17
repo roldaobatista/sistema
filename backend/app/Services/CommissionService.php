@@ -15,13 +15,17 @@ class CommissionService
 {
     /**
      * Gera comissões para uma OS (calcula, aplica campanhas, salva eventos).
+     * @param string|null $trigger Quando a comissão foi acionada (os_completed, os_invoiced, installment_paid)
      * Retorna array de CommissionEvent criados.
      */
-    public function calculateAndGenerate(\App\Models\WorkOrder $wo): array
+    public function calculateAndGenerate(\App\Models\WorkOrder $wo, ?string $trigger = null): array
     {
-        // 1. Verificar se já existem comissões para esta OS
+        $trigger = $trigger ?? CommissionRule::WHEN_OS_COMPLETED;
+
+        // 1. Verificar se já existem comissões para esta OS com este trigger
         $existing = CommissionEvent::where('tenant_id', $wo->tenant_id)
             ->where('work_order_id', $wo->id)
+            ->where('notes', 'LIKE', "%trigger:{$trigger}%")
             ->exists();
 
         if ($existing) {
@@ -48,10 +52,12 @@ class CommissionService
         $events = [];
 
         // 6. Processar regras para cada beneficiário
-        DB::transaction(function () use ($wo, $beneficiaries, $campaigns, $context, &$events) {
+        DB::transaction(function () use ($wo, $beneficiaries, $campaigns, $context, $trigger, &$events) {
             foreach ($beneficiaries as $b) {
                 $rules = CommissionRule::where('tenant_id', $wo->tenant_id)
-                    ->where('user_id', $b['id'])
+                    ->where(function ($q) use ($b) {
+                        $q->whereNull('user_id')->orWhere('user_id', $b['id']);
+                    })
                     ->where('applies_to_role', $b['role'])
                     ->where('active', true)
                     ->orderByDesc('priority')
@@ -71,6 +77,12 @@ class CommissionService
                         }
                     }
 
+                    // Check applies_when: only generate if trigger matches
+                    $ruleWhen = $rule->applies_when ?? CommissionRule::WHEN_OS_COMPLETED;
+                    if ($ruleWhen !== $trigger) {
+                        continue;
+                    }
+
                     $commissionAmount = $rule->calculateCommission((float) $wo->total, $context);
 
                     if (bccomp((string) $commissionAmount, '0', 2) <= 0) {
@@ -85,7 +97,7 @@ class CommissionService
 
                     $campaignResult = $this->applyCampaignMultiplier($campaigns, $b['role'], $rule->calculation_type, (string) $commissionAmount);
 
-                    $notes = "Regra: {$rule->name} ({$rule->calculation_type})";
+                    $notes = "Regra: {$rule->name} ({$rule->calculation_type}) | trigger:{$trigger}";
                     if ($splitDivisor > 1) {
                         $notes .= " | Divisão 1/{$splitDivisor}";
                     }
@@ -106,11 +118,40 @@ class CommissionService
                     ]);
 
                     $events[] = $event;
+                    break; // primeira regra aplicável por beneficiário (maior prioridade)
                 }
             }
         });
 
         return $events;
+    }
+
+    /**
+     * Gera comissões para uma OS testando todos os triggers possíveis.
+     * Usado para geração retroativa em lote onde o trigger original é desconhecido.
+     */
+    public function calculateAndGenerateAnyTrigger(\App\Models\WorkOrder $wo): array
+    {
+        $triggers = [
+            CommissionRule::WHEN_OS_COMPLETED,
+            CommissionRule::WHEN_OS_INVOICED,
+            CommissionRule::WHEN_INSTALLMENT_PAID,
+        ];
+
+        foreach ($triggers as $trigger) {
+            try {
+                $events = $this->calculateAndGenerate($wo, $trigger);
+                if (count($events) > 0) {
+                    return $events;
+                }
+            } catch (\Exception $e) {
+                if (str_contains($e->getMessage(), 'já geradas')) {
+                    throw $e;
+                }
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -131,9 +172,12 @@ class CommissionService
 
         foreach ($beneficiaries as $b) {
             $rules = CommissionRule::where('tenant_id', $wo->tenant_id)
-                ->where('user_id', $b['id'])
+                ->where(function ($q) use ($b) {
+                    $q->whereNull('user_id')->orWhere('user_id', $b['id']);
+                })
                 ->where('applies_to_role', $b['role'])
                 ->where('active', true)
+                ->orderByDesc('priority')
                 ->get();
 
             // GAP-22: Determine commercial source for seller filter
@@ -164,6 +208,8 @@ class CommissionService
 
                 $campaignResult = $this->applyCampaignMultiplier($campaigns, $b['role'], $rule->calculation_type, (string) $amount);
 
+                $userName = $rule->user?->name ?? \App\Models\User::find($b['id'])?->name ?? 'Usuario ' . $b['id'];
+
                 $notes = "Regra: {$rule->name} ({$rule->calculation_type})";
                 if ($splitDivisor > 1) {
                     $notes .= " | Divisão 1/{$splitDivisor}";
@@ -174,10 +220,11 @@ class CommissionService
 
                 $simulations[] = [
                     'user_id' => $b['id'],
-                    'user_name' => $rule->user?->name ?? 'Usuario ' . $b['id'],
+                    'user_name' => $userName,
                     'rule_name' => $rule->name,
                     'calculation_type' => $rule->calculation_type,
                     'applies_to_role' => $rule->applies_to_role,
+                    'applies_when' => $rule->applies_when ?? CommissionRule::WHEN_OS_COMPLETED,
                     'base_amount' => (float) $wo->total,
                     'commission_amount' => (float) $campaignResult['final_amount'],
                     'multiplier' => (float) $campaignResult['multiplier'],
@@ -185,6 +232,8 @@ class CommissionService
                     'split_divisor' => $splitDivisor,
                     'notes' => $notes,
                 ];
+
+                break; // primeira regra aplicável por beneficiário (maior prioridade)
             }
         }
 
@@ -359,8 +408,7 @@ class CommissionService
      */
     private function loadActiveCampaigns(int $tenantId): Collection
     {
-        return CommissionCampaign::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenantId)
+        return CommissionCampaign::where('tenant_id', $tenantId)
             ->active()
             ->get();
     }

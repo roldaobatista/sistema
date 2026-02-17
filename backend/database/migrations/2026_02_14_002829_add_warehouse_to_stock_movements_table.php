@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stock_movements', function (Blueprint $table) {
-            $table->foreignId('warehouse_id')->nullable()->after('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('batch_id')->nullable()->after('warehouse_id')->constrained()->onDelete('set null');
-            $table->foreignId('product_serial_id')->nullable()->after('batch_id')->constrained()->onDelete('set null');
-            $table->foreignId('target_warehouse_id')->nullable()->after('type')->constrained('warehouses')->onDelete('cascade');
+            $table->foreignId('warehouse_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('batch_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('product_serial_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('target_warehouse_id')->nullable()->constrained('warehouses')->onDelete('cascade');
         });
     }
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     DollarSign, Plus, Search, ArrowUp, AlertTriangle,
-    CheckCircle, Clock, Eye, Trash2, Pencil,
+    CheckCircle, Clock, Eye, Trash2, Pencil, Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -102,6 +102,8 @@ export function AccountsPayablePage() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
     const [catFilter, setCatFilter] = useState('')
+    const [dueFrom, setDueFrom] = useState('')
+    const [dueTo, setDueTo] = useState('')
     const [page, setPage] = useState(1)
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<number | null>(null)
@@ -114,9 +116,17 @@ export function AccountsPayablePage() {
     const [payForm, setPayForm] = useState({ amount: '', payment_method: 'pix', payment_date: '', notes: '' })
 
     const { data: res, isLoading, isError, refetch } = useQuery({
-        queryKey: ['accounts-payable', search, statusFilter, catFilter, page],
+        queryKey: ['accounts-payable', search, statusFilter, catFilter, dueFrom, dueTo, page],
         queryFn: () => api.get('/accounts-payable', {
-            params: { search: search || undefined, status: statusFilter || undefined, category: catFilter || undefined, per_page: 50, page },
+            params: {
+                search: search || undefined,
+                status: statusFilter || undefined,
+                category: catFilter || undefined,
+                due_from: dueFrom || undefined,
+                due_to: dueTo || undefined,
+                per_page: 50,
+                page,
+            },
         }),
     })
     const records: AP[] = res?.data?.data ?? []
@@ -302,6 +312,26 @@ export function AccountsPayablePage() {
         }
     }
 
+    const handleExport = async () => {
+        try {
+            const params = new URLSearchParams()
+            if (statusFilter) params.set('status', statusFilter)
+            if (catFilter) params.set('category', catFilter)
+            if (dueFrom) params.set('due_from', dueFrom)
+            if (dueTo) params.set('due_to', dueTo)
+            const response = await api.get(`/accounts-payable-export?${params.toString()}`, { responseType: 'blob' })
+            const url = window.URL.createObjectURL(new Blob([response.data]))
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `contas_pagar_${new Date().toISOString().slice(0, 10)}.csv`
+            a.click()
+            window.URL.revokeObjectURL(url)
+            toast.success('Exportação concluída')
+        } catch {
+            toast.error('Erro ao exportar contas a pagar')
+        }
+    }
+
     return (
         <div className="space-y-5">
             <PageHeader
@@ -309,6 +339,7 @@ export function AccountsPayablePage() {
                 subtitle="Despesas, fornecedores e pagamentos"
                 count={pagination.total}
                 actions={[
+                    { label: 'Exportar CSV', onClick: handleExport, icon: <Download className="h-4 w-4" />, variant: 'outline' as const },
                     ...(canCreate ? [{ label: 'Nova Conta', onClick: openCreate, icon: <Plus className="h-4 w-4" /> }] : []),
                 ]}
             />
@@ -381,6 +412,8 @@ export function AccountsPayablePage() {
                     <option value="">Todas categorias</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+                <Input type="date" value={dueFrom} onChange={(e: any) => setDueFrom(e.target.value)} className="w-40" placeholder="Venc. de" />
+                <Input type="date" value={dueTo} onChange={(e: any) => setDueTo(e.target.value)} className="w-40" placeholder="Venc. até" />
             </div>
 
             <div className="overflow-hidden rounded-xl border border-default bg-surface-0 shadow-card">

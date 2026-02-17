@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PermissionsSeeder::class,
             CameraSeeder::class,
-            ExpenseCategorySeeder::class,
         ]);
 
         // ─── TENANT 1 ─── Calibrações Brasil ──────────────────
@@ -49,6 +48,11 @@ class DatabaseSeeder extends Seeder
             'status' => 'active',
         ]);
         Branch::create(['tenant_id' => $t3->id, 'name' => 'Laboratório BH', 'code' => 'LBH', 'address_city' => 'Belo Horizonte', 'address_state' => 'MG']);
+
+        // 3. Seeders que dependem de tenants existentes
+        $this->call([
+            ExpenseCategorySeeder::class,
+        ]);
 
         // 4. Buscar roles criados pelo PermissionsSeeder
         $superAdmin = Role::where('name', 'super_admin')->first();

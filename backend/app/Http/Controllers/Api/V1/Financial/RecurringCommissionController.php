@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Financial;
 use App\Http\Controllers\Controller;
 use App\Models\CommissionEvent;
 use App\Models\CommissionRule;
+use App\Models\RecurringCommission;
+use App\Models\RecurringContract;
 use App\Models\WorkOrder;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -17,10 +19,6 @@ class RecurringCommissionController extends Controller
 {
     use ApiResponseTrait;
 
-    private const STATUS_ACTIVE = 'active';
-    private const STATUS_PAUSED = 'paused';
-    private const STATUS_TERMINATED = 'terminated';
-
     private function tenantId(): int
     {
         $user = auth()->user();
@@ -29,8 +27,7 @@ class RecurringCommissionController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = DB::table('recurring_commissions')
-            ->where('recurring_commissions.tenant_id', $this->tenantId())
+        $query = RecurringCommission::where('recurring_commissions.tenant_id', $this->tenantId())
             ->join('users', 'recurring_commissions.user_id', '=', 'users.id')
             ->join('commission_rules', 'recurring_commissions.commission_rule_id', '=', 'commission_rules.id')
             ->leftJoin('recurring_contracts', 'recurring_commissions.recurring_contract_id', '=', 'recurring_contracts.id')
@@ -47,7 +44,7 @@ class RecurringCommissionController extends Controller
             $query->where('recurring_commissions.status', $status);
         }
 
-        return response()->json($query->orderByDesc('recurring_commissions.created_at')->get());
+        return response()->json($query->orderByDesc('recurring_commissions.created_at')->paginate($request->get('per_page', 50)));
     }
 
     public function store(Request $request): JsonResponse
@@ -60,20 +57,28 @@ class RecurringCommissionController extends Controller
             'commission_rule_id' => ['required', Rule::exists('commission_rules', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ]);
 
+        $existing = RecurringCommission::where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->where('recurring_contract_id', $validated['recurring_contract_id'])
+            ->where('status', RecurringCommission::STATUS_ACTIVE)
+            ->exists();
+
+        if ($existing) {
+            return $this->error('Já existe comissão recorrente ativa para este usuário e contrato', 422);
+        }
+
         try {
-            $id = DB::transaction(function () use ($tenantId, $validated) {
-                return DB::table('recurring_commissions')->insertGetId([
+            $rec = DB::transaction(function () use ($tenantId, $validated) {
+                return RecurringCommission::create([
                     'tenant_id' => $tenantId,
                     'user_id' => $validated['user_id'],
                     'recurring_contract_id' => $validated['recurring_contract_id'],
                     'commission_rule_id' => $validated['commission_rule_id'],
-                    'status' => self::STATUS_ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'status' => RecurringCommission::STATUS_ACTIVE,
                 ]);
             });
 
-            return $this->success(['id' => $id], 'Comissão recorrente criada', 201);
+            return $this->success(['id' => $rec->id], 'Comissão recorrente criada', 201);
         } catch (\Exception $e) {
             Log::error('Falha ao criar comissão recorrente', ['error' => $e->getMessage()]);
             return $this->error('Erro interno ao criar comissão recorrente', 500);
@@ -83,31 +88,28 @@ class RecurringCommissionController extends Controller
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|in:' . self::STATUS_ACTIVE . ',' . self::STATUS_PAUSED . ',' . self::STATUS_TERMINATED,
+            'status' => 'required|in:' . RecurringCommission::STATUS_ACTIVE . ',' . RecurringCommission::STATUS_PAUSED . ',' . RecurringCommission::STATUS_TERMINATED,
         ]);
 
-        $updated = DB::table('recurring_commissions')
-            ->where('id', $id)
-            ->where('tenant_id', $this->tenantId())
-            ->update(['status' => $validated['status'], 'updated_at' => now()]);
+        $rec = RecurringCommission::where('tenant_id', $this->tenantId())->find($id);
 
-        if (!$updated) {
+        if (!$rec) {
             return $this->error('Comissão recorrente não encontrada', 404);
         }
+
+        $rec->update(['status' => $validated['status']]);
 
         return $this->success(null, 'Status atualizado');
     }
 
-    /** Generate monthly commission events for all active recurring commissions */
     public function processMonthly(): JsonResponse
     {
         $tid = $this->tenantId();
         $now = now();
         $period = $now->format('Y-m');
 
-        $recurrings = DB::table('recurring_commissions')
-            ->where('tenant_id', $tid)
-            ->where('status', self::STATUS_ACTIVE)
+        $recurrings = RecurringCommission::where('tenant_id', $tid)
+            ->where('status', RecurringCommission::STATUS_ACTIVE)
             ->get();
 
         try {
@@ -115,24 +117,26 @@ class RecurringCommissionController extends Controller
 
             DB::transaction(function () use ($recurrings, $tid, $now, $period, &$generated) {
                 foreach ($recurrings as $rec) {
-                    if ($rec->last_generated_at && substr($rec->last_generated_at, 0, 7) === $period) {
+                    if ($rec->last_generated_at && $rec->last_generated_at->format('Y-m') === $period) {
                         continue;
                     }
 
-                    $contract = DB::table('recurring_contracts')
-                        ->where('tenant_id', $tid)
-                        ->where('id', $rec->recurring_contract_id)
-                        ->first();
-                    if (!$contract || !(bool) ($contract->is_active ?? false)) continue;
+                    $contract = RecurringContract::where('tenant_id', $tid)->find($rec->recurring_contract_id);
+                    if (!$contract || !($contract->is_active ?? false)) {
+                        continue;
+                    }
 
-                    $rule = CommissionRule::where('tenant_id', $tid)->find($rec->commission_rule_id);
-                    if (!$rule || !$rule->active) continue;
+                    $rule = $rec->commissionRule;
+                    if (!$rule || !$rule->active) {
+                        continue;
+                    }
 
                     $baseAmount = (float) ($contract->monthly_value ?? $contract->total_value ?? 0);
-                    if ($baseAmount <= 0) continue;
+                    if ($baseAmount <= 0) {
+                        continue;
+                    }
 
-                    $workOrder = WorkOrder::query()
-                        ->where('tenant_id', $tid)
+                    $workOrder = WorkOrder::where('tenant_id', $tid)
                         ->where('recurring_contract_id', $rec->recurring_contract_id)
                         ->whereYear('created_at', $now->year)
                         ->whereMonth('created_at', $now->month)
@@ -152,7 +156,9 @@ class RecurringCommissionController extends Controller
                         'cost' => 0,
                     ]);
 
-                    if (bccomp((string) $commissionAmount, '0', 2) <= 0) continue;
+                    if (bccomp((string) $commissionAmount, '0', 2) <= 0) {
+                        continue;
+                    }
 
                     CommissionEvent::create([
                         'tenant_id' => $tid,
@@ -165,11 +171,7 @@ class RecurringCommissionController extends Controller
                         'notes' => "Recorrente: OS " . ($workOrder->os_number ?? $workOrder->number) . " / Contrato #{$rec->recurring_contract_id} ({$period})",
                     ]);
 
-                    DB::table('recurring_commissions')->where('id', $rec->id)->update([
-                        'last_generated_at' => $now->toDateString(),
-                        'updated_at' => $now,
-                    ]);
-
+                    $rec->update(['last_generated_at' => $now->toDateString()]);
                     $generated++;
                 }
             });
@@ -183,16 +185,14 @@ class RecurringCommissionController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        $rec = RecurringCommission::where('tenant_id', $this->tenantId())->find($id);
+
+        if (!$rec) {
+            return $this->error('Comissão recorrente não encontrada', 404);
+        }
+
         try {
-            $deleted = DB::table('recurring_commissions')
-                ->where('id', $id)
-                ->where('tenant_id', $this->tenantId())
-                ->delete();
-
-            if (!$deleted) {
-                return $this->error('Comissão recorrente não encontrada', 404);
-            }
-
+            DB::transaction(fn () => $rec->delete());
             return response()->json(null, 204);
         } catch (\Exception $e) {
             Log::error('Falha ao excluir comissão recorrente', ['error' => $e->getMessage(), 'recurring_id' => $id]);

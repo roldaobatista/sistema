@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\FleetVehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,10 +12,12 @@ use Illuminate\Support\Facades\Log;
 
 class GpsTrackingController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function livePositions(Request $request): JsonResponse
     {
         try {
-            $vehicles = FleetVehicle::where('tenant_id', $request->user()->tenant_id)
+            $vehicles = FleetVehicle::where('tenant_id', $this->resolvedTenantId())
                 ->whereNotNull('last_gps_lat')
                 ->whereNotNull('last_gps_lng')
                 ->select('id', 'plate', 'model', 'brand', 'status', 'last_gps_lat', 'last_gps_lng', 'last_gps_at', 'assigned_user_id')
@@ -40,7 +43,7 @@ class GpsTrackingController extends Controller
             ]);
 
             $vehicle = FleetVehicle::where('id', $validated['fleet_vehicle_id'])
-                ->where('tenant_id', $request->user()->tenant_id)
+                ->where('tenant_id', $this->resolvedTenantId())
                 ->firstOrFail();
 
             $vehicle->update([
@@ -50,7 +53,7 @@ class GpsTrackingController extends Controller
             ]);
 
             DB::table('gps_tracking_history')->insert([
-                'tenant_id' => $request->user()->tenant_id,
+                'tenant_id' => $this->resolvedTenantId(),
                 'fleet_vehicle_id' => $validated['fleet_vehicle_id'],
                 'lat' => $validated['lat'],
                 'lng' => $validated['lng'],
@@ -74,12 +77,12 @@ class GpsTrackingController extends Controller
     {
         try {
             $vehicle = FleetVehicle::where('id', $vehicleId)
-                ->where('tenant_id', $request->user()->tenant_id)
+                ->where('tenant_id', $this->resolvedTenantId())
                 ->firstOrFail();
 
             $history = DB::table('gps_tracking_history')
                 ->where('fleet_vehicle_id', $vehicleId)
-                ->where('tenant_id', $request->user()->tenant_id)
+                ->where('tenant_id', $this->resolvedTenantId())
                 ->when($request->filled('date'), fn ($q) => $q->whereDate('recorded_at', $request->date))
                 ->orderBy('recorded_at')
                 ->limit(500)

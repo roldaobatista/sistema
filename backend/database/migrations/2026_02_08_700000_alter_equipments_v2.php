@@ -9,29 +9,29 @@ return new class extends Migration {
     {
         // Expandir tabela equipments
         Schema::table('equipments', function (Blueprint $t) {
-            $t->string('code', 30)->nullable()->after('id');
-            $t->string('category', 40)->default('outro')->after('type');
-            $t->string('manufacturer', 100)->nullable()->after('brand');
-            $t->decimal('capacity', 14, 4)->nullable()->after('serial_number');
-            $t->string('capacity_unit', 10)->nullable()->after('capacity');
-            $t->decimal('resolution', 14, 6)->nullable()->after('capacity_unit');
-            $t->string('precision_class', 10)->nullable()->after('resolution');
-            $t->string('status', 30)->default('ativo')->after('precision_class');
-            $t->string('location', 150)->nullable()->after('status');
-            $t->unsignedBigInteger('responsible_user_id')->nullable()->after('location');
-            $t->date('purchase_date')->nullable()->after('responsible_user_id');
-            $t->decimal('purchase_value', 12, 2)->nullable()->after('purchase_date');
-            $t->date('warranty_expires_at')->nullable()->after('purchase_value');
-            $t->date('last_calibration_at')->nullable()->after('warranty_expires_at');
-            $t->date('next_calibration_at')->nullable()->after('last_calibration_at');
-            $t->unsignedSmallInteger('calibration_interval_months')->nullable()->after('next_calibration_at');
-            $t->string('inmetro_number', 50)->nullable()->after('calibration_interval_months');
-            $t->string('certificate_number', 50)->nullable()->after('inmetro_number');
-            $t->string('tag', 50)->nullable()->after('certificate_number');
-            $t->string('qr_code', 100)->nullable()->after('tag');
-            $t->string('photo_url')->nullable()->after('qr_code');
-            $t->boolean('is_critical')->default(false)->after('photo_url');
-            $t->boolean('is_active')->default(true)->after('is_critical');
+            $t->string('code', 30)->nullable();
+            $t->string('category', 40)->default('outro');
+            $t->string('manufacturer', 100)->nullable();
+            $t->decimal('capacity', 14, 4)->nullable();
+            $t->string('capacity_unit', 10)->nullable();
+            $t->decimal('resolution', 14, 6)->nullable();
+            $t->string('precision_class', 10)->nullable();
+            $t->string('status', 30)->default('ativo');
+            $t->string('location', 150)->nullable();
+            $t->unsignedBigInteger('responsible_user_id')->nullable();
+            $t->date('purchase_date')->nullable();
+            $t->decimal('purchase_value', 12, 2)->nullable();
+            $t->date('warranty_expires_at')->nullable();
+            $t->date('last_calibration_at')->nullable();
+            $t->date('next_calibration_at')->nullable();
+            $t->unsignedSmallInteger('calibration_interval_months')->nullable();
+            $t->string('inmetro_number', 50)->nullable();
+            $t->string('certificate_number', 50)->nullable();
+            $t->string('tag', 50)->nullable();
+            $t->string('qr_code', 100)->nullable();
+            $t->string('photo_url')->nullable();
+            $t->boolean('is_critical')->default(false);
+            $t->boolean('is_active')->default(true);
             $t->softDeletes();
 
             $t->foreign('responsible_user_id')->references('id')->on('users')->nullOnDelete();

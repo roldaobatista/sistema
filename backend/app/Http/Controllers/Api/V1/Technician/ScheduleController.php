@@ -102,15 +102,19 @@ class ScheduleController extends Controller
             ], 409);
         }
 
-        $schedule = DB::transaction(function () use ($validated, $tenantId) {
-            return Schedule::create([
-                ...$validated,
-                'tenant_id' => $tenantId,
-                'status' => $validated['status'] ?? Schedule::STATUS_SCHEDULED,
-            ]);
-        });
-
-        return response()->json($schedule->load(['technician:id,name', 'customer:id,name', 'workOrder:id,number,os_number']), 201);
+        try {
+            $schedule = DB::transaction(function () use ($validated, $tenantId) {
+                return Schedule::create([
+                    ...$validated,
+                    'tenant_id' => $tenantId,
+                    'status' => $validated['status'] ?? Schedule::STATUS_SCHEDULED,
+                ]);
+            });
+            return response()->json($schedule->load(['technician:id,name', 'customer:id,name', 'workOrder:id,number,os_number']), 201);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Schedule store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar agendamento'], 500);
+        }
     }
 
     public function show(Request $request, Schedule $schedule): JsonResponse
@@ -154,11 +158,15 @@ class ScheduleController extends Controller
             ], 409);
         }
 
-        DB::transaction(function () use ($schedule, $validated) {
-            $schedule->update($validated);
-        });
-
-        return response()->json($schedule->fresh()->load(['technician:id,name', 'customer:id,name']));
+        try {
+            DB::transaction(function () use ($schedule, $validated) {
+                $schedule->update($validated);
+            });
+            return response()->json($schedule->fresh()->load(['technician:id,name', 'customer:id,name']));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Schedule update failed', ['id' => $schedule->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar agendamento'], 500);
+        }
     }
 
     public function destroy(Request $request, Schedule $schedule): JsonResponse

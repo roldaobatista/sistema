@@ -26,7 +26,7 @@ return new class extends Migration
         if (Schema::hasTable('accounts_payable')) {
             Schema::table('accounts_payable', function (Blueprint $table) {
                 if (!Schema::hasColumn('accounts_payable', 'category_id')) {
-                    $table->unsignedBigInteger('category_id')->nullable()->after('category');
+                    $table->unsignedBigInteger('category_id')->nullable();
                     $table->foreign('category_id')->references('id')->on('account_payable_categories')->nullOnDelete();
                 }
             });

@@ -139,7 +139,7 @@ export function CustomerDocumentsTab({ customerId }: Props) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {documents.map((doc: CustomerDocument) => (
-                        <div key={doc.id} className="group relative rounded-xl border border-surface-200 bg-white p-4 hover:shadow-md transition-all">
+                        <div key={doc.id} className="group relative rounded-xl border border-surface-200 bg-surface-0 dark:bg-surface-800 p-4 hover:shadow-md transition-all">
                             <div className="flex items-start gap-4">
                                 <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-surface-50 text-surface-400 group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
                                     <FileText className="h-6 w-6" />
@@ -213,7 +213,7 @@ export function CustomerDocumentsTab({ customerId }: Props) {
                         <select
                             value={uploadForm.type}
                             onChange={e => setUploadForm({ ...uploadForm, type: e.target.value })}
-                            className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                            className="w-full px-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-surface-0 dark:bg-surface-800"
                         >
                             {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>

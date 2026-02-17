@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Services\Fleet\FleetDashboardService;
 use App\Services\Fleet\FuelComparisonService;
 use App\Services\Fleet\DriverScoringService;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Log;
 
 class FleetAdvancedController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function __construct(
         private FleetDashboardService $dashboardService,
         private FuelComparisonService $fuelComparisonService,
@@ -21,7 +24,7 @@ class FleetAdvancedController extends Controller
     public function dashboard(Request $request): JsonResponse
     {
         try {
-            $data = $this->dashboardService->getAdvancedDashboard($request->user()->tenant_id);
+            $data = $this->dashboardService->getAdvancedDashboard($this->resolvedTenantId());
             return response()->json(['data' => $data]);
         } catch (\Exception $e) {
             Log::error('FleetAdvanced dashboard failed', ['error' => $e->getMessage()]);
@@ -80,7 +83,7 @@ class FleetAdvancedController extends Controller
     public function driverScore(Request $request, int $driverId): JsonResponse
     {
         try {
-            $result = $this->driverScoringService->calculateScore($driverId, $request->user()->tenant_id);
+            $result = $this->driverScoringService->calculateScore($driverId, $this->resolvedTenantId());
             return response()->json(['data' => $result]);
         } catch (\Exception $e) {
             Log::error('FleetAdvanced driverScore failed', ['error' => $e->getMessage(), 'driverId' => $driverId]);
@@ -91,7 +94,7 @@ class FleetAdvancedController extends Controller
     public function driverRanking(Request $request): JsonResponse
     {
         try {
-            $ranking = $this->driverScoringService->getRanking($request->user()->tenant_id);
+            $ranking = $this->driverScoringService->getRanking($this->resolvedTenantId());
             return response()->json(['data' => $ranking]);
         } catch (\Exception $e) {
             Log::error('FleetAdvanced driverRanking failed', ['error' => $e->getMessage()]);

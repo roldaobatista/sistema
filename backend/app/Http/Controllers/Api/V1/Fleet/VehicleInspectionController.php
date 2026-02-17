@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\VehicleInspection;
 use App\Models\FleetVehicle;
 use Illuminate\Http\Request;
@@ -13,10 +14,12 @@ use Illuminate\Validation\Rule;
 
 class VehicleInspectionController extends Controller
 {
+    use ResolvesCurrentTenant;
+
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = VehicleInspection::where('tenant_id', $request->user()->tenant_id)
+            $query = VehicleInspection::where('tenant_id', $this->resolvedTenantId())
                 ->with(['vehicle:id,plate,model', 'inspector:id,name']);
 
             if ($request->filled('fleet_vehicle_id')) {
@@ -48,7 +51,7 @@ class VehicleInspectionController extends Controller
                 'observations' => 'nullable|string',
             ]);
 
-            $validated['tenant_id'] = $request->user()->tenant_id;
+            $validated['tenant_id'] = $this->resolvedTenantId();
             $validated['inspector_id'] = $request->user()->id;
 
             $inspection = VehicleInspection::create($validated);
@@ -72,7 +75,7 @@ class VehicleInspectionController extends Controller
     public function show(VehicleInspection $inspection): JsonResponse
     {
         try {
-            if ($inspection->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($inspection->tenant_id != $this->resolvedTenantId()) abort(403);
             return response()->json($inspection->load(['vehicle', 'inspector']));
         } catch (\Exception $e) {
             Log::error('VehicleInspection show failed', ['error' => $e->getMessage()]);
@@ -85,7 +88,7 @@ class VehicleInspectionController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($inspection->tenant_id != $request->user()->tenant_id) abort(403);
+            if ($inspection->tenant_id != $this->resolvedTenantId()) abort(403);
 
             $validated = $request->validate([
                 'inspection_date' => 'sometimes|date',
@@ -112,7 +115,7 @@ class VehicleInspectionController extends Controller
     public function destroy(VehicleInspection $inspection): JsonResponse
     {
         try {
-            if ($inspection->tenant_id != auth()->user()->tenant_id) abort(403);
+            if ($inspection->tenant_id != $this->resolvedTenantId()) abort(403);
             $inspection->delete();
             return response()->json(['message' => 'Inspeção excluída']);
         } catch (\Exception $e) {

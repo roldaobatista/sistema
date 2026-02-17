@@ -138,6 +138,12 @@ export const useAuthStore = create<AuthState>()(
                 const user = get().user
                 if (!user) return false
 
+                const roles = Array.isArray(user.roles)
+                    ? user.roles
+                    : (Array.isArray(user.all_roles) ? user.all_roles : [])
+
+                if (roles.includes('super_admin')) return true
+
                 const permissions = Array.isArray(user.permissions)
                     ? user.permissions
                     : (Array.isArray(user.all_permissions) ? user.all_permissions : [])

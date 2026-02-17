@@ -624,6 +624,18 @@ export function CustomersPage() {
                         onClick={(e) => { e.stopPropagation(); openEdit(c) }}
                       />
                     )}
+                    {canExportAuvo && (
+                      <IconButton
+                        icon={<UploadCloud className="h-3.5 w-3.5" />}
+                        aria-label="Exportar para Auvo"
+                        tooltip="Exportar para Auvo"
+                        size="sm"
+                        variant="ghost"
+                        className="hover:text-blue-600 hover:bg-blue-50"
+                        disabled={exportCustomer.isPending}
+                        onClick={(e) => { e.stopPropagation(); exportCustomer.mutate(c.id) }}
+                      />
+                    )}
                     {canDelete && (
                       <IconButton
                         icon={<Trash2 className="h-3.5 w-3.5" />}
@@ -780,20 +792,20 @@ export function CustomersPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   {enrichmentData.capital != null && (
-                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                    <div className="rounded-lg bg-surface-0/60 dark:bg-surface-800/60 p-2.5 border border-brand-100 dark:border-brand-900">
                       <div className="text-surface-400 flex items-center gap-1"><DollarSign className="h-3 w-3" /> Capital Social</div>
                       <div className="font-bold text-surface-900 mt-0.5">{fmtBRL(enrichmentData.capital)}</div>
                     </div>
                   )}
                   {enrichmentData.cnae_code && (
-                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                    <div className="rounded-lg bg-surface-0/60 dark:bg-surface-800/60 p-2.5 border border-brand-100 dark:border-brand-900">
                       <div className="text-surface-400 flex items-center gap-1"><Briefcase className="h-3 w-3" /> CNAE Principal</div>
                       <div className="font-bold text-surface-900 mt-0.5">{enrichmentData.cnae_code}</div>
                       <div className="text-surface-500 truncate">{enrichmentData.cnae_description}</div>
                     </div>
                   )}
                   {enrichmentData.simples_nacional != null && (
-                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                    <div className="rounded-lg bg-surface-0/60 dark:bg-surface-800/60 p-2.5 border border-brand-100 dark:border-brand-900">
                       <div className="text-surface-400">Simples Nacional</div>
                       <div className={`font-bold mt-0.5 ${enrichmentData.simples_nacional ? 'text-emerald-600' : 'text-surface-500'}`}>
                         {enrichmentData.simples_nacional ? 'Optante' : 'Não optante'}
@@ -801,7 +813,7 @@ export function CustomersPage() {
                     </div>
                   )}
                   {enrichmentData.opened_at && (
-                    <div className="rounded-lg bg-white/60 p-2.5 border border-brand-100">
+                    <div className="rounded-lg bg-surface-0/60 dark:bg-surface-800/60 p-2.5 border border-brand-100 dark:border-brand-900">
                       <div className="text-surface-400">Abertura</div>
                       <div className="font-bold text-surface-900 mt-0.5">{enrichmentData.opened_at}</div>
                     </div>
@@ -815,7 +827,7 @@ export function CustomersPage() {
                     </p>
                     <div className="grid gap-1.5">
                       {enrichmentData.partners.slice(0, 5).map((p: Partner, i: number) => (
-                        <div key={i} className="flex items-center justify-between rounded-lg bg-white/60 px-3 py-1.5 border border-brand-100 text-xs">
+                        <div key={i} className="flex items-center justify-between rounded-lg bg-surface-0/60 dark:bg-surface-800/60 px-3 py-1.5 border border-brand-100 dark:border-brand-900 text-xs">
                           <span className="font-medium text-surface-800">{p.name}</span>
                           <span className="text-surface-400">{p.role}</span>
                         </div>
@@ -1281,7 +1293,7 @@ export function CustomersPage() {
               <Button
                 variant="danger"
                 onClick={() => {
-                  if (delId && window.confirm('Deseja realmente excluir este registro?')) {
+                  if (delId) {
                     deleteMut.mutate(delId)
                   }
                 }}

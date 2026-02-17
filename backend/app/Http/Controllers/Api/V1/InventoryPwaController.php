@@ -65,75 +65,79 @@ class InventoryPwaController extends Controller
      */
     public function submitCounts(Request $request): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $validated = $request->validate([
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => "required|exists:warehouses,id,tenant_id,{$tenantId}",
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
             'items.*.counted_quantity' => 'required|numeric|min:0',
         ]);
 
         $this->authorizeWarehouseForUser($validated['warehouse_id']);
 
-        $tenantId = (int) (Auth::user()->current_tenant_id ?? Auth::user()->tenant_id);
+        $tenantIdInt = (int) (Auth::user()->current_tenant_id ?? Auth::user()->tenant_id);
         $warehouse = Warehouse::findOrFail($validated['warehouse_id']);
 
-        $inventory = Inventory::where('tenant_id', $tenantId)
-            ->where('warehouse_id', $validated['warehouse_id'])
-            ->whereIn('status', [Inventory::STATUS_OPEN, Inventory::STATUS_PROCESSING])
-            ->first();
+        return DB::transaction(function () use ($validated, $tenantIdInt, $warehouse) {
+            $inventory = Inventory::where('tenant_id', $tenantIdInt)
+                ->where('warehouse_id', $validated['warehouse_id'])
+                ->whereIn('status', [Inventory::STATUS_OPEN, Inventory::STATUS_PROCESSING])
+                ->first();
 
-        if (!$inventory) {
-            $inventory = Inventory::create([
-                'tenant_id' => $tenantId,
-                'warehouse_id' => $validated['warehouse_id'],
-                'reference' => 'PWA - ' . $warehouse->name . ' - ' . now()->format('d/m/Y H:i'),
-                'status' => Inventory::STATUS_OPEN,
-                'created_by' => Auth::id(),
-            ]);
-            $stocks = WarehouseStock::where('warehouse_id', $validated['warehouse_id'])->get();
-            foreach ($stocks as $stock) {
-                $inventory->items()->create([
-                    'product_id' => $stock->product_id,
-                    'batch_id' => $stock->batch_id,
-                    'expected_quantity' => $stock->quantity,
+            if (!$inventory) {
+                $inventory = Inventory::create([
+                    'tenant_id' => $tenantIdInt,
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'reference' => 'PWA - ' . $warehouse->name . ' - ' . now()->format('d/m/Y H:i'),
+                    'status' => Inventory::STATUS_OPEN,
+                    'created_by' => Auth::id(),
                 ]);
+                $stocks = WarehouseStock::where('warehouse_id', $validated['warehouse_id'])->get();
+                foreach ($stocks as $stock) {
+                    $inventory->items()->create([
+                        'product_id' => $stock->product_id,
+                        'batch_id' => $stock->batch_id,
+                        'expected_quantity' => $stock->quantity,
+                    ]);
+                }
             }
-        }
 
-        $hasDiscrepancy = false;
-        $discrepancyDetail = [];
+            $hasDiscrepancy = false;
+            $discrepancyDetail = [];
 
-        foreach ($validated['items'] as $row) {
-            $item = $inventory->items()->where('product_id', $row['product_id'])->first();
-            if (!$item) {
-                $item = $inventory->items()->create([
-                    'product_id' => $row['product_id'],
-                    'batch_id' => null,
-                    'expected_quantity' => WarehouseStock::where('warehouse_id', $validated['warehouse_id'])
-                        ->where('product_id', $row['product_id'])->value('quantity') ?? 0,
-                ]);
+            foreach ($validated['items'] as $row) {
+                $item = $inventory->items()->where('product_id', $row['product_id'])->first();
+                if (!$item) {
+                    $item = $inventory->items()->create([
+                        'product_id' => $row['product_id'],
+                        'batch_id' => null,
+                        'expected_quantity' => WarehouseStock::where('warehouse_id', $validated['warehouse_id'])
+                            ->where('product_id', $row['product_id'])->value('quantity') ?? 0,
+                    ]);
+                }
+                $expected = (float) $item->expected_quantity;
+                $counted = (float) ($row['counted_quantity'] ?? 0);
+                $item->update(['counted_quantity' => $counted]);
+                if (abs($counted - $expected) > 0.0001) {
+                    $hasDiscrepancy = true;
+                    $discrepancyDetail[] = "Produto #{$item->product_id}: esperado {$expected}, contado {$counted}";
+                }
             }
-            $expected = (float) $item->expected_quantity;
-            $counted = (float) ($row['counted_quantity'] ?? 0);
-            $item->update(['counted_quantity' => $counted]);
-            if (abs($counted - $expected) > 0.0001) {
-                $hasDiscrepancy = true;
-                $discrepancyDetail[] = "Produto #{$item->product_id}: esperado {$expected}, contado {$counted}";
+
+            if ($hasDiscrepancy) {
+                $this->createInventoryDiscrepancyAlert($inventory, $warehouse, $discrepancyDetail);
             }
-        }
 
-        if ($hasDiscrepancy) {
-            $this->createInventoryDiscrepancyAlert($inventory, $warehouse, $discrepancyDetail);
-        }
-
-        return response()->json([
-            'message' => $hasDiscrepancy
-                ? 'Contagem recebida. Foi detectada diferença em relação ao esperado; o responsável do estoque foi notificado.'
-                : 'Contagem recebida.',
-            'inventory_id' => $inventory->id,
-            'has_discrepancy' => $hasDiscrepancy,
-            'data' => $inventory->fresh('items.product'),
-        ], 201);
+            return response()->json([
+                'message' => $hasDiscrepancy
+                    ? 'Contagem recebida. Foi detectada diferença em relação ao esperado; o responsável do estoque foi notificado.'
+                    : 'Contagem recebida.',
+                'inventory_id' => $inventory->id,
+                'has_discrepancy' => $hasDiscrepancy,
+                'data' => $inventory->fresh('items.product'),
+            ], 201);
+        });
     }
 
     protected function authorizeWarehouseForUser(int $warehouseId): void

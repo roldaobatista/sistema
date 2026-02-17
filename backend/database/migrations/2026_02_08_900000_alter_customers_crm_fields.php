@@ -9,20 +9,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->string('source')->nullable()->after('notes');
-            $table->string('segment')->nullable()->after('source');
-            $table->string('company_size')->nullable()->after('segment');
-            $table->decimal('annual_revenue_estimate', 12, 2)->nullable()->after('company_size');
-            $table->string('contract_type')->nullable()->after('annual_revenue_estimate');
-            $table->date('contract_start')->nullable()->after('contract_type');
-            $table->date('contract_end')->nullable()->after('contract_start');
-            $table->integer('health_score')->default(0)->after('contract_end');
-            $table->timestamp('last_contact_at')->nullable()->after('health_score');
-            $table->timestamp('next_follow_up_at')->nullable()->after('last_contact_at');
-            $table->foreignId('assigned_seller_id')->nullable()->after('next_follow_up_at')
+            $table->string('source')->nullable();
+            $table->string('segment')->nullable();
+            $table->string('company_size')->nullable();
+            $table->decimal('annual_revenue_estimate', 12, 2)->nullable();
+            $table->string('contract_type')->nullable();
+            $table->date('contract_start')->nullable();
+            $table->date('contract_end')->nullable();
+            $table->integer('health_score')->default(0);
+            $table->timestamp('last_contact_at')->nullable();
+            $table->timestamp('next_follow_up_at')->nullable();
+            $table->foreignId('assigned_seller_id')->nullable()
                 ->constrained('users')->nullOnDelete();
-            $table->json('tags')->nullable()->after('assigned_seller_id');
-            $table->string('rating')->nullable()->after('tags');
+            $table->json('tags')->nullable();
+            $table->string('rating')->nullable();
         });
     }
 

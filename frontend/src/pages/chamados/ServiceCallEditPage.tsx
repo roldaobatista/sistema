@@ -101,7 +101,20 @@ export function ServiceCallEditPage() {
         queryFn: () =>
             api.get('/customers', { params: { search: customerSearch || undefined, per_page: 50 } }).then((r) => r.data),
     })
-    const customers: Customer[] = customersRes?.data ?? []
+
+    const { data: currentCustomer } = useQuery({
+        queryKey: ['customer', serviceCall?.customer_id],
+        queryFn: () => api.get(`/customers/${serviceCall!.customer_id}`).then((r) => r.data),
+        enabled: !!serviceCall?.customer_id,
+    })
+
+    const customers: Customer[] = useMemo(() => {
+        const list: Customer[] = customersRes?.data ?? []
+        if (currentCustomer && !list.some((c) => String(c.id) === String(currentCustomer.id))) {
+            return [currentCustomer as Customer, ...list]
+        }
+        return list
+    }, [customersRes?.data, currentCustomer])
 
     const { data: assigneesRes, isError: assigneesError } = useQuery({
         queryKey: ['service-call-assignees'],

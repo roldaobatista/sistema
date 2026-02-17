@@ -47,7 +47,9 @@ export default function VacationBalancePage() {
                 queryClient.invalidateQueries({ queryKey: ['vacation-balance'] }) },
     onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
   })
-  const handleDelete = (id: number) => { if (window.confirm('Tem certeza que deseja remover?')) deleteMutation.mutate(id) }
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const handleDelete = (id: number) => { setConfirmDeleteId(id) }
+  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
   const { hasPermission } = useAuthStore()
 
     const [search, setSearch] = useState('')

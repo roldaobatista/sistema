@@ -17,8 +17,16 @@ class ProductKardexController extends Controller
         try {
             $tenantId = app()->bound('current_tenant_id') ? (int) app('current_tenant_id') : null;
 
+            if (!$tenantId) {
+                return response()->json(['message' => 'Tenant não identificado'], 403);
+            }
+
+            if ($product->tenant_id !== $tenantId) {
+                return response()->json(['message' => 'Produto não pertence ao tenant atual'], 403);
+            }
+
             $query = StockMovement::where('product_id', $product->id)
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+                ->where('tenant_id', $tenantId)
                 ->with(['user:id,name', 'warehouse:id,name']);
 
             if ($request->filled('warehouse_id')) {
@@ -42,7 +50,7 @@ class ProductKardexController extends Controller
             $movements = $query->orderByDesc('created_at')->paginate($perPage);
 
             $stats = StockMovement::where('product_id', $product->id)
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+                ->where('tenant_id', $tenantId)
                 ->selectRaw("
                     SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) as total_in,
                     SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) as total_out,
@@ -57,7 +65,7 @@ class ProductKardexController extends Controller
                     'id' => $product->id,
                     'name' => $product->name,
                     'code' => $product->code,
-                    'current_stock' => $product->current_stock ?? 0,
+                    'current_stock' => $product->stock_qty ?? 0,
                 ],
                 'stats' => $stats,
                 'data' => $movements,
@@ -72,13 +80,22 @@ class ProductKardexController extends Controller
     {
         try {
             $tenantId = app()->bound('current_tenant_id') ? (int) app('current_tenant_id') : null;
+
+            if (!$tenantId) {
+                return response()->json(['message' => 'Tenant não identificado'], 403);
+            }
+
+            if ($product->tenant_id !== $tenantId) {
+                return response()->json(['message' => 'Produto não pertence ao tenant atual'], 403);
+            }
+
             $months = min((int) $request->input('months', 12), 24);
 
             $results = StockMovement::where('product_id', $product->id)
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+                ->where('tenant_id', $tenantId)
                 ->where('created_at', '>=', now()->subMonths($months))
                 ->selectRaw("
-                    strftime('%Y-%m', created_at) as month,
+                    DATE_FORMAT(created_at, '%Y-%m') as month,
                     SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) as entries,
                     SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) as exits,
                     COUNT(*) as movements

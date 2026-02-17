@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuthStore } from '@/stores/auth-store';
+import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     ShoppingCart, PackageSearch, QrCode, RotateCcw, Trash2,
-    Loader2, Search, Plus, Eye, Check, X, AlertTriangle, Package
+    Loader2, Search, Plus, Eye, Check, X, AlertTriangle, Package,
+    ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 type Tab = 'quotes' | 'requests' | 'tags' | 'rma' | 'disposal';
@@ -17,6 +21,16 @@ const tabs: { key: Tab; label: string; icon: React.ElementType; color: string }[
     { key: 'rma', label: 'RMA', icon: RotateCcw, color: 'text-orange-600' },
     { key: 'disposal', label: 'Descarte', icon: Trash2, color: 'text-red-600' },
 ];
+
+const createTitles: Record<Tab, string> = {
+    quotes: 'Nova Cotação',
+    requests: 'Nova Solicitação',
+    tags: 'Nova Tag',
+    rma: 'Novo RMA',
+    disposal: 'Novo Descarte',
+};
+
+const PER_PAGE = 15;
 
 const statusColors: Record<string, string> = {
     draft: 'bg-surface-100 text-surface-700',
@@ -60,72 +74,185 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
+function PaginationControls({ data, page, onPageChange }: { data: any; page: number; onPageChange: (p: number) => void }) {
+    const lastPage = data?.last_page ?? data?.meta?.last_page ?? 1;
+    const total = data?.total ?? data?.meta?.total ?? 0;
+    if (lastPage <= 1) return null;
+    return (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-subtle">
+            <span className="text-xs text-surface-500">{total} registros</span>
+            <div className="flex items-center gap-1">
+                <button title="Página anterior" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="p-1.5 rounded hover:bg-surface-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="text-sm px-2">{page} / {lastPage}</span>
+                <button title="Próxima página" disabled={page >= lastPage} onClick={() => onPageChange(page + 1)} className="p-1.5 rounded hover:bg-surface-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <ChevronRight className="h-4 w-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function StockIntegrationPage() {
     const { hasPermission } = useAuthStore()
 
     const [activeTab, setActiveTab] = useState<Tab>('quotes');
     const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [createOpen, setCreateOpen] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<{
+        id: number; status: string; label: string;
+        type: 'quote' | 'request' | 'rma' | 'disposal';
+    } | null>(null);
+    const [form, setForm] = useState<Record<string, any>>({});
     const queryClient = useQueryClient();
+
+    const updateForm = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
     // ═══ Queries ═══
     const { data: quotesData, isLoading: quotesLoading } = useQuery({
-        queryKey: ['purchase-quotes', search],
-        queryFn: () => api.get('/api/v1/purchase-quotes', { params: { search, per_page: 50 } }).then(r => r.data),
+        queryKey: ['purchase-quotes', search, page],
+        queryFn: () => api.get('/purchase-quotes', { params: { search, page, per_page: PER_PAGE } }).then(r => r.data),
         enabled: activeTab === 'quotes',
     });
 
     const { data: requestsData, isLoading: requestsLoading } = useQuery({
-        queryKey: ['material-requests', search],
-        queryFn: () => api.get('/api/v1/material-requests', { params: { search, per_page: 50 } }).then(r => r.data),
+        queryKey: ['material-requests', search, page],
+        queryFn: () => api.get('/material-requests', { params: { search, page, per_page: PER_PAGE } }).then(r => r.data),
         enabled: activeTab === 'requests',
     });
 
     const { data: tagsData, isLoading: tagsLoading } = useQuery({
-        queryKey: ['asset-tags', search],
-        queryFn: () => api.get('/api/v1/asset-tags', { params: { search, per_page: 50 } }).then(r => r.data),
+        queryKey: ['asset-tags', search, page],
+        queryFn: () => api.get('/asset-tags', { params: { search, page, per_page: PER_PAGE } }).then(r => r.data),
         enabled: activeTab === 'tags',
     });
 
     const { data: rmaData, isLoading: rmaLoading } = useQuery({
-        queryKey: ['rma-requests', search],
-        queryFn: () => api.get('/api/v1/rma', { params: { search, per_page: 50 } }).then(r => r.data),
+        queryKey: ['rma-requests', search, page],
+        queryFn: () => api.get('/rma', { params: { search, page, per_page: PER_PAGE } }).then(r => r.data),
         enabled: activeTab === 'rma',
     });
 
     const { data: disposalData, isLoading: disposalLoading } = useQuery({
-        queryKey: ['stock-disposals', search],
-        queryFn: () => api.get('/api/v1/stock-disposals', { params: { search, per_page: 50 } }).then(r => r.data),
+        queryKey: ['stock-disposals', search, page],
+        queryFn: () => api.get('/stock-disposals', { params: { search, page, per_page: PER_PAGE } }).then(r => r.data),
         enabled: activeTab === 'disposal',
     });
 
     // ═══ Status update mutations ═══
     const updateQuoteStatus = useMutation({
-        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/purchase-quotes/${id}`, { status }),
+        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/purchase-quotes/${id}`, { status }),
         onSuccess: () => { toast.success('Cotação atualizada');
                 queryClient.invalidateQueries({ queryKey: ['purchase-quotes'] }); },
         onError: () => toast.error('Erro ao atualizar cotação'),
     });
 
     const updateRequestStatus = useMutation({
-        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/material-requests/${id}`, { status }),
+        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/material-requests/${id}`, { status }),
         onSuccess: () => { toast.success('Solicitação atualizada');
                 queryClient.invalidateQueries({ queryKey: ['material-requests'] }); },
         onError: () => toast.error('Erro ao atualizar'),
     });
 
     const updateRmaStatus = useMutation({
-        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/rma/${id}`, { status }),
+        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/rma/${id}`, { status }),
         onSuccess: () => { toast.success('RMA atualizado');
                 queryClient.invalidateQueries({ queryKey: ['rma-requests'] }); },
         onError: () => toast.error('Erro ao atualizar RMA'),
     });
 
     const updateDisposalStatus = useMutation({
-        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/api/v1/stock-disposals/${id}`, { status }),
+        mutationFn: ({ id, status }: { id: number; status: string }) => api.put(`/stock-disposals/${id}`, { status }),
         onSuccess: () => { toast.success('Descarte atualizado');
                 queryClient.invalidateQueries({ queryKey: ['stock-disposals'] }); },
         onError: () => toast.error('Erro ao atualizar descarte'),
     });
+
+    // ═══ Create mutations ═══
+    const onCreateSuccess = (msg: string, queryKey: string) => {
+        toast.success(msg);
+        queryClient.invalidateQueries({ queryKey: [queryKey] });
+        setCreateOpen(false);
+        setForm({});
+    };
+
+    const createQuote = useMutation({
+        mutationFn: (data: Record<string, any>) => api.post('/purchase-quotes', data),
+        onSuccess: () => onCreateSuccess('Cotação criada', 'purchase-quotes'),
+        onError: () => toast.error('Erro ao criar cotação'),
+    });
+
+    const createRequest = useMutation({
+        mutationFn: (data: Record<string, any>) => api.post('/material-requests', data),
+        onSuccess: () => onCreateSuccess('Solicitação criada', 'material-requests'),
+        onError: () => toast.error('Erro ao criar solicitação'),
+    });
+
+    const createTag = useMutation({
+        mutationFn: (data: Record<string, any>) => api.post('/asset-tags', data),
+        onSuccess: () => onCreateSuccess('Tag criada', 'asset-tags'),
+        onError: () => toast.error('Erro ao criar tag'),
+    });
+
+    const createRma = useMutation({
+        mutationFn: (data: Record<string, any>) => api.post('/rma', data),
+        onSuccess: () => onCreateSuccess('RMA criado', 'rma-requests'),
+        onError: () => toast.error('Erro ao criar RMA'),
+    });
+
+    const createDisposal = useMutation({
+        mutationFn: (data: Record<string, any>) => api.post('/stock-disposals', data),
+        onSuccess: () => onCreateSuccess('Descarte criado', 'stock-disposals'),
+        onError: () => toast.error('Erro ao criar descarte'),
+    });
+
+    const handleCreate = () => {
+        const buildItems = () => {
+            const items: Record<string, any>[] = [];
+            if (form._item_product_id && form._item_qty) {
+                items.push({
+                    product_id: Number(form._item_product_id),
+                    quantity: Number(form._item_qty),
+                    quantity_requested: Number(form._item_qty),
+                    specifications: form._item_specs ?? undefined,
+                    defect_description: form._item_defect ?? undefined,
+                });
+            }
+            return items;
+        };
+
+        const items = buildItems();
+        const { _item_product_id, _item_qty, _item_specs, _item_defect, ...rest } = form;
+
+        const payloads: Record<Tab, Record<string, any>> = {
+            quotes: { title: rest.title, notes: rest.notes, deadline: rest.deadline, items },
+            requests: { priority: rest.priority ?? 'normal', justification: rest.justification, items },
+            tags: { tag_code: rest.tag_code, tag_type: rest.tag_type ?? 'qrcode', taggable_type: rest.taggable_type ?? 'App\\Models\\Product', taggable_id: Number(rest.taggable_id), location: rest.location },
+            rma: { type: rest.type ?? 'customer_return', reason: rest.reason, items },
+            disposal: { disposal_type: rest.disposal_type ?? 'expired', disposal_method: rest.disposal_method ?? 'recycling', justification: rest.justification, items },
+        };
+
+        const mutations: Record<Tab, typeof createQuote> = {
+            quotes: createQuote, requests: createRequest, tags: createTag,
+            rma: createRma, disposal: createDisposal,
+        };
+        mutations[activeTab].mutate(payloads[activeTab]);
+    };
+
+    const handleConfirmAction = () => {
+        if (!confirmAction) return;
+        const { id, status, type } = confirmAction;
+        const mutations = {
+            quote: updateQuoteStatus, request: updateRequestStatus,
+            rma: updateRmaStatus, disposal: updateDisposalStatus,
+        };
+        mutations[type].mutate({ id, status });
+        setConfirmAction(null);
+    };
+
+    const isCreating = createQuote.isPending || createRequest.isPending || createTag.isPending || createRma.isPending || createDisposal.isPending;
 
     const isLoading =
         (activeTab === 'quotes' && quotesLoading) ||
@@ -145,7 +272,7 @@ export default function StockIntegrationPage() {
                 {tabs.map(tab => (
                     <button
                         key={tab.key}
-                        onClick={() => { setActiveTab(tab.key); setSearch(''); }}
+                        onClick={() => { setActiveTab(tab.key); setSearch(''); setPage(1); }}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === tab.key ? 'bg-surface-0 shadow-sm text-surface-900' : 'text-surface-600 hover:text-surface-900'
                             }`}
                     >
@@ -155,16 +282,21 @@ export default function StockIntegrationPage() {
                 ))}
             </div>
 
-            {/* Search */}
-            <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
-                <input
-                    type="text"
-                    placeholder="Buscar..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-default rounded-lg focus:ring-2 focus:ring-indigo-500"
-                />
+            {/* Search + Novo */}
+            <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar..."
+                        value={search}
+                        onChange={e => { setSearch(e.target.value); setPage(1); }}
+                        className="w-full pl-10 pr-4 py-2 border border-default rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                </div>
+                <Button onClick={() => { setForm({}); setCreateOpen(true); }} icon={<Plus className="h-4 w-4" />}>
+                    Novo
+                </Button>
             </div>
 
             {isLoading && (
@@ -174,7 +306,8 @@ export default function StockIntegrationPage() {
             )}
 
             {activeTab === 'quotes' && !quotesLoading && (
-                <div className="bg-surface-0 rounded-xl shadow-card overflow-x-auto">
+                <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-subtle">
                         <thead className="bg-surface-50">
                             <tr>
@@ -187,7 +320,7 @@ export default function StockIntegrationPage() {
                                 <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-surface-100">
                             {(quotesData?.data ?? []).length === 0 && (
                                 <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
                                     <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhuma cotação
@@ -206,8 +339,8 @@ export default function StockIntegrationPage() {
                                             {q.status === 'draft' && (
                                                 <button title="Enviar" onClick={() => updateQuoteStatus.mutate({ id: q.id, status: 'sent' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
                                             )}
-                                            {q.status !== 'cancelled' && (
-                                                <button title="Cancelar" onClick={() => updateQuoteStatus.mutate({ id: q.id, status: 'cancelled' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
+                                                {q.status !== 'cancelled' && (
+                                                <button title="Cancelar" onClick={() => setConfirmAction({ id: q.id, status: 'cancelled', label: 'cancelar esta cotação', type: 'quote' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
                                             )}
                                         </div>
                                     </td>
@@ -215,11 +348,14 @@ export default function StockIntegrationPage() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
+                    <PaginationControls data={quotesData} page={page} onPageChange={setPage} />
                 </div>
             )}
 
             {activeTab === 'requests' && !requestsLoading && (
-                <div className="bg-surface-0 rounded-xl shadow-card overflow-x-auto">
+                <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-subtle">
                         <thead className="bg-surface-50">
                             <tr>
@@ -256,7 +392,7 @@ export default function StockIntegrationPage() {
                                             {r.status === 'pending' && (
                                                 <>
                                                     <button title="Aprovar" onClick={() => updateRequestStatus.mutate({ id: r.id, status: 'approved' })} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-4 w-4" /></button>
-                                                    <button title="Rejeitar" onClick={() => updateRequestStatus.mutate({ id: r.id, status: 'rejected' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
+                                                    <button title="Rejeitar" onClick={() => setConfirmAction({ id: r.id, status: 'rejected', label: 'rejeitar esta solicitação', type: 'request' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
                                                 </>
                                             )}
                                         </div>
@@ -265,11 +401,14 @@ export default function StockIntegrationPage() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
+                    <PaginationControls data={requestsData} page={page} onPageChange={setPage} />
                 </div>
             )}
 
             {activeTab === 'tags' && !tagsLoading && (
-                <div className="bg-surface-0 rounded-xl shadow-card overflow-x-auto">
+                <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-subtle">
                         <thead className="bg-surface-50">
                             <tr>
@@ -301,13 +440,16 @@ export default function StockIntegrationPage() {
                                     <td className="px-4 py-3 text-sm">{t.last_scanner?.name ?? '—'}</td>
                                 </tr>
                             ))}
-                        </tbody>
+                            </tbody>
                     </table>
+                    </div>
+                    <PaginationControls data={tagsData} page={page} onPageChange={setPage} />
                 </div>
             )}
 
             {activeTab === 'rma' && !rmaLoading && (
-                <div className="bg-surface-0 rounded-xl shadow-card overflow-x-auto">
+                <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-subtle">
                         <thead className="bg-surface-50">
                             <tr>
@@ -320,7 +462,7 @@ export default function StockIntegrationPage() {
                                 <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-surface-100">
                             {(rmaData?.data ?? []).length === 0 && (
                                 <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
                                     <RotateCcw className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhum RMA
@@ -348,11 +490,14 @@ export default function StockIntegrationPage() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
+                    <PaginationControls data={rmaData} page={page} onPageChange={setPage} />
                 </div>
             )}
 
             {activeTab === 'disposal' && !disposalLoading && (
-                <div className="bg-surface-0 rounded-xl shadow-card overflow-x-auto">
+                <div className="bg-surface-0 rounded-xl shadow-card overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-subtle">
                         <thead className="bg-surface-50">
                             <tr>
@@ -365,7 +510,7 @@ export default function StockIntegrationPage() {
                                 <th className="px-4 py-3 text-center text-xs font-medium text-surface-500 uppercase">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-surface-100">
                             {(disposalData?.data ?? []).length === 0 && (
                                 <tr><td colSpan={7} className="px-4 py-12 text-center text-surface-400">
                                     <Trash2 className="h-8 w-8 mx-auto mb-2 text-surface-300" />Nenhum descarte
@@ -396,6 +541,9 @@ export default function StockIntegrationPage() {
                                                 {d.status === 'approved' && (
                                                     <button title="Concluir" onClick={() => updateDisposalStatus.mutate({ id: d.id, status: 'completed' })} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Check className="h-4 w-4" /></button>
                                                 )}
+                                                {d.status !== 'completed' && d.status !== 'cancelled' && (
+                                                    <button title="Cancelar" onClick={() => setConfirmAction({ id: d.id, status: 'cancelled', label: 'cancelar este descarte', type: 'disposal' })} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><X className="h-4 w-4" /></button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -403,8 +551,179 @@ export default function StockIntegrationPage() {
                             })}
                         </tbody>
                     </table>
+                    </div>
+                    <PaginationControls data={disposalData} page={page} onPageChange={setPage} />
                 </div>
             )}
+
+            {/* ═══ Create Modal ═══ */}
+            <Modal
+                open={createOpen}
+                onClose={() => { setCreateOpen(false); setForm({}); }}
+                title={createTitles[activeTab]}
+            >
+                <div className="space-y-4">
+                    {activeTab === 'quotes' && (
+                        <>
+                            <Input label="Título" value={form.title ?? ''} onChange={e => updateForm('title', e.target.value)} placeholder="Título da cotação" />
+                            <Input label="Prazo" type="date" value={form.deadline ?? ''} onChange={e => updateForm('deadline', e.target.value)} />
+                            <Input label="Observações" value={form.notes ?? ''} onChange={e => updateForm('notes', e.target.value)} placeholder="Observações (opcional)" />
+                            <div className="border border-default rounded-lg p-3 space-y-2 bg-surface-50">
+                                <p className="text-xs font-semibold text-surface-500 uppercase">Item da Cotação</p>
+                                <Input label="ID do Produto" type="number" value={form._item_product_id ?? ''} onChange={e => updateForm('_item_product_id', e.target.value)} placeholder="ID do produto" />
+                                <Input label="Quantidade" type="number" step="0.01" min="0.01" value={form._item_qty ?? ''} onChange={e => updateForm('_item_qty', e.target.value)} placeholder="Quantidade" />
+                                <Input label="Especificações" value={form._item_specs ?? ''} onChange={e => updateForm('_item_specs', e.target.value)} placeholder="Especificações (opcional)" />
+                            </div>
+                        </>
+                    )}
+                    {activeTab === 'requests' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label htmlFor="sel-priority" className="block text-[13px] font-medium text-surface-700">Prioridade</label>
+                                <select
+                                    id="sel-priority"
+                                    value={form.priority ?? 'normal'}
+                                    onChange={e => updateForm('priority', e.target.value)}
+                                    className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400"
+                                >
+                                    <option value="low">Baixa</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="high">Alta</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+                            <Input label="Justificativa" value={form.justification ?? ''} onChange={e => updateForm('justification', e.target.value)} placeholder="Justificativa da solicitação" />
+                            <div className="border border-default rounded-lg p-3 space-y-2 bg-surface-50">
+                                <p className="text-xs font-semibold text-surface-500 uppercase">Item Solicitado</p>
+                                <Input label="ID do Produto" type="number" value={form._item_product_id ?? ''} onChange={e => updateForm('_item_product_id', e.target.value)} placeholder="ID do produto" />
+                                <Input label="Quantidade" type="number" step="0.01" min="0.01" value={form._item_qty ?? ''} onChange={e => updateForm('_item_qty', e.target.value)} placeholder="Quantidade" />
+                            </div>
+                        </>
+                    )}
+                    {activeTab === 'tags' && (
+                        <>
+                            <Input label="Código da Tag" value={form.tag_code ?? ''} onChange={e => updateForm('tag_code', e.target.value)} placeholder="Ex: TAG-001" />
+                            <div className="space-y-1.5">
+                                <label htmlFor="sel-tag-type" className="block text-[13px] font-medium text-surface-700">Tipo</label>
+                                <select
+                                    id="sel-tag-type"
+                                    value={form.tag_type ?? 'qrcode'}
+                                    onChange={e => updateForm('tag_type', e.target.value)}
+                                    className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400"
+                                >
+                                    <option value="rfid">RFID</option>
+                                    <option value="qrcode">QR Code</option>
+                                    <option value="barcode">Código de Barras</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label htmlFor="sel-taggable-type" className="block text-[13px] font-medium text-surface-700">Tipo de Recurso</label>
+                                <select
+                                    id="sel-taggable-type"
+                                    value={form.taggable_type ?? 'App\\Models\\Product'}
+                                    onChange={e => updateForm('taggable_type', e.target.value)}
+                                    className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400"
+                                >
+                                    <option value="App\Models\Product">Produto</option>
+                                    <option value="App\Models\Equipment">Equipamento</option>
+                                </select>
+                            </div>
+                            <Input label="ID do Recurso" type="number" value={form.taggable_id ?? ''} onChange={e => updateForm('taggable_id', e.target.value)} placeholder="ID do produto ou equipamento" />
+                            <Input label="Localização" value={form.location ?? ''} onChange={e => updateForm('location', e.target.value)} placeholder="Ex: Almoxarifado A" />
+                        </>
+                    )}
+                    {activeTab === 'rma' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label htmlFor="sel-rma-type" className="block text-[13px] font-medium text-surface-700">Tipo</label>
+                                <select
+                                    id="sel-rma-type"
+                                    value={form.type ?? 'customer_return'}
+                                    onChange={e => updateForm('type', e.target.value)}
+                                    className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400"
+                                >
+                                    <option value="customer_return">Devolução de Cliente</option>
+                                    <option value="supplier_return">Devolução para Fornecedor</option>
+                                </select>
+                            </div>
+                            <Input label="Motivo" value={form.reason ?? ''} onChange={e => updateForm('reason', e.target.value)} placeholder="Motivo da devolução" />
+                            <div className="border border-default rounded-lg p-3 space-y-2 bg-surface-50">
+                                <p className="text-xs font-semibold text-surface-500 uppercase">Item</p>
+                                <Input label="ID do Produto" type="number" value={form._item_product_id ?? ''} onChange={e => updateForm('_item_product_id', e.target.value)} placeholder="ID do produto" />
+                                <Input label="Quantidade" type="number" step="0.01" min="0.01" value={form._item_qty ?? ''} onChange={e => updateForm('_item_qty', e.target.value)} placeholder="Quantidade" />
+                                <Input label="Descrição do Defeito" value={form._item_defect ?? ''} onChange={e => updateForm('_item_defect', e.target.value)} placeholder="Descreva o defeito (opcional)" />
+                            </div>
+                        </>
+                    )}
+                    {activeTab === 'disposal' && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label htmlFor="sel-disposal-type" className="block text-[13px] font-medium text-surface-700">Tipo de Descarte</label>
+                                <select
+                                    id="sel-disposal-type"
+                                    value={form.disposal_type ?? 'expired'}
+                                    onChange={e => updateForm('disposal_type', e.target.value)}
+                                    className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400"
+                                >
+                                    <option value="expired">Vencido</option>
+                                    <option value="damaged">Danificado</option>
+                                    <option value="obsolete">Obsoleto</option>
+                                    <option value="recalled">Recolhido</option>
+                                    <option value="hazardous">Perigoso</option>
+                                    <option value="other">Outro</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label htmlFor="sel-disposal-method" className="block text-[13px] font-medium text-surface-700">Método de Descarte</label>
+                                <select
+                                    id="sel-disposal-method"
+                                    value={form.disposal_method ?? 'recycling'}
+                                    onChange={e => updateForm('disposal_method', e.target.value)}
+                                    className="w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/15 focus:border-brand-400"
+                                >
+                                    <option value="recycling">Reciclagem</option>
+                                    <option value="incineration">Incineração</option>
+                                    <option value="landfill">Aterro</option>
+                                    <option value="donation">Doação</option>
+                                    <option value="return_manufacturer">Devolver ao Fabricante</option>
+                                    <option value="specialized_treatment">Tratamento Especializado</option>
+                                </select>
+                            </div>
+                            <Input label="Justificativa" value={form.justification ?? ''} onChange={e => updateForm('justification', e.target.value)} placeholder="Justificativa do descarte" />
+                            <div className="border border-default rounded-lg p-3 space-y-2 bg-surface-50">
+                                <p className="text-xs font-semibold text-surface-500 uppercase">Item para Descarte</p>
+                                <Input label="ID do Produto" type="number" value={form._item_product_id ?? ''} onChange={e => updateForm('_item_product_id', e.target.value)} placeholder="ID do produto" />
+                                <Input label="Quantidade" type="number" step="0.01" min="0.01" value={form._item_qty ?? ''} onChange={e => updateForm('_item_qty', e.target.value)} placeholder="Quantidade" />
+                            </div>
+                        </>
+                    )}
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                    <Button variant="outline" onClick={() => { setCreateOpen(false); setForm({}); }}>Cancelar</Button>
+                    <Button onClick={handleCreate} loading={isCreating}>Salvar</Button>
+                </div>
+            </Modal>
+
+            {/* ═══ Confirmation Modal ═══ */}
+            <Modal
+                open={!!confirmAction}
+                onClose={() => setConfirmAction(null)}
+                title="Confirmar Ação"
+                size="sm"
+            >
+                <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 p-2 bg-red-50 rounded-full">
+                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                    </div>
+                    <p className="text-sm text-surface-600 pt-1.5">
+                        Tem certeza que deseja <strong>{confirmAction?.label}</strong>? Esta ação não pode ser desfeita.
+                    </p>
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                    <Button variant="outline" onClick={() => setConfirmAction(null)}>Voltar</Button>
+                    <Button variant="danger" onClick={handleConfirmAction}>Confirmar</Button>
+                </div>
+            </Modal>
         </div>
     );
 }

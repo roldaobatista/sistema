@@ -187,6 +187,9 @@ class PermissionsSeeder extends Seeder
             'estoque.movement.view',
             'estoque.view',
             'estoque.warehouse.view',
+            'estoque.warehouse.create',
+            'estoque.warehouse.update',
+            'estoque.warehouse.delete',
             'estoque.transfer.create',
             'estoque.transfer.accept',
             'estoque.used_stock.view',
@@ -194,6 +197,17 @@ class PermissionsSeeder extends Seeder
             'estoque.used_stock.confirm',
             'estoque.warranty.view',
             'estoque.label.print',
+            'estoque.serial.view',
+            'estoque.serial.create',
+            'estoque.rma.view',
+            'estoque.rma.create',
+            'estoque.disposal.view',
+            'estoque.disposal.create',
+            'estoque.intelligence.view',
+            'estoque.kardex.view',
+            'estoque.inventory.view',
+            'estoque.inventory.create',
+            'estoque.inventory.execute',
 
             // ─── Despesas / Abastecimento ───
             'expenses.expense.approve',
@@ -297,6 +311,7 @@ class PermissionsSeeder extends Seeder
             'hr.training.view',
 
             // ─── IAM ───
+            'iam.audit_log.export',
             'iam.audit_log.view',
             'iam.permission.manage',
             'iam.role.create',
@@ -305,6 +320,7 @@ class PermissionsSeeder extends Seeder
             'iam.role.view',
             'iam.user.create',
             'iam.user.delete',
+            'iam.user.export',
             'iam.user.update',
             'iam.user.view',
 
@@ -406,6 +422,7 @@ class PermissionsSeeder extends Seeder
             'tool.calibration.manage',
 
             // ─── Orçamentos ───
+            'quotes.quote.apply_discount',
             'quotes.quote.approve',
             'quotes.quote.convert',
             'quotes.quote.create',
@@ -415,22 +432,34 @@ class PermissionsSeeder extends Seeder
             'quotes.quote.update',
             'quotes.quote.view',
 
-            // ─── Relatórios ───
-            'relatorios.report.view',
+            // ─── Relatórios ───  (relatorios.report.view removida — permissão órfã sem uso)
+            'reports.commission_report.export',
             'reports.commission_report.view',
+            'reports.crm_report.export',
             'reports.crm_report.view',
+            'reports.customers_report.export',
             'reports.customers_report.view',
+            'reports.equipments_report.export',
             'reports.equipments_report.view',
+            'reports.financial_report.export',
             'reports.financial_report.view',
+            'reports.margin_report.export',
             'reports.margin_report.view',
+            'reports.os_report.export',
             'reports.os_report.view',
+            'reports.productivity_report.export',
             'reports.productivity_report.view',
+            'reports.quotes_report.export',
             'reports.quotes_report.view',
             'reports.scheduled.manage',
             'reports.scheduled.view',
+            'reports.service_calls_report.export',
             'reports.service_calls_report.view',
+            'reports.stock_report.export',
             'reports.stock_report.view',
+            'reports.suppliers_report.export',
             'reports.suppliers_report.view',
+            'reports.technician_cash_report.export',
             'reports.technician_cash_report.view',
 
             // ─── Rotas ───

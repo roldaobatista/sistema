@@ -1,9 +1,9 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import {
     Search, Plus, FileText, Clock, User, AlertTriangle,
-    Filter, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Download, Trash2,
+    Filter, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Download, Trash2, Upload,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -51,18 +51,31 @@ export function WorkOrdersListPage() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
     const [priorityFilter, setPriorityFilter] = useState('')
+    const [technicianFilter, setTechnicianFilter] = useState('')
     const [dateFrom, setDateFrom] = useState('')
     const [dateTo, setDateTo] = useState('')
     const [showFilters, setShowFilters] = useState(false)
     const [page, setPage] = useState(1)
     const [deleteId, setDeleteId] = useState<number | null>(null)
+    const [importModal, setImportModal] = useState(false)
+    const [importFile, setImportFile] = useState<File | null>(null)
+    const [importing, setImporting] = useState(false)
+    const [importResult, setImportResult] = useState<{ created: number; errors: string[] } | null>(null)
     const { hasPermission } = useAuthStore()
 
+    const { data: techniciansRes } = useQuery({
+        queryKey: ['technicians-options'],
+        queryFn: () => api.get('/technicians/options'),
+        staleTime: 5 * 60 * 1000,
+    })
+    const technicians: { id: number; name: string }[] = techniciansRes?.data ?? []
+
     const { data: res, isLoading, isError, refetch } = useQuery({
-        queryKey: ['work-orders', search, statusFilter, priorityFilter, dateFrom, dateTo, page],
+        queryKey: ['work-orders', search, statusFilter, priorityFilter, technicianFilter, dateFrom, dateTo, page],
         queryFn: () => api.get('/work-orders', {
             params: {
                 search, status: statusFilter || undefined, priority: priorityFilter || undefined,
+                assigned_to: technicianFilter || undefined,
                 date_from: dateFrom || undefined, date_to: dateTo || undefined,
                 per_page: 20, page,
             },
@@ -103,12 +116,35 @@ export function WorkOrdersListPage() {
         },
     })
 
+    // Import CSV
+    const handleImport = async () => {
+        if (!importFile) return toast.error('Selecione um arquivo CSV')
+        setImporting(true)
+        try {
+            const formData = new FormData()
+            formData.append('file', importFile)
+            const res = await api.post('/work-orders-import', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+            const data = res.data
+            setImportResult({ created: data.created, errors: data.errors ?? [] })
+            if (data.created > 0) {
+                toast.success(`${data.created} OS importadas com sucesso`)
+                qc.invalidateQueries({ queryKey: ['work-orders'] })
+            }
+            if (data.errors?.length > 0) toast.error(`${data.errors.length} erro(s) na importação`)
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Erro ao importar CSV')
+        } finally {
+            setImporting(false)
+        }
+    }
+
     // Export CSV
     const handleExport = async () => {
         try {
             const response = await api.get('/work-orders-export', {
                 params: {
                     status: statusFilter || undefined, priority: priorityFilter || undefined,
+                    assigned_to: technicianFilter || undefined,
                     date_from: dateFrom || undefined, date_to: dateTo || undefined,
                 },
                 responseType: 'blob',
@@ -135,6 +171,7 @@ export function WorkOrdersListPage() {
                 subtitle="Gerencie suas ordens de serviço"
                 count={totalRecords}
                 actions={[
+                    ...(hasPermission('os.work_order.create') ? [{ label: 'Importar CSV', onClick: () => setImportModal(true), icon: <Upload className="h-4 w-4" />, variant: 'outline' as const }] : []),
                     ...(hasPermission('os.work_order.export') ? [{ label: 'Exportar', onClick: handleExport, icon: <Download className="h-4 w-4" />, variant: 'outline' as const }] : []),
                     ...(hasPermission('os.work_order.create') ? [{ label: 'Nova OS', onClick: () => navigate('/os/nova'), icon: <Plus className="h-4 w-4" /> }] : []),
                 ]}
@@ -209,6 +246,14 @@ export function WorkOrdersListPage() {
                         <option value="">Todas prioridades</option>
                         {Object.entries(priorityConfig).map(([k, v]) => (
                             <option key={k} value={k}>{v.label}</option>
+                        ))}
+                    </select>
+                    <select value={technicianFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setTechnicianFilter(e.target.value); setPage(1) }}
+                        aria-label="Filtrar por técnico"
+                        className="cursor-pointer rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
+                        <option value="">Todos técnicos</option>
+                        {technicians.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                     </select>
                     <input type="date" value={dateFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDateFrom(e.target.value); setPage(1) }}
@@ -328,6 +373,38 @@ export function WorkOrdersListPage() {
                     </div>
                 </div>
             )}
+
+            {/* Import CSV Modal */}
+            <Modal open={importModal} onOpenChange={(open) => { if (!open) { setImportModal(false); setImportFile(null); setImportResult(null) } }} title="Importar OS via CSV">
+                <div className="space-y-4">
+                    <p className="text-sm text-surface-600">
+                        Importe ordens de serviço retroativas a partir de um arquivo CSV. Separador: <strong>;</strong> (ponto e vírgula).
+                    </p>
+                    <div className="bg-surface-50 border border-default rounded-lg p-3 text-xs text-surface-600 space-y-1">
+                        <p className="font-semibold">Colunas obrigatórias: cliente, descricao, valor_total</p>
+                        <p>Opcionais: tecnico, data (dd/mm/yyyy), data_conclusao, numero_os, status, item_custo, despesa_valor, despesa_descricao</p>
+                        <p className="mt-2 font-mono bg-surface-100 p-2 rounded text-[11px]">cliente;descricao;valor_total;tecnico;data;numero_os;item_custo;despesa_valor<br />João Silva;Manutenção preventiva;1500,00;Rodolfo;15/03/2025;OS-001;200,00;50,00</p>
+                    </div>
+                    <div>
+                        <input type="file" accept=".csv,.txt" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                            className="block w-full text-sm text-surface-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+                    </div>
+                    {importResult && (
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-emerald-600">{importResult.created} OS importadas</p>
+                            {importResult.errors.length > 0 && (
+                                <div className="max-h-32 overflow-y-auto bg-red-50 rounded-lg p-2 text-xs text-red-700 space-y-0.5">
+                                    {importResult.errors.map((err, i) => <p key={i}>{err}</p>)}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={() => { setImportModal(false); setImportFile(null); setImportResult(null) }}>Fechar</Button>
+                        <Button onClick={handleImport} loading={importing} disabled={!importFile || importing} icon={<Upload className="h-4 w-4" />}>Importar</Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Delete Confirmation Modal */}
             <Modal open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null) }} title="Confirmar Exclusão">

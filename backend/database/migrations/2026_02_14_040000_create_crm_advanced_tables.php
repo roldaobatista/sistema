@@ -61,8 +61,8 @@ return new class extends Migration
         if (Schema::hasTable('quotes')) {
             if (!Schema::hasColumn('quotes', 'parent_quote_id')) {
                 Schema::table('quotes', function (Blueprint $table) {
-                    $table->unsignedBigInteger('parent_quote_id')->nullable()->after('id');
-                    $table->string('option_label')->nullable()->after('parent_quote_id');
+                    $table->unsignedBigInteger('parent_quote_id')->nullable();
+                    $table->string('option_label')->nullable();
                 });
             }
         }

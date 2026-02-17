@@ -53,8 +53,20 @@ class ServiceCallController extends Controller
             ->withCount('equipments')
             ->where('tenant_id', $tenantId);
 
-        if ($this->shouldScopeByUser()) {
-            $query->where('created_by', auth()->id());
+        if ($request->get('my')) {
+            $userId = auth()->id();
+            $query->where(function ($q) use ($userId) {
+                $q->where('technician_id', $userId)
+                    ->orWhere('driver_id', $userId)
+                    ->orWhere('created_by', $userId);
+            });
+        } elseif ($this->shouldScopeByUser()) {
+            $userId = auth()->id();
+            $query->where(function ($q) use ($userId) {
+                $q->where('technician_id', $userId)
+                    ->orWhere('driver_id', $userId)
+                    ->orWhere('created_by', $userId);
+            });
         }
 
         if ($s = $request->get('search')) {
@@ -242,6 +254,11 @@ class ServiceCallController extends Controller
                     $updateData['started_at'] = null;
                     $updateData['completed_at'] = null;
                 }
+                // Tracking de reagendamento (voltou para scheduled de outro estado)
+                if ($validated['status'] === ServiceCall::STATUS_SCHEDULED && $old !== ServiceCall::STATUS_OPEN) {
+                    $updateData['reschedule_count'] = ($serviceCall->reschedule_count ?? 0) + 1;
+                    $updateData['reschedule_reason'] = $validated['resolution_notes'] ?? null;
+                }
 
                 $serviceCall->update($updateData);
 
@@ -274,7 +291,11 @@ class ServiceCallController extends Controller
         try {
             DB::transaction(function () use ($serviceCall, $validated) {
                 $newStatus = $serviceCall->status;
-                if ($serviceCall->status === ServiceCall::STATUS_OPEN && $serviceCall->canTransitionTo(ServiceCall::STATUS_SCHEDULED)) {
+                $hasScheduledDate = !empty($validated['scheduled_date']);
+
+                if ($serviceCall->status === ServiceCall::STATUS_OPEN
+                    && $hasScheduledDate
+                    && $serviceCall->canTransitionTo(ServiceCall::STATUS_SCHEDULED)) {
                     $newStatus = ServiceCall::STATUS_SCHEDULED;
                 }
 

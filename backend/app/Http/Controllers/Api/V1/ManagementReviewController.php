@@ -8,6 +8,7 @@ use App\Models\ManagementReviewAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ManagementReviewController extends Controller
 {
@@ -48,21 +49,25 @@ class ManagementReviewController extends Controller
         $actions = $data['actions'] ?? [];
         unset($data['actions']);
 
-        $review = DB::transaction(function () use ($data, $actions) {
-            $review = ManagementReview::create($data);
-            foreach ($actions as $i => $a) {
-                ManagementReviewAction::create([
-                    'management_review_id' => $review->id,
-                    'description' => $a['description'],
-                    'responsible_id' => $a['responsible_id'] ?? null,
-                    'due_date' => $a['due_date'] ?? null,
-                    'status' => 'pending',
-                ]);
-            }
-            return $review->load('actions.responsible:id,name');
-        });
-
-        return response()->json(['message' => 'Revisão registrada', 'data' => $review], 201);
+        try {
+            $review = DB::transaction(function () use ($data, $actions) {
+                $review = ManagementReview::create($data);
+                foreach ($actions as $i => $a) {
+                    ManagementReviewAction::create([
+                        'management_review_id' => $review->id,
+                        'description' => $a['description'],
+                        'responsible_id' => $a['responsible_id'] ?? null,
+                        'due_date' => $a['due_date'] ?? null,
+                        'status' => 'pending',
+                    ]);
+                }
+                return $review->load('actions.responsible:id,name');
+            });
+            return response()->json(['message' => 'Revisão registrada', 'data' => $review], 201);
+        } catch (\Throwable $e) {
+            Log::error('ManagementReview store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao registrar revisão'], 500);
+        }
     }
 
     public function show(Request $request, ManagementReview $management_review): JsonResponse
@@ -87,8 +92,13 @@ class ManagementReviewController extends Controller
             'decisions' => 'nullable|string',
             'summary' => 'nullable|string',
         ]);
-        $management_review->update($data);
-        return response()->json(['message' => 'Revisão atualizada', 'data' => $management_review->fresh(['creator:id,name', 'actions.responsible:id,name'])]);
+        try {
+            $management_review->update($data);
+            return response()->json(['message' => 'Revisão atualizada', 'data' => $management_review->fresh(['creator:id,name', 'actions.responsible:id,name'])]);
+        } catch (\Throwable $e) {
+            Log::error('ManagementReview update failed', ['id' => $management_review->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar revisão'], 500);
+        }
     }
 
     public function destroy(Request $request, ManagementReview $management_review): JsonResponse
@@ -96,8 +106,13 @@ class ManagementReviewController extends Controller
         if ($management_review->tenant_id !== $this->tenantId($request)) {
             abort(404);
         }
-        $management_review->delete();
-        return response()->json(['message' => 'Revisão excluída']);
+        try {
+            $management_review->delete();
+            return response()->json(['message' => 'Revisão excluída']);
+        } catch (\Throwable $e) {
+            Log::error('ManagementReview destroy failed', ['id' => $management_review->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir revisão'], 500);
+        }
     }
 
     public function storeAction(Request $request, ManagementReview $management_review): JsonResponse
@@ -112,9 +127,15 @@ class ManagementReviewController extends Controller
         ]);
         $data['management_review_id'] = $management_review->id;
         $data['status'] = 'pending';
-        $action = ManagementReviewAction::create($data);
-        $action->load('responsible:id,name');
-        return response()->json(['message' => 'Ação adicionada', 'data' => $action], 201);
+
+        try {
+            $action = ManagementReviewAction::create($data);
+            $action->load('responsible:id,name');
+            return response()->json(['message' => 'Ação adicionada', 'data' => $action], 201);
+        } catch (\Throwable $e) {
+            Log::error('ManagementReviewAction store failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao adicionar ação'], 500);
+        }
     }
 
     public function updateAction(Request $request, ManagementReviewAction $action): JsonResponse
@@ -133,8 +154,14 @@ class ManagementReviewController extends Controller
         if (($data['status'] ?? null) === 'completed') {
             $data['completed_at'] = now()->toDateString();
         }
-        $action->update($data);
-        return response()->json(['message' => 'Ação atualizada', 'data' => $action->fresh('responsible:id,name')]);
+
+        try {
+            $action->update($data);
+            return response()->json(['message' => 'Ação atualizada', 'data' => $action->fresh('responsible:id,name')]);
+        } catch (\Throwable $e) {
+            Log::error('ManagementReviewAction update failed', ['id' => $action->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao atualizar ação'], 500);
+        }
     }
 
     public function dashboard(Request $request): JsonResponse

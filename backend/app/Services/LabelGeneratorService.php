@@ -92,7 +92,7 @@ class LabelGeneratorService
     /**
      * @param  Collection<int, Product>  $products
      */
-    public function generatePdf(Collection $products, string $formatKey): string
+    public function generatePdf(Collection $products, string $formatKey, ?string $companyLogoPath = null): string
     {
         $formats = $this->getFormats();
         $format = $formats[$formatKey] ?? $formats['pdf_40x30'];
@@ -116,6 +116,7 @@ class LabelGeneratorService
             'perPage' => $perPage,
             'widthMm' => $widthMm,
             'heightMm' => $heightMm,
+            'company_logo_path' => $companyLogoPath,
         ]);
 
         if ($perPage > 1) {
