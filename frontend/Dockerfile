@@ -20,6 +20,11 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
+
+RUN printf "VITE_API_URL=%s\nVITE_WS_URL=%s\nVITE_REVERB_APP_KEY=%s\nVITE_REVERB_HOST=%s\nVITE_REVERB_PORT=%s\nVITE_REVERB_SCHEME=%s\n" \
+    "$VITE_API_URL" "$VITE_WS_URL" "$VITE_REVERB_APP_KEY" "$VITE_REVERB_HOST" "$VITE_REVERB_PORT" "$VITE_REVERB_SCHEME" \
+    > .env.production
+
 RUN npm run build:deploy
 
 FROM nginx:alpine AS production
