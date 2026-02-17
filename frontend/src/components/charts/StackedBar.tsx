@@ -9,7 +9,16 @@ const PALETTE = [
     'var(--color-brand-300)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-info)', 'var(--color-surface-500)'
 ]
 
-// ... types ...
+
+export interface StackedBarProps {
+    data: any[]
+    xKey: string
+    dataKeys: { key: string; label: string; color?: string }[]
+    height?: number | string
+    className?: string
+    formatValue?: (value: number) => string
+    layout?: 'horizontal' | 'vertical'
+}
 
 function CustomTooltip({ active, payload, label, formatValue }: any) {
     if (!active || !payload?.length) return null
@@ -79,7 +88,7 @@ export function StackedBar({
                         iconType="circle"
                         iconSize={8}
                         wrapperStyle={{ fontSize: 11, paddingTop: 12, color: 'var(--color-surface-500)' }}
-                        formatter={(value: any) => <span style={{ color: 'var(--color-surface-600)' }}>{value}</span>}
+                        formatter={(value: any, entry: any, index: number) => <span style={{ color: 'var(--color-surface-600)' }}>{value}</span>}
                     />
                     {dataKeys.map((dk: any, i: number) => (
                         <Bar

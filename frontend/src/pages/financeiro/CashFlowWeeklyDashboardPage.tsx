@@ -168,7 +168,7 @@ export function CashFlowWeeklyDashboardPage() {
                                     <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                                     <YAxis tickFormatter={v => (v / 1000).toFixed(0) + 'k'} tick={{ fontSize: 11 }} />
                                     <Tooltip
-                                        formatter={(value) => [fmtBRL(Number(value)), 'Saldo']}
+                                        formatter={(value) => [fmtBRL(Number(value)), 'Saldo'] as any}
                                         labelFormatter={label => `Dia ${label}`}
                                     />
                                     <ReferenceLine y={0} stroke="var(--color-content-secondary)" strokeDasharray="2 2" />
@@ -195,7 +195,7 @@ export function CashFlowWeeklyDashboardPage() {
                                     <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                                     <YAxis tickFormatter={v => (v / 1000).toFixed(0) + 'k'} tick={{ fontSize: 11 }} />
                                     <Tooltip
-                                        formatter={(value) => [fmtBRL(Number(value)), '']}
+                                        formatter={(value) => [fmtBRL(Number(value)), ''] as any}
                                         labelFormatter={label => `Dia ${label}`}
                                     />
                                     <Legend />

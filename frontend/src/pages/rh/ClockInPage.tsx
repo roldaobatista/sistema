@@ -21,7 +21,7 @@ type ClockStatus = {
 }
 
 export default function ClockInPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const videoRef = useRef<HTMLVideoElement>(null)
@@ -142,7 +142,7 @@ export default function ClockInPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['clock-status'] })
             toast.success('Ponto de entrada registrado com sucesso!')
-                setStep('done')
+            setStep('done')
         },
         onError: (err: any) => {
             toast.error(err?.response?.data?.message ?? 'Erro ao registrar entrada')
@@ -155,7 +155,7 @@ export default function ClockInPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['clock-status'] })
             toast.success('Ponto de saída registrado com sucesso!')
-                setStep('camera')
+            setStep('camera')
             setSelfieBlob(null)
             setSelfieUrl(null)
             setGpsCoords(null)
@@ -370,7 +370,7 @@ export default function ClockInPage() {
                         {step === 'done' && (
                             <div className="flex flex-col items-center gap-4 py-8">
                                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-                                    <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                                    <CheckCircle2 className="h-8 w-8 text-success" />
                                 </div>
                                 <p className="text-lg font-semibold text-surface-900">Entrada registrada!</p>
                                 <p className="text-sm text-surface-500">Seu ponto foi registrado com sucesso.</p>

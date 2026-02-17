@@ -237,7 +237,7 @@ export function CustomerDocumentsTab({ customerId }: Props) {
                             />
                             {uploadForm.file ? (
                                 <div className="flex flex-col items-center">
-                                    <FileCheck className="h-8 w-8 text-emerald-500 mb-2" />
+                                    <FileCheck className="h-8 w-8 text-success mb-2" />
                                     <p className="text-sm font-bold text-emerald-800">{uploadForm.file.name}</p>
                                     <p className="text-xs text-emerald-600">{formatSize(uploadForm.file.size)}</p>
                                 </div>

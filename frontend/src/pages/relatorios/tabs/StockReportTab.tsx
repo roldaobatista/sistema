@@ -52,7 +52,7 @@ export function StockReportTab({ data }: Props) {
                             <CartesianGrid strokeDasharray="3 3" className="stroke-surface-200" />
                             <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
                             <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} />
-                            <Tooltip formatter={(v: any) => [fmtBRL(Number(v)), 'Valor']} />
+                            <Tooltip formatter={(v: any) => [fmtBRL(Number(v)), 'Valor'] as any} />
                             <Bar dataKey="value" name="Valor" radius={[0, 4, 4, 0]} animationDuration={800}>
                                 {top10.map((_: any, i: number) => (
                                     <Cell key={i} fill={COLORS[i % COLORS.length]} />

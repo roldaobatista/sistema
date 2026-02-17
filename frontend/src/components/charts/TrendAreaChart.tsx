@@ -15,7 +15,7 @@ interface TrendAreaChartProps {
     data: Record<string, any>[]
     xKey: string
     series: SeriesConfig[]
-    height?: number
+    height?: number | string
     className?: string
     formatValue?: (v: number) => string
     showGrid?: boolean

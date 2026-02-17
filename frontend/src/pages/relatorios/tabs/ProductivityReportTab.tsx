@@ -73,7 +73,7 @@ export function ProductivityReportTab({ data }: Props) {
                             { key: 'Espera', label: 'Espera', color: '#ef4444' },
                         ]}
                         layout="vertical"
-                        formatValue={(v) => fmtHours(v)}
+                        formatValue={(v: number) => fmtHours(v)}
                         height="100%"
                     />
                 </ChartCard>
@@ -87,9 +87,9 @@ export function ProductivityReportTab({ data }: Props) {
                             <XAxis type="number" tick={{ fontSize: 11 }} />
                             <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
                             <Tooltip
-                                formatter={(value: any, name: string) => {
-                                    if (name === 'Valor') return [fmtBRL(Number(value)), name]
-                                    return [value, name]
+                                formatter={(value: any, name: any) => {
+                                    if (name === 'Valor') return [fmtBRL(Number(value)), name] as any
+                                    return [value, name] as any
                                 }}
                             />
                             <Legend />

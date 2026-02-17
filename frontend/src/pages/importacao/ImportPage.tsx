@@ -111,6 +111,61 @@ export default function ImportPage() {
     const queryClient = useQueryClient()
     const hasPermission = useAuthStore(s => s.hasPermission)
 
+    // Upload
+    const uploadMutation = useMutation({
+        mutationFn: (file: File) => {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('entity_type', entity)
+            return api.post('/import/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            }).then(r => r.data)
+        },
+        onSuccess: (data) => {
+            setUploadData(data)
+            setStep(1)
+            // Auto-match headers with available fields
+            const newMapping: Record<string, string> = {}
+            data.available_fields.forEach((field: FieldDef) => {
+                const match = data.headers.find((h: string) =>
+                    h.toLowerCase() === field.label.toLowerCase() ||
+                    h.toLowerCase() === field.key.toLowerCase()
+                )
+                if (match) newMapping[field.key] = match
+            })
+            setMapping(newMapping)
+            toast.success('Arquivo carregado com sucesso!')
+        },
+        onError: (err: any) => {
+            toast.error('Erro ao carregar arquivo.')
+            if (err?.response?.status === 422) {
+                setErrorMessage('Formato de arquivo inválido ou colunas não identificadas.')
+            } else {
+                setErrorMessage(err?.response?.data?.message || 'Erro ao carregar arquivo.')
+            }
+        }
+    })
+
+    // Preview
+    const previewMutation = useMutation({
+        mutationFn: () => api.post('/import/preview', {
+            file_path: uploadData?.file_path,
+            entity_type: entity,
+            mapping,
+            separator: uploadData?.separator,
+            encoding: uploadData?.encoding,
+        }).then(r => r.data),
+        onSuccess: (data) => {
+            setPreviewRows(data.rows)
+            setPreviewStats(data.stats)
+            setStep(2)
+        },
+        onError: (err: any) => {
+            toast.error('Erro ao gerar preview.')
+            setErrorMessage(err?.response?.data?.message || 'Erro ao gerar visualização prévia.')
+        }
+    })
+
     // Templates
     const { data: templates } = useQuery({
         queryKey: ['import-templates', entity],

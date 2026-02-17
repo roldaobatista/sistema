@@ -560,8 +560,8 @@ export function CustomersPage() {
           className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">Todos segmentos</option>
-          {(crmOptions?.segments ?? []).map((s: string) => (
-            <option key={s} value={s}>{s}</option>
+          {crmOptions?.segments && Object.entries(crmOptions.segments).map(([k, v]) => (
+            <option key={k} value={k}>{v as string}</option>
           ))}
         </select>
         <select
@@ -571,8 +571,8 @@ export function CustomersPage() {
           className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">Todos ratings</option>
-          {(crmOptions?.ratings ?? []).map((r: string) => (
-            <option key={r} value={r}>{r}</option>
+          {crmOptions?.ratings && Object.entries(crmOptions.ratings).map(([k, v]) => (
+            <option key={k} value={k}>{v as string}</option>
           ))}
         </select>
         <select
@@ -582,8 +582,8 @@ export function CustomersPage() {
           className="text-sm border border-default rounded-lg px-3 py-2 bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">Todas origens</option>
-          {(crmOptions?.sources ?? []).map((s: string) => (
-            <option key={s} value={s}>{s}</option>
+          {crmOptions?.sources && Object.entries(crmOptions.sources).map(([k, v]) => (
+            <option key={k} value={k}>{v as string}</option>
           ))}
         </select>
         <select

@@ -77,7 +77,7 @@ export function CrmReportTab({ data }: Props) {
                             <CartesianGrid strokeDasharray="3 3" className="stroke-surface-200" />
                             <XAxis type="number" tick={{ fontSize: 11 }} />
                             <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                            <Tooltip formatter={(v: any, name: string) => name === 'Valor' ? [fmtBRL(Number(v)), name] : [v, name]} />
+                            <Tooltip formatter={(v: any, name: any) => (name === 'Valor' ? [fmtBRL(Number(v)), name] : [v, name]) as any} />
                             <Legend />
                             <Bar dataKey="count" name="Quantidade" fill="#6366f1" radius={[0, 4, 4, 0]} animationDuration={800} />
                         </BarChart>

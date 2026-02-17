@@ -64,7 +64,7 @@ const COLORS = ['#f59e0b', '#10b981', '#6b7280']
 // ─── Component ──────────────────────────────────────
 
 export function ReconciliationDashboardPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const [startDate, setStartDate] = useState(() => {
         const d = new Date()
@@ -212,7 +212,7 @@ export function ReconciliationDashboardPage() {
                                             <Cell key={i} fill={entry.color || COLORS[i % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(v: number | undefined) => [v ?? 0, 'Qtd']} />
+                                    <Tooltip formatter={(v: number | undefined) => [v ?? 0, 'Qtd'] as [number, string]} />
                                     <Legend />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -285,7 +285,7 @@ export function ReconciliationDashboardPage() {
                             </h3>
                             {data.top_unreconciled.length === 0 ? (
                                 <div className="py-6 text-center">
-                                    <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-400" />
+                                    <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-success" />
                                     <p className="text-sm text-surface-400">Nenhum lançamento pendente!</p>
                                 </div>
                             ) : (

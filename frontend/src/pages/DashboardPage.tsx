@@ -30,7 +30,9 @@ function TrendBadge({ current, previous, invert = false }: {
     return (
         <span className={cn(
             'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums',
-            isPositive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+            isPositive
+                ? 'bg-success/10 text-success dark:bg-success/20 dark:text-success'
+                : 'bg-danger/10 text-danger dark:bg-danger/20 dark:text-danger'
         )}>
             <Icon className="h-3 w-3" />
             {Math.abs(pct)}%
@@ -170,8 +172,8 @@ export function DashboardPage() {
                             />
                         </div>
                         <div className="mt-3 flex items-center gap-4 text-xs text-surface-500 dark:text-surface-400">
-                            <span>Receita: <strong className="text-emerald-600 dark:text-emerald-400">{fmtBRL(s.revenue_month ?? 0)}</strong></span>
-                            <span>Despesa: <strong className="text-red-600 dark:text-red-400">{fmtBRL(s.expenses_month ?? 0)}</strong></span>
+                            <span>Receita: <strong className="text-success">{fmtBRL(s.revenue_month ?? 0)}</strong></span>
+                            <span>Despesa: <strong className="text-danger">{fmtBRL(s.expenses_month ?? 0)}</strong></span>
                         </div>
                     </div>
 
@@ -194,7 +196,7 @@ export function DashboardPage() {
                     <div className="rounded-xl border border-default bg-surface-0 dark:bg-surface-800 p-5 shadow-card animate-fade-in stagger-2">
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-label text-surface-500 dark:text-surface-500">Concluídas</span>
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                            <CheckCircle2 className="h-4 w-4 text-success" />
                         </div>
                         <div className="flex items-end gap-2">
                             <p className="text-display text-surface-900 dark:text-surface-50">{s.completed_month ?? 0}</p>
@@ -329,7 +331,7 @@ export function DashboardPage() {
                                             </div>
                                         ))}
                                     </div>
-                                    ) : (
+                                ) : (
                                     <p className="text-center text-sm text-surface-400 dark:text-surface-500 py-8">Sem dados</p>
                                 )
                             })()}

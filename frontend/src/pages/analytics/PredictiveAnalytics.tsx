@@ -10,7 +10,8 @@ import {
     TrendingUp,
     MessageSquare,
     ArrowRight,
-    Sparkles
+    Sparkles,
+    CheckCircle2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -205,7 +206,7 @@ function AnomaliesSection() {
 
                     {data?.anomalies?.length === 0 ? (
                         <div className="text-center py-12 bg-surface-50 rounded-lg text-surface-500 border border-dashed border-default">
-                            <CheckCircle2 className="h-8 w-8 mx-auto text-emerald-500 mb-2" />
+                            <CheckCircle2 className="h-8 w-8 mx-auto text-success mb-2" />
                             Nenhuma anomalia detectada nos últimos 24 meses. Comportamento dentro do esperado.
                         </div>
                     ) : (

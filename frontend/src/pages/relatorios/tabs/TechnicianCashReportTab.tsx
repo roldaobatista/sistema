@@ -55,7 +55,7 @@ export function TechnicianCashReportTab({ data }: Props) {
                             <CartesianGrid strokeDasharray="3 3" className="stroke-surface-200" />
                             <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
                             <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
-                            <Tooltip formatter={(v: any) => [fmtBRL(Number(v)), '']} />
+                            <Tooltip formatter={(v: any) => [fmtBRL(Number(v)), ''] as any} />
                             <Legend />
                             <Bar dataKey="Créditos" fill="#22c55e" animationDuration={800} />
                             <Bar dataKey="Débitos" fill="#ef4444" animationDuration={800} />
