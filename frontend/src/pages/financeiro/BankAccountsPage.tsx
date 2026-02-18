@@ -4,6 +4,7 @@ import {
     Building2, Plus, Pencil, Trash2, Search, CheckCircle, XCircle,
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -59,6 +60,7 @@ export function BankAccountsPage() {
         mutationFn: (data: typeof emptyForm) => api.post('/bank-accounts', data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['bank-accounts'] })
+            broadcastQueryInvalidation(['bank-accounts'], 'Contas Bancárias')
             setShowModal(false)
             toast.success('Conta bancária criada com sucesso')
         },
@@ -71,6 +73,7 @@ export function BankAccountsPage() {
         mutationFn: ({ id, data }: { id: number; data: typeof emptyForm }) => api.put(`/bank-accounts/${id}`, data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['bank-accounts'] })
+            broadcastQueryInvalidation(['bank-accounts'], 'Contas Bancárias')
             setShowModal(false)
             setEditing(null)
             toast.success('Conta bancária atualizada com sucesso')
@@ -84,6 +87,7 @@ export function BankAccountsPage() {
         mutationFn: (id: number) => api.delete(`/bank-accounts/${id}`),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['bank-accounts'] })
+            broadcastQueryInvalidation(['bank-accounts'], 'Contas Bancárias')
             setDeleteTarget(null)
             toast.success('Conta bancária excluída')
         },

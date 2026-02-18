@@ -72,9 +72,11 @@ const AccountPayableCategoriesPage = lazy(() => import('@/pages/financeiro/Accou
 const BankAccountsPage = lazy(() => import('@/pages/financeiro/BankAccountsPage').then(m => ({ default: m.BankAccountsPage })))
 const FundTransfersPage = lazy(() => import('@/pages/financeiro/FundTransfersPage').then(m => ({ default: m.FundTransfersPage })))
 const FiscalNotesPage = lazy(() => import('@/pages/fiscal/FiscalNotesPage'))
+const FiscalConfigPage = lazy(() => import('@/pages/fiscal/FiscalConfigPage'))
 const ReportsPage = lazy(() => import('@/pages/relatorios/ReportsPage').then(m => ({ default: m.ReportsPage })))
 const AnalyticsHubPage = lazy(() => import('@/pages/analytics/AnalyticsHubPage').then(m => ({ default: m.AnalyticsHubPage })))
 const SettingsPage = lazy(() => import('@/pages/configuracoes/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const LookupsPage = lazy(() => import('@/pages/configuracoes/LookupsPage').then(m => ({ default: m.LookupsPage })))
 const BranchesPage = lazy(() => import('@/pages/configuracoes/BranchesPage').then(m => ({ default: m.BranchesPage })))
 const ProfilePage = lazy(() => import('@/pages/configuracoes/ProfilePage').then(m => ({ default: m.ProfilePage })))
 const TenantManagementPage = lazy(() => import('@/pages/configuracoes/TenantManagementPage').then(m => ({ default: m.TenantManagementPage })))
@@ -278,10 +280,14 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       staleTime: 30_000,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
     },
   },
 })
+
+// Cross-tab sync: listen for invalidation messages from other tabs
+import { initCrossTabSync } from '@/lib/cross-tab-sync'
+initCrossTabSync(queryClient)
 
 const routePermissionRules: Array<{ match: string; permission: string | null }> = [
   { match: '/central/regras', permission: 'central.manage.rules' },
@@ -336,6 +342,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
   { match: '/financeiro/contas-bancarias', permission: 'financial.bank_account.view' },
   { match: '/financeiro/transferencias-tecnicos', permission: 'financial.fund_transfer.view' },
+  { match: '/fiscal/configuracoes', permission: 'fiscal.config.manage' },
   { match: '/fiscal/notas', permission: 'fiscal.note.view' },
   { match: '/estoque/movimentacoes', permission: 'estoque.movement.view' },
   { match: '/estoque/armazens', permission: 'estoque.warehouse.view' },
@@ -364,6 +371,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/configuracoes/whatsapp', permission: 'whatsapp.config.view' },
   { match: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
   { match: '/configuracoes', permission: 'platform.settings.view' },
+  { match: '/configuracoes/cadastros-auxiliares', permission: 'lookups.view' },
   { match: '/financeiro/regua-cobranca', permission: 'finance.receivable.view' },
   { match: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
   { match: '/financeiro/reembolsos', permission: 'expenses.expense.view' },
@@ -657,6 +665,7 @@ export default function App() {
 
               {/* Fiscal */}
               <Route path="/fiscal/notas" element={<ProtectedRoute><FiscalNotesPage /></ProtectedRoute>} />
+              <Route path="/fiscal/configuracoes" element={<ProtectedRoute><FiscalConfigPage /></ProtectedRoute>} />
 
               {/* Estoque */}
               <Route path="/estoque" element={<ProtectedRoute><StockDashboardPage /></ProtectedRoute>} />
@@ -719,6 +728,7 @@ export default function App() {
 
               {/* Configurações */}
               <Route path="/configuracoes" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/configuracoes/cadastros-auxiliares" element={<ProtectedRoute><LookupsPage /></ProtectedRoute>} />
               <Route path="/configuracoes/filiais" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
               <Route path="/configuracoes/empresas" element={<ProtectedRoute><TenantManagementPage /></ProtectedRoute>} />
               <Route path="/configuracoes/auditoria" element={<ProtectedRoute><AuditLogPage /></ProtectedRoute>} />

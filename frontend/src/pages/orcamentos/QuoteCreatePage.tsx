@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import {
     ArrowLeft, ArrowRight, Plus, Trash2, Search, Package, Wrench, Save, Scale,
 } from 'lucide-react'
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 import QuickEquipmentModal from '@/components/common/QuickEquipmentModal'
+import QuickProductServiceModal from '@/components/common/QuickProductServiceModal'
 
 // Strings constant for easy localization in the future
 const STRINGS = {
@@ -75,6 +77,8 @@ export function QuoteCreatePage() {
     const [blocks, setBlocks] = useState<EquipmentBlock[]>([])
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
     const [showQuickEquipmentModal, setShowQuickEquipmentModal] = useState(false)
+    const [showQuickProductService, setShowQuickProductService] = useState(false)
+    const [quickPSTab, setQuickPSTab] = useState<'product' | 'service'>('product')
 
     const { data: preselectedCustomer } = useQuery({
         queryKey: ['customer', customerIdFromUrl],
@@ -82,11 +86,30 @@ export function QuoteCreatePage() {
         enabled: !!customerIdFromUrl,
     })
 
+    // Fetch default validity days from settings
+    const { data: settingsRes } = useQuery({
+        queryKey: ['settings'],
+        queryFn: () => api.get('/settings', { params: { group: 'quotes' } }),
+    })
+
     useEffect(() => {
         if (preselectedCustomer?.name) {
             setCustomerSearch(preselectedCustomer.name)
         }
     }, [preselectedCustomer])
+
+    // Auto-populate valid_until from setting
+    useEffect(() => {
+        if (validUntil) return // don't override if user already set it
+        const settings = settingsRes?.data ?? []
+        const daysSetting = settings.find((s: any) => s.key === 'quote_default_validity_days')
+        const days = daysSetting ? parseInt(daysSetting.value) : 30
+        if (days > 0) {
+            const date = new Date()
+            date.setDate(date.getDate() + days)
+            setValidUntil(date.toISOString().slice(0, 10))
+        }
+    }, [settingsRes]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Lookups
     const { data: customersRes } = useQuery({
@@ -184,6 +207,7 @@ export function QuoteCreatePage() {
             toast.success('Orçamento criado com sucesso!')
             qc.invalidateQueries({ queryKey: ['quotes'] })
             qc.invalidateQueries({ queryKey: ['quotes-summary'] })
+            broadcastQueryInvalidation(['quotes', 'quotes-summary', 'dashboard'], 'Orçamento')
             navigate('/orcamentos')
         },
         onError: (err: any) => {
@@ -401,23 +425,43 @@ export function QuoteCreatePage() {
                                 ))}
 
                                 {/* Add item buttons */}
-                                <div className="flex gap-2">
-                                    <select onChange={e => {
-                                        const p = products.find((pr: any) => pr.id === Number(e.target.value))
-                                        if (p) addItem(bIdx, 'product', p.id, p.name, p.sell_price ?? 0)
-                                        e.target.value = ''
-                                    }} className="rounded-lg border border-default bg-surface-50 px-2 py-1.5 text-xs">
-                                        <option value="">{STRINGS.addProduct}</option>
-                                        {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                    </select>
-                                    <select onChange={e => {
-                                        const s = services.find((sv: any) => sv.id === Number(e.target.value))
-                                        if (s) addItem(bIdx, 'service', s.id, s.name, s.default_price ?? 0)
-                                        e.target.value = ''
-                                    }} className="rounded-lg border border-default bg-surface-50 px-2 py-1.5 text-xs">
-                                        <option value="">{STRINGS.addService}</option>
-                                        {services.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
+                                <div className="flex gap-2 flex-wrap">
+                                    <div className="flex gap-1 items-center">
+                                        <select onChange={e => {
+                                            const p = products.find((pr: any) => pr.id === Number(e.target.value))
+                                            if (p) addItem(bIdx, 'product', p.id, p.name, p.sell_price ?? 0)
+                                            e.target.value = ''
+                                        }} className="rounded-lg border border-default bg-surface-50 px-2 py-1.5 text-xs">
+                                            <option value="">{STRINGS.addProduct}</option>
+                                            {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setQuickPSTab('product'); setShowQuickProductService(true) }}
+                                            title="Cadastrar novo produto"
+                                            className="flex items-center justify-center rounded-lg border border-dashed border-brand-300 bg-brand-50 h-[30px] w-[30px] text-brand-600 hover:bg-brand-100 hover:border-brand-400 transition-colors"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                    <div className="flex gap-1 items-center">
+                                        <select onChange={e => {
+                                            const s = services.find((sv: any) => sv.id === Number(e.target.value))
+                                            if (s) addItem(bIdx, 'service', s.id, s.name, s.default_price ?? 0)
+                                            e.target.value = ''
+                                        }} className="rounded-lg border border-default bg-surface-50 px-2 py-1.5 text-xs">
+                                            <option value="">{STRINGS.addService}</option>
+                                            {services.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setQuickPSTab('service'); setShowQuickProductService(true) }}
+                                            title="Cadastrar novo serviço"
+                                            className="flex items-center justify-center rounded-lg border border-dashed border-emerald-300 bg-emerald-50 h-[30px] w-[30px] text-emerald-600 hover:bg-emerald-100 hover:border-emerald-400 transition-colors"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -439,6 +483,12 @@ export function QuoteCreatePage() {
                                 customerName={customerSearch}
                             />
                         )}
+
+                        <QuickProductServiceModal
+                            open={showQuickProductService}
+                            onOpenChange={setShowQuickProductService}
+                            defaultTab={quickPSTab}
+                        />
                     </div>
                 )}
 

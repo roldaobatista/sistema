@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync';
 import { PageHeader } from '@/components/ui/pageheader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,19 +49,19 @@ export default function ManagementReviewPage() {
 
   const createMut = useMutation({
     mutationFn: (d: any) => api.post('/management-reviews', d),
-    onSuccess: () => { toast.success('Revisão registrada'); setShowForm(false); setForm({ meeting_date: '', title: '', participants: '', agenda: '', decisions: '', summary: '' }); qc.invalidateQueries({ queryKey: ['management-reviews'] }); qc.invalidateQueries({ queryKey: ['management-reviews-dashboard'] }); },
+    onSuccess: () => { toast.success('Revisão registrada'); setShowForm(false); setForm({ meeting_date: '', title: '', participants: '', agenda: '', decisions: '', summary: '' }); qc.invalidateQueries({ queryKey: ['management-reviews'] }); qc.invalidateQueries({ queryKey: ['management-reviews-dashboard'] }); broadcastQueryInvalidation(['management-reviews', 'management-reviews-dashboard'], 'Revisão pela Direção'); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Erro ao criar'),
   });
 
   const addActionMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.post(`/management-reviews/${id}/actions`, data),
-    onSuccess: () => { setActionForm({ description: '', responsible_id: '', due_date: '' }); qc.invalidateQueries({ queryKey: ['management-review-detail', detailId] }); qc.invalidateQueries({ queryKey: ['management-reviews-dashboard'] }); },
+    onSuccess: () => { setActionForm({ description: '', responsible_id: '', due_date: '' }); qc.invalidateQueries({ queryKey: ['management-review-detail', detailId] }); qc.invalidateQueries({ queryKey: ['management-reviews-dashboard'] }); broadcastQueryInvalidation(['management-review-detail', 'management-reviews-dashboard'], 'Revisão pela Direção'); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Erro ao adicionar ação'),
   });
 
   const updateActionMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/management-reviews/actions/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['management-review-detail', detailId] }); qc.invalidateQueries({ queryKey: ['management-reviews-dashboard'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['management-review-detail', detailId] }); qc.invalidateQueries({ queryKey: ['management-reviews-dashboard'] }); broadcastQueryInvalidation(['management-review-detail', 'management-reviews-dashboard'], 'Revisão pela Direção'); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Erro ao atualizar'),
   });
 

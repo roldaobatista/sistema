@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, Plus, CheckCircle2, Circle, Play, Users, Search, Trash2, Pencil } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -59,19 +60,19 @@ export default function OnboardingPage() {
 
     const createTmplMut = useMutation({
         mutationFn: (data: any) => api.post('/hr/onboarding/templates', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['onboarding-templates'] }); setShowTemplateModal(false); toast.success('Template criado') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['onboarding-templates'] }); broadcastQueryInvalidation(['onboarding-templates'], 'Onboarding'); setShowTemplateModal(false); toast.success('Template criado') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao criar template'),
     })
 
     const startMut = useMutation({
         mutationFn: (data: any) => api.post('/hr/onboarding/start', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['onboarding-checklists'] }); setShowStartModal(false); toast.success('Onboarding iniciado') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['onboarding-checklists'] }); broadcastQueryInvalidation(['onboarding-checklists'], 'Onboarding'); setShowStartModal(false); toast.success('Onboarding iniciado') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao iniciar onboarding'),
     })
 
     const completeMut = useMutation({
         mutationFn: (itemId: number) => api.post(`/hr/onboarding/items/${itemId}/complete`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['onboarding-checklists'] }); toast.success('Tarefa concluída') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['onboarding-checklists'] }); broadcastQueryInvalidation(['onboarding-checklists'], 'Onboarding'); toast.success('Tarefa concluída') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao concluir tarefa'),
     })
 

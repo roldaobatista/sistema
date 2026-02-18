@@ -81,7 +81,9 @@ class InvoiceFiscalTest extends TestCase
 
     public function test_cancelar_nota_inexistente_returns_404(): void
     {
-        $response = $this->postJson('/api/v1/fiscal/notas/99999/cancelar');
+        $response = $this->postJson('/api/v1/fiscal/notas/99999/cancelar', [
+            'justificativa' => 'Teste de cancelamento',
+        ]);
         $response->assertStatus(404);
     }
 }

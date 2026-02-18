@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Shield, Trash2, Copy, ShieldOff, Pencil } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
@@ -70,6 +71,7 @@ export function RolesPage() {
                 : api.post('/roles', data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] })
+            broadcastQueryInvalidation(['roles'], 'Roles')
             setShowForm(false)
             toast.success(editingRole ? 'Role atualizada com sucesso!' : 'Role criada com sucesso!')
         },
@@ -82,6 +84,7 @@ export function RolesPage() {
         mutationFn: (id: number) => api.delete(`/roles/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] })
+            broadcastQueryInvalidation(['roles'], 'Roles')
             setDeleteConfirmRole(null)
             toast.success('Role excluída com sucesso!')
         },
@@ -95,6 +98,7 @@ export function RolesPage() {
             api.post(`/roles/${roleId}/clone`, { name, ...(display_name ? { display_name } : {}) }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] })
+            broadcastQueryInvalidation(['roles'], 'Roles')
             setCloneRole(null)
             setCloneName('')
             setCloneDisplayName('')

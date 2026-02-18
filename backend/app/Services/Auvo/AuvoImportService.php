@@ -10,6 +10,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Quote;
 use App\Models\Service;
 use App\Models\WorkOrder;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +76,7 @@ class AuvoImportService
                 AuvoImport::ENTITY_SERVICES => $this->importServices($import, $strategy),
                 AuvoImport::ENTITY_TASKS => $this->importTasks($import, $strategy),
                 AuvoImport::ENTITY_EXPENSES => $this->importExpenses($import, $strategy),
+                'quotations' => $this->importQuotations($import, $strategy),
                 default => $this->importGeneric($import, $entity),
             };
 
@@ -359,8 +361,18 @@ class AuvoImportService
 
     private function importServices(AuvoImport $import, string $strategy): array
     {
-        return $this->importWithMapping($import, $strategy, function (array $mapped) use ($import) {
+        Log::info('Auvo importServices: starting', [
+            'tenant_id' => $import->tenant_id,
+            'strategy' => $strategy,
+        ]);
+
+        $result = $this->importWithMapping($import, $strategy, function (array $mapped) use ($import) {
             $data = AuvoFieldMapper::stripMetadata($mapped);
+
+            Log::debug('Auvo importServices: processing record', [
+                'auvo_id' => $mapped['_auvo_id'] ?? null,
+                'raw_fields' => array_keys($data),
+            ]);
 
             if (isset($data['default_price']) && is_string($data['default_price'])) {
                 $data['default_price'] = bcadd(str_replace(',', '.', $data['default_price']), '0', 2);
@@ -376,6 +388,9 @@ class AuvoImportService
             }
             return null;
         }, Service::class);
+
+        Log::info('Auvo importServices: completed', $result);
+        return $result;
     }
 
     private function importTasks(AuvoImport $import, string $strategy): array
@@ -503,6 +518,99 @@ class AuvoImportService
         }, Expense::class);
     }
 
+    private function importQuotations(AuvoImport $import, string $strategy): array
+    {
+        Log::info('Auvo importQuotations: starting', [
+            'tenant_id' => $import->tenant_id,
+            'strategy' => $strategy,
+        ]);
+
+        $result = $this->importWithMapping($import, $strategy, function (array $mapped) use ($import) {
+            $data = AuvoFieldMapper::stripMetadata($mapped);
+
+            Log::debug('Auvo importQuotations: processing record', [
+                'auvo_id' => $mapped['_auvo_id'] ?? null,
+                'raw_fields' => array_keys($data),
+            ]);
+
+            // Generate quote_number
+            $data['quote_number'] = Quote::nextNumber($import->tenant_id);
+
+            // Map title to observations (Quote has no title field)
+            if (!empty($data['title'])) {
+                $data['observations'] = $data['title'];
+                unset($data['title']);
+            }
+
+            // Map notes to internal_notes
+            if (!empty($data['notes'])) {
+                $data['internal_notes'] = $data['notes'];
+                unset($data['notes']);
+            }
+
+            // Resolve customer via AuvoIdMapping (required NOT NULL field)
+            $customerAuvoId = $mapped['_customer_auvo_id'] ?? null;
+            if ($customerAuvoId) {
+                $localCustomerId = AuvoIdMapping::findLocal('customers', (int) $customerAuvoId, $import->tenant_id);
+                if ($localCustomerId) {
+                    $data['customer_id'] = $localCustomerId;
+                }
+            }
+
+            // customer_id is required — skip record if not resolved (never assign to random customer)
+            if (empty($data['customer_id'])) {
+                Log::warning('Auvo importQuotations: skipping record — customer_id could not be resolved', [
+                    'auvo_id' => $mapped['_auvo_id'] ?? null,
+                    'customer_auvo_id' => $customerAuvoId,
+                    'hint' => 'Import customers first to create AuvoIdMapping entries.',
+                ]);
+                return null; // will be skipped by importWithMapping
+            }
+
+            // seller_id is required — use import user as fallback
+            $data['seller_id'] = $import->user_id;
+
+            // Map Auvo status to QuoteStatus
+            $data['status'] = $this->mapQuotationStatus($data['status'] ?? null);
+
+            // Normalize total
+            if (isset($data['total']) && is_string($data['total'])) {
+                $data['total'] = bcadd(str_replace(',', '.', $data['total']), '0', 2);
+            }
+
+            // Parse valid_until date
+            if (!empty($data['valid_until'])) {
+                try {
+                    $data['valid_until'] = \Carbon\Carbon::parse($data['valid_until'])->toDateString();
+                } catch (\Throwable) {
+                    unset($data['valid_until']);
+                }
+            }
+
+            return $data;
+        }, function (array $data, int $tenantId) {
+            // Quotations have no natural unique key — rely on AuvoIdMapping
+            return null;
+        }, Quote::class);
+
+        Log::info('Auvo importQuotations: completed', $result);
+        return $result;
+    }
+
+    private function mapQuotationStatus(?string $auvoStatus): string
+    {
+        // Auvo quotation statuses vary — map to Kalibrium QuoteStatus values
+        return match (strtolower(trim((string) $auvoStatus))) {
+            'draft', 'rascunho' => 'draft',
+            'sent', 'enviado' => 'sent',
+            'approved', 'aprovado' => 'approved',
+            'rejected', 'rejeitado', 'recusado' => 'rejected',
+            'expired', 'expirado' => 'expired',
+            'invoiced', 'faturado' => 'invoiced',
+            default => 'draft',
+        };
+    }
+
     /**
      * Generic importer for entities without special logic (segments, keywords, etc.).
      * Just stores the ID mapping without creating Kalibrium records.
@@ -513,7 +621,7 @@ class AuvoImportService
         $fieldMap = AuvoFieldMapper::getMap($entity);
 
         $totalFetched = 0;
-        $imported = 0;
+        $totalMapped = 0;
         $skipped = 0;
         $errors = 0;
         $errorLog = [];
@@ -536,7 +644,7 @@ class AuvoImportService
                     $mapping->update(['import_id' => $import->id]);
                 }
 
-                $imported++;
+                $totalMapped++;
             } catch (\Throwable $e) {
                 $errors++;
                 $errorLog[] = [
@@ -548,7 +656,7 @@ class AuvoImportService
 
         $import->update([
             'total_fetched' => $totalFetched,
-            'total_imported' => $imported,
+            'total_imported' => 0, // No records created — mapping only
             'total_skipped' => $skipped,
             'total_errors' => $errors,
             'error_log' => $errorLog ?: null,
@@ -556,10 +664,12 @@ class AuvoImportService
 
         return [
             'total_fetched' => $totalFetched,
-            'total_imported' => $imported,
+            'total_imported' => 0,
+            'total_mapped' => $totalMapped,
             'total_updated' => 0,
             'total_skipped' => $skipped,
             'total_errors' => $errors,
+            'mapping_only' => true,
         ];
     }
 
@@ -614,6 +724,14 @@ class AuvoImportService
 
                 // Transform data
                 $data = $transformer($mapped);
+
+                // Transformer returning null means skip this record
+                if ($data === null) {
+                    $skipped++;
+                    DB::commit();
+                    continue;
+                }
+
                 $data['tenant_id'] = $import->tenant_id;
 
                 // Check for duplicate by natural key
@@ -739,6 +857,7 @@ class AuvoImportService
             'services' => Service::class,
             'tasks' => WorkOrder::class,
             'expenses' => Expense::class,
+            'quotations' => Quote::class,
             default => null,
         };
     }

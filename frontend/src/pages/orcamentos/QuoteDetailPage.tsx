@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { crmFeaturesApi } from '@/lib/crm-features-api'
 import { QUOTE_STATUS } from '@/lib/constants'
 import { QUOTE_STATUS_CONFIG } from '@/features/quotes/constants'
@@ -80,6 +81,7 @@ export function QuoteDetailPage() {
         qc.invalidateQueries({ queryKey: ['quote', id] })
         qc.invalidateQueries({ queryKey: ['quotes'] })
         qc.invalidateQueries({ queryKey: ['quotes-summary'] })
+        broadcastQueryInvalidation(['quotes', 'quotes-summary', 'dashboard'], 'Orçamento')
     }
 
     const requestInternalApprovalMut = useMutation({

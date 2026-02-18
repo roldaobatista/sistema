@@ -111,6 +111,10 @@ class QuoteController extends Controller
 
     public function show(Quote $quote): JsonResponse
     {
+        if ($quote->tenant_id !== $this->currentTenantId()) {
+            return response()->json(['message' => 'Orçamento não encontrado'], 404);
+        }
+
         return response()->json(
             $quote->load([
                 'customer.contacts',

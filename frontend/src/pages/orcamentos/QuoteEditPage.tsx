@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { QUOTE_STATUS } from '@/lib/constants'
 import type { Quote, QuoteEquipment, QuoteItem } from '@/types/quote'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { Card } from '@/components/ui/card'
 import { ArrowLeft, Save, Plus, Trash2, Package, Wrench } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
+import QuickProductServiceModal from '@/components/common/QuickProductServiceModal'
 
 const formatCurrency = (v: number | string) => {
     const n = typeof v === 'string' ? parseFloat(v) : v
@@ -44,6 +46,9 @@ export function QuoteEditPage() {
     const [addItemEquipmentId, setAddItemEquipmentId] = useState<number | null>(null)
     const [newItem, setNewItem] = useState<ItemForm>({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
     const [showAddEquipment, setShowAddEquipment] = useState(false)
+    const [showQuickProductService, setShowQuickProductService] = useState(false)
+    const [quickPSTab, setQuickPSTab] = useState<'product' | 'service'>('product')
+    const [removeEquipmentTarget, setRemoveEquipmentTarget] = useState<{ quoteEquipId: number; equipmentName: string } | null>(null)
 
     const { data: quote, isLoading } = useQuery<Quote>({
         queryKey: ['quote', id],
@@ -76,6 +81,7 @@ export function QuoteEditPage() {
         qc.invalidateQueries({ queryKey: ['quote', id] })
         qc.invalidateQueries({ queryKey: ['quotes'] })
         qc.invalidateQueries({ queryKey: ['quotes-summary'] })
+        broadcastQueryInvalidation(['quotes', 'quotes-summary', 'dashboard'], 'Orçamento')
     }
 
     const updateMut = useMutation({
@@ -189,16 +195,16 @@ export function QuoteEditPage() {
                         <Input type="number" min={0} step={0.01} value={displacementValue} onChange={(e) => setDisplacementValue(parseFloat(e.target.value) || 0)} />
                     </div>
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-content-secondary mb-1">Observações</label>
-                        <textarea className="w-full rounded-lg border border-default p-3 text-sm min-h-[80px]" value={observations} onChange={(e) => setObservations(e.target.value)} />
+                        <label htmlFor="quote-observations" className="block text-sm font-medium text-content-secondary mb-1">Observações</label>
+                        <textarea id="quote-observations" aria-label="Observações do orçamento" className="w-full rounded-lg border border-default p-3 text-sm min-h-[80px]" value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Observações visíveis ao cliente" />
                     </div>
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-content-secondary mb-1">Notas Internas</label>
-                        <textarea className="w-full rounded-lg border border-default p-3 text-sm min-h-[60px]" value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} />
+                        <label htmlFor="quote-internal-notes" className="block text-sm font-medium text-content-secondary mb-1">Notas Internas</label>
+                        <textarea id="quote-internal-notes" aria-label="Notas internas do orçamento" className="w-full rounded-lg border border-default p-3 text-sm min-h-[60px]" value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} placeholder="Notas visíveis apenas internamente" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-content-secondary mb-1">Origem Comercial</label>
-                        <select value={source} onChange={e => setSource(e.target.value)}
+                        <label htmlFor="quote-source" className="block text-sm font-medium text-content-secondary mb-1">Origem Comercial</label>
+                        <select id="quote-source" aria-label="Origem comercial" value={source} onChange={e => setSource(e.target.value)}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                             <option value="">Selecione (opcional)</option>
                             <option value="prospeccao">Prospecção</option>
@@ -268,7 +274,7 @@ export function QuoteEditPage() {
                                 variant="danger"
                                 size="sm"
                                 icon={<Trash2 className="h-4 w-4" />}
-                                onClick={() => { if (confirm('Remover equipamento e todos os seus itens?')) removeEquipmentMut.mutate({ quoteEquipId: eq.id }) }}
+                                onClick={() => setRemoveEquipmentTarget({ quoteEquipId: eq.id, equipmentName: eq.equipment?.tag || eq.equipment?.model || 'Equipamento' })}
                                 disabled={removeEquipmentMut.isPending}
                             >
                                 Remover
@@ -294,29 +300,45 @@ export function QuoteEditPage() {
                             <h4 className="text-sm font-medium text-content-primary mb-3">Novo Item</h4>
                             <div className="grid gap-3 md:grid-cols-2">
                                 <div>
-                                    <label className="text-xs text-content-secondary">Tipo</label>
-                                    <select className="w-full mt-1 rounded-lg border border-default p-2 text-sm" value={newItem.type} onChange={(e) => setNewItem({ ...newItem, type: e.target.value as 'product' | 'service', product_id: null, service_id: null })}>
+                                    <label htmlFor="new-item-type" className="text-xs text-content-secondary">Tipo</label>
+                                    <select id="new-item-type" aria-label="Tipo do item (produto ou serviço)" className="w-full mt-1 rounded-lg border border-default p-2 text-sm" value={newItem.type} onChange={(e) => setNewItem({ ...newItem, type: e.target.value as 'product' | 'service', product_id: null, service_id: null })}>
                                         <option value="product">Produto</option>
                                         <option value="service">Serviço</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-content-secondary">{newItem.type === 'product' ? 'Produto' : 'Serviço'}</label>
-                                    <select className="w-full mt-1 rounded-lg border border-default p-2 text-sm" onChange={(e) => {
-                                        const val = parseInt(e.target.value)
-                                        if (newItem.type === 'product') {
-                                            const p = (products ?? []).find((x: any) => x.id === val)
-                                            setNewItem({ ...newItem, product_id: val, unit_price: p?.price ?? 0, original_price: p?.price ?? 0, custom_description: p?.name ?? '' })
-                                        } else {
-                                            const s = (services ?? []).find((x: any) => x.id === val)
-                                            setNewItem({ ...newItem, service_id: val, unit_price: s?.price ?? 0, original_price: s?.price ?? 0, custom_description: s?.name ?? '' })
-                                        }
-                                    }}>
-                                        <option value="">Selecione...</option>
-                                        {(newItem.type === 'product' ? products : services)?.map((x: any) => (
-                                            <option key={x.id} value={x.id}>{x.name}</option>
-                                        ))}
-                                    </select>
+                                    <label htmlFor="new-item-product-service" className="text-xs text-content-secondary">{newItem.type === 'product' ? 'Produto' : 'Serviço'}</label>
+                                    <div className="flex gap-1 items-center mt-1">
+                                        <select id="new-item-product-service" aria-label={newItem.type === 'product' ? 'Selecionar produto' : 'Selecionar serviço'} className="flex-1 rounded-lg border border-default p-2 text-sm" onChange={(e) => {
+                                            const val = parseInt(e.target.value)
+                                            if (newItem.type === 'product') {
+                                                const p = (products ?? []).find((x: any) => x.id === val)
+                                                const price = p?.sell_price ?? 0
+                                                setNewItem({ ...newItem, product_id: val, unit_price: price, original_price: price, custom_description: p?.name ?? '' })
+                                            } else {
+                                                const s = (services ?? []).find((x: any) => x.id === val)
+                                                const price = s?.default_price ?? 0
+                                                setNewItem({ ...newItem, service_id: val, unit_price: price, original_price: price, custom_description: s?.name ?? '' })
+                                            }
+                                        }}>
+                                            <option value="">Selecione...</option>
+                                            {(newItem.type === 'product' ? products : services)?.map((x: any) => (
+                                                <option key={x.id} value={x.id}>{x.name}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setQuickPSTab(newItem.type); setShowQuickProductService(true) }}
+                                            title={`Cadastrar novo ${newItem.type === 'product' ? 'produto' : 'serviço'}`}
+                                            className={`flex items-center justify-center rounded-lg border border-dashed h-[34px] w-[34px] transition-colors ${
+                                                newItem.type === 'product'
+                                                    ? 'border-brand-300 bg-brand-50 text-brand-600 hover:bg-brand-100 hover:border-brand-400'
+                                                    : 'border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:border-emerald-400'
+                                            }`}
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-xs text-content-secondary">Quantidade</label>
@@ -355,6 +377,37 @@ export function QuoteEditPage() {
                     )}
                 </Card>
             ))}
+
+            <QuickProductServiceModal
+                open={showQuickProductService}
+                onOpenChange={setShowQuickProductService}
+                defaultTab={quickPSTab}
+            />
+
+            {removeEquipmentTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setRemoveEquipmentTarget(null)}>
+                    <div className="bg-surface-0 rounded-xl p-6 max-w-sm mx-4 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-content-primary mb-2">Remover equipamento</h3>
+                        <p className="text-content-secondary text-sm mb-6">
+                            Remover <strong>{removeEquipmentTarget.equipmentName}</strong> e todos os itens vinculados? Esta ação não pode ser desfeita.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <Button variant="outline" size="sm" onClick={() => setRemoveEquipmentTarget(null)}>Cancelar</Button>
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                    removeEquipmentMut.mutate({ quoteEquipId: removeEquipmentTarget.quoteEquipId })
+                                    setRemoveEquipmentTarget(null)
+                                }}
+                                disabled={removeEquipmentMut.isPending}
+                            >
+                                {removeEquipmentMut.isPending ? 'Removendo...' : 'Remover'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -386,15 +439,15 @@ function EditableItemRow({ item, onSave, onRemove, saving }: {
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="font-medium text-sm">{formatCurrency(item.subtotal)}</span>
-                    <button onClick={() => setEditing(true)} className="p-1 rounded hover:bg-surface-200 opacity-0 group-hover:opacity-100 transition-opacity text-content-secondary">✏️</button>
+                    <button type="button" onClick={() => setEditing(true)} className="p-1 rounded hover:bg-surface-200 opacity-0 group-hover:opacity-100 transition-opacity text-content-secondary" aria-label="Editar item">✏️</button>
                     {confirmDelete ? (
                         <div className="flex gap-1">
-                            <button onClick={onRemove} className="text-xs text-red-600 font-medium">Sim</button>
-                            <button onClick={() => setConfirmDelete(false)} className="text-xs text-content-secondary">Não</button>
+                            <button type="button" onClick={onRemove} className="text-xs text-red-600 font-medium" aria-label="Confirmar remoção do item">Sim</button>
+                            <button type="button" onClick={() => setConfirmDelete(false)} className="text-xs text-content-secondary" aria-label="Cancelar remoção">Não</button>
                         </div>
                     ) : (
-                        <button onClick={() => setConfirmDelete(true)} className="p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity text-red-500">
-                            <Trash2 className="h-3.5 w-3.5" />
+                        <button type="button" onClick={() => setConfirmDelete(true)} className="p-1 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity text-red-500" aria-label="Remover item">
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
                         </button>
                     )}
                 </div>

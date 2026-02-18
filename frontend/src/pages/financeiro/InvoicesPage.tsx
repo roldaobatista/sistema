@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle, Eye, FileText, Plus, Search, Send, Trash2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { useAuthStore } from '@/stores/auth-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -131,7 +132,8 @@ export function InvoicesPage() {
         },
         onSuccess: () => {
             toast.success('Fatura criada com sucesso')
-                qc.invalidateQueries({ queryKey: ['invoices'] })
+            qc.invalidateQueries({ queryKey: ['invoices'] })
+            broadcastQueryInvalidation(['invoices'], 'Fatura')
             setShowModal(false)
             setForm({ customer_id: '', work_order_id: '', nf_number: '', due_date: '', observations: '' })
         },
@@ -150,7 +152,8 @@ export function InvoicesPage() {
         },
         onSuccess: () => {
             toast.success('Fatura excluida com sucesso')
-                qc.invalidateQueries({ queryKey: ['invoices'] })
+            qc.invalidateQueries({ queryKey: ['invoices'] })
+            broadcastQueryInvalidation(['invoices'], 'Fatura')
         },
         onError: (error: ApiErrorLike) => {
             if (error?.response?.status === 403) {
@@ -167,7 +170,8 @@ export function InvoicesPage() {
         },
         onSuccess: () => {
             toast.success('Status da fatura atualizado')
-                qc.invalidateQueries({ queryKey: ['invoices'] })
+            qc.invalidateQueries({ queryKey: ['invoices'] })
+            broadcastQueryInvalidation(['invoices'], 'Fatura')
             if (detailInvoice) {
                 loadInvoiceDetail(detailInvoice.id)
             }

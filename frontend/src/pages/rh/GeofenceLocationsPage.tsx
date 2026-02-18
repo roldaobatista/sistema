@@ -4,6 +4,7 @@ import {
     MapPin, Plus, Pencil, Trash2, Power, PowerOff, Search, Crosshair
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -52,6 +53,7 @@ export default function GeofenceLocationsPage() {
                 : api.post('/hr/geofences', data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['geofences'] })
+            broadcastQueryInvalidation(['geofences'], 'Geofencing')
             setShowModal(false)
             setEditing(null)
             setForm(emptyForm)
@@ -64,6 +66,7 @@ export default function GeofenceLocationsPage() {
         mutationFn: (id: number) => api.delete(`/hr/geofences/${id}`),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['geofences'] })
+            broadcastQueryInvalidation(['geofences'], 'Geofencing')
             setDeleteTarget(null)
             toast.success('Geofence excluído')
         },

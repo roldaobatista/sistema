@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync';
 import { PageHeader } from '@/components/ui/pageheader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,26 +57,26 @@ export default function QualityAuditsPage() {
 
   const createMut = useMutation({
     mutationFn: (data: any) => api.post('/quality-audits', data).then(r => r.data),
-    onSuccess: () => { toast.success('Auditoria criada'); setShowForm(false); qc.invalidateQueries({ queryKey: ['quality-audits'] }); },
+    onSuccess: () => { toast.success('Auditoria criada'); setShowForm(false); qc.invalidateQueries({ queryKey: ['quality-audits'] }); broadcastQueryInvalidation(['quality-audits'], 'Auditorias'); },
     onError: () => toast.error('Erro ao criar auditoria'),
   });
 
   const updateAuditMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/quality-audits/${id}`, data),
-    onSuccess: () => { toast.success('Auditoria atualizada'); qc.invalidateQueries({ queryKey: ['quality-audits'] }); qc.invalidateQueries({ queryKey: ['quality-audit-detail', detailId] }); },
+    onSuccess: () => { toast.success('Auditoria atualizada'); qc.invalidateQueries({ queryKey: ['quality-audits'] }); qc.invalidateQueries({ queryKey: ['quality-audit-detail', detailId] }); broadcastQueryInvalidation(['quality-audits', 'quality-audit-detail'], 'Auditorias'); },
     onError: () => toast.error('Erro ao atualizar'),
   });
 
   const updateItemMut = useMutation({
     mutationFn: ({ itemId, data }: { itemId: number; data: any }) => api.put(`/quality-audits/items/${itemId}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['quality-audit-detail', detailId] }); qc.invalidateQueries({ queryKey: ['quality-audits'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['quality-audit-detail', detailId] }); qc.invalidateQueries({ queryKey: ['quality-audits'] }); broadcastQueryInvalidation(['quality-audit-detail', 'quality-audits'], 'Auditorias'); },
     onError: () => toast.error('Erro ao atualizar item'),
   });
 
   const createCapaFromAuditMut = useMutation({
     mutationFn: (payload: { sourceable_type: string; sourceable_id: number; nonconformity_description: string }) =>
       api.post('/quality/corrective-actions', { type: 'corrective', source: 'audit', ...payload }),
-    onSuccess: () => { toast.success('Ação corretiva criada'); setCapaItem(null); qc.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); },
+    onSuccess: () => { toast.success('Ação corretiva criada'); setCapaItem(null); qc.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); broadcastQueryInvalidation(['quality-corrective-actions'], 'Ação Corretiva'); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Erro ao criar ação'),
   });
 

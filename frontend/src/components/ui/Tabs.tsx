@@ -53,7 +53,7 @@ interface TabsListProps {
 
 export function TabsList({ children, className }: TabsListProps) {
     return (
-        <div className={cn('inline-flex items-center gap-1 rounded-lg bg-surface-100 p-1', className)}>
+        <div className={cn('inline-flex items-center gap-1 rounded-[var(--radius-lg)] bg-surface-100 dark:bg-white/[0.04] p-1', className)}>
             {children}
         </div>
     )
@@ -74,10 +74,10 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
             type="button"
             onClick={() => ctx.onChange(value)}
             className={cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-all',
+                'rounded-[var(--radius-md)] px-3.5 py-1.5 text-sm font-semibold transition-all',
                 isActive
-                    ? 'bg-surface-0 text-surface-900 shadow-sm'
-                    : 'text-surface-500 hover:text-surface-700',
+                    ? 'bg-white dark:bg-white/[0.08] text-surface-900 dark:text-white shadow-sm'
+                    : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300',
                 className
             )}
         >

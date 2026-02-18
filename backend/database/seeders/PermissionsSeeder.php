@@ -480,6 +480,12 @@ class PermissionsSeeder extends Seeder
 
             // ─── Avançado (Frontend route: /avancado) ───
             'advanced.follow_up.view',
+
+            // ─── Cadastros Auxiliares (Lookups) ───
+            'lookups.view',
+            'lookups.create',
+            'lookups.update',
+            'lookups.delete',
         ];
 
         $guard = 'web';

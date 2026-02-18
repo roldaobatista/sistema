@@ -86,24 +86,24 @@ export function PageHeader({
     const shouldShowBackButton = Boolean(backTo || backButton)
 
     return (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
                 <div className="flex items-center gap-2.5">
                     {headerIcon}
-                    <h1 className="text-heading text-surface-900 truncate">
+                    <h1 className="text-heading text-surface-900 dark:text-white truncate">
                         {title}
                     </h1>
                     {count !== undefined && (
-                        <span className="inline-flex items-center rounded-md bg-surface-100 px-2 py-0.5 text-xs font-semibold text-surface-500 tabular-nums">
+                        <span className="inline-flex items-center rounded-[var(--radius-pill)] bg-surface-100 dark:bg-white/[0.06] px-2.5 py-0.5 text-xs font-semibold text-surface-500 tabular-nums">
                             {count}
                         </span>
                     )}
                 </div>
                 {titleDescription && (
-                    <p className="mt-0.5 text-sm text-surface-500">{titleDescription}</p>
+                    <p className="mt-1 text-sm text-surface-500">{titleDescription}</p>
                 )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0">
                 {shouldShowBackButton && (
                     <Button
                         variant="outline"

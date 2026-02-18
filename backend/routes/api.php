@@ -412,18 +412,107 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware('check.permission:finance.receivable.delete')->delete('reconciliation-rules/{rule}', [\App\Http\Controllers\Api\V1\ReconciliationRuleController::class, 'destroy']);
 
-        // Fiscal â€” NF-e / NFS-e
+        // Fiscal — NF-e / NFS-e
         Route::middleware('check.permission:fiscal.note.view')->group(function () {
             Route::get('fiscal/notas', [\App\Http\Controllers\Api\V1\FiscalController::class, 'index']);
             Route::get('fiscal/notas/{id}', [\App\Http\Controllers\Api\V1\FiscalController::class, 'show']);
             Route::get('fiscal/notas/{id}/pdf', [\App\Http\Controllers\Api\V1\FiscalController::class, 'downloadPdf']);
             Route::get('fiscal/notas/{id}/xml', [\App\Http\Controllers\Api\V1\FiscalController::class, 'downloadXml']);
+            Route::get('fiscal/notas/{id}/events', [\App\Http\Controllers\Api\V1\FiscalController::class, 'events']);
+            Route::get('fiscal/stats', [\App\Http\Controllers\Api\V1\FiscalController::class, 'stats']);
+            Route::get('fiscal/contingency/status', [\App\Http\Controllers\Api\V1\FiscalController::class, 'contingencyStatus']);
         });
         Route::middleware('check.permission:fiscal.note.create')->group(function () {
             Route::post('fiscal/nfe', [\App\Http\Controllers\Api\V1\FiscalController::class, 'emitirNFe']);
             Route::post('fiscal/nfse', [\App\Http\Controllers\Api\V1\FiscalController::class, 'emitirNFSe']);
+            Route::post('fiscal/nfe/from-work-order/{workOrderId}', [\App\Http\Controllers\Api\V1\FiscalController::class, 'emitirNFeFromWorkOrder']);
+            Route::post('fiscal/nfse/from-work-order/{workOrderId}', [\App\Http\Controllers\Api\V1\FiscalController::class, 'emitirNFSeFromWorkOrder']);
+            Route::post('fiscal/nfe/from-quote/{quoteId}', [\App\Http\Controllers\Api\V1\FiscalController::class, 'emitirNFeFromQuote']);
+            Route::post('fiscal/inutilizar', [\App\Http\Controllers\Api\V1\FiscalController::class, 'inutilizar']);
         });
         Route::middleware('check.permission:fiscal.note.cancel')->post('fiscal/notas/{id}/cancelar', [\App\Http\Controllers\Api\V1\FiscalController::class, 'cancelar']);
+        Route::middleware('check.permission:fiscal.note.create')->post('fiscal/notas/{id}/carta-correcao', [\App\Http\Controllers\Api\V1\FiscalController::class, 'cartaCorrecao']);
+        Route::middleware('check.permission:fiscal.note.view')->post('fiscal/notas/{id}/email', [\App\Http\Controllers\Api\V1\FiscalController::class, 'sendEmail']);
+        Route::middleware('check.permission:fiscal.note.create')->post('fiscal/contingency/retransmit', [\App\Http\Controllers\Api\V1\FiscalController::class, 'retransmitContingency']);
+        Route::middleware('check.permission:fiscal.note.create')->post('fiscal/contingency/retransmit/{id}', [\App\Http\Controllers\Api\V1\FiscalController::class, 'retransmitSingleNote']);
+
+        // Fiscal Config
+        Route::middleware('check.permission:platform.settings.view')->group(function () {
+            Route::get('fiscal/config', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'show']);
+            Route::get('fiscal/config/certificate/status', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'certificateStatus']);
+            Route::get('fiscal/config/cfop-options', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'cfopOptions']);
+            Route::get('fiscal/config/csosn-options', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'csosnOptions']);
+            Route::get('fiscal/config/iss-exigibilidade-options', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'issExigibilidadeOptions']);
+            Route::get('fiscal/config/lc116-options', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'lc116Options']);
+        });
+        Route::middleware('check.permission:platform.settings.manage')->group(function () {
+            Route::put('fiscal/config', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'update']);
+            Route::post('fiscal/config/certificate', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'uploadCertificate']);
+            Route::delete('fiscal/config/certificate', [\App\Http\Controllers\Api\V1\FiscalConfigController::class, 'removeCertificate']);
+        });
+
+        // Fiscal Expanded — 30 New Features
+        // Reports (#1-5)
+        Route::middleware('check.permission:fiscal.note.view')->group(function () {
+            Route::get('fiscal/reports/sped', [\App\Http\Controllers\Api\V1\FiscalReportController::class, 'spedFiscal']);
+            Route::get('fiscal/reports/tax-dashboard', [\App\Http\Controllers\Api\V1\FiscalReportController::class, 'taxDashboard']);
+            Route::get('fiscal/reports/export-accountant', [\App\Http\Controllers\Api\V1\FiscalReportController::class, 'exportAccountant']);
+            Route::get('fiscal/reports/ledger', [\App\Http\Controllers\Api\V1\FiscalReportController::class, 'ledger']);
+            Route::get('fiscal/reports/tax-forecast', [\App\Http\Controllers\Api\V1\FiscalReportController::class, 'taxForecast']);
+        });
+
+        // Automation (#6-9)
+        Route::middleware('check.permission:fiscal.note.create')->group(function () {
+            Route::post('fiscal/batch', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'emitBatch']);
+            Route::post('fiscal/schedule', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'scheduleEmission']);
+            Route::post('fiscal/notas/{id}/retry-email', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'retryEmail']);
+        });
+
+        // Webhooks (#10)
+        Route::middleware('check.permission:platform.settings.manage')->group(function () {
+            Route::get('fiscal/webhooks', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'listWebhooks']);
+            Route::post('fiscal/webhooks', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'createWebhook']);
+            Route::delete('fiscal/webhooks/{id}', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'deleteWebhook']);
+        });
+
+        // Advanced NF-e (#11-15)
+        Route::middleware('check.permission:fiscal.note.create')->group(function () {
+            Route::post('fiscal/notas/{id}/devolucao', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'emitirDevolucao']);
+            Route::post('fiscal/notas/{id}/complementar', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'emitirComplementar']);
+            Route::post('fiscal/remessa', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'emitirRemessa']);
+            Route::post('fiscal/notas/{id}/retorno', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'emitirRetorno']);
+            Route::post('fiscal/manifestacao', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'manifestarDestinatario']);
+            Route::post('fiscal/cte', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'emitirCTe']);
+        });
+
+        // Compliance (#16-20)
+        Route::middleware('check.permission:fiscal.note.view')->group(function () {
+            Route::get('fiscal/certificate-alert', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'certificateAlert']);
+            Route::get('fiscal/notas/{id}/audit', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'auditLog']);
+            Route::get('fiscal/audit-report', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'auditReport']);
+            Route::post('fiscal/validate-document', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'validateDocument']);
+            Route::get('fiscal/check-regime', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'checkRegime']);
+        });
+
+        // Finance (#21-25)
+        Route::middleware('check.permission:fiscal.note.create')->group(function () {
+            Route::post('fiscal/notas/{id}/reconcile', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'reconcile']);
+            Route::post('fiscal/notas/{id}/boleto', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'generateBoleto']);
+            Route::post('fiscal/notas/{id}/split-payment', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'splitPayment']);
+            Route::post('fiscal/retentions', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'calculateRetentions']);
+            Route::post('fiscal/payment-confirmed', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'paymentConfirmed']);
+        });
+
+        // Templates & UX (#26-28)
+        Route::middleware('check.permission:fiscal.note.view')->group(function () {
+            Route::get('fiscal/templates', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'listTemplates']);
+            Route::post('fiscal/templates', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'saveTemplate']);
+            Route::post('fiscal/notas/{id}/save-template', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'saveTemplateFromNote']);
+            Route::get('fiscal/templates/{id}/apply', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'applyTemplate']);
+            Route::delete('fiscal/templates/{id}', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'deleteTemplate']);
+            Route::get('fiscal/notas/{id}/duplicate', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'duplicateNote']);
+            Route::get('fiscal/search-key', [\App\Http\Controllers\Api\V1\FiscalExpandedController::class, 'searchByAccessKey']);
+        });
 
         // Push Notifications
         Route::post('push/subscribe', [\App\Http\Controllers\Api\V1\PushSubscriptionController::class, 'subscribe']);
@@ -1065,9 +1154,6 @@ Route::prefix('v1')->group(function () {
             Route::middleware('check.permission:inmetro.view')->put('inmetro/advanced/webhooks/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'updateWebhook']);
             Route::middleware('check.permission:inmetro.view')->delete('inmetro/advanced/webhooks/{id}', [\App\Http\Controllers\Api\V1\InmetroAdvancedController::class, 'deleteWebhook']);
         });
-
-        // â”€â”€â”€ Integração Auvo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 
 
         // Configurações + Auditoria
@@ -2589,6 +2675,14 @@ Route::prefix('v1')->group(function () {
 
     });
 
+    // --- Cadastros Auxiliares (Lookups) ---
+    Route::prefix('lookups')->group(function () {
+        Route::get('types', [\App\Http\Controllers\Api\V1\LookupController::class, 'types']);
+        Route::middleware('check.permission:lookups.view')->get('{type}', [\App\Http\Controllers\Api\V1\LookupController::class, 'index']);
+        Route::middleware('check.permission:lookups.create')->post('{type}', [\App\Http\Controllers\Api\V1\LookupController::class, 'store']);
+        Route::middleware('check.permission:lookups.update')->put('{type}/{id}', [\App\Http\Controllers\Api\V1\LookupController::class, 'update']);
+        Route::middleware('check.permission:lookups.delete')->delete('{type}/{id}', [\App\Http\Controllers\Api\V1\LookupController::class, 'destroy']);
+    });
 
 });
 // â”€â”€â”€ PUBLIC: Work Order Rating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2606,6 +2700,186 @@ Route::prefix('quotes')->group(function () {
     Route::middleware('throttle:30,1')->post('{quote}/public-approve', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicApprove']);
 });
 
+// ═══════════════════════════════════════════════════════════════════
+    // LOTE 1: Atendimento & OS — Service Ops (#1-#8B)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('operational/service-ops')->group(function () {
+        // #1 SLA
+        Route::get('sla/dashboard', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'slaDashboard']);
+        Route::post('sla/run-checks', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'runSlaChecks']);
+        Route::get('sla/status/{workOrder}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'slaStatus']);
+        // #2B Bulk create
+        Route::post('work-orders/bulk-create', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'bulkCreateWorkOrders']);
+        // #3B Route optimization
+        Route::post('work-orders/optimize-route', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'optimizeRoute']);
+        // #4 Photo checklist
+        Route::post('work-orders/{workOrder}/photo-checklist', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'validatePhotoChecklist']);
+        Route::get('work-orders/{workOrder}/photo-checklist', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'getPhotoChecklist']);
+        // #5B NPS Dashboard
+        Route::get('nps/dashboard', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'npsDashboard']);
+        // #6 Heatmap
+        Route::get('heatmap', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'heatmapData']);
+        // #7 Technician Productivity
+        Route::get('productivity', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'techProductivity']);
+        Route::get('productivity/ranking', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'techRanking']);
+        Route::get('productivity/team', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'teamSummary']);
+        // #8B Auto-assignment rules
+        Route::get('auto-assign/rules', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'autoAssignRules']);
+        Route::post('auto-assign/rules', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'storeAutoAssignRule']);
+        Route::put('auto-assign/rules/{rule}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'updateAutoAssignRule']);
+        Route::delete('auto-assign/rules/{rule}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'deleteAutoAssignRule']);
+        Route::post('auto-assign/{workOrder}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'triggerAutoAssign']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // End of Lote 1
+    // ═══════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 2: Financeiro (#9B-#15B)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('finance-advanced')->group(function () {
+        Route::post('cnab/import', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'importCnab']);
+        Route::get('cash-flow/projection', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'cashFlowProjection']);
+        Route::get('collection-rules', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'collectionRules']);
+        Route::post('collection-rules', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'storeCollectionRule']);
+        Route::put('collection-rules/{rule}', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'updateCollectionRule']);
+        Route::delete('collection-rules/{rule}', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'deleteCollectionRule']);
+        Route::post('receivables/{receivable}/partial-payment', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'partialPayment']);
+        Route::get('dre/cost-center', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'dreByCostCenter']);
+        Route::post('installment/simulate', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'simulateInstallment']);
+        Route::post('installment/create', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'createInstallment']);
+        Route::get('delinquency/dashboard', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'delinquencyDashboard']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 3: Estoque & Compras (#16B-#21B)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('stock-advanced')->group(function () {
+        Route::get('auto-reorder/suggestions', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'autoReorder']);
+        Route::post('auto-reorder/create', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'createAutoOrder']);
+        Route::post('work-orders/{workOrder}/auto-deduct', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'autoDeductFromWO']);
+        Route::post('inventory/start-count', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'startCyclicCount']);
+        Route::post('inventory/{count}/record', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'recordCountItem']);
+        Route::post('inventory/{count}/finalize', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'finalizeCount']);
+        Route::get('warranty/lookup', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'warrantyLookup']);
+        Route::post('quotes/compare', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'compareQuotes']);
+        Route::get('slow-moving', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'slowMovingAnalysis']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 4: CRM & Vendas (#22-#27)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('crm-advanced')->group(function () {
+        Route::get('funnel-automations', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'funnelAutomations']);
+        Route::post('funnel-automations', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'storeFunnelAutomation']);
+        Route::put('funnel-automations/{id}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'updateFunnelAutomation']);
+        Route::delete('funnel-automations/{id}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'deleteFunnelAutomation']);
+        Route::post('lead-scoring/recalculate', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'recalculateLeadScores']);
+        Route::post('quotes/{quote}/send-for-signature', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'sendQuoteForSignature']);
+        Route::get('forecast', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'salesForecast']);
+        Route::get('leads/duplicates', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'findDuplicateLeads']);
+        Route::post('leads/merge', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'mergeLeads']);
+        Route::get('pipelines', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'multiProductPipelines']);
+        Route::post('pipelines', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'createPipeline']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 5: BI & Analytics (#28-#32)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('bi-analytics')->group(function () {
+        Route::get('kpis/realtime', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'realtimeKpis']);
+        Route::get('profitability', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'profitabilityByOS']);
+        Route::get('anomalies', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'anomalyDetection']);
+        Route::get('exports/scheduled', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'scheduledExports']);
+        Route::post('exports/scheduled', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'createScheduledExport']);
+        Route::delete('exports/scheduled/{id}', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'deleteScheduledExport']);
+        Route::get('comparison', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'periodComparison']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 6: RH & Pessoas (#33-#37)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('hr')->group(function () {
+        Route::get('hour-bank', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'hourBankSummary']);
+        Route::get('on-call', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'onCallSchedule']);
+        Route::post('on-call', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeOnCallSchedule']);
+        Route::get('performance-reviews', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'performanceReviews']);
+        Route::post('performance-reviews', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storePerformanceReview']);
+        Route::get('onboarding/templates', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'onboardingTemplates']);
+        Route::post('onboarding/templates', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeOnboardingTemplate']);
+        Route::post('onboarding/start', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'startOnboarding']);
+        Route::get('training/courses', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'trainingCourses']);
+        Route::post('training/courses', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeTrainingCourse']);
+        Route::post('training/enroll', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'enrollUser']);
+        Route::post('training/{enrollment}/complete', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'completeTraining']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 7: Contratos & Recorrência (#38-#41)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('contracts-advanced')->group(function () {
+        Route::get('adjustments/pending', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'pendingAdjustments']);
+        Route::post('{contract}/adjust', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'applyAdjustment']);
+        Route::get('churn-risk', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'churnRisk']);
+        Route::get('{contract}/addendums', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'contractAddendums']);
+        Route::post('{contract}/addendums', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'createAddendum']);
+        Route::post('addendums/{addendum}/approve', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'approveAddendum']);
+        Route::get('{contract}/measurements', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'contractMeasurements']);
+        Route::post('{contract}/measurements', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'storeMeasurement']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 8: Portal do Cliente (#42-#44)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('client-portal')->group(function () {
+        Route::post('service-calls', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'createServiceCallFromPortal']);
+        Route::get('work-orders/track', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'trackWorkOrders']);
+        Route::get('service-calls/track', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'trackServiceCalls']);
+        Route::get('calibration-certificates', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'calibrationCertificates']);
+        Route::get('calibration-certificates/{certificate}/download', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'downloadCertificate']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 9: Metrologia & Qualidade (#45-#48)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('metrology')->group(function () {
+        Route::get('non-conformances', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'nonConformances']);
+        Route::post('non-conformances', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'storeNonConformance']);
+        Route::put('non-conformances/{id}', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'updateNonConformance']);
+        Route::post('certificates/{certificate}/qr', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'generateCertificateQR']);
+        Route::get('uncertainties', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'measurementUncertainty']);
+        Route::post('uncertainties', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'storeMeasurementUncertainty']);
+        Route::get('calibration-schedule', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'calibrationSchedule']);
+        Route::post('calibration-schedule/recall', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'triggerRecall']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 10: Infraestrutura & Integrações (#49-#50)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('infra')->group(function () {
+        Route::get('webhooks', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'webhookConfigs']);
+        Route::post('webhooks', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'storeWebhook']);
+        Route::put('webhooks/{id}', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'updateWebhook']);
+        Route::delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'deleteWebhook']);
+        Route::post('webhooks/{id}/test', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'testWebhook']);
+        Route::get('webhooks/{id}/logs', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'webhookLogs']);
+        Route::get('api-keys', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'apiKeys']);
+        Route::post('api-keys', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'createApiKey']);
+        Route::delete('api-keys/{id}/revoke', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'revokeApiKey']);
+        Route::get('swagger', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'swaggerSpec']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // End of Lotes 2-10
+    // ═══════════════════════════════════════════════════════════════════
+
+// Rota pública: Assinatura digital de orçamento (#24)
+Route::middleware('throttle:30,1')->post('v1/crm/quotes/sign/{token}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'signQuote']);
+
+// Rota pública: Verificação de certificado (#46)
+Route::middleware('throttle:60,1')->get('v1/verify-certificate/{code}', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'verifyCertificate']);
+
 // QR Code público — status de calibração do equipamento
 Route::middleware('throttle:120,1')->get('v1/equipment-qr/{token}', [\App\Http\Controllers\Api\V1\FeaturesController::class, 'equipmentByQr']);
 
@@ -2614,3 +2888,7 @@ Route::middleware('throttle:120,1')->get('v1/catalog/{slug}', [\App\Http\Control
 
 // Email Tracking (Pixel)
 Route::middleware('throttle:600,1')->get('pixel/{trackingId}', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'track']);
+
+// #19 — Consulta pública DANFE por chave de acesso
+Route::middleware('throttle:60,1')->post('v1/fiscal/consulta-publica', [\App\Http\Controllers\Api\V1\FiscalPublicController::class, 'consultaPublica']);
+

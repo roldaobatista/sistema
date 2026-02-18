@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { FINANCIAL_STATUS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
@@ -191,6 +192,7 @@ export function AccountsReceivablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
             qc.invalidateQueries({ queryKey: ['ar-summary'] })
+            broadcastQueryInvalidation(['accounts-receivable', 'ar-summary'], 'Contas a Receber')
             setShowForm(false)
             setEditingId(null)
             setFormErrors({})
@@ -218,6 +220,7 @@ export function AccountsReceivablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
             qc.invalidateQueries({ queryKey: ['ar-summary'] })
+            broadcastQueryInvalidation(['accounts-receivable', 'ar-summary'], 'Contas a Receber')
             setShowPay(null)
             setPayErrors({})
             setPayForm({ amount: '', payment_method: 'pix', payment_date: '', notes: '' })
@@ -244,6 +247,7 @@ export function AccountsReceivablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
             qc.invalidateQueries({ queryKey: ['ar-summary'] })
+            broadcastQueryInvalidation(['accounts-receivable', 'ar-summary'], 'Contas a Receber')
             setShowGenOS(false)
             toast.success('Título gerado a partir da OS')
         },
@@ -257,6 +261,7 @@ export function AccountsReceivablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
             qc.invalidateQueries({ queryKey: ['ar-summary'] })
+            broadcastQueryInvalidation(['accounts-receivable', 'ar-summary'], 'Contas a Receber')
             setDeleteTarget(null)
             toast.success('Título excluido com sucesso')
         },
@@ -275,6 +280,7 @@ export function AccountsReceivablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-receivable'] })
             qc.invalidateQueries({ queryKey: ['ar-summary'] })
+            broadcastQueryInvalidation(['accounts-receivable', 'ar-summary'], 'Contas a Receber')
             setCancelTarget(null)
             toast.success('Título cancelado com sucesso')
         },

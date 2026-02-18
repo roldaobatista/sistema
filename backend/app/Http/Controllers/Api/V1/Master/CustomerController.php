@@ -7,6 +7,9 @@ use App\Http\Requests\Customer\StoreCustomerRequest;
 use App\Http\Requests\Customer\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\CustomerContact;
+use App\Models\Lookups\ContractType;
+use App\Models\Lookups\CustomerSegment;
+use App\Models\Lookups\LeadSource;
 use App\Events\CustomerCreated;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -186,14 +189,29 @@ class CustomerController extends Controller
 
     /**
      * Return CRM enum options for frontend selects.
+     * Sources, segments and contract_types come from lookup tables; company_sizes and ratings remain constants.
      */
     public function options(): JsonResponse
     {
+        $sources = LeadSource::query()->active()->ordered()->get()->pluck('name', 'slug')->all();
+        $segments = CustomerSegment::query()->active()->ordered()->get()->pluck('name', 'slug')->all();
+        $contractTypes = ContractType::query()->active()->ordered()->get()->pluck('name', 'slug')->all();
+
+        if (empty($sources)) {
+            $sources = Customer::SOURCES;
+        }
+        if (empty($segments)) {
+            $segments = Customer::SEGMENTS;
+        }
+        if (empty($contractTypes)) {
+            $contractTypes = Customer::CONTRACT_TYPES;
+        }
+
         return response()->json([
-            'sources' => Customer::SOURCES,
-            'segments' => Customer::SEGMENTS,
+            'sources' => $sources,
+            'segments' => $segments,
             'company_sizes' => Customer::COMPANY_SIZES,
-            'contract_types' => Customer::CONTRACT_TYPES,
+            'contract_types' => $contractTypes,
             'ratings' => Customer::RATINGS,
         ]);
     }

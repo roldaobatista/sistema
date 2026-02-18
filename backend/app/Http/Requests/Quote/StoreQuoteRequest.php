@@ -31,7 +31,7 @@ class StoreQuoteRequest extends FormRequest
             'source' => 'nullable|in:prospeccao,retorno,contato_direto,indicacao',
             'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'seller_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'valid_until' => 'nullable|date|after:today',
+            'valid_until' => 'nullable|date|after_or_equal:today',
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'discount_amount' => 'nullable|numeric|min:0',
             'displacement_value' => 'nullable|numeric|min:0',

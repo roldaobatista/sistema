@@ -5,6 +5,7 @@ import {
     Wallet, RefreshCw, Trash2, Edit, TrendingUp, Target, Megaphone, Repeat, Pause, Play, Download, RotateCcw, Split, Calculator
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -243,13 +244,13 @@ function CommissionRules() {
 
     const saveMut = useMutation({
         mutationFn: (data: any) => editing ? api.put(`/commission-rules/${editing.id}`, data) : api.post('/commission-rules', data),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-rules'] }); setShowModal(false); setEditing(null); toast.success('Regra salva com sucesso') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-rules'] }); broadcastQueryInvalidation(['commission-rules'], 'Regra de Comissão'); setShowModal(false); setEditing(null); toast.success('Regra salva com sucesso') },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao salvar regra'; setSaveError(msg); toast.error(msg) }
     })
 
     const delMut = useMutation({
         mutationFn: (id: number) => api.delete(`/commission-rules/${id}`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-rules'] }); toast.success('Regra excluída') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-rules'] }); broadcastQueryInvalidation(['commission-rules'], 'Regra de Comissão'); toast.success('Regra excluída') },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao excluir regra'; setDelError(msg); toast.error(msg) }
     })
 
@@ -475,15 +476,19 @@ function CommissionEvents() {
 
     const approveMut = useMutation({
         mutationFn: (id: number) => api.put(`/commission-events/${id}/status`, { status: 'approved' }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] });
-                qc.invalidateQueries({ queryKey: ['commission-overview'] }); setEventError(null); toast.success('Evento aprovado') },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['commission-events'] });
+            qc.invalidateQueries({ queryKey: ['commission-overview'] }); broadcastQueryInvalidation(['commission-events', 'commission-overview'], 'Comissão'); setEventError(null); toast.success('Evento aprovado')
+        },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao aprovar evento'; setEventError(msg); toast.error(msg) }
     })
 
     const reverseMut = useMutation({
         mutationFn: (id: number) => api.put(`/commission-events/${id}/status`, { status: 'reversed' }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] });
-                qc.invalidateQueries({ queryKey: ['commission-overview'] }); setEventError(null); toast.success('Evento estornado') },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['commission-events'] });
+            qc.invalidateQueries({ queryKey: ['commission-overview'] }); broadcastQueryInvalidation(['commission-events', 'commission-overview'], 'Comissão'); setEventError(null); toast.success('Evento estornado')
+        },
         onError: (err: any) => { const msg = err?.response?.data?.message ?? 'Erro ao estornar evento'; setEventError(msg); toast.error(msg) }
     })
 
@@ -492,6 +497,7 @@ function CommissionEvents() {
         onSuccess: (_, vars) => {
             qc.invalidateQueries({ queryKey: ['commission-events'] })
             qc.invalidateQueries({ queryKey: ['commission-overview'] })
+            broadcastQueryInvalidation(['commission-events', 'commission-overview'], 'Comissão')
             setSelectedIds(new Set())
             toast.success(`${vars.ids.length} eventos ${vars.status === 'approved' ? 'aprovados' : 'estornados'}`)
         },
@@ -529,7 +535,7 @@ function CommissionEvents() {
 
     const splitMut = useMutation({
         mutationFn: ({ eventId, splits }: { eventId: number; splits: any[] }) => api.post(`/commission-events/${eventId}/splits`, { splits }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] }); setSplitEvent(null); toast.success('Comissão dividida com sucesso') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] }); broadcastQueryInvalidation(['commission-events'], 'Comissão'); setSplitEvent(null); toast.success('Comissão dividida com sucesso') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao dividir comissão')
     })
 
@@ -795,6 +801,7 @@ function CommissionSettlements() {
         qc.invalidateQueries({ queryKey: ['commission-events'] })
         qc.invalidateQueries({ queryKey: ['commission-overview'] })
         qc.invalidateQueries({ queryKey: ['commission-balance'] })
+        broadcastQueryInvalidation(['commission-settlements', 'commission-events', 'commission-overview', 'commission-balance'], 'Comissão')
     }
 
     const closeMut = useMutation({
@@ -1396,8 +1403,10 @@ function CommissionRecurring() {
     })
     const processMut = useMutation({
         mutationFn: () => api.post('/recurring-commissions/process-monthly'),
-        onSuccess: (res: any) => { qc.invalidateQueries({ queryKey: ['recurring-commissions'] });
-                qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success(res?.data?.message ?? 'Processamento concluído') },
+        onSuccess: (res: any) => {
+            qc.invalidateQueries({ queryKey: ['recurring-commissions'] });
+            qc.invalidateQueries({ queryKey: ['commission-events'] }); toast.success(res?.data?.message ?? 'Processamento concluído')
+        },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao processar')
     })
 
@@ -1461,8 +1470,10 @@ function CommissionSimulator() {
     })
     const genMut = useMutation({
         mutationFn: (workOrderId: string) => api.post('/commission-events/generate', { work_order_id: Number(workOrderId) }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['commission-events'] });
-                qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Comissões geradas com sucesso!') },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['commission-events'] });
+            qc.invalidateQueries({ queryKey: ['commission-overview'] }); toast.success('Comissões geradas com sucesso!')
+        },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao gerar comissões')
     })
     const results = simMut.data?.data ?? []

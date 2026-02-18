@@ -5,6 +5,7 @@ import {
     Shield, Wifi, WifiOff, RefreshCw, AlertTriangle, Loader2
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/pageheader'
 import { toast } from 'sonner'
@@ -141,6 +142,7 @@ export default function ClockInPage() {
         }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['clock-status'] })
+            broadcastQueryInvalidation(['clock-status'], 'Ponto')
             toast.success('Ponto de entrada registrado com sucesso!')
             setStep('done')
         },
@@ -154,6 +156,7 @@ export default function ClockInPage() {
             api.post('/hr/advanced/clock-out', data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['clock-status'] })
+            broadcastQueryInvalidation(['clock-status'], 'Ponto')
             toast.success('Ponto de saída registrado com sucesso!')
             setStep('camera')
             setSelfieBlob(null)

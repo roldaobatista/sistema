@@ -226,3 +226,15 @@ export function useAuvoConfig() {
         onError: handleMutationError,
     })
 }
+
+export function useAuvoDeleteHistory() {
+    const qc = useQueryClient()
+    return useMutation({
+        mutationFn: (id: number) => api.delete(`/auvo/history/${id}`).then(r => r.data),
+        onSuccess: () => {
+            toast.success('Registro removido do histórico.')
+            qc.invalidateQueries({ queryKey: ['auvo'] })
+        },
+        onError: handleMutationError,
+    })
+}

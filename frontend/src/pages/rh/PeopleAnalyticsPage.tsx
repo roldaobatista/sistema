@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Users, UserMinus, Briefcase, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
@@ -16,7 +17,7 @@ export default function PeopleAnalyticsPage() {
         mutationFn: (id: number) => api.delete(`/people-analytics/${id}`),
         onSuccess: () => {
             toast.success('Removido com sucesso');
-            queryClient.invalidateQueries({ queryKey: ['people-analytics'] }); setConfirmDeleteId(null)
+            queryClient.invalidateQueries({ queryKey: ['people-analytics'] }); broadcastQueryInvalidation(['people-analytics', 'hr-analytics'], 'People Analytics'); setConfirmDeleteId(null)
         },
         onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover'); setConfirmDeleteId(null) },
     })

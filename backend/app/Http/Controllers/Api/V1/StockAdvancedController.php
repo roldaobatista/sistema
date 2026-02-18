@@ -3,601 +3,374 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\StockService;
 use App\Models\Product;
-use Illuminate\Http\JsonResponse;
+use App\Models\WorkOrder;
+use App\Models\PurchaseOrder;
+use App\Models\WarrantyTracking;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class StockAdvancedController extends Controller
 {
-    private function tenantId(): int
+    public function __construct(private StockService $stockService) {}
+
+    // ─── #16B Compra Automática por Reorder Point ───────────────
+
+    public function autoReorder(Request $request): JsonResponse
     {
-        $user = auth()->user();
-        return (int) ($user->current_tenant_id ?? $user->tenant_id);
-    }
+        $tenantId = $request->user()->company_id;
 
-    // ═══════════════════════════════════════════════════════════════════
-    // 1. PURCHASE QUOTATIONS (Cotação de Compras)
-    // ═══════════════════════════════════════════════════════════════════
+        $belowReorder = DB::table('products')
+            ->where('company_id', $tenantId)
+            ->where('is_active', true)
+            ->whereNotNull('reorder_point')
+            ->whereRaw('current_stock <= reorder_point')
+            ->get();
 
-    public function purchaseQuotations(Request $request): JsonResponse
-    {
-        $data = DB::table('purchase_quotations')
-            ->where('tenant_id', $this->tenantId())
-            ->when($request->input('status'), fn($q, $s) => $q->where('status', $s))
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $orders = [];
+        foreach ($belowReorder as $product) {
+            $orderQty = ($product->max_stock ?? ($product->reorder_point * 2)) - $product->current_stock;
+            if ($orderQty <= 0) continue;
 
-        return response()->json($data);
-    }
-
-    public function storePurchaseQuotation(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $validated = $request->validate([
-            'supplier_id' => ['required', \Illuminate\Validation\Rule::exists('suppliers', 'id')->where('tenant_id', $tenantId)],
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'notes' => 'nullable|string',
-            'valid_until' => 'nullable|date',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $total = collect($validated['items'])->sum(fn($i) => $i['quantity'] * $i['unit_price']);
-
-            $id = DB::table('purchase_quotations')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'supplier_id' => $validated['supplier_id'],
-                'total' => $total,
-                'status' => 'pending',
-                'notes' => $validated['notes'] ?? null,
-                'valid_until' => $validated['valid_until'] ?? null,
-                'created_by' => auth()->id(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            foreach ($validated['items'] as $item) {
-                DB::table('purchase_quotation_items')->insert([
-                    'purchase_quotation_id' => $id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'total' => $item['quantity'] * $item['unit_price'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Cotação criada com sucesso', 'id' => $id], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Purchase quotation creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao criar cotação'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 2. STOCK TRANSFERS (Transferências de Estoque)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function stockTransfers(Request $request): JsonResponse
-    {
-        $data = DB::table('stock_transfers')
-            ->where('tenant_id', $this->tenantId())
-            ->when($request->input('status'), fn($q, $s) => $q->where('status', $s))
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    public function suggestTransfers(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-
-        // Find products with excess in one warehouse and deficit in another
-        $suggestions = DB::select("
-            SELECT
-                ws1.product_id,
-                p.name as product_name,
-                ws1.warehouse_id as from_warehouse,
-                w1.name as from_warehouse_name,
-                ws1.quantity as from_quantity,
-                ws2.warehouse_id as to_warehouse,
-                w2.name as to_warehouse_name,
-                ws2.quantity as to_quantity,
-                LEAST(ws1.quantity - p.stock_min, p.stock_min - ws2.quantity) as suggested_qty
-            FROM warehouse_stocks ws1
-            JOIN warehouse_stocks ws2 ON ws1.product_id = ws2.product_id AND ws1.warehouse_id != ws2.warehouse_id
-            JOIN products p ON p.id = ws1.product_id
-            JOIN warehouses w1 ON w1.id = ws1.warehouse_id
-            JOIN warehouses w2 ON w2.id = ws2.warehouse_id
-            WHERE w1.tenant_id = ?
-              AND ws1.quantity > COALESCE(p.stock_min, 0) * 1.5
-              AND ws2.quantity < COALESCE(p.stock_min, 0)
-            ORDER BY (COALESCE(p.stock_min, 0) - ws2.quantity) DESC
-            LIMIT 20
-        ", [$tenantId]);
-
-        return response()->json(['data' => $suggestions]);
-    }
-
-    public function storeTransfer(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $validated = $request->validate([
-            'from_warehouse_id' => ['required', \Illuminate\Validation\Rule::exists('warehouses', 'id')->where('tenant_id', $tenantId)],
-            'to_warehouse_id' => ['required', 'different:from_warehouse_id', \Illuminate\Validation\Rule::exists('warehouses', 'id')->where('tenant_id', $tenantId)],
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'notes' => 'nullable|string',
-        ]);
-
-        try {
-            $service = app(\App\Services\StockTransferService::class);
-            $transfer = $service->createTransfer(
-                fromWarehouseId: $validated['from_warehouse_id'],
-                toWarehouseId: $validated['to_warehouse_id'],
-                items: $validated['items'],
-                notes: $validated['notes'] ?? null,
-                createdBy: auth()->id(),
-            );
-
-            return response()->json([
-                'message' => 'Transferência realizada com sucesso',
-                'data' => $transfer,
-            ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Stock transfer failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro na transferência'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 3. SERIAL NUMBER TRACKING (Rastreamento de Número de Série)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function serialNumbers(Request $request): JsonResponse
-    {
-        $data = DB::table('serial_numbers')
-            ->where('tenant_id', $this->tenantId())
-            ->when($request->input('product_id'), fn($q, $p) => $q->where('product_id', $p))
-            ->when($request->input('status'), fn($q, $s) => $q->where('status', $s))
-            ->when($request->input('search'), fn($q, $s) => $q->where('serial', 'like', "%{$s}%"))
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    public function storeSerialNumber(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $validated = $request->validate([
-            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
-            'serial' => 'required|string|max:100',
-            'status' => 'nullable|in:available,in_use,returned,defective',
-            'notes' => 'nullable|string',
-        ]);
-
-        try {
-            $exists = DB::table('serial_numbers')
-                ->where('tenant_id', $this->tenantId())
-                ->where('serial', $validated['serial'])
+            $hasPending = DB::table('purchase_order_items')
+                ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
+                ->where('purchase_orders.company_id', $tenantId)
+                ->where('purchase_orders.status', 'pending')
+                ->where('purchase_order_items.product_id', $product->id)
                 ->exists();
 
-            if ($exists) {
-                return response()->json(['message' => 'Número de série já cadastrado'], 422);
-            }
+            if ($hasPending) continue;
 
-            DB::beginTransaction();
-
-            $id = DB::table('serial_numbers')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'product_id' => $validated['product_id'],
-                'serial' => $validated['serial'],
-                'status' => $validated['status'] ?? 'available',
-                'notes' => $validated['notes'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            DB::commit();
-            return response()->json(['message' => 'Número de série registrado', 'id' => $id], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Serial number creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao registrar número de série'], 500);
+            $orders[] = [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'current_stock' => $product->current_stock,
+                'reorder_point' => $product->reorder_point,
+                'suggested_quantity' => $orderQty,
+                'preferred_supplier_id' => $product->default_supplier_id,
+            ];
         }
-    }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // 4. MATERIAL REQUESTS (Solicitação de Material)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function materialRequests(Request $request): JsonResponse
-    {
-        $data = DB::table('material_requests')
-            ->where('tenant_id', $this->tenantId())
-            ->when($request->input('status'), fn($q, $s) => $q->where('status', $s))
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    public function storeMaterialRequest(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $validated = $request->validate([
-            'work_order_id' => ['nullable', \Illuminate\Validation\Rule::exists('work_orders', 'id')->where('tenant_id', $tenantId)],
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'urgency' => 'nullable|in:low,normal,high,critical',
-            'notes' => 'nullable|string',
+        return response()->json([
+            'products_below_reorder' => count($orders),
+            'suggestions' => $orders,
         ]);
-
-        try {
-            DB::beginTransaction();
-
-            $id = DB::table('material_requests')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'work_order_id' => $validated['work_order_id'] ?? null,
-                'requested_by' => auth()->id(),
-                'status' => 'pending',
-                'urgency' => $validated['urgency'] ?? 'normal',
-                'notes' => $validated['notes'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            foreach ($validated['items'] as $item) {
-                DB::table('material_request_items')->insert([
-                    'material_request_id' => $id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'created_at' => now(),
-                ]);
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Solicitação criada com sucesso', 'id' => $id], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Material request creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao criar solicitação'], 500);
-        }
     }
 
-    public function approveMaterialRequest(int $id): JsonResponse
-    {
-        try {
-            DB::beginTransaction();
-
-            $updated = DB::table('material_requests')
-                ->where('id', $id)
-                ->where('tenant_id', $this->tenantId())
-                ->update(['status' => 'approved', 'approved_by' => auth()->id(), 'updated_at' => now()]);
-
-            if (!$updated) {
-                DB::rollBack();
-                return response()->json(['message' => 'Solicitação não encontrada'], 404);
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Solicitação aprovada com sucesso']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Material request approval failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao aprovar solicitação'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 5. RMA (Return Merchandise Authorization)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function rmaList(Request $request): JsonResponse
-    {
-        $data = DB::table('rma_requests')
-            ->where('tenant_id', $this->tenantId())
-            ->when($request->input('status'), fn($q, $s) => $q->where('status', $s))
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    public function storeRma(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $validated = $request->validate([
-            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
-            'serial_number' => 'nullable|string|max:100',
-            'customer_id' => ['nullable', \Illuminate\Validation\Rule::exists('customers', 'id')->where('tenant_id', $tenantId)],
-            'work_order_id' => ['nullable', \Illuminate\Validation\Rule::exists('work_orders', 'id')->where('tenant_id', $tenantId)],
-            'reason' => 'required|string|max:500',
-            'quantity' => 'required|integer|min:1',
-            'action' => 'required|in:replace,repair,refund',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $id = DB::table('rma_requests')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'product_id' => $validated['product_id'],
-                'serial_number' => $validated['serial_number'] ?? null,
-                'customer_id' => $validated['customer_id'] ?? null,
-                'work_order_id' => $validated['work_order_id'] ?? null,
-                'reason' => $validated['reason'],
-                'quantity' => $validated['quantity'],
-                'action' => $validated['action'],
-                'status' => 'open',
-                'created_by' => auth()->id(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            DB::commit();
-            return response()->json(['message' => 'RMA criado com sucesso', 'id' => $id], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('RMA creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao criar RMA'], 500);
-        }
-    }
-
-    public function updateRmaStatus(Request $request, int $id): JsonResponse
-    {
-        $validated = $request->validate([
-            'status' => 'required|in:open,in_progress,resolved,closed',
-            'resolution_notes' => 'nullable|string',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $updated = DB::table('rma_requests')
-                ->where('id', $id)
-                ->where('tenant_id', $this->tenantId())
-                ->update([
-                    'status' => $validated['status'],
-                    'resolution_notes' => $validated['resolution_notes'] ?? null,
-                    'resolved_at' => in_array($validated['status'], ['resolved', 'closed']) ? now() : null,
-                    'updated_at' => now(),
-                ]);
-
-            if (!$updated) {
-                DB::rollBack();
-                return response()->json(['message' => 'RMA não encontrado'], 404);
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Status RMA atualizado com sucesso']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('RMA status update failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao atualizar RMA'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 6. ASSET TAGS (RFID/QR)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function assetTags(Request $request): JsonResponse
-    {
-        $data = DB::table('asset_tags')
-            ->where('tenant_id', $this->tenantId())
-            ->when($request->input('search'), fn($q, $s) => $q->where('tag_code', 'like', "%{$s}%"))
-            ->when($request->input('type'), fn($q, $t) => $q->where('tag_type', $t))
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    public function storeAssetTag(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $validated = $request->validate([
-            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
-            'tag_code' => ['required', 'string', 'max:100', \Illuminate\Validation\Rule::unique('asset_tags', 'tag_code')->where('tenant_id', $tenantId)],
-            'tag_type' => 'required|in:rfid,qr,barcode',
-            'location' => 'nullable|string|max:255',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $id = DB::table('asset_tags')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'product_id' => $validated['product_id'],
-                'tag_code' => $validated['tag_code'],
-                'tag_type' => $validated['tag_type'],
-                'location' => $validated['location'] ?? null,
-                'last_scanned_at' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            DB::commit();
-            return response()->json(['message' => 'Tag registrada com sucesso', 'id' => $id], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Asset tag creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao registrar tag'], 500);
-        }
-    }
-
-    public function scanAssetTag(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'tag_code' => 'required|string',
-        ]);
-
-        try {
-            $tag = DB::table('asset_tags')
-                ->where('tenant_id', $this->tenantId())
-                ->where('tag_code', $validated['tag_code'])
-                ->first();
-
-            if (!$tag) {
-                return response()->json(['message' => 'Tag não encontrada'], 404);
-            }
-
-            DB::table('asset_tags')->where('id', $tag->id)
-                ->update(['last_scanned_at' => now(), 'updated_at' => now()]);
-
-            $product = Product::find($tag->product_id);
-
-            return response()->json([
-                'data' => [
-                    'tag' => $tag,
-                    'product' => $product,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Asset tag scan failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao escanear tag'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 7. ECOLOGICAL DISPOSAL (Descarte Ecológico)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function ecologicalDisposals(Request $request): JsonResponse
-    {
-        $data = DB::table('ecological_disposals')
-            ->where('tenant_id', $this->tenantId())
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    public function storeEcologicalDisposal(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $validated = $request->validate([
-            'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('tenant_id', $tenantId)],
-            'quantity' => 'required|numeric|min:0.01',
-            'disposal_method' => 'required|in:recycling,incineration,donation,return_to_supplier,special_waste',
-            'disposal_company' => 'nullable|string|max:255',
-            'certificate_number' => 'nullable|string|max:100',
-            'reason' => 'required|string|max:500',
-            'notes' => 'nullable|string',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $id = DB::table('ecological_disposals')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'product_id' => $validated['product_id'],
-                'quantity' => $validated['quantity'],
-                'disposal_method' => $validated['disposal_method'],
-                'disposal_company' => $validated['disposal_company'] ?? null,
-                'certificate_number' => $validated['certificate_number'] ?? null,
-                'reason' => $validated['reason'],
-                'notes' => $validated['notes'] ?? null,
-                'disposed_by' => auth()->id(),
-                'disposed_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            DB::commit();
-            return response()->json(['message' => 'Descarte registrado com sucesso', 'id' => $id], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Ecological disposal creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao registrar descarte'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 8. XML INVOICE IMPORT (Importar NF-e via XML)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function importNfeXml(Request $request): JsonResponse
+    public function createAutoReorderPO(Request $request): JsonResponse
     {
         $request->validate([
-            'xml_file' => 'required|file|mimes:xml|max:5120',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|integer|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:1',
+            'items.*.supplier_id' => 'required|integer|exists:suppliers,id',
         ]);
 
+        $tenantId = $request->user()->company_id;
+        $grouped = collect($request->input('items'))->groupBy('supplier_id');
+        $created = [];
+
+        DB::beginTransaction();
         try {
-            $xml = simplexml_load_string(file_get_contents($request->file('xml_file')->path()));
+            foreach ($grouped as $supplierId => $items) {
+                $po = PurchaseOrder::create([
+                    'company_id' => $tenantId,
+                    'supplier_id' => $supplierId,
+                    'status' => 'pending',
+                    'origin' => 'auto_reorder',
+                    'created_by' => $request->user()->id,
+                ]);
 
-            if (!$xml) {
-                return response()->json(['message' => 'XML inválido'], 422);
+                $total = 0;
+                foreach ($items as $item) {
+                    $product = Product::find($item['product_id']);
+                    $unitCost = $product->cost_price ?? 0;
+                    DB::table('purchase_order_items')->insert([
+                        'purchase_order_id' => $po->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_cost' => $unitCost,
+                        'total' => $unitCost * $item['quantity'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $total += $unitCost * $item['quantity'];
+                }
+
+                $po->update(['total' => $total]);
+                $created[] = $po->id;
             }
-
-            $ns = $xml->getNamespaces(true);
-            $nfe = $xml->children($ns[''] ?? '');
-
-            $infNFe = $nfe->NFe->infNFe ?? $nfe->infNFe ?? null;
-            if (!$infNFe) {
-                return response()->json(['message' => 'Estrutura XML não reconhecida'], 422);
-            }
-
-            $emit = $infNFe->emit;
-            $items = [];
-
-            foreach ($infNFe->det as $det) {
-                $prod = $det->prod;
-                $items[] = [
-                    'code' => (string) $prod->cProd,
-                    'description' => (string) $prod->xProd,
-                    'ncm' => (string) $prod->NCM,
-                    'unit' => (string) $prod->uCom,
-                    'quantity' => (float) $prod->qCom,
-                    'unit_price' => (float) $prod->vUnCom,
-                    'total' => (float) $prod->vProd,
-                ];
-            }
-
-            $total = $infNFe->total->ICMSTot;
-
-            return response()->json([
-                'data' => [
-                    'nfe_number' => (string) $infNFe->ide->nNF,
-                    'nfe_key' => (string) ($infNFe->attributes()->Id ?? ''),
-                    'emission_date' => (string) $infNFe->ide->dhEmi,
-                    'supplier' => [
-                        'cnpj' => (string) $emit->CNPJ,
-                        'name' => (string) $emit->xNome,
-                    ],
-                    'items' => $items,
-                    'totals' => [
-                        'products' => (float) ($total->vProd ?? 0),
-                        'freight' => (float) ($total->vFrete ?? 0),
-                        'discount' => (float) ($total->vDesc ?? 0),
-                        'nfe_total' => (float) ($total->vNF ?? 0),
-                    ],
-                    'item_count' => count($items),
-                ],
-                'message' => 'XML importado com sucesso. Revise os itens antes de confirmar.',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('NF-e XML import failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao processar XML: ' . $e->getMessage()], 500);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
         }
+
+        return response()->json([
+            'message' => count($created) . ' purchase orders created',
+            'purchase_order_ids' => $created,
+        ], 201);
+    }
+
+    // ─── #17 Baixa Automática de Estoque na OS ─────────────────
+
+    public function autoDeductFromWO(Request $request, WorkOrder $workOrder): JsonResponse
+    {
+        $tenantId = $request->user()->company_id;
+
+        if ($workOrder->company_id !== $tenantId) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $parts = DB::table('work_order_parts')
+            ->where('work_order_id', $workOrder->id)
+            ->where('deducted', false)
+            ->get();
+
+        if ($parts->isEmpty()) {
+            return response()->json(['message' => 'No parts to deduct']);
+        }
+
+        $deducted = [];
+        $errors = [];
+
+        foreach ($parts as $part) {
+            try {
+                $product = Product::findOrFail($part->product_id);
+                $this->stockService->createMovement(
+                    product: $product,
+                    type: \App\Enums\StockMovementType::DEDUCTED,
+                    quantity: $part->quantity,
+                    warehouseId: $part->warehouse_id ?? $workOrder->warehouse_id,
+                    workOrder: $workOrder,
+                    reference: "Auto-deduct OS #{$workOrder->id}",
+                    unitCost: $product->cost_price ?? 0,
+                    user: $request->user(),
+                );
+
+                DB::table('work_order_parts')
+                    ->where('id', $part->id)
+                    ->update(['deducted' => true, 'deducted_at' => now()]);
+
+                $deducted[] = $part->product_id;
+            } catch (\Throwable $e) {
+                $errors[] = "Product #{$part->product_id}: {$e->getMessage()}";
+            }
+        }
+
+        return response()->json([
+            'deducted' => count($deducted),
+            'errors' => $errors,
+        ]);
+    }
+
+    // ─── #18 Inventário Cíclico com QR Code ────────────────────
+
+    public function startCyclicCount(Request $request): JsonResponse
+    {
+        $request->validate([
+            'warehouse_id' => 'required|integer|exists:warehouses,id',
+            'product_ids' => 'nullable|array',
+            'category' => 'nullable|string',
+        ]);
+
+        $tenantId = $request->user()->company_id;
+
+        $query = Product::where('company_id', $tenantId)->where('is_active', true);
+
+        if ($request->filled('product_ids')) {
+            $query->whereIn('id', $request->input('product_ids'));
+        }
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        $products = $query->get(['id', 'name', 'sku', 'barcode', 'current_stock']);
+
+        $countSession = DB::table('inventory_counts')->insertGetId([
+            'company_id' => $tenantId,
+            'warehouse_id' => $request->input('warehouse_id'),
+            'status' => 'in_progress',
+            'started_by' => $request->user()->id,
+            'items_count' => $products->count(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        foreach ($products as $product) {
+            DB::table('inventory_count_items')->insert([
+                'inventory_count_id' => $countSession,
+                'product_id' => $product->id,
+                'system_quantity' => $product->current_stock,
+                'counted_quantity' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'count_id' => $countSession,
+            'items' => $products->count(),
+            'message' => 'Cyclic inventory count started',
+        ], 201);
+    }
+
+    public function submitCount(Request $request, int $countId): JsonResponse
+    {
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|integer',
+            'items.*.counted_quantity' => 'required|numeric|min:0',
+        ]);
+
+        foreach ($request->input('items') as $item) {
+            DB::table('inventory_count_items')
+                ->where('inventory_count_id', $countId)
+                ->where('product_id', $item['product_id'])
+                ->update([
+                    'counted_quantity' => $item['counted_quantity'],
+                    'counted_by' => $request->user()->id,
+                    'counted_at' => now(),
+                    'updated_at' => now(),
+                ]);
+        }
+
+        $pending = DB::table('inventory_count_items')
+            ->where('inventory_count_id', $countId)
+            ->whereNull('counted_quantity')
+            ->count();
+
+        if ($pending === 0) {
+            DB::table('inventory_counts')
+                ->where('id', $countId)
+                ->update(['status' => 'completed', 'completed_at' => now(), 'updated_at' => now()]);
+        }
+
+        $divergences = DB::table('inventory_count_items')
+            ->where('inventory_count_id', $countId)
+            ->whereNotNull('counted_quantity')
+            ->whereRaw('counted_quantity != system_quantity')
+            ->get();
+
+        return response()->json([
+            'pending_items' => $pending,
+            'divergences' => $divergences->count(),
+            'divergence_details' => $divergences,
+        ]);
+    }
+
+    // ─── #19B Rastreabilidade de Garantia ───────────────────────
+
+    public function warrantyLookup(Request $request): JsonResponse
+    {
+        $request->validate([
+            'serial_number' => 'nullable|string',
+            'work_order_id' => 'nullable|integer',
+            'equipment_id' => 'nullable|integer',
+        ]);
+
+        $tenantId = $request->user()->company_id;
+        $query = WarrantyTracking::where('company_id', $tenantId);
+
+        if ($request->filled('serial_number')) {
+            $query->where('serial_number', $request->input('serial_number'));
+        }
+        if ($request->filled('work_order_id')) {
+            $query->where('work_order_id', $request->input('work_order_id'));
+        }
+        if ($request->filled('equipment_id')) {
+            $query->where('equipment_id', $request->input('equipment_id'));
+        }
+
+        $warranties = $query->with(['workOrder', 'product', 'equipment'])->get();
+
+        return response()->json([
+            'total' => $warranties->count(),
+            'active' => $warranties->filter(fn ($w) => Carbon::parse($w->warranty_end)->isFuture())->count(),
+            'expired' => $warranties->filter(fn ($w) => Carbon::parse($w->warranty_end)->isPast())->count(),
+            'warranties' => $warranties,
+        ]);
+    }
+
+    // ─── #20B Comparador Automático de Cotações ─────────────────
+
+    public function comparePurchaseQuotes(Request $request): JsonResponse
+    {
+        $request->validate([
+            'purchase_quote_ids' => 'required|array|min:2',
+        ]);
+
+        $tenantId = $request->user()->company_id;
+        $quotes = DB::table('purchase_quotes')
+            ->where('company_id', $tenantId)
+            ->whereIn('id', $request->input('purchase_quote_ids'))
+            ->get();
+
+        $comparison = [];
+        foreach ($quotes as $quote) {
+            $items = DB::table('purchase_quote_items')
+                ->where('purchase_quote_id', $quote->id)
+                ->get();
+
+            $comparison[] = [
+                'quote_id' => $quote->id,
+                'supplier' => $quote->supplier_name ?? "Supplier #{$quote->supplier_id}",
+                'total' => $items->sum('total'),
+                'delivery_days' => $quote->delivery_days ?? null,
+                'payment_terms' => $quote->payment_terms ?? null,
+                'items_count' => $items->count(),
+            ];
+        }
+
+        $minTotal = collect($comparison)->min('total');
+        $scored = collect($comparison)->map(function ($q) use ($minTotal) {
+            $priceScore = $minTotal > 0 ? round(($minTotal / $q['total']) * 100, 1) : 100;
+            $deliveryScore = isset($q['delivery_days']) ? max(0, 100 - $q['delivery_days'] * 5) : 50;
+            $q['score'] = round($priceScore * 0.7 + $deliveryScore * 0.3, 1);
+            return $q;
+        })->sortByDesc('score')->values();
+
+        return response()->json([
+            'comparison' => $scored,
+            'recommended' => $scored->first(),
+        ]);
+    }
+
+    // ─── #21B Análise de Estoque de Giro Lento ─────────────────
+
+    public function slowMovingAnalysis(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->company_id;
+        $days = $request->input('days', 90);
+        $threshold = Carbon::now()->subDays($days);
+
+        $slowMoving = DB::table('products')
+            ->where('products.company_id', $tenantId)
+            ->where('products.is_active', true)
+            ->where('products.current_stock', '>', 0)
+            ->leftJoin('stock_movements', function ($join) use ($threshold) {
+                $join->on('products.id', '=', 'stock_movements.product_id')
+                     ->where('stock_movements.created_at', '>=', $threshold)
+                     ->whereIn('stock_movements.type', ['DEDUCTED', 'MANUAL_EXIT']);
+            })
+            ->selectRaw('products.id, products.name, products.sku, products.current_stock, 
+                          products.cost_price, (products.current_stock * COALESCE(products.cost_price, 0)) as capital_invested,
+                          COUNT(stock_movements.id) as movement_count,
+                          MAX(stock_movements.created_at) as last_movement')
+            ->groupBy('products.id', 'products.name', 'products.sku', 'products.current_stock', 'products.cost_price')
+            ->having('movement_count', '=', 0)
+            ->orderByDesc('capital_invested')
+            ->limit(50)
+            ->get();
+
+        return response()->json([
+            'period_days' => $days,
+            'slow_moving_count' => $slowMoving->count(),
+            'total_capital_locked' => round($slowMoving->sum('capital_invested'), 2),
+            'products' => $slowMoving,
+        ]);
     }
 }

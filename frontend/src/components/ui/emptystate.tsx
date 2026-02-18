@@ -73,7 +73,7 @@ export function EmptyState({
         )}>
             {!compact && <EmptyIllustration className="h-20 w-30 mb-2" />}
             {compact && (
-                <div className="flex items-center justify-center rounded-xl bg-surface-100 h-8 w-8">
+                <div className="flex items-center justify-center rounded-[var(--radius-lg)] bg-surface-100 dark:bg-white/[0.04] h-8 w-8">
                     {(iconNode as React.ReactNode) ?? <Inbox className="h-4 w-4 text-surface-300" />}
                 </div>
             )}

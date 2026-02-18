@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
         // 3. Seeders que dependem de tenants existentes
         $this->call([
             ExpenseCategorySeeder::class,
+            LookupSeeder::class,
         ]);
 
         // 4. Buscar roles criados pelo PermissionsSeeder

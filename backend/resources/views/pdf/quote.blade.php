@@ -128,7 +128,7 @@
             Condições Gerais
         </div>
         <div style="font-size: 9px; color: #64748b; line-height: 1.8;">
-            • A validade desta proposta é de {{ $quote->valid_until ? max(0, now()->diffInDays($quote->valid_until, false)) : 30 }} dias a contar da data de emissão.<br>
+            • A validade desta proposta é de {{ $quote->valid_until ? intval(max(0, now()->diffInDays($quote->valid_until, false))) : 30 }} dias a contar da data de emissão.<br>
             • Os preços incluem todos os materiais e mão de obra necessários para a execução dos serviços.<br>
             • Garantia de 90 dias para serviços e peças, exceto desgaste natural.<br>
             • Prazo de execução a combinar após aprovação.<br>

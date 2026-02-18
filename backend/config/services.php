@@ -41,7 +41,14 @@ return [
     ],
 
     'fiscal' => [
-        'provider' => env('FISCAL_PROVIDER', 'nuvemfiscal'),
+        'provider' => env('FISCAL_PROVIDER', 'focusnfe'),
+    ],
+
+    'focusnfe' => [
+        'token' => env('FOCUSNFE_TOKEN'),
+        'environment' => env('FOCUSNFE_ENV', 'homologation'),
+        'url_production' => 'https://api.focusnfe.com.br',
+        'url_homologation' => 'https://homologacao.focusnfe.com.br',
     ],
 
     'nuvemfiscal' => [

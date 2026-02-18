@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useAuvoExport } from '@/hooks/useAuvoExport'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { QUOTE_STATUS } from '@/lib/constants'
 import { QUOTE_STATUS_CONFIG } from '@/features/quotes/constants'
 import type { Quote, QuoteSummary } from '@/types/quote'
@@ -103,6 +104,7 @@ export function QuotesListPage() {
     const invalidateAll = () => {
         qc.invalidateQueries({ queryKey: ['quotes'] })
         qc.invalidateQueries({ queryKey: ['quotes-summary'] })
+        broadcastQueryInvalidation(['quotes', 'quotes-summary', 'dashboard'], 'Orçamento')
     }
 
     const requestInternalApprovalMut = useMutation({

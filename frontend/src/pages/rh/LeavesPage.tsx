@@ -5,6 +5,7 @@ import {
     ChevronLeft, ChevronRight, FileText, Upload, Loader2
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -85,6 +86,7 @@ export default function LeavesPage() {
         }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['leaves'] })
+            broadcastQueryInvalidation(['leaves'], 'Férias')
             setShowModal(false)
             setForm(emptyForm)
             setDocFile(null)
@@ -103,6 +105,7 @@ export default function LeavesPage() {
         mutationFn: (id: number) => api.post(`/hr/leaves/${id}/approve`),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['leaves'] })
+            broadcastQueryInvalidation(['leaves'], 'Férias')
             toast.success('Solicitação aprovada')
         },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao aprovar'),
@@ -113,6 +116,7 @@ export default function LeavesPage() {
             api.post(`/hr/leaves/${id}/reject`, { rejection_reason: reason }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['leaves'] })
+            broadcastQueryInvalidation(['leaves'], 'Férias')
             setRejectTarget(null)
             setRejectReason('')
             toast.success('Solicitação rejeitada')

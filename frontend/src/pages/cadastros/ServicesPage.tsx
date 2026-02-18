@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Briefcase, Clock, AlertTriangle, UploadCloud } from 'lucide-react'
@@ -27,7 +28,7 @@ const emptyForm = {
 }
 
 export function ServicesPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const { exportService } = useAuvoExport()
@@ -60,6 +61,7 @@ export function ServicesPage() {
             editing ? api.put(`/services/${editing.id}`, data) : api.post('/services', data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['services'] })
+            broadcastQueryInvalidation(['services', 'services-all'], 'Serviço')
             setShowForm(false)
             toast.success(editing ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!')
         },
@@ -72,6 +74,7 @@ export function ServicesPage() {
         mutationFn: (id: number) => api.delete(`/services/${id}`),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['services'] })
+            broadcastQueryInvalidation(['services', 'services-all'], 'Serviço')
             setShowConfirmDelete(null)
             toast.success('Serviço excluído com sucesso!')
         },

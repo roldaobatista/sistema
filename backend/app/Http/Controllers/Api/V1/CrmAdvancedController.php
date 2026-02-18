@@ -3,417 +3,277 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
+use App\Models\Lead;
+use App\Models\Opportunity;
 use App\Models\Quote;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class CrmAdvancedController extends Controller
 {
-    private function tenantId(): int
+    // ─── #22 Automação de Email por Etapa do Funil ──────────────
+
+    public function funnelAutomations(Request $request): JsonResponse
     {
-        $user = auth()->user();
-        return (int) ($user->current_tenant_id ?? $user->tenant_id);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 1. PDF PROPOSAL GENERATOR (Gerador de Propostas PDF)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function generateProposalPdf(int $quoteId): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-
-        $quote = Quote::where('tenant_id', $tenantId)
-            ->with(['customer', 'items.product', 'createdBy'])
-            ->findOrFail($quoteId);
-
-        $data = [
-            'quote_number' => $quote->number ?? "ORC-{$quote->id}",
-            'date' => $quote->created_at->format('d/m/Y'),
-            'valid_until' => $quote->valid_until ?? $quote->created_at->addDays(30)->format('d/m/Y'),
-            'customer' => [
-                'name' => $quote->customer?->name,
-                'document' => $quote->customer?->document,
-                'email' => $quote->customer?->email,
-                'phone' => $quote->customer?->phone,
-                'address' => $quote->customer?->address,
-            ],
-            'items' => $quote->items->map(fn($i) => [
-                'description' => $i->product?->name ?? $i->description,
-                'quantity' => $i->quantity,
-                'unit_price' => $i->unit_price,
-                'total' => $i->total,
-            ]),
-            'subtotal' => $quote->subtotal ?? $quote->items->sum('total'),
-            'discount' => $quote->discount ?? 0,
-            'total' => $quote->total ?? $quote->items->sum('total'),
-            'notes' => $quote->notes,
-            'payment_terms' => $quote->payment_terms,
-            'seller' => $quote->createdBy?->name ?? 'N/A',
-        ];
-
-        return response()->json(['data' => $data, 'message' => 'Dados para geração de PDF']);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 2. MULTI-OPTION QUOTES (Orçamentos com Múltiplas Opções)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function multiOptionQuotes(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-
-        $quotes = Quote::where('tenant_id', $tenantId)
-            ->whereNotNull('parent_quote_id')
-            ->with('customer:id,name')
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($quotes);
-    }
-
-    public function createQuoteVariant(Request $request, int $quoteId): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-
-        $original = Quote::where('tenant_id', $tenantId)->findOrFail($quoteId);
-
-        try {
-            DB::beginTransaction();
-
-            $variant = $original->replicate();
-            $variant->parent_quote_id = $original->id;
-            $variant->option_label = $request->input('option_label', 'Opção alternativa');
-            $variant->status = 'draft';
-            $variant->save();
-
-            foreach ($original->items as $item) {
-                $newItem = $item->replicate();
-                $newItem->quote_id = $variant->id;
-                $newItem->save();
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Variante criada com sucesso', 'data' => $variant], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Quote variant creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao criar variante'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 3. CLIENT HEAT MAP (Mapa de Calor de Clientes)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function clientHeatMap(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-
-        $customers = Customer::where('tenant_id', $tenantId)
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->select('id', 'name', 'latitude', 'longitude', 'city', 'state')
-            ->withCount(['workOrders' => fn($q) => $q->where('created_at', '>=', now()->subMonths(12))])
-            ->get()
-            ->map(fn($c) => [
-                'id' => $c->id,
-                'name' => $c->name,
-                'lat' => (float) $c->latitude,
-                'lng' => (float) $c->longitude,
-                'city' => $c->city,
-                'state' => $c->state,
-                'intensity' => min($c->work_orders_count * 10, 100),
-                'os_count' => $c->work_orders_count,
-            ]);
-
-        $byCity = $customers->groupBy('city')->map(fn($group) => [
-            'count' => $group->count(),
-            'total_os' => $group->sum('os_count'),
-        ])->sortByDesc('total_os')->take(20);
-
-        return response()->json([
-            'data' => [
-                'points' => $customers,
-                'by_city' => $byCity,
-                'total_geolocated' => $customers->count(),
-            ],
-        ]);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 4. SALES GAMIFICATION (Gamificação de Vendas)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function salesGamification(Request $request): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-        $month = $request->input('month', now()->month);
-        $year = $request->input('year', now()->year);
-
-        $leaderboard = DB::table('quotes')
-            ->where('quotes.tenant_id', $tenantId)
-            ->where('quotes.status', 'approved')
-            ->whereMonth('quotes.approved_at', $month)
-            ->whereYear('quotes.approved_at', $year)
-            ->join('users', 'quotes.created_by', '=', 'users.id')
-            ->select(
-                'users.id',
-                'users.name',
-                DB::raw('COUNT(quotes.id) as deals_won'),
-                DB::raw('SUM(quotes.total) as total_revenue'),
-                DB::raw('AVG(DATEDIFF(quotes.approved_at, quotes.created_at)) as avg_cycle_days')
-            )
-            ->groupBy('users.id', 'users.name')
-            ->orderByDesc('total_revenue')
-            ->get()
-            ->map(function ($seller, $index) {
-                $seller->rank = $index + 1;
-                $seller->badge = match (true) {
-                    $index === 0 => '🥇 Campeão',
-                    $index === 1 => '🥈 Vice',
-                    $index === 2 => '🥉 Bronze',
-                    $seller->deals_won >= 10 => '⭐ Estrela',
-                    $seller->deals_won >= 5 => '🔥 Quente',
-                    default => '📊 Em crescimento',
-                };
-                return $seller;
-            });
-
-        return response()->json(['data' => $leaderboard]);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 5. LEAD IMPORT (Importar Leads)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function importLeads(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'source' => 'required|in:linkedin,google,csv,manual',
-            'leads' => 'required|array|min:1',
-            'leads.*.name' => 'required|string|max:255',
-            'leads.*.email' => 'nullable|email',
-            'leads.*.phone' => 'nullable|string',
-            'leads.*.company' => 'nullable|string',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $tenantId = $this->tenantId();
-            $imported = 0;
-            $skipped = 0;
-
-            foreach ($validated['leads'] as $lead) {
-                $exists = DB::table('crm_deals')
-                    ->where('tenant_id', $tenantId)
-                    ->where(function ($q) use ($lead) {
-                        if (!empty($lead['email'])) {
-                            $q->where('contact_email', $lead['email']);
-                        }
-                        if (!empty($lead['phone'])) {
-                            $q->orWhere('contact_phone', $lead['phone']);
-                        }
-                    })
-                    ->exists();
-
-                if ($exists) {
-                    $skipped++;
-                    continue;
-                }
-
-                DB::table('crm_deals')->insert([
-                    'tenant_id' => $tenantId,
-                    'title' => $lead['name'],
-                    'contact_name' => $lead['name'],
-                    'contact_email' => $lead['email'] ?? null,
-                    'contact_phone' => $lead['phone'] ?? null,
-                    'company_name' => $lead['company'] ?? null,
-                    'source' => $validated['source'],
-                    'stage' => 'lead',
-                    'value' => 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $imported++;
-            }
-
-            DB::commit();
-            return response()->json([
-                'message' => "Importação concluída: {$imported} leads importados, {$skipped} duplicados ignorados",
-                'imported' => $imported,
-                'skipped' => $skipped,
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Lead import failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao importar leads'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 6. EMAIL MARKETING CAMPAIGNS (Campanhas de E-mail)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function emailCampaigns(Request $request): JsonResponse
-    {
-        $data = DB::table('email_campaigns')
-            ->where('tenant_id', $this->tenantId())
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    public function storeEmailCampaign(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'subject' => 'required|string|max:255',
-            'content' => 'required|string',
-            'segment' => 'nullable|in:all,active,inactive,vip,prospects',
-            'scheduled_at' => 'nullable|date|after:now',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $id = DB::table('email_campaigns')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'name' => $validated['name'],
-                'subject' => $validated['subject'],
-                'content' => $validated['content'],
-                'segment' => $validated['segment'] ?? 'all',
-                'status' => 'draft',
-                'scheduled_at' => $validated['scheduled_at'] ?? null,
-                'created_by' => auth()->id(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            DB::commit();
-            return response()->json(['message' => 'Campanha criada com sucesso', 'id' => $id], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Email campaign creation failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao criar campanha'], 500);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 7. WHATSAPP INTEGRATION (Integração WhatsApp)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function sendWhatsApp(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'message' => 'required|string|max:4000',
-            'template' => 'nullable|in:quote_followup,payment_reminder,appointment_confirmation,certificate_ready',
-        ]);
-
-        $customer = Customer::findOrFail($validated['customer_id']);
-
-        if (!$customer->phone) {
-            return response()->json(['message' => 'Cliente sem telefone cadastrado'], 422);
-        }
-
-        try {
-            $phone = preg_replace('/[^0-9]/', '', $customer->phone);
-            if (strlen($phone) <= 11) {
-                $phone = '55' . $phone;
-            }
-
-            DB::table('whatsapp_messages')->insert([
-                'tenant_id' => $this->tenantId(),
-                'customer_id' => $customer->id,
-                'phone' => $phone,
-                'message' => $validated['message'],
-                'template' => $validated['template'] ?? null,
-                'status' => 'queued',
-                'created_by' => auth()->id(),
-                'created_at' => now(),
-            ]);
-
-            return response()->json([
-                'message' => 'Mensagem adicionada à fila de envio',
-                'whatsapp_link' => "https://wa.me/{$phone}?text=" . urlencode($validated['message']),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('WhatsApp message failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao enviar mensagem'], 500);
-        }
-    }
-
-    public function whatsAppHistory(Request $request): JsonResponse
-    {
-        $data = DB::table('whatsapp_messages')
-            ->where('tenant_id', $this->tenantId())
-            ->when($request->input('customer_id'), fn($q, $c) => $q->where('customer_id', $c))
-            ->orderByDesc('created_at')
-            ->paginate(20);
-
-        return response()->json($data);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 8. SELF-SERVICE QUOTE PORTAL
-    // ═══════════════════════════════════════════════════════════════════
-
-    public function selfServiceCatalog(): JsonResponse
-    {
-        $tenantId = $this->tenantId();
-
-        $services = DB::table('products')
-            ->where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->where('type', 'service')
-            ->select('id', 'name', 'description', 'sale_price', 'category')
-            ->orderBy('name')
+        $tenantId = $request->user()->company_id;
+        $automations = DB::table('funnel_email_automations')
+            ->where('company_id', $tenantId)
+            ->orderBy('pipeline_stage_id')
             ->get();
 
-        return response()->json(['data' => $services]);
+        return response()->json($automations);
     }
 
-    public function selfServiceQuoteRequest(Request $request): JsonResponse
+    public function storeFunnelAutomation(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'customer_name' => 'required|string|max:255',
-            'customer_email' => 'required|email',
-            'customer_phone' => 'required|string|max:20',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'notes' => 'nullable|string',
+        $data = $request->validate([
+            'pipeline_stage_id' => 'required|integer',
+            'trigger' => 'required|string|in:on_enter,on_exit,after_days',
+            'trigger_days' => 'nullable|integer|min:1',
+            'subject' => 'required|string|max:255',
+            'body' => 'required|string',
+            'is_active' => 'boolean',
         ]);
 
-        try {
-            DB::beginTransaction();
+        $data['company_id'] = $request->user()->company_id;
+        $id = DB::table('funnel_email_automations')->insertGetId(array_merge($data, [
+            'created_at' => now(), 'updated_at' => now(),
+        ]));
 
-            $id = DB::table('self_service_quote_requests')->insertGetId([
-                'tenant_id' => $this->tenantId(),
-                'customer_name' => $validated['customer_name'],
-                'customer_email' => $validated['customer_email'],
-                'customer_phone' => $validated['customer_phone'],
-                'items' => json_encode($validated['items']),
-                'notes' => $validated['notes'] ?? null,
-                'status' => 'pending',
-                'created_at' => now(),
+        return response()->json(['id' => $id, ...$data], 201);
+    }
+
+    public function updateFunnelAutomation(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'trigger' => 'sometimes|string|in:on_enter,on_exit,after_days',
+            'trigger_days' => 'nullable|integer|min:1',
+            'subject' => 'sometimes|string|max:255',
+            'body' => 'sometimes|string',
+            'is_active' => 'boolean',
+        ]);
+
+        DB::table('funnel_email_automations')
+            ->where('id', $id)->where('company_id', $request->user()->company_id)
+            ->update(array_merge($data, ['updated_at' => now()]));
+
+        return response()->json(['message' => 'Updated']);
+    }
+
+    public function deleteFunnelAutomation(Request $request, int $id): JsonResponse
+    {
+        DB::table('funnel_email_automations')
+            ->where('id', $id)->where('company_id', $request->user()->company_id)->delete();
+        return response()->json(['message' => 'Deleted']);
+    }
+
+    // ─── #23 Lead Scoring com Interações ────────────────────────
+
+    public function recalculateLeadScores(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->company_id;
+        $leads = Lead::where('company_id', $tenantId)->where('status', '!=', 'converted')->get();
+        $updated = 0;
+
+        foreach ($leads as $lead) {
+            $score = 0;
+            if ($lead->email) $score += 10;
+            if ($lead->phone) $score += 5;
+            if ($lead->company_name) $score += 10;
+
+            $emailOpens = DB::table('email_tracking')->where('lead_id', $lead->id)->where('event', 'open')->count();
+            $score += min(20, $emailOpens * 3);
+
+            $emailClicks = DB::table('email_tracking')->where('lead_id', $lead->id)->where('event', 'click')->count();
+            $score += min(25, $emailClicks * 5);
+
+            $visits = DB::table('lead_activities')->where('lead_id', $lead->id)->where('type', 'website_visit')->count();
+            $score += min(15, $visits * 2);
+
+            $lastActivity = DB::table('lead_activities')->where('lead_id', $lead->id)->max('created_at');
+            if ($lastActivity && Carbon::parse($lastActivity)->diffInDays(now()) <= 7) $score += 15;
+            if ($lastActivity && Carbon::parse($lastActivity)->diffInDays(now()) > 30) $score = (int) ($score * 0.7);
+
+            $lead->update(['score' => min(100, $score), 'score_updated_at' => now()]);
+            $updated++;
+        }
+
+        return response()->json(['message' => "{$updated} lead scores recalculated"]);
+    }
+
+    // ─── #24 Orçamento com Assinatura Digital ───────────────────
+
+    public function sendQuoteForSignature(Request $request, Quote $quote): JsonResponse
+    {
+        $token = bin2hex(random_bytes(32));
+        $quote->update(['signature_token' => $token, 'signature_sent_at' => now(), 'status' => 'SENT']);
+
+        return response()->json([
+            'message' => 'Quote ready for signature',
+            'signature_url' => config('app.frontend_url') . "/quote-sign/{$token}",
+        ]);
+    }
+
+    public function signQuote(Request $request, string $token): JsonResponse
+    {
+        $request->validate([
+            'signer_name' => 'required|string|max:255',
+            'signature_data' => 'required|string',
+        ]);
+
+        $quote = Quote::where('signature_token', $token)->firstOrFail();
+        if ($quote->signed_at) return response()->json(['message' => 'Already signed'], 422);
+
+        $quote->update([
+            'status' => 'APPROVED', 'signed_at' => now(),
+            'signer_name' => $request->input('signer_name'),
+            'signature_data' => $request->input('signature_data'),
+            'signer_ip' => $request->ip(),
+        ]);
+
+        return response()->json(['message' => 'Quote signed successfully']);
+    }
+
+    // ─── #25 Previsão de Fechamento (Forecast) ─────────────────
+
+    public function salesForecast(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->company_id;
+        $months = $request->input('months', 3);
+
+        $opportunities = Opportunity::where('company_id', $tenantId)
+            ->whereNotIn('status', ['lost', 'won'])->get();
+
+        $forecast = [];
+        for ($i = 0; $i < $months; $i++) {
+            $monthStart = now()->addMonths($i)->startOfMonth();
+            $monthEnd = $monthStart->copy()->endOfMonth();
+
+            $monthOpps = $opportunities->filter(function ($opp) use ($monthStart, $monthEnd) {
+                return Carbon::parse($opp->expected_close_date)->between($monthStart, $monthEnd);
+            });
+
+            $forecast[] = [
+                'month' => $monthStart->format('Y-m'),
+                'pipeline_value' => round($monthOpps->sum('value'), 2),
+                'weighted_value' => round($monthOpps->sum(fn ($o) => $o->value * ($o->probability / 100)), 2),
+                'opportunities_count' => $monthOpps->count(),
+            ];
+        }
+
+        return response()->json([
+            'forecast' => $forecast,
+            'total_pipeline' => round($opportunities->sum('value'), 2),
+        ]);
+    }
+
+    // ─── #26 Merge de Leads Duplicados ──────────────────────────
+
+    public function findDuplicateLeads(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->company_id;
+        $duplicates = [];
+
+        $byEmail = Lead::where('company_id', $tenantId)->whereNotNull('email')
+            ->selectRaw('email, COUNT(*) as cnt, GROUP_CONCAT(id) as ids')
+            ->groupBy('email')->having('cnt', '>', 1)->get();
+
+        foreach ($byEmail as $d) {
+            $duplicates[] = ['type' => 'email', 'value' => $d->email, 'lead_ids' => explode(',', $d->ids)];
+        }
+
+        $byPhone = Lead::where('company_id', $tenantId)->whereNotNull('phone')
+            ->selectRaw('phone, COUNT(*) as cnt, GROUP_CONCAT(id) as ids')
+            ->groupBy('phone')->having('cnt', '>', 1)->get();
+
+        foreach ($byPhone as $d) {
+            $duplicates[] = ['type' => 'phone', 'value' => $d->phone, 'lead_ids' => explode(',', $d->ids)];
+        }
+
+        return response()->json(['total_groups' => count($duplicates), 'duplicates' => $duplicates]);
+    }
+
+    public function mergeLeads(Request $request): JsonResponse
+    {
+        $request->validate([
+            'primary_id' => 'required|integer|exists:leads,id',
+            'merge_ids' => 'required|array|min:1',
+        ]);
+
+        $tenantId = $request->user()->company_id;
+        $primary = Lead::where('company_id', $tenantId)->findOrFail($request->input('primary_id'));
+        $mergeIds = $request->input('merge_ids');
+
+        DB::beginTransaction();
+        try {
+            DB::table('lead_activities')->whereIn('lead_id', $mergeIds)->update(['lead_id' => $primary->id]);
+            Opportunity::whereIn('lead_id', $mergeIds)->update(['lead_id' => $primary->id]);
+
+            foreach (Lead::whereIn('id', $mergeIds)->get() as $ml) {
+                if (!$primary->email && $ml->email) $primary->email = $ml->email;
+                if (!$primary->phone && $ml->phone) $primary->phone = $ml->phone;
+            }
+            $primary->save();
+
+            Lead::whereIn('id', $mergeIds)->update(['status' => 'merged', 'merged_into_id' => $primary->id, 'deleted_at' => now()]);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+        return response()->json(['message' => count($mergeIds) . ' leads merged']);
+    }
+
+    // ─── #27 Pipeline Multi-Produto ─────────────────────────────
+
+    public function multiProductPipelines(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->company_id;
+        $pipelines = DB::table('pipelines')->where('company_id', $tenantId)->get()
+            ->map(function ($p) {
+                $p->stages = DB::table('pipeline_stages')->where('pipeline_id', $p->id)->orderBy('position')->get();
+                $p->total_value = Opportunity::where('pipeline_id', $p->id)->whereNotIn('status', ['lost'])->sum('value');
+                return $p;
+            });
+
+        return response()->json($pipelines);
+    }
+
+    public function createPipeline(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'product_category' => 'nullable|string',
+            'stages' => 'required|array|min:2',
+            'stages.*.name' => 'required|string',
+            'stages.*.probability' => 'required|integer|min:0|max:100',
+        ]);
+
+        $tenantId = $request->user()->company_id;
+        DB::beginTransaction();
+        try {
+            $pipelineId = DB::table('pipelines')->insertGetId([
+                'company_id' => $tenantId, 'name' => $data['name'],
+                'product_category' => $data['product_category'] ?? null,
+                'created_at' => now(), 'updated_at' => now(),
             ]);
 
+            foreach ($data['stages'] as $i => $stage) {
+                DB::table('pipeline_stages')->insert([
+                    'pipeline_id' => $pipelineId, 'name' => $stage['name'],
+                    'probability' => $stage['probability'], 'position' => $i + 1,
+                    'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
             DB::commit();
-            return response()->json([
-                'message' => 'Solicitação de orçamento recebida. Entraremos em contato em breve.',
-                'request_id' => $id,
-            ], 201);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Self-service quote request failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao registrar solicitação'], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
+
+        return response()->json(['id' => $pipelineId, 'message' => 'Pipeline created'], 201);
     }
 }

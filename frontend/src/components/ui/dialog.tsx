@@ -19,7 +19,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm dark:bg-black/70 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -46,18 +46,15 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          /* Mobile: bottom sheet / full-screen */
           "fixed inset-x-0 bottom-0 z-50 w-full",
-          "rounded-t-xl border-t border-default bg-surface-0 p-0 shadow-modal",
+          "rounded-t-[var(--radius-2xl)] bg-white p-0 shadow-modal",
+          "border-t border-black/[0.04] dark:border-white/[0.08]",
+          "dark:bg-[#111113] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_16px_64px_rgba(0,0,0,0.6)]",
           "max-h-[92vh] flex flex-col",
-          /* Desktop: centered modal */
           "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
-          "sm:rounded-xl sm:border sm:border-default sm:max-h-[85vh]",
-          /* Animations */
+          "sm:rounded-[var(--radius-xl)] sm:border sm:border-black/[0.04] sm:dark:border-white/[0.08] sm:max-h-[85vh]",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
-          /* Mobile: slide up from bottom */
           "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-          /* Desktop: fade + zoom */
           "sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:fade-in-0",
           "sm:data-[state=closed]:zoom-out-[0.98] sm:data-[state=open]:zoom-in-[0.98]",
           "sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0",
@@ -66,11 +63,10 @@ const DialogContent = React.forwardRef<
         )}
         {...props}
       >
-        {/* Mobile drag handle indicator */}
-        <div className="mx-auto mt-2 h-1 w-8 rounded-full bg-surface-300 sm:hidden" />
+        <div className="mx-auto mt-2 h-1 w-8 rounded-full bg-surface-300 dark:bg-white/10 sm:hidden" />
         {children}
-        <DialogPrimitive.Close className="absolute right-3 top-3 rounded-md p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-          <X className="h-4 w-4" />
+        <DialogPrimitive.Close className="absolute right-3 top-3 rounded-[var(--radius-md)] p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-white/[0.04] dark:hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+          <X className="h-4 w-4" strokeWidth={1.5} />
           <span className="sr-only">Fechar</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
@@ -84,7 +80,7 @@ const DialogHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("border-b border-subtle px-5 py-4 max-sm:px-4 max-sm:py-3", className)}
+    className={cn("border-b border-black/[0.04] dark:border-white/[0.06] px-6 py-5 max-sm:px-4 max-sm:py-4", className)}
     {...props}
   />
 )
@@ -96,7 +92,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex items-center justify-end gap-2 border-t border-subtle px-5 py-3",
+      "flex items-center justify-end gap-2 border-t border-black/[0.04] dark:border-white/[0.06] px-6 py-4",
       "max-sm:flex-col-reverse max-sm:px-4 max-sm:py-4 max-sm:gap-2.5",
       className
     )}
@@ -110,7 +106,7 @@ const DialogBody = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("px-5 py-4 overflow-y-auto flex-1 max-sm:px-4", className)}
+    className={cn("px-6 py-5 overflow-y-auto flex-1 max-sm:px-4", className)}
     {...props}
   />
 )
@@ -122,7 +118,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-[15px] font-semibold text-surface-900 tracking-tight", className)}
+    className={cn("text-base font-bold text-surface-900 dark:text-white tracking-tight", className)}
     {...props}
   />
 ))
@@ -134,7 +130,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("mt-0.5 text-[13px] text-surface-500", className)}
+    className={cn("mt-1 text-sm text-surface-500", className)}
     {...props}
   />
 ))

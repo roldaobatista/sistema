@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { parseLabelQrPayload } from '@/lib/labelQr'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -146,6 +147,7 @@ export function WorkOrderDetailPage() {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             qc.invalidateQueries({ queryKey: ['dashboard'] })
+            broadcastQueryInvalidation(['work-orders', 'dashboard'], 'Ordem de Serviço')
             setShowStatusModal(false)
             toast.success('Status atualizado com sucesso!')
         },
@@ -159,6 +161,7 @@ export function WorkOrderDetailPage() {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             qc.invalidateQueries({ queryKey: ['stock'] })
             qc.invalidateQueries({ queryKey: ['products'] })
+            broadcastQueryInvalidation(['work-orders', 'stock', 'products'], 'Item de OS')
             setShowItemModal(false)
             toast.success('Item adicionado com sucesso!')
         },
@@ -172,6 +175,7 @@ export function WorkOrderDetailPage() {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             qc.invalidateQueries({ queryKey: ['stock'] })
             qc.invalidateQueries({ queryKey: ['products'] })
+            broadcastQueryInvalidation(['work-orders', 'stock', 'products'], 'Item de OS')
             setShowItemModal(false)
             setEditingItem(null)
             toast.success('Item atualizado com sucesso!')
@@ -186,6 +190,7 @@ export function WorkOrderDetailPage() {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
             qc.invalidateQueries({ queryKey: ['stock'] })
             qc.invalidateQueries({ queryKey: ['products'] })
+            broadcastQueryInvalidation(['work-orders', 'stock', 'products'], 'Item de OS')
             setDeleteItemId(null)
             toast.success('Item removido com sucesso!')
         },
@@ -197,6 +202,7 @@ export function WorkOrderDetailPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
             qc.invalidateQueries({ queryKey: ['work-orders'] })
+            broadcastQueryInvalidation(['work-orders'], 'Ordem de Serviço')
             toast.success('Alterações salvas com sucesso!')
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar alterações'),
@@ -298,6 +304,7 @@ export function WorkOrderDetailPage() {
         mutationFn: () => api.post(`/work-orders/${id}/duplicate`),
         onSuccess: (res: any) => {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
+            broadcastQueryInvalidation(['work-orders', 'dashboard'], 'Ordem de Serviço')
             toast.success('OS duplicada com sucesso!')
             navigate(`/os/${res.data?.data?.id ?? res.data?.id}`)
         },
@@ -309,6 +316,7 @@ export function WorkOrderDetailPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['work-order', id] })
             qc.invalidateQueries({ queryKey: ['work-orders'] })
+            broadcastQueryInvalidation(['work-orders', 'dashboard'], 'Ordem de Serviço')
             toast.success('OS reaberta com sucesso!')
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao reabrir OS'),

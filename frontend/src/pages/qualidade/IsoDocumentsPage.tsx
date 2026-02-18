@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync';
 import { PageHeader } from '@/components/ui/pageheader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,12 +37,12 @@ export default function IsoDocumentsPage() {
 
   const createMut = useMutation({
     mutationFn: (d: any) => api.post('/iso-documents', d),
-    onSuccess: () => { toast.success('Documento criado'); setShowForm(false); qc.invalidateQueries({ queryKey: ['iso-documents'] }); },
+    onSuccess: () => { toast.success('Documento criado'); setShowForm(false); qc.invalidateQueries({ queryKey: ['iso-documents'] }); broadcastQueryInvalidation(['iso-documents'], 'Documentos ISO'); },
   });
 
   const approveMut = useMutation({
     mutationFn: (id: number) => api.post(`/iso-documents/${id}/approve`),
-    onSuccess: () => { toast.success('Documento aprovado'); qc.invalidateQueries({ queryKey: ['iso-documents'] }); },
+    onSuccess: () => { toast.success('Documento aprovado'); qc.invalidateQueries({ queryKey: ['iso-documents'] }); broadcastQueryInvalidation(['iso-documents'], 'Documentos ISO'); },
   });
 
   const uploadMut = useMutation({
@@ -50,7 +51,7 @@ export default function IsoDocumentsPage() {
       fd.append('file', file);
       return api.post(`/iso-documents/${id}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
     },
-    onSuccess: () => { toast.success('Arquivo anexado'); qc.invalidateQueries({ queryKey: ['iso-documents'] }); },
+    onSuccess: () => { toast.success('Arquivo anexado'); qc.invalidateQueries({ queryKey: ['iso-documents'] }); broadcastQueryInvalidation(['iso-documents'], 'Documentos ISO'); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Erro ao anexar'),
   });
 

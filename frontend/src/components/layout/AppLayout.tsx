@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useDarkMode } from '@/hooks/useDarkMode'
 import { AppBreadcrumb } from './AppBreadcrumb'
 import {
-    LayoutDashboard, Users, FileText, Wrench, DollarSign, BarChart3, Settings,
+    LayoutDashboard, Users, FileText, Wrench, DollarSign, BarChart3, Settings, List,
     Shield, ChevronLeft, ChevronRight, LogOut, Menu, X, Building2, Package,
     Briefcase, KeyRound, Grid3x3, Calendar, Clock, ArrowDownToLine, ArrowUpFromLine,
     Award, Receipt, WifiOff, Download, Phone, Upload, Truck, CreditCard, Scale,
@@ -271,6 +271,7 @@ const navigationSections: NavSection[] = [
             {
                 label: 'Configurações', icon: Settings, path: '/configuracoes', permission: 'platform.settings.view',
                 children: [
+                    { label: 'Cadastros Auxiliares', icon: List, path: '/configuracoes/cadastros-auxiliares', permission: 'lookups.view' },
                     { label: 'Filiais', icon: Building2, path: '/configuracoes/filiais', permission: 'platform.branch.view' },
                     { label: 'Empresas', icon: Building2, path: '/configuracoes/empresas', permission: 'platform.tenant.view' },
                     { label: 'WhatsApp', icon: Phone, path: '/configuracoes/whatsapp', permission: 'whatsapp.config.view' },
@@ -450,26 +451,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const isActive = (path: string) => location.pathname === path
 
     return (
-        <div className="flex h-screen overflow-hidden bg-surface-50">
+        <div className="flex h-screen overflow-hidden bg-background">
             {sidebarMobileOpen && (
-                <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={toggleMobileSidebar} />
+                <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={toggleMobileSidebar} />
             )}
 
             <aside
                 data-sidebar
                 className={cn(
-                    'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-default bg-surface-0 transition-[width,transform] duration-200 ease-out',
+                    'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-surface-200 bg-white text-surface-500 transition-[width,transform] duration-200 ease-out',
+                    'dark:bg-[#09090B] dark:text-zinc-400 dark:border-white/[0.06]',
                     'lg:relative lg:z-auto',
                     sidebarCollapsed ? 'w-[var(--sidebar-collapsed)]' : 'w-[var(--sidebar-width)]',
                     sidebarMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                 )}
             >
-                <div className="flex h-[var(--topbar-height)] items-center gap-2.5 border-b border-subtle px-3.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-600 text-white font-bold text-xs">
+                <div className="flex h-[var(--topbar-height)] items-center gap-3 border-b border-surface-200 dark:border-white/[0.06] px-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-500/20">
                         K
                     </div>
                     {!sidebarCollapsed && (
-                        <span className="truncate font-semibold text-surface-900 text-sm tracking-tight">
+                        <span className="truncate font-bold text-surface-900 dark:text-white text-sm tracking-tight">
                             KALIBRIUM
                         </span>
                     )}
@@ -479,8 +481,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     {favoriteItems.length > 0 && (
                         <div>
                             {!sidebarCollapsed && (
-                                <div className="px-2.5 pt-1 pb-1.5 text-label text-amber-500 flex items-center gap-1">
-                                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                <div className="px-2.5 pt-1 pb-1.5 text-label text-blue-500/70 dark:text-blue-400/70 flex items-center gap-1">
+                                    <Star className="h-3 w-3 fill-blue-500 text-blue-500/70 dark:fill-blue-400 dark:text-blue-400/70" />
                                     Favoritos
                                 </div>
                             )}
@@ -490,19 +492,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         key={`fav-${item.path}`}
                                         to={item.path}
                                         className={cn(
-                                            'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
+                                            'group relative flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                             isActive(item.path)
-                                                ? 'bg-surface-100 text-surface-900'
-                                                : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
+                                                ? 'bg-blue-50 text-surface-900 dark:bg-white/8 dark:text-white'
+                                                : 'text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-white/5 dark:hover:text-surface-200',
                                             sidebarCollapsed && 'justify-center px-2'
                                         )}
                                     >
                                         {isActive(item.path) && (
-                                            <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-brand-500" />
+                                            <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-blue-500" />
                                         )}
                                         <item.icon className={cn(
                                             'h-4 w-4 shrink-0 transition-colors duration-100',
-                                            isActive(item.path) ? 'text-brand-500' : 'text-surface-400 group-hover:text-surface-600'
+                                            isActive(item.path) ? 'text-blue-600 dark:text-blue-400' : 'text-surface-400 group-hover:text-surface-600 dark:text-surface-500 dark:group-hover:text-surface-300'
                                         )} />
                                         {!sidebarCollapsed && (
                                             <span className="flex-1 text-left truncate">{item.label}</span>
@@ -510,7 +512,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                     </Link>
                                 ))}
                             </div>
-                            <div className={cn('border-t border-subtle', sidebarCollapsed ? 'my-1.5 mx-2' : 'mt-1.5 mx-2')} />
+                            <div className={cn('border-t border-surface-100 dark:border-white/6', sidebarCollapsed ? 'my-1.5 mx-2' : 'mt-1.5 mx-2')} />
                         </div>
                     )}
 
@@ -518,14 +520,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         <div key={section.label}>
                             {!sidebarCollapsed && (
                                 <div className={cn(
-                                    'px-2.5 pt-3 pb-1.5 text-label text-surface-400',
-                                    sectionIdx > 0 && 'mt-1.5 border-t border-subtle pt-3.5'
+                                    'px-2.5 pt-3 pb-1.5 text-label text-surface-400 dark:text-surface-500',
+                                    sectionIdx > 0 && 'mt-1.5 border-t border-surface-100 dark:border-white/6 pt-3.5'
                                 )}>
                                     {section.label}
                                 </div>
                             )}
                             {sidebarCollapsed && sectionIdx > 0 && (
-                                <div className="my-1.5 mx-2 border-t border-subtle" />
+                                <div className="my-1.5 mx-2 border-t border-surface-100 dark:border-white/6" />
                             )}
                             <div className="space-y-0.5">
                                 {section.items.map((item) => (
@@ -534,23 +536,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                             <button
                                                 onClick={() => toggleGroup(item.path)}
                                                 className={cn(
-                                                    'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
+                                                    'group flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     item.children.some(c => isActive(c.path))
-                                                        ? 'bg-surface-100 text-surface-900'
-                                                        : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
+                                                        ? 'bg-blue-50 text-surface-900 dark:bg-white/8 dark:text-white'
+                                                        : 'text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-white/5 dark:hover:text-surface-200',
                                                     sidebarCollapsed && 'justify-center px-2'
                                                 )}
                                             >
                                                 <item.icon className={cn(
                                                     'h-4 w-4 shrink-0 transition-colors duration-100',
-                                                    item.children.some(c => isActive(c.path)) ? 'text-brand-500' : 'text-surface-400 group-hover:text-surface-600'
+                                                    item.children.some(c => isActive(c.path)) ? 'text-blue-600 dark:text-blue-400' : 'text-surface-400 group-hover:text-surface-600 dark:text-surface-500 dark:group-hover:text-surface-300'
                                                 )} />
                                                 {!sidebarCollapsed && (
                                                     <>
                                                         <span className="flex-1 text-left truncate">{item.label}</span>
                                                         <ChevronRight
                                                             className={cn(
-                                                                'h-3.5 w-3.5 text-surface-300 transition-transform duration-150',
+                                                                'h-3.5 w-3.5 text-surface-400 dark:text-surface-500 transition-transform duration-150',
                                                                 expandedGroups.has(item.path) && 'rotate-90'
                                                             )}
                                                         />
@@ -561,19 +563,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                             <Link
                                                 to={item.path}
                                                 className={cn(
-                                                    'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
+                                                    'group relative flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-sm font-medium transition-colors duration-100',
                                                     isActive(item.path)
-                                                        ? 'bg-surface-100 text-surface-900'
-                                                        : 'text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-800',
+                                                        ? 'bg-blue-50 text-surface-900 dark:bg-white/8 dark:text-white'
+                                                        : 'text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-white/5 dark:hover:text-surface-200',
                                                     sidebarCollapsed && 'justify-center px-2'
                                                 )}
                                             >
                                                 {isActive(item.path) && (
-                                                    <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-brand-500" />
+                                                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-blue-500" />
                                                 )}
                                                 <item.icon className={cn(
                                                     'h-4 w-4 shrink-0 transition-colors duration-100',
-                                                    isActive(item.path) ? 'text-brand-500' : 'text-surface-400 group-hover:text-surface-600'
+                                                    isActive(item.path) ? 'text-blue-600 dark:text-blue-400' : 'text-surface-400 group-hover:text-surface-600 dark:text-surface-500 dark:group-hover:text-surface-300'
                                                 )} />
                                                 {!sidebarCollapsed && (
                                                     <>
@@ -583,12 +585,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                                             className={cn(
                                                                 'h-3.5 w-3.5 shrink-0 transition-all duration-150',
                                                                 favorites.includes(item.path)
-                                                                    ? 'text-amber-400 opacity-100'
-                                                                    : 'text-surface-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'
+                                                                    ? 'text-blue-500 dark:text-blue-400 opacity-100'
+                                                                    : 'text-surface-300 opacity-0 group-hover:opacity-100 hover:text-blue-500 dark:text-surface-600 dark:hover:text-blue-400'
                                                             )}
                                                             title={favorites.includes(item.path) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                                                         >
-                                                            <Star className={cn('h-3.5 w-3.5', favorites.includes(item.path) && 'fill-amber-400')} />
+                                                            <Star className={cn('h-3.5 w-3.5', favorites.includes(item.path) && 'fill-blue-500 dark:fill-blue-400')} />
                                                         </button>
                                                     </>
                                                 )}
@@ -596,16 +598,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         )}
 
                                         {item.children && !sidebarCollapsed && expandedGroups.has(item.path) && (
-                                            <div className="ml-[18px] mt-0.5 space-y-0.5 border-l border-subtle pl-2.5">
+                                            <div className="ml-[18px] mt-0.5 space-y-0.5 border-l border-surface-200 dark:border-white/6 pl-2.5">
                                                 {item.children.map((child) => (
                                                     <Link
                                                         key={child.path}
                                                         to={child.path}
                                                         className={cn(
-                                                            'relative flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-xs font-medium transition-colors duration-100',
+                                                            'relative flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-[5px] text-xs font-medium transition-colors duration-100',
                                                             isActive(child.path)
-                                                                ? 'bg-brand-50 text-brand-700'
-                                                                : 'text-surface-500 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-700'
+                                                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300'
+                                                                : 'text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-500 dark:hover:bg-white/4 dark:hover:text-surface-300'
                                                         )}
                                                     >
                                                         <child.icon className="h-3.5 w-3.5" />
@@ -621,10 +623,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     ))}
                 </nav>
 
-                <div className="hidden border-t border-subtle p-2 lg:block">
+                <div className="hidden border-t border-surface-200 dark:border-white/[0.06] p-2.5 lg:block">
                     <button
                         onClick={toggleSidebar}
-                        className="flex w-full items-center justify-center rounded-md p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors duration-100"
+                        className="flex w-full items-center justify-center rounded-[var(--radius-md)] p-2 text-surface-400 hover:bg-surface-100 hover:text-blue-500 dark:text-zinc-500 dark:hover:bg-white/[0.04] dark:hover:text-blue-400 transition-colors duration-150"
                     >
                         {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
                     </button>
@@ -639,21 +641,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 )}
 
-                <header data-header className="flex h-[var(--topbar-height)] items-center justify-between border-b border-default bg-surface-0 px-4 lg:px-5">
+                <header data-header className={cn(
+                    "flex h-[var(--topbar-height)] items-center justify-between px-4 lg:px-6",
+                    "border-b border-black/[0.06] bg-white/80 backdrop-blur-xl",
+                    "dark:border-white/[0.06] dark:bg-[#09090B]/80 dark:backdrop-blur-xl"
+                )}>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={toggleMobileSidebar}
-                            className="rounded-md p-1 text-surface-500 hover:bg-surface-100 lg:hidden"
+                            className="rounded-[var(--radius-md)] p-1.5 text-surface-500 hover:bg-surface-100 dark:hover:bg-white/[0.04] lg:hidden"
                         >
                             {sidebarMobileOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <ModeSwitcher />
                         {isInstallable && (
                             <button onClick={install}
-                                className="flex items-center gap-1.5 rounded-md bg-surface-100 px-2.5 py-1 text-xs font-medium text-surface-700 transition-colors hover:bg-surface-200">
+                                className="flex items-center gap-1.5 rounded-[var(--radius-pill)] bg-surface-100 dark:bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 transition-colors hover:bg-surface-200 dark:hover:bg-white/[0.08]">
                                 <Download className="h-3 w-3" />
                                 Instalar
                             </button>
@@ -665,12 +671,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 onChange={e => switchTenant(Number(e.target.value))}
                                 disabled={isSwitching}
                                 aria-label="Selecionar empresa"
-                                className="hidden appearance-none rounded-md border border-default bg-surface-0 px-2.5 py-1 text-xs font-medium text-surface-700 sm:block focus:outline-none focus:ring-2 focus:ring-brand-500/15 cursor-pointer"
+                                className="hidden appearance-none rounded-[var(--radius-md)] border border-surface-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-300 sm:block focus:outline-none focus:ring-2 focus:ring-prix-500/15 cursor-pointer"
                             >
                                 {tenants.map(t => <option key={t.id} value={t.id} disabled={t.status === 'inactive'}>{t.name}{t.status === 'inactive' ? ' (Inativa)' : t.status === 'trial' ? ' (Teste)' : ''}</option>)}
                             </select>
                         ) : (
-                            <span className="hidden items-center gap-1.5 rounded-md border border-subtle bg-surface-50 px-2.5 py-1 text-xs font-medium text-surface-600 sm:flex">
+                            <span className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-surface-200 dark:border-white/[0.06] bg-surface-50 dark:bg-white/[0.03] px-2.5 py-1.5 text-xs font-medium text-surface-600 dark:text-surface-400 sm:flex">
                                 <Building2 className="h-3 w-3" />
                                 {currentTenant?.name ?? '—'}
                             </span>
@@ -679,23 +685,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         {canViewNotifications ? <NotificationPanel /> : null}
 
                         {hasPermission('central.create.task') ? (
-                            <QuickReminderButton className="rounded-md p-1.5 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors" />
+                            <QuickReminderButton className="rounded-[var(--radius-md)] p-1.5 text-surface-500 hover:bg-surface-100 dark:hover:bg-white/[0.04] hover:text-surface-700 dark:hover:text-white transition-colors" />
                         ) : null}
 
                         <button
                             onClick={toggleDarkMode}
-                            className="rounded-md p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 transition-colors duration-100"
+                            className="rounded-[var(--radius-md)] p-1.5 text-surface-400 hover:bg-surface-100 dark:hover:bg-white/[0.04] hover:text-surface-600 dark:hover:text-white transition-all duration-200"
                             title={darkMode ? 'Modo Claro' : 'Modo Escuro'}
                         >
                             {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                         </button>
 
-                        <Link to="/perfil" className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-surface-50 transition-colors duration-100">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 text-brand-700 text-xs font-bold ring-1 ring-brand-200/50 dark:ring-brand-600/30">
+                        <Link to="/perfil" className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 hover:bg-surface-50 dark:hover:bg-white/[0.04] transition-colors duration-150">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] prix-gradient text-white text-xs font-bold shadow-sm">
                                 {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                             </div>
                             <div className="hidden sm:flex flex-col">
-                                <span className="text-sm font-medium text-surface-700 leading-tight">
+                                <span className="text-sm font-semibold text-surface-800 dark:text-white leading-tight">
                                     {user?.name ?? 'Usuário'}
                                 </span>
                                 {user?.role_details?.[0] && (
@@ -708,7 +714,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
                         <button
                             onClick={logout}
-                            className="rounded-md p-1 text-surface-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-100"
+                            className="rounded-[var(--radius-md)] p-1.5 text-surface-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150"
                             title="Sair"
                         >
                             <LogOut className="h-3.5 w-3.5" />
@@ -716,7 +722,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-4 lg:p-5">
+                <main className="flex-1 overflow-y-auto p-4 lg:p-6">
                     <AppBreadcrumb />
                     {children}
                 </main>

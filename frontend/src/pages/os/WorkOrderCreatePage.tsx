@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Plus, Trash2, Package, Briefcase, Users, Truck } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -56,8 +57,8 @@ function EquipmentSelector({ customerId, selectedIds, onToggle }: {
 }
 
 export function WorkOrderCreatePage() {
-  const { hasPermission } = useAuthStore()
-  const { canViewPrices } = usePriceGate()
+    const { hasPermission } = useAuthStore()
+    const { canViewPrices } = usePriceGate()
 
     const navigate = useNavigate()
     const qc = useQueryClient()
@@ -145,6 +146,7 @@ export function WorkOrderCreatePage() {
         mutationFn: (data: any) => api.post('/work-orders', data),
         onSuccess: (res) => {
             qc.invalidateQueries({ queryKey: ['work-orders'] })
+            broadcastQueryInvalidation(['work-orders', 'dashboard'], 'Ordem de Serviço')
             toast.success('OS criada com sucesso!')
             const warrantyWarning = res?.data?.warranty_warning
             if (warrantyWarning) {
@@ -462,36 +464,36 @@ export function WorkOrderCreatePage() {
                     )}
 
                     {canViewPrices && (
-                    <div className="border-t border-subtle pt-4 space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-surface-600">Subtotal</span>
-                            <span className="font-medium">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <div className="border-t border-subtle pt-4 space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-surface-600">Subtotal</span>
+                                <span className="font-medium">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4 text-sm">
+                                <span className="text-surface-600">Desconto Fixo (R$)</span>
+                                <input type="number" step="0.01" value={form.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount', e.target.value)}
+                                    disabled={parseFloat(form.discount_percentage) > 0}
+                                    className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
+                            </div>
+                            <div className="flex items-center justify-between gap-4 text-sm">
+                                <span className="text-surface-600">Desconto Global (%)</span>
+                                <input type="number" step="0.01" min="0" max="100" value={form.discount_percentage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount_percentage', e.target.value)}
+                                    disabled={parseFloat(form.discount) > 0}
+                                    className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
+                            </div>
+                            {parseFloat(form.discount) > 0 && parseFloat(form.discount_percentage) > 0 && (
+                                <p className="text-xs text-amber-600">Apenas um tipo de desconto pode ser aplicado. O desconto percentual terá prioridade.</p>
+                            )}
+                            <div className="flex items-center justify-between gap-4 text-sm">
+                                <span className="text-surface-600">Valor Deslocamento (R$)</span>
+                                <input type="number" step="0.01" value={form.displacement_value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('displacement_value', e.target.value)}
+                                    className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                            </div>
+                            <div className="flex items-center justify-between text-base border-t border-subtle pt-2">
+                                <span className="font-semibold text-surface-900">Total</span>
+                                <span className="font-bold text-brand-600">{grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
                         </div>
-                        <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-surface-600">Desconto Fixo (R$)</span>
-                            <input type="number" step="0.01" value={form.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount', e.target.value)}
-                                disabled={parseFloat(form.discount_percentage) > 0}
-                                className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
-                        </div>
-                        <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-surface-600">Desconto Global (%)</span>
-                            <input type="number" step="0.01" min="0" max="100" value={form.discount_percentage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount_percentage', e.target.value)}
-                                disabled={parseFloat(form.discount) > 0}
-                                className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
-                        </div>
-                        {parseFloat(form.discount) > 0 && parseFloat(form.discount_percentage) > 0 && (
-                            <p className="text-xs text-amber-600">Apenas um tipo de desconto pode ser aplicado. O desconto percentual terá prioridade.</p>
-                        )}
-                        <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-surface-600">Valor Deslocamento (R$)</span>
-                            <input type="number" step="0.01" value={form.displacement_value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('displacement_value', e.target.value)}
-                                className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
-                        </div>
-                        <div className="flex items-center justify-between text-base border-t border-subtle pt-2">
-                            <span className="font-semibold text-surface-900">Total</span>
-                            <span className="font-bold text-brand-600">{grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                        </div>
-                    </div>
                     )}
                 </div>
 

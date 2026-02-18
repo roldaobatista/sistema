@@ -7,6 +7,7 @@ import {
     Plus, Pencil, Trash2, X, Wrench
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
 import { useAuthStore } from '@/stores/auth-store'
@@ -67,7 +68,7 @@ export default function QualityPage() {
     // Mutations
     const saveProcedure = useMutation({
         mutationFn: (data: typeof procForm) => editingId ? api.put(`/quality/procedures/${editingId}`, data) : api.post('/quality/procedures', data),
-        onSuccess: () => { toast.success(editingId ? 'Procedimento atualizado' : 'Procedimento criado'); setModalEntity(null); queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }) },
+        onSuccess: () => { toast.success(editingId ? 'Procedimento atualizado' : 'Procedimento criado'); setModalEntity(null); queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }); broadcastQueryInvalidation(['quality-procedures'], 'Qualidade') },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar procedimento'),
     })
 
@@ -87,19 +88,19 @@ export default function QualityPage() {
             }
             return editingId ? api.put(`/quality/corrective-actions/${editingId}`, data) : api.post('/quality/corrective-actions', data)
         },
-        onSuccess: () => { toast.success(editingId ? 'Ação atualizada' : 'Ação criada'); setModalEntity(null); setFromComplaintId(null); queryClient.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }) },
+        onSuccess: () => { toast.success(editingId ? 'Ação atualizada' : 'Ação criada'); setModalEntity(null); setFromComplaintId(null); queryClient.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }); broadcastQueryInvalidation(['quality-corrective-actions', 'quality-complaints'], 'Qualidade') },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar ação'),
     })
 
     const saveComplaint = useMutation({
         mutationFn: (data: typeof complaintForm) => editingId ? api.put(`/quality/complaints/${editingId}`, data) : api.post('/quality/complaints', data),
-        onSuccess: () => { toast.success(editingId ? 'Reclamação atualizada' : 'Reclamação registrada'); setModalEntity(null); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }) },
+        onSuccess: () => { toast.success(editingId ? 'Reclamação atualizada' : 'Reclamação registrada'); setModalEntity(null); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }); broadcastQueryInvalidation(['quality-complaints'], 'Qualidade') },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao salvar reclamação'),
     })
 
     const deleteMutation = useMutation({
         mutationFn: ({ entity, id }: { entity: string; id: number }) => api.delete(`/quality/${entity}/${id}`),
-        onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }); queryClient.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }) },
+        onSuccess: () => { toast.success('Removido com sucesso'); queryClient.invalidateQueries({ queryKey: ['quality-procedures'] }); queryClient.invalidateQueries({ queryKey: ['quality-corrective-actions'] }); queryClient.invalidateQueries({ queryKey: ['quality-complaints'] }); broadcastQueryInvalidation(['quality-procedures', 'quality-corrective-actions', 'quality-complaints'], 'Qualidade') },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao remover'),
     })
     const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{ entity: string; id: number } | null>(null)

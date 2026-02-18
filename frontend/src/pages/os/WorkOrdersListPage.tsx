@@ -6,6 +6,7 @@ import {
     Filter, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Download, Trash2, Upload,
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/iconbutton'
@@ -107,12 +108,13 @@ export function WorkOrdersListPage() {
         mutationFn: (id: number) => api.delete(`/work-orders/${id}`),
         onSuccess: () => {
             toast.success('OS excluída com sucesso')
-                qc.invalidateQueries({ queryKey: ['work-orders'] })
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            broadcastQueryInvalidation(['work-orders', 'dashboard'], 'Ordem de Serviço')
             setDeleteId(null)
         },
         onError: (err: any) => {
             toast.error(err?.response?.data?.message || 'Erro ao excluir OS')
-                setDeleteId(null)
+            setDeleteId(null)
         },
     })
 
@@ -129,6 +131,7 @@ export function WorkOrdersListPage() {
             if (data.created > 0) {
                 toast.success(`${data.created} OS importadas com sucesso`)
                 qc.invalidateQueries({ queryKey: ['work-orders'] })
+                broadcastQueryInvalidation(['work-orders', 'dashboard'], 'Ordem de Serviço')
             }
             if (data.errors?.length > 0) toast.error(`${data.errors.length} erro(s) na importação`)
         } catch (err: any) {

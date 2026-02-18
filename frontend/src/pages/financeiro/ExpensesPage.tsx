@@ -7,6 +7,7 @@ import {
     BarChart3, ChevronDown, Copy, History, AlertTriangle,
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { EXPENSE_STATUS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/iconbutton'
@@ -210,6 +211,7 @@ export function ExpensesPage() {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
             qc.invalidateQueries({ queryKey: ['expense-analytics'] })
+            broadcastQueryInvalidation(['expenses', 'expense-summary', 'expense-analytics'], 'Despesa')
             setShowForm(false)
             setEditingId(null)
             setForm(emptyForm)
@@ -237,6 +239,7 @@ export function ExpensesPage() {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
             qc.invalidateQueries({ queryKey: ['expense-analytics'] })
+            broadcastQueryInvalidation(['expenses', 'expense-summary', 'expense-analytics'], 'Despesa')
             setRejectTarget(null)
             toast.success(`Despesa ${statusConfig[vars.status]?.label?.toLowerCase() ?? vars.status} com sucesso`)
         },
@@ -256,6 +259,7 @@ export function ExpensesPage() {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
             qc.invalidateQueries({ queryKey: ['expense-analytics'] })
+            broadcastQueryInvalidation(['expenses', 'expense-summary', 'expense-analytics'], 'Despesa')
             setDeleteTarget(null)
             toast.success('Despesa excluída com sucesso')
         },
@@ -276,6 +280,7 @@ export function ExpensesPage() {
         },
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['expense-categories'] })
+            broadcastQueryInvalidation(['expense-categories'], 'Despesa')
             setShowCatForm(false)
             setEditingCatId(null)
             toast.success(editingCatId ? 'Categoria atualizada com sucesso' : 'Categoria criada com sucesso')
@@ -296,6 +301,7 @@ export function ExpensesPage() {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
             qc.invalidateQueries({ queryKey: ['expense-analytics'] })
+            broadcastQueryInvalidation(['expenses', 'expense-summary', 'expense-analytics'], 'Despesa')
             setSelectedIds(new Set())
             setShowBatchReject(false)
             toast.success(res?.data?.message ?? 'Lote processado com sucesso')
@@ -317,6 +323,7 @@ export function ExpensesPage() {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
             qc.invalidateQueries({ queryKey: ['expense-analytics'] })
+            broadcastQueryInvalidation(['expenses', 'expense-summary', 'expense-analytics'], 'Despesa')
             toast.success('Despesa duplicada como pendente')
         },
         onError: (err: any) => {
@@ -329,6 +336,7 @@ export function ExpensesPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['expenses'] })
             qc.invalidateQueries({ queryKey: ['expense-summary'] })
+            broadcastQueryInvalidation(['expenses', 'expense-summary'], 'Despesa')
             toast.success('Despesa conferida com sucesso')
         },
         onError: (err: any) => {
@@ -397,6 +405,7 @@ export function ExpensesPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['expense-categories'] })
             qc.invalidateQueries({ queryKey: ['expenses'] })
+            broadcastQueryInvalidation(['expense-categories', 'expenses'], 'Despesa')
             setDeleteCatTarget(null)
             toast.success('Categoria excluída com sucesso')
         },

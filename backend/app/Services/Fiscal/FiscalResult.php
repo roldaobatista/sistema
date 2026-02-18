@@ -18,6 +18,11 @@ class FiscalResult
         public readonly ?string $xmlUrl = null,
         public readonly ?string $errorMessage = null,
         public readonly ?array $rawResponse = null,
+        public readonly ?string $protocolNumber = null,
+        public readonly ?string $eventType = null,
+        public readonly ?string $correctionText = null,
+        public readonly ?string $verificationCode = null,
+        public readonly ?string $reference = null,
     ) {}
 
     public static function ok(array $data = []): self
@@ -32,6 +37,11 @@ class FiscalResult
             pdfUrl: $data['pdf_url'] ?? null,
             xmlUrl: $data['xml_url'] ?? null,
             rawResponse: $data['raw'] ?? null,
+            protocolNumber: $data['protocol_number'] ?? null,
+            eventType: $data['event_type'] ?? null,
+            correctionText: $data['correction_text'] ?? null,
+            verificationCode: $data['verification_code'] ?? null,
+            reference: $data['reference'] ?? null,
         );
     }
 

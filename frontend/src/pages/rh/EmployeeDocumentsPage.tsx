@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FileText, Plus, Trash2, Upload, Search, AlertTriangle, Download, Shield } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -59,14 +60,16 @@ export default function EmployeeDocumentsPage() {
 
     const uploadMut = useMutation({
         mutationFn: (fd: FormData) => api.post('/hr/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['employee-documents'] });
-                qc.invalidateQueries({ queryKey: ['employee-documents-expiring'] }); setShowModal(false); setForm(emptyForm); setFile(null); toast.success('Documento adicionado') },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['employee-documents'] });
+            qc.invalidateQueries({ queryKey: ['employee-documents-expiring'] }); broadcastQueryInvalidation(['employee-documents', 'employee-documents-expiring'], 'Documentos'); setShowModal(false); setForm(emptyForm); setFile(null); toast.success('Documento adicionado')
+        },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao enviar documento'),
     })
 
     const deleteMut = useMutation({
         mutationFn: (id: number) => api.delete(`/hr/documents/${id}`),
-        onSuccess: () => { qc.invalidateQueries({ queryKey: ['employee-documents'] }); setDeleteTarget(null); toast.success('Documento excluído') },
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['employee-documents'] }); broadcastQueryInvalidation(['employee-documents', 'employee-documents-expiring'], 'Documentos'); setDeleteTarget(null); toast.success('Documento excluído') },
         onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao excluir'),
     })
 

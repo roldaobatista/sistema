@@ -61,6 +61,7 @@ const defaultSettings: SettingItem[] = [
     { key: 'os_number_prefix', value: 'OS-', type: 'string', group: 'os' },
     // Orcamentos
     { key: 'quote_sequence_start', value: '1', type: 'integer', group: 'quotes' },
+    { key: 'quote_default_validity_days', value: '30', type: 'integer', group: 'quotes' },
     // Financeiro
     { key: 'default_payment_method', value: 'pix', type: 'string', group: 'financial' },
     { key: 'late_fee_percentage', value: '2', type: 'integer', group: 'financial' },
@@ -108,6 +109,7 @@ const settingLabels: Record<string, string> = {
     require_approval_above: 'Exigir Aprovação Acima de (R$)',
     os_number_prefix: 'Prefixo da Numeração OS',
     quote_sequence_start: 'Início da Sequência dos Orçamentos',
+    quote_default_validity_days: 'Prazo de Validade Padrão (dias)',
     default_payment_method: 'Forma de Pagamento Padrão',
     late_fee_percentage: 'Multa por Atraso (%)',
     auto_generate_invoice: 'Gerar Fatura Automaticamente ao Concluir OS',
@@ -147,7 +149,7 @@ const entityLabels: Record<string, string> = {
 }
 
 export function SettingsPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const [tab, setTab] = useState<Tab>('settings')
@@ -290,23 +292,23 @@ export function SettingsPage() {
                                         return <CompanyLogoUpload key={s.key} currentUrl={getVal(s.key)} onUploaded={(url) => setVal(s.key, url)} />
                                     }
                                     return (
-                                    <div key={s.key} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-                                        <label className="text-sm font-medium text-surface-600">{settingLabels[s.key] ?? s.key}</label>
-                                        {s.type === 'boolean' ? (
-                                            <button onClick={() => setVal(s.key, getVal(s.key) === 'true' ? 'false' : 'true')}
-                                                aria-label={settingLabels[s.key] ?? s.key}
-                                                className={cn('relative h-6 w-11 rounded-full transition-colors',
-                                                    getVal(s.key) === 'true' ? 'bg-brand-500' : 'bg-surface-300')}>
-                                                <span className={cn('absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform shadow',
-                                                    getVal(s.key) === 'true' && 'translate-x-5')} />
-                                            </button>
-                                        ) : (
-                                            <input value={getVal(s.key)} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVal(s.key, e.target.value)}
-                                                type={s.type === 'integer' ? 'number' : 'text'}
-                                                aria-label={settingLabels[s.key] ?? s.key}
-                                                className="w-full max-w-xs rounded-lg border border-default bg-surface-50 px-3.5 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
-                                        )}
-                                    </div>
+                                        <div key={s.key} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                                            <label className="text-sm font-medium text-surface-600">{settingLabels[s.key] ?? s.key}</label>
+                                            {s.type === 'boolean' ? (
+                                                <button onClick={() => setVal(s.key, getVal(s.key) === 'true' ? 'false' : 'true')}
+                                                    aria-label={settingLabels[s.key] ?? s.key}
+                                                    className={cn('relative h-6 w-11 rounded-full transition-colors',
+                                                        getVal(s.key) === 'true' ? 'bg-brand-500' : 'bg-surface-300')}>
+                                                    <span className={cn('absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform shadow',
+                                                        getVal(s.key) === 'true' && 'translate-x-5')} />
+                                                </button>
+                                            ) : (
+                                                <input value={getVal(s.key)} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVal(s.key, e.target.value)}
+                                                    type={s.type === 'integer' ? 'number' : 'text'}
+                                                    aria-label={settingLabels[s.key] ?? s.key}
+                                                    className="w-full max-w-xs rounded-lg border border-default bg-surface-50 px-3.5 py-2 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
+                                            )}
+                                        </div>
                                     )
                                 })}
                             </div>

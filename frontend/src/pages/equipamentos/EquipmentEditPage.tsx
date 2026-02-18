@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Save, Loader2, Scale, XCircle } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { PageHeader } from '@/components/ui/pageheader'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -90,6 +91,7 @@ export default function EquipmentEditPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['equipment', id] })
             queryClient.invalidateQueries({ queryKey: ['equipments'] })
+            broadcastQueryInvalidation(['equipments'], 'Equipamento')
             toast.success('Equipamento atualizado.')
             navigate(`/equipamentos/${id}`)
         },

@@ -212,7 +212,7 @@ class AuvoFieldMapper
             'teams'                 => 'teams',
             'segments'              => 'segments',
             'keywords'              => 'keywords',
-            default                 => $entityType,
+            default                 => throw new \InvalidArgumentException("Unknown Auvo entity type: {$entityType}"),
         };
     }
 

@@ -8,7 +8,6 @@ import {
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  // Detecta dark mode pela classe no documentElement (compatível com useDarkMode hook)
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
   const theme: ToasterProps["theme"] = isDark ? "dark" : "light"
 
@@ -26,8 +25,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
+            "group toast group-[.toaster]:bg-white group-[.toaster]:text-surface-900 group-[.toaster]:border-black/[0.06] group-[.toaster]:shadow-elevated dark:group-[.toaster]:bg-[#111113] dark:group-[.toaster]:text-white dark:group-[.toaster]:border-white/[0.08]",
+          description: "group-[.toast]:text-surface-500",
           actionButton:
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton:

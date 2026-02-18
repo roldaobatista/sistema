@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, Edit2, FolderTree, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 import { Badge } from '@/components/ui/badge'
@@ -175,8 +176,9 @@ export function ChartOfAccountsPage() {
         },
         onSuccess: () => {
             toast.success('Plano de contas atualizado com sucesso')
-                qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
+            qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
             qc.invalidateQueries({ queryKey: ['chart-of-accounts-parent-options'] })
+            broadcastQueryInvalidation(['chart-of-accounts', 'chart-of-accounts-parent-options'], 'Plano de Contas')
             setModal(null)
             setForm(emptyForm)
         },
@@ -191,8 +193,9 @@ export function ChartOfAccountsPage() {
         },
         onSuccess: () => {
             toast.success('Conta removida com sucesso')
-                qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
+            qc.invalidateQueries({ queryKey: ['chart-of-accounts'] })
             qc.invalidateQueries({ queryKey: ['chart-of-accounts-parent-options'] })
+            broadcastQueryInvalidation(['chart-of-accounts', 'chart-of-accounts-parent-options'], 'Plano de Contas')
             setDeleteTarget(null)
         },
         onError: (error) => {

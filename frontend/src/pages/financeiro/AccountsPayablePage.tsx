@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { FINANCIAL_STATUS } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
@@ -192,6 +193,7 @@ export function AccountsPayablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-payable'] })
             qc.invalidateQueries({ queryKey: ['ap-summary'] })
+            broadcastQueryInvalidation(['accounts-payable', 'ap-summary'], 'Contas a Pagar')
             setShowForm(false)
             setEditingId(null)
             setFormErrors({})
@@ -219,6 +221,7 @@ export function AccountsPayablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-payable'] })
             qc.invalidateQueries({ queryKey: ['ap-summary'] })
+            broadcastQueryInvalidation(['accounts-payable', 'ap-summary'], 'Contas a Pagar')
             setShowPay(null)
             setPayErrors({})
             setPayForm({ amount: '', payment_method: 'pix', payment_date: '', notes: '' })
@@ -245,6 +248,7 @@ export function AccountsPayablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-payable'] })
             qc.invalidateQueries({ queryKey: ['ap-summary'] })
+            broadcastQueryInvalidation(['accounts-payable', 'ap-summary'], 'Contas a Pagar')
             setDeleteTarget(null)
             toast.success('Conta excluida com sucesso')
         },
@@ -263,6 +267,7 @@ export function AccountsPayablePage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['accounts-payable'] })
             qc.invalidateQueries({ queryKey: ['ap-summary'] })
+            broadcastQueryInvalidation(['accounts-payable', 'ap-summary'], 'Contas a Pagar')
             setCancelTarget(null)
             toast.success('Conta cancelada com sucesso')
         },

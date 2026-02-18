@@ -46,15 +46,7 @@ class AuvoExportService
         ];
 
         if ($mapping) {
-            $patch = [
-                ['op' => 'replace', 'path' => '/name', 'value' => $customer->name],
-                ['op' => 'replace', 'path' => '/description', 'value' => $customer->trade_name ?? $customer->name],
-                ['op' => 'replace', 'path' => '/cpfCnpj', 'value' => $customer->document ?? ''],
-                ['op' => 'replace', 'path' => '/address', 'value' => $customer->address_street ?? ''],
-                ['op' => 'replace', 'path' => '/city', 'value' => $customer->address_city ?? ''],
-                ['op' => 'replace', 'path' => '/state', 'value' => $customer->address_state ?? ''],
-            ];
-            $response = $this->client->patch("customers/{$mapping->auvo_id}", $patch);
+            $response = $this->client->patch("customers/{$mapping->auvo_id}", $payload);
             return $response['result'] ?? $response;
         }
 
@@ -88,15 +80,7 @@ class AuvoExportService
         ];
 
         if ($mapping) {
-            // Update via PATCH (Json Patch format)
-            // [ { "op": "replace", "path": "/name", "value": "New Name" } ]
-            $patch = [
-                ['op' => 'replace', 'path' => '/name', 'value' => $product->name],
-                ['op' => 'replace', 'path' => '/description', 'value' => $product->name],
-                ['op' => 'replace', 'path' => '/value', 'value' => (float) $product->sell_price],
-            ];
-            
-            $response = $this->client->patch("products/{$mapping->auvo_id}", $patch);
+            $response = $this->client->patch("products/{$mapping->auvo_id}", $payload);
             return $response['result'] ?? $response;
         } else {
             // Create via POST
@@ -129,13 +113,7 @@ class AuvoExportService
         ];
 
         if ($mapping) {
-            $patch = [
-                ['op' => 'replace', 'path' => '/name', 'value' => $service->name],
-                ['op' => 'replace', 'path' => '/description', 'value' => $service->name],
-                ['op' => 'replace', 'path' => '/value', 'value' => (float) ($service->default_price ?? 0)],
-            ];
-
-            $response = $this->client->patch("services/{$mapping->auvo_id}", $patch);
+            $response = $this->client->patch("services/{$mapping->auvo_id}", $payload);
             return $response['result'] ?? $response;
         } else {
             // Create via POST
@@ -195,12 +173,7 @@ class AuvoExportService
         ];
 
         if ($quoteMapping) {
-            $patch = [
-                ['op' => 'replace', 'path' => '/title', 'value' => $payload['title']],
-                ['op' => 'replace', 'path' => '/totalValue', 'value' => $payload['totalValue']],
-                ['op' => 'replace', 'path' => '/observation', 'value' => $payload['observation']],
-            ];
-            $response = $this->client->patch("quotations/{$quoteMapping->auvo_id}", $patch);
+            $response = $this->client->patch("quotations/{$quoteMapping->auvo_id}", $payload);
             return $response['result'] ?? $response;
         }
 

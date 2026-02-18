@@ -1,7 +1,8 @@
-import { useState , useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { usePerformance } from '@/hooks/usePerformance'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { PageHeader } from '@/components/ui/pageheader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,18 +21,21 @@ import { toast } from 'sonner'
 
 export default function PerformancePage() {
 
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/performance/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['performance'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
-  const handleDelete = (id: number) => { setConfirmDeleteId(id) }
-  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
-  const { hasPermission } = useAuthStore()
+    // MVP: Delete mutation
+    const queryClient = useQueryClient()
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/performance/${id}`),
+        onSuccess: () => {
+            toast.success('Removido com sucesso');
+            queryClient.invalidateQueries({ queryKey: ['performance'] })
+            broadcastQueryInvalidation(['performance'], 'Desempenho')
+        },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    })
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+    const handleDelete = (id: number) => { setConfirmDeleteId(id) }
+    const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
+    const { hasPermission } = useAuthStore()
 
     const navigate = useNavigate()
     const {
@@ -230,10 +234,10 @@ export default function PerformancePage() {
                     { label: 'Estrela em Crescimento', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700' },
                     { label: 'Estrela', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
                     { label: 'Risco', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
-                                    { label: 'Profissional Confiável', bg: 'bg-surface-50', border: 'border-default', text: 'text-surface-700' },
+                    { label: 'Profissional Confiável', bg: 'bg-surface-50', border: 'border-default', text: 'text-surface-700' },
                     { label: 'Alto Potencial', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700' },
                     { label: 'Iceberg', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
-                                    { label: 'Eficiente', bg: 'bg-surface-50', border: 'border-default', text: 'text-surface-700' },
+                    { label: 'Eficiente', bg: 'bg-surface-50', border: 'border-default', text: 'text-surface-700' },
                     { label: 'Comprometido', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
                 ]
 

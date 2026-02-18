@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Package, AlertTriangle, UploadCloud, Scale, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -32,7 +33,7 @@ const emptyForm = {
 }
 
 export function ProductsPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const canCreate = hasPermission('cadastros.product.create')
     const canEdit = hasPermission('cadastros.product.update')
@@ -73,6 +74,7 @@ export function ProductsPage() {
             editing ? api.put(`/products/${editing.id}`, data) : api.post('/products', data),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['products'] })
+            broadcastQueryInvalidation(['products', 'products-all', 'stock'], 'Produto')
             setShowForm(false)
             toast.success(editing ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!')
         },
@@ -86,6 +88,7 @@ export function ProductsPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['products'] })
             qc.invalidateQueries({ queryKey: ['stock'] })
+            broadcastQueryInvalidation(['products', 'products-all', 'stock'], 'Produto')
             setShowConfirmDelete(null)
             toast.success('Produto excluído com sucesso!')
         },

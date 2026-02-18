@@ -23,7 +23,7 @@ export function useDarkMode() {
         document.documentElement.classList.toggle('light', !dark)
         const metaThemeColor = document.querySelector('meta[name="theme-color"]')
         if (metaThemeColor) {
-            metaThemeColor.setAttribute('content', dark ? '#0f172a' : '#2563eb')
+            metaThemeColor.setAttribute('content', dark ? '#09090B' : '#2563EB')
         }
     }, [])
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud, FileText, MapPin, Loader2, CheckCircle2, Zap, Sprout, Briefcase, DollarSign, AlertTriangle, Sparkles } from 'lucide-react'
@@ -369,6 +370,7 @@ export function CustomersPage() {
     onSuccess: () => {
       toast.success(editingId ? 'Cliente atualizado!' : 'Cliente criado!')
       qc.invalidateQueries({ queryKey: ['customers'] })
+      broadcastQueryInvalidation(['customers', 'customers-search'], 'Cliente')
       closeModal()
     },
     onError: (err: any) => {
@@ -409,6 +411,7 @@ export function CustomersPage() {
     onSuccess: () => {
       toast.success('Cliente excluído!')
       qc.invalidateQueries({ queryKey: ['customers'] })
+      broadcastQueryInvalidation(['customers', 'customers-search'], 'Cliente')
       setDelId(null)
       setDelDeps(null)
     },

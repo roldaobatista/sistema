@@ -34,83 +34,88 @@ export function LoginPage() {
 
     return (
         <div className="flex min-h-screen">
-            {/* Left Panel — Branding */}
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-b from-surface-900 via-surface-800 to-surface-950">
-                {/* Grid */}
-                <div className="absolute inset-0 opacity-[0.03]"
-                    style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+            {/* Left Panel — Premium Branding */}
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#18181B] dark:bg-[#09090B]">
+                {/* Animated gradient mesh */}
+                <div className="absolute inset-0">
+                    <div className="absolute -top-1/4 -left-1/4 h-[600px] w-[600px] rounded-full bg-brand-500/8 blur-[140px] animate-pulse-soft" />
+                    <div className="absolute -bottom-1/4 -right-1/4 h-[500px] w-[500px] rounded-full bg-cta-500/6 blur-[120px] animate-pulse-soft" style={{ animationDelay: '1s' }} />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] rounded-full bg-prix-500/4 blur-[100px] animate-pulse-soft" style={{ animationDelay: '2s' }} />
+                </div>
 
-                {/* Brand accent glow */}
-                <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-brand-500/8 blur-3xl" />
-                <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-brand-600/5 blur-3xl" />
+                {/* Subtle grid */}
+                <div className="absolute inset-0 opacity-[0.02]"
+                    style={{ backgroundImage: 'radial-gradient(circle, #A1A1AA 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
-                <div className="relative z-10 flex flex-col justify-center px-16">
-                    <div className="flex items-center gap-2.5 mb-10">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-white font-bold text-sm">
+                <div className="relative z-10 flex flex-col justify-center px-16 xl:px-20">
+                    {/* Brand */}
+                    <div className="flex items-center gap-3.5 mb-16">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] prix-gradient text-white font-bold text-lg shadow-lg shadow-brand-500/25">
                             K
                         </div>
-                        <span className="text-[15px] font-semibold tabular-nums text-white tracking-tight">KALIBRIUM</span>
+                        <span className="font-bold text-white text-xl tracking-tight">KALIBRIUM</span>
                     </div>
 
-                    <h2 className="text-3xl font-bold text-white leading-tight tracking-tight mb-3">
+                    <h2 className="text-[3rem] xl:text-[3.5rem] leading-[1.05] font-extrabold text-white tracking-tight mb-5">
                         Gestão completa<br />
-                        <span className="text-brand-400">para sua empresa</span>
+                        <span className="prix-gradient-text">para sua empresa</span>
                     </h2>
-                    <p className="text-sm text-surface-400 max-w-md leading-relaxed">
-                        Ordens de serviço, financeiro, CRM, estoque e muito mais em uma plataforma integrada.
+                    <p className="text-base text-zinc-400 max-w-md leading-relaxed">
+                        Ordens de serviço, financeiro, CRM, estoque e muito mais em uma plataforma integrada e inteligente.
                     </p>
 
                     {/* Feature pills */}
-                    <div className="flex flex-wrap gap-1.5 mt-8">
+                    <div className="flex flex-wrap gap-2.5 mt-12">
                         {['Ordens de Serviço', 'Financeiro', 'CRM', 'Estoque', 'Portal Cliente'].map(f => (
-                            <span key={f} className="rounded-md border border-white/10 bg-surface-0/5 dark:bg-surface-800/5 px-2.5 py-1 text-[11px] font-medium text-white/60">
+                            <span key={f} className="rounded-[var(--radius-pill)] border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-medium text-zinc-400 tracking-wide hover:bg-white/[0.06] hover:text-zinc-300 transition-colors duration-200">
                                 {f}
                             </span>
                         ))}
                     </div>
 
-                    {/* Tolerance bar — brand signature */}
-                    <div className="mt-12 flex gap-0.5 max-w-xs">
-                        <div className="h-0.5 flex-[5] rounded-l-full bg-emerald-500/40" />
-                        <div className="h-0.5 flex-[2] bg-amber-400/40" />
-                        <div className="h-0.5 flex-[1] rounded-r-full bg-red-400/40" />
+                    {/* Signature bar */}
+                    <div className="mt-16 flex gap-[3px] max-w-xs">
+                        <div className="h-[3px] flex-[5] rounded-l-full bg-gradient-to-r from-brand-500/70 to-brand-500/40" />
+                        <div className="h-[3px] flex-[2] bg-cta-500/50" />
+                        <div className="h-[3px] flex-[1] rounded-r-full bg-prix-500/40" />
                     </div>
                 </div>
             </div>
 
             {/* Right Panel — Form */}
-            <div className="flex flex-1 items-center justify-center bg-surface-50 p-4 relative">
+            <div className="flex flex-1 items-center justify-center p-4 relative bg-background">
                 <div className="relative w-full max-w-sm">
                     {/* Mobile branding */}
-                    <div className="mb-8 text-center lg:hidden">
-                        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white font-bold text-sm">
+                    <div className="mb-10 text-center lg:hidden">
+                        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] prix-gradient text-white font-bold text-lg shadow-lg shadow-brand-500/25">
                             K
                         </div>
-                        <h1 className="text-[15px] font-semibold tabular-nums text-surface-900 tracking-tight">KALIBRIUM</h1>
+                        <h1 className="font-bold text-brand-600 dark:text-brand-400 text-lg tracking-tight">KALIBRIUM</h1>
                     </div>
 
                     {/* Card */}
-                    <div className="rounded-xl border border-default bg-surface-0 p-7 shadow-elevated">
-                        <div className="mb-6">
-                            <h1 className="text-lg font-semibold text-surface-900 tracking-tight">
+                    <div className={cn(
+                        "rounded-[var(--radius-xl)] border bg-white p-8 shadow-elevated",
+                        "border-black/[0.04] dark:border-white/[0.08] dark:bg-[#111113] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_8px_40px_rgba(0,0,0,0.5)]"
+                    )}>
+                        <div className="mb-7">
+                            <h1 className="text-2xl font-bold text-surface-900 dark:text-white tracking-tight">
                                 Bem-vindo de volta
                             </h1>
-                            <p className="mt-0.5 text-[13px] text-surface-500">
+                            <p className="mt-1.5 text-sm text-surface-500">
                                 Entre com suas credenciais para acessar
                             </p>
                         </div>
 
-                        {/* Error */}
                         {error && (
-                            <div className="mb-5 rounded-lg border border-red-200/50 dark:border-red-700/50 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700 flex items-center gap-2">
-                                <Shield className="h-3.5 w-3.5 flex-shrink-0" /> {error}
+                            <div className="mb-6 rounded-[var(--radius-md)] border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8 px-4 py-3 text-sm text-red-700 dark:text-red-300 flex items-center gap-2.5">
+                                <Shield className="h-4 w-4 flex-shrink-0" /> {error}
                             </div>
                         )}
 
-                        {/* Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-1.5">
-                                <label htmlFor="email" className="block text-[13px] font-medium text-surface-700">
+                                <label htmlFor="email" className="block text-sm font-medium text-surface-700 dark:text-surface-300">
                                     E-mail
                                 </label>
                                 <input
@@ -122,16 +127,17 @@ export function LoginPage() {
                                     required
                                     autoFocus
                                     className={cn(
-                                        'w-full rounded-md border border-default bg-surface-50 px-3 py-2 text-sm text-foreground',
-                                        'placeholder:text-surface-400 dark:placeholder:text-surface-500',
-                                        'focus:border-brand-400 focus:bg-surface-0 dark:focus:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
+                                        'w-full rounded-[var(--radius-md)] border bg-white px-3.5 py-2.5 text-sm text-surface-900',
+                                        'border-surface-200 dark:border-white/[0.08] dark:bg-[#0F0F12] dark:text-white',
+                                        'placeholder:text-surface-400 dark:placeholder:text-zinc-600',
+                                        'focus:border-prix-400 dark:focus:border-prix-400/50 focus:outline-none focus:ring-2 focus:ring-prix-500/15',
                                         'transition-all duration-150'
                                     )}
                                 />
                             </div>
 
                             <div className="space-y-1.5">
-                                <label htmlFor="password" className="block text-[13px] font-medium text-surface-700">
+                                <label htmlFor="password" className="block text-sm font-medium text-surface-700 dark:text-surface-300">
                                     Senha
                                 </label>
                                 <div className="relative">
@@ -143,18 +149,19 @@ export function LoginPage() {
                                         placeholder="••••••••"
                                         required
                                         className={cn(
-                                            'w-full rounded-md border border-default bg-surface-50 px-3 py-2 pr-9 text-sm text-foreground',
-                                            'placeholder:text-surface-400 dark:placeholder:text-surface-500',
-                                            'focus:border-brand-400 focus:bg-surface-0 dark:focus:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-500/15',
+                                            'w-full rounded-[var(--radius-md)] border bg-white px-3.5 py-2.5 pr-10 text-sm text-surface-900',
+                                            'border-surface-200 dark:border-white/[0.08] dark:bg-[#0F0F12] dark:text-white',
+                                            'placeholder:text-surface-400 dark:placeholder:text-zinc-600',
+                                            'focus:border-prix-400 dark:focus:border-prix-400/50 focus:outline-none focus:ring-2 focus:ring-prix-500/15',
                                             'transition-all duration-150'
                                         )}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-white transition-colors"
                                     >
-                                        {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
                                 </div>
                             </div>
@@ -162,7 +169,7 @@ export function LoginPage() {
                             <div className="flex justify-end">
                                 <Link
                                     to="/esqueci-senha"
-                                    className="text-[12px] font-medium text-brand-600 hover:text-brand-500 transition-colors"
+                                    className="text-sm font-medium text-prix-500 hover:text-prix-600 dark:hover:text-prix-400 transition-colors"
                                 >
                                     Esqueceu sua senha?
                                 </Link>
@@ -172,25 +179,26 @@ export function LoginPage() {
                                 type="submit"
                                 disabled={isLoading}
                                 className={cn(
-                                    'flex w-full items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm',
-                                    'hover:bg-brand-500 active:bg-brand-700',
-                                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+                                    'flex w-full items-center justify-center gap-2.5 rounded-[var(--radius-pill)] prix-gradient px-5 py-3 text-sm font-bold text-white',
+                                    'shadow-[0_1px_2px_rgba(0,0,0,0.1),0_2px_8px_rgba(37,99,235,0.2)]',
+                                    'hover:brightness-110 hover:shadow-[0_2px_12px_rgba(37,99,235,0.3)] active:brightness-95',
+                                    'dark:hover:shadow-[0_0_24px_rgba(96,165,250,0.25)]',
+                                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-prix-500/50',
                                     'disabled:cursor-not-allowed disabled:opacity-40',
-                                    'transition-colors duration-150'
+                                    'transition-all duration-200'
                                 )}
                             >
                                 {isLoading ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
-                                    <LogIn className="h-3.5 w-3.5" />
+                                    <LogIn className="h-4 w-4" />
                                 )}
                                 {isLoading ? 'Entrando...' : 'Entrar'}
                             </button>
                         </form>
                     </div>
 
-                    {/* Footer */}
-                    <p className="mt-5 text-center text-[11px] text-surface-400">
+                    <p className="mt-6 text-center text-xs text-surface-400">
                         KALIBRIUM © 2026 — Gestão empresarial inteligente
                     </p>
                 </div>

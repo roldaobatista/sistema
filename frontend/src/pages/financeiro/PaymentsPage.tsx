@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownCircle, ArrowUpCircle, Calendar, DollarSign, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { useAuthStore } from '@/stores/auth-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -116,8 +117,9 @@ export function PaymentsPage() {
         },
         onSuccess: () => {
             toast.success('Pagamento estornado com sucesso')
-                qc.invalidateQueries({ queryKey: ['payments'] })
+            qc.invalidateQueries({ queryKey: ['payments'] })
             qc.invalidateQueries({ queryKey: ['payments-summary'] })
+            broadcastQueryInvalidation(['payments', 'payments-summary'], 'Pagamento')
         },
         onError: (error: ApiErrorLike) => {
             if (error?.response?.status === 403) {

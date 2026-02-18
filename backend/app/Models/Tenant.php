@@ -42,6 +42,19 @@ class Tenant extends Model
         'address_state',
         'address_zip',
         'inmetro_config',
+        // Fiscal config
+        'fiscal_regime',
+        'cnae_code',
+        'fiscal_certificate_path',
+        'fiscal_certificate_password',
+        'fiscal_certificate_expires_at',
+        'fiscal_nfse_token',
+        'fiscal_nfse_city',
+        'fiscal_nfe_series',
+        'fiscal_nfe_next_number',
+        'fiscal_nfse_rps_series',
+        'fiscal_nfse_rps_next_number',
+        'fiscal_environment',
     ];
 
     protected function casts(): array
@@ -49,6 +62,11 @@ class Tenant extends Model
         return [
             'status' => 'string',
             'inmetro_config' => 'array',
+            'fiscal_regime' => 'integer',
+            'fiscal_nfe_series' => 'integer',
+            'fiscal_nfe_next_number' => 'integer',
+            'fiscal_nfse_rps_next_number' => 'integer',
+            'fiscal_certificate_expires_at' => 'date',
         ];
     }
 
@@ -74,6 +92,11 @@ class Tenant extends Model
     public function numberingSequences(): HasMany
     {
         return $this->hasMany(NumberingSequence::class);
+    }
+
+    public function fiscalNotes(): HasMany
+    {
+        return $this->hasMany(FiscalNote::class);
     }
 
     /* ── Status Helpers ── */

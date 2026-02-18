@@ -1,10 +1,11 @@
-import { useState , useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
-import { useQuery , useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Palmtree, AlertTriangle, Clock, CheckCircle2, Users, CalendarDays
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { PageHeader } from '@/components/ui/pageheader'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -39,18 +40,21 @@ const statusLabels: Record<string, string> = {
 
 export default function VacationBalancePage() {
 
-  // MVP: Delete mutation
-  const queryClient = useQueryClient()
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/vacation-balance/${id}`),
-    onSuccess: () => { toast.success('Removido com sucesso');
-                queryClient.invalidateQueries({ queryKey: ['vacation-balance'] }) },
-    onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
-  })
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
-  const handleDelete = (id: number) => { setConfirmDeleteId(id) }
-  const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
-  const { hasPermission } = useAuthStore()
+    // MVP: Delete mutation
+    const queryClient = useQueryClient()
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => api.delete(`/vacation-balance/${id}`),
+        onSuccess: () => {
+            toast.success('Removido com sucesso');
+            queryClient.invalidateQueries({ queryKey: ['vacation-balance'] })
+            broadcastQueryInvalidation(['vacation-balance', 'vacation-balances'], 'Saldo de Férias')
+        },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao remover') },
+    })
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+    const handleDelete = (id: number) => { setConfirmDeleteId(id) }
+    const confirmDelete = () => { if (confirmDeleteId !== null) { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) } }
+    const { hasPermission } = useAuthStore()
 
     const [search, setSearch] = useState('')
 

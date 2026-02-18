@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import api from '@/lib/api'
 import {
     useAuvoConnectionStatus,
     useAuvoSyncStatus,
@@ -13,6 +11,7 @@ import {
     useAuvoRollback,
     useAuvoConfig,
     useAuvoGetConfig,
+    useAuvoDeleteHistory,
 } from '@/hooks/useAuvoImport'
 import {
     CheckCircle2,
@@ -58,7 +57,7 @@ const ENTITY_LABELS: Record<string, string> = {
     product_categories: 'Cat. Produto',
     services: 'Serviços',
     tasks: 'Ordens de Serviço',
-    task_types: 'Tipos de Tarefa',
+    task_types: 'Tipos de OS',
     quotations: 'Orçamentos',
     tickets: 'Chamados',
     expenses: 'Despesas',
@@ -69,12 +68,12 @@ const ENTITY_LABELS: Record<string, string> = {
 }
 
 const FULL_IMPORT_ENTITIES = [
-    'customers', 'equipments', 'products', 'services', 'tasks', 'expenses',
+    'customers', 'equipments', 'products', 'services', 'tasks', 'expenses', 'quotations',
 ]
 
 const MAPPING_ONLY_ENTITIES = [
     'segments', 'customer_groups', 'equipment_categories', 'product_categories',
-    'task_types', 'expense_types', 'quotations', 'tickets', 'users', 'teams', 'keywords',
+    'task_types', 'expense_types', 'tickets', 'users', 'teams', 'keywords',
 ]
 
 export function AuvoImportPage() {
@@ -115,17 +114,7 @@ export function AuvoImportPage() {
     const [showMappings, setShowMappings] = useState(false)
     const { data: mappingsData, isLoading: loadingMappings } = useAuvoMappings()
 
-    const deleteMutation = useMutation({
-        mutationFn: (id: number) => api.delete(`/auvo/history/${id}`),
-        onSuccess: () => {
-            toast.success('Registro removido do histórico.')
-            queryClient.invalidateQueries({ queryKey: ['auvo'] })
-        },
-        onError: (err: unknown) => {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-            toast.error(msg || 'Não foi possível remover o registro.')
-        },
-    })
+    const deleteMutation = useAuvoDeleteHistory()
 
     useEffect(() => {
         if (isErrorConn && savedConfig?.has_credentials) {

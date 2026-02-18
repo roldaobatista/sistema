@@ -29,7 +29,7 @@ function TrendBadge({ current, previous, invert = false }: {
 
     return (
         <span className={cn(
-            'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums',
+            'inline-flex items-center gap-0.5 rounded-[var(--radius-pill)] px-1.5 py-0.5 text-xs font-semibold tabular-nums',
             isPositive
                 ? 'bg-success/10 text-success dark:bg-success/20 dark:text-success'
                 : 'bg-danger/10 text-danger dark:bg-danger/20 dark:text-danger'
@@ -42,26 +42,26 @@ function TrendBadge({ current, previous, invert = false }: {
 
 function KpiSkeleton() {
     return (
-        <div className="rounded-xl border border-default bg-surface-0 p-5 animate-pulse">
+        <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] p-6 animate-pulse">
             <div className="flex items-center justify-between mb-4">
-                <div className="h-3 w-20 rounded bg-surface-200" />
-                <div className="h-4 w-4 rounded bg-surface-200" />
+                <div className="h-3 w-20 rounded bg-surface-200 dark:bg-white/[0.06]" />
+                <div className="h-4 w-4 rounded bg-surface-200 dark:bg-white/[0.06]" />
             </div>
-            <div className="h-7 w-24 rounded bg-surface-200" />
-            <div className="h-3 w-16 rounded bg-surface-200 mt-2" />
+            <div className="h-7 w-24 rounded bg-surface-200 dark:bg-white/[0.06]" />
+            <div className="h-3 w-16 rounded bg-surface-200 dark:bg-white/[0.06] mt-2" />
         </div>
     )
 }
 
 function ChartSkeleton() {
     return (
-        <div className="rounded-xl border border-default bg-surface-0 animate-pulse">
-            <div className="px-5 py-4 border-b border-subtle">
-                <div className="h-4 w-32 rounded bg-surface-200" />
+        <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] animate-pulse">
+            <div className="px-6 py-4 border-b border-black/[0.04] dark:border-white/[0.06]">
+                <div className="h-4 w-32 rounded bg-surface-200 dark:bg-white/[0.06]" />
             </div>
-            <div className="p-5 h-40 flex items-end gap-2">
+            <div className="p-6 h-40 flex items-end gap-2">
                 {SKELETON_BAR_HEIGHTS.map((height, i) => (
-                    <div key={i} className="flex-1 rounded-sm bg-surface-100" style={{ height }} />
+                    <div key={i} className="flex-1 rounded-sm bg-surface-100 dark:bg-white/[0.04]" style={{ height }} />
                 ))}
             </div>
         </div>
@@ -99,24 +99,24 @@ export function DashboardPage() {
     const isEmpty = !isLoading && (s.open_os ?? 0) === 0 && (s.completed_month ?? 0) === 0 && (s.revenue_month ?? 0) === 0
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-heading text-foreground">Dashboard</h1>
-                    <p className="mt-0.5 text-sm text-surface-500">
-                        Olá, {user?.name ?? 'Usuário'}. Aqui está o resumo do dia.
+                    <h1 className="text-heading text-foreground dark:text-white">Dashboard</h1>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Olá, <span className="font-semibold text-surface-700 dark:text-surface-300">{user?.name ?? 'Usuário'}</span>. Aqui está o resumo do dia.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => navigate('/os/nova')}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] prix-gradient px-3.5 py-2 text-sm font-medium text-white hover:brightness-110 hover:shadow-md transition-all"
                     >
                         <Plus className="h-4 w-4" /> Nova OS
                     </button>
                     <button
                         onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm font-medium text-surface-600 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-default bg-surface-0 px-3 py-2 text-sm font-medium text-surface-600 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
                     >
                         <Search className="h-4 w-4" />
                         <span className="hidden sm:inline">Buscar</span>
@@ -128,7 +128,7 @@ export function DashboardPage() {
             </div>
 
             {isEmpty && (
-                <div className="rounded-xl border border-border bg-gradient-to-br from-brand-50/80 to-surface-0 dark:from-brand-950/40 dark:to-surface-800 p-10 text-center animate-fade-in shadow-card">
+                <div className="rounded-[var(--radius-md)] border border-border bg-gradient-to-br from-brand-50/80 to-surface-0 dark:from-brand-950/40 dark:to-surface-800 p-10 text-center animate-fade-in shadow-card">
                     <Rocket className="mx-auto h-10 w-10 text-brand-500 dark:text-brand-400 mb-3" />
                     <h2 className="text-subtitle text-foreground">Bem-vindo ao Kalibrium!</h2>
                     <p className="mt-1 text-sm text-surface-600 max-w-md mx-auto">
@@ -137,13 +137,13 @@ export function DashboardPage() {
                     <div className="mt-5 flex justify-center gap-3">
                         <button
                             onClick={() => navigate('/cadastros/clientes/novo')}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-surface-0 px-4 py-2.5 text-sm font-medium text-surface-700 hover:bg-surface-50 dark:hover:bg-surface-600 transition-colors shadow-sm"
+                            className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-surface-200 bg-surface-0 px-4 py-2.5 text-sm font-medium text-surface-700 hover:bg-surface-50 dark:hover:bg-surface-600 transition-colors shadow-sm"
                         >
                             <Users className="h-4 w-4" /> Cadastrar Cliente
                         </button>
                         <button
                             onClick={() => navigate('/os/nova')}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-500 transition-colors shadow-sm"
+                            className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] prix-gradient px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 transition-all shadow-sm"
                         >
                             <Plus className="h-4 w-4" /> Criar OS
                         </button>
@@ -157,13 +157,16 @@ export function DashboardPage() {
                 </div>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="sm:col-span-2 rounded-xl border border-brand-200/60 dark:border-brand-500/30 bg-gradient-to-br from-brand-50 to-surface-0 dark:from-brand-950/40 dark:to-surface-800 p-5 shadow-card animate-fade-in">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-label text-brand-600/70 dark:text-brand-400/80">Faturamento do Mês</span>
-                            <DollarSign className="h-5 w-5 text-brand-400" />
+                    <div className="sm:col-span-2 rounded-[var(--radius-lg)] border border-brand-200/40 dark:border-brand-500/15 bg-white dark:bg-[#111113] p-6 shadow-card animate-fade-in relative overflow-hidden">
+                        <div className="absolute inset-y-0 left-0 w-1 prix-gradient" />
+                        <div className="flex items-center justify-between mb-1.5 pl-4">
+                            <span className="text-label text-brand-600 dark:text-brand-400">Faturamento do Mês</span>
+                            <div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-brand-50 dark:bg-brand-500/10">
+                                <DollarSign className="h-4 w-4 text-brand-500 dark:text-brand-400" />
+                            </div>
                         </div>
-                        <div className="flex items-end gap-3">
-                            <p className="text-display-lg text-foreground">
+                        <div className="flex items-end gap-3 pl-4">
+                            <p className="text-display-lg text-surface-900 dark:text-white">
                                 {fmtBRL(s.revenue_month ?? 0)}
                             </p>
                             <TrendBadge
@@ -171,16 +174,18 @@ export function DashboardPage() {
                                 previous={s.prev_revenue_month ?? s.revenue_month ?? 0}
                             />
                         </div>
-                        <div className="mt-3 flex items-center gap-4 text-xs text-surface-500">
+                        <div className="mt-3 flex items-center gap-4 text-xs text-surface-500 dark:text-surface-400 pl-4">
                             <span>Receita: <strong className="text-success">{fmtBRL(s.revenue_month ?? 0)}</strong></span>
                             <span>Despesa: <strong className="text-danger">{fmtBRL(s.expenses_month ?? 0)}</strong></span>
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card animate-fade-in stagger-1">
-                        <div className="flex items-center justify-between mb-1">
+                    <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] p-6 shadow-card animate-fade-in stagger-1">
+                        <div className="flex items-center justify-between mb-1.5">
                             <span className="text-label text-surface-500">OS Abertas</span>
-                            <FileText className="h-4 w-4 text-surface-300" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-surface-50 dark:bg-white/[0.04]">
+                                <FileText className="h-4 w-4 text-surface-400" />
+                            </div>
                         </div>
                         <div className="flex items-end gap-2">
                             <p className="text-display text-foreground">{s.open_os ?? 0}</p>
@@ -193,10 +198,12 @@ export function DashboardPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card animate-fade-in stagger-2">
-                        <div className="flex items-center justify-between mb-1">
+                    <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] p-6 shadow-card animate-fade-in stagger-2">
+                        <div className="flex items-center justify-between mb-1.5">
                             <span className="text-label text-surface-500">Concluídas</span>
-                            <CheckCircle2 className="h-4 w-4 text-success" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-emerald-50 dark:bg-emerald-500/8">
+                                <CheckCircle2 className="h-4 w-4 text-success" />
+                            </div>
                         </div>
                         <div className="flex items-end gap-2">
                             <p className="text-display text-foreground">{s.completed_month ?? 0}</p>
@@ -215,7 +222,7 @@ export function DashboardPage() {
                     { label: 'SLA Estourado', value: (s.sla_response_breached ?? 0) + (s.sla_resolution_breached ?? 0), icon: AlertTriangle, color: 'text-red-500' },
                 ].map((stat, i) => (
                     <div key={stat.label} className={cn(
-                        'flex items-center gap-3 rounded-lg border border-subtle bg-surface-0 px-4 py-3 animate-fade-in',
+                        'flex items-center gap-3 rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] px-4 py-3.5 animate-fade-in',
                         `stagger-${i + 3}`
                     )}>
                         <stat.icon className={cn('h-4 w-4 shrink-0', stat.color)} />
@@ -231,8 +238,8 @@ export function DashboardPage() {
             <div className="grid gap-4 lg:grid-cols-2">
                 {/* Alertas Ativos */}
                 {alertsRes?.data && (
-                    <div className="rounded-xl border border-default bg-surface-0 shadow-card animate-fade-in">
-                        <div className="flex items-center justify-between px-5 py-3 border-b border-subtle">
+                    <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] shadow-card animate-fade-in">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] dark:border-white/[0.06]">
                             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                                 <Bell className="h-4 w-4 text-amber-500" /> Alertas do Sistema
                             </h3>
@@ -261,8 +268,8 @@ export function DashboardPage() {
 
                 {/* NPS Score */}
                 {npsRes?.data && (
-                    <div className="rounded-xl border border-default bg-surface-0 shadow-card animate-fade-in">
-                        <div className="flex items-center justify-between px-5 py-3 border-b border-subtle">
+                    <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] shadow-card animate-fade-in">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] dark:border-white/[0.06]">
                             <h3 className="flex items-center gap-2 text-sm font-semibold text-surface-900">
                                 <Star className="h-4 w-4 text-amber-400" /> Satisfação do Cliente
                             </h3>
@@ -308,11 +315,11 @@ export function DashboardPage() {
                 </div>
             ) : (
                 <div className="grid gap-4 lg:grid-cols-3">
-                    <div className="rounded-xl border border-default bg-surface-0 shadow-card animate-fade-in">
-                        <div className="px-5 py-4 border-b border-subtle">
-                            <h3 className="text-sm font-semibold text-foreground">Faturamento Mensal</h3>
+                    <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] shadow-card animate-fade-in">
+                        <div className="px-6 py-4 border-b border-black/[0.04] dark:border-white/[0.06]">
+                            <h3 className="text-sm font-bold text-foreground dark:text-white">Faturamento Mensal</h3>
                         </div>
-                        <div className="p-5">
+                        <div className="p-6">
                             {(() => {
                                 const monthly: { month: string; total: number }[] = s.monthly_revenue ?? []
                                 const max = Math.max(...monthly.map(m => m.total), 1)
@@ -338,11 +345,11 @@ export function DashboardPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-default bg-surface-0 shadow-card animate-fade-in stagger-1">
-                        <div className="px-5 py-4 border-b border-subtle">
-                            <h3 className="text-sm font-semibold text-foreground">OS por Status</h3>
+                    <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] shadow-card animate-fade-in stagger-1">
+                        <div className="px-6 py-4 border-b border-black/[0.04] dark:border-white/[0.06]">
+                            <h3 className="text-sm font-bold text-foreground dark:text-white">OS por Status</h3>
                         </div>
-                        <div className="p-5">
+                        <div className="p-6">
                             {(() => {
                                 const data = [
                                     { key: 'open', label: 'Abertas', value: s.open_os ?? 0, color: 'oklch(0.55 0.18 245)' },
@@ -384,11 +391,11 @@ export function DashboardPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-default bg-surface-0 shadow-card animate-fade-in stagger-2">
-                        <div className="px-5 py-4 border-b border-subtle">
-                            <h3 className="text-sm font-semibold text-foreground">Receita vs Despesa</h3>
+                    <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] shadow-card animate-fade-in stagger-2">
+                        <div className="px-6 py-4 border-b border-black/[0.04] dark:border-white/[0.06]">
+                            <h3 className="text-sm font-bold text-foreground dark:text-white">Receita vs Despesa</h3>
                         </div>
-                        <div className="p-5">
+                        <div className="p-6">
                             {(() => {
                                 const rev = s.revenue_month ?? 0
                                 const exp = s.expenses_month ?? 0
@@ -427,7 +434,7 @@ export function DashboardPage() {
             )}
 
             <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-center gap-3 rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] p-4 shadow-card">
                     <TrendingUp className="h-4 w-4 shrink-0 text-emerald-400" />
                     <div className="min-w-0 flex-1">
                         <p className="text-xs text-surface-400">A Receber (pendente)</p>
@@ -437,7 +444,7 @@ export function DashboardPage() {
                         <Badge variant="danger" size="xs">{fmtBRL(s.receivables_overdue)} vencido</Badge>
                     )}
                 </div>
-                <div className="flex items-center gap-3 rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] p-4 shadow-card">
                     <Receipt className="h-4 w-4 shrink-0 text-red-400" />
                     <div className="min-w-0 flex-1">
                         <p className="text-xs text-surface-400">A Pagar (pendente)</p>
@@ -447,7 +454,7 @@ export function DashboardPage() {
                         <Badge variant="danger" size="xs">{fmtBRL(s.payables_overdue)} vencido</Badge>
                     )}
                 </div>
-                <div className="flex items-center gap-3 rounded-xl border border-default bg-surface-0 p-4 shadow-card">
+                <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] p-4 shadow-card">
                     <Clock className="h-4 w-4 shrink-0 text-brand-400" />
                     <div className="min-w-0 flex-1">
                         <p className="text-xs text-surface-400">SLA — Tempo Médio OS</p>
@@ -492,18 +499,18 @@ export function DashboardPage() {
             )}
 
             <div className="grid gap-4 lg:grid-cols-3">
-                <div className="lg:col-span-2 rounded-xl border border-default bg-surface-0 shadow-card animate-fade-in">
-                    <div className="flex items-center justify-between border-b border-subtle px-5 py-4">
-                        <h2 className="text-sm font-semibold text-foreground">Últimas Ordens de Serviço</h2>
+                <div className="lg:col-span-2 rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] shadow-card animate-fade-in">
+                    <div className="flex items-center justify-between border-b border-black/[0.04] dark:border-white/[0.06] px-6 py-4">
+                        <h2 className="text-sm font-bold text-foreground dark:text-white">Últimas Ordens de Serviço</h2>
                     </div>
-                    <div className="divide-y divide-subtle">
+                    <div className="divide-y divide-surface-100 dark:divide-white/[0.04]">
                         {isLoading ? (
                             Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="flex items-center gap-4 px-5 py-3 animate-pulse">
-                                    <div className="h-4 w-16 rounded bg-surface-200" />
-                                    <div className="h-4 w-32 rounded bg-surface-100" />
+                                <div key={i} className="flex items-center gap-4 px-6 py-3.5 animate-pulse">
+                                    <div className="h-4 w-16 rounded bg-surface-200 dark:bg-white/[0.06]" />
+                                    <div className="h-4 w-32 rounded bg-surface-100 dark:bg-white/[0.04]" />
                                     <div className="flex-1" />
-                                    <div className="h-5 w-20 rounded-full bg-surface-100" />
+                                    <div className="h-5 w-20 rounded-full bg-surface-100 dark:bg-white/[0.04]" />
                                 </div>
                             ))
                         ) : recentOs.length === 0 ? (
@@ -513,12 +520,12 @@ export function DashboardPage() {
                             return (
                                 <div
                                     key={os.id}
-                                    className="flex items-center justify-between px-5 py-3 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors cursor-pointer"
+                                    className="flex items-center justify-between px-6 py-3.5 hover:bg-surface-50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer"
                                     onClick={() => navigate(`/os/${os.id}`)}
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <span className="font-mono text-xs font-semibold text-brand-600 tabular-nums">{os.number}</span>
-                                        <span className="text-sm text-surface-700 truncate max-w-[200px]">{os.customer?.name}</span>
+                                        <span className="font-mono text-xs font-semibold text-brand-600 dark:text-brand-400 tabular-nums">{os.number}</span>
+                                        <span className="text-sm text-surface-700 dark:text-surface-300 truncate max-w-[200px]">{os.customer?.name}</span>
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0">
                                         <span className="text-xs text-surface-400 hidden sm:block">{os.assignee?.name}</span>
@@ -531,9 +538,9 @@ export function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="rounded-xl border border-default bg-surface-0 shadow-card animate-fade-in stagger-1">
-                    <div className="border-b border-subtle px-5 py-4">
-                        <h2 className="text-sm font-semibold text-foreground">Top Técnicos (mês)</h2>
+                <div className="rounded-[var(--radius-lg)] border border-black/[0.04] dark:border-white/[0.06] bg-white dark:bg-[#111113] shadow-card animate-fade-in stagger-1">
+                    <div className="border-b border-black/[0.04] dark:border-white/[0.06] px-6 py-4">
+                        <h2 className="text-sm font-bold text-foreground dark:text-white">Top Técnicos (mês)</h2>
                     </div>
                     <div className="divide-y divide-subtle">
                         {isLoading ? (

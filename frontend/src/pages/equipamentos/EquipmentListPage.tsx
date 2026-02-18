@@ -7,6 +7,7 @@ import {
     Filter, Eye, ChevronLeft, ChevronRight, Shield, Download, Trash2
 } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/pageheader'
 import { useAuthStore } from '@/stores/auth-store'
@@ -71,7 +72,7 @@ function calibrationBadge(nextDate: string | null) {
 }
 
 export default function EquipmentListPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
     const qc = useQueryClient()
 
     const [search, setSearch] = useState('')
@@ -112,7 +113,8 @@ export default function EquipmentListPage() {
         mutationFn: (id: number) => api.delete(`/equipments/${id}`),
         onSuccess: () => {
             toast.success('Equipamento excluído com sucesso')
-                qc.invalidateQueries({ queryKey: ['equipments'] })
+            qc.invalidateQueries({ queryKey: ['equipments'] })
+            broadcastQueryInvalidation(['equipments'], 'Equipamento')
         },
         onError: () => toast.error('Erro ao excluir equipamento'),
     })

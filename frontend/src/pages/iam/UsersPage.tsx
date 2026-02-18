@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Search, Trash2, UserCheck, UserX, KeyRound, Download, CheckSquare, Square, Monitor, LogOut, Users, UserPlus, UserMinus, AlertCircle, History, ShieldCheck, ShieldOff, ShieldAlert } from 'lucide-react'
 import api from '@/lib/api'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/pageheader'
@@ -123,6 +124,7 @@ export function UsersPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] })
+            broadcastQueryInvalidation(['users'], 'Usuários')
             closeForm()
             toast.success(editingUser ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!')
         },
@@ -136,6 +138,7 @@ export function UsersPage() {
         mutationFn: (id: number) => api.delete(`/users/${id}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] })
+            broadcastQueryInvalidation(['users'], 'Usuários')
             setDeleteConfirmUser(null)
             toast.success('Usuário excluído com sucesso!')
         },
@@ -148,6 +151,7 @@ export function UsersPage() {
         mutationFn: (id: number) => api.post(`/users/${id}/toggle-active`),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['users'] })
+            broadcastQueryInvalidation(['users'], 'Usuários')
             const isActive = data.data.is_active
             toast.success(`Usuário ${isActive ? 'ativado' : 'desativado'} com sucesso!`)
         },
@@ -175,6 +179,7 @@ export function UsersPage() {
             api.post('/users/bulk-toggle-active', data),
         onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ['users'] })
+            broadcastQueryInvalidation(['users'], 'Usuários')
             setSelectedIds([])
             toast.success(res.data?.message ?? 'Status alterado com sucesso!')
         },
@@ -194,6 +199,7 @@ export function UsersPage() {
             api.delete(`/users/${userId}/sessions/${tokenId}`),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user-sessions', sessionsUser?.id] })
+            broadcastQueryInvalidation(['user-sessions'], 'Sessões')
             toast.success('Sessão revogada com sucesso!')
         },
         onError: (err: any) => {
@@ -205,6 +211,7 @@ export function UsersPage() {
         mutationFn: (userId: number) => api.post(`/users/${userId}/force-logout`),
         onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ['user-sessions'] })
+            broadcastQueryInvalidation(['user-sessions'], 'Sessões')
             toast.success(res.data?.message ?? 'Sessões revogadas com sucesso!')
         },
         onError: (err: any) => {
@@ -376,7 +383,7 @@ export function UsersPage() {
 
             {selectedIds.length > 0 && canUpdate && (
                 <div className="flex items-center gap-3 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2.5">
-                        <span className="text-sm font-medium text-brand-700">
+                    <span className="text-sm font-medium text-brand-700">
                         {selectedIds.length} selecionado(s)
                     </span>
                     <div className="flex items-center gap-2">

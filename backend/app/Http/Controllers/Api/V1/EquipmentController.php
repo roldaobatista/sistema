@@ -8,6 +8,10 @@ use App\Http\Requests\Equipment\UpdateEquipmentRequest;
 use App\Models\Equipment;
 use App\Models\EquipmentCalibration;
 use App\Models\EquipmentDocument;
+use App\Models\Lookups\CalibrationType;
+use App\Models\Lookups\DocumentType;
+use App\Models\Lookups\EquipmentCategory;
+use App\Models\Lookups\MaintenanceType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -390,11 +394,30 @@ class EquipmentController extends Controller
 
     /**
      * Constantes para o frontend.
+     * Categories, calibration_types, maintenance_types e document_types vêm das tabelas de lookup quando existirem.
      */
     public function constants(): JsonResponse
     {
+        $categories = EquipmentCategory::query()->active()->ordered()->get()->pluck('name', 'slug')->all();
+        $calibrationTypes = CalibrationType::query()->active()->ordered()->get()->pluck('name', 'slug')->all();
+        $maintenanceTypes = MaintenanceType::query()->active()->ordered()->get()->pluck('name', 'slug')->all();
+        $documentTypes = DocumentType::query()->active()->ordered()->get()->pluck('name', 'slug')->all();
+
+        if (empty($categories)) {
+            $categories = Equipment::CATEGORIES;
+        }
+        if (empty($calibrationTypes)) {
+            $calibrationTypes = ['interna' => 'Interna', 'externa' => 'Externa', 'rastreada_rbc' => 'Rastreada RBC'];
+        }
+        if (empty($maintenanceTypes)) {
+            $maintenanceTypes = ['preventiva' => 'Preventiva', 'corretiva' => 'Corretiva', 'ajuste' => 'Ajuste', 'limpeza' => 'Limpeza'];
+        }
+        if (empty($documentTypes)) {
+            $documentTypes = ['certificado' => 'Certificado', 'manual' => 'Manual', 'foto' => 'Foto', 'laudo' => 'Laudo', 'relatorio' => 'Relatório'];
+        }
+
         return response()->json([
-            'categories' => Equipment::CATEGORIES,
+            'categories' => $categories,
             'precision_classes' => Equipment::PRECISION_CLASSES,
             'statuses' => Equipment::STATUSES,
             'types' => Equipment::query()
@@ -406,29 +429,14 @@ class EquipmentController extends Controller
             'models' => Equipment::query()
                 ->whereNotNull('model')->where('model', '!=', '')
                 ->distinct()->orderBy('model')->pluck('model')->values(),
-            'calibration_types' => [
-                'interna' => 'Interna',
-                'externa' => 'Externa',
-                'rastreada_rbc' => 'Rastreada RBC',
-            ],
+            'calibration_types' => $calibrationTypes,
             'calibration_results' => [
                 'aprovado' => 'Aprovado',
                 'aprovado_com_ressalva' => 'Aprovado com Ressalva',
                 'reprovado' => 'Reprovado',
             ],
-            'maintenance_types' => [
-                'preventiva' => 'Preventiva',
-                'corretiva' => 'Corretiva',
-                'ajuste' => 'Ajuste',
-                'limpeza' => 'Limpeza',
-            ],
-            'document_types' => [
-                'certificado' => 'Certificado',
-                'manual' => 'Manual',
-                'foto' => 'Foto',
-                'laudo' => 'Laudo',
-                'relatorio' => 'Relatório',
-            ],
+            'maintenance_types' => $maintenanceTypes,
+            'document_types' => $documentTypes,
         ]);
     }
 

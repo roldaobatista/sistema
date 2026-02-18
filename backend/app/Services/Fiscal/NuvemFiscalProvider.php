@@ -103,20 +103,20 @@ class NuvemFiscalProvider implements FiscalProvider
         }
     }
 
-    public function consultarStatus(string $chaveAcesso): FiscalResult
+    public function consultarStatus(string $referencia): FiscalResult
     {
         try {
             $token = $this->getAccessToken();
 
             $response = Http::withToken($token)
                 ->timeout(15)
-                ->get("{$this->baseUrl}/nfe/{$chaveAcesso}");
+                ->get("{$this->baseUrl}/nfe/{$referencia}");
 
             if ($response->successful()) {
                 $body = $response->json();
                 return FiscalResult::ok([
                     'provider_id' => $body['id'] ?? null,
-                    'access_key' => $chaveAcesso,
+                    'access_key' => $referencia,
                     'status' => $this->mapStatus($body['status'] ?? ''),
                     'raw' => $body,
                 ]);
@@ -128,20 +128,20 @@ class NuvemFiscalProvider implements FiscalProvider
         }
     }
 
-    public function cancelar(string $chaveAcesso, string $justificativa): FiscalResult
+    public function cancelar(string $referencia, string $justificativa): FiscalResult
     {
         try {
             $token = $this->getAccessToken();
 
             $response = Http::withToken($token)
                 ->timeout(30)
-                ->post("{$this->baseUrl}/nfe/{$chaveAcesso}/cancelamento", [
+                ->post("{$this->baseUrl}/nfe/{$referencia}/cancelamento", [
                     'justificativa' => $justificativa,
                 ]);
 
             if ($response->successful()) {
                 return FiscalResult::ok([
-                    'access_key' => $chaveAcesso,
+                    'access_key' => $referencia,
                     'status' => 'cancelled',
                     'raw' => $response->json(),
                 ]);
@@ -153,13 +153,13 @@ class NuvemFiscalProvider implements FiscalProvider
         }
     }
 
-    public function downloadPdf(string $chaveAcesso): string
+    public function downloadPdf(string $referencia): string
     {
         $token = $this->getAccessToken();
 
         $response = Http::withToken($token)
             ->timeout(30)
-            ->get("{$this->baseUrl}/nfe/{$chaveAcesso}/pdf");
+            ->get("{$this->baseUrl}/nfe/{$referencia}/pdf");
 
         if ($response->successful()) {
             return base64_encode($response->body());
@@ -168,19 +168,34 @@ class NuvemFiscalProvider implements FiscalProvider
         throw new \RuntimeException('Erro ao baixar PDF: ' . $response->status());
     }
 
-    public function downloadXml(string $chaveAcesso): string
+    public function downloadXml(string $referencia): string
     {
         $token = $this->getAccessToken();
 
         $response = Http::withToken($token)
             ->timeout(30)
-            ->get("{$this->baseUrl}/nfe/{$chaveAcesso}/xml");
+            ->get("{$this->baseUrl}/nfe/{$referencia}/xml");
 
         if ($response->successful()) {
             return $response->body();
         }
 
         throw new \RuntimeException('Erro ao baixar XML: ' . $response->status());
+    }
+
+    public function inutilizar(array $data): FiscalResult
+    {
+        return FiscalResult::fail('Inutilização não suportada pelo provider NuvemFiscal. Use Focus NFe.');
+    }
+
+    public function cartaCorrecao(string $referencia, string $correcao): FiscalResult
+    {
+        return FiscalResult::fail('Carta de Correção não suportada pelo provider NuvemFiscal. Use Focus NFe.');
+    }
+
+    public function consultarStatusServico(string $uf): FiscalResult
+    {
+        return FiscalResult::fail('Consulta status SEFAZ não suportada pelo provider NuvemFiscal. Use Focus NFe.');
     }
 
     /**
