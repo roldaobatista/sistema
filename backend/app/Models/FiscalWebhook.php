@@ -11,6 +11,10 @@ class FiscalWebhook extends Model
         'failure_count', 'last_triggered_at',
     ];
 
+    protected $attributes = [
+        'events' => '["authorized","cancelled","rejected"]',
+    ];
+
     protected $casts = [
         'events' => 'array',
         'active' => 'boolean',

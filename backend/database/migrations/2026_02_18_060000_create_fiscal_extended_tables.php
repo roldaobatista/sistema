@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('url');
-            $table->json('events')->default('["authorized","cancelled","rejected"]');
+            $table->json('events')->nullable();
             $table->string('secret', 64)->nullable();
             $table->boolean('active')->default(true);
             $table->integer('failure_count')->default(0);
