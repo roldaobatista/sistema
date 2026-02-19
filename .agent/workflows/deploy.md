@@ -1,176 +1,115 @@
 ---
-description: Deployment command for production releases. Pre-flight checks and deployment execution.
+description: Deploy para produção no Hetzner. Pre-flight checks, build, deploy e verificação.
 ---
 
-# /deploy - Production Deployment
+# /deploy - Deploy Produção (Kalibrium ERP)
 
-$ARGUMENTS
+## ⚠️ REGRA CRÍTICA
 
----
-
-## Purpose
-
-This command handles production deployment with pre-flight checks, deployment execution, and verification.
+> **NUNCA use `docker-compose.prod-http.yml` manualmente se certificados SSL existem.**
+> O `deploy.sh` auto-detecta o compose correto.
+> Domínio atual: `app.balancassolution.com` (HTTPS)
 
 ---
 
-## Sub-commands
+## Servidor
+
+- **IP:** 178.156.176.145
+- **Domínio:** app.balancassolution.com
+- **SSH Key:** `$env:USERPROFILE\.ssh\id_ed25519`
+- **User:** root
+- **Deploy dir:** `/root/sistema`
+
+---
+
+## Sub-comandos
 
 ```
-/deploy            - Interactive deployment wizard
-/deploy check      - Run pre-deployment checks only
-/deploy preview    - Deploy to preview/staging
-/deploy production - Deploy to production
-/deploy rollback   - Rollback to previous version
-```
-
----
-
-## Pre-Deployment Checklist
-
-Before any deployment:
-
-```markdown
-## 🚀 Pre-Deploy Checklist
-
-### Code Quality
-- [ ] No TypeScript errors (`npx tsc --noEmit`)
-- [ ] ESLint passing (`npx eslint .`)
-- [ ] All tests passing (`npm test`)
-
-### Security
-- [ ] No hardcoded secrets
-- [ ] Environment variables documented
-- [ ] Dependencies audited (`npm audit`)
-
-### Performance
-- [ ] Bundle size acceptable
-- [ ] No console.log statements
-- [ ] Images optimized
-
-### Documentation
-- [ ] README updated
-- [ ] CHANGELOG updated
-- [ ] API docs current
-
-### Ready to deploy? (y/n)
+/deploy            - Deploy padrão (sem migrations)
+/deploy migrate    - Deploy com migrations (backup automático)
+/deploy seed       - Apenas seeders
+/deploy status     - Status dos containers
+/deploy logs       - Últimas 100 linhas de log
+/deploy rollback   - Rollback emergencial
+/deploy backup     - Backup manual do banco
 ```
 
 ---
 
-## Deployment Flow
+## Fluxo do Deploy
 
+### 1. Verificar código limpo (local)
+
+// turbo
+
+```powershell
+cd c:\projetos\sistema
+git status
 ```
-┌─────────────────┐
-│  /deploy        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Pre-flight     │
-│  checks         │
-└────────┬────────┘
-         │
-    Pass? ──No──► Fix issues
-         │
-        Yes
-         │
-         ▼
-┌─────────────────┐
-│  Build          │
-│  application    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Deploy to      │
-│  platform       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Health check   │
-│  & verify       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  ✅ Complete    │
-└─────────────────┘
+
+### 2. Push para GitHub (se necessário)
+
+```powershell
+git push origin main
+```
+
+### 3. Executar deploy remoto
+
+// turbo
+
+```powershell
+.\deploy-prod.ps1
+```
+
+Ou com migrations:
+
+```powershell
+.\deploy-prod.ps1 -Migrate
+```
+
+### 4. Verificar no browser
+
+Acessar: **<https://app.balancassolution.com>**
+
+---
+
+## Deploy Manual (SSH direto — somente emergência)
+
+// turbo-all
+
+### 1. Conectar ao servidor
+
+```powershell
+ssh -i $env:USERPROFILE\.ssh\id_ed25519 root@178.156.176.145
+```
+
+### 2. No servidor
+
+```bash
+cd /root/sistema && ./deploy.sh --migrate
 ```
 
 ---
 
-## Output Format
+## Compose Files (IMPORTANTE!)
 
-### Successful Deploy
+| Arquivo | Quando usar | Portas |
+|---|---|---|
+| `docker-compose.prod-http.yml` | Primeiro deploy sem domínio | 80 |
+| `docker-compose.prod-https.yml` | **Produção com SSL (ATUAL)** | 80 + 443 |
+| `docker-compose.prod.yml` | Referência original | 80 + 443 |
+| `docker-compose.yml` | Desenvolvimento local | 3307, 8080 |
 
-```markdown
-## 🚀 Deployment Complete
-
-### Summary
-- **Version:** v1.2.3
-- **Environment:** production
-- **Duration:** 47 seconds
-- **Platform:** Vercel
-
-### URLs
-- 🌐 Production: https://app.example.com
-- 📊 Dashboard: https://vercel.com/project
-
-### What Changed
-- Added user profile feature
-- Fixed login bug
-- Updated dependencies
-
-### Health Check
-✅ API responding (200 OK)
-✅ Database connected
-✅ All services healthy
-```
-
-### Failed Deploy
-
-```markdown
-## ❌ Deployment Failed
-
-### Error
-Build failed at step: TypeScript compilation
-
-### Details
-```
-error TS2345: Argument of type 'string' is not assignable...
-```
-
-### Resolution
-1. Fix TypeScript error in `src/services/user.ts:45`
-2. Run `npm run build` locally to verify
-3. Try `/deploy` again
-
-### Rollback Available
-Previous version (v1.2.2) is still active.
-Run `/deploy rollback` if needed.
-```
+> **O `deploy.sh` escolhe automaticamente** verificando `certbot/conf/live/`.
+> **NUNCA escolha manualmente** — use `deploy.sh` ou `deploy-prod.ps1`.
 
 ---
 
-## Platform Support
+## Troubleshooting
 
-| Platform | Command | Notes |
-|----------|---------|-------|
-| Vercel | `vercel --prod` | Auto-detected for Next.js |
-| Railway | `railway up` | Needs Railway CLI |
-| Fly.io | `fly deploy` | Needs flyctl |
-| Docker | `docker compose up -d` | For self-hosted |
-
----
-
-## Examples
-
-```
-/deploy
-/deploy check
-/deploy preview
-/deploy production --skip-tests
-/deploy rollback
-```
+| Problema | Causa | Solução |
+|---|---|---|
+| `ERR_CONNECTION_REFUSED` | Compose HTTP ativo com domínio HTTPS | `docker compose -f docker-compose.prod-https.yml up -d` |
+| 500 no endpoint | Coluna inexistente / bug no código | Verificar log: `docker exec kalibrium_backend tail -100 /var/www/storage/logs/laravel.log` |
+| Login 422 | Credenciais inválidas ou usuário não existe | Verificar via `php artisan tinker` |
+| Cert expirado | Let's Encrypt não renovou | `docker compose run --rm certbot certbot renew` |

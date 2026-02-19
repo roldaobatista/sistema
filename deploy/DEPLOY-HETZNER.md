@@ -1,95 +1,152 @@
-# Deploy no Hetzner via IP (HTTP)
+# Deploy no Hetzner — Kalibrium ERP
 
-Servidor já configurado: **178.156.176.145** (Docker, UFW, Git).
+Servidor: **178.156.176.145** | Domínio: **app.balancassolution.com**
 
-## Passos
+---
 
-### 1. Enviar o projeto para o servidor
+## ⚠️ REGRA CRÍTICA: HTTP vs HTTPS
 
-No seu PC, na pasta do projeto:
+> **NUNCA use `docker-compose.prod-http.yml` se o domínio já tem SSL configurado.**
+> O script `deploy.sh` auto-detecta o compose correto. **SEMPRE use `deploy.sh`.**
+
+| Situação | Compose File | Como saber |
+|---|---|---|
+| Primeiro deploy (sem domínio) | `docker-compose.prod-http.yml` | `certbot/conf/live/` vazio |
+| **Produção com domínio (atual)** | **`docker-compose.prod-https.yml`** | `certbot/conf/live/app.balancassolution.com/` existe |
+
+**Se usar o compose errado (HTTP quando tem SSL):**
+
+- Frontend não consegue chamar a API → `ERR_CONNECTION_REFUSED`
+- Login falha completamente
+- Porta 443 fica fechada
+
+---
+
+## Deploy Rápido (Recomendado)
+
+### Do seu PC (Windows)
+
+```powershell
+# Deploy padrão (sem migrations)
+.\deploy-prod.ps1
+
+# Deploy com migrations (faz backup automático)
+.\deploy-prod.ps1 -Migrate
+
+# Ver status
+.\deploy-prod.ps1 -Status
+```
+
+### Direto no servidor (SSH)
+
+```bash
+cd /root/sistema
+./deploy.sh              # Deploy padrão
+./deploy.sh --migrate    # Com migrations
+./deploy.sh --status     # Status
+./deploy.sh --rollback   # Rollback emergencial
+```
+
+---
+
+## Setup Inicial (Primeira Vez)
+
+### 1. Enviar projeto
 
 ```powershell
 scp -i $env:USERPROFILE\.ssh\id_ed25519 -r C:\projetos\sistema root@178.156.176.145:/root/sistema
 ```
 
-Ou se o repositório estiver no Git:
-
-```powershell
-ssh -i $env:USERPROFILE\.ssh\id_ed25519 root@178.156.176.145 "cd /root && git clone SEU_REPOSITORIO sistema && cd sistema"
-```
-
-### 2. Configurar backend/.env no servidor
-
-No servidor:
+### 2. Configurar `.env`
 
 ```bash
 ssh -i $env:USERPROFILE\.ssh\id_ed25519 root@178.156.176.145
-```
-
-Dentro do servidor:
-
-```bash
 cd /root/sistema
 cp backend/.env.example backend/.env
 nano backend/.env
 ```
 
-Ajuste pelo menos:
+Ajustar:
 
-- `APP_KEY=` → rode `php artisan key:generate` depois
+- `APP_URL=https://app.balancassolution.com`
+- `CORS_ALLOWED_ORIGINS=https://app.balancassolution.com`
 - `DB_ROOT_PASSWORD=` → senha forte
-- `DB_PASSWORD=` → mesma senha ou outra forte
-- `CORS_ALLOWED_ORIGINS=http://178.156.176.145` (para acesso via IP)
-- `REVERB_APP_KEY=` → gere com `php artisan reverb:install` ou defina um valor qualquer
-- `APP_URL=http://178.156.176.145`
+- `DB_PASSWORD=` → senha forte
 
-### 3. Deploy via HTTP (IP)
+Criar `.env` na raiz:
+
+```bash
+cat > .env << 'EOF'
+DOMAIN=app.balancassolution.com
+REVERB_APP_KEY=kalibrium-key
+DB_ROOT_PASSWORD=sua_senha
+DB_PASSWORD=sua_senha
+DB_USERNAME=kalibrium
+EOF
+```
+
+### 3. Configurar SSL (se primeiro deploy com domínio)
+
+```bash
+DOMAIN=app.balancassolution.com CERTBOT_EMAIL=admin@balancassolution.com ./deploy.sh --init-ssl
+```
+
+### 4. Deploy
+
+```bash
+./deploy.sh --migrate
+```
+
+---
+
+## Deploy Manual (EMERGÊNCIA APENAS)
+
+> ⚠️ Prefira SEMPRE `deploy.sh` ou `deploy-prod.ps1`. Deploy manual é para emergências.
 
 ```bash
 cd /root/sistema
 
-# Variáveis para o frontend (API e WebSocket via IP)
-export VITE_API_URL=http://178.156.176.145/api/v1
-export VITE_WS_URL=ws://178.156.176.145/app
-export VITE_REVERB_HOST=178.156.176.145
-export VITE_REVERB_PORT=80
-export VITE_REVERB_SCHEME=http
+# VERIFICAR qual compose usar !!!
+if [ -d "certbot/conf/live" ] && [ "$(ls -A certbot/conf/live 2>/dev/null)" ]; then
+    COMPOSE="docker-compose.prod-https.yml"
+else
+    COMPOSE="docker-compose.prod-http.yml"
+fi
+echo "Usando: $COMPOSE"
 
-# Usar o .env do backend para REVERB_APP_KEY e DB_*
-# Crie .env na raiz se necessário:
-echo "REVERB_APP_KEY=kalibrium-key" >> .env
-echo "DB_ROOT_PASSWORD=sua_senha_forte" >> .env
-echo "DB_PASSWORD=sua_senha_forte" >> .env
-echo "DB_USERNAME=kalibrium" >> .env
+# Build e deploy
+docker compose -f $COMPOSE build --no-cache frontend
+docker compose -f $COMPOSE down
+docker compose -f $COMPOSE up -d
 
-# Build e subir
-docker compose -f docker-compose.prod-http.yml build --no-cache
-docker compose -f docker-compose.prod-http.yml up -d
-
-# Aguardar MySQL
-sleep 20
-
-# Migrations e cache
-docker compose -f docker-compose.prod-http.yml exec backend php artisan migrate --force
-docker compose -f docker-compose.prod-http.yml exec backend php artisan key:generate --force
-docker compose -f docker-compose.prod-http.yml exec backend php artisan config:cache
-docker compose -f docker-compose.prod-http.yml exec backend php artisan db:seed --class=PermissionsSeeder --force
+# Migrations (se necessário)
+docker compose -f $COMPOSE exec backend php artisan migrate --force
+docker compose -f $COMPOSE exec backend php artisan config:cache
 ```
-
-### 4. Acessar
-
-Abra no navegador: **http://178.156.176.145**
 
 ---
 
-## Quando tiver domínio (HTTPS / "Seguro")
+## Troubleshooting
 
-Para o navegador deixar de mostrar "Não seguro", é preciso um **domínio** (Let's Encrypt não emite certificado para IP). Passos completos: **[deploy/SSL-SETUP.md](SSL-SETUP.md)**.
+### ERR_CONNECTION_REFUSED no login
 
-Resumo: aponte o domínio (DNS A) para `178.156.176.145`, depois no servidor:
+**Causa:** Servidor rodando compose HTTP, mas acessando via HTTPS.
+**Solução:**
 
 ```bash
-DOMAIN=gestao.empresa.com CERTBOT_EMAIL=admin@empresa.com ./deploy.sh --init-ssl
+docker compose -f docker-compose.prod-http.yml down
+docker compose -f docker-compose.prod-https.yml build --no-cache frontend
+docker compose -f docker-compose.prod-https.yml up -d
 ```
 
-Em seguida use `docker-compose.prod.yml` e ajuste `APP_URL` / `CORS` no backend para `https://seu-dominio`.
+### 500 Internal Server Error em endpoints
+
+**Causa:** Código referencia colunas inexistentes no banco.
+**Solução:** Verificar logs: `docker exec kalibrium_backend tail -100 /var/www/storage/logs/laravel.log`
+
+### Certificado SSL expirado
+
+```bash
+docker compose -f docker-compose.prod-https.yml run --rm certbot certbot renew
+docker compose -f docker-compose.prod-https.yml restart nginx
+```

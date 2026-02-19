@@ -108,7 +108,8 @@ function Invoke-RemoteDeploy {
     if ($exitCode -eq 0) {
         Write-Host "============================================" -ForegroundColor Green
         Write-Host "  DEPLOY CONCLUIDO COM SUCESSO!" -ForegroundColor Green
-        Write-Host "  Acesse: http://$SERVER_IP" -ForegroundColor Green
+        Write-Host "  Acesse: https://app.balancassolution.com" -ForegroundColor Green
+        Write-Host "  (IP direto: http://$SERVER_IP)" -ForegroundColor Gray
         Write-Host "============================================" -ForegroundColor Green
     } else {
         Write-Host "============================================" -ForegroundColor Red

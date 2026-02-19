@@ -24,10 +24,23 @@ MYSQL_WAIT_RETRIES=30
 MYSQL_WAIT_INTERVAL=3
 
 # Auto-detecta compose file (HTTP se não tem SSL, HTTPS se tem)
+# IMPORTANTE: docker-compose.prod-https.yml = HTTPS (porta 80+443)
+#             docker-compose.prod-http.yml  = HTTP only (porta 80)
+#             docker-compose.prod.yml       = referência/legado
 if [ -d "certbot/conf/live" ] && [ "$(ls -A certbot/conf/live 2>/dev/null)" ]; then
-    COMPOSE_FILE="docker-compose.prod.yml"
+    COMPOSE_FILE="docker-compose.prod-https.yml"
+    if [ ! -f "$COMPOSE_FILE" ]; then
+        # Fallback para prod.yml se prod-https.yml não existir
+        COMPOSE_FILE="docker-compose.prod.yml"
+    fi
 else
     COMPOSE_FILE="docker-compose.prod-http.yml"
+    # Aviso se DOMAIN está definido mas SSL não está configurado
+    if [ -n "$DOMAIN" ] && [ "$DOMAIN" != "your-domain.com" ]; then
+        warn "DOMAIN=$DOMAIN definido mas sem certificados SSL!"
+        warn "O frontend NÃO funcionará via HTTPS sem SSL."
+        warn "Execute: DOMAIN=$DOMAIN CERTBOT_EMAIL=admin@$DOMAIN ./deploy.sh --init-ssl"
+    fi
 fi
 
 DOMAIN="${DOMAIN:-}"
