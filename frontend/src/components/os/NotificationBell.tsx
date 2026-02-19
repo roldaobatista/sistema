@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { isApiHealthy } from '@/lib/api-health'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Notification {
     id: string
@@ -30,10 +31,11 @@ export function useOSNotifications() {
     const [unreadCount, setUnreadCount] = useState(0)
     const wsRef = useRef<WebSocket | null>(null)
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const { token } = useAuthStore()
 
     // Fetch existing notifications
     const fetchNotifications = useCallback(async () => {
-        if (!isApiHealthy()) return
+        if (!isApiHealthy() || !token) return
         try {
             const res = await api.get('/notifications', { params: { per_page: 20 } })
             const data: Notification[] = res.data?.data ?? []
@@ -42,10 +44,11 @@ export function useOSNotifications() {
         } catch {
             // silent fail
         }
-    }, [])
+    }, [token])
 
     // Try WebSocket first, fall back to polling
     useEffect(() => {
+        if (!token) return
         fetchNotifications()
 
         // Attempt WebSocket

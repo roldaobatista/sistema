@@ -53,7 +53,7 @@ export default function NotificationPanel() {
     const ref = useRef<HTMLDivElement>(null)
     const navigate = useNavigate()
     const qc = useQueryClient()
-    const { hasRole, hasPermission } = useAuthStore()
+    const { hasRole, hasPermission, token } = useAuthStore()
     const canUpdateNotifications = hasRole('super_admin') || hasPermission('notifications.notification.update')
 
     // WebSocket real-time connection
@@ -67,14 +67,17 @@ export default function NotificationPanel() {
     const { data: countData } = useQuery<NotificationCountResponse>({
         queryKey: ['notifications-count'],
         queryFn: async () => (await api.get('/notifications/unread-count')).data,
+        enabled: !!token && isApiHealthy(),
         refetchInterval: isApiHealthy() ? (isConnected ? 60_000 : 30_000) : false,
+        retry: 1,
     })
 
     // Full list when panel open
     const { data: listData } = useQuery<NotificationListResponse>({
         queryKey: ['notifications'],
         queryFn: async () => (await api.get('/notifications')).data,
-        enabled: open,
+        enabled: open && !!token,
+        retry: 1,
     })
 
     const markRead = useMutation({

@@ -194,7 +194,7 @@ class ScheduleController extends Controller
             $techId = $request->get('technician_id');
 
             // Schedules normais
-            $schedulesQuery = Schedule::with(['technician:id,name', 'customer:id,name,latitude,longitude', 'workOrder:id,number,os_number,status'])
+            $schedulesQuery = Schedule::with(['technician:id,name', 'customer:id,name', 'workOrder:id,number,os_number,status'])
             ->where('tenant_id', $tenantId)
             ->where('scheduled_start', '>=', $from)
             ->where('scheduled_end', '<=', "$to 23:59:59");
