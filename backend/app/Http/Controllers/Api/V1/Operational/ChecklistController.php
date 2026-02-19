@@ -26,7 +26,10 @@ class ChecklistController extends Controller
                 ->get();
 
             return response()->json($checklists);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json(['message' => 'Sem permissão para acessar checklists'], 403);
         } catch (\Exception $e) {
+            Log::error('Checklist index failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao listar checklists'], 500);
         }
     }

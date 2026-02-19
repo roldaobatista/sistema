@@ -162,7 +162,7 @@ class TvDashboardController extends Controller
             })
             ->whereHas('roles', fn ($q) => $q->where('name', Role::TECNICO))
             ->where('is_active', true)
-            ->get(['id', 'name', 'status', 'location_lat', 'location_lng', 'location_updated_at', 'avatar_url']);
+            ->get(['id', 'name', 'status', 'location_lat', 'location_lng', 'location_updated_at']);
     }
 
     private function getOpenServiceCalls()
@@ -177,7 +177,7 @@ class TvDashboardController extends Controller
     private function getActiveWorkOrders()
     {
         return WorkOrder::where('status', 'in_progress')
-            ->with(['customer:id,name,latitude,longitude', 'assignee:id,name', 'serviceCall:id,subject'])
+            ->with(['customer:id,name,latitude,longitude', 'assignee:id,name', 'serviceCall:id,call_number,status'])
             ->orderBy('started_at', 'desc')
             ->get();
     }
@@ -285,7 +285,7 @@ class TvDashboardController extends Controller
                     return [
                         'id' => $tech->id,
                         'name' => $tech->name,
-                        'avatar_url' => $tech->avatar_url,
+                        'avatar_url' => null,
                         'status' => $tech->status,
                         'completed_today' => $completed->total_completed ?? 0,
                         'avg_execution_min' => isset($avgExecTime[$tech->id]) ? (int) $avgExecTime[$tech->id]['avg_min'] : null,
