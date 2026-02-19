@@ -218,31 +218,32 @@ class ScheduleController extends Controller
                 'address' => $s->address,
             ]);
 
-        // Atividades CRM (meetings/tasks) do período
+        // Atividades CRM (reuniões/tarefas) do período
         $crmActivities = collect([]);
         if (class_exists(\App\Models\CrmActivity::class)) {
             $crmQuery = \App\Models\CrmActivity::with(['deal:id,title', 'user:id,name'])
                 ->where('tenant_id', $tenantId)
-                ->whereIn('type', ['meeting', 'task'])
-                ->where('due_date', '>=', $from)
-                ->where('due_date', '<=', "$to 23:59:59");
+                ->whereIn('type', ['reuniao', 'tarefa', 'visita'])
+                ->whereNotNull('scheduled_at')
+                ->where('scheduled_at', '>=', $from)
+                ->where('scheduled_at', '<=', "$to 23:59:59");
 
             if ($techId) {
                 $crmQuery->where('user_id', $techId);
             }
 
-            $crmActivities = $crmQuery->orderBy('due_date')->get()
+            $crmActivities = $crmQuery->orderBy('scheduled_at')->get()
                 ->map(fn ($a) => [
                     'id' => "crm-{$a->id}",
                     'source' => 'crm',
-                    'title' => $a->subject,
-                    'start' => $a->due_date,
-                    'end' => $a->due_date,
-                    'status' => $a->is_done ? Schedule::STATUS_COMPLETED : Schedule::STATUS_SCHEDULED,
+                    'title' => $a->title,
+                    'start' => $a->scheduled_at,
+                    'end' => $a->scheduled_at,
+                    'status' => $a->completed_at ? Schedule::STATUS_COMPLETED : Schedule::STATUS_SCHEDULED,
                     'technician' => $a->user,
                     'customer' => null,
                     'deal' => $a->deal,
-                    'notes' => $a->notes,
+                    'notes' => $a->description,
                     'crm_type' => $a->type,
                 ]);
         }
