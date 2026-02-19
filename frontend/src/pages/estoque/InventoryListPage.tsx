@@ -13,7 +13,7 @@ import { ptBR } from 'date-fns/locale'
 import { useAuthStore } from '@/stores/auth-store'
 
 export default function InventoryListPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
     const navigate = useNavigate()
     const [statusFilter, setStatusFilter] = useState('')
     const [warehouseFilter, setWarehouseFilter] = useState('')
@@ -22,7 +22,7 @@ export default function InventoryListPage() {
         queryKey: ['warehouses'],
         queryFn: () => api.get('/inventory/warehouses')
     })
-    const warehouses = warehousesRes?.data || []
+    const warehouses = warehousesRes?.data?.data || []
 
     const { data: inventoriesRes, isLoading } = useQuery({
         queryKey: ['inventories', statusFilter, warehouseFilter],
@@ -120,7 +120,7 @@ export default function InventoryListPage() {
                                 {inv.reference || `Inventário ${inv.id}`}
                             </h3>
 
-                                <div className="space-y-2 mt-auto pt-4 border-t border-subtle">
+                            <div className="space-y-2 mt-auto pt-4 border-t border-subtle">
                                 <div className="flex items-center gap-2 text-xs text-surface-500">
                                     <Warehouse className="w-3.5 h-3.5" />
                                     {inv.warehouse?.name}

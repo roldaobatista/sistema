@@ -9,7 +9,6 @@ import {
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { isApiHealthy } from '@/lib/api-health'
-import { useWebSocket } from '@/hooks/useWebSocket'
 import { useAuthStore } from '@/stores/auth-store'
 
 interface NotificationItem {
@@ -56,19 +55,13 @@ export default function NotificationPanel() {
     const { hasRole, hasPermission, token } = useAuthStore()
     const canUpdateNotifications = hasRole('super_admin') || hasPermission('notifications.notification.update')
 
-    // WebSocket real-time connection
-    const wsUrl = import.meta.env.VITE_WS_URL || undefined
-    const { isConnected } = useWebSocket({
-        url: wsUrl,
-        enabled: !!wsUrl,
-    })
-
-    // Poll unread count every 30s (fallback when no WebSocket)
+    // Poll unread count every 30s
+    // Real-time handled by Laravel Echo (Reverb) on /app path, not native WS
     const { data: countData } = useQuery<NotificationCountResponse>({
         queryKey: ['notifications-count'],
         queryFn: async () => (await api.get('/notifications/unread-count')).data,
         enabled: !!token && isApiHealthy(),
-        refetchInterval: isApiHealthy() ? (isConnected ? 60_000 : 30_000) : false,
+        refetchInterval: isApiHealthy() ? 30_000 : false,
         retry: 1,
     })
 

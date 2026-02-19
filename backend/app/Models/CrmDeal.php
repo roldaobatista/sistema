@@ -19,7 +19,7 @@ class CrmDeal extends Model
         'title', 'value', 'probability', 'expected_close_date',
         'source', 'assigned_to', 'quote_id', 'work_order_id',
         'equipment_id', 'status', 'won_at', 'lost_at',
-        'lost_reason', 'notes',
+        'lost_reason', 'loss_reason_id', 'competitor_name', 'competitor_price', 'notes',
     ];
 
     protected function casts(): array

@@ -54,7 +54,7 @@ services:
     container_name: kalibrium_queue
     restart: unless-stopped
     env_file: ./backend/.env
-    command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
+    command: [ "php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600" ]
     depends_on:
       mysql:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
     container_name: kalibrium_scheduler
     restart: unless-stopped
     env_file: ./backend/.env
-    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"]
+    command: [ "sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done" ]
     depends_on:
       mysql:
         condition: service_healthy
@@ -89,7 +89,7 @@ services:
     environment:
       REDIS_HOST: redis
       DB_HOST: mysql
-    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    command: [ "php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080" ]
     expose:
       - "8080"
     depends_on:
@@ -107,7 +107,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-https://${DOMAIN}/api/v1}
-        VITE_WS_URL: ${VITE_WS_URL:-}
         VITE_REVERB_APP_KEY: ${REVERB_APP_KEY}
         VITE_REVERB_HOST: ${VITE_REVERB_HOST:-${DOMAIN}}
         VITE_REVERB_PORT: ${VITE_REVERB_PORT:-443}
@@ -147,13 +146,9 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     command: >
-      --default-authentication-plugin=mysql_native_password
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-      --innodb-buffer-pool-size=256M
-      --max-connections=200
+      --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=256M --max-connections=200
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -165,11 +160,11 @@ services:
     image: redis:7-alpine
     container_name: kalibrium_redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    command: [ "redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru" ]
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -180,6 +175,7 @@ volumes:
   mysql_data:
   redis_data:
   backend_storage:
+
 
 networks:
   kalibrium:

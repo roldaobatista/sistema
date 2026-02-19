@@ -29,7 +29,6 @@ const typeConfig: Record<string, { icon: any; color: string }> = {
 export function useOSNotifications() {
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
-    const wsRef = useRef<WebSocket | null>(null)
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const { token } = useAuthStore()
 
@@ -51,45 +50,10 @@ export function useOSNotifications() {
         if (!token) return
         fetchNotifications()
 
-        // Attempt WebSocket
-        const wsUrl = import.meta.env.VITE_WS_URL
-        if (wsUrl) {
-            try {
-                const ws = new WebSocket(wsUrl)
-                wsRef.current = ws
-
-                ws.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data)
-                        if (data.type === 'notification') {
-                            const notif: Notification = data.payload
-                            setNotifications(prev => [notif, ...prev.slice(0, 19)])
-                            setUnreadCount(prev => prev + 1)
-
-                            // Browser notification
-                            if (Notification.permission === 'granted') {
-                                new Notification(notif.title, { body: notif.message, icon: '/favicon.ico' })
-                            }
-
-                            toast.info(notif.title, { description: notif.message })
-                        }
-                    } catch { /* ignore parse errors */ }
-                }
-
-                ws.onclose = () => {
-                    // fallback to polling if WS closes
-                    startPolling()
-                }
-
-                ws.onerror = () => {
-                    ws.close()
-                }
-            } catch {
-                startPolling()
-            }
-        } else {
-            startPolling()
-        }
+        // Real-time notifications handled by Laravel Echo (Reverb) on /app path.
+        // Native WebSocket on /ws is not supported by the current Nginx config.
+        // Use polling as the reliable fallback.
+        startPolling()
 
         function startPolling() {
             if (!pollingRef.current) {
@@ -105,7 +69,6 @@ export function useOSNotifications() {
         window.addEventListener('api:health-changed', onHealthChange)
 
         return () => {
-            wsRef.current?.close()
             if (pollingRef.current) clearInterval(pollingRef.current)
             window.removeEventListener('api:health-changed', onHealthChange)
         }

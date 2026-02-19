@@ -708,44 +708,55 @@ class CrmFeaturesController extends Controller
         $months = $request->input('months', 6);
         $since = now()->subMonths($months);
 
-        $byReason = CrmDeal::where('tenant_id', $tenantId)
-            ->lost()
-            ->where('lost_at', '>=', $since)
-            ->whereNotNull('loss_reason_id')
-            ->join('crm_loss_reasons', 'crm_deals.loss_reason_id', '=', 'crm_loss_reasons.id')
-            ->select('crm_loss_reasons.name', 'crm_loss_reasons.category',
-                DB::raw('COUNT(*) as count'), DB::raw('SUM(crm_deals.value) as total_value'))
-            ->groupBy('crm_loss_reasons.name', 'crm_loss_reasons.category')
-            ->orderByDesc('count')
-            ->get();
+        try {
+            $byReason = CrmDeal::where('tenant_id', $tenantId)
+                ->lost()
+                ->where('lost_at', '>=', $since)
+                ->whereNotNull('loss_reason_id')
+                ->join('crm_loss_reasons', 'crm_deals.loss_reason_id', '=', 'crm_loss_reasons.id')
+                ->select('crm_loss_reasons.name', 'crm_loss_reasons.category',
+                    DB::raw('COUNT(*) as count'), DB::raw('SUM(crm_deals.value) as total_value'))
+                ->groupBy('crm_loss_reasons.name', 'crm_loss_reasons.category')
+                ->orderByDesc('count')
+                ->get();
 
-        $byCompetitor = CrmDeal::where('crm_deals.tenant_id', $tenantId)
-            ->lost()
-            ->where('lost_at', '>=', $since)
-            ->whereNotNull('competitor_name')
-            ->select('competitor_name',
-                DB::raw('COUNT(*) as count'), DB::raw('SUM(value) as total_value'),
-                DB::raw('AVG(competitor_price) as avg_competitor_price'))
-            ->groupBy('competitor_name')
-            ->orderByDesc('count')
-            ->get();
+            $byCompetitor = CrmDeal::where('crm_deals.tenant_id', $tenantId)
+                ->lost()
+                ->where('lost_at', '>=', $since)
+                ->whereNotNull('competitor_name')
+                ->select('competitor_name',
+                    DB::raw('COUNT(*) as count'), DB::raw('SUM(value) as total_value'),
+                    DB::raw('AVG(competitor_price) as avg_competitor_price'))
+                ->groupBy('competitor_name')
+                ->orderByDesc('count')
+                ->get();
 
-        $byUser = CrmDeal::where('crm_deals.tenant_id', $tenantId)
-            ->lost()
-            ->where('lost_at', '>=', $since)
-            ->join('users', 'crm_deals.assigned_to', '=', 'users.id')
-            ->select('users.name', DB::raw('COUNT(*) as count'), DB::raw('SUM(crm_deals.value) as total_value'))
-            ->groupBy('users.name')
-            ->orderByDesc('count')
-            ->get();
+            $byUser = CrmDeal::where('crm_deals.tenant_id', $tenantId)
+                ->lost()
+                ->where('lost_at', '>=', $since)
+                ->join('users', 'crm_deals.assigned_to', '=', 'users.id')
+                ->select('users.name', DB::raw('COUNT(*) as count'), DB::raw('SUM(crm_deals.value) as total_value'))
+                ->groupBy('users.name')
+                ->orderByDesc('count')
+                ->get();
 
-        $monthlyTrend = CrmDeal::where('tenant_id', $tenantId)
-            ->lost()
-            ->where('lost_at', '>=', $since)
-            ->selectRaw('DATE_FORMAT(lost_at, "%Y-%m") as month, COUNT(*) as count, SUM(value) as total_value')
-            ->groupByRaw('DATE_FORMAT(lost_at, "%Y-%m")')
-            ->orderBy('month')
-            ->get();
+            $monthlyTrend = CrmDeal::where('tenant_id', $tenantId)
+                ->lost()
+                ->where('lost_at', '>=', $since)
+                ->selectRaw('DATE_FORMAT(lost_at, "%Y-%m") as month, COUNT(*) as count, SUM(value) as total_value')
+                ->groupByRaw('DATE_FORMAT(lost_at, "%Y-%m")')
+                ->orderBy('month')
+                ->get();
+        } catch (\Exception $e) {
+            Log::warning('CrmFeatures lossAnalytics query failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'by_reason' => [],
+                'by_competitor' => [],
+                'by_user' => [],
+                'monthly_trend' => [],
+            ]);
+        }
 
         return response()->json([
             'by_reason' => $byReason,
