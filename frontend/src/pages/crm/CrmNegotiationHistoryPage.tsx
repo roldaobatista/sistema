@@ -17,7 +17,7 @@ export function CrmNegotiationHistoryPage() {
 
     const searchQ = useQuery({
         queryKey: ['customers-neg-search', search],
-        queryFn: () => api.get('/api/v1/customers', { params: { search, per_page: 8, is_active: true } }).then(r => r.data?.data ?? []),
+        queryFn: () => api.get('/customers', { params: { search, per_page: 8, is_active: true } }).then(r => r.data?.data ?? []),
         enabled: search.length >= 2,
     })
 

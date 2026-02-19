@@ -1,66 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Receipt, Loader2, Plus, CheckCircle2, X, Camera } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ArrowLeft, Receipt, Loader2, Plus, AlertTriangle } from 'lucide-react'
+import { cn, formatCurrency } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
-
-interface ExpenseCategory {
-    id: number
-    name: string
-    color: string
-}
-
-interface Expense {
-    id: number
-    description: string
-    category?: { id: number; name: string; color: string } | null
-    amount: number | string
-    work_order_id: number | null
-    work_order?: { id: number; number: string; os_number?: string | null } | null
-    status: string
-    expense_date: string
-    created_at: string
-    notes?: string | null
-    receipt_path?: string | null
-}
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' },
-    reviewed: { label: 'Conferida', color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30' },
-    approved: { label: 'Aprovada', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' },
-    rejected: { label: 'Rejeitada', color: 'bg-red-100 text-red-700 dark:bg-red-900/30' },
-    reimbursed: { label: 'Reembolsada', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-}
+import { useExpenseCategories } from '@/hooks/useExpenseCategories'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
+import ExpenseForm from '@/components/expenses/ExpenseForm'
+import type { ExpenseFormSubmitData } from '@/components/expenses/ExpenseForm'
+import type { ExpenseItem, ExpenseStatus } from '@/types/expense'
+import { EXPENSE_STATUS_MAP } from '@/types/expense'
 
 export default function TechExpensesOverviewPage() {
     const navigate = useNavigate()
-    const [expenses, setExpenses] = useState<Expense[]>([])
+    const { categories } = useExpenseCategories()
+    const [expenses, setExpenses] = useState<ExpenseItem[]>([])
     const [loading, setLoading] = useState(true)
     const [period, setPeriod] = useState<'week' | 'month' | 'all'>('month')
     const [categoryFilter, setCategoryFilter] = useState('')
-
-    // Create form state
     const [showCreateForm, setShowCreateForm] = useState(false)
-    const [apiCategories, setApiCategories] = useState<ExpenseCategory[]>([])
-    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
-    const [description, setDescription] = useState('')
-    const [amount, setAmount] = useState('')
-    const [photo, setPhoto] = useState<File | null>(null)
-    const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-    const [saving, setSaving] = useState(false)
 
-    useEffect(() => {
-        api.get('/expense-categories')
-            .then(res => setApiCategories(res.data ?? []))
-            .catch(() => toast.error('Erro ao carregar categorias'))
-    }, [])
-
-    useEffect(() => {
-        fetchExpenses()
-    }, [period])
-
-    async function fetchExpenses() {
+    const fetchExpenses = useCallback(async () => {
         setLoading(true)
         try {
             const params: Record<string, string> = { my: '1', per_page: '200' }
@@ -80,63 +40,59 @@ export default function TechExpensesOverviewPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [period])
 
-    const handlePhoto = (file: File) => {
-        setPhoto(file)
-        const reader = new FileReader()
-        reader.onloadend = () => setPhotoPreview(reader.result as string)
-        reader.readAsDataURL(file)
-    }
+    useEffect(() => { fetchExpenses() }, [fetchExpenses])
 
-    const selectedCategory = apiCategories.find(c => c.id === selectedCategoryId)
+    const { containerRef, isRefreshing, pullDistance } = usePullToRefresh({
+        onRefresh: fetchExpenses,
+    })
 
-    const handleCreateExpense = useCallback(async () => {
-        if (!selectedCategoryId || !amount) return
-        setSaving(true)
+    const handleCreateExpense = useCallback(async (data: ExpenseFormSubmitData) => {
         try {
-            const catName = selectedCategory?.name ?? ''
             const formData = new FormData()
-            formData.append('expense_category_id', String(selectedCategoryId))
-            formData.append('description', description || catName)
-            formData.append('amount', amount)
-            formData.append('expense_date', new Date().toISOString().slice(0, 10))
+            formData.append('expense_category_id', String(data.expense_category_id))
+            formData.append('description', data.description || data.categoryName)
+            formData.append('amount', data.amount)
+            formData.append('expense_date', data.expense_date)
             formData.append('affects_technician_cash', '1')
             formData.append('affects_net_value', '1')
-            if (description) formData.append('notes', description)
-            if (photo) formData.append('receipt', photo)
+            if (data.notes) formData.append('notes', data.notes)
+            if (data.photo) formData.append('receipt', data.photo)
 
-            await api.post('/expenses', formData, {
+            const { data: created } = await api.post('/expenses', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             })
 
-            setSelectedCategoryId(null)
-            setDescription('')
-            setAmount('')
-            setPhoto(null)
-            setPhotoPreview(null)
             setShowCreateForm(false)
             toast.success('Despesa registrada com sucesso')
-            fetchExpenses()
-        } catch {
-            toast.error('Não foi possível salvar a despesa. Tente novamente.')
-        } finally {
-            setSaving(false)
-        }
-    }, [selectedCategoryId, selectedCategory, description, amount, photo])
 
-    const formatCurrency = (val: number) =>
-        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+            if (created._budget_warning) {
+                toast.warning(created._budget_warning)
+            }
+
+            fetchExpenses()
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            toast.error(msg || 'Erro ao salvar despesa')
+        }
+    }, [fetchExpenses])
+
+    const toNum = (v: number | string) => Number(v) || 0
 
     const filtered = categoryFilter
         ? expenses.filter(e => (e.category?.name ?? 'Outros') === categoryFilter)
         : expenses
 
-    const toNum = (v: number | string) => Number(v) || 0
     const totalAmount = filtered.reduce((sum, e) => sum + toNum(e.amount), 0)
-    const pendingAmount = filtered.filter(e => e.status === 'pending' || e.status === 'reviewed').reduce((sum, e) => sum + toNum(e.amount), 0)
-    const approvedAmount = filtered.filter(e => e.status === 'approved' || e.status === 'reimbursed').reduce((sum, e) => sum + toNum(e.amount), 0)
+    const pendingAmount = filtered
+        .filter(e => e.status === 'pending' || e.status === 'reviewed')
+        .reduce((sum, e) => sum + toNum(e.amount), 0)
+    const approvedAmount = filtered
+        .filter(e => e.status === 'approved' || e.status === 'reimbursed')
+        .reduce((sum, e) => sum + toNum(e.amount), 0)
 
+    const rejectedCount = expenses.filter(e => e.status === 'rejected').length
     const uniqueCategories = [...new Set(expenses.map(e => e.category?.name ?? 'Outros'))].sort()
 
     return (
@@ -148,7 +104,27 @@ export default function TechExpensesOverviewPage() {
                 <h1 className="text-lg font-bold text-foreground">Minhas Despesas</h1>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            {/* Pull-to-refresh indicator */}
+            {(pullDistance > 0 || isRefreshing) && (
+                <div className="flex items-center justify-center py-2">
+                    <Loader2 className={cn('w-5 h-5 text-brand-500', isRefreshing && 'animate-spin')} />
+                    <span className="ml-2 text-xs text-surface-500">
+                        {isRefreshing ? 'Atualizando...' : 'Solte para atualizar'}
+                    </span>
+                </div>
+            )}
+
+            <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                {/* Rejected alert */}
+                {rejectedCount > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                        <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <p className="text-xs text-red-700 dark:text-red-400 font-medium">
+                            {rejectedCount} despesa(s) rejeitada(s) — corrija e reenvie
+                        </p>
+                    </div>
+                )}
+
                 {/* Summary cards */}
                 <div className="grid grid-cols-3 gap-2">
                     <div className="bg-card rounded-xl p-3 text-center">
@@ -226,21 +202,32 @@ export default function TechExpensesOverviewPage() {
                         {filtered.map((exp) => {
                             const catName = exp.category?.name ?? 'Outros'
                             const catColor = exp.category?.color ?? '#9ca3af'
-                            const statusInfo = STATUS_LABELS[exp.status] || STATUS_LABELS.pending
+                            const statusInfo = EXPENSE_STATUS_MAP[exp.status as ExpenseStatus] || EXPENSE_STATUS_MAP.pending
                             const woLabel = exp.work_order?.os_number ?? exp.work_order?.number
+
                             return (
                                 <div key={exp.id} className="bg-card rounded-xl p-3">
                                     <div className="flex items-center gap-3">
-                                        <div
-                                            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                                            style={{ backgroundColor: `${catColor}20`, color: catColor }}
-                                        >
-                                            <Receipt className="w-4 h-4" />
-                                        </div>
+                                        {/* Thumbnail or icon */}
+                                        {exp.receipt_path ? (
+                                            <img
+                                                src={exp.receipt_path}
+                                                alt="Comprovante"
+                                                className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
+                                            />
+                                        ) : (
+                                            <div
+                                                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                                // eslint-disable-next-line react/forbid-dom-props -- dynamic category color from DB
+                                                style={{ backgroundColor: `${catColor}20`, color: catColor }}
+                                            >
+                                                <Receipt className="w-4 h-4" />
+                                            </div>
+                                        )}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
                                                 <p className="text-sm font-medium text-foreground">{exp.description}</p>
-                                                <span className={cn('px-1.5 py-0.5 rounded-full text-[10px] font-medium', statusInfo.color)}>
+                                                <span className={cn('px-1.5 py-0.5 rounded-full text-[10px] font-medium', statusInfo.cls)}>
                                                     {statusInfo.label}
                                                 </span>
                                             </div>
@@ -251,6 +238,11 @@ export default function TechExpensesOverviewPage() {
                                                 {woLabel && <span>OS: {woLabel}</span>}
                                                 <span>{new Date(exp.expense_date + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
                                             </div>
+                                            {exp.status === 'rejected' && exp.rejection_reason && (
+                                                <p className="text-[10px] text-red-500 mt-0.5 truncate">
+                                                    Motivo: {exp.rejection_reason}
+                                                </p>
+                                            )}
                                         </div>
                                         <p className="text-sm font-bold text-foreground flex-shrink-0">
                                             {formatCurrency(toNum(exp.amount))}
@@ -279,104 +271,13 @@ export default function TechExpensesOverviewPage() {
 
             {/* Bottom Sheet — Create Expense */}
             {showCreateForm && (
-                <div className="absolute inset-0 z-20 flex flex-col">
-                    <div className="flex-1 bg-black/40" onClick={() => setShowCreateForm(false)} />
-                    <div className="bg-card rounded-t-2xl px-4 pt-4 pb-6 shadow-2xl animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-base font-bold text-foreground">Nova Despesa Avulsa</h2>
-                            <button onClick={() => setShowCreateForm(false)} aria-label="Fechar formulário" className="p-1 rounded-full hover:bg-surface-100 dark:hover:bg-surface-800">
-                                <X className="w-5 h-5 text-surface-400" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {/* Category chips */}
-                            <div>
-                                <label className="text-xs text-surface-500 font-medium mb-2 block">Categoria *</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {apiCategories.map((cat) => (
-                                        <button
-                                            key={cat.id}
-                                            onClick={() => setSelectedCategoryId(cat.id)}
-                                            className={cn(
-                                                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                                                selectedCategoryId === cat.id
-                                                    ? 'text-white'
-                                                    : 'bg-surface-100 text-surface-600'
-                                            )}
-                                            style={selectedCategoryId === cat.id ? { backgroundColor: cat.color } : undefined}
-                                        >
-                                            {cat.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Amount */}
-                            <div>
-                                <label className="text-xs text-surface-500 font-medium mb-1 block">Valor (R$) *</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={amount}
-                                    onChange={e => setAmount(e.target.value)}
-                                    placeholder="0,00"
-                                    className="w-full rounded-lg border border-border bg-surface-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-                                />
-                            </div>
-
-                            {/* Description */}
-                            <div>
-                                <label className="text-xs text-surface-500 font-medium mb-1 block">Descrição</label>
-                                <input
-                                    type="text"
-                                    value={description}
-                                    onChange={e => setDescription(e.target.value)}
-                                    placeholder="Descrição da despesa"
-                                    className="w-full rounded-lg border border-border bg-surface-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-                                />
-                            </div>
-
-                            {/* Photo */}
-                            <div>
-                                <label className="text-xs text-surface-500 font-medium mb-1 block">Comprovante</label>
-                                {photoPreview ? (
-                                    <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                                        <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
-                                        <button onClick={() => { setPhoto(null); setPhotoPreview(null) }}
-                                            className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center">
-                                            <X className="w-3 h-3 text-white" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <label className="flex items-center justify-center gap-2 w-full py-6 border-2 border-dashed border-surface-300 rounded-lg cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
-                                        <Camera className="w-5 h-5 text-surface-400" />
-                                        <span className="text-xs text-surface-500">Tirar foto ou selecionar</span>
-                                        <input type="file" accept="image/*" className="hidden" aria-label="Selecionar comprovante"
-                                            onChange={e => { if (e.target.files?.[0]) handlePhoto(e.target.files[0]) }}
-                                        />
-                                    </label>
-                                )}
-                            </div>
-
-                            {/* Save button */}
-                            <button
-                                onClick={handleCreateExpense}
-                                disabled={saving || !selectedCategoryId || !amount}
-                                className={cn(
-                                    'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-colors',
-                                    selectedCategoryId && amount
-                                        ? 'bg-brand-600 active:bg-brand-700'
-                                        : 'bg-surface-300',
-                                    saving && 'opacity-70',
-                                )}
-                            >
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                Salvar Despesa
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ExpenseForm
+                    categories={categories}
+                    onSubmit={handleCreateExpense}
+                    variant="sheet"
+                    onClose={() => setShowCreateForm(false)}
+                    showDateField
+                />
             )}
         </div>
     )

@@ -297,6 +297,10 @@ export const crmFeaturesApi = {
     deleteSequence: (id: number) => api.delete(`/crm-features/sequences/${id}`),
     enrollInSequence: (data: { sequence_id: number; customer_id: number; deal_id?: number }) => api.post('/crm-features/sequences/enroll', data),
     cancelEnrollment: (id: number) => api.put(`/crm-features/enrollments/${id}/cancel`),
+    getSequenceEnrollments: (sequenceId: number) => api.get<{ data: CrmSequenceEnrollment[] }>(`/crm-features/sequences/${sequenceId}/enrollments`),
+
+    // Email Tracking Stats (aggregated from tracking events)
+    getEmailTrackingStats: () => api.get('/crm-features/tracking/stats'),
 
     // Forecasting
     getForecast: (params?: { period?: string; months?: number }) => api.get<{ forecast: CrmForecast[]; historical_won: unknown[] }>('/crm-features/forecast', { params }),
@@ -377,4 +381,22 @@ export const crmFeaturesApi = {
     getCompetitiveMatrix: (params?: { months?: number }) => api.get<CrmDealCompetitor[]>('/crm-features/competitors', { params }),
     addDealCompetitor: (data: { deal_id: number; competitor_name: string; competitor_price?: number; strengths?: string; weaknesses?: string }) => api.post('/crm-features/competitors', data),
     updateDealCompetitor: (id: number, data: Record<string, unknown>) => api.put(`/crm-features/competitors/${id}`, data),
+
+    // Cross-Sell Recommendations (#13)
+    getCrossSellRecommendations: (customerId: number) => api.get(`/crm-features/customers/${customerId}/recommendations`),
+
+    // Deals CSV Import/Export (#15)
+    exportDealsCsv: (params?: { pipeline_id?: number; status?: string }) =>
+        api.get('/crm-features/deals/export-csv', { params, responseType: 'blob' }),
+    importDealsCsv: (file: File) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        return api.post<{ imported: number; errors: string[] }>('/crm-features/deals/import-csv', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        })
+    },
+
+    // Activities for Calendar integration (#14)
+    getActivitiesAsCalendarEvents: (params?: { start?: string; end?: string }) =>
+        api.get('/crm-features/calendar/activities', { params }),
 }

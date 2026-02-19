@@ -48,8 +48,14 @@ interface FiscalNote {
     pdf_path: string | null
     xml_url: string | null
     xml_path: string | null
+    nature_of_operation?: string | null
+    cfop?: string | null
+    cancel_reason?: string | null
+    environment?: string | null
+    protocol_number?: string | null
     customer?: { id: number; name: string; email?: string }
     work_order?: { id: number; number: string } | null
+    quote?: { id: number } | null
     creator?: { id: number; name: string }
     created_at: string
 }
@@ -134,7 +140,7 @@ export default function FiscalNotesPage() {
     // Carta de correção mutation
     const ccMutation = useMutation({
         mutationFn: async ({ id, texto }: { id: number; texto: string }) => {
-            return api.post(`/fiscal/notas/${id}/carta-correcao`, { texto_correcao: texto })
+            return api.post(`/fiscal/notas/${id}/carta-correcao`, { correcao: texto })
         },
         onSuccess: () => {
             toast.success('Carta de correção emitida com sucesso')
@@ -230,11 +236,10 @@ export default function FiscalNotesPage() {
                 actions={
                     <div className="flex items-center gap-2">
                         {/* SEFAZ Status Indicator */}
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${
-                            sefazOk
-                                ? 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                : 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:text-red-400'
-                        }`}>
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${sefazOk
+                            ? 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400'
+                            : 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:text-red-400'
+                            }`}>
                             {sefazOk ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
                             {sefazOk ? 'SEFAZ Online' : 'SEFAZ Offline'}
                         </div>
@@ -374,11 +379,11 @@ export default function FiscalNotesPage() {
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${note.type === 'nfe'
                                                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                                                         : 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
-                                                    }`}>
+                                                        }`}>
                                                         {note.type === 'nfe' ? 'NF-e' : 'NFS-e'}
                                                     </span>
                                                     {note.contingency_mode && (
-                                                        <WifiOff className="w-3.5 h-3.5 text-amber-500" title="Em contingência" />
+                                                        <WifiOff className="w-3.5 h-3.5 text-amber-500" aria-label="Em contingência" />
                                                     )}
                                                 </div>
                                             </td>

@@ -190,8 +190,13 @@ class HRAdvancedController extends Controller
 
     public function destroyGeofence(GeofenceLocation $geofence): JsonResponse
     {
-        $geofence->delete();
-        return response()->json(['message' => 'Geofence removido']);
+        try {
+            $geofence->delete();
+            return response()->json(['message' => 'Geofence removido']);
+        } catch (\Exception $e) {
+            Log::error('HRAdvanced destroyGeofence failed', ['geofence_id' => $geofence->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover geofence'], 500);
+        }
     }
 
     // ─── TIME CLOCK ADJUSTMENTS ─────────────────────────────────

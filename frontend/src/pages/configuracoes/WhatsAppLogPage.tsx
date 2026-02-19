@@ -32,7 +32,7 @@ export default function WhatsAppLogPage() {
 
     const { data, isLoading } = useQuery<WhatsAppLog[]>({
         queryKey: ['whatsapp-logs', search, statusFilter],
-        queryFn: () => api.get('/api/v1/whatsapp/logs', {
+        queryFn: () => api.get('/whatsapp/logs', {
             params: { search, status: statusFilter || undefined },
         }).then(r => r.data.data ?? r.data),
     })
@@ -59,6 +59,7 @@ export default function WhatsAppLogPage() {
                     />
                 </div>
                 <select
+                    aria-label="Filtrar por status"
                     className="rounded-lg border bg-background px-3 py-2 text-sm"
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
@@ -127,11 +128,10 @@ export default function WhatsAppLogPage() {
                                             </span>
                                         </td>
                                         <td className="p-3 text-xs">
-                                            <span className={`rounded-full px-2 py-0.5 ${
-                                                log.direction === 'outgoing'
-                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
-                                            }`}>
+                                            <span className={`rounded-full px-2 py-0.5 ${log.direction === 'outgoing'
+                                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
+                                                }`}>
                                                 {log.direction === 'outgoing' ? 'Enviada' : 'Recebida'}
                                             </span>
                                         </td>

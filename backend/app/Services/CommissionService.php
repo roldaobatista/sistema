@@ -148,6 +148,11 @@ class CommissionService
                 if (str_contains($e->getMessage(), 'já geradas')) {
                     throw $e;
                 }
+                \Illuminate\Support\Facades\Log::debug('CommissionService: trigger skipped', [
+                    'work_order_id' => $wo->id,
+                    'trigger' => $trigger,
+                    'reason' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -371,10 +376,14 @@ class CommissionService
      */
     private function buildCalculationContext(WorkOrder $wo): array
     {
-        $expensesTotal = \App\Models\Expense::where('tenant_id', $wo->tenant_id)
+        $expensesTotal = \App\Models\Expense::withoutGlobalScopes()
+            ->where('tenant_id', $wo->tenant_id)
             ->where('work_order_id', $wo->id)
             ->where('status', \App\Models\Expense::STATUS_APPROVED)
-            ->where('affects_net_value', true)
+            ->where(function ($q) {
+                $q->whereIn('affects_net_value', [true, 1])
+                    ->orWhereNull('affects_net_value');
+            })
             ->sum('amount');
 
         $itemsCost = '0';

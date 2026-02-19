@@ -19,7 +19,7 @@ class AutoAssignmentService
      */
     public function assignWorkOrder(WorkOrder $wo): ?User
     {
-        $rules = AutoAssignmentRule::where('company_id', $wo->company_id)
+        $rules = AutoAssignmentRule::where('tenant_id', $wo->tenant_id)
             ->where('is_active', true)
             ->where('entity_type', 'work_order')
             ->orderBy('priority')
@@ -49,7 +49,7 @@ class AutoAssignmentService
      */
     public function assignServiceCall(ServiceCall $call): ?User
     {
-        $rules = AutoAssignmentRule::where('company_id', $call->company_id)
+        $rules = AutoAssignmentRule::where('tenant_id', $call->tenant_id)
             ->where('is_active', true)
             ->where('entity_type', 'service_call')
             ->orderBy('priority')
@@ -102,12 +102,12 @@ class AutoAssignmentService
     {
         $strategy = $rule->strategy ?? 'round_robin';
 
-        $candidates = $this->getCandidates($wo->company_id, $rule);
+        $candidates = $this->getCandidates($wo->tenant_id, $rule);
         if ($candidates->isEmpty()) return null;
 
         return match ($strategy) {
-            'round_robin' => $this->roundRobin($candidates, $wo->company_id),
-            'least_loaded' => $this->leastLoaded($candidates, $wo->company_id),
+            'round_robin' => $this->roundRobin($candidates, $wo->tenant_id),
+            'least_loaded' => $this->leastLoaded($candidates, $wo->tenant_id),
             'skill_match' => $this->skillMatch($candidates, $wo),
             'proximity' => $this->proximity($candidates, $wo),
             default => $candidates->first(),
@@ -119,13 +119,13 @@ class AutoAssignmentService
      */
     private function findBestTechnicianForCall(ServiceCall $call, AutoAssignmentRule $rule): ?User
     {
-        $candidates = $this->getCandidates($call->company_id, $rule);
+        $candidates = $this->getCandidates($call->tenant_id, $rule);
         if ($candidates->isEmpty()) return null;
 
         $strategy = $rule->strategy ?? 'round_robin';
         return match ($strategy) {
-            'round_robin' => $this->roundRobin($candidates, $call->company_id),
-            'least_loaded' => $this->leastLoaded($candidates, $call->company_id),
+            'round_robin' => $this->roundRobin($candidates, $call->tenant_id),
+            'least_loaded' => $this->leastLoaded($candidates, $call->tenant_id),
             default => $candidates->first(),
         };
     }
@@ -135,7 +135,7 @@ class AutoAssignmentService
      */
     private function getCandidates(int $tenantId, AutoAssignmentRule $rule)
     {
-        $query = User::where('company_id', $tenantId)
+        $query = User::where('tenant_id', $tenantId)
             ->where('is_active', true)
             ->whereHas('roles', fn ($q) => $q->whereIn('name', ['tecnico', 'technician']));
 
@@ -167,7 +167,7 @@ class AutoAssignmentService
     private function roundRobin($candidates, int $tenantId): ?User
     {
         return $candidates->sortBy(function ($tech) use ($tenantId) {
-            return WorkOrder::where('company_id', $tenantId)
+            return WorkOrder::where('tenant_id', $tenantId)
                 ->where('assigned_to', $tech->id)
                 ->where('auto_assigned', true)
                 ->max('created_at') ?? '2000-01-01';
@@ -180,7 +180,7 @@ class AutoAssignmentService
     private function leastLoaded($candidates, int $tenantId): ?User
     {
         return $candidates->sortBy(function ($tech) use ($tenantId) {
-            return WorkOrder::where('company_id', $tenantId)
+            return WorkOrder::where('tenant_id', $tenantId)
                 ->where('assigned_to', $tech->id)
                 ->whereNotIn('status', ['concluida', 'cancelada', 'faturada'])
                 ->count();

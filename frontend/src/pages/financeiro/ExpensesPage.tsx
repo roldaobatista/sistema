@@ -17,6 +17,10 @@ import { Modal } from '@/components/ui/modal'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
 import { useAuthStore } from '@/stores/auth-store'
+import { ExpenseAnalyticsPanel } from '@/components/expenses/ExpenseAnalyticsPanel'
+import { ExpenseHistoryModal } from '@/components/expenses/ExpenseHistoryModal'
+import { ExpenseCategoryManager } from '@/components/expenses/ExpenseCategoryManager'
+import { ColorDot } from '@/components/ui/color-dot'
 
 const statusConfig: Record<string, { label: string; variant: any }> = {
     pending: { label: 'Pendente', variant: 'warning' },
@@ -83,11 +87,7 @@ export function ExpensesPage() {
     const [page, setPage] = useState(1)
     const [showForm, setShowForm] = useState(false)
     const [showDetail, setShowDetail] = useState<Exp | null>(null)
-    const [showCatForm, setShowCatForm] = useState(false)
     const [showCatManager, setShowCatManager] = useState(false)
-    const [catForm, setCatForm] = useState({ name: '', color: '#6b7280', budget_limit: '' as string, default_affects_net_value: false, default_affects_technician_cash: false })
-    const [editingCatId, setEditingCatId] = useState<number | null>(null)
-    const [deleteCatTarget, setDeleteCatTarget] = useState<number | null>(null)
     const [editingId, setEditingId] = useState<number | null>(null)
     const [rejectTarget, setRejectTarget] = useState<number | null>(null)
     const [rejectReason, setRejectReason] = useState('')
@@ -273,27 +273,6 @@ export function ExpensesPage() {
         },
     })
 
-    const saveCatMut = useMutation({
-        mutationFn: (data: typeof catForm) => {
-            if (editingCatId) return api.put(`/expense-categories/${editingCatId}`, data)
-            return api.post('/expense-categories', data)
-        },
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['expense-categories'] })
-            broadcastQueryInvalidation(['expense-categories'], 'Despesa')
-            setShowCatForm(false)
-            setEditingCatId(null)
-            toast.success(editingCatId ? 'Categoria atualizada com sucesso' : 'Categoria criada com sucesso')
-        },
-        onError: (err: any) => {
-            if (err?.response?.status === 403) {
-                toast.error('Você não tem permissão para esta ação')
-            } else {
-                toast.error(err?.response?.data?.message ?? 'Erro ao salvar categoria')
-            }
-        },
-    })
-
     const batchMut = useMutation({
         mutationFn: (data: { expense_ids: number[]; status: string; rejection_reason?: string }) =>
             api.post('/expenses/batch-status', data),
@@ -399,22 +378,6 @@ export function ExpensesPage() {
 
     const filterUsers = allUsers.length > 0 ? allUsers : Array.from(new Map(records.map(r => [r.creator.id, r.creator])).values())
 
-    const delCatMut = useMutation({
-        mutationFn: (id: number) => api.delete(`/expense-categories/${id}`),
-
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['expense-categories'] })
-            qc.invalidateQueries({ queryKey: ['expenses'] })
-            broadcastQueryInvalidation(['expense-categories', 'expenses'], 'Despesa')
-            setDeleteCatTarget(null)
-            toast.success('Categoria excluída com sucesso')
-        },
-        onError: (err: any) => {
-            setDeleteCatTarget(null)
-            toast.error(err?.response?.data?.message ?? 'Erro ao excluir categoria')
-        },
-    })
-
     const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
         setForm(p => ({ ...p, [k]: v }))
         // Clear field error when user changes value
@@ -497,100 +460,12 @@ export function ExpensesPage() {
                 </div>
             </div>
 
-            <div className="rounded-xl border border-default bg-surface-0 shadow-card">
-                <button onClick={() => setShowAnalytics(p => !p)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-surface-50 transition-colors">
-                    <div className="flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4 text-brand-600" />
-                        <span className="text-sm font-semibold text-surface-800">Analytics de Despesas</span>
-                    </div>
-                    <ChevronDown className={`h-4 w-4 text-surface-400 transition-transform duration-200 ${showAnalytics ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showAnalytics && analytics && (
-                    <div className="border-t border-subtle px-4 pb-4 pt-3">
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {/* By Category */}
-                            <div>
-                                <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Gastos por Categoria</h3>
-                                <div className="space-y-2">
-                                    {(analytics.by_category ?? []).length === 0 ? (
-                                        <p className="text-xs text-surface-400">Nenhum dado no período</p>
-                                    ) : (() => {
-                                        const maxVal = Math.max(...(analytics.by_category ?? []).map((c: any) => Number(c.total)), 1)
-                                        return (analytics.by_category ?? []).map((cat: any) => (
-                                            <div key={cat.category_id ?? 'none'} className="flex items-center gap-2">
-                                                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: cat.category_color }} />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between mb-0.5">
-                                                        <span className="truncate text-xs font-medium text-surface-700">{cat.category_name}</span>
-                                                        <span className="ml-2 text-xs tabular-nums text-surface-500">{fmtBRL(cat.total)}</span>
-                                                    </div>
-                                                    <div className="h-1.5 w-full rounded-full bg-surface-100">
-                                                        <div className="h-full rounded-full transition-all duration-300"
-                                                            style={{ width: `${(Number(cat.total) / maxVal) * 100}%`, backgroundColor: cat.category_color }} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    })()}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Evolução Mensal (6 meses)</h3>
-                                <div className="space-y-2">
-                                    {(analytics.by_month ?? []).length === 0 ? (
-                                        <p className="text-xs text-surface-400">Nenhum dado</p>
-                                    ) : (() => {
-                                        const maxMonth = Math.max(...(analytics.by_month ?? []).map((m: any) => Number(m.total)), 1)
-                                        return (analytics.by_month ?? []).map((m: any) => {
-                                            const [year, month] = m.month.split('-')
-                                            const label = `${month}/${year}`
-                                            return (
-                                                <div key={m.month} className="flex items-center gap-3">
-                                                    <span className="w-12 text-xs text-surface-500 tabular-nums">{label}</span>
-                                                    <div className="flex-1 h-1.5 rounded-full bg-surface-100">
-                                                        <div className="h-full rounded-full bg-brand-500 transition-all duration-300"
-                                                            style={{ width: `${(Number(m.total) / maxMonth) * 100}%` }} />
-                                                    </div>
-                                                    <span className="w-24 text-right text-xs text-surface-600 tabular-nums">{fmtBRL(m.total)}</span>
-                                                </div>
-                                            )
-                                        })
-                                    })()}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="mb-3 text-xs font-semibold uppercase text-surface-500">Top Responsáveis</h3>
-                                <div className="space-y-2">
-                                    {(analytics.top_creators ?? []).length === 0 ? (
-                                        <p className="text-xs text-surface-400">Nenhum dado</p>
-                                    ) : (analytics.top_creators ?? []).map((cr: any, i: number) => (
-                                        <div key={cr.user_id} className="flex items-center gap-2">
-                                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-100 text-[10px] font-bold text-surface-500">{i + 1}</span>
-                                            <span className="flex-1 truncate text-xs font-medium text-surface-700">{cr.user_name}</span>
-                                            <span className="text-xs text-surface-400">{cr.count}x</span>
-                                            <span className="text-xs font-medium tabular-nums text-surface-600">{fmtBRL(cr.total)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <p className="mt-3 text-xs text-surface-400">
-                            Período: {analytics.period?.from} a {analytics.period?.to} · Exclui despesas rejeitadas
-                        </p>
-                    </div>
-                )}
-
-                {showAnalytics && !analytics && (
-                    <div className="border-t border-subtle px-4 py-6 text-center">
-                        <div className="mx-auto h-4 w-32 animate-pulse rounded bg-surface-200" />
-                    </div>
-                )}
-            </div>
+            <ExpenseAnalyticsPanel
+                show={showAnalytics}
+                onToggle={() => setShowAnalytics(p => !p)}
+                analytics={analytics}
+                fmtBRL={fmtBRL}
+            />
 
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 max-w-sm">
@@ -599,20 +474,23 @@ export function ExpensesPage() {
                         className="w-full rounded-lg border border-default bg-surface-50 py-2.5 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none" />
                 </div>
                 <select value={statusFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
+                    aria-label="Filtrar por status"
                     className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                     <option value="">Todos os status</option>
                     {Object.entries(statusConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
                 <select value={catFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCatFilter(e.target.value)}
+                    aria-label="Filtrar por categoria"
                     className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                     <option value="">Todas categorias</option>
-                    {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {categories.map((c: { id: number; name: string }) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 {filterUsers.length > 1 && (
                     <select value={creatorFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCreatorFilter(e.target.value)}
+                        aria-label="Filtrar por responsável"
                         className="rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                         <option value="">Todos responsáveis</option>
-                        {filterUsers.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {filterUsers.map((c: { id: number; name: string }) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 )}
             </div>
@@ -696,6 +574,7 @@ export function ExpensesPage() {
                                     <td className="px-3 py-3">
                                         {(r.status === EXPENSE_STATUS.PENDING || r.status === EXPENSE_STATUS.REVIEWED) ? (
                                             <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)}
+                                                aria-label={`Selecionar despesa ${r.description}`}
                                                 className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
                                         ) : <div className="h-4 w-4" />}
                                     </td>
@@ -707,7 +586,7 @@ export function ExpensesPage() {
                                 <td className="hidden px-4 py-3 sm:table-cell">
                                     {r.category ? (
                                         <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-                                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: r.category.color }} />
+                                            <ColorDot color={r.category.color} size="md" />
                                             {r.category.name}
                                         </span>
                                     ) : '—'}
@@ -772,17 +651,17 @@ export function ExpensesPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Categoria</label>
-                            <select value={form.expense_category_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('expense_category_id', e.target.value)}
+                            <label htmlFor="expense_category_id" className="mb-1.5 block text-sm font-medium text-surface-700">Categoria</label>
+                            <select id="expense_category_id" value={form.expense_category_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('expense_category_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Sem categoria</option>
-                                {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                {categories.map((c: { id: number; name: string }) => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                             {fieldErrors.expense_category_id && <p className="mt-1 text-xs text-red-500">{fieldErrors.expense_category_id[0]}</p>}
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Vinculada à OS</label>
-                            <select value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
+                            <label htmlFor="work_order_id" className="mb-1.5 block text-sm font-medium text-surface-700">Vinculada à OS</label>
+                            <select id="work_order_id" value={form.work_order_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('work_order_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhuma</option>
                                 {(wosRes?.data?.data ?? []).map((wo: any) => <option key={wo.id} value={wo.id}>{wo.business_number ?? wo.os_number ?? wo.number} — {wo.customer?.name}</option>)}
@@ -791,8 +670,8 @@ export function ExpensesPage() {
                     </div>
                     {canViewChart && (
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Plano de Contas</label>
-                            <select value={form.chart_of_account_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('chart_of_account_id', e.target.value)}
+                            <label htmlFor="chart_of_account_id" className="mb-1.5 block text-sm font-medium text-surface-700">Plano de Contas</label>
+                            <select id="chart_of_account_id" value={form.chart_of_account_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('chart_of_account_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nao classificado</option>
                                 {chartAccounts.map(account => <option key={account.id} value={account.id}>{account.code} - {account.name}</option>)}
@@ -809,8 +688,8 @@ export function ExpensesPage() {
                             {fieldErrors.expense_date && <p className="mt-1 text-xs text-red-500">{fieldErrors.expense_date[0]}</p>}
                         </div>
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Forma Pgto</label>
-                            <select value={form.payment_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('payment_method', e.target.value)}
+                            <label htmlFor="payment_method" className="mb-1.5 block text-sm font-medium text-surface-700">Forma Pgto</label>
+                            <select id="payment_method" value={form.payment_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('payment_method', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Não definido</option>
                                 {Object.entries(paymentMethods).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -818,8 +697,8 @@ export function ExpensesPage() {
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Observações</label>
-                        <textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
+                        <label htmlFor="expense_notes" className="mb-1.5 block text-sm font-medium text-surface-700">Observações</label>
+                        <textarea id="expense_notes" value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('notes', e.target.value)} rows={2}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
@@ -871,8 +750,8 @@ export function ExpensesPage() {
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-sm font-medium text-surface-700">Comprovante</label>
-                        <input type="file" accept="image/*,.pdf" onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        <label htmlFor="expense_receipt" className="mb-1.5 block text-sm font-medium text-surface-700">Comprovante</label>
+                        <input id="expense_receipt" type="file" accept="image/*,.pdf" onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             if (e.target.files?.[0]) set('receipt', e.target.files[0])
                         }} className="w-full text-sm text-surface-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
                         {editingId && !form.receipt && (
@@ -887,84 +766,11 @@ export function ExpensesPage() {
                 </form>
             </Modal>
 
-            <Modal open={showCatManager} onOpenChange={setShowCatManager} title="Gerenciar Categorias" size="lg">
-                <div className="space-y-4">
-                    <div className="flex justify-end">
-                        <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => { setEditingCatId(null); setCatForm({ name: '', color: '#6b7280', budget_limit: '', default_affects_net_value: false, default_affects_technician_cash: false }); setShowCatForm(true) }}>Nova Categoria</Button>
-                    </div>
-                    {categories.length === 0 ? (
-                        <div className="py-8 text-center">
-                            <Tag className="mx-auto h-8 w-8 text-surface-300" />
-                            <p className="mt-2 text-sm text-surface-500">Nenhuma categoria criada</p>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-subtle rounded-lg border border-default">
-                            {categories.map((c: any) => (
-                                <div key={c.id} className="flex items-center justify-between px-4 py-3">
-                                    <div className="flex items-center gap-2.5">
-                                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: c.color }} />
-                                        <span className="text-sm font-medium text-surface-800">{c.name}</span>
-                                        {c.expenses_count != null && (
-                                            <span className="text-xs text-surface-400">({c.expenses_count})</span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <IconButton label="Editar categoria" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => { setEditingCatId(c.id); setCatForm({ name: c.name, color: c.color, budget_limit: c.budget_limit ?? '', default_affects_net_value: !!c.default_affects_net_value, default_affects_technician_cash: !!c.default_affects_technician_cash }); setShowCatForm(true) }} className="hover:text-brand-600" />
-                                        <IconButton label="Excluir categoria" icon={<Trash2 className="h-3.5 w-3.5" />} onClick={() => setDeleteCatTarget(c.id)} className="hover:text-red-600" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </Modal>
-
-            <Modal open={showCatForm} onOpenChange={(v) => { setShowCatForm(v); if (!v) setEditingCatId(null) }} title={editingCatId ? 'Editar Categoria' : 'Nova Categoria de Despesa'}>
-                <form onSubmit={e => { e.preventDefault(); saveCatMut.mutate(catForm) }} className="space-y-4">
-                    <Input label="Nome *" value={catForm.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, name: e.target.value }))} required />
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Cor</label>
-                            <div className="flex items-center gap-3">
-                                <input type="color" value={catForm.color} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, color: e.target.value }))}
-                                    className="h-10 w-14 cursor-pointer rounded-lg border border-default" />
-                                <span className="text-sm text-surface-500">{catForm.color}</span>
-                            </div>
-                        </div>
-                        <Input label="Limite orçamentário mensal (R$)" type="number" step="0.01" value={catForm.budget_limit}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, budget_limit: e.target.value }))}
-                            placeholder="Sem limite" />
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
-                        <div className="flex items-center gap-2">
-                            <input type="checkbox" id="cat_default_net" checked={catForm.default_affects_net_value}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, default_affects_net_value: e.target.checked }))}
-                                className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
-                            <label htmlFor="cat_default_net" className="text-sm font-medium text-surface-700">Padrão: deduz do líquido</label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input type="checkbox" id="cat_default_cash" checked={catForm.default_affects_technician_cash}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatForm(p => ({ ...p, default_affects_technician_cash: e.target.checked }))}
-                                className="h-4 w-4 rounded border-default text-brand-600 focus:ring-brand-500" />
-                            <label htmlFor="cat_default_cash" className="text-sm font-medium text-surface-700">Padrão: impacta caixa técnico</label>
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-2 border-t pt-4">
-                        <Button variant="outline" type="button" onClick={() => { setShowCatForm(false); setEditingCatId(null) }}>Cancelar</Button>
-                        <Button type="submit" loading={saveCatMut.isPending} disabled={saveCatMut.isPending}>{editingCatId ? 'Salvar' : 'Criar'}</Button>
-                    </div>
-                </form>
-            </Modal>
-
-            <Modal open={deleteCatTarget !== null} onOpenChange={() => setDeleteCatTarget(null)} title="Excluir Categoria">
-                <div className="space-y-4">
-                    <p className="text-sm text-surface-600">Tem certeza que deseja excluir esta categoria? Despesas vinculadas precisarão ser reclassificadas.</p>
-                    <div className="flex justify-end gap-2 border-t pt-4">
-                        <Button variant="outline" onClick={() => setDeleteCatTarget(null)}>Cancelar</Button>
-                        <Button className="bg-red-600 hover:bg-red-700" loading={delCatMut.isPending} disabled={delCatMut.isPending} onClick={() => delCatMut.mutate(deleteCatTarget!)}>Excluir</Button>
-                    </div>
-                </div>
-            </Modal>
+            <ExpenseCategoryManager
+                open={showCatManager}
+                onClose={() => setShowCatManager(false)}
+                categories={categories}
+            />
 
             <Modal open={!!showDetail} onOpenChange={() => setShowDetail(null)} title="Detalhes da Despesa" size="lg">
                 {showDetail && (
@@ -975,7 +781,7 @@ export function ExpensesPage() {
                                 <span className="text-xs text-surface-500">Categoria</span>
                                 {showDetail.category ? (
                                     <p className="flex items-center gap-1.5 text-sm font-medium">
-                                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: showDetail.category.color }} />
+                                        <ColorDot color={showDetail.category.color} size="md" />
                                         {showDetail.category.name}
                                     </p>
                                 ) : <p className="text-sm text-surface-400">Sem categoria</p>}
@@ -1050,34 +856,12 @@ export function ExpensesPage() {
                 </form>
             </Modal>
 
-            <Modal open={showHistory !== null} onOpenChange={() => setShowHistory(null)} title="Histórico de Status">
-                <div className="space-y-3 max-h-80 overflow-y-auto">
-                    {historyEntries.length === 0 ? (
-                        <p className="text-sm text-surface-400 text-center py-6">Nenhum registro de histórico</p>
-                    ) : historyEntries.map((h) => (
-                        <div key={h.id} className="flex gap-3 border-b border-subtle pb-3 last:border-0">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-100">
-                                <History className="h-4 w-4 text-surface-500" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    {h.from_status && (
-                                        <>
-                                            <Badge variant={statusConfig[h.from_status]?.variant}>{statusConfig[h.from_status]?.label}</Badge>
-                                            <span className="text-xs text-surface-400">→</span>
-                                        </>
-                                    )}
-                                    <Badge variant={statusConfig[h.to_status]?.variant}>{statusConfig[h.to_status]?.label}</Badge>
-                                </div>
-                                {h.reason && <p className="mt-1 text-xs text-surface-600">{h.reason}</p>}
-                                <p className="mt-1 text-xs text-surface-400">
-                                    {h.changed_by} · {new Date(h.changed_at).toLocaleString('pt-BR')}
-                                </p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </Modal>
+            <ExpenseHistoryModal
+                open={showHistory !== null}
+                onClose={() => setShowHistory(null)}
+                entries={historyEntries}
+                statusConfig={statusConfig}
+            />
         </div>
     )
 }

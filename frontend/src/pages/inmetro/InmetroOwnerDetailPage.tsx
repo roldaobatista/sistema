@@ -170,7 +170,7 @@ export function InmetroOwnerDetailPage() {
                         </Button>
                     )}
                     {owner.converted_to_customer_id && (
-                        <Link to={`/customers/${owner.converted_to_customer_id}`}>
+                        <Link to={`/cadastros/clientes/${owner.converted_to_customer_id}`}>
                             <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1.5 hover:bg-green-200 transition-colors cursor-pointer">
                                 <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Cliente CRM
                             </Badge>

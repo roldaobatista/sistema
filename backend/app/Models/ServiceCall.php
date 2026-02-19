@@ -17,10 +17,11 @@ class ServiceCall extends Model
 
     protected $fillable = [
         'tenant_id', 'call_number', 'customer_id', 'quote_id',
+        'contract_id', 'sla_policy_id', 'template_id',
         'technician_id', 'driver_id', 'created_by', 'status', 'priority',
         'scheduled_date', 'started_at', 'completed_at',
         'latitude', 'longitude', 'address', 'city', 'state', 'observations',
-        'resolution_notes', 'reschedule_count', 'reschedule_reason',
+        'resolution_notes', 'reschedule_count', 'reschedule_reason', 'reschedule_history',
     ];
 
     protected $appends = [
@@ -39,6 +40,7 @@ class ServiceCall extends Model
             'completed_at' => 'datetime',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'reschedule_history' => 'array',
         ];
     }
 
@@ -52,7 +54,7 @@ class ServiceCall extends Model
     public const STATUSES = [
         self::STATUS_OPEN => ['label' => 'Aberto', 'color' => 'bg-blue-100 text-blue-700'],
         self::STATUS_SCHEDULED => ['label' => 'Agendado', 'color' => 'bg-amber-100 text-amber-700'],
-        self::STATUS_IN_TRANSIT => ['label' => 'Em Deslocamento', 'color' => 'bg-cyan-100 text-cyan-700'],
+        self::STATUS_IN_TRANSIT => ['label' => 'Em Trânsito', 'color' => 'bg-cyan-100 text-cyan-700'],
         self::STATUS_IN_PROGRESS => ['label' => 'Em Atendimento', 'color' => 'bg-indigo-100 text-indigo-700'],
         self::STATUS_COMPLETED => ['label' => 'Concluído', 'color' => 'bg-emerald-100 text-emerald-700'],
         self::STATUS_CANCELLED => ['label' => 'Cancelado', 'color' => 'bg-red-100 text-red-700'],
@@ -88,6 +90,21 @@ class ServiceCall extends Model
     public function quote(): BelongsTo
     {
         return $this->belongsTo(Quote::class);
+    }
+
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Contract::class);
+    }
+
+    public function slaPolicy(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\SlaPolicy::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\ServiceCallTemplate::class, 'template_id');
     }
 
     public function technician(): BelongsTo
@@ -160,6 +177,10 @@ class ServiceCall extends Model
 
     public function getSlaLimitHoursAttribute(): int
     {
+        // Dynamic SLA: policy > default by priority
+        if ($this->sla_policy_id && $this->relationLoaded('slaPolicy') && $this->slaPolicy) {
+            return (int) ceil($this->slaPolicy->resolution_time_minutes / 60);
+        }
         return self::SLA_HOURS[$this->priority ?? 'normal'] ?? 24;
     }
 

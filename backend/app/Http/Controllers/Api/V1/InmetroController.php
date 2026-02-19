@@ -311,7 +311,7 @@ class InmetroController extends Controller
             return response()->json(['message' => 'Import completed', 'results' => $results]);
         } catch (\Exception $e) {
             Log::error('INMETRO XML import error', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Import failed', 'error' => $e->getMessage()], 500);
+            Log::error('Import failed: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Import failed'], 500);
         }
     }
 
@@ -436,7 +436,7 @@ class InmetroController extends Controller
             return response()->json($result);
         } catch (\Exception $e) {
             Log::error('INMETRO enrichment error', ['owner_id' => $ownerId, 'error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            Log::error($e->getMessage(), ['exception' => $e]); return response()->json(['success' => false, 'error' => 'Erro interno do servidor.'], 500);
         }
     }
 
@@ -797,7 +797,7 @@ class InmetroController extends Controller
             return response()->json(['message' => 'Cross-reference completed', 'stats' => $stats]);
         } catch (\Exception $e) {
             Log::error('INMETRO cross-reference error', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Cross-reference failed', 'error' => $e->getMessage()], 500);
+            Log::error('Cross-reference failed: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Cross-reference failed'], 500);
         }
     }
 
@@ -813,7 +813,7 @@ class InmetroController extends Controller
             return response()->json($profile ?? ['linked' => false]);
         } catch (\Exception $e) {
             Log::error('INMETRO customer profile error', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Failed to get profile', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to get profile: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to get profile'], 500);
         }
     }
 

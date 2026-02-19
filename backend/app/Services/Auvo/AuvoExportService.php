@@ -133,7 +133,7 @@ class AuvoExportService
      */
     public function exportQuote(Quote $quote): array
     {
-        $quote->loadMissing('customer', 'items');
+        $quote->loadMissing('customer');
 
         $customer = $quote->customer;
         if (!$customer) {

@@ -68,7 +68,7 @@ describe('Tabs', () => {
 
     it('active trigger has active styles', () => {
         render(<TabsExample value="tab1" onValueChange={vi.fn()} />)
-        expect(screen.getByText('Tab 1').className).toContain('bg-surface-0')
+        expect(screen.getByText('Tab 1').className).toContain('bg-white')
     })
 
     it('inactive trigger has inactive styles', () => {

@@ -22,6 +22,10 @@ class EquipmentCalibration extends Model
         'cost', 'work_order_id', 'notes', 'eccentricity_data',
         'certificate_template_id', 'conformity_declaration',
         'max_permissible_error', 'max_error_found', 'mass_unit', 'calibration_method',
+        // Wizard / ISO 17025 fields
+        'received_date', 'issued_date', 'calibration_location',
+        'calibration_location_type', 'before_adjustment_data', 'after_adjustment_data',
+        'verification_type', 'verification_division_e', 'prefilled_from_id',
     ];
 
     protected function casts(): array
@@ -29,6 +33,8 @@ class EquipmentCalibration extends Model
         return [
             'calibration_date' => 'date',
             'next_due_date' => 'date',
+            'received_date' => 'date',
+            'issued_date' => 'date',
             'errors_found' => 'array',
             'error_found' => 'decimal:4',
             'uncertainty' => 'decimal:4',
@@ -37,6 +43,9 @@ class EquipmentCalibration extends Model
             'pressure' => 'decimal:2',
             'cost' => 'decimal:2',
             'eccentricity_data' => 'array',
+            'before_adjustment_data' => 'array',
+            'after_adjustment_data' => 'array',
+            'verification_division_e' => 'decimal:6',
         ];
     }
 
@@ -63,6 +72,16 @@ class EquipmentCalibration extends Model
     public function excentricityTests(): HasMany
     {
         return $this->hasMany(ExcentricityTest::class);
+    }
+
+    public function repeatabilityTests(): HasMany
+    {
+        return $this->hasMany(RepeatabilityTest::class);
+    }
+
+    public function prefilledFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'prefilled_from_id');
     }
 
     public function template(): BelongsTo

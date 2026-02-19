@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         if (!Schema::hasColumn('imports', 'progress')) {
             Schema::table('imports', function (Blueprint $table) {
-                $table->unsignedTinyInteger('progress')->default(0)->after('status');
+                $table->unsignedTinyInteger('progress')->default(0);
             });
         }
     }

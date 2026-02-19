@@ -14,14 +14,14 @@ return new class extends Migration
         // Add cancelled_at to work_orders
         if (Schema::hasTable('work_orders') && !Schema::hasColumn('work_orders', 'cancelled_at')) {
             Schema::table('work_orders', function (Blueprint $table) {
-                $table->timestamp('cancelled_at')->nullable()->after('delivered_at');
+                $table->timestamp('cancelled_at')->nullable();
             });
         }
 
         // Add tenant_id to work_order_status_history (isolação multi-tenant)
         if (Schema::hasTable('work_order_status_history') && !Schema::hasColumn('work_order_status_history', 'tenant_id')) {
             Schema::table('work_order_status_history', function (Blueprint $table) {
-                $table->unsignedBigInteger('tenant_id')->nullable()->after('id');
+                $table->unsignedBigInteger('tenant_id')->nullable();
             });
 
             // Backfill tenant_id from work_orders

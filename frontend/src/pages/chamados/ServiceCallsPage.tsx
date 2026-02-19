@@ -4,7 +4,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useNavigate } from 'react-router-dom'
 import {
     Plus, Search, Phone, MapPin, AlertTriangle, Pencil, Trash2,
-    Map, Calendar, Download, ChevronLeft, ChevronRight,
+    Map, Calendar, Download, ChevronLeft, ChevronRight, LayoutGrid, BarChart3,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import { serviceCallStatus, priorityConfig, getStatusEntry } from '@/lib/status-config'
 import { cn } from '@/lib/utils'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 
 export function ServiceCallsPage() {
     const navigate = useNavigate()
@@ -68,6 +69,7 @@ export function ServiceCallsPage() {
             toast.success('Chamado excluído com sucesso')
             queryClient.invalidateQueries({ queryKey: ['service-calls'] })
             queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
+            broadcastQueryInvalidation(['service-calls', 'service-calls-summary'], 'Chamado')
             setDeleteTarget(null)
         },
         onError: (error: any) => {
@@ -119,6 +121,8 @@ export function ServiceCallsPage() {
                 title="Chamados Técnicos"
                 count={pagination?.total}
                 actions={[
+                    { label: 'Kanban', icon: <LayoutGrid className="h-4 w-4" />, variant: 'outline', onClick: () => navigate('/chamados/kanban') },
+                    { label: 'Dashboard', icon: <BarChart3 className="h-4 w-4" />, variant: 'outline', onClick: () => navigate('/chamados/dashboard') },
                     { label: 'Mapa', icon: <Map className="h-4 w-4" />, variant: 'outline', onClick: () => navigate('/chamados/mapa') },
                     { label: 'Agenda', icon: <Calendar className="h-4 w-4" />, variant: 'outline', onClick: () => navigate('/chamados/agenda') },
                     { label: 'CSV', icon: <Download className="h-4 w-4" />, variant: 'outline', onClick: handleExport },
@@ -274,7 +278,13 @@ export function ServiceCallsPage() {
                                                             <AlertTriangle className="h-3 w-3" /> Estourado
                                                         </Badge>
                                                     ) : call.status !== 'completed' && call.status !== 'cancelled' ? (
-                                                        <Badge variant="success">OK</Badge>
+                                                        <span className="text-xs">
+                                                            {call.sla_remaining_minutes != null && call.sla_remaining_minutes <= 240 ? (
+                                                                <Badge variant="warning">{Math.round(call.sla_remaining_minutes / 60)}h restantes</Badge>
+                                                            ) : (
+                                                                <Badge variant="success">OK</Badge>
+                                                            )}
+                                                        </span>
                                                     ) : (
                                                         <span className="text-surface-400">—</span>
                                                     )}

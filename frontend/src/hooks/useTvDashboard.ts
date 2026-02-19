@@ -42,7 +42,7 @@ export function useTvDashboard() {
         if (!data?.tenant_id) return;
 
         let cancelled = false;
-        let channelName = `dashboard.${data.tenant_id}`;
+        const channelName = `dashboard.${data.tenant_id}`;
 
         initEcho().then((echoInstance) => {
             if (cancelled || !echoInstance) return;

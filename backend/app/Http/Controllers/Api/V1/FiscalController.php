@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class FiscalController extends Controller
@@ -102,10 +103,11 @@ class FiscalController extends Controller
      */
     public function emitirNFe(Request $request): JsonResponse
     {
+        $tenantId = $request->user()->current_tenant_id;
         $request->validate([
-            'customer_id' => 'required|integer|exists:customers,id',
-            'work_order_id' => 'nullable|integer|exists:work_orders,id',
-            'quote_id' => 'nullable|integer|exists:quotes,id',
+            'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->where('tenant_id', $tenantId)],
+            'work_order_id' => ['nullable', 'integer', Rule::exists('work_orders', 'id')->where('tenant_id', $tenantId)],
+            'quote_id' => ['nullable', 'integer', Rule::exists('quotes', 'id')->where('tenant_id', $tenantId)],
             'nature_of_operation' => 'nullable|string|max:60',
             'cfop' => 'nullable|string|max:4',
             'items' => 'required|array|min:1',
@@ -145,10 +147,11 @@ class FiscalController extends Controller
      */
     public function emitirNFSe(Request $request): JsonResponse
     {
+        $tenantId = $request->user()->current_tenant_id;
         $request->validate([
-            'customer_id' => 'required|integer|exists:customers,id',
-            'work_order_id' => 'nullable|integer|exists:work_orders,id',
-            'quote_id' => 'nullable|integer|exists:quotes,id',
+            'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->where('tenant_id', $tenantId)],
+            'work_order_id' => ['nullable', 'integer', Rule::exists('work_orders', 'id')->where('tenant_id', $tenantId)],
+            'quote_id' => ['nullable', 'integer', Rule::exists('quotes', 'id')->where('tenant_id', $tenantId)],
             'services' => 'required|array|min:1',
             'services.*.description' => 'required|string|max:2000',
             'services.*.amount' => 'required|numeric|min:0',
@@ -350,7 +353,7 @@ class FiscalController extends Controller
 
             if ($result->success) {
                 FiscalEvent::create([
-                    'fiscal_note_id' => 0,
+                    'fiscal_note_id' => null,
                     'tenant_id' => $tenantId,
                     'event_type' => 'inutilization',
                     'protocol_number' => $result->protocolNumber,
@@ -512,13 +515,13 @@ class FiscalController extends Controller
         return response()->json([
             'data' => [
                 'total' => (clone $baseQuery)->count(),
-                'authorized' => (clone $baseQuery)->where('status', 'authorized')->count(),
-                'pending' => (clone $baseQuery)->whereIn('status', ['pending', 'processing'])->count(),
-                'rejected' => (clone $baseQuery)->where('status', 'rejected')->count(),
-                'cancelled' => (clone $baseQuery)->where('status', 'cancelled')->count(),
-                'total_nfe' => (clone $baseQuery)->where('type', 'nfe')->where('status', 'authorized')->count(),
-                'total_nfse' => (clone $baseQuery)->where('type', 'nfse')->where('status', 'authorized')->count(),
-                'total_amount' => (clone $baseQuery)->where('status', 'authorized')->sum('total_amount'),
+                'authorized' => (clone $baseQuery)->where('status', FiscalNote::STATUS_AUTHORIZED)->count(),
+                'pending' => (clone $baseQuery)->whereIn('status', [FiscalNote::STATUS_PENDING, FiscalNote::STATUS_PROCESSING])->count(),
+                'rejected' => (clone $baseQuery)->where('status', FiscalNote::STATUS_REJECTED)->count(),
+                'cancelled' => (clone $baseQuery)->where('status', FiscalNote::STATUS_CANCELLED)->count(),
+                'total_nfe' => (clone $baseQuery)->where('type', FiscalNote::TYPE_NFE)->where('status', FiscalNote::STATUS_AUTHORIZED)->count(),
+                'total_nfse' => (clone $baseQuery)->where('type', FiscalNote::TYPE_NFSE)->where('status', FiscalNote::STATUS_AUTHORIZED)->count(),
+                'total_amount' => (clone $baseQuery)->where('status', FiscalNote::STATUS_AUTHORIZED)->sum('total_amount'),
             ],
         ]);
     }
@@ -657,6 +660,8 @@ class FiscalController extends Controller
             // Contingency fallback: if connection error, save offline
             if ($this->isConnectionError($e) && isset($note) && isset($payload)) {
                 try {
+                    DB::beginTransaction();
+                    $note->update(['status' => FiscalNote::STATUS_PENDING, 'contingency_mode' => true]);
                     $contingency = new ContingencyService($this->provider);
                     $contingency->saveOffline($note, $payload);
                     DB::commit();
@@ -668,6 +673,7 @@ class FiscalController extends Controller
                         'contingency' => true,
                     ], 202);
                 } catch (\Exception $contingencyEx) {
+                    DB::rollBack();
                     Log::error('Contingency save also failed', ['error' => $contingencyEx->getMessage()]);
                 }
             }

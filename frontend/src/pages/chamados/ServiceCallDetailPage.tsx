@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
@@ -128,7 +128,7 @@ export function ServiceCallDetailPage() {
         mutationFn: (content: string) => api.post(`/service-calls/${id}/comments`, { content }),
         onSuccess: () => {
             toast.success('Comentário adicionado')
-                setCommentText('')
+            setCommentText('')
             refetchComments()
         },
         onError: (err: AxiosError<any>) => {

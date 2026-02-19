@@ -238,6 +238,11 @@ class RoleController extends Controller
 
         $tenantId = (int) app('current_tenant_id');
 
+        // Verificar que a role pertence ao tenant atual
+        if ($role->tenant_id !== null && (int) $role->tenant_id !== $tenantId) {
+            abort(403, 'Acesso negado a esta role.');
+        }
+
         $validated = $request->validate([
             'name' => [
                 'required',

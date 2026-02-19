@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getClientSummary } from '@/lib/crm-field-api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,11 +6,28 @@ import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/pageheader'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Loader2, FileText, User, Phone, Mail, MapPin, Calendar, Wrench, Handshake, Printer } from 'lucide-react'
+import { Loader2, FileText, User, Phone, Mail, MapPin, Calendar, Wrench, Handshake, Printer, Download } from 'lucide-react'
 import api from '@/lib/api'
 
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('pt-BR') : '-'
 const ratingColors: Record<string, string> = { A: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', B: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300', C: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300', D: 'bg-surface-100 text-surface-600' }
+
+function exportPDF() {
+    const style = document.createElement('style')
+    style.id = 'pdf-print-style'
+    style.textContent = `
+        @media print {
+            body > *:not(#root) { display: none !important; }
+            nav, header, aside, [data-sidebar], .no-print { display: none !important; }
+            main { padding: 0 !important; margin: 0 !important; }
+            .print-area { break-inside: avoid; }
+            @page { margin: 1cm; size: A4; }
+        }
+    `
+    document.head.appendChild(style)
+    window.print()
+    setTimeout(() => style.remove(), 1000)
+}
 
 export function CrmClientSummaryPage() {
     const [customerId, setCustomerId] = useState<number | null>(null)
@@ -18,7 +35,7 @@ export function CrmClientSummaryPage() {
 
     const searchQ = useQuery({
         queryKey: ['customers-summary-search', search],
-        queryFn: () => api.get('/api/v1/customers', { params: { search, per_page: 8, is_active: true } }).then(r => r.data?.data ?? []),
+        queryFn: () => api.get('/customers', { params: { search, per_page: 8, is_active: true } }).then(r => r.data?.data ?? []),
         enabled: search.length >= 2,
     })
 
@@ -31,7 +48,7 @@ export function CrmClientSummaryPage() {
     return (
         <div className="space-y-6">
             <PageHeader title="Ficha Resumo do Cliente" description="Resumo de uma página para levar na visita" />
-            <div className="flex items-center gap-4 max-w-md">
+            <div className="flex items-center gap-4 max-w-md no-print">
                 <div className="flex-1">
                     <Input placeholder="Buscar cliente..." value={search} onChange={e => setSearch(e.target.value)} />
                     {(searchQ.data ?? []).length > 0 && search.length >= 2 && (
@@ -40,7 +57,12 @@ export function CrmClientSummaryPage() {
                         ))}</div>
                     )}
                 </div>
-                {data && <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Imprimir</Button>}
+                {data && (
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />Imprimir</Button>
+                        <Button variant="default" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />Exportar PDF</Button>
+                    </div>
+                )}
             </div>
 
             {customerId && isLoading && <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}

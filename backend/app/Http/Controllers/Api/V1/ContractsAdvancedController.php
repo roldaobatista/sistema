@@ -15,10 +15,10 @@ class ContractsAdvancedController extends Controller
 
     public function pendingAdjustments(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
 
         $contracts = DB::table('recurring_contracts')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->where('status', 'active')
             ->whereNotNull('adjustment_index')
             ->whereRaw('next_adjustment_date <= ?', [now()->addDays(30)])
@@ -39,7 +39,7 @@ class ContractsAdvancedController extends Controller
 
         $contract = DB::table('recurring_contracts')
             ->where('id', $contractId)
-            ->where('company_id', $request->user()->company_id)
+            ->where('tenant_id', $request->user()->current_tenant_id)
             ->first();
 
         if (!$contract) return response()->json(['message' => 'Not found'], 404);
@@ -50,7 +50,7 @@ class ContractsAdvancedController extends Controller
 
         DB::table('contract_adjustments')->insert([
             'contract_id' => $contractId,
-            'company_id' => $request->user()->company_id,
+            'tenant_id' => $request->user()->current_tenant_id,
             'old_value' => $oldValue,
             'new_value' => $newValue,
             'index_rate' => $request->input('index_rate'),
@@ -77,11 +77,11 @@ class ContractsAdvancedController extends Controller
 
     public function churnRisk(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $days = $request->input('days', 60);
 
         $expiring = DB::table('recurring_contracts')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->where('status', 'active')
             ->whereNotNull('end_date')
             ->whereRaw('end_date BETWEEN ? AND ?', [now(), now()->addDays($days)])
@@ -117,7 +117,7 @@ class ContractsAdvancedController extends Controller
     {
         $addendums = DB::table('contract_addendums')
             ->where('contract_id', $contractId)
-            ->where('company_id', $request->user()->company_id)
+            ->where('tenant_id', $request->user()->current_tenant_id)
             ->orderByDesc('created_at')
             ->get();
 
@@ -134,11 +134,11 @@ class ContractsAdvancedController extends Controller
             'effective_date' => 'required|date',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
 
         $id = DB::table('contract_addendums')->insertGetId([
             'contract_id' => $contractId,
-            'company_id' => $tenantId,
+            'tenant_id' => $tenantId,
             'type' => $data['type'],
             'description' => $data['description'],
             'new_value' => $data['new_value'] ?? null,
@@ -156,7 +156,7 @@ class ContractsAdvancedController extends Controller
     {
         $addendum = DB::table('contract_addendums')
             ->where('id', $addendumId)
-            ->where('company_id', $request->user()->company_id)
+            ->where('tenant_id', $request->user()->current_tenant_id)
             ->first();
 
         if (!$addendum) return response()->json(['message' => 'Not found'], 404);
@@ -185,7 +185,7 @@ class ContractsAdvancedController extends Controller
     {
         $measurements = DB::table('contract_measurements')
             ->where('contract_id', $contractId)
-            ->where('company_id', $request->user()->company_id)
+            ->where('tenant_id', $request->user()->current_tenant_id)
             ->orderByDesc('period')
             ->paginate(20);
 
@@ -204,7 +204,7 @@ class ContractsAdvancedController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $totalAccepted = 0;
         $totalRejected = 0;
 
@@ -219,7 +219,7 @@ class ContractsAdvancedController extends Controller
 
         $id = DB::table('contract_measurements')->insertGetId([
             'contract_id' => $contractId,
-            'company_id' => $tenantId,
+            'tenant_id' => $tenantId,
             'period' => $data['period'],
             'items' => json_encode($data['items']),
             'total_accepted' => round($totalAccepted, 2),

@@ -85,7 +85,10 @@ export default function TechWorkOrderDetailPage() {
         if (!id) return
         api.get(`/work-orders/${id}/chats`).then(res => {
             setNotes(res.data?.data || res.data || [])
-        }).catch(() => {})
+        }).catch(() => {
+            setNotes([])
+            toast({ title: 'Não foi possível carregar as notas', variant: 'destructive' })
+        })
     }, [id])
 
     const handleSendNote = async () => {

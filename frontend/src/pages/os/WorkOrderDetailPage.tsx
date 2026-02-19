@@ -26,6 +26,22 @@ import AdminChatTab from '@/components/os/AdminChatTab'
 import AuditTrailTab from '@/components/os/AuditTrailTab'
 import GeoCheckinButton from '@/components/os/GeoCheckinButton'
 import SatisfactionTab from '@/components/os/SatisfactionTab'
+import StatusTimeline from '@/components/os/StatusTimeline'
+import ExecutionTimer from '@/components/os/ExecutionTimer'
+import BeforeAfterPhotos from '@/components/os/BeforeAfterPhotos'
+import ShareOS from '@/components/os/ShareOS'
+import ProfitabilityIndicator from '@/components/os/ProfitabilityIndicator'
+import DragDropUpload from '@/components/os/DragDropUpload'
+import TagManager from '@/components/os/TagManager'
+import FavoriteButton from '@/components/os/FavoriteButton'
+import EquipmentHistory from '@/components/os/EquipmentHistory'
+import TimeReport from '@/components/os/TimeReport'
+import MissingPartsIndicator from '@/components/os/MissingPartsIndicator'
+import QRTracking from '@/components/os/QRTracking'
+import AuditDiffViewer from '@/components/os/AuditDiffViewer'
+import PhotoChecklist from '@/components/os/PhotoChecklist'
+import DeliveryForecast from '@/components/os/DeliveryForecast'
+import ApprovalChain from '@/components/os/ApprovalChain'
 import { QrScannerModal } from '@/components/qr/QrScannerModal'
 
 const MAX_ATTACHMENT_SIZE_MB = 50
@@ -562,6 +578,11 @@ export function WorkOrderDetailPage() {
                 </div>
             </div>
 
+            <StatusTimeline
+                currentStatus={order.status}
+                statusHistory={order.status_history ?? []}
+            />
+
             <div className="flex items-center gap-1 border-b border-subtle mb-6">
                 <button
                     onClick={() => setActiveTab('details')}
@@ -998,6 +1019,9 @@ export function WorkOrderDetailPage() {
                                     )}
                                 </div>
 
+                                {/* Drag & Drop Upload */}
+                                {canUpdate && <DragDropUpload workOrderId={order.id} />}
+
                                 {(!order.attachments || order.attachments.length === 0) ? (
                                     <p className="py-4 text-center text-sm text-surface-400">Nenhum anexo</p>
                                 ) : (
@@ -1186,6 +1210,68 @@ export function WorkOrderDetailPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* Timer de Execução */}
+                    <ExecutionTimer workOrderId={order.id} status={order.status} />
+
+                    {/* Fotos Antes/Depois */}
+                    <BeforeAfterPhotos workOrderId={order.id} />
+
+                    {/* Compartilhamento */}
+                    <ShareOS
+                        workOrderId={order.id}
+                        osNumber={order.business_number ?? order.os_number ?? order.number}
+                        customerName={order.customer?.name ?? ''}
+                        status={statusConfig[order.status]?.label ?? order.status}
+                    />
+
+                    {/* Indicador de Rentabilidade */}
+                    {canViewPrices && costEstimate && (
+                        <ProfitabilityIndicator
+                            revenue={parseFloat(costEstimate.revenue ?? '0')}
+                            totalCost={parseFloat(costEstimate.total_cost ?? '0')}
+                        />
+                    )}
+
+                    {/* Tags Personalizadas */}
+                    <TagManager workOrderId={order.id} currentTags={order.tags ?? []} />
+
+                    {/* Histórico do Equipamento */}
+                    {order.equipment?.id && (
+                        <EquipmentHistory equipmentId={order.equipment.id} currentWorkOrderId={order.id} />
+                    )}
+
+                    {/* Relatório Tempo por Técnico */}
+                    <TimeReport workOrderId={order.id} />
+
+                    {/* Peças em Falta */}
+                    {order.items?.length > 0 && (
+                        <MissingPartsIndicator items={order.items} />
+                    )}
+
+                    {/* QR Code Rastreamento */}
+                    <QRTracking
+                        workOrderId={order.id}
+                        osNumber={order.business_number ?? order.os_number ?? order.number}
+                    />
+
+                    {/* Previsão de Entrega */}
+                    <DeliveryForecast
+                        workOrderId={order.id}
+                        currentForecast={order.delivery_forecast}
+                    />
+
+                    {/* Checklist com Fotos */}
+                    <PhotoChecklist
+                        workOrderId={order.id}
+                        initialItems={order.checklist ?? []}
+                    />
+
+                    {/* Cadeia de Aprovação */}
+                    <ApprovalChain
+                        workOrderId={order.id}
+                        currentUserId={user?.id ?? 0}
+                    />
 
                     {/* Estimativa de Custo */}
                     {canViewPrices && (

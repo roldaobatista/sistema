@@ -61,7 +61,8 @@ describe('Modal', () => {
                 X
             </Modal>
         )
-        expect(screen.queryByTestId('dialog-description')).toBeNull()
+        // Modal always renders DialogDescription; when no description prop it uses title as fallback
+        expect(screen.getByTestId('dialog-description')).toHaveTextContent('T')
     })
 
     it('renders children in dialog body', () => {

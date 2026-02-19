@@ -1097,6 +1097,14 @@ class ReportController extends Controller
     }
     public function export(Request $request, string $type)
     {
+        $allowedTypes = ['equipments', 'suppliers', 'stock', 'customers'];
+        if (!in_array($type, $allowedTypes, true)) {
+            return response()->json([
+                'message' => 'Tipo de relatório inválido para exportação.',
+                'allowed_types' => $allowedTypes,
+            ], 422);
+        }
+
         try {
             $tenantId = $this->resolvedTenantId();
             $from = $this->validatedDate($request, 'from', now()->startOfMonth()->toDateString());
@@ -1195,13 +1203,6 @@ class ReportController extends Controller
                                 ], ';');
                             }
                         });
-                        break;
-                    
-                    // Fallback for existing reports if needed, or default
-                    default:
-                        // Implement other report exports or return error
-                        // For now we handle the new ones. Ideally we'd move all export logic here.
-                        fputcsv($file, ['Erro', 'Tipo de relatório não implementado para exportação CSV.'], ';');
                         break;
                 }
 

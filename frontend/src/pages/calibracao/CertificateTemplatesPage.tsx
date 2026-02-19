@@ -41,15 +41,15 @@ export default function CertificateTemplatesPage() {
 
     const { data, isLoading } = useQuery<CertificateTemplate[]>({
         queryKey: ['certificate-templates'],
-        queryFn: () => api.get('/api/v1/certificate-templates').then(r => r.data.data ?? r.data),
+        queryFn: () => api.get('/certificate-templates').then(r => r.data.data ?? r.data),
     })
 
     const saveMutation = useMutation({
         mutationFn: (payload: typeof form) => {
             if (editingId) {
-                return api.put(`/api/v1/certificate-templates/${editingId}`, payload)
+                return api.put(`/certificate-templates/${editingId}`, payload)
             }
-            return api.post('/api/v1/certificate-templates', payload)
+            return api.post('/certificate-templates', payload)
         },
         onSuccess: () => {
             toast.success(editingId ? 'Template atualizado' : 'Template criado')
@@ -192,6 +192,7 @@ export default function CertificateTemplatesPage() {
                                     value={form.description}
                                     onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                                     rows={2}
+                                    placeholder="Descrição do template"
                                 />
                             </div>
 
@@ -224,6 +225,7 @@ export default function CertificateTemplatesPage() {
                                     <label className="mb-1 block text-sm font-medium">Cor Primária</label>
                                     <input
                                         type="color"
+                                        aria-label="Cor primária do certificado"
                                         className="h-10 w-full rounded-lg border bg-background"
                                         value={form.layout_config.primary_color ?? '#059669'}
                                         onChange={e => setForm(p => ({
@@ -235,6 +237,7 @@ export default function CertificateTemplatesPage() {
                                 <div>
                                     <label className="mb-1 block text-sm font-medium">Posição Logo</label>
                                     <select
+                                        aria-label="Posição do logo"
                                         className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                                         value={form.layout_config.logo_position ?? 'left'}
                                         onChange={e => setForm(p => ({

@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -26,6 +26,16 @@ function getAvailableModes(hasRole: (r: string) => boolean): AppMode[] {
     return modes
 }
 
+function readStoredMode(availableModes: AppMode[]): AppMode | null {
+    try {
+        const saved = localStorage.getItem(MODE_STORAGE_KEY) as AppMode | null
+        if (saved && availableModes.includes(saved)) return saved
+    } catch {
+        // ignore
+    }
+    return null
+}
+
 function pathToMode(pathname: string, availableModes: AppMode[]): AppMode {
     if (pathname.startsWith('/tech')) return 'tecnico'
     if ((pathname.startsWith('/crm') || pathname.startsWith('/orcamentos')) && availableModes.includes('vendedor')) {
@@ -40,18 +50,20 @@ export function useAppMode() {
     const navigate = useNavigate()
 
     const availableModes = useMemo(() => getAvailableModes(hasRole), [hasRole])
-    const currentMode = useMemo(() => {
-        try {
-            const saved = localStorage.getItem(MODE_STORAGE_KEY) as AppMode | null
-            if (saved && availableModes.includes(saved)) {
-                return saved
-            }
-        } catch {
-            // ignore
-        }
-        return pathToMode(location.pathname, availableModes)
-    }, [location.pathname, availableModes])
 
+    const [currentMode, setCurrentMode] = useState<AppMode>(() => {
+        return readStoredMode(availableModes) ?? pathToMode(location.pathname, availableModes)
+    })
+
+    // Keep mode in sync when available modes change (e.g. after login)
+    useEffect(() => {
+        if (!availableModes.includes(currentMode)) {
+            const fallback = readStoredMode(availableModes) ?? availableModes[0]
+            setCurrentMode(fallback)
+        }
+    }, [availableModes, currentMode])
+
+    // Persist to localStorage whenever mode changes
     useEffect(() => {
         try {
             localStorage.setItem(MODE_STORAGE_KEY, currentMode)
@@ -60,17 +72,13 @@ export function useAppMode() {
         }
     }, [currentMode])
 
-    const switchMode = (mode: AppMode) => {
+    const switchMode = useCallback((mode: AppMode) => {
         if (!availableModes.includes(mode)) return
-        try {
-            localStorage.setItem(MODE_STORAGE_KEY, mode)
-        } catch {
-            // ignore
-        }
+        setCurrentMode(mode)
         if (mode === 'tecnico') navigate('/tech')
         else if (mode === 'vendedor') navigate('/crm')
         else navigate('/')
-    }
+    }, [availableModes, navigate])
 
     return {
         currentMode,

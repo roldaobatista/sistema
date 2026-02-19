@@ -1,0 +1,256 @@
+{
+    "totals":  {
+                   "routes":  259,
+                   "modules":  41,
+                   "protected":  202,
+                   "portalProtected":  5
+               },
+    "modules":  [
+                    {
+                        "module":  "(root)",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "(wildcard)",
+                        "total":  1,
+                        "protected":  0,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "admin",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "agenda-calibracoes",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "alertas",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "analytics",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "automacao",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "avancado",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "cadastros",
+                        "total":  8,
+                        "protected":  8,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "calibracao",
+                        "total":  3,
+                        "protected":  3,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "catalogo",
+                        "total":  2,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "central",
+                        "total":  3,
+                        "protected":  3,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "chamados",
+                        "total":  6,
+                        "protected":  6,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "configuracoes",
+                        "total":  7,
+                        "protected":  7,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "crm",
+                        "total":  41,
+                        "protected":  41,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "emails",
+                        "total":  3,
+                        "protected":  3,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "equipamento-qr",
+                        "total":  1,
+                        "protected":  0,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "equipamentos",
+                        "total":  7,
+                        "protected":  7,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "esqueci-senha",
+                        "total":  1,
+                        "protected":  0,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "estoque",
+                        "total":  17,
+                        "protected":  17,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "financeiro",
+                        "total":  32,
+                        "protected":  32,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "fiscal",
+                        "total":  2,
+                        "protected":  2,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "frota",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "ia",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "iam",
+                        "total":  3,
+                        "protected":  3,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "importacao",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "inmetro",
+                        "total":  14,
+                        "protected":  14,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "integracao",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "login",
+                        "total":  1,
+                        "protected":  0,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "notificacoes",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "orcamentos",
+                        "total":  4,
+                        "protected":  4,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "os",
+                        "total":  8,
+                        "protected":  8,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "perfil",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "portal",
+                        "total":  6,
+                        "protected":  0,
+                        "portalProtected":  5
+                    },
+                    {
+                        "module":  "qualidade",
+                        "total":  4,
+                        "protected":  4,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "redefinir-senha",
+                        "total":  1,
+                        "protected":  0,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "relatorios",
+                        "total":  1,
+                        "protected":  1,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "rh",
+                        "total":  20,
+                        "protected":  20,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "tech",
+                        "total":  45,
+                        "protected":  0,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "tecnicos",
+                        "total":  3,
+                        "protected":  3,
+                        "portalProtected":  0
+                    },
+                    {
+                        "module":  "tv",
+                        "total":  2,
+                        "protected":  2,
+                        "portalProtected":  0
+                    }
+                ]
+}

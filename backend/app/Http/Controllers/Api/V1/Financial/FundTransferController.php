@@ -184,7 +184,7 @@ class FundTransferController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('FundTransfer create failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Erro ao criar transferência: ' . $e->getMessage()], 500);
+            Log::error('Erro ao criar transferência: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro ao criar transferência'], 500);
         }
     }
 
@@ -243,7 +243,7 @@ class FundTransferController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('FundTransfer cancel failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Erro ao cancelar transferência: ' . $e->getMessage()], 500);
+            Log::error('Erro ao cancelar transferência: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro ao cancelar transferência'], 500);
         }
     }
 

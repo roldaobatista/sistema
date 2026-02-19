@@ -25,6 +25,17 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->runningUnitTests() || env('TESTING_SQLITE_PROVIDER')) {
             $this->app->register(\App\Providers\TestingSqliteServiceProvider::class);
         }
+
+        $this->app->bind(
+            \App\Services\Fiscal\FiscalProvider::class,
+            function () {
+                $provider = config('services.fiscal.provider', 'focusnfe');
+                return match ($provider) {
+                    'nuvemfiscal' => new \App\Services\Fiscal\NuvemFiscalProvider(),
+                    default => new \App\Services\Fiscal\FocusNFeProvider(),
+                };
+            }
+        );
     }
 
     /**

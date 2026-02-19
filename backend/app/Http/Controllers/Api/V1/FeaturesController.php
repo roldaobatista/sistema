@@ -141,6 +141,92 @@ class FeaturesController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // CALIBRAÇÃO WIZARD — Prefill, EMA, Pontos, Repetibilidade, Validação
+    // ═══════════════════════════════════════════════════════════════════
+
+    /** Pre-fill calibration from previous (memory feature). */
+    public function prefillCalibration(Equipment $equipment, \App\Services\Calibration\CalibrationWizardService $service): JsonResponse
+    {
+        $data = $service->prefillFromPrevious($equipment);
+        if (!$data) {
+            return response()->json(['prefilled' => false, 'message' => 'No previous calibration found.']);
+        }
+        return response()->json(['prefilled' => true, 'data' => $data]);
+    }
+
+    /** Calculate Maximum Permissible Errors for given loads. */
+    public function calculateEma(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'precision_class' => 'required|string|in:I,II,III,IIII',
+            'e_value' => 'required|numeric|gt:0',
+            'loads' => 'required|array|min:1',
+            'loads.*' => 'required|numeric|min:0',
+            'verification_type' => 'nullable|string|in:initial,subsequent,in_use',
+        ]);
+
+        $results = \App\Services\Calibration\EmaCalculator::calculateForPoints(
+            $data['precision_class'],
+            (float) $data['e_value'],
+            array_map('floatval', $data['loads']),
+            $data['verification_type'] ?? 'initial'
+        );
+
+        return response()->json(['ema_results' => $results]);
+    }
+
+    /** Suggest measurement points based on equipment capacity. */
+    public function suggestMeasurementPoints(Equipment $equipment, \App\Services\Calibration\CalibrationWizardService $service): JsonResponse
+    {
+        $points = $service->suggestMeasurementPoints($equipment);
+        return response()->json([
+            'points' => $points,
+            'eccentricity_load' => \App\Services\Calibration\EmaCalculator::suggestEccentricityLoad((float) ($equipment->capacity ?? 0)),
+            'repeatability_load' => \App\Services\Calibration\EmaCalculator::suggestRepeatabilityLoad((float) ($equipment->capacity ?? 0)),
+        ]);
+    }
+
+    /** Store repeatability test measurements. */
+    public function storeRepeatabilityTest(Request $request, EquipmentCalibration $calibration): JsonResponse
+    {
+        $data = $request->validate([
+            'load_value' => 'required|numeric|gt:0',
+            'unit' => 'nullable|string|max:10',
+            'measurements' => 'required|array|min:2|max:10',
+            'measurements.*' => 'required|numeric',
+        ]);
+
+        $test = \App\Models\RepeatabilityTest::updateOrCreate(
+            ['equipment_calibration_id' => $calibration->id, 'tenant_id' => $this->tenantId($request)],
+            [
+                'load_value' => $data['load_value'],
+                'unit' => $data['unit'] ?? 'kg',
+                'measurement_1' => $data['measurements'][0] ?? null,
+                'measurement_2' => $data['measurements'][1] ?? null,
+                'measurement_3' => $data['measurements'][2] ?? null,
+                'measurement_4' => $data['measurements'][3] ?? null,
+                'measurement_5' => $data['measurements'][4] ?? null,
+                'measurement_6' => $data['measurements'][5] ?? null,
+                'measurement_7' => $data['measurements'][6] ?? null,
+                'measurement_8' => $data['measurements'][7] ?? null,
+                'measurement_9' => $data['measurements'][8] ?? null,
+                'measurement_10' => $data['measurements'][9] ?? null,
+            ]
+        );
+
+        $test->calculateStatistics();
+        $test->save();
+
+        return response()->json(['message' => 'Repeatability test saved.', 'test' => $test]);
+    }
+
+    /** Validate calibration for ISO 17025 completeness. */
+    public function validateCalibrationIso17025(EquipmentCalibration $calibration, \App\Services\Calibration\CalibrationWizardService $service): JsonResponse
+    {
+        return response()->json($service->validateIso17025($calibration));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // CERTIFICATE TEMPLATES
     // ═══════════════════════════════════════════════════════════════════
 

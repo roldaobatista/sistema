@@ -63,7 +63,7 @@ export function useChatStoreForward(workOrderId: number) {
         // Also enqueue for sync
         try {
             const { enqueueMutation } = await import('@/lib/offlineDb')
-            await enqueueMutation('POST', `/api/v1/work-orders/${workOrderId}/chat`, {
+            await enqueueMutation('POST', `/work-orders/${workOrderId}/chat`, {
                 body: msg.body,
                 type: msg.type,
                 local_id: msg.id,

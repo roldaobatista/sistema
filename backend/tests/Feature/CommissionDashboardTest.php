@@ -42,18 +42,18 @@ class CommissionDashboardTest extends TestCase
 
     public function test_commission_dashboard_overview(): void
     {
-        $response = $this->getJson('/api/v1/commissions/dashboard/overview');
+        $response = $this->getJson('/api/v1/commission-dashboard/overview');
         $response->assertOk();
 
-        $data = $response->json();
-        $this->assertArrayHasKey('total_pending', $data);
-        $this->assertArrayHasKey('total_approved', $data);
-        $this->assertArrayHasKey('total_paid_month', $data);
+        $data = $response->json('data');
+        $this->assertArrayHasKey('pending', $data);
+        $this->assertArrayHasKey('approved', $data);
+        $this->assertArrayHasKey('paid_this_month', $data);
     }
 
     public function test_commission_dashboard_ranking(): void
     {
-        $response = $this->getJson('/api/v1/commissions/dashboard/ranking');
+        $response = $this->getJson('/api/v1/commission-dashboard/ranking');
         $response->assertOk();
 
         $data = $response->json();
@@ -62,7 +62,7 @@ class CommissionDashboardTest extends TestCase
 
     public function test_commission_dashboard_evolution(): void
     {
-        $response = $this->getJson('/api/v1/commissions/dashboard/evolution?months=6');
+        $response = $this->getJson('/api/v1/commission-dashboard/evolution?months=6');
         $response->assertOk();
 
         $data = $response->json();
@@ -71,13 +71,13 @@ class CommissionDashboardTest extends TestCase
 
     public function test_commission_dashboard_by_rule(): void
     {
-        $response = $this->getJson('/api/v1/commissions/dashboard/by-rule');
+        $response = $this->getJson('/api/v1/commission-dashboard/by-rule');
         $response->assertOk();
     }
 
     public function test_commission_dashboard_by_role(): void
     {
-        $response = $this->getJson('/api/v1/commissions/dashboard/by-role');
+        $response = $this->getJson('/api/v1/commission-dashboard/by-role');
         $response->assertOk();
     }
 }

@@ -826,7 +826,7 @@ export function UsersPage() {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => revokeSessionMutation.mutate({ userId: sessionsUser!.id, tokenId: session.id })}
+                                    onClick={() => sessionsUser && revokeSessionMutation.mutate({ userId: sessionsUser.id, tokenId: session.id })}
                                     loading={revokeSessionMutation.isPending}
                                     title="Revogar Sessão"
                                 >

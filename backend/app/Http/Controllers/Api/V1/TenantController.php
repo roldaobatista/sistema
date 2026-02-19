@@ -3,43 +3,29 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
-use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\TenantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
 
 class TenantController extends Controller
 {
+    protected TenantService $service;
+
+    public function __construct(TenantService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Tenant::withCount(['users', 'branches'])->orderBy('name');
-
-            if ($request->filled('search')) {
-                $term = '%' . $request->search . '%';
-                $query->where(function ($q) use ($term) {
-                    $q->where('name', 'like', $term)
-                      ->orWhere('document', 'like', $term)
-                      ->orWhere('email', 'like', $term);
-                });
-            }
-
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
-            }
-
-            $perPage = min((int) ($request->per_page ?? 50), 100);
-            $tenants = $query->paginate($perPage);
-
+            $tenants = $this->service->list($request->only(['search', 'status']), $request->get('per_page', 50));
             return response()->json($tenants);
         } catch (\Throwable $e) {
             report($e);
@@ -73,13 +59,8 @@ class TenantController extends Controller
         ]);
 
         try {
-            return DB::transaction(function () use ($validated) {
-                $tenant = Tenant::create([...$validated, 'status' => $validated['status'] ?? Tenant::STATUS_ACTIVE]);
-
-                AuditLog::log('created', "Empresa {$tenant->name} criada", $tenant);
-
-                return response()->json($tenant->loadCount(['users', 'branches']), 201);
-            });
+            $tenant = $this->service->create($validated);
+            return response()->json($tenant->loadCount(['users', 'branches']), 201);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao criar empresa.'], 500);
@@ -128,12 +109,7 @@ class TenantController extends Controller
         ]);
 
         try {
-            $old = $tenant->toArray();
-            $tenant->update($validated);
-
-            $freshTenant = $tenant->fresh();
-            AuditLog::log('updated', "Empresa {$freshTenant->name} atualizada", $freshTenant, $old, $freshTenant->toArray());
-
+            $freshTenant = $this->service->update($tenant, $validated);
             return response()->json($freshTenant->loadCount(['users', 'branches']));
         } catch (\Throwable $e) {
             report($e);
@@ -143,44 +119,17 @@ class TenantController extends Controller
 
     public function destroy(Tenant $tenant): JsonResponse
     {
-        $dependencies = [];
-
-        $usersCount = $tenant->users()->count();
-        if ($usersCount > 0) $dependencies['users'] = $usersCount;
-
-        $branchesCount = Branch::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->count();
-        if ($branchesCount > 0) $dependencies['branches'] = $branchesCount;
-
-        $dependentTables = [
-            'work_orders' => \App\Models\WorkOrder::class,
-            'customers' => \App\Models\Customer::class,
-            'quotes' => \App\Models\Quote::class,
-            'products' => \App\Models\Product::class,
-        ];
-
-        foreach ($dependentTables as $label => $modelClass) {
-            if (class_exists($modelClass)) {
-                $count = $modelClass::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $tenant->id)
-                    ->count();
-                if ($count > 0) $dependencies[$label] = $count;
-            }
-        }
-
-        if (!empty($dependencies)) {
-            return response()->json([
-                'message' => 'Não é possível excluir empresa com dados vinculados.',
-                'dependencies' => $dependencies,
-            ], 409);
-        }
-
         try {
-            return DB::transaction(function () use ($tenant) {
-                AuditLog::log('deleted', "Empresa {$tenant->name} removida", $tenant);
-                $tenant->delete();
+            $result = $this->service->delete($tenant);
 
-                return response()->json(null, 204);
-            });
+            if (is_array($result)) {
+                return response()->json([
+                    'message' => 'Não é possível excluir empresa com dados vinculados.',
+                    'dependencies' => $result,
+                ], 409);
+            }
+
+            return response()->json(null, 204);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao excluir empresa.'], 500);
@@ -189,8 +138,6 @@ class TenantController extends Controller
 
     /**
      * Convidar usuário para um tenant.
-     * Se o usuário já existe, vincula ao tenant.
-     * Se não existe, cria com senha temporária e envia link de reset.
      */
     public function invite(Request $request, Tenant $tenant): JsonResponse
     {
@@ -201,62 +148,19 @@ class TenantController extends Controller
         ]);
 
         try {
-            return DB::transaction(function () use ($validated, $tenant) {
-                $user = User::where('email', $validated['email'])->first();
-                $isNewUser = false;
+            $result = $this->service->inviteUser($tenant, $validated);
 
-                if ($user) {
-                    if ($tenant->users()->where('user_id', $user->id)->exists()) {
-                        return response()->json(['message' => 'Usuário já pertence a esta empresa.'], 422);
-                    }
-                    $tenant->users()->attach($user->id, ['is_default' => false]);
-                } else {
-                    $isNewUser = true;
-                    $user = User::create([
-                        'name' => $validated['name'],
-                        'email' => $validated['email'],
-                        'password' => Hash::make(Str::random(32)),
-                        'tenant_id' => $tenant->id,
-                        'current_tenant_id' => $tenant->id,
-                    ]);
-                    $tenant->users()->attach($user->id, ['is_default' => true]);
-                }
-
-                if (!empty($validated['role'])) {
-                    $roleExists = Role::where('name', $validated['role'])
-                        ->where(function ($q) use ($tenant) {
-                            $q->where('team_id', $tenant->id)->orWhereNull('team_id');
-                        })->exists();
-
-                    if (!$roleExists) {
-                        return response()->json([
-                            'message' => 'Role informada não existe.',
-                            'errors' => ['role' => ['A role informada não é válida para esta empresa.']],
-                        ], 422);
-                    }
-
-                    setPermissionsTeamId($tenant->id);
-                    $user->assignRole($validated['role']);
-                }
-
-                if ($isNewUser) {
-                    $token = Password::broker()->createToken($user);
-                    try {
-                        $user->sendPasswordResetNotification($token);
-                    } catch (\Throwable $e) {
-                        report($e);
-                    }
-                }
-
-                AuditLog::log('created', "Usuário {$user->name} convidado para {$tenant->name}", $user);
-
-                return response()->json([
-                    'user' => $user,
-                    'message' => $isNewUser
-                        ? 'Usuário criado e notificação de definição de senha enviada.'
-                        : 'Usuário existente vinculado à empresa.',
-                ], 201);
-            });
+            return response()->json([
+                'user' => $result['user'],
+                'message' => $result['is_new']
+                    ? 'Usuário criado e notificação de definição de senha enviada.'
+                    : 'Usuário existente vinculado à empresa.',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => $e->getCode() === 422 ? ['role' => [$e->getMessage()]] : null
+            ], $e->getCode() ?: 500);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao convidar usuário.'], 500);
@@ -265,35 +169,14 @@ class TenantController extends Controller
 
     /**
      * Remover usuário de um tenant.
-     * Impede remoção do último usuário para evitar tenant órfão.
      */
     public function removeUser(Tenant $tenant, User $user): JsonResponse
     {
-        if (!$tenant->users()->where('user_id', $user->id)->exists()) {
-            return response()->json(['message' => 'Usuário não pertence a esta empresa.'], 404);
-        }
-
-        $usersCount = $tenant->users()->count();
-        if ($usersCount <= 1) {
-            return response()->json([
-                'message' => 'Não é possível remover o último usuário da empresa. A empresa ficaria sem acesso.',
-            ], 422);
-        }
-
         try {
-            return DB::transaction(function () use ($tenant, $user) {
-                $tenant->users()->detach($user->id);
-
-                if ($user->current_tenant_id === $tenant->id) {
-                    $nextTenant = $user->tenants()->first();
-                    $user->update([
-                        'current_tenant_id' => $nextTenant?->id ?? $user->tenant_id,
-                    ]);
-                }
-
-                AuditLog::log('deleted', "Usuário {$user->name} removido de {$tenant->name}", $user);
-                return response()->json(null, 204);
-            });
+            $this->service->removeUser($tenant, $user, Auth::user());
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao remover usuário.'], 500);

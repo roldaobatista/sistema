@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class DatabaseSeederServiceCallPermissionsTest extends TestCase
@@ -26,7 +26,7 @@ class DatabaseSeederServiceCallPermissionsTest extends TestCase
             'service_calls.service_call.update',
         ]);
 
-        $this->assertRoleHasPermissions('atendente', [
+        $this->assertRoleHasPermissions('atendimento', [
             'service_calls.service_call.view',
             'service_calls.service_call.create',
             'service_calls.service_call.update',

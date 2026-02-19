@@ -223,7 +223,7 @@ export function RolesPage() {
                         </div>
 
                         <div className="mt-4 flex items-center gap-2">
-                            {canCreate && !['super_admin', 'admin'].includes(role.name) && (
+                            {canCreate && (
                                 <Button
                                     variant="ghost"
                                     size="sm"

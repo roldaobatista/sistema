@@ -30,11 +30,11 @@ export default function WeightAssignmentsPage() {
 
     const { data, isLoading } = useQuery<WeightAssignment[]>({
         queryKey: ['weight-assignments'],
-        queryFn: () => api.get('/api/v1/weight-assignments').then(r => r.data.data ?? r.data),
+        queryFn: () => api.get('/weight-assignments').then(r => r.data.data ?? r.data),
     })
 
     const assignMutation = useMutation({
-        mutationFn: (payload: typeof form) => api.post('/api/v1/weight-assignments', payload),
+        mutationFn: (payload: typeof form) => api.post('/weight-assignments', payload),
         onSuccess: () => {
             toast.success('Peso atribuído com sucesso')
             queryClient.invalidateQueries({ queryKey: ['weight-assignments'] })
@@ -45,7 +45,7 @@ export default function WeightAssignmentsPage() {
     })
 
     const returnMutation = useMutation({
-        mutationFn: (id: number) => api.post(`/api/v1/weight-assignments/${id}/return`),
+        mutationFn: (id: number) => api.post(`/weight-assignments/${id}/return`),
         onSuccess: () => {
             toast.success('Peso devolvido com sucesso')
             queryClient.invalidateQueries({ queryKey: ['weight-assignments'] })
@@ -174,6 +174,7 @@ export default function WeightAssignmentsPage() {
                             <div>
                                 <label className="mb-1 block text-sm font-medium">Tipo</label>
                                 <select
+                                    aria-label="Tipo de atribuição"
                                     className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                                     value={form.assigned_to_type}
                                     onChange={e => setForm(p => ({ ...p, assigned_to_type: e.target.value }))}
@@ -199,6 +200,7 @@ export default function WeightAssignmentsPage() {
                                     value={form.notes}
                                     onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
                                     rows={2}
+                                    placeholder="Observações sobre a atribuição"
                                 />
                             </div>
                         </div>

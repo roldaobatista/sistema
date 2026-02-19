@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-    TrendingUp, DollarSign, Target, AlertTriangle,
+    TrendingUp, TrendingDown, DollarSign, Target, AlertTriangle,
     ArrowRight, Scale, Handshake, XCircle,
     ArrowUpRight, BarChart3, Clock, MessageCircle, Mail, Send,
-    RefreshCw,
+    RefreshCw, Minus,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { cn } from '@/lib/utils'
+import {
+    BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid,
+    FunnelChart, Funnel, LabelList,
+} from 'recharts'
+import { cn, formatCurrency } from '@/lib/utils'
 import { DEAL_STATUS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { crmApi, type CrmDashboardData } from '@/lib/crm-api'
@@ -20,9 +24,37 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 
-const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-
 type PeriodKey = 'month' | 'quarter' | 'year'
+
+function ChangeIndicator({ current, previous, isCurrency = false }: { current: number; previous: number; isCurrency?: boolean }) {
+    if (previous === 0 && current === 0) return null
+    const diff = current - previous
+    const pct = previous > 0 ? Math.round((diff / previous) * 100) : (current > 0 ? 100 : 0)
+
+    if (diff === 0) {
+        return (
+            <span className="flex items-center gap-0.5 text-[10px] font-medium text-surface-400">
+                <Minus className="h-3 w-3" /> 0%
+            </span>
+        )
+    }
+
+    const isPositive = diff > 0
+    return (
+        <span className={cn(
+            'flex items-center gap-0.5 text-[10px] font-semibold',
+            isPositive ? 'text-emerald-600' : 'text-red-500',
+        )}>
+            {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {isPositive ? '+' : ''}{pct}%
+        </span>
+    )
+}
+
+const FUNNEL_COLORS = [
+    '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7',
+    '#d946ef', '#ec4899', '#f43f5e', '#ef4444',
+]
 
 export function CrmDashboardPage() {
     const { hasPermission } = useAuthStore()
@@ -46,18 +78,72 @@ export function CrmDashboardPage() {
     const topCustomers = data?.top_customers ?? []
     const calibrationAlerts = data?.calibration_alerts ?? []
 
-    const kpiCards: { label: string; value: React.ReactNode; icon: React.ElementType; color: string; href?: string }[] = [
-        { label: 'Deals Abertos', value: kpis?.open_deals ?? 0, icon: Target, color: 'text-blue-600 bg-blue-50', href: '/crm/pipeline' },
-        { label: `Ganhos (${periodLabel})`, value: kpis?.won_month ?? 0, icon: Handshake, color: 'text-emerald-600 bg-emerald-50', href: '/crm/pipeline' },
-        { label: `Perdidos (${periodLabel})`, value: kpis?.lost_month ?? 0, icon: XCircle, color: 'text-red-500 bg-red-50', href: '/crm/pipeline' },
-        { label: 'Conversão', value: `${kpis?.conversion_rate ?? 0}%`, icon: TrendingUp, color: 'text-brand-600 bg-brand-50' },
+    // Funnel data for chart
+    const funnelData = useMemo(() => {
+        if (pipelines.length === 0) return []
+        const mainPipeline = pipelines[0]
+        return (mainPipeline.stages ?? [])
+            .filter((s: any) => !s.is_won && !s.is_lost)
+            .map((stage: any, i: number) => ({
+                name: stage.name,
+                value: stage.deals_count ?? 0,
+                revenue: stage.deals_sum_value ?? 0,
+                fill: stage.color || FUNNEL_COLORS[i % FUNNEL_COLORS.length],
+            }))
+    }, [pipelines])
+
+    // Top customers chart data
+    const topCustomersChartData = useMemo(() =>
+        topCustomers.slice(0, 8).map((row: any) => ({
+            name: (row.customer?.name ?? '').length > 15
+                ? (row.customer?.name ?? '').slice(0, 15) + '…'
+                : (row.customer?.name ?? ''),
+            value: parseFloat(row.total_value) || 0,
+            deals: row.deal_count,
+            fullName: row.customer?.name ?? '',
+        })),
+        [topCustomers],
+    )
+
+    const kpiCards: { label: string; value: React.ReactNode; icon: React.ElementType; color: string; href?: string; change?: React.ReactNode }[] = [
+        {
+            label: 'Deals Abertos', value: kpis?.open_deals ?? 0,
+            icon: Target, color: 'text-blue-600 bg-blue-50', href: '/crm/pipeline',
+        },
+        {
+            label: `Ganhos (${periodLabel})`, value: kpis?.won_month ?? 0,
+            icon: Handshake, color: 'text-emerald-600 bg-emerald-50', href: '/crm/pipeline',
+            change: prevPeriod ? <ChangeIndicator current={kpis?.won_month ?? 0} previous={prevPeriod.won_month ?? 0} /> : null,
+        },
+        {
+            label: `Perdidos (${periodLabel})`, value: kpis?.lost_month ?? 0,
+            icon: XCircle, color: 'text-red-500 bg-red-50', href: '/crm/pipeline',
+            change: prevPeriod ? <ChangeIndicator current={kpis?.lost_month ?? 0} previous={prevPeriod.lost_month ?? 0} /> : null,
+        },
+        {
+            label: 'Conversão', value: `${kpis?.conversion_rate ?? 0}%`,
+            icon: TrendingUp, color: 'text-brand-600 bg-brand-50',
+        },
     ]
 
-    const kpiCards2: { label: string; value: React.ReactNode; icon: React.ElementType; color: string; href?: string }[] = [
-        { label: 'Receita no Pipeline', value: fmtBRL(kpis?.revenue_in_pipeline ?? 0), icon: DollarSign, color: 'text-emerald-600 bg-emerald-50', href: '/crm/pipeline' },
-        { label: `Receita Ganha (${periodLabel})`, value: fmtBRL(kpis?.won_revenue ?? 0), icon: ArrowUpRight, color: 'text-blue-600 bg-blue-50', href: '/crm/pipeline' },
-        { label: 'Health Score Médio', value: kpis?.avg_health_score ?? 0, icon: BarChart3, color: 'text-amber-600 bg-amber-50' },
-        { label: 'Sem Contato > 90d', value: kpis?.no_contact_90d ?? 0, icon: AlertTriangle, color: 'text-red-500 bg-red-50', href: '/crm/forgotten-clients' },
+    const kpiCards2: { label: string; value: React.ReactNode; icon: React.ElementType; color: string; href?: string; change?: React.ReactNode }[] = [
+        {
+            label: 'Receita no Pipeline', value: formatCurrency(kpis?.revenue_in_pipeline ?? 0),
+            icon: DollarSign, color: 'text-emerald-600 bg-emerald-50', href: '/crm/pipeline',
+        },
+        {
+            label: `Receita Ganha (${periodLabel})`, value: formatCurrency(kpis?.won_revenue ?? 0),
+            icon: ArrowUpRight, color: 'text-blue-600 bg-blue-50', href: '/crm/pipeline',
+            change: prevPeriod ? <ChangeIndicator current={kpis?.won_revenue ?? 0} previous={prevPeriod.won_revenue ?? 0} isCurrency /> : null,
+        },
+        {
+            label: 'Health Score Médio', value: kpis?.avg_health_score ?? 0,
+            icon: BarChart3, color: 'text-amber-600 bg-amber-50',
+        },
+        {
+            label: 'Sem Contato > 90d', value: kpis?.no_contact_90d ?? 0,
+            icon: AlertTriangle, color: 'text-red-500 bg-red-50', href: '/crm/forgotten-clients',
+        },
     ]
 
     if (isError) {
@@ -92,7 +178,7 @@ export function CrmDashboardPage() {
                             <SelectItem value="year">Este ano</SelectItem>
                         </SelectContent>
                     </Select>
-                    {pipelines.map(p => (
+                    {pipelines.map((p: any) => (
                         <Link
                             key={p.id}
                             to={`/crm/pipeline/${p.id}`}
@@ -114,6 +200,7 @@ export function CrmDashboardPage() {
                             <div>
                                 <p className="text-xs font-medium text-surface-500 uppercase tracking-wider">{card.label}</p>
                                 <p className="mt-2 text-lg font-semibold text-surface-900 tracking-tight">{isLoading ? '…' : card.value}</p>
+                                {card.change && <div className="mt-1">{card.change}</div>}
                             </div>
                             <div className={cn('rounded-lg p-2.5', card.color)}>
                                 <card.icon className="h-5 w-5" />
@@ -141,6 +228,7 @@ export function CrmDashboardPage() {
                             <div>
                                 <p className="text-xs text-surface-500">{card.label}</p>
                                 <p className="text-sm font-semibold tabular-nums text-surface-900">{isLoading ? '…' : card.value}</p>
+                                {card.change && <div className="mt-0.5">{card.change}</div>}
                             </div>
                         </div>
                     )
@@ -155,39 +243,90 @@ export function CrmDashboardPage() {
                 })}
             </div>
 
-            {/* Pipeline Funnel Summary */}
+            {/* Funnel Chart + Pipeline Breakdown */}
             {pipelines.length > 0 && (
-                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
-                    <div className="border-b border-subtle px-5 py-3">
-                        <h2 className="text-sm font-semibold text-surface-900">Funil de Vendas</h2>
+                <div className="grid gap-4 lg:grid-cols-2">
+                    {/* Interactive Funnel Chart */}
+                    <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                        <div className="border-b border-subtle px-5 py-3">
+                            <h2 className="text-sm font-semibold text-surface-900">Funil de Vendas</h2>
+                        </div>
+                        <div className="p-4">
+                            {funnelData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={funnelData} layout="vertical" margin={{ left: 0, right: 20, top: 5, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border-subtle, #e5e7eb)" />
+                                        <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--color-text-muted, #9ca3af)' }} />
+                                        <YAxis
+                                            type="category"
+                                            dataKey="name"
+                                            width={100}
+                                            tick={{ fontSize: 11, fill: 'var(--color-text-secondary, #6b7280)' }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                borderRadius: 8,
+                                                border: '1px solid var(--color-border-default, #e5e7eb)',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                fontSize: 12,
+                                            }}
+                                            formatter={(value: number, name: string, props: any) => [
+                                                `${value} deal(s) — ${formatCurrency(props.payload.revenue)}`,
+                                                'Quantidade',
+                                            ]}
+                                        />
+                                        <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>
+                                            {funnelData.map((entry: any, i: number) => (
+                                                <Cell key={i} fill={entry.fill} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <p className="py-12 text-center text-sm text-surface-400">Sem dados de funil</p>
+                            )}
+                        </div>
                     </div>
-                    <div className="p-5 space-y-4">
-                        {pipelines.map(pipeline => (
-                            <div key={pipeline.id}>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: pipeline.color || '#94a3b8' }} />
-                                    <Link to={`/crm/pipeline/${pipeline.id}`} className="text-sm font-medium text-surface-800 hover:text-brand-600 transition-colors">
-                                        {pipeline.name}
-                                    </Link>
-                                </div>
-                                <div className="flex gap-1">
-                                    {pipeline.stages.filter((s: any) => !s.is_won && !s.is_lost).map((stage: any) => {
-                                        const count = stage.deals_count ?? 0
-                                        const value = stage.deals_sum_value ?? 0
-                                        return (
-                                            <div key={stage.id} className="flex-1 group/stage">
-                                                <div className="h-8 rounded-md flex items-center justify-center text-xs font-medium text-white relative overflow-hidden"
-                                                    style={{ backgroundColor: stage.color || '#94a3b8' }}
-                                                    title={`${stage.name}: ${count} deal(s) — ${fmtBRL(value)}`}>
-                                                    <span className="relative z-10">{count > 0 ? count : ''}</span>
+
+                    {/* Pipeline Stage Breakdown */}
+                    <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                        <div className="border-b border-subtle px-5 py-3">
+                            <h2 className="text-sm font-semibold text-surface-900">Detalhamento por Etapa</h2>
+                        </div>
+                        <div className="p-5 space-y-4 max-h-[340px] overflow-y-auto">
+                            {pipelines.map((pipeline: any) => (
+                                <div key={pipeline.id}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: pipeline.color || '#94a3b8' }} />
+                                        <Link to={`/crm/pipeline/${pipeline.id}`} className="text-sm font-medium text-surface-800 hover:text-brand-600 transition-colors">
+                                            {pipeline.name}
+                                        </Link>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {pipeline.stages.filter((s: any) => !s.is_won && !s.is_lost).map((stage: any) => {
+                                            const count = stage.deals_count ?? 0
+                                            const value = stage.deals_sum_value ?? 0
+                                            const maxCount = Math.max(...pipeline.stages.filter((s: any) => !s.is_won && !s.is_lost).map((s: any) => s.deals_count ?? 0), 1)
+                                            const pct = Math.max((count / maxCount) * 100, 4)
+                                            return (
+                                                <div key={stage.id} className="flex items-center gap-3">
+                                                    <span className="text-xs text-surface-500 w-20 truncate" title={stage.name}>{stage.name}</span>
+                                                    <div className="flex-1 h-5 bg-surface-100 rounded-md overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-md flex items-center pl-2 text-[10px] font-semibold text-white transition-all duration-500"
+                                                            style={{ width: `${pct}%`, backgroundColor: stage.color || '#94a3b8' }}
+                                                        >
+                                                            {count > 0 && count}
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs font-medium text-surface-600 w-24 text-right tabular-nums">{formatCurrency(value)}</span>
                                                 </div>
-                                                <p className="text-xs text-surface-400 mt-1 text-center truncate">{stage.name}</p>
-                                            </div>
-                                        )
-                                    })}
+                                            )
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -195,7 +334,7 @@ export function CrmDashboardPage() {
             {/* Messaging Stats */}
             <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                 <div className="flex items-center justify-between border-b border-subtle px-5 py-3">
-                    <h2 className="text-sm font-semibold text-surface-900">Mensageria (mês atual)</h2>
+                    <h2 className="text-sm font-semibold text-surface-900">Mensageria ({periodLabel})</h2>
                     <Link to="/crm/templates" className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">
                         Templates <ArrowRight className="h-3 w-3" />
                     </Link>
@@ -233,7 +372,7 @@ export function CrmDashboardPage() {
                             <p className="py-8 text-center text-sm text-surface-400">Carregando…</p>
                         ) : recentDeals.length === 0 ? (
                             <p className="py-8 text-center text-sm text-surface-400">Nenhum deal encontrado</p>
-                        ) : recentDeals.map(deal => (
+                        ) : recentDeals.map((deal: any) => (
                             <div key={deal.id} className="flex items-center justify-between px-5 py-3 hover:bg-surface-50 transition-colors duration-100">
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="h-2 w-2 rounded-full shrink-0"
@@ -247,7 +386,7 @@ export function CrmDashboardPage() {
                                     <Badge variant={deal.status === DEAL_STATUS.WON ? 'success' : deal.status === DEAL_STATUS.LOST ? 'danger' : 'info'}>
                                         {deal.stage?.name ?? deal.status}
                                     </Badge>
-                                    <span className="text-sm font-bold text-surface-900">{fmtBRL(deal.value)}</span>
+                                    <span className="text-sm font-bold text-surface-900">{formatCurrency(deal.value)}</span>
                                 </div>
                             </div>
                         ))}
@@ -263,7 +402,7 @@ export function CrmDashboardPage() {
                             <p className="py-8 text-center text-sm text-surface-400">Carregando…</p>
                         ) : upcomingActivities.length === 0 ? (
                             <p className="py-8 text-center text-sm text-surface-400">Nenhuma atividade agendada</p>
-                        ) : upcomingActivities.map(act => (
+                        ) : upcomingActivities.map((act: any) => (
                             <div key={act.id} className="px-5 py-3 hover:bg-surface-50 transition-colors duration-100">
                                 <p className="text-sm font-medium text-surface-800">{act.title}</p>
                                 <div className="flex items-center gap-2 mt-1 text-xs text-surface-400">
@@ -280,30 +419,70 @@ export function CrmDashboardPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
+                {/* Top Customers Chart */}
                 <div className="rounded-xl border border-default bg-surface-0 shadow-card">
                     <div className="border-b border-subtle px-5 py-3">
                         <h2 className="text-sm font-semibold text-surface-900">Top Clientes (receita ganha)</h2>
                     </div>
-                    <div className="divide-y divide-subtle">
-                        {isLoading ? (
-                            <p className="py-8 text-center text-sm text-surface-400">Carregando…</p>
-                        ) : topCustomers.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-surface-400">Sem dados</p>
-                        ) : topCustomers.map((row: any, i: number) => (
-                            <div key={row.customer_id} className="flex items-center justify-between px-5 py-3">
-                                <div className="flex items-center gap-3">
-                                    <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
-                                        i === 0 ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-600')}>
-                                        {i + 1}
-                                    </span>
-                                    <span className="text-sm font-medium text-surface-800">{row.customer?.name}</span>
+                    {isLoading ? (
+                        <p className="py-8 text-center text-sm text-surface-400">Carregando…</p>
+                    ) : topCustomersChartData.length === 0 ? (
+                        <p className="py-8 text-center text-sm text-surface-400">Sem dados</p>
+                    ) : (
+                        <div className="p-4">
+                            <ResponsiveContainer width="100%" height={Math.max(topCustomersChartData.length * 36, 160)}>
+                                <BarChart data={topCustomersChartData} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border-subtle, #e5e7eb)" />
+                                    <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={(v) => formatCurrency(v)} />
+                                    <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11, fill: '#6b7280' }} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }}
+                                        formatter={(value: number, name: string, props: any) => [
+                                            `${formatCurrency(value)} (${props.payload.deals} deal(s))`,
+                                            props.payload.fullName,
+                                        ]}
+                                    />
+                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                                        {topCustomersChartData.map((_: any, i: number) => (
+                                            <Cell key={i} fill={i === 0 ? '#f59e0b' : i < 3 ? '#3b82f6' : '#94a3b8'} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                </div>
+
+                {/* Email Tracking Metrics (#5) */}
+                <div className="rounded-xl border border-default bg-surface-0 shadow-card">
+                    <div className="flex items-center gap-2 border-b border-subtle px-5 py-3">
+                        <Mail className="h-4 w-4 text-brand-600" />
+                        <h2 className="text-sm font-semibold text-surface-900">Métricas de E-mail</h2>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-muted">
+                        {(() => {
+                            const emailData = data?.email_tracking ?? { total_sent: 0, opened: 0, clicked: 0, replied: 0, bounced: 0 }
+                            const total = emailData.total_sent || 1
+                            const openRate = Math.round((emailData.opened / total) * 100)
+                            const clickRate = Math.round((emailData.clicked / total) * 100)
+                            const replyRate = Math.round((emailData.replied / total) * 100)
+                            const items = [
+                                { label: 'Enviados', value: emailData.total_sent, icon: Send, color: 'text-blue-600' },
+                                { label: 'Abertos', value: emailData.opened, icon: Mail, color: 'text-green-600', sub: `${openRate}%` },
+                                { label: 'Clicados', value: emailData.clicked, icon: ArrowUpRight, color: 'text-brand-600', sub: `${clickRate}%` },
+                                { label: 'Respondidos', value: emailData.replied, icon: MessageCircle, color: 'text-teal-600', sub: `${replyRate}%` },
+                                { label: 'Bounced', value: emailData.bounced, icon: XCircle, color: 'text-red-500' },
+                                { label: 'Taxa Abertura', value: `${openRate}%`, icon: BarChart3, color: 'text-amber-600' },
+                            ]
+                            return items.map(item => (
+                                <div key={item.label} className="bg-surface-0 p-4 text-center">
+                                    <item.icon className={cn('h-4 w-4 mx-auto mb-1', item.color)} />
+                                    <p className="text-lg font-bold tabular-nums text-surface-900">{isLoading ? '…' : item.value}</p>
+                                    <p className="text-[10px] font-medium text-surface-500">{item.label}</p>
+                                    {item.sub && <p className="text-[10px] text-surface-400">{item.sub}</p>}
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-bold text-surface-900">{fmtBRL(parseFloat(row.total_value))}</p>
-                                    <p className="text-xs text-surface-400">{row.deal_count} deal(s)</p>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        })()}
                     </div>
                 </div>
 

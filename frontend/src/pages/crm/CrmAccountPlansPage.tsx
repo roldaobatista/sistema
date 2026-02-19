@@ -29,7 +29,7 @@ export function CrmAccountPlansPage() {
     const { data: plansRes, isLoading } = useQuery({ queryKey: ['account-plans'], queryFn: () => getAccountPlans() })
     const plans: AccountPlan[] = plansRes?.data ?? []
 
-    const searchQ = useQuery({ queryKey: ['customers-plan-search', searchCustomer], queryFn: () => api.get('/api/v1/customers', { params: { search: searchCustomer, per_page: 8 } }).then(r => r.data?.data ?? []), enabled: searchCustomer.length >= 2 })
+    const searchQ = useQuery({ queryKey: ['customers-plan-search', searchCustomer], queryFn: () => api.get('/customers', { params: { search: searchCustomer, per_page: 8 } }).then(r => r.data?.data ?? []), enabled: searchCustomer.length >= 2 })
 
     const createMut = useMutation({ mutationFn: createAccountPlan, onSuccess: () => { qc.invalidateQueries({ queryKey: ['account-plans'] }); setShowDialog(false); toast.success('Plano criado!') }, onError: () => toast.error('Erro') })
 

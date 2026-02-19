@@ -16,7 +16,7 @@ class InfraIntegrationController extends Controller
 
     public function webhookConfigs(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         return response()->json(
             DB::table('webhook_configs')->where('company_id', $tenantId)->get()
         );
@@ -34,7 +34,7 @@ class InfraIntegrationController extends Controller
             'headers' => 'nullable|array',
         ]);
 
-        $data['company_id'] = $request->user()->company_id;
+        $data['company_id'] = $request->user()->current_tenant_id;
         $data['secret'] = $data['secret'] ?? Str::random(32);
         $data['events'] = json_encode($data['events']);
         $data['headers'] = json_encode($data['headers'] ?? []);
@@ -61,7 +61,7 @@ class InfraIntegrationController extends Controller
 
         DB::table('webhook_configs')
             ->where('id', $id)
-            ->where('company_id', $request->user()->company_id)
+            ->where('company_id', $request->user()->current_tenant_id)
             ->update(array_merge($data, ['updated_at' => now()]));
 
         return response()->json(['message' => 'Updated']);
@@ -70,14 +70,14 @@ class InfraIntegrationController extends Controller
     public function deleteWebhook(Request $request, int $id): JsonResponse
     {
         DB::table('webhook_configs')
-            ->where('id', $id)->where('company_id', $request->user()->company_id)->delete();
+            ->where('id', $id)->where('company_id', $request->user()->current_tenant_id)->delete();
         return response()->json(['message' => 'Deleted']);
     }
 
     public function testWebhook(Request $request, int $id): JsonResponse
     {
         $webhook = DB::table('webhook_configs')
-            ->where('id', $id)->where('company_id', $request->user()->company_id)->first();
+            ->where('id', $id)->where('company_id', $request->user()->current_tenant_id)->first();
 
         if (!$webhook) return response()->json(['message' => 'Not found'], 404);
 
@@ -109,7 +109,7 @@ class InfraIntegrationController extends Controller
                 'status_code' => $response->status(),
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            Log::error($e->getMessage(), ['exception' => $e]); return response()->json(['success' => false, 'error' => 'Erro interno do servidor.'], 500);
         }
     }
 
@@ -128,7 +128,7 @@ class InfraIntegrationController extends Controller
 
     public function apiKeys(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $keys = DB::table('api_keys')
             ->where('company_id', $tenantId)
             ->get(['id', 'name', 'prefix', 'permissions', 'last_used_at', 'expires_at', 'is_active', 'created_at']);
@@ -145,7 +145,7 @@ class InfraIntegrationController extends Controller
             'expires_at' => 'nullable|date|after:today',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $key = Str::random(48);
         $prefix = substr($key, 0, 8);
 
@@ -172,7 +172,7 @@ class InfraIntegrationController extends Controller
     public function revokeApiKey(Request $request, int $id): JsonResponse
     {
         DB::table('api_keys')
-            ->where('id', $id)->where('company_id', $request->user()->company_id)
+            ->where('id', $id)->where('company_id', $request->user()->current_tenant_id)
             ->update(['is_active' => false, 'revoked_at' => now(), 'updated_at' => now()]);
 
         return response()->json(['message' => 'API key revoked']);

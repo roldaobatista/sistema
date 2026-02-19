@@ -99,3 +99,23 @@ export interface TvSettings {
     soundAlerts: boolean;
     showAlertPanel: boolean;
 }
+
+export interface TvProductivityEntry {
+    id: number;
+    name: string;
+    avatar_url?: string;
+    status: string;
+    completed_today: number;
+    avg_execution_min: number | null;
+}
+
+export interface TvKpiTrendPoint {
+    hour: string;
+    os_criadas: number;
+    os_finalizadas: number;
+    chamados: number;
+}
+
+export interface TvAlertHistoryEntry extends TvAlert {
+    resolved: boolean;
+}

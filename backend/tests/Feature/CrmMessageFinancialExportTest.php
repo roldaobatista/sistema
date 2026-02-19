@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Customer;
+use App\Models\CommissionRule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
@@ -59,6 +60,7 @@ class CrmMessageFinancialExportTest extends TestCase
     {
         $response = $this->postJson('/api/v1/crm/message-templates', [
             'name' => 'Boas-vindas',
+            'slug' => 'boas-vindas',
             'subject' => 'Bem-vindo à nossa empresa',
             'body' => 'Olá {{nome}}, agradecemos pela preferência.',
             'channel' => 'email',
@@ -85,11 +87,38 @@ class CrmMessageFinancialExportTest extends TestCase
 
     public function test_create_recurring_commission(): void
     {
+        $rule = CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $this->user->id,
+            'name' => 'Recurring Rule',
+            'type' => CommissionRule::TYPE_PERCENTAGE,
+            'value' => 10,
+            'applies_to' => CommissionRule::APPLIES_ALL,
+            'applies_to_role' => CommissionRule::ROLE_TECHNICIAN,
+            'calculation_type' => CommissionRule::CALC_PERCENT_GROSS,
+            'applies_when' => CommissionRule::WHEN_OS_COMPLETED,
+            'active' => true,
+        ]);
+
+        $contractId = DB::table('recurring_contracts')->insertGetId([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->user->id,
+            'name' => 'Contrato Mensal Teste',
+            'frequency' => 'monthly',
+            'monthly_value' => 500,
+            'start_date' => now()->subMonth()->toDateString(),
+            'next_run_date' => now()->toDateString(),
+            'is_active' => true,
+            'generated_count' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $response = $this->postJson('/api/v1/recurring-commissions', [
             'user_id' => $this->user->id,
-            'amount' => 500.00,
-            'frequency' => 'monthly',
-            'description' => 'Comissão fixa mensal',
+            'commission_rule_id' => $rule->id,
+            'recurring_contract_id' => $contractId,
         ]);
         $response->assertCreated();
     }
@@ -104,13 +133,19 @@ class CrmMessageFinancialExportTest extends TestCase
 
     public function test_financial_export_csv(): void
     {
-        $response = $this->getJson('/api/v1/financial/export/csv?type=receivable');
+        $from = now()->startOfMonth()->toDateString();
+        $to = now()->endOfMonth()->toDateString();
+
+        $response = $this->getJson("/api/v1/financial/export/csv?type=receivable&from={$from}&to={$to}");
         $response->assertOk();
     }
 
     public function test_financial_export_ofx(): void
     {
-        $response = $this->getJson('/api/v1/financial/export/ofx?type=receivable');
+        $from = now()->startOfMonth()->toDateString();
+        $to = now()->endOfMonth()->toDateString();
+
+        $response = $this->getJson("/api/v1/financial/export/ofx?type=receivable&from={$from}&to={$to}");
         $response->assertOk();
     }
 

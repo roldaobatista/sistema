@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useDarkMode } from '@/hooks/useDarkMode'
 import { AppBreadcrumb } from './AppBreadcrumb'
@@ -10,7 +10,7 @@ import {
     Weight, RotateCcw, TrendingUp, History, Warehouse, ArrowLeftRight, Bell,
     CheckSquare, Tag, Inbox, Heart, Zap, Search, Moon, Sun, Star, ClipboardCheck,
     MapPinned, BookOpen, Fuel, ScrollText, Brain, QrCode, Network, User, BarChart,
-    Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy, Wallet, Calculator,
+    Monitor, Target, Crosshair, AlertTriangle, Share2, Link2, Gauge, Repeat, Trophy, Wallet, Calculator, Wand2,
     GitBranch, PieChart, Swords, Globe, Eye, Video,
     MapPin, StickyNote, Handshake, Lightbulb, ShieldCheck, CalendarHeart, Route,
     UserX, Medal, Printer,
@@ -26,6 +26,11 @@ import { QuickReminderButton } from '@/components/central/QuickReminderButton'
 import OfflineIndicator from '@/components/pwa/OfflineIndicator'
 import { ModeSwitcher } from '@/components/pwa/ModeSwitcher'
 import { InstallBanner } from '@/components/pwa/InstallBanner'
+import { UpdateBanner } from '@/components/pwa/UpdateBanner'
+import { SyncStatusPanel } from '@/components/pwa/SyncStatusPanel'
+import { NetworkBadge } from '@/components/pwa/NetworkBadge'
+import { usePrefetchCriticalData } from '@/hooks/usePrefetchCriticalData'
+import { useSwipeGesture } from '@/hooks/useSwipeGesture'
 
 interface NavItem {
     label: string
@@ -163,6 +168,7 @@ const navigationSections: NavSection[] = [
                     { label: 'Pesos Padrão', icon: Weight, path: '/equipamentos/pesos-padrao', permission: 'equipments.standard_weight.view' },
                     { label: 'Atr. Pesos', icon: ArrowLeftRight, path: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
                     { label: 'Leituras', icon: BookOpen, path: '/calibracao/leituras', permission: 'calibration.reading.view' },
+                    { label: 'Wizard Cert.', icon: Wand2, path: '/calibracao/wizard/0', permission: 'calibration.reading.view' },
                     { label: 'Templates Cert.', icon: FileText, path: '/calibracao/templates', permission: 'calibration.reading.view' },
                     { label: 'Agenda', icon: Calendar, path: '/agenda-calibracoes' },
                 ],
@@ -222,7 +228,7 @@ const navigationSections: NavSection[] = [
                     { label: 'Régua de Cobrança', icon: ArrowDownToLine, path: '/financeiro/regua-cobranca', permission: 'finance.receivable.view' },
                     { label: 'Cobrança Auto', icon: Zap, path: '/financeiro/cobranca-automatica', permission: 'finance.receivable.view' },
                     { label: 'Plano de Contas', icon: FileText, path: '/financeiro/plano-contas', permission: 'finance.chart.view' },
-                    { label: 'Consolidado', icon: Building2, path: '/financeiro/consolidado', permission: 'financeiro.view' },
+                    { label: 'Consolidado', icon: Building2, path: '/financeiro/consolidado', permission: 'finance.cashflow.view' },
                     { label: 'Formas de Pagamento', icon: CreditCard, path: '/financeiro/formas-pagamento', permission: 'finance.payable.view|finance.receivable.view' },
                     { label: 'Reembolsos', icon: ArrowUpFromLine, path: '/financeiro/reembolsos', permission: 'expenses.expense.view' },
                     { label: 'Cheques', icon: CheckSquare, path: '/financeiro/cheques', permission: 'finance.payable.view' },
@@ -231,8 +237,8 @@ const navigationSections: NavSection[] = [
                     { label: 'Simulador Recebíveis', icon: TrendingUp, path: '/financeiro/simulador-recebiveis', permission: 'finance.receivable.view' },
                     { label: 'Aprovação em Lote', icon: CheckSquare, path: '/financeiro/aprovacao-lote', permission: 'finance.payable.view' },
                     { label: 'Alocação Despesas', icon: PieChart, path: '/financeiro/alocacao-despesas', permission: 'expenses.expense.view' },
-                    { label: 'Calculadora Tributos', icon: Calculator, path: '/financeiro/calculadora-tributos', permission: 'financeiro.view' },
-                    { label: 'DRE', icon: BarChart3, path: '/financeiro/dre', permission: 'financeiro.view' },
+                    { label: 'Calculadora Tributos', icon: Calculator, path: '/financeiro/calculadora-tributos', permission: 'finance.dre.view' },
+                    { label: 'DRE', icon: BarChart3, path: '/financeiro/dre', permission: 'finance.dre.view' },
                 ],
             },
             { label: 'Relatórios', icon: BarChart3, path: '/relatorios', permission: 'reports.os_report.view' },
@@ -393,6 +399,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const { isInstallable, isOnline, install } = usePWA()
     const { currentMode } = useAppMode()
     const { currentTenant, tenants, switchTenant, isSwitching } = useTenantHook()
+
+    // PWA: Pre-cache data based on current mode
+    usePrefetchCriticalData()
+
+    // PWA: Swipe gesture for mobile sidebar
+    const mainContentRef = useRef<HTMLDivElement>(null)
+    useSwipeGesture(mainContentRef, {
+        onSwipeRight: () => { if (!sidebarCollapsed && window.innerWidth < 1024) toggleMobileSidebar() },
+        onSwipeLeft: () => { if (sidebarMobileOpen && window.innerWidth < 1024) toggleMobileSidebar() },
+        enabled: window.innerWidth < 1024,
+    })
 
     const baseSections =
         currentMode === 'vendedor'
@@ -682,6 +699,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             </span>
                         )}
 
+                        <NetworkBadge />
+                        <SyncStatusPanel />
                         {canViewNotifications ? <NotificationPanel /> : null}
 
                         {hasPermission('central.create.task') ? (
@@ -722,11 +741,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+                <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6">
                     <AppBreadcrumb />
                     {children}
                 </main>
 
+                <UpdateBanner />
                 <OfflineIndicator />
                 <InstallBanner />
             </div>

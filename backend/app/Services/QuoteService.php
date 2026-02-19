@@ -2,17 +2,23 @@
 
 namespace App\Services;
 
+use App\Enums\PaymentTerms;
 use App\Enums\QuoteStatus;
 use App\Events\QuoteApproved;
+use App\Mail\QuoteReadyMail;
 use App\Models\AuditLog;
 use App\Models\Quote;
+use App\Models\QuoteEmail;
 use App\Models\QuoteEquipment;
 use App\Models\QuoteItem;
+use App\Models\QuoteTemplate;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class QuoteService
 {
@@ -32,6 +38,12 @@ class QuoteService
                 'displacement_value' => $data['displacement_value'] ?? 0,
                 'observations' => $data['observations'] ?? null,
                 'internal_notes' => $data['internal_notes'] ?? null,
+                'payment_terms' => $data['payment_terms'] ?? null,
+                'payment_terms_detail' => $data['payment_terms_detail'] ?? null,
+                'template_id' => $data['template_id'] ?? null,
+                'opportunity_id' => $data['opportunity_id'] ?? null,
+                'currency' => $data['currency'] ?? 'BRL',
+                'custom_fields' => $data['custom_fields'] ?? null,
             ]);
 
             foreach ($data['equipments'] as $i => $eqData) {
@@ -45,7 +57,11 @@ class QuoteService
                 foreach ($eqData['items'] as $j => $itemData) {
                     $eq->items()->create([
                         'tenant_id' => $tenantId,
-                        ...Arr::only($itemData, ['type', 'product_id', 'service_id', 'custom_description', 'quantity', 'original_price', 'unit_price', 'discount_percentage']),
+                        ...Arr::only($itemData, [
+                            'type', 'product_id', 'service_id', 'custom_description',
+                            'quantity', 'original_price', 'cost_price', 'unit_price',
+                            'discount_percentage', 'internal_note',
+                        ]),
                         'sort_order' => $j,
                     ]);
                 }
@@ -204,7 +220,8 @@ class QuoteService
                         'tenant_id' => $quote->tenant_id,
                         ...$item->only([
                             'type', 'product_id', 'service_id', 'custom_description',
-                            'quantity', 'original_price', 'unit_price', 'discount_percentage', 'sort_order',
+                            'quantity', 'original_price', 'cost_price', 'unit_price',
+                            'discount_percentage', 'sort_order', 'internal_note',
                         ]),
                     ]);
                 }
@@ -221,7 +238,8 @@ class QuoteService
     {
         return DB::transaction(function () use ($item, $data) {
             $item->update(Arr::only($data, [
-                'custom_description', 'quantity', 'original_price', 'unit_price', 'discount_percentage',
+                'custom_description', 'quantity', 'original_price', 'cost_price',
+                'unit_price', 'discount_percentage', 'internal_note',
             ]));
 
             // recalculateTotal() é chamado automaticamente pelo evento saved do QuoteItem
@@ -377,5 +395,124 @@ class QuoteService
         }
 
         return User::where('tenant_id', $quote->tenant_id)->orderBy('id')->first();
+    }
+
+    // ── New methods for improvements ──
+
+    public function sendEmail(Quote $quote, string $recipientEmail, ?string $recipientName, ?string $message, int $sentBy): QuoteEmail
+    {
+        $quote->load(['customer', 'equipments.items', 'seller']);
+
+        $pdf = Pdf::loadView('pdf.quote', compact('quote'));
+        $pdfContent = $pdf->output();
+
+        $subject = "Orçamento #{$quote->quote_number}";
+
+        Mail::send('emails.quote-ready', [
+            'quote' => $quote,
+            'customerName' => $recipientName ?? $quote->customer?->name ?? 'Cliente',
+            'total' => number_format((float) $quote->total, 2, ',', '.'),
+            'approvalUrl' => $quote->approval_url,
+            'customMessage' => $message,
+        ], function ($mail) use ($recipientEmail, $recipientName, $subject, $pdfContent, $quote) {
+            $mail->to($recipientEmail, $recipientName)
+                ->subject($subject)
+                ->attachData($pdfContent, "Orcamento-{$quote->quote_number}.pdf", [
+                    'mime' => 'application/pdf',
+                ]);
+        });
+
+        $emailLog = QuoteEmail::create([
+            'tenant_id' => $quote->tenant_id,
+            'quote_id' => $quote->id,
+            'sent_by' => $sentBy,
+            'recipient_email' => $recipientEmail,
+            'recipient_name' => $recipientName,
+            'subject' => $subject,
+            'status' => 'sent',
+            'message_body' => $message,
+            'pdf_attached' => true,
+        ]);
+
+        AuditLog::log('email_sent', "E-mail com orçamento {$quote->quote_number} enviado para {$recipientEmail}", $quote);
+
+        return $emailLog;
+    }
+
+    public function createFromTemplate(QuoteTemplate $template, array $data, int $tenantId, int $userId): Quote
+    {
+        $data['template_id'] = $template->id;
+        $data['payment_terms_detail'] = $data['payment_terms_detail'] ?? $template->payment_terms_text;
+        return $this->createQuote($data, $tenantId, $userId);
+    }
+
+    public function advancedSummary(int $tenantId): array
+    {
+        $quotes = Quote::where('tenant_id', $tenantId);
+        $total = $quotes->count();
+        $approved = (clone $quotes)->where('status', QuoteStatus::APPROVED)->count() +
+                    (clone $quotes)->where('status', QuoteStatus::INVOICED)->count();
+
+        $avgTicket = (clone $quotes)->whereIn('status', [
+            QuoteStatus::APPROVED, QuoteStatus::INVOICED,
+        ])->avg('total') ?? 0;
+
+        $avgConversionDays = (clone $quotes)
+            ->whereNotNull('approved_at')
+            ->whereNotNull('sent_at')
+            ->selectRaw('AVG(DATEDIFF(approved_at, sent_at)) as avg_days')
+            ->value('avg_days') ?? 0;
+
+        $topSellers = Quote::where('tenant_id', $tenantId)
+            ->whereIn('status', [QuoteStatus::APPROVED, QuoteStatus::INVOICED])
+            ->selectRaw('seller_id, COUNT(*) as total_approved, SUM(total) as total_value')
+            ->groupBy('seller_id')
+            ->orderByDesc('total_value')
+            ->limit(5)
+            ->with('seller:id,name')
+            ->get();
+
+        $monthlyTrend = Quote::where('tenant_id', $tenantId)
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as total, SUM(CASE WHEN status IN ('approved', 'invoiced') THEN 1 ELSE 0 END) as approved")
+            ->groupByRaw("DATE_FORMAT(created_at, '%Y-%m')")
+            ->orderBy('month', 'desc')
+            ->limit(12)
+            ->get();
+
+        return [
+            'total_quotes' => $total,
+            'total_approved' => $approved,
+            'conversion_rate' => $total > 0 ? round(($approved / $total) * 100, 1) : 0,
+            'avg_ticket' => round((float) $avgTicket, 2),
+            'avg_conversion_days' => round((float) $avgConversionDays, 1),
+            'top_sellers' => $topSellers,
+            'monthly_trend' => $monthlyTrend,
+        ];
+    }
+
+    public function trackClientView(Quote $quote): void
+    {
+        $quote->update([
+            'client_viewed_at' => now(),
+            'client_view_count' => $quote->client_view_count + 1,
+        ]);
+    }
+
+    public function internalApproveLevel2(Quote $quote, int $approverId): Quote
+    {
+        if ($quote->status !== QuoteStatus::PENDING_INTERNAL_APPROVAL) {
+            throw new \DomainException('Orçamento não está aguardando aprovação interna');
+        }
+
+        return DB::transaction(function () use ($quote, $approverId) {
+            $quote->update([
+                'level2_approved_by' => $approverId,
+                'level2_approved_at' => now(),
+                'status' => Quote::STATUS_INTERNALLY_APPROVED,
+            ]);
+
+            AuditLog::log('status_changed', "Orçamento {$quote->quote_number} aprovado internamente (nível 2)", $quote);
+            return $quote;
+        });
     }
 }

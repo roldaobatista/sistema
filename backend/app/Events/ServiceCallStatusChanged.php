@@ -57,7 +57,7 @@ class ServiceCallStatusChanged implements ShouldBroadcastNow
                 'id' => $sc->id,
                 'status' => $sc->status,
                 'priority' => $sc->priority,
-                'subject' => $sc->subject ?? null,
+                'observations' => $sc->observations ?? null,
                 'customer' => $sc->customer ? [
                     'id' => $sc->customer->id,
                     'name' => $sc->customer->name,

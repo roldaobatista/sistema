@@ -97,20 +97,18 @@ class StockController extends Controller
     {
         $tenantId = app('current_tenant_id');
 
+        $validated = $request->validate([
+            'product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
+            'warehouse_id' => "required|exists:warehouses,id,tenant_id,{$tenantId}",
+            'batch_id' => "nullable|exists:batches,id,tenant_id,{$tenantId}",
+            'product_serial_id' => "nullable|exists:product_serials,id,tenant_id,{$tenantId}",
+            'type' => 'required|in:entry,exit,reserve,return,adjustment',
+            'quantity' => 'required|numeric|min:0.01',
+            'unit_cost' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
         try {
-            $validated = $request->validate([
-                'product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
-                'warehouse_id' => "required|exists:warehouses,id,tenant_id,{$tenantId}",
-                'batch_id' => "nullable|exists:batches,id,tenant_id,{$tenantId}",
-                'product_serial_id' => "nullable|exists:product_serials,id,tenant_id,{$tenantId}",
-                'type' => 'required|in:entry,exit,reserve,return,adjustment',
-                'quantity' => 'required|numeric|min:0.01',
-                'unit_cost' => 'nullable|numeric|min:0',
-                'notes' => 'nullable|string|max:500',
-            ]);
-
-            DB::beginTransaction();
-
             $product = Product::findOrFail($validated['product_id']);
             $type = StockMovementType::from($validated['type']);
 
@@ -164,19 +162,13 @@ class StockController extends Controller
                 default => abort(422, 'Tipo de movimentação inválido para entrada manual.'),
             };
 
-            DB::commit();
-
             $movement->load(['product:id,name,code,stock_qty', 'createdByUser:id,name']);
 
             return response()->json([
                 'message' => 'Movimentação registrada com sucesso.',
                 'data' => $movement,
             ], 201);
-        } catch (ValidationException $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Erro de validação', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('StockController::store failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Erro ao registrar movimentação.'], 500);
         }

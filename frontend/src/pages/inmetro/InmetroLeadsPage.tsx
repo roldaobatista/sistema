@@ -372,7 +372,7 @@ export function InmetroLeadsPage() {
                                                     </Link>
                                                     {lead.trade_name && <p className="text-xs text-surface-500">{lead.trade_name}</p>}
                                                     {lead.converted_to_customer_id && (
-                                                        <Link to={`/customers/${lead.converted_to_customer_id}`} className="inline-flex items-center gap-1 mt-0.5 text-xs text-green-600 hover:text-green-700">
+                                                        <Link to={`/cadastros/clientes/${lead.converted_to_customer_id}`} className="inline-flex items-center gap-1 mt-0.5 text-xs text-green-600 hover:text-green-700">
                                                             <CheckCircle className="h-3 w-3" /> Convertido
                                                         </Link>
                                                     )}
@@ -552,7 +552,7 @@ export function InmetroLeadsPage() {
                                 deleteOwnerMutation.mutate(ownerToDelete, {
                                     onSuccess: () => {
                                         toast.success('Lead excluído com sucesso')
-                setOwnerToDelete(null)
+                                        setOwnerToDelete(null)
                                     },
                                     onError: (err: any) => {
                                         toast.error(err.response?.data?.message || 'Erro ao excluir lead')

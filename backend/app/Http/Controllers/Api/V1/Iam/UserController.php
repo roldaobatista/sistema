@@ -28,8 +28,7 @@ class UserController extends Controller
 
     private function resolveTenantUser(User $user, int $tenantId): User
     {
-        $belongsToTenant = (int) $user->tenant_id === $tenantId
-            || $user->tenants()->where('tenants.id', $tenantId)->exists();
+        $belongsToTenant = $user->tenants()->where('tenants.id', $tenantId)->exists();
 
         abort_unless($belongsToTenant, 404);
 
@@ -74,7 +73,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'nullable|string|max:20',
-            'password' => ['required', PasswordRule::min(8)->mixedCase()->numbers()],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
             'roles' => 'array',
             'roles.*' => ['integer', Rule::exists('roles', 'id')->where(function ($q) use ($tenantId) {
                 $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id');
@@ -235,21 +234,18 @@ class UserController extends Controller
         }
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($user) {
+                $user->update(['is_active' => !$user->is_active]);
 
-            $user->update(['is_active' => !$user->is_active]);
-
-            if (!$user->is_active) {
-                $user->tokens()->delete();
-            }
-
-            DB::commit();
+                if (!$user->is_active) {
+                    $user->tokens()->delete();
+                }
+            });
 
             AuditLog::log('status_changed', "Usuário {$user->name} " . ($user->is_active ? 'ativado' : 'desativado'), $user);
 
             return response()->json(['is_active' => $user->is_active]);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('User toggleActive failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao alterar status do usuário.'], 500);
         }
@@ -268,18 +264,15 @@ class UserController extends Controller
         ]);
 
         try {
-            DB::beginTransaction();
-
-            $user->update(['password' => $validated['password']]);
-            $user->tokens()->delete();
-
-            DB::commit();
+            DB::transaction(function () use ($user, $validated) {
+                $user->update(['password' => $validated['password']]);
+                $user->tokens()->delete();
+            });
 
             AuditLog::log('updated', "Senha do usuário {$user->name} resetada", $user);
 
             return response()->json(['message' => 'Senha atualizada.']);
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('User resetPassword failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Erro ao redefinir senha.'], 500);
         }
@@ -295,7 +288,9 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'roles' => 'required|array',
-            'roles.*' => 'string|exists:roles,name',
+            'roles.*' => ['string', Rule::exists('roles', 'name')->where(function ($q) use ($tenantId) {
+                $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id');
+            })],
         ]);
 
         try {
@@ -372,7 +367,7 @@ class UserController extends Controller
             : null;
 
         $tokens = $user->tokens()
-            ->select('id', 'name', 'last_used_at', 'created_at')
+            ->select('id', 'name', 'last_used_at', 'created_at', 'expires_at')
             ->orderByDesc('last_used_at')
             ->get()
             ->map(fn ($token) => [
@@ -380,6 +375,7 @@ class UserController extends Controller
                 'name' => $token->name,
                 'last_used_at' => $token->last_used_at,
                 'created_at' => $token->created_at,
+                'expires_at' => $token->expires_at,
                 'is_current' => $currentTokenId !== null && $currentTokenId === $token->id,
             ]);
 
@@ -418,7 +414,7 @@ class UserController extends Controller
 
         // Filter out the current user and only target tenant users
         $userIds = collect($validated['user_ids'])
-            ->reject(fn ($id) => $id === $currentUserId)
+            ->reject(fn ($id) => (int) $id === $currentUserId)
             ->values()
             ->toArray();
 

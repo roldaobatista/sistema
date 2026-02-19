@@ -270,7 +270,7 @@ class CrmMessageController extends Controller
             return response()->json(['status' => 'ok']);
         } catch (\Exception $e) {
             Log::error('CrmMessage webhookWhatsApp failed', ['error' => $e->getMessage()]);
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            Log::error($e->getMessage(), ['exception' => $e]); return response()->json(['status' => 'error', 'message' => 'Erro interno do servidor.'], 500);
         }
     }
 
@@ -300,7 +300,7 @@ class CrmMessageController extends Controller
             return response()->json(['status' => 'ok']);
         } catch (\Exception $e) {
             Log::error('CrmMessage webhookEmail failed', ['error' => $e->getMessage()]);
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            Log::error($e->getMessage(), ['exception' => $e]); return response()->json(['status' => 'error', 'message' => 'Erro interno do servidor.'], 500);
         }
     }
 }

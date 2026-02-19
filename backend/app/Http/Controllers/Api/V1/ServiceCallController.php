@@ -29,6 +29,18 @@ class ServiceCallController extends Controller
         return (int) ($user->current_tenant_id ?? $user->tenant_id);
     }
 
+    private function slaBreachCondition(string $endExpr = 'NOW()'): string
+    {
+        $driver = DB::getDriverName();
+        $slaCase = "CASE priority WHEN 'urgent' THEN 4 WHEN 'high' THEN 8 WHEN 'normal' THEN 24 WHEN 'low' THEN 48 ELSE 24 END";
+
+        if ($driver === 'sqlite') {
+            return "(julianday(COALESCE({$endExpr}, datetime('now'))) - julianday(created_at)) * 24 > {$slaCase}";
+        }
+
+        return "TIMESTAMPDIFF(HOUR, created_at, COALESCE({$endExpr}, NOW())) > {$slaCase}";
+    }
+
     private function canAssignTechnician(): bool
     {
         $user = auth()->user();
@@ -89,7 +101,7 @@ class ServiceCallController extends Controller
         $tenantId = $this->currentTenantId();
         if ($this->requestTouchesAssignmentFields($request) && !$this->canAssignTechnician()) {
             return response()->json([
-                'message' => 'Sem permissao para atribuir tecnico/agenda no chamado.',
+                'message' => 'Sem permissão para atribuir técnico/agenda no chamado.',
             ], 403);
         }
 
@@ -150,7 +162,7 @@ class ServiceCallController extends Controller
 
         if ($this->requestTouchesAssignmentFields($request) && !$this->canAssignTechnician()) {
             return response()->json([
-                'message' => 'Sem permissao para atribuir tecnico/agenda no chamado.',
+                'message' => 'Sem permissão para atribuir técnico/agenda no chamado.',
             ], 403);
         }
 
@@ -283,8 +295,8 @@ class ServiceCallController extends Controller
         }
 
         $validated = $request->validate([
-            'technician_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'technician_id' => ['required', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true)->where(fn ($sub) => $sub->where('tenant_id', $tenantId)->orWhere('current_tenant_id', $tenantId)))],
+            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true)->where(fn ($sub) => $sub->where('tenant_id', $tenantId)->orWhere('current_tenant_id', $tenantId)))],
             'scheduled_date' => 'nullable|date',
         ]);
 
@@ -606,8 +618,7 @@ class ServiceCallController extends Controller
 
         $activeBreached = (clone $base)
             ->whereNotIn('status', [ServiceCall::STATUS_COMPLETED, ServiceCall::STATUS_CANCELLED])
-            ->get()
-            ->filter(fn ($c) => $c->sla_breached)
+            ->whereRaw($this->slaBreachCondition('NULL'))
             ->count();
 
         return response()->json([
@@ -618,6 +629,222 @@ class ServiceCallController extends Controller
             'completed_today' => (clone $base)->where('status', ServiceCall::STATUS_COMPLETED)->whereDate('completed_at', today())->count(),
             'sla_breached_active' => $activeBreached,
         ]);
+    }
+
+    // ── Dashboard KPI ──
+
+    public function dashboardKpi(Request $request): JsonResponse
+    {
+        $tenantId = $this->currentTenantId();
+        $days = $request->integer('days', 30);
+        $since = now()->subDays($days);
+
+        $base = ServiceCall::where('tenant_id', $tenantId);
+
+        // Volume by day
+        $volumeByDay = (clone $base)->where('created_at', '>=', $since)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->groupByRaw('DATE(created_at)')
+            ->orderBy('date')
+            ->get();
+
+        // MTTR (Mean Time To Resolution) in hours
+        $completed = (clone $base)->where('status', ServiceCall::STATUS_COMPLETED)
+            ->where('completed_at', '>=', $since)
+            ->whereNotNull('completed_at')
+            ->whereNotNull('created_at')
+            ->get(['created_at', 'completed_at']);
+        $mttrHours = $completed->count() > 0
+            ? round($completed->avg(fn($c) => $c->completed_at->diffInMinutes($c->created_at)) / 60, 1)
+            : 0;
+
+        // Mean time triage (open → scheduled) approximation
+        $triaged = (clone $base)->where('created_at', '>=', $since)
+            ->whereNotNull('scheduled_date')
+            ->get(['created_at', 'scheduled_date']);
+        $mtTriageHours = $triaged->count() > 0
+            ? round($triaged->avg(fn($c) => Carbon::parse($c->scheduled_date)->diffInMinutes($c->created_at)) / 60, 1)
+            : 0;
+
+        // SLA breach rate
+        $totalPeriod = (clone $base)->where('created_at', '>=', $since)->count();
+        $breachedPeriod = (clone $base)->where('created_at', '>=', $since)
+            ->whereRaw($this->slaBreachCondition('completed_at'))
+            ->count();
+        $slaBreachRate = $totalPeriod > 0 ? round(($breachedPeriod / $totalPeriod) * 100, 1) : 0;
+
+        // Top 10 recurrent customers
+        $topCustomers = (clone $base)->where('created_at', '>=', $since)
+            ->selectRaw('customer_id, COUNT(*) as total')
+            ->groupBy('customer_id')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->with('customer:id,name')
+            ->get()
+            ->map(fn($row) => ['customer' => $row->customer?->name, 'total' => $row->total]);
+
+        // Reschedule rate
+        $rescheduled = (clone $base)->where('created_at', '>=', $since)
+            ->where('reschedule_count', '>', 0)->count();
+        $rescheduleRate = $totalPeriod > 0 ? round(($rescheduled / $totalPeriod) * 100, 1) : 0;
+
+        // By technician
+        $byTechnician = (clone $base)->where('created_at', '>=', $since)
+            ->selectRaw('technician_id, COUNT(*) as total')
+            ->groupBy('technician_id')
+            ->with('technician:id,name')
+            ->get()
+            ->map(fn($r) => ['technician' => $r->technician?->name ?? 'Sem técnico', 'total' => $r->total]);
+
+        return response()->json([
+            'mttr_hours' => $mttrHours,
+            'mt_triage_hours' => $mtTriageHours,
+            'sla_breach_rate' => $slaBreachRate,
+            'reschedule_rate' => $rescheduleRate,
+            'total_period' => $totalPeriod,
+            'volume_by_day' => $volumeByDay,
+            'top_customers' => $topCustomers,
+            'by_technician' => $byTechnician,
+        ]);
+    }
+
+    // ── Bulk Action ──
+
+    public function bulkAction(Request $request): JsonResponse
+    {
+        $tenantId = $this->currentTenantId();
+
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+            'action' => 'required|string|in:assign_technician,change_priority',
+            'technician_id' => ['required_if:action,assign_technician', 'nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'priority' => 'required_if:action,change_priority|nullable|string|in:low,normal,high,urgent',
+        ]);
+
+        try {
+            $calls = ServiceCall::where('tenant_id', $tenantId)
+                ->whereIn('id', $validated['ids'])
+                ->get();
+
+            $updated = 0;
+            DB::transaction(function () use ($calls, $validated, &$updated) {
+                $updateData = match ($validated['action']) {
+                    'assign_technician' => ['technician_id' => $validated['technician_id']],
+                    'change_priority' => ['priority' => $validated['priority']],
+                };
+                $updated = $calls->count();
+                ServiceCall::whereIn('id', $calls->pluck('id'))->update($updateData);
+                AuditLog::log('bulk_action', "Ação em massa ({$validated['action']}) em {$updated} chamados", $calls->first());
+            });
+
+            return response()->json(['updated' => $updated]);
+        } catch (\Throwable $e) {
+            Log::error('ServiceCall bulk action failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro na ação em massa'], 500);
+        }
+    }
+
+    // ── Reschedule ──
+
+    public function reschedule(Request $request, ServiceCall $serviceCall): JsonResponse
+    {
+        if ((int) $serviceCall->tenant_id !== $this->currentTenantId()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'scheduled_date' => 'required|date|after:now',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            DB::transaction(function () use ($serviceCall, $validated) {
+                $history = $serviceCall->reschedule_history ?? [];
+                $history[] = [
+                    'from' => $serviceCall->scheduled_date?->toIso8601String(),
+                    'to' => $validated['scheduled_date'],
+                    'reason' => $validated['reason'],
+                    'by' => auth()->user()->name,
+                    'at' => now()->toIso8601String(),
+                ];
+
+                $serviceCall->update([
+                    'scheduled_date' => $validated['scheduled_date'],
+                    'reschedule_count' => ($serviceCall->reschedule_count ?? 0) + 1,
+                    'reschedule_reason' => $validated['reason'],
+                    'reschedule_history' => $history,
+                ]);
+
+                AuditLog::log('rescheduled', "Chamado {$serviceCall->call_number} reagendado: {$validated['reason']}", $serviceCall);
+            });
+
+            return response()->json($serviceCall->fresh());
+        } catch (\Throwable $e) {
+            Log::error('ServiceCall reschedule failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao reagendar chamado'], 500);
+        }
+    }
+
+    // ── Check Duplicate ──
+
+    public function checkDuplicate(Request $request): JsonResponse
+    {
+        $tenantId = $this->currentTenantId();
+
+        $request->validate([
+            'customer_id' => 'required|integer',
+        ]);
+
+        $duplicates = ServiceCall::where('tenant_id', $tenantId)
+            ->where('customer_id', $request->integer('customer_id'))
+            ->whereNotIn('status', [ServiceCall::STATUS_COMPLETED, ServiceCall::STATUS_CANCELLED])
+            ->where('created_at', '>=', now()->subDays(30))
+            ->with('technician:id,name')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get(['id', 'call_number', 'status', 'priority', 'technician_id', 'scheduled_date', 'created_at']);
+
+        return response()->json([
+            'has_duplicates' => $duplicates->isNotEmpty(),
+            'duplicates' => $duplicates,
+        ]);
+    }
+
+    // ── Webhook (external creation) ──
+
+    public function webhookCreate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'tenant_id' => 'required|integer|exists:tenants,id',
+            'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $request->input('tenant_id')))],
+            'priority' => 'nullable|string|in:low,normal,high,urgent',
+            'observations' => 'nullable|string|max:3000',
+            'address' => 'nullable|string|max:300',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:2',
+        ]);
+
+        try {
+            $call = DB::transaction(function () use ($validated) {
+                $call = ServiceCall::create([
+                    ...$validated,
+                    'call_number' => ServiceCall::nextNumber($validated['tenant_id']),
+                    'status' => ServiceCall::STATUS_OPEN,
+                    'priority' => $validated['priority'] ?? 'normal',
+                    'created_by' => auth()->user()?->id,
+                ]);
+
+                AuditLog::log('created', "Chamado {$call->call_number} criado via webhook", $call);
+
+                return $call;
+            });
+
+            return response()->json($call, 201);
+        } catch (\Throwable $e) {
+            Log::error('ServiceCall webhook create failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao criar chamado via webhook'], 500);
+        }
     }
 
     public function assignees(): JsonResponse

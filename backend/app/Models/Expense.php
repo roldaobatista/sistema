@@ -15,12 +15,25 @@ class Expense extends Model
     use BelongsToTenant, HasFactory, SoftDeletes, Auditable;
 
     protected $fillable = [
-        'tenant_id', 'expense_category_id', 'work_order_id', 'created_by', 'approved_by',
+        'tenant_id',
+        'expense_category_id',
+        'work_order_id',
+        'created_by',
+        'approved_by',
         'chart_of_account_id',
-        'description', 'amount', 'km_quantity', 'km_rate', 'km_billed_to_client',
-        'expense_date', 'payment_method',
-        'notes', 'receipt_path', 'affects_technician_cash', 'affects_net_value',
-        'status', 'reviewed_by', 'reviewed_at', 'rejection_reason',
+        'description',
+        'amount',
+        'km_quantity',
+        'km_rate',
+        'km_billed_to_client',
+        'expense_date',
+        'payment_method',
+        'notes',
+        'receipt_path',
+        'affects_technician_cash',
+        'affects_net_value',
+        'reviewed_by',
+        'reviewed_at',
     ];
 
     protected function casts(): array

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\QuoteStatus;
 use App\Models\Customer;
 use App\Models\Quote;
 use App\Models\ServiceCall;
@@ -67,7 +68,7 @@ class ConvertToServiceCallTest extends TestCase
         $this->assertStringStartsWith('CT-', $call->call_number);
 
         // Quote should be marked as invoiced
-        $this->assertEquals(Quote::STATUS_INVOICED, $quote->fresh()->status);
+        $this->assertEquals(QuoteStatus::INVOICED, $quote->fresh()->status);
 
         // Audit log should exist
         $this->assertDatabaseHas('audit_logs', [

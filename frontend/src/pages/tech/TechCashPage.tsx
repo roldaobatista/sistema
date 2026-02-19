@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     ArrowLeft, Wallet, ArrowUpCircle, ArrowDownCircle, Loader2,
     Send, Clock, CheckCircle2, XCircle, DollarSign, TrendingUp, TrendingDown,
 } from 'lucide-react'
-import { cn, getApiErrorMessage } from '@/lib/utils'
+import { cn, formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 interface CashFund {
     id: number
@@ -47,11 +48,7 @@ export default function TechCashPage() {
     const [submitting, setSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState<'transactions' | 'requests'>('transactions')
 
-    useEffect(() => {
-        fetchData()
-    }, [])
-
-    async function fetchData() {
+    const fetchData = useCallback(async () => {
         setLoading(true)
         try {
             const [fundRes, txRes, reqRes] = await Promise.allSettled([
@@ -68,7 +65,13 @@ export default function TechCashPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
+
+    useEffect(() => { fetchData() }, [fetchData])
+
+    const { containerRef, isRefreshing, pullDistance } = usePullToRefresh({
+        onRefresh: fetchData,
+    })
 
     async function handleRequestFunds() {
         if (!requestAmount || parseFloat(requestAmount) <= 0) return
@@ -90,8 +93,7 @@ export default function TechCashPage() {
         }
     }
 
-    const formatCurrency = (val: number) =>
-        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+    // formatCurrency imported from @/lib/utils
 
     const txTypeConfig: Record<string, { label: string; icon: typeof ArrowUpCircle; color: string }> = {
         credit: { label: 'Crédito', icon: ArrowUpCircle, color: 'text-emerald-600 dark:text-emerald-400' },
@@ -126,7 +128,17 @@ export default function TechCashPage() {
                 <h1 className="text-lg font-bold text-foreground">Meu Caixa</h1>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            {/* Pull-to-refresh indicator */}
+            {(pullDistance > 0 || isRefreshing) && (
+                <div className="flex items-center justify-center py-2">
+                    <Loader2 className={cn('w-5 h-5 text-brand-500', isRefreshing && 'animate-spin')} />
+                    <span className="ml-2 text-xs text-surface-500">
+                        {isRefreshing ? 'Atualizando...' : 'Solte para atualizar'}
+                    </span>
+                </div>
+            )}
+
+            <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 {/* Balance card */}
                 <div className="bg-gradient-to-br from-brand-600 to-brand-700 rounded-2xl p-5 text-white">
                     <div className="flex items-center gap-2 mb-1">

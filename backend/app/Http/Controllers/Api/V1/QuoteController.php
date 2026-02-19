@@ -12,6 +12,8 @@ use App\Models\Quote;
 use App\Models\QuoteEquipment;
 use App\Models\QuoteItem;
 use App\Models\QuotePhoto;
+use App\Models\QuoteTag;
+use App\Models\QuoteTemplate;
 use App\Models\WorkOrder;
 use App\Services\QuoteService;
 use Illuminate\Http\JsonResponse;
@@ -242,7 +244,7 @@ class QuoteController extends Controller
 
             DB::transaction(function () use ($quote, $user) {
                 $quote->update([
-                    'status' => Quote::STATUS_INTERNALLY_APPROVED,
+                    'status' => QuoteStatus::INTERNALLY_APPROVED->value,
                     'internal_approved_by' => $user->id,
                     'internal_approved_at' => now(),
                 ]);
@@ -381,14 +383,14 @@ class QuoteController extends Controller
         }
     }
 
-    public function updateEquipment(QuoteEquipment $equipment): JsonResponse
+    public function updateEquipment(Request $request, QuoteEquipment $equipment): JsonResponse
     {
         $quote = $equipment->quote()->firstOrFail();
         if ($error = $this->ensureQuoteMutable($quote)) {
             return $error;
         }
 
-        $validated = request()->validate([
+        $validated = $request->validate([
             'description' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
         ]);
@@ -441,7 +443,7 @@ class QuoteController extends Controller
         }
     }
 
-    public function updateItem(QuoteItem $item): JsonResponse
+    public function updateItem(Request $request, QuoteItem $item): JsonResponse
     {
         $item->loadMissing('quoteEquipment.quote');
         $quote = $item->quoteEquipment?->quote;
@@ -449,7 +451,7 @@ class QuoteController extends Controller
             return $error;
         }
 
-        $validated = request()->validate([
+        $validated = $request->validate([
             'custom_description' => 'nullable|string',
             'quantity' => 'sometimes|numeric|min:0.01',
             'original_price' => 'sometimes|numeric|min:0',
@@ -457,7 +459,7 @@ class QuoteController extends Controller
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        if ($error = $this->ensureCanApplyDiscount(request(), (float) ($validated['discount_percentage'] ?? 0))) {
+        if ($error = $this->ensureCanApplyDiscount($request, (float) ($validated['discount_percentage'] ?? 0))) {
             return $error;
         }
 
@@ -662,5 +664,215 @@ class QuoteController extends Controller
             return response()->json(['message' => 'Erro ao aprovar orçamento'], 500);
         }
     }
-}
 
+    // ── New endpoints (30-improvements) ──
+
+    public function sendEmail(Request $request, Quote $quote): JsonResponse
+    {
+        $request->validate([
+            'recipient_email' => 'required|email',
+            'recipient_name' => 'nullable|string|max:255',
+            'message' => 'nullable|string',
+        ]);
+
+        try {
+            $emailLog = $this->service->sendEmail(
+                $quote,
+                $request->input('recipient_email'),
+                $request->input('recipient_name'),
+                $request->input('message'),
+                $request->user()->id,
+            );
+
+            return response()->json(['message' => 'E-mail enviado com sucesso', 'email' => $emailLog], 201);
+        } catch (\Exception $e) {
+            report($e);
+            Log::error('Erro ao enviar e-mail: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['message' => 'Erro ao enviar e-mail'], 500);
+        }
+    }
+
+    public function advancedSummary(): JsonResponse
+    {
+        return response()->json($this->service->advancedSummary($this->currentTenantId()));
+    }
+
+    public function tags(Quote $quote): JsonResponse
+    {
+        return response()->json($quote->tags);
+    }
+
+    public function syncTags(Request $request, Quote $quote): JsonResponse
+    {
+        $tenantId = $this->currentTenantId();
+        $request->validate([
+            'tag_ids' => 'required|array',
+            'tag_ids.*' => ['integer', Rule::exists('quote_tags', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+        ]);
+        $quote->tags()->sync($request->input('tag_ids'));
+        return response()->json($quote->load('tags'));
+    }
+
+    public function listTags(): JsonResponse
+    {
+        $tags = QuoteTag::where('tenant_id', $this->currentTenantId())->orderBy('name')->get();
+        return response()->json($tags);
+    }
+
+    public function storeTag(Request $request): JsonResponse
+    {
+        $request->validate(['name' => 'required|string|max:100', 'color' => 'nullable|string|max:7']);
+        $tag = QuoteTag::create([
+            'tenant_id' => $this->currentTenantId(),
+            'name' => $request->input('name'),
+            'color' => $request->input('color', '#3B82F6'),
+        ]);
+        return response()->json($tag, 201);
+    }
+
+    public function destroyTag(QuoteTag $tag): JsonResponse
+    {
+        if ($tag->tenant_id !== $this->currentTenantId()) {
+            return response()->json(['message' => 'Tag não encontrada'], 404);
+        }
+        $tag->delete();
+        return response()->json(null, 204);
+    }
+
+    public function listTemplates(): JsonResponse
+    {
+        $templates = QuoteTemplate::where('tenant_id', $this->currentTenantId())
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        return response()->json($templates);
+    }
+
+    public function storeTemplate(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'default_items' => 'nullable|array',
+            'payment_terms_text' => 'nullable|string',
+            'validity_days' => 'nullable|integer|min:1',
+        ]);
+
+        $template = QuoteTemplate::create([
+            'tenant_id' => $this->currentTenantId(),
+            ...$request->only(['name', 'description', 'default_items', 'payment_terms_text', 'validity_days']),
+        ]);
+
+        return response()->json($template, 201);
+    }
+
+    public function updateTemplate(Request $request, QuoteTemplate $template): JsonResponse
+    {
+        if ($template->tenant_id !== $this->currentTenantId()) {
+            return response()->json(['message' => 'Template não encontrado'], 404);
+        }
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'default_items' => 'nullable|array',
+            'payment_terms_text' => 'nullable|string',
+            'validity_days' => 'nullable|integer|min:1',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $template->update($request->only(['name', 'description', 'default_items', 'payment_terms_text', 'validity_days', 'is_active']));
+        return response()->json($template);
+    }
+
+    public function destroyTemplate(QuoteTemplate $template): JsonResponse
+    {
+        if ($template->tenant_id !== $this->currentTenantId()) {
+            return response()->json(['message' => 'Template não encontrado'], 404);
+        }
+        $template->delete();
+        return response()->json(null, 204);
+    }
+
+    public function createFromTemplate(Request $request, QuoteTemplate $template): JsonResponse
+    {
+        $request->validate([
+            'customer_id' => 'required|integer|exists:customers,id',
+            'seller_id' => 'nullable|integer',
+            'equipments' => 'required|array|min:1',
+        ]);
+
+        try {
+            $quote = $this->service->createFromTemplate(
+                $template,
+                $request->all(),
+                $this->currentTenantId(),
+                $request->user()->id,
+            );
+            return response()->json($quote->load('equipments.items'), 201);
+        } catch (\Exception $e) {
+            report($e);
+            Log::error($e->getMessage(), ['exception' => $e]);
+            return response()->json(['message' => 'Erro ao criar orçamento a partir do template'], 500);
+        }
+    }
+
+    public function compareQuotes(Request $request): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array|min:2|max:5', 'ids.*' => 'integer']);
+        $tenantId = $this->currentTenantId();
+
+        $quotes = Quote::where('tenant_id', $tenantId)
+            ->whereIn('id', $request->input('ids'))
+            ->with(['equipments.items', 'customer:id,name', 'seller:id,name'])
+            ->get();
+
+        return response()->json($quotes);
+    }
+
+    public function compareRevisions(Quote $quote): JsonResponse
+    {
+        $revisions = Quote::where('tenant_id', $this->currentTenantId())
+            ->where('quote_number', $quote->quote_number)
+            ->with(['equipments.items'])
+            ->orderBy('revision')
+            ->get();
+
+        return response()->json($revisions);
+    }
+
+    public function approveLevel2(Request $request, Quote $quote): JsonResponse
+    {
+        try {
+            $updated = $this->service->internalApproveLevel2($quote, $request->user()->id);
+            return response()->json(['message' => 'Aprovação nível 2 realizada', 'quote' => $updated]);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao aprovar nível 2'], 500);
+        }
+    }
+
+    public function whatsappLink(Quote $quote): JsonResponse
+    {
+        $quote->load('customer.contacts');
+        $phone = $quote->customer?->contacts?->first()?->phone ?? $quote->customer?->phone;
+        if (!$phone) {
+            return response()->json(['message' => 'Cliente sem telefone cadastrado'], 422);
+        }
+
+        $cleanPhone = preg_replace('/\D/', '', $phone);
+        $message = urlencode("Olá! Segue o orçamento #{$quote->quote_number} no valor de R$ " . number_format((float) $quote->total, 2, ',', '.') . ". Para visualizar: {$quote->approval_url}");
+
+        return response()->json([
+            'url' => "https://wa.me/{$cleanPhone}?text={$message}",
+            'phone' => $cleanPhone,
+        ]);
+    }
+
+    public function installmentSimulation(Quote $quote): JsonResponse
+    {
+        return response()->json($quote->installmentSimulation());
+    }
+}

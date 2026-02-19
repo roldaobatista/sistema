@@ -19,6 +19,7 @@ class PermissionsSeeder extends Seeder
             'ai.analytics.view',
 
             // ─── Admin / Settings ───
+            'admin.settings.manage',
             'admin.settings.update',
             'admin.settings.view',
 
@@ -56,6 +57,15 @@ class PermissionsSeeder extends Seeder
             'catalog.view',
             'catalog.manage',
 
+            // ─── Avançado (AdvancedFeatures) ───
+            'advanced.follow_up.manage',
+            'advanced.follow_up.view',
+            'advanced.price_table.manage',
+            'advanced.price_table.view',
+            'advanced.cost_center.manage',
+            'advanced.cost_center.view',
+            'advanced.route_plan.view',
+
             // ─── Central de Atendimento ───
             'central.assign',
             'central.close.self',
@@ -65,11 +75,6 @@ class PermissionsSeeder extends Seeder
             'central.manage.rules',
 
             // ─── Chamados (Service Calls) ───
-            'chamados.service_call.assign',
-            'chamados.service_call.create',
-            'chamados.service_call.delete',
-            'chamados.service_call.update',
-            'chamados.service_call.view',
             'service_calls.service_call.assign',
             'service_calls.service_call.create',
             'service_calls.service_call.delete',
@@ -134,6 +139,7 @@ class PermissionsSeeder extends Seeder
             'crm.sequence.view',
             'crm.territory.manage',
             'crm.territory.view',
+            'crm.manage',
             'crm.view',
 
             // ─── Customer ───
@@ -184,6 +190,8 @@ class PermissionsSeeder extends Seeder
             // ─── Estoque ───
             'estoque.manage',
             'estoque.movement.create',
+            'estoque.movement.delete',
+            'estoque.movement.update',
             'estoque.movement.view',
             'estoque.view',
             'estoque.warehouse.view',
@@ -240,8 +248,11 @@ class PermissionsSeeder extends Seeder
             'finance.receivable.settle',
             'finance.receivable.update',
             'finance.receivable.view',
+            'financeiro.accounts_receivable.create',
             'financeiro.accounts_receivable.update',
+            'financeiro.accounts_receivable.view',
             'financeiro.approve',
+            'financeiro.payment.create',
             'financeiro.view',
             'financial.bank_account.create',
             'financial.bank_account.delete',
@@ -252,6 +263,8 @@ class PermissionsSeeder extends Seeder
             'financial.fund_transfer.view',
 
             // ─── Fiscal ───
+            'fiscal.config.manage',
+            'fiscal.config.view',
             'fiscal.note.cancel',
             'fiscal.note.create',
             'fiscal.note.view',
@@ -305,6 +318,9 @@ class PermissionsSeeder extends Seeder
             'hr.reports.view',
             'hr.schedule.manage',
             'hr.schedule.view',
+
+            // ─── RH Geral ───
+            'rh.manage',
             'hr.skills.manage',
             'hr.skills.view',
             'hr.training.manage',
@@ -341,6 +357,8 @@ class PermissionsSeeder extends Seeder
             'notifications.notification.view',
 
             // ─── Ordens de Serviço ───
+            'os.checklist.manage',
+            'os.checklist.view',
             'os.work_order.authorize_dispatch',
             'os.work_order.change_status',
             'os.work_order.create',
@@ -368,9 +386,12 @@ class PermissionsSeeder extends Seeder
             'tv.camera.manage',
 
             // ─── Portal ───
+            'portal.client.create',
+            'portal.client.view',
             'portal.view',
 
             // ─── Qualidade ───
+            'qualidade.manage',
             'qualidade.view',
             'quality.complaint.manage',
             'quality.complaint.view',
@@ -414,6 +435,7 @@ class PermissionsSeeder extends Seeder
             'financeiro.receipt.generate',
             'financeiro.collection.manage',
             'calibration.weight_assignment.view',
+            'calibration.reading.create',
             'calibration.reading.view',
             'calibration.tool.view',
             'weight.assignment.view',
@@ -461,6 +483,16 @@ class PermissionsSeeder extends Seeder
             'reports.suppliers_report.view',
             'reports.technician_cash_report.export',
             'reports.technician_cash_report.view',
+
+            // ─── Reports Analytics ───
+            'reports.analytics.view',
+            'reports.commissions_report.view',
+            'reports.profitability_report.view',
+
+            // ─── Contratos ───
+            'contracts.contract.create',
+            'contracts.contract.update',
+            'contracts.contract.view',
 
             // ─── Rotas ───
             'route.plan.view',
@@ -767,6 +799,8 @@ class PermissionsSeeder extends Seeder
                 str_starts_with($p, 'reports.crm') ||
                 str_starts_with($p, 'reports.quotes') ||
                 str_starts_with($p, 'reports.customers') ||
+                $p === 'service_calls.service_call.view' ||
+                $p === 'service_calls.service_call.create' ||
                 $p === 'os.work_order.view' ||
                 $p === 'notifications.notification.view' ||
                 $p === 'notifications.notification.update' ||

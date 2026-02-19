@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::table('tenants', function (Blueprint $table) {
             if (!Schema::hasColumn('tenants', 'fiscal_regime')) {
-                $table->tinyInteger('fiscal_regime')->default(1)->after('status'); // 1=Simples, 2=Presumido, 3=Real
+                $table->tinyInteger('fiscal_regime')->default(1); // 1=Simples, 2=Presumido, 3=Real
             }
             if (!Schema::hasColumn('tenants', 'cnae_code')) {
-                $table->string('cnae_code', 20)->nullable()->after('city_registration');
+                $table->string('cnae_code', 20)->nullable();
             }
             if (!Schema::hasColumn('tenants', 'fiscal_certificate_path')) {
                 $table->string('fiscal_certificate_path')->nullable();

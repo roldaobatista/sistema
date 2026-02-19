@@ -11,6 +11,7 @@ use App\Models\WarrantyTracking;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
 
 class StockAdvancedController extends Controller
@@ -21,23 +22,23 @@ class StockAdvancedController extends Controller
 
     public function autoReorder(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) app('current_tenant_id');
 
         $belowReorder = DB::table('products')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->where('is_active', true)
             ->whereNotNull('reorder_point')
-            ->whereRaw('current_stock <= reorder_point')
+            ->whereRaw('stock_qty <= reorder_point')
             ->get();
 
         $orders = [];
         foreach ($belowReorder as $product) {
-            $orderQty = ($product->max_stock ?? ($product->reorder_point * 2)) - $product->current_stock;
+            $orderQty = ($product->max_stock ?? ($product->reorder_point * 2)) - $product->stock_qty;
             if ($orderQty <= 0) continue;
 
             $hasPending = DB::table('purchase_order_items')
                 ->join('purchase_orders', 'purchase_order_items.purchase_order_id', '=', 'purchase_orders.id')
-                ->where('purchase_orders.company_id', $tenantId)
+                ->where('purchase_orders.tenant_id', $tenantId)
                 ->where('purchase_orders.status', 'pending')
                 ->where('purchase_order_items.product_id', $product->id)
                 ->exists();
@@ -47,7 +48,7 @@ class StockAdvancedController extends Controller
             $orders[] = [
                 'product_id' => $product->id,
                 'product_name' => $product->name,
-                'current_stock' => $product->current_stock,
+                'stock_qty' => $product->stock_qty,
                 'reorder_point' => $product->reorder_point,
                 'suggested_quantity' => $orderQty,
                 'preferred_supplier_id' => $product->default_supplier_id,
@@ -62,14 +63,15 @@ class StockAdvancedController extends Controller
 
     public function createAutoReorderPO(Request $request): JsonResponse
     {
+        $tenantId = (int) app('current_tenant_id');
+
         $request->validate([
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|integer|exists:products,id',
+            'items.*.product_id' => "required|integer|exists:products,id,tenant_id,{$tenantId}",
             'items.*.quantity' => 'required|numeric|min:1',
-            'items.*.supplier_id' => 'required|integer|exists:suppliers,id',
+            'items.*.supplier_id' => 'required|integer|exists:suppliers,id', // Suppliers global or tenant? Assuming global for now or shared. If tenant-specific: exists:suppliers,id,tenant_id,{$tenantId}
         ]);
 
-        $tenantId = $request->user()->company_id;
         $grouped = collect($request->input('items'))->groupBy('supplier_id');
         $created = [];
 
@@ -77,7 +79,7 @@ class StockAdvancedController extends Controller
         try {
             foreach ($grouped as $supplierId => $items) {
                 $po = PurchaseOrder::create([
-                    'company_id' => $tenantId,
+                    'tenant_id' => $tenantId,
                     'supplier_id' => $supplierId,
                     'status' => 'pending',
                     'origin' => 'auto_reorder',
@@ -106,7 +108,8 @@ class StockAdvancedController extends Controller
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('StockAdvanced createAutoReorderPO failed', ['exception' => $e]);
+            return response()->json(['message' => 'Erro interno do servidor.'], 500);
         }
 
         return response()->json([
@@ -119,9 +122,9 @@ class StockAdvancedController extends Controller
 
     public function autoDeductFromWO(Request $request, WorkOrder $workOrder): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) app('current_tenant_id');
 
-        if ($workOrder->company_id !== $tenantId) {
+        if ($workOrder->tenant_id !== $tenantId) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -137,28 +140,41 @@ class StockAdvancedController extends Controller
         $deducted = [];
         $errors = [];
 
-        foreach ($parts as $part) {
-            try {
-                $product = Product::findOrFail($part->product_id);
-                $this->stockService->createMovement(
-                    product: $product,
-                    type: \App\Enums\StockMovementType::DEDUCTED,
-                    quantity: $part->quantity,
-                    warehouseId: $part->warehouse_id ?? $workOrder->warehouse_id,
-                    workOrder: $workOrder,
-                    reference: "Auto-deduct OS #{$workOrder->id}",
-                    unitCost: $product->cost_price ?? 0,
-                    user: $request->user(),
-                );
+        DB::beginTransaction();
+        try {
+            foreach ($parts as $part) {
+                try {
+                    $product = Product::findOrFail($part->product_id);
+                    $this->stockService->deduct(
+                        product: $product,
+                        qty: $part->quantity,
+                        workOrder: $workOrder,
+                        warehouseId: $part->warehouse_id ?? $workOrder->warehouse_id,
+                    );
 
-                DB::table('work_order_parts')
-                    ->where('id', $part->id)
-                    ->update(['deducted' => true, 'deducted_at' => now()]);
+                    DB::table('work_order_parts')
+                        ->where('id', $part->id)
+                        ->update(['deducted' => true, 'deducted_at' => now()]);
 
-                $deducted[] = $part->product_id;
-            } catch (\Throwable $e) {
-                $errors[] = "Product #{$part->product_id}: {$e->getMessage()}";
+                    $deducted[] = $part->product_id;
+                } catch (\Throwable $e) {
+                    $errors[] = "Product #{$part->product_id}: {$e->getMessage()}";
+                }
             }
+
+            if (!empty($errors)) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Erro ao processar deduções. Operação cancelada.',
+                    'errors' => $errors
+                ], 422);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('autoDeductFromWO transaction failed', ['wo_id' => $workOrder->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao deduzir peças da OS.'], 500);
         }
 
         return response()->json([
@@ -171,27 +187,27 @@ class StockAdvancedController extends Controller
 
     public function startCyclicCount(Request $request): JsonResponse
     {
+        $tenantId = (int) app('current_tenant_id');
+
         $request->validate([
-            'warehouse_id' => 'required|integer|exists:warehouses,id',
+            'warehouse_id' => "required|integer|exists:warehouses,id,tenant_id,{$tenantId}",
             'product_ids' => 'nullable|array',
             'category' => 'nullable|string',
         ]);
 
-        $tenantId = $request->user()->company_id;
-
-        $query = Product::where('company_id', $tenantId)->where('is_active', true);
+        $query = Product::where('tenant_id', $tenantId)->where('is_active', true);
 
         if ($request->filled('product_ids')) {
             $query->whereIn('id', $request->input('product_ids'));
         }
         if ($request->filled('category')) {
-            $query->where('category', $request->input('category'));
+            $query->where('category_id', $request->input('category'));
         }
 
-        $products = $query->get(['id', 'name', 'sku', 'barcode', 'current_stock']);
+        $products = $query->get(['id', 'name', 'sku', 'barcode', 'stock_qty']);
 
         $countSession = DB::table('inventory_counts')->insertGetId([
-            'company_id' => $tenantId,
+            'tenant_id' => $tenantId,
             'warehouse_id' => $request->input('warehouse_id'),
             'status' => 'in_progress',
             'started_by' => $request->user()->id,
@@ -204,7 +220,7 @@ class StockAdvancedController extends Controller
             DB::table('inventory_count_items')->insert([
                 'inventory_count_id' => $countSession,
                 'product_id' => $product->id,
-                'system_quantity' => $product->current_stock,
+                'system_quantity' => $product->stock_qty,
                 'counted_quantity' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -220,6 +236,12 @@ class StockAdvancedController extends Controller
 
     public function submitCount(Request $request, int $countId): JsonResponse
     {
+        $tenantId = (int) app('current_tenant_id');
+        $exists = DB::table('inventory_counts')->where('id', $countId)->where('tenant_id', $tenantId)->exists();
+        if (!$exists) {
+            abort(404, 'Contagem de inventário não encontrada.');
+        }
+
         $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer',
@@ -272,8 +294,8 @@ class StockAdvancedController extends Controller
             'equipment_id' => 'nullable|integer',
         ]);
 
-        $tenantId = $request->user()->company_id;
-        $query = WarrantyTracking::where('company_id', $tenantId);
+        $tenantId = (int) app('current_tenant_id');
+        $query = WarrantyTracking::where('tenant_id', $tenantId);
 
         if ($request->filled('serial_number')) {
             $query->where('serial_number', $request->input('serial_number'));
@@ -303,9 +325,9 @@ class StockAdvancedController extends Controller
             'purchase_quote_ids' => 'required|array|min:2',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) app('current_tenant_id');
         $quotes = DB::table('purchase_quotes')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->whereIn('id', $request->input('purchase_quote_ids'))
             ->get();
 
@@ -343,24 +365,24 @@ class StockAdvancedController extends Controller
 
     public function slowMovingAnalysis(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) app('current_tenant_id');
         $days = $request->input('days', 90);
         $threshold = Carbon::now()->subDays($days);
 
         $slowMoving = DB::table('products')
-            ->where('products.company_id', $tenantId)
+            ->where('products.tenant_id', $tenantId)
             ->where('products.is_active', true)
-            ->where('products.current_stock', '>', 0)
+            ->where('products.stock_qty', '>', 0)
             ->leftJoin('stock_movements', function ($join) use ($threshold) {
                 $join->on('products.id', '=', 'stock_movements.product_id')
                      ->where('stock_movements.created_at', '>=', $threshold)
-                     ->whereIn('stock_movements.type', ['DEDUCTED', 'MANUAL_EXIT']);
+                     ->whereIn('stock_movements.type', ['exit']);
             })
-            ->selectRaw('products.id, products.name, products.sku, products.current_stock, 
-                          products.cost_price, (products.current_stock * COALESCE(products.cost_price, 0)) as capital_invested,
+            ->selectRaw('products.id, products.name, products.sku, products.stock_qty, 
+                          products.cost_price, (products.stock_qty * COALESCE(products.cost_price, 0)) as capital_invested,
                           COUNT(stock_movements.id) as movement_count,
                           MAX(stock_movements.created_at) as last_movement')
-            ->groupBy('products.id', 'products.name', 'products.sku', 'products.current_stock', 'products.cost_price')
+            ->groupBy('products.id', 'products.name', 'products.sku', 'products.stock_qty', 'products.cost_price')
             ->having('movement_count', '=', 0)
             ->orderByDesc('capital_invested')
             ->limit(50)

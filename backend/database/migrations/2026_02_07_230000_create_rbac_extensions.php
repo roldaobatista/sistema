@@ -23,21 +23,23 @@ return new class extends Migration {
             $table->enum('criticality', ['LOW', 'MED', 'HIGH'])->default('MED');
         });
 
-        // Audit logs
+        // Audit logs — schema must match AuditLog model $fillable
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('action', 50); // ex: create, update, delete, login
-            $table->string('entity_type', 100);
-            $table->unsignedBigInteger('entity_id')->nullable();
-            $table->json('payload_json')->nullable();
-            $table->string('ip', 50)->nullable();
+            $table->string('action', 50);
+            $table->string('auditable_type')->nullable();
+            $table->unsignedBigInteger('auditable_id')->nullable();
+            $table->string('description')->nullable();
+            $table->json('old_values')->nullable();
+            $table->json('new_values')->nullable();
+            $table->string('ip_address', 45)->nullable();
             $table->string('user_agent')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
             $table->index(['tenant_id', 'created_at']);
-            $table->index(['entity_type', 'entity_id']);
+            $table->index(['tenant_id', 'auditable_type', 'auditable_id']);
         });
     }
 

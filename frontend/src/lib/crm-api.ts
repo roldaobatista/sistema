@@ -100,6 +100,18 @@ export interface CrmDashboardData {
         won_month: number
         lost_month: number
         won_revenue: number
+        open_deals?: number
+        revenue_in_pipeline?: number
+        avg_health_score?: number
+        no_contact_90d?: number
+        conversion_rate?: number
+    }
+    email_tracking?: {
+        total_sent: number
+        opened: number
+        clicked: number
+        replied: number
+        bounced: number
     }
     messaging_stats: {
         sent_month: number
@@ -159,6 +171,8 @@ export const crmApi = {
     markDealLost: (id: number, reason?: string) =>
         api.put<CrmDeal>(`/crm/deals/${id}/lost`, { lost_reason: reason }),
     deleteDeal: (id: number) => api.delete(`/crm/deals/${id}`),
+    dealsBulkUpdate: (data: { deal_ids: number[]; action: 'move_stage' | 'mark_won' | 'mark_lost' | 'delete'; stage_id?: number }) =>
+        api.post<{ message: string; affected: number }>('/crm/deals/bulk-update', data),
 
     // Activities
     getActivities: (params?: Record<string, unknown>) =>
@@ -167,7 +181,7 @@ export const crmApi = {
         api.post<CrmActivity>('/crm/activities', data),
 
     // Customer 360
-    getCustomer360: (id: number) => api.get(`/crm/customers/${id}/360`),
+    getCustomer360: (id: number) => api.get(`/crm/customer-360/${id}`),
 
     // Messages
     getMessages: (params?: Record<string, unknown>) =>

@@ -613,6 +613,62 @@ class CrmController extends Controller
         }
     }
 
+    /**
+     * Bulk update multiple deals at once.
+     * Supports: move_stage, mark_won, mark_lost, delete.
+     */
+    public function dealsBulkUpdate(Request $request): JsonResponse
+    {
+        $request->validate([
+            'deal_ids' => 'required|array|min:1|max:100',
+            'deal_ids.*' => 'integer|exists:crm_deals,id',
+            'action' => 'required|in:move_stage,mark_won,mark_lost,delete',
+            'stage_id' => 'required_if:action,move_stage|integer|exists:crm_pipeline_stages,id',
+        ]);
+
+        $tenantId = $this->tenantId($request);
+        $dealIds = $request->input('deal_ids');
+        $action = $request->input('action');
+
+        $deals = CrmDeal::where('tenant_id', $tenantId)
+            ->whereIn('id', $dealIds)
+            ->get();
+
+        if ($deals->isEmpty()) {
+            return response()->json(['message' => 'Nenhum deal encontrado'], 404);
+        }
+
+        try {
+            DB::transaction(function () use ($deals, $action, $request) {
+                foreach ($deals as $deal) {
+                    switch ($action) {
+                        case 'move_stage':
+                            $deal->update(['stage_id' => $request->input('stage_id')]);
+                            break;
+                        case 'mark_won':
+                            $deal->update(['status' => 'won', 'won_at' => now()]);
+                            break;
+                        case 'mark_lost':
+                            $deal->update(['status' => 'lost', 'lost_at' => now()]);
+                            break;
+                        case 'delete':
+                            $deal->activities()->delete();
+                            $deal->delete();
+                            break;
+                    }
+                }
+            });
+
+            return response()->json([
+                'message' => 'Operação em massa concluída',
+                'affected' => $deals->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro bulk update deals', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao processar operação em massa'], 500);
+        }
+    }
+
     // ─── Activities ─────────────────────────────────────
 
     public function activitiesIndex(Request $request): JsonResponse

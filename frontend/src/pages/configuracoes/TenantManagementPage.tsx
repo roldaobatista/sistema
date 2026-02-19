@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { AxiosError } from 'axios'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Building2, Plus, Search, Users, MapPin, Mail, Phone, FileText,
@@ -248,7 +249,7 @@ export function TenantManagementPage() {
             setFormErrors({})
             toast.success(selectedTenant ? 'Empresa atualizada com sucesso!' : 'Empresa criada com sucesso!')
         },
-        onError: (err: any) => {
+        onError: (err: AxiosError<any>) => {
             if (err.response?.status === 422 && err.response.data?.errors) {
                 const serverErrors: Partial<Record<keyof TenantForm, string>> = {}
                 for (const [key, msgs] of Object.entries(err.response.data.errors)) {
@@ -275,7 +276,7 @@ export function TenantManagementPage() {
             setDeleteMessage(null)
             toast.success('Empresa excluída com sucesso!')
         },
-        onError: (err: any) => {
+        onError: (err: AxiosError<any>) => {
             const status = err.response?.status
             if ((status === 409 || status === 422) && err.response.data?.dependencies) {
                 setDeleteDependencies(err.response.data.dependencies)
@@ -297,7 +298,7 @@ export function TenantManagementPage() {
             setInviteForm({ name: '', email: '', role: '' })
             toast.success(res.data?.message ?? 'Convite enviado com sucesso!')
         },
-        onError: (err: any) => {
+        onError: (err: AxiosError<any>) => {
             toast.error(err.response?.data?.message ?? 'Erro ao convidar usuário.')
         },
     })
@@ -311,7 +312,7 @@ export function TenantManagementPage() {
             setShowConfirmRemoveUser(null)
             toast.success('Usuário removido com sucesso!')
         },
-        onError: (err: any) => {
+        onError: (err: AxiosError<any>) => {
             setShowConfirmRemoveUser(null)
             toast.error(err.response?.data?.message ?? 'Erro ao remover usuário.')
         },

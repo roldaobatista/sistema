@@ -1,114 +1,107 @@
 # AGENTS.md
 
-## 🌐 Language Handling (MANDATORY)
+## Language Handling (MANDATORY)
 
-> 🔴 **MANDATORY:** The AI must **ALWAYS** communicate in **PORTUGUESE (pt-BR)**, regardless of the user's input language.
+1. Output language: todas as respostas da IA devem ser em Portugues (pt-BR).
+2. Codigo: nomes tecnicos (variaveis, funcoes, classes, colunas) em Ingles.
+3. Regra vale para tudo: explicacoes, perguntas, comentarios, resumo final e mensagens de progresso.
 
-1. **Output Language**: ALL explanations, questions, comments, and task summaries MUST be in Portuguese.
-2. **Code**: Variable names, function names, and database columns MUST be in English (standard practice).
-3. **Applies to**: ALL responses, including "Applying knowledge of..." and other template messages.
+## Modos de Trabalho (OBRIGATORIO)
 
-## Mandatory Always-On Skills
+### CONSULTA
+- Usar quando o usuario pedir analise, explicacao, revisao ou levantamento.
+- Nao editar codigo, exceto se o usuario pedir explicitamente.
 
-The following skills are mandatory in every turn and must be auto-applied without explicit user mention.
+### IMPLEMENTACAO (padrao)
+- Usar quando o usuario pedir correcao, melhoria ou nova funcionalidade.
+- Implementar fim a fim com validacao minima necessaria.
 
-1. clean-code (CRITICAL)
-2. mvp-completeness (CRITICAL)
-3. error-resilience (CRITICAL)
-4. data-consistency-guard (CRITICAL)
-5. regression-prevention (CRITICAL)
-6. migration-safety (HIGH)
-7. permission-completeness (CRITICAL)
-8. ux-consistency (HIGH)
+### PRODUCAO
+- Usar quando o pedido envolver deploy, migration em producao, servidor, rollback, backup ou hotfix em ambiente real.
+- Seguir estritamente `.cursor/rules/deploy-production.mdc` e `.cursor/rules/migration-production.mdc`.
 
-## Installed Skill Paths
+## Skills Instaladas
 
-All mandatory skills are installed in Codex home and must be loaded from:
+- `%USERPROFILE%/.codex/skills/clean-code/SKILL.md`
+- `%USERPROFILE%/.codex/skills/mvp-completeness/SKILL.md`
+- `%USERPROFILE%/.codex/skills/error-resilience/SKILL.md`
+- `%USERPROFILE%/.codex/skills/data-consistency-guard/SKILL.md`
+- `%USERPROFILE%/.codex/skills/regression-prevention/SKILL.md`
+- `%USERPROFILE%/.codex/skills/migration-safety/SKILL.md`
+- `%USERPROFILE%/.codex/skills/permission-completeness/SKILL.md`
+- `%USERPROFILE%/.codex/skills/ux-consistency/SKILL.md`
 
-- C:/Users/Roldão testes/.codex/skills/clean-code/SKILL.md
-- C:/Users/Roldão testes/.codex/skills/mvp-completeness/SKILL.md
-- C:/Users/Roldão testes/.codex/skills/error-resilience/SKILL.md
-- C:/Users/Roldão testes/.codex/skills/data-consistency-guard/SKILL.md
-- C:/Users/Roldão testes/.codex/skills/regression-prevention/SKILL.md
-- C:/Users/Roldão testes/.codex/skills/migration-safety/SKILL.md
-- C:/Users/Roldão testes/.codex/skills/permission-completeness/SKILL.md
-- C:/Users/Roldão testes/.codex/skills/ux-consistency/SKILL.md
+## Politica de Ativacao de Skills
 
-## Trigger Rules (Mandatory)
-
-- Apply all 8 skills on every task by default.
-- Skills persist across turns; do not require re-mention.
-- Do not ask whether to activate these skills; activation is implicit.
-- If any mandatory skill is missing or unreadable, stop and report exactly which skill failed.
-
-## Execution Priority
-
-Use this fixed order:
-
+### Base (sempre ativas)
 1. clean-code
-2. mvp-completeness
-3. error-resilience
-4. data-consistency-guard
-5. regression-prevention
-6. permission-completeness
-7. migration-safety
-8. ux-consistency
+2. error-resilience
+3. regression-prevention
 
-## Completion Gate (Required Before Final Answer)
+### Condicionais (ativar quando aplicavel)
+4. mvp-completeness: modulo novo, fluxo incompleto ou entrega E2E
+5. data-consistency-guard: mutacao de dados, transacoes, cache, auditoria, orfaos
+6. permission-completeness: CRUD, auth, middleware, roteamento, gate frontend
+7. migration-safety: qualquer alteracao de schema/migration/seeder de estrutura
+8. ux-consistency: telas, formularios, tabelas, feedback visual/interacoes
 
-Before completing any task, verify and confirm:
+Se alguma skill obrigatoria para o contexto estiver ausente ou ilegivel, parar e reportar exatamente qual falhou.
 
-- Code quality and simplicity preserved (clean-code)
-- End-to-end flow is complete for touched module(s) (mvp-completeness)
-- Error handling and fallback paths exist (error-resilience)
-- Data integrity is preserved and validated (data-consistency-guard)
-- No behavior regressions introduced (regression-prevention)
-- Migration changes are safe and reversible when applicable (migration-safety)
-- Permission coverage is complete across backend and frontend when applicable (permission-completeness)
-- UX behavior stays consistent with existing patterns (ux-consistency)
+## Autonomia da IA com Seguranca (OBRIGATORIO)
+
+- A IA deve corrigir automaticamente problemas relacionados encontrados durante a tarefa.
+- A IA nao deve limitar mudancas apenas ao minimo textual quando houver risco tecnico claro.
+- A IA deve pedir confirmacao antes de acoes de alto risco:
+  1. acao destrutiva em banco/infra/producao
+  2. alteracao sensivel de autenticacao/permissao global
+  3. migration com risco de perda de dados
+  4. operacao irreversivel fora do escopo original
+
+## Gate Final Obrigatorio (simples para usuario nao tecnico)
+
+Antes da resposta final, apresentar sempre estes 4 itens:
+1. O que mudou
+2. Risco (baixo/medio/alto e motivo)
+3. Como validar rapido
+4. Como desfazer (rollback)
+
+## Fonte Unica de Verdade para Producao
+
+- Em caso de conflito entre este AGENTS e regras de producao, prevalece:
+  1. `.cursor/rules/deploy-production.mdc`
+  2. `.cursor/rules/migration-production.mdc`
+
+## Producao e Deploy (OBRIGATORIO)
+
+### Servidor de Producao
+- IP: `178.156.176.145`
+- SSH: `ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o StrictHostKeyChecking=no root@178.156.176.145`
+- Diretorio: `/root/sistema`
+- URL principal: `http://178.156.176.145`
+- Banco: MySQL 8.0, database `kalibrium`, user `kalibrium`
+
+### NUNCA perguntar ao usuario
+- Onde esta o servidor
+- Qual chave SSH usar
+- Qual compose file usar
+- Se deve fazer backup (sempre fazer antes de alteracao em producao)
+
+## Politica de Migration em Producao (resumo)
+
+- NUNCA usar `->after()` em migration nova.
+- NUNCA usar `->default()` em coluna JSON.
+- Usar `hasColumn`/`hasTable` quando houver alteracao incremental.
+- Nome curto para indice composto quando houver risco de exceder 64 caracteres.
+- Atualizar `composer.lock` ao adicionar pacote.
+
+### Regra de Legado (OBRIGATORIA)
+- Se a migration legado ja rodou em producao: nao editar arquivo antigo; criar migration corretiva nova, idempotente e reversivel.
+- Se a migration legado ainda nao rodou em producao: pode corrigir o arquivo diretamente.
+- NUNCA usar `migrate:fresh` ou `migrate:reset` em producao.
 
 ## Safety Rule For Skill Origin
 
-Do not delete original skills from project-local path:
+Nao deletar skills originais do caminho:
+- `c:/Users/Roldao testes/projetos/sistema/.agent/skills`
 
-- c:/Users/Roldão testes/projetos/sistema/.agent/skills
-Copy-only policy is mandatory.
-
-## Produção e Deploy (OBRIGATÓRIO)
-
-O sistema está em produção. A IA DEVE saber essas informações SEM perguntar ao usuário:
-
-### Servidor de Produção
-- **IP:** 178.156.176.145
-- **SSH:** `ssh -i "$env:USERPROFILE\.ssh\id_ed25519" -o StrictHostKeyChecking=no root@178.156.176.145`
-- **Diretório:** /root/sistema
-- **Stack:** Docker Compose (docker-compose.prod-http.yml)
-- **URL:** http://178.156.176.145
-- **Banco:** MySQL 8.0, database `kalibrium`, user `kalibrium`
-- **SSL:** Ainda NÃO configurado (HTTP only). Quando configurar, usar docker-compose.prod.yml
-
-### Como fazer deploy
-Ler a regra completa em `.cursor/rules/deploy-production.mdc`. Resumo:
-1. Commitar mudanças locais
-2. Push para GitHub
-3. Backup .env do servidor
-4. `git fetch` + `git reset --hard origin/main` no servidor
-5. Restaurar .env
-6. Build Docker + up -d
-7. Migrations + seeders + cache
-8. Health check
-
-### NUNCA perguntar ao usuário
-- Onde está o servidor (IP: 178.156.176.145)
-- Qual chave SSH usar (~/.ssh/id_ed25519)
-- Qual compose file usar (docker-compose.prod-http.yml)
-- Qual e-mail para SSL (já não é necessário, SSL não configurado ainda)
-- Se deve fazer backup (SEMPRE fazer antes de qualquer mudança)
-
-### Regras de migrations para produção
-Ler `.cursor/rules/migration-production.mdc`. Resumo:
-- NUNCA usar `->after()` em migrations
-- NUNCA usar `->default()` em colunas JSON
-- Sempre dar nome curto a índices compostos (< 64 chars)
-- Sempre usar `hasColumn`/`hasTable` guards
-- Sempre atualizar `composer.lock` se adicionar pacote
+Politica obrigatoria: copy-only.

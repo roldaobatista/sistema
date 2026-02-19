@@ -25,11 +25,11 @@ class ClientPortalController extends Controller
             'attachments.*' => 'file|max:10240',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $customerId = $request->user()->customer_id ?? $request->user()->id;
 
         $callId = DB::table('service_calls')->insertGetId([
-            'company_id' => $tenantId,
+            'tenant_id' => $tenantId,
             'customer_id' => $customerId,
             'subject' => $data['subject'],
             'description' => $data['description'],
@@ -64,21 +64,21 @@ class ClientPortalController extends Controller
 
     public function trackWorkOrders(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $customerId = $request->user()->customer_id ?? $request->user()->id;
 
-        $workOrders = WorkOrder::where('company_id', $tenantId)
+        $workOrders = WorkOrder::where('tenant_id', $tenantId)
             ->where('customer_id', $customerId)
-            ->whereNotIn('status', ['cancelada'])
+            ->whereNotIn('status', [WorkOrder::STATUS_CANCELLED])
             ->orderByDesc('created_at')
             ->limit(50)
-            ->get(['id', 'tipo', 'status', 'prioridade', 'created_at', 'sla_deadline', 'assigned_to', 'data_conclusao']);
+            ->get(['id', 'status', 'priority', 'created_at', 'sla_deadline', 'assigned_to', 'completed_at']);
 
         $workOrders->each(function ($wo) {
-            $wo->timeline = DB::table('work_order_logs')
+            $wo->timeline = DB::table('work_order_status_history')
                 ->where('work_order_id', $wo->id)
                 ->orderBy('created_at')
-                ->get(['action', 'description', 'created_at']);
+                ->get(['from_status', 'to_status', 'notes', 'created_at']);
 
             $wo->technician_name = $wo->assigned_to
                 ? DB::table('users')->where('id', $wo->assigned_to)->value('name')
@@ -90,11 +90,11 @@ class ClientPortalController extends Controller
 
     public function trackServiceCalls(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $customerId = $request->user()->customer_id ?? $request->user()->id;
 
         $calls = DB::table('service_calls')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->where('customer_id', $customerId)
             ->orderByDesc('created_at')
             ->limit(50)
@@ -107,12 +107,12 @@ class ClientPortalController extends Controller
 
     public function calibrationCertificates(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $customerId = $request->user()->customer_id ?? $request->user()->id;
 
         $certificates = DB::table('calibration_certificates')
             ->join('equipments', 'calibration_certificates.equipment_id', '=', 'equipments.id')
-            ->where('calibration_certificates.company_id', $tenantId)
+            ->where('equipments.tenant_id', $tenantId)
             ->where('equipments.customer_id', $customerId)
             ->select(
                 'calibration_certificates.*',
@@ -127,11 +127,11 @@ class ClientPortalController extends Controller
 
     public function downloadCertificate(Request $request, int $certificateId): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
 
         $cert = DB::table('calibration_certificates')
             ->where('id', $certificateId)
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->first();
 
         if (!$cert) return response()->json(['message' => 'Not found'], 404);

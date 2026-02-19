@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { crmFeaturesApi } from '@/lib/crm-features-api'
 import type { CrmCalendarEvent } from '@/lib/crm-features-api'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import {
     CalendarDays, ChevronLeft, ChevronRight, Plus, Loader2,
     Clock, MapPin, User, RefreshCw, LayoutGrid, List,
@@ -93,6 +95,28 @@ export function CrmCalendarPage() {
     const [userFilter, setUserFilter] = useState('all')
     const [dialogOpen, setDialogOpen] = useState(false)
     const [selectedDay, setSelectedDay] = useState<Date | null>(null)
+    const [editingEvent, setEditingEvent] = useState<CrmCalendarEvent | null>(null)
+    const [editDialogOpen, setEditDialogOpen] = useState(false)
+    const [showActivities, setShowActivities] = useState(true)
+    const [showRenewals, setShowRenewals] = useState(true)
+
+    const deleteMut = useMutation({
+        mutationFn: (id: number) => crmFeaturesApi.deleteCalendarEvent(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['crm-calendar'] })
+            broadcastQueryInvalidation(['crm-calendar'], 'Calendário')
+            toast.success('Evento excluído')
+            setEditDialogOpen(false)
+            setEditingEvent(null)
+        },
+        onError: () => toast.error('Erro ao excluir evento'),
+    })
+
+    const openEventEdit = (ev: CrmCalendarEvent, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setEditingEvent(ev)
+        setEditDialogOpen(true)
+    }
 
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
@@ -133,9 +157,23 @@ export function CrmCalendarPage() {
     })
 
     const events: CrmCalendarEvent[] = useMemo(() => {
-        const raw = eventsRes?.data ?? eventsRes ?? []
-        return Array.isArray(raw) ? raw : []
-    }, [eventsRes])
+        const raw = eventsRes?.events ?? eventsRes?.data ?? eventsRes ?? []
+        const mainEvents: CrmCalendarEvent[] = Array.isArray(raw) ? raw : []
+
+        // Merge activities (#14)
+        if (showActivities && eventsRes?.activities) {
+            const acts = Array.isArray(eventsRes.activities) ? eventsRes.activities : []
+            mainEvents.push(...acts)
+        }
+
+        // Merge renewals (#14)
+        if (showRenewals && eventsRes?.renewals) {
+            const rens = Array.isArray(eventsRes.renewals) ? eventsRes.renewals : []
+            mainEvents.push(...rens)
+        }
+
+        return mainEvents
+    }, [eventsRes, showActivities, showRenewals])
 
     const uniqueUsers = useMemo(() => {
         const map = new Map<number, string>()
@@ -231,6 +269,23 @@ export function CrmCalendarPage() {
                                     Semana
                                 </Button>
                             </div>
+                            {/* Activities & Renewals toggles (#14) */}
+                            <Button
+                                variant={showActivities ? 'secondary' : 'ghost'}
+                                size="sm"
+                                onClick={() => setShowActivities(v => !v)}
+                                title="Mostrar/ocultar atividades"
+                            >
+                                {showActivities ? '✓' : '○'} Atividades
+                            </Button>
+                            <Button
+                                variant={showRenewals ? 'secondary' : 'ghost'}
+                                size="sm"
+                                onClick={() => setShowRenewals(v => !v)}
+                                title="Mostrar/ocultar renovações"
+                            >
+                                {showRenewals ? '✓' : '○'} Renovações
+                            </Button>
                         </div>
                     </div>
                 </CardContent>
@@ -294,10 +349,11 @@ export function CrmCalendarPage() {
                                                 <div
                                                     key={ev.id}
                                                     className={cn(
-                                                        'truncate rounded px-1 py-0.5 text-[10px] font-medium text-white',
+                                                        'truncate rounded px-1 py-0.5 text-[10px] font-medium text-white cursor-pointer hover:opacity-80 transition-opacity',
                                                         typeColors[ev.type] ?? 'bg-surface-500',
                                                     )}
                                                     title={`${ev.title} - ${fmtTime(ev.start_at)}`}
+                                                    onClick={(e) => openEventEdit(ev, e)}
                                                 >
                                                     {ev.title}
                                                 </div>
@@ -350,13 +406,21 @@ export function CrmCalendarPage() {
                                             {dayEvents.map(ev => (
                                                 <div
                                                     key={ev.id}
-                                                    className={cn(
-                                                        'rounded-md border-l-4 bg-muted/50 p-2 space-y-1',
-                                                        `border-l-${typeColors[ev.type]?.replace('bg-', '') ?? 'gray-500'}`,
-                                                    )}
+                                                    className="rounded-md border-l-4 bg-muted/50 p-2 space-y-1 group/ev cursor-pointer hover:bg-muted/80 transition-colors"
                                                     style={{ borderLeftColor: getColorHex(ev.type) }}
+                                                    onClick={(e) => openEventEdit(ev, e)}
                                                 >
-                                                    <p className="text-xs font-medium leading-tight">{ev.title}</p>
+                                                    <div className="flex items-start justify-between gap-1">
+                                                        <p className="text-xs font-medium leading-tight">{ev.title}</p>
+                                                        <div className="flex gap-0.5 opacity-0 group-hover/ev:opacity-100 transition-opacity">
+                                                            <button onClick={(e) => openEventEdit(ev, e)} title="Editar" className="rounded p-0.5 text-surface-400 hover:text-brand-600 hover:bg-brand-50">
+                                                                <Pencil className="h-3 w-3" />
+                                                            </button>
+                                                            <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir este evento?')) deleteMut.mutate(ev.id) }} title="Excluir" className="rounded p-0.5 text-surface-400 hover:text-red-600 hover:bg-red-50">
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                                         <Clock className="h-3 w-3" />
                                                         {fmtTime(ev.start_at)}
@@ -403,6 +467,22 @@ export function CrmCalendarPage() {
                         </div>
                     </CardContent>
                 </Card>
+            )}
+
+            {/* Edit Event Dialog */}
+            {editingEvent && (
+                <Dialog open={editDialogOpen} onOpenChange={(v) => { setEditDialogOpen(v); if (!v) setEditingEvent(null) }}>
+                    <EditEventDialog
+                        event={editingEvent}
+                        onSuccess={() => {
+                            setEditDialogOpen(false)
+                            setEditingEvent(null)
+                            queryClient.invalidateQueries({ queryKey: ['crm-calendar'] })
+                        }}
+                        onDelete={(id) => deleteMut.mutate(id)}
+                        isDeleting={deleteMut.isPending}
+                    />
+                </Dialog>
             )}
         </div>
     )
@@ -465,6 +545,7 @@ function CreateEventDialog({
         },
         onSuccess: () => {
             toast.success('Evento criado com sucesso')
+            broadcastQueryInvalidation(['crm-calendar'], 'Calendário')
             onSuccess()
         },
         onError: () => toast.error('Erro ao criar evento'),
@@ -547,6 +628,143 @@ function CreateEventDialog({
                     {createMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Criar Evento
                 </Button>
+            </DialogFooter>
+        </DialogContent>
+    )
+}
+
+function EditEventDialog({
+    event,
+    onSuccess,
+    onDelete,
+    isDeleting,
+}: {
+    event: CrmCalendarEvent
+    onSuccess: () => void
+    onDelete: (id: number) => void
+    isDeleting: boolean
+}) {
+    const extractDate = (d: string) => d ? d.slice(0, 10) : ''
+    const extractTime = (d: string) => d ? d.slice(11, 16) : ''
+
+    const [form, setForm] = useState({
+        title: event.title,
+        description: event.description ?? '',
+        type: event.type,
+        start_date: extractDate(event.start_at),
+        start_time: extractTime(event.start_at),
+        end_date: extractDate(event.end_at),
+        end_time: extractTime(event.end_at),
+        all_day: event.all_day ?? false,
+        location: event.location ?? '',
+    })
+
+    const updateMut = useMutation({
+        mutationFn: () => {
+            const start_at = `${form.start_date}T${form.start_time || '00:00'}:00`
+            const end_at = form.end_date
+                ? `${form.end_date}T${form.end_time || '23:59'}:00`
+                : start_at
+            return crmFeaturesApi.updateCalendarEvent(event.id, {
+                title: form.title,
+                description: form.description || null,
+                type: form.type,
+                start_at,
+                end_at,
+                all_day: form.all_day,
+                location: form.location || null,
+            })
+        },
+        onSuccess: () => {
+            toast.success('Evento atualizado')
+            broadcastQueryInvalidation(['crm-calendar'], 'Calendário')
+            onSuccess()
+        },
+        onError: () => toast.error('Erro ao atualizar evento'),
+    })
+
+    const update = (field: string, value: string | boolean) =>
+        setForm(prev => ({ ...prev, [field]: value }))
+
+    return (
+        <DialogContent size="lg">
+            <DialogHeader>
+                <DialogTitle>Editar Evento</DialogTitle>
+                <DialogDescription>Altere os dados do evento</DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5 md:col-span-2">
+                        <Label>Título</Label>
+                        <Input
+                            placeholder="Título do evento"
+                            value={form.title}
+                            onChange={e => update('title', e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-1.5 md:col-span-2">
+                        <Label>Descrição</Label>
+                        <Input
+                            placeholder="Descrição (opcional)"
+                            value={form.description}
+                            onChange={e => update('description', e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Tipo</Label>
+                        <Select value={form.type} onValueChange={v => update('type', v)}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(typeLabels).map(([k, v]) => (
+                                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Local</Label>
+                        <Input placeholder="Local" value={form.location} onChange={e => update('location', e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Data Início</Label>
+                        <Input type="date" value={form.start_date} onChange={e => update('start_date', e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Hora Início</Label>
+                        <Input type="time" value={form.start_time} onChange={e => update('start_time', e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Data Fim</Label>
+                        <Input type="date" value={form.end_date} onChange={e => update('end_date', e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label>Hora Fim</Label>
+                        <Input type="time" value={form.end_time} onChange={e => update('end_time', e.target.value)} />
+                    </div>
+                </div>
+            </DialogBody>
+            <DialogFooter className="flex !justify-between">
+                <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => { if (confirm('Excluir este evento permanentemente?')) onDelete(event.id) }}
+                    disabled={isDeleting}
+                >
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1 h-4 w-4" />}
+                    Excluir
+                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={onSuccess}>Cancelar</Button>
+                    <Button
+                        onClick={() => updateMut.mutate()}
+                        disabled={updateMut.isPending || !form.title || !form.start_date}
+                    >
+                        {updateMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Salvar
+                    </Button>
+                </div>
             </DialogFooter>
         </DialogContent>
     )

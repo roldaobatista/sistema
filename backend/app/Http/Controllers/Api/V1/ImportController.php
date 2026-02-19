@@ -63,7 +63,7 @@ class ImportController extends Controller
             return response()->json($result);
         } catch (\Throwable $e) {
             Log::error('Import upload failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Erro ao processar arquivo: ' . $e->getMessage()], 500);
+            Log::error('Erro ao processar arquivo: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro ao processar arquivo'], 500);
         }
     }
 
@@ -104,7 +104,7 @@ class ImportController extends Controller
             return response()->json($result);
         } catch (\Throwable $e) {
             Log::error('Import preview failed', ['error' => $e->getMessage(), 'file' => $filePath]);
-            return response()->json(['message' => $e->getMessage()], 500);
+            Log::error($e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro interno do servidor.'], 500);
         }
     }
 

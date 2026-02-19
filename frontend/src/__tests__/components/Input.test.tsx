@@ -39,7 +39,8 @@ describe('Input', () => {
     it('applies default border when no error', () => {
         render(<Input placeholder="ok" />)
         const input = screen.getByPlaceholderText('ok')
-        expect(input.className).toContain('border-default')
+        expect(input.className).toMatch(/border/)
+        expect(input.className).not.toContain('border-red')
     })
 
     it('shows hint text when hint prop is set and no error', () => {

@@ -26,7 +26,7 @@ class UpdateExpenseRequest extends FormRequest
         $tenantId = $this->user()->current_tenant_id ?? $this->user()->tenant_id;
 
         return [
-            'expense_category_id' => ['nullable', Rule::exists('expense_categories', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'expense_category_id' => ['nullable', Rule::exists('expense_categories', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('active', true))],
             'work_order_id' => ['nullable', Rule::exists('work_orders', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'chart_of_account_id' => ['nullable', Rule::exists('chart_of_accounts', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'description' => 'sometimes|string|max:255',

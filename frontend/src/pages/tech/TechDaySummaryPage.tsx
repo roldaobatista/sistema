@@ -4,12 +4,9 @@ import {
     Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Receipt, Briefcase,
     Send, CheckCircle2, Loader2, ArrowLeft, Car,
 } from 'lucide-react'
-import { cn, getApiErrorMessage } from '@/lib/utils'
+import { cn, formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import api from '@/lib/api'
 import { toast } from 'sonner'
-
-const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
 const formatHours = (minutes: number) =>
     `${Math.floor(minutes / 60)}h ${minutes % 60}min`
@@ -173,11 +170,8 @@ export default function TechDaySummaryPage() {
     }, [userId, selectedDate])
 
     const kmTotal = useMemo(() => {
-        const fromEntries = timeEntries.reduce((sum: number, te: any) => sum + (te.distance_km || 0), 0)
-        if (fromEntries > 0) return fromEntries
-        const transportExpenses = expenses.filter((e: any) => ['Transporte', 'Combustível', 'Pedágio'].includes(e.category?.name || e.category))
-        return transportExpenses.length > 0 ? transportExpenses.length * 30 : 0
-    }, [timeEntries, expenses])
+        return timeEntries.reduce((sum: number, te: Record<string, unknown>) => sum + (Number(te.distance_km) || 0), 0)
+    }, [timeEntries])
 
     const hoursTotal = useMemo(() => {
         return Math.floor(summary.hoursWorked / 60)
@@ -219,6 +213,7 @@ export default function TechDaySummaryPage() {
                 <div className="flex items-center justify-between bg-card rounded-xl p-3">
                     <button
                         onClick={() => navigateDate(-1)}
+                        aria-label="Dia anterior"
                         className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700"
                     >
                         <ChevronLeft className="w-5 h-5 text-surface-600" />
@@ -231,6 +226,7 @@ export default function TechDaySummaryPage() {
                     </div>
                     <button
                         onClick={() => navigateDate(1)}
+                        aria-label="Próximo dia"
                         className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700"
                     >
                         <ChevronRight className="w-5 h-5 text-surface-600" />

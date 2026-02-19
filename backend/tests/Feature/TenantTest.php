@@ -437,4 +437,40 @@ class TenantTest extends TestCase
         $response->assertStatus(409)
             ->assertJsonPath('dependencies.users', 1);
     }
+
+    // ── RemoveUser edge-cases ──
+
+    public function test_cannot_remove_last_user_from_tenant(): void
+    {
+        $soloTenant = Tenant::factory()->create();
+        $soloUser = User::factory()->create([
+            'tenant_id' => $soloTenant->id,
+            'current_tenant_id' => $soloTenant->id,
+        ]);
+        $soloTenant->users()->attach($soloUser->id, ['is_default' => true]);
+
+        $response = $this->deleteJson("/api/v1/tenants/{$soloTenant->id}/users/{$soloUser->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Não é possível remover o último usuário da empresa. A empresa ficaria sem acesso.');
+    }
+
+    public function test_cannot_remove_self_from_tenant(): void
+    {
+        $response = $this->deleteJson("/api/v1/tenants/{$this->tenant->id}/users/{$this->user->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Você não pode remover a si mesmo da empresa.');
+    }
+
+    public function test_list_tenants_with_search(): void
+    {
+        Tenant::factory()->create(['name' => 'Buscável XYZ']);
+
+        $response = $this->getJson('/api/v1/tenants?search=Buscável');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('name')->toArray();
+        $this->assertContains('Buscável XYZ', $names);
+    }
 }

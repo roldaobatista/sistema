@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
     Search, Plus, FileText, Clock, User, AlertTriangle,
     Filter, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Download, Trash2, Upload,
+    CheckSquare, Square, UserCog, LayoutGrid,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
@@ -16,6 +17,8 @@ import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
+import ExcelExport from '@/components/os/ExcelExport'
+import FavoriteButton from '@/components/os/FavoriteButton'
 
 const statusConfig: Record<string, { label: string; variant: any; dot?: boolean }> = {
     open: { label: 'Aberta', variant: 'info', dot: true },
@@ -63,6 +66,19 @@ export function WorkOrdersListPage() {
     const [importing, setImporting] = useState(false)
     const [importResult, setImportResult] = useState<{ created: number; errors: string[] } | null>(null)
     const { hasPermission } = useAuthStore()
+
+    // Batch selection
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+    const [batchStatus, setBatchStatus] = useState('')
+    const [batchTechnician, setBatchTechnician] = useState('')
+    const toggleSelect = (id: number) => setSelectedIds(prev => {
+        const next = new Set(prev)
+        next.has(id) ? next.delete(id) : next.add(id)
+        return next
+    })
+    const toggleAll = () => setSelectedIds(prev =>
+        prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id))
+    )
 
     const { data: techniciansRes } = useQuery({
         queryKey: ['technicians-options'],
@@ -116,6 +132,34 @@ export function WorkOrdersListPage() {
             toast.error(err?.response?.data?.message || 'Erro ao excluir OS')
             setDeleteId(null)
         },
+    })
+
+    // Batch status change mutation
+    const batchStatusMut = useMutation({
+        mutationFn: (data: { ids: number[]; status: string }) =>
+            Promise.all(data.ids.map(id => api.post(`/work-orders/${id}/status`, { status: data.status }))),
+        onSuccess: () => {
+            toast.success(`Status atualizado para ${selectedIds.size} OS`)
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            broadcastQueryInvalidation(['work-orders', 'dashboard'], 'Ordem de Serviço')
+            setSelectedIds(new Set())
+            setBatchStatus('')
+        },
+        onError: () => toast.error('Erro ao atualizar status em lote'),
+    })
+
+    // Batch reassign mutation
+    const batchReassignMut = useMutation({
+        mutationFn: (data: { ids: number[]; assignee_id: number }) =>
+            Promise.all(data.ids.map(id => api.put(`/work-orders/${id}`, { assignee_id: data.assignee_id }))),
+        onSuccess: () => {
+            toast.success(`Técnico reatribuído para ${selectedIds.size} OS`)
+            qc.invalidateQueries({ queryKey: ['work-orders'] })
+            broadcastQueryInvalidation(['work-orders'], 'Ordem de Serviço')
+            setSelectedIds(new Set())
+            setBatchTechnician('')
+        },
+        onError: () => toast.error('Erro ao reatribuir em lote'),
     })
 
     // Import CSV
@@ -179,6 +223,59 @@ export function WorkOrdersListPage() {
                     ...(hasPermission('os.work_order.create') ? [{ label: 'Nova OS', onClick: () => navigate('/os/nova'), icon: <Plus className="h-4 w-4" /> }] : []),
                 ]}
             />
+
+            {/* Batch Actions Bar */}
+            {selectedIds.size > 0 && (
+                <div className="sticky top-0 z-10 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 shadow-elevated animate-in slide-in-from-top-2">
+                    <span className="text-sm font-medium text-brand-700">
+                        {selectedIds.size} selecionada{selectedIds.size > 1 ? 's' : ''}
+                    </span>
+                    <div className="flex-1" />
+                    {hasPermission('os.work_order.change_status') && (
+                        <div className="flex items-center gap-1.5">
+                            <select
+                                value={batchStatus}
+                                onChange={e => setBatchStatus(e.target.value)}
+                                aria-label="Status em lote"
+                                className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                            >
+                                <option value="">Alterar status...</option>
+                                {Object.entries(statusConfig).map(([k, v]) => (
+                                    <option key={k} value={k}>{v.label}</option>
+                                ))}
+                            </select>
+                            {batchStatus && (
+                                <Button size="sm" variant="outline"
+                                    loading={batchStatusMut.isPending}
+                                    onClick={() => batchStatusMut.mutate({ ids: [...selectedIds], status: batchStatus })}
+                                >Aplicar</Button>
+                            )}
+                        </div>
+                    )}
+                    {hasPermission('os.work_order.update') && (
+                        <div className="flex items-center gap-1.5">
+                            <select
+                                value={batchTechnician}
+                                onChange={e => setBatchTechnician(e.target.value)}
+                                aria-label="Reatribuir técnico em lote"
+                                className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                            >
+                                <option value="">Reatribuir...</option>
+                                {technicians.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
+                            {batchTechnician && (
+                                <Button size="sm" variant="outline"
+                                    loading={batchReassignMut.isPending}
+                                    onClick={() => batchReassignMut.mutate({ ids: [...selectedIds], assignee_id: Number(batchTechnician) })}
+                                >Aplicar</Button>
+                            )}
+                        </div>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Limpar</Button>
+                </div>
+            )}
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -311,9 +408,21 @@ export function WorkOrdersListPage() {
                         className="group block rounded-xl border border-default bg-surface-0 p-4 shadow-card hover:shadow-elevated hover:border-brand-200 transition-all duration-200"
                     >
                         <div className="flex items-start justify-between gap-4">
+                            {/* Checkbox */}
+                            <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(order.id) }}
+                                className="mt-0.5 flex-shrink-0 text-surface-400 hover:text-brand-500 transition-colors"
+                                aria-label={`Selecionar OS ${woIdentifier(order)}`}
+                            >
+                                {selectedIds.has(order.id)
+                                    ? <CheckSquare className="h-4.5 w-4.5 text-brand-500" />
+                                    : <Square className="h-4.5 w-4.5" />
+                                }
+                            </button>
                             {/* Left */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
+                                    <FavoriteButton workOrderId={order.id} />
                                     <span className="text-sm font-bold text-brand-600">{woIdentifier(order)}</span>
                                     <Badge variant={statusConfig[order.status]?.variant ?? 'default'} dot={statusConfig[order.status]?.dot}>
                                         {statusConfig[order.status]?.label ?? order.status}
@@ -390,6 +499,7 @@ export function WorkOrdersListPage() {
                     </div>
                     <div>
                         <input type="file" accept=".csv,.txt" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                            aria-label="Selecionar arquivo CSV para importação"
                             className="block w-full text-sm text-surface-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
                     </div>
                     {importResult && (

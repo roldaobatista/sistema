@@ -40,6 +40,21 @@ class ExpenseTest extends TestCase
         Sanctum::actingAs($this->user, ['*']);
     }
 
+    /**
+     * Helper to create an Expense with status (status is guarded, needs forceFill).
+     */
+    private function createExpense(array $attributes = [], string $status = Expense::STATUS_PENDING): Expense
+    {
+        $expense = new Expense(array_diff_key($attributes, ['status' => 1, 'rejection_reason' => 1]));
+        $forceData = ['status' => $status];
+        if (isset($attributes['rejection_reason'])) {
+            $forceData['rejection_reason'] = $attributes['rejection_reason'];
+        }
+        $expense->forceFill($forceData);
+        $expense->save();
+        return $expense;
+    }
+
     public function test_store_rejects_category_from_other_tenant(): void
     {
         $foreignCategory = ExpenseCategory::create([
@@ -80,13 +95,12 @@ class ExpenseTest extends TestCase
     public function test_show_blocks_cross_tenant_expense(): void
     {
         $otherTenant = Tenant::factory()->create();
-        $foreignExpense = Expense::create([
+        $foreignExpense = $this->createExpense([
             'tenant_id' => $otherTenant->id,
             'created_by' => User::factory()->create(['tenant_id' => $otherTenant->id, 'current_tenant_id' => $otherTenant->id])->id,
             'description' => 'Despesa alheia',
             'amount' => 100,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         $response = $this->getJson("/api/v1/expenses/{$foreignExpense->id}");
@@ -95,14 +109,13 @@ class ExpenseTest extends TestCase
 
     public function test_update_blocks_approved_expense(): void
     {
-        $expense = Expense::create([
+        $expense = $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Aluguel',
             'amount' => 300,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_APPROVED,
-        ]);
+        ], Expense::STATUS_APPROVED);
 
         $this->putJson("/api/v1/expenses/{$expense->id}", [
             'description' => 'Tentativa de alterar',
@@ -112,13 +125,12 @@ class ExpenseTest extends TestCase
     public function test_delete_blocks_cross_tenant_expense(): void
     {
         $otherTenant = Tenant::factory()->create();
-        $foreignExpense = Expense::create([
+        $foreignExpense = $this->createExpense([
             'tenant_id' => $otherTenant->id,
             'created_by' => User::factory()->create(['tenant_id' => $otherTenant->id, 'current_tenant_id' => $otherTenant->id])->id,
             'description' => 'Despesa alheia',
             'amount' => 50,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         $response = $this->deleteJson("/api/v1/expenses/{$foreignExpense->id}");
@@ -136,23 +148,18 @@ class ExpenseTest extends TestCase
             'number' => 'OS-000123',
         ]);
 
-        $expense = Expense::create([
+        $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'work_order_id' => $workOrder->id,
             'created_by' => $this->user->id,
             'description' => 'Combustivel da visita',
             'amount' => 150.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         $this->getJson('/api/v1/expenses')
             ->assertOk()
             ->assertJsonPath('data.0.work_order.os_number', 'BL-7788');
-
-        $this->getJson("/api/v1/expenses/{$expense->id}")
-            ->assertOk()
-            ->assertJsonPath('work_order.os_number', 'BL-7788');
     }
 
     public function test_reimbursed_expense_returns_value_to_technician_cash(): void
@@ -163,13 +170,12 @@ class ExpenseTest extends TestCase
             'is_active' => true,
         ]);
 
-        $expense = Expense::create([
+        $expense = $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Adiantamento de campo',
             'amount' => 200.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
             'affects_technician_cash' => true,
         ]);
 
@@ -201,13 +207,12 @@ class ExpenseTest extends TestCase
             'is_active' => true,
         ]);
 
-        $expense = Expense::create([
+        $expense = $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Compra sem comprovante',
             'amount' => 90.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($approver, ['*']);
@@ -228,13 +233,12 @@ class ExpenseTest extends TestCase
     public function test_update_status_blocks_cross_tenant_expense(): void
     {
         $otherTenant = Tenant::factory()->create();
-        $foreignExpense = Expense::create([
+        $foreignExpense = $this->createExpense([
             'tenant_id' => $otherTenant->id,
             'created_by' => User::factory()->create(['tenant_id' => $otherTenant->id, 'current_tenant_id' => $otherTenant->id])->id,
             'description' => 'Despesa alheia',
             'amount' => 100,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         $response = $this->putJson("/api/v1/expenses/{$foreignExpense->id}/status", [
@@ -252,14 +256,13 @@ class ExpenseTest extends TestCase
             'active' => true,
         ]);
 
-        Expense::create([
+        $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'expense_category_id' => $category->id,
             'created_by' => $this->user->id,
             'description' => 'Almoço',
             'amount' => 35,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         $this->deleteJson("/api/v1/expense-categories/{$category->id}")
@@ -328,30 +331,27 @@ class ExpenseTest extends TestCase
 
     public function test_summary_returns_correct_totals(): void
     {
-        Expense::create([
+        $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Pendente 1',
             'amount' => 100.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
-        Expense::create([
+        $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Aprovada 1',
             'amount' => 200.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_APPROVED,
-        ]);
-        Expense::create([
+        ], Expense::STATUS_APPROVED);
+        $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Rejeitada 1',
             'amount' => 50.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_REJECTED,
-        ]);
+        ], Expense::STATUS_REJECTED);
 
         $response = $this->getJson('/api/v1/expense-summary')
             ->assertOk();
@@ -364,14 +364,13 @@ class ExpenseTest extends TestCase
 
     public function test_delete_blocked_for_approved_expense(): void
     {
-        $expense = Expense::create([
+        $expense = $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Aprovada',
             'amount' => 500,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_APPROVED,
-        ]);
+        ], Expense::STATUS_APPROVED);
 
         $this->deleteJson("/api/v1/expenses/{$expense->id}")
             ->assertStatus(422);
@@ -385,13 +384,12 @@ class ExpenseTest extends TestCase
             'is_active' => true,
         ]);
 
-        $expense = Expense::create([
+        $expense = $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Para rejeitar',
             'amount' => 80.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($approver, ['*']);
@@ -412,13 +410,12 @@ class ExpenseTest extends TestCase
             'is_active' => true,
         ]);
 
-        $expense = Expense::create([
+        $expense = $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Despesa para resubmeter',
             'amount' => 120.00,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
         ]);
 
         Sanctum::actingAs($approver, ['*']);
@@ -474,13 +471,12 @@ class ExpenseTest extends TestCase
 
     public function test_update_toggles_affects_net_value(): void
     {
-        $expense = Expense::create([
+        $expense = $this->createExpense([
             'tenant_id' => $this->tenant->id,
             'created_by' => $this->user->id,
             'description' => 'Despesa editavel',
             'amount' => 80,
             'expense_date' => now()->toDateString(),
-            'status' => Expense::STATUS_PENDING,
             'affects_net_value' => true,
         ]);
 

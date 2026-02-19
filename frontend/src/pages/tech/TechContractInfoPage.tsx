@@ -100,7 +100,10 @@ export default function TechContractInfoPage() {
                         (w: WorkOrder & { recurring_contract_id?: number }) => w.recurring_contract_id === first.id
                     )
                     setVisitHistory(byContract.slice(0, 10))
-                }).catch(() => {})
+                }).catch(() => {
+                    setVisitHistory([])
+                    toast.error('Não foi possível carregar histórico de visitas')
+                })
             })
             .catch(() => toast.error('Não foi possível carregar os dados'))
             .finally(() => setLoading(false))

@@ -18,10 +18,13 @@ class StockDisposal extends Model
         'warehouse_id', 'approved_by', 'approved_at', 'completed_at', 'created_by',
     ];
 
-    protected $casts = [
-        'approved_at' => 'datetime',
-        'completed_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'approved_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
+    }
 
     public function items(): HasMany
     {

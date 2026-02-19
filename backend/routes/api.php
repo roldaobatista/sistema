@@ -73,8 +73,11 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:tv.dashboard.view')->group(function () {
             Route::get('/tv/dashboard', [\App\Http\Controllers\TvDashboardController::class, 'index']);
             Route::get('/tv/kpis', [\App\Http\Controllers\TvDashboardController::class, 'kpis']);
+            Route::get('/tv/kpis/trend', [\App\Http\Controllers\TvDashboardController::class, 'kpisTrend']);
             Route::get('/tv/map-data', [\App\Http\Controllers\TvDashboardController::class, 'mapData']);
             Route::get('/tv/alerts', [\App\Http\Controllers\TvDashboardController::class, 'alerts']);
+            Route::get('/tv/alerts/history', [\App\Http\Controllers\TvDashboardController::class, 'alertsHistory']);
+            Route::get('/tv/productivity', [\App\Http\Controllers\TvDashboardController::class, 'productivity']);
         });
 
         // TV Camera Management
@@ -545,7 +548,7 @@ Route::prefix('v1')->group(function () {
             Route::put('work-orders/{work_order}/items/{item}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'updateItem']);
             Route::delete('work-orders/{work_order}/items/{item}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'destroyItem']);
         });
-        Route::middleware('check.permission:os.work_order.change_status')->match(['post', 'patch'], 'work-orders/{work_order}/status', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'updateStatus']);
+        Route::middleware('check.permission:os.work_order.change_status')->match(['put', 'post', 'patch'], 'work-orders/{work_order}/status', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'updateStatus']);
         Route::middleware('check.permission:os.work_order.create')->post('work-orders/{work_order}/duplicate', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'duplicate']);
         Route::middleware('check.permission:os.work_order.export')->get('work-orders-export', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'exportCsv']);
         Route::middleware('check.permission:os.work_order.create')->post('work-orders-import', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'importCsv']);
@@ -587,6 +590,11 @@ Route::prefix('v1')->group(function () {
 
         // Audit Trail
         Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/audit-trail', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'auditTrail']);
+
+        // Time Logs (Timer de Execução)
+        Route::middleware('check.permission:os.work_order.view')->get('work-order-time-logs', [\App\Http\Controllers\WorkOrderTimeLogController::class, 'index']);
+        Route::middleware('check.permission:os.work_order.update')->post('work-order-time-logs/start', [\App\Http\Controllers\WorkOrderTimeLogController::class, 'start']);
+        Route::middleware('check.permission:os.work_order.update')->post('work-order-time-logs/{workOrderTimeLog}/stop', [\App\Http\Controllers\WorkOrderTimeLogController::class, 'stop']);
 
         // Satisfação do Cliente (NPS)
         Route::middleware('check.permission:os.work_order.view')->get('work-orders/{work_order}/satisfaction', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'satisfaction']);
@@ -964,7 +972,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('check.permission:reports.customers_report.view')->get('/reports/customers', [\App\Http\Controllers\Api\V1\ReportController::class, 'customers']);
 
     // Export Routes
-    Route::get('/reports/{type}/export', [\App\Http\Controllers\Api\V1\ReportController::class, 'export']);
+    Route::middleware('check.permission:reports.os_report.view')->get('/reports/{type}/export', [\App\Http\Controllers\Api\V1\ReportController::class, 'export']);
 
         // Analytics Hub (Fase 2 — Unified Analytics)
         Route::middleware('check.permission:reports.analytics.view')->group(function () {
@@ -1197,6 +1205,34 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:quotes.quote.convert')->post('quotes/{quote}/convert-to-chamado', [\App\Http\Controllers\Api\V1\QuoteController::class, 'convertToServiceCall']);
         Route::middleware('check.permission:quotes.quote.delete')->delete('quotes/{quote}', [\App\Http\Controllers\Api\V1\QuoteController::class, 'destroy']);
 
+        // ── Melhorias Orçamentos (30 funcionalidades) ──
+        Route::middleware('check.permission:quotes.quote.view')->group(function () {
+            Route::get('quotes-advanced-summary', [\App\Http\Controllers\Api\V1\QuoteController::class, 'advancedSummary']);
+            Route::get('quotes/{quote}/tags', [\App\Http\Controllers\Api\V1\QuoteController::class, 'tags']);
+            Route::get('quote-tags', [\App\Http\Controllers\Api\V1\QuoteController::class, 'listTags']);
+            Route::get('quote-templates', [\App\Http\Controllers\Api\V1\QuoteController::class, 'listTemplates']);
+            Route::post('quotes/compare', [\App\Http\Controllers\Api\V1\QuoteController::class, 'compareQuotes']);
+            Route::get('quotes/{quote}/revisions', [\App\Http\Controllers\Api\V1\QuoteController::class, 'compareRevisions']);
+            Route::get('quotes/{quote}/whatsapp', [\App\Http\Controllers\Api\V1\QuoteController::class, 'whatsappLink']);
+            Route::get('quotes/{quote}/installments', [\App\Http\Controllers\Api\V1\QuoteController::class, 'installmentSimulation']);
+        });
+        Route::middleware('check.permission:quotes.quote.update')->group(function () {
+            Route::post('quotes/{quote}/tags', [\App\Http\Controllers\Api\V1\QuoteController::class, 'syncTags']);
+        });
+        Route::middleware('check.permission:quotes.quote.create')->group(function () {
+            Route::post('quote-tags', [\App\Http\Controllers\Api\V1\QuoteController::class, 'storeTag']);
+            Route::post('quote-templates', [\App\Http\Controllers\Api\V1\QuoteController::class, 'storeTemplate']);
+            Route::put('quote-templates/{template}', [\App\Http\Controllers\Api\V1\QuoteController::class, 'updateTemplate']);
+            Route::post('quote-templates/{template}/create-quote', [\App\Http\Controllers\Api\V1\QuoteController::class, 'createFromTemplate']);
+        });
+        Route::middleware('check.permission:quotes.quote.delete')->group(function () {
+            Route::delete('quote-tags/{tag}', [\App\Http\Controllers\Api\V1\QuoteController::class, 'destroyTag']);
+            Route::delete('quote-templates/{template}', [\App\Http\Controllers\Api\V1\QuoteController::class, 'destroyTemplate']);
+        });
+        Route::middleware('check.permission:quotes.quote.send')->post('quotes/{quote}/email', [\App\Http\Controllers\Api\V1\QuoteController::class, 'sendEmail']);
+        Route::middleware('check.permission:quotes.quote.internal_approve')->post('quotes/{quote}/approve-level2', [\App\Http\Controllers\Api\V1\QuoteController::class, 'approveLevel2']);
+
+
         // Chamados Técnicos
         Route::middleware('check.permission:service_calls.service_call.view')->group(function () {
             Route::get('service-calls', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'index']);
@@ -1207,21 +1243,36 @@ Route::prefix('v1')->group(function () {
             Route::get('service-calls/agenda', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'agenda']); // compat
             Route::get('service-calls-summary', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'summary']);
             Route::get('service-calls-export', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'exportCsv']);
+            Route::get('service-calls-kpi', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'dashboardKpi']);
+            Route::get('service-calls/check-duplicate', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'checkDuplicate']);
             Route::get('service-calls/{serviceCall}', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'show']);
             Route::get('service-calls/{serviceCall}/comments', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'comments']);
             Route::get('service-calls/{serviceCall}/audit-trail', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'auditTrail']);
+            // Templates
+            Route::get('service-call-templates', [\App\Http\Controllers\Api\V1\ServiceCallTemplateController::class, 'index']);
+            Route::get('service-call-templates/active', [\App\Http\Controllers\Api\V1\ServiceCallTemplateController::class, 'activeList']);
         });
         Route::middleware('check.permission:service_calls.service_call.create')->group(function () {
             Route::post('service-calls', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'store']);
             Route::post('service-calls/{serviceCall}/convert-to-os', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'convertToWorkOrder']);
             Route::post('service-calls/{serviceCall}/comments', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'addComment']);
+            Route::post('service-calls/bulk-action', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'bulkAction']);
+            Route::post('service-calls/{serviceCall}/reschedule', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'reschedule']);
+            Route::post('service-calls/webhook', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'webhookCreate']);
+            // Templates
+            Route::post('service-call-templates', [\App\Http\Controllers\Api\V1\ServiceCallTemplateController::class, 'store']);
         });
         Route::middleware('check.permission:service_calls.service_call.update')->group(function () {
             Route::put('service-calls/{serviceCall}', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'update']);
             Route::put('service-calls/{serviceCall}/status', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'updateStatus']);
+            // Templates
+            Route::put('service-call-templates/{serviceCallTemplate}', [\App\Http\Controllers\Api\V1\ServiceCallTemplateController::class, 'update']);
         });
         Route::middleware('check.permission:service_calls.service_call.assign')->put('service-calls/{serviceCall}/assign', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'assignTechnician']);
-        Route::middleware('check.permission:service_calls.service_call.delete')->delete('service-calls/{serviceCall}', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'destroy']);
+        Route::middleware('check.permission:service_calls.service_call.delete')->group(function () {
+            Route::delete('service-calls/{serviceCall}', [\App\Http\Controllers\Api\V1\ServiceCallController::class, 'destroy']);
+            Route::delete('service-call-templates/{serviceCallTemplate}', [\App\Http\Controllers\Api\V1\ServiceCallTemplateController::class, 'destroy']);
+        });
 
         // Caixa do Técnico - endpoints mobile (self-service, rotas literais antes das parametrizadas)
         Route::get('technician-cash/my-fund', [\App\Http\Controllers\Api\V1\TechnicianCashController::class, 'myFund']);
@@ -1390,6 +1441,7 @@ Route::prefix('v1')->group(function () {
                 Route::put('deals/{deal}/stage', [\App\Http\Controllers\Api\V1\CrmController::class, 'dealsUpdateStage']);
                 Route::put('deals/{deal}/won', [\App\Http\Controllers\Api\V1\CrmController::class, 'dealsMarkWon']);
                 Route::put('deals/{deal}/lost', [\App\Http\Controllers\Api\V1\CrmController::class, 'dealsMarkLost']);
+                Route::post('deals/bulk-update', [\App\Http\Controllers\Api\V1\CrmController::class, 'dealsBulkUpdate']);
                 Route::put('activities/{activity}', [\App\Http\Controllers\Api\V1\CrmController::class, 'activitiesUpdate']);
             });
             Route::middleware('check.permission:crm.deal.delete')->group(function () {
@@ -1569,6 +1621,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('competitors', [$cf, 'storeDealCompetitor']);
                 Route::put('competitors/{competitor}', [$cf, 'updateDealCompetitor']);
             });
+
+            // CSV Import/Export (#15)
+            Route::middleware('check.permission:crm.deal.view')->get('deals/export-csv', [$cf, 'exportDealsCsv']);
+            Route::middleware('check.permission:crm.deal.update')->post('deals/import-csv', [$cf, 'importDealsCsv']);
+
+            // Calendar Activities Integration (#14)
+            Route::middleware('check.permission:crm.deal.view')->get('calendar/activities', [$cf, 'calendarActivities']);
         });
 
         // ─── CRM Field Management (20 novas funcionalidades de gestão) ─────
@@ -1724,12 +1783,12 @@ Route::prefix('v1')->group(function () {
             Route::middleware('check.permission:estoque.view')->get('stock-demand', [$si, 'stockDemandForecast']);
 
             // Quality / CAPA
-            Route::middleware('check.permission:qualidade.procedure.view')->group(function () use ($si) {
+            Route::middleware('check.permission:quality.procedure.view')->group(function () use ($si) {
                 Route::get('capa', [$si, 'capaRecords']);
                 Route::get('quality-dashboard', [$si, 'qualityDashboard']);
             });
-            Route::middleware('check.permission:qualidade.procedure.create')->post('capa', [$si, 'storeCapaRecord']);
-            Route::middleware('check.permission:qualidade.procedure.update')->put('capa/{record}', [$si, 'updateCapaRecord']);
+            Route::middleware('check.permission:quality.procedure.create')->post('capa', [$si, 'storeCapaRecord']);
+            Route::middleware('check.permission:quality.procedure.update')->put('capa/{record}', [$si, 'updateCapaRecord']);
 
             // WO Cost Estimate
             Route::middleware('check.permission:os.work_order.view')->get('work-orders/{workOrder}/cost-estimate', [$si, 'workOrderCostEstimate']);
@@ -1737,15 +1796,19 @@ Route::prefix('v1')->group(function () {
 
         // ─── Perfil do Usuário ───
         // FIX-B5: Usar o controller de perfil (Api\V1\UserController), não o IAM
-        Route::post('profile/change-password', [\App\Http\Controllers\Api\V1\UserController::class, 'changePassword']);
+        // Rota profile/change-password removida (duplicata da L1386)
 
         // (Rotas reports/suppliers e reports/stock já registradas na seção de Relatórios â€” L474-475)
 
         // â?,â?,â?, Operações (Fase 5) â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,
         Route::middleware('check.permission:os.work_order.view')->group(function () {
-            Route::apiResource('service-checklists', \App\Http\Controllers\Api\V1\ServiceChecklistController::class);
-            Route::apiResource('sla-policies', \App\Http\Controllers\Api\V1\SlaPolicyController::class);
+            Route::apiResource('service-checklists', \App\Http\Controllers\Api\V1\ServiceChecklistController::class)->only(['index', 'show']);
+            Route::apiResource('sla-policies', \App\Http\Controllers\Api\V1\SlaPolicyController::class)->only(['index', 'show']);
             Route::get('work-orders/{work_order}/checklist-responses', [\App\Http\Controllers\Api\V1\WorkOrderChecklistResponseController::class, 'index']);
+        });
+        Route::middleware('check.permission:os.work_order.create')->group(function () {
+            Route::apiResource('service-checklists', \App\Http\Controllers\Api\V1\ServiceChecklistController::class)->only(['store', 'update', 'destroy']);
+            Route::apiResource('sla-policies', \App\Http\Controllers\Api\V1\SlaPolicyController::class)->only(['store', 'update', 'destroy']);
         });
         Route::middleware('check.permission:os.work_order.update')->group(function () {
             Route::post('work-orders/{work_order}/checklist-responses', [\App\Http\Controllers\Api\V1\WorkOrderChecklistResponseController::class, 'store']);
@@ -1803,11 +1866,36 @@ Route::prefix('v1')->group(function () {
                 Route::get('items', [\App\Http\Controllers\Api\V1\CentralController::class, 'index']);
                 Route::get('items/{centralItem}', [\App\Http\Controllers\Api\V1\CentralController::class, 'show']);
                 Route::post('items/{centralItem}/comments', [\App\Http\Controllers\Api\V1\CentralController::class, 'comment']);
+
+                // Subtasks
+                Route::get('items/{centralItem}/subtasks', [\App\Http\Controllers\Api\V1\CentralController::class, 'subtasks']);
+                Route::post('items/{centralItem}/subtasks', [\App\Http\Controllers\Api\V1\CentralController::class, 'storeSubtask']);
+                Route::patch('items/{centralItem}/subtasks/{subtask}', [\App\Http\Controllers\Api\V1\CentralController::class, 'updateSubtask']);
+                Route::delete('items/{centralItem}/subtasks/{subtask}', [\App\Http\Controllers\Api\V1\CentralController::class, 'destroySubtask']);
+
+                // Attachments
+                Route::get('items/{centralItem}/attachments', [\App\Http\Controllers\Api\V1\CentralController::class, 'attachments']);
+                Route::post('items/{centralItem}/attachments', [\App\Http\Controllers\Api\V1\CentralController::class, 'storeAttachment']);
+                Route::delete('items/{centralItem}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\CentralController::class, 'destroyAttachment']);
+
+                // Timer / Time Entries
+                Route::get('items/{centralItem}/time-entries', [\App\Http\Controllers\Api\V1\CentralController::class, 'timeEntries']);
+                Route::post('items/{centralItem}/timer/start', [\App\Http\Controllers\Api\V1\CentralController::class, 'startTimer']);
+                Route::post('items/{centralItem}/timer/stop', [\App\Http\Controllers\Api\V1\CentralController::class, 'stopTimer']);
+
+                // Dependencies
+                Route::post('items/{centralItem}/dependencies', [\App\Http\Controllers\Api\V1\CentralController::class, 'addDependency']);
+                Route::delete('items/{centralItem}/dependencies/{dependsOnId}', [\App\Http\Controllers\Api\V1\CentralController::class, 'removeDependency']);
+
+                // iCal Feed
+                Route::get('ical-feed', [\App\Http\Controllers\Api\V1\CentralController::class, 'icalFeed']);
             });
 
             Route::middleware('check.permission:central.create.task')->post('items', [\App\Http\Controllers\Api\V1\CentralController::class, 'store']);
             Route::middleware('check.permission:central.close.self')->patch('items/{centralItem}', [\App\Http\Controllers\Api\V1\CentralController::class, 'update']);
             Route::middleware('check.permission:central.assign')->post('items/{centralItem}/assign', [\App\Http\Controllers\Api\V1\CentralController::class, 'assign']);
+            Route::middleware('check.permission:central.close.self')->post('items/bulk-update', [\App\Http\Controllers\Api\V1\CentralController::class, 'bulkUpdate']);
+            Route::middleware('check.permission:central.item.view')->get('items-export', [\App\Http\Controllers\Api\V1\CentralController::class, 'export']);
 
             // Dashboard gerencial
             Route::middleware('check.permission:central.manage.kpis')->group(function () {
@@ -2063,12 +2151,14 @@ Route::prefix('v1')->group(function () {
             Route::get('emails', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'index']);
             Route::get('emails/stats', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'stats']);
             Route::get('emails/{email}', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'show']);
+        });
+        Route::middleware('check.permission:email.inbox.manage')->group(function () {
             Route::post('emails/{email}/toggle-star', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'toggleStar']);
             Route::post('emails/{email}/mark-read', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'markRead']);
             Route::post('emails/{email}/mark-unread', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'markUnread']);
             Route::post('emails/{email}/archive', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'archive']);
             Route::post('emails/{email}/link-entity', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'linkEntity']);
-            Route::middleware('check.permission:admin.settings.view')->post('emails/batch-action', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'batchAction']);
+            Route::middleware('check.permission:admin.settings.manage')->post('emails/batch-action', [\App\Http\Controllers\Api\V1\Email\EmailController::class, 'batchAction']);
         });
         // Send / Reply / Forward
         Route::middleware('check.permission:email.inbox.send')->group(function () {
@@ -2249,18 +2339,22 @@ Route::prefix('v1')->group(function () {
         // ═══ Financeiro Avançado ══════════════════════════════════════
         Route::prefix('financial')->middleware('check.permission:financeiro.view')->group(function () {
             Route::get('supplier-contracts', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'supplierContracts']);
-            Route::post('supplier-contracts', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'storeSupplierContract']);
-            Route::post('tax-calculation', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'taxCalculation']);
             Route::get('expense-reimbursements', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'expenseReimbursements']);
-            Route::post('expense-reimbursements/{expense}/approve', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'approveReimbursement'])
-                ->middleware('check.permission:financeiro.approve');
             Route::get('checks', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'checks']);
-            Route::post('checks', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'storeCheck']);
-            Route::patch('checks/{check}/status', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'updateCheckStatus']);
-            Route::post('receivables-simulator', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'receivablesSimulator']);
             Route::get('collection-rules', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'collectionRules']);
             Route::get('supplier-advances', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'supplierAdvances']);
+            // Receivables simulator (read-only calculation)
+            Route::post('receivables-simulator', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'receivablesSimulator']);
+            Route::post('tax-calculation', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'taxCalculation']);
+        });
+        Route::prefix('financial')->middleware('check.permission:financeiro.payment.create')->group(function () {
+            Route::post('supplier-contracts', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'storeSupplierContract']);
+            Route::post('checks', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'storeCheck']);
+            Route::patch('checks/{check}/status', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'updateCheckStatus']);
             Route::post('supplier-advances', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'storeSupplierAdvance']);
+        });
+        Route::prefix('financial')->middleware('check.permission:financeiro.approve')->group(function () {
+            Route::post('expense-reimbursements/{expense}/approve', [\App\Http\Controllers\Api\V1\Financial\FinancialAdvancedController::class, 'approveReimbursement']);
         });
 
         // ═══ Estoque Avançado ═════════════════════════════════════════
@@ -2308,45 +2402,49 @@ Route::prefix('v1')->group(function () {
         Route::prefix('crm-advanced')->middleware('check.permission:crm.view')->group(function () {
             Route::get('proposal-pdf/{quoteId}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'generateProposalPdf']);
             Route::get('multi-option-quotes', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'multiOptionQuotes']);
-            Route::post('quotes/{quoteId}/variant', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'createQuoteVariant']);
             Route::get('client-heat-map', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'clientHeatMap']);
             Route::get('sales-gamification', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'salesGamification']);
-            Route::post('import-leads', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'importLeads']);
             Route::get('email-campaigns', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'emailCampaigns']);
-            Route::post('email-campaigns', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'storeEmailCampaign']);
-            Route::middleware('check.permission:admin.settings.view')->post('whatsapp/send', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'sendWhatsApp']);
             Route::middleware('check.permission:admin.settings.view')->get('whatsapp/history', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'whatsAppHistory']);
             Route::middleware('check.permission:portal.view')->get('self-service/catalog', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'selfServiceCatalog']);
+        });
+        Route::prefix('crm-advanced')->middleware('check.permission:crm.manage')->group(function () {
+            Route::post('quotes/{quoteId}/variant', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'createQuoteVariant']);
+            Route::post('import-leads', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'importLeads']);
+            Route::post('email-campaigns', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'storeEmailCampaign']);
+            Route::middleware('check.permission:admin.settings.manage')->post('whatsapp/send', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'sendWhatsApp']);
             Route::middleware('check.permission:portal.view')->post('self-service/quote-request', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'selfServiceQuoteRequest']);
         });
 
         // ═══ Laboratório Avançado ═════════════════════════════════════
         Route::prefix('lab-advanced')->middleware('check.permission:qualidade.view')->group(function () {
-            Route::post('rr-study', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'rrStudy']);
             Route::get('sensor-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'sensorReadings']);
+            Route::get('retention-samples', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'retentionSamples']);
+            Route::get('logbook', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'labLogbook']);
+            Route::get('raw-data-backups', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'rawDataBackups']);
+            Route::middleware('check.permission:os.work_order.view')->get('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'scaleReadings']);
+        });
+        Route::prefix('lab-advanced')->middleware('check.permission:qualidade.manage')->group(function () {
+            Route::post('rr-study', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'rrStudy']);
             Route::post('sensor-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeSensorReading']);
             Route::post('sign-certificate', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'signCertificate']);
-            Route::get('retention-samples', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'retentionSamples']);
             Route::post('retention-samples', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeRetentionSample']);
-            Route::get('logbook', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'labLogbook']);
             Route::post('logbook', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeLogbookEntry']);
-            Route::get('raw-data-backups', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'rawDataBackups']);
             Route::post('raw-data-backups', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'triggerRawDataBackup']);
-            Route::middleware('check.permission:os.work_order.view')->get('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'scaleReadings']);
-            Route::middleware('check.permission:os.work_order.view')->post('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeScaleReading']);
+            Route::middleware('check.permission:os.work_order.create')->post('scale-readings', [\App\Http\Controllers\Api\V1\LabAdvancedController::class, 'storeScaleReading']);
         });
 
         // ═══ Portal do Cliente ════════════════════════════════════════
         Route::prefix('portal')->group(function () {
             Route::middleware('check.permission:cadastros.customer.view')->get('dashboard/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'executiveDashboard']);
             Route::middleware('check.permission:os.work_order.view')->post('certificates/batch-download', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'batchCertificateDownload']);
-            Route::middleware('check.permission:chamados.service_call.view')->post('tickets/qr-code', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'openTicketByQrCode']);
-            Route::post('quotes/{quoteId}/approve', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'oneClickApproval']);
+            Route::middleware('check.permission:service_calls.service_call.view')->post('tickets/qr-code', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'openTicketByQrCode']);
+            Route::middleware('check.permission:quotes.quote.approve')->post('quotes/{quoteId}/approve', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'oneClickApproval']);
             Route::middleware('check.permission:os.work_order.view')->get('chat/{ticketId}/messages', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'chatMessages']);
             Route::middleware('check.permission:os.work_order.view')->post('chat/{ticketId}/messages', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'sendChatMessage']);
-            Route::get('financial/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'financialHistory']);
-            Route::middleware('check.permission:chamados.service_call.view')->get('schedule/slots', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'availableSlots']);
-            Route::middleware('check.permission:chamados.service_call.view')->post('schedule/book', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'bookSlot']);
+            Route::middleware('check.permission:financeiro.accounts_receivable.view')->get('financial/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'financialHistory']);
+            Route::middleware('check.permission:service_calls.service_call.view')->get('schedule/slots', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'availableSlots']);
+            Route::middleware('check.permission:service_calls.service_call.view')->post('schedule/book', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'bookSlot']);
             Route::middleware('check.permission:admin.settings.view')->post('push/subscribe', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'registerPushSubscription']);
             Route::middleware('check.permission:admin.settings.view')->get('knowledge-base', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'knowledgeBase']);
             Route::middleware('check.permission:admin.settings.view')->post('knowledge-base', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'storeArticle']);
@@ -2358,7 +2456,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('check.permission:os.work_order.view')->get('nps', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'npsSurveys']);
             Route::middleware('check.permission:os.work_order.view')->post('nps', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'submitNps']);
             Route::middleware('check.permission:equipamentos.equipment.view')->get('equipment-map/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'equipmentMap']);
-            Route::middleware('check.permission:relatorios.report.view')->post('bi-report/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'biSelfServiceReport']);
+            Route::middleware('check.permission:reports.analytics.view')->post('bi-report/{customerId}', [\App\Http\Controllers\Api\V1\PortalClienteController::class, 'biSelfServiceReport']);
         });
 
         // ═══ Integrações ══════════════════════════════════════════════
@@ -2380,7 +2478,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('check.permission:admin.settings.view')->get('swagger', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'swaggerDoc']);
             Route::middleware('check.permission:admin.settings.view')->get('email-plugin/manifest', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'emailPluginManifest']);
             Route::middleware('check.permission:admin.settings.view')->post('email-plugin/webhook', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'emailPluginWebhook']);
-            Route::middleware('check.permission:relatorios.report.view')->post('power-bi/export', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'powerBiDataExport']);
+            Route::middleware('check.permission:reports.analytics.view')->post('power-bi/export', [\App\Http\Controllers\Api\V1\IntegrationController::class, 'powerBiDataExport']);
         });
 
         // ═══ Segurança ════════════════════════════════════════════════
@@ -2410,28 +2508,36 @@ Route::prefix('v1')->group(function () {
         // ═══ Frota Avançada (GPS, Pedágio, Rotas) ═════════════════════
         Route::prefix('fleet-advanced')->middleware('check.permission:fleet.vehicle.view')->group(function () {
             Route::get('tolls', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'tollTransactions']);
-            Route::post('tolls', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeTollTransaction']);
             Route::get('gps', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'gpsTracking']);
-            Route::post('gps', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeGpsPosition']);
             Route::get('route-analysis', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'routeAnalysis']);
+        });
+        Route::prefix('fleet-advanced')->middleware('check.permission:fleet.vehicle.create')->group(function () {
+            Route::post('tolls', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeTollTransaction']);
+            Route::post('gps', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeGpsPosition']);
         });
 
         // ═══ RH Avançado (Portal, EPI, Gamificação, Organograma) ══════
         Route::prefix('hr-advanced')->middleware('check.permission:hr.dashboard.view')->group(function () {
             Route::get('employee-portal', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'employeePortal']);
             Route::get('epi', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'epiList']);
-            Route::post('epi', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeEpi']);
             Route::get('gamification', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'productivityGamification']);
             Route::get('org-chart', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'orgChart']);
+        });
+        Route::prefix('hr-advanced')->middleware('check.permission:rh.manage')->group(function () {
+            Route::post('epi', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'storeEpi']);
         });
 
         // ═══ Financeiro Avançado (Boleto, NFS-e, Gateway, Portal, Bloqueio) ═
         Route::prefix('financial-extra')->middleware('check.permission:financeiro.view')->group(function () {
+            Route::get('payment-gateway', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'paymentGatewayConfig']);
+            Route::get('portal-overview', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'financialPortalOverview']);
+        });
+        Route::prefix('financial-extra')->middleware('check.permission:financeiro.payment.create')->group(function () {
             Route::post('boleto', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'generateBoleto']);
             Route::post('nfse', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'emitNfse']);
-            Route::get('payment-gateway', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'paymentGatewayConfig']);
             Route::post('payment-gateway/pay', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'processOnlinePayment']);
-            Route::get('portal-overview', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'financialPortalOverview']);
+        });
+        Route::prefix('financial-extra')->middleware('check.permission:admin.settings.manage')->group(function () {
             Route::post('customers/{customerId}/block', [\App\Http\Controllers\Api\V1\RemainingModulesController::class, 'toggleCustomerBlock']);
         });
 
@@ -2545,10 +2651,10 @@ Route::prefix('v1')->group(function () {
             Route::get('natural-language-report', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'naturalLanguageReport']);
             Route::get('customer-clustering', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'customerClustering']);
             Route::get('equipment-image-analysis', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'equipmentImageAnalysis']);
-            Route::middleware('check.permission:relatorios.report.view')->get('demand-forecast', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'demandForecast']);
+            Route::middleware('check.permission:reports.analytics.view')->get('demand-forecast', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'demandForecast']);
             Route::middleware('check.permission:os.work_order.view')->get('route-optimization', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'aiRouteOptimization']);
-            Route::middleware('check.permission:chamados.service_call.view')->get('smart-ticket-labeling', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'smartTicketLabeling']);
-            Route::middleware('check.permission:relatorios.report.view')->get('churn-prediction', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'churnPrediction']);
+            Route::middleware('check.permission:service_calls.service_call.view')->get('smart-ticket-labeling', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'smartTicketLabeling']);
+            Route::middleware('check.permission:reports.analytics.view')->get('churn-prediction', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'churnPrediction']);
             Route::middleware('check.permission:os.work_order.view')->get('service-summary/{workOrderId}', [\App\Http\Controllers\Api\V1\AIAnalyticsController::class, 'serviceSummary']);
         });
 
@@ -2563,7 +2669,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('{calibration}/excentricity', [$fc, 'storeExcentricityTest']);
                 Route::post('{calibration}/weights', [$fc, 'syncCalibrationWeights']);
                 Route::post('{calibration}/generate-certificate', [$fc, 'generateCertificate']);
+                Route::post('{calibration}/repeatability', [$fc, 'storeRepeatabilityTest']);
             });
+            // Wizard endpoints
+            Route::get('equipment/{equipment}/prefill', [$fc, 'prefillCalibration']);
+            Route::get('equipment/{equipment}/suggest-points', [$fc, 'suggestMeasurementPoints']);
+            Route::post('calculate-ema', [$fc, 'calculateEma']);
+            Route::get('{calibration}/validate-iso17025', [$fc, 'validateCalibrationIso17025']);
         });
 
         // --- Templates de Certificado ---
@@ -2684,6 +2796,210 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:lookups.delete')->delete('{type}/{id}', [\App\Http\Controllers\Api\V1\LookupController::class, 'destroy']);
     });
 
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 1: Atendimento & OS — Service Ops (#1-#8B)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('operational/service-ops')->group(function () {
+        // #1 SLA
+        Route::middleware('check.permission:os.work_order.view')->get('sla/dashboard', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'slaDashboard']);
+        Route::middleware('check.permission:os.work_order.update')->post('sla/run-checks', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'runSlaChecks']);
+        Route::middleware('check.permission:os.work_order.view')->get('sla/status/{workOrder}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'slaStatus']);
+        // #2B Bulk create
+        Route::middleware('check.permission:os.work_order.create')->post('work-orders/bulk-create', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'bulkCreateWorkOrders']);
+        // #3B Route optimization
+        Route::middleware('check.permission:os.work_order.update')->post('work-orders/optimize-route', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'optimizeRoute']);
+        // #4 Photo checklist
+        Route::middleware('check.permission:os.work_order.update')->post('work-orders/{workOrder}/photo-checklist', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'validatePhotoChecklist']);
+        Route::middleware('check.permission:os.work_order.view')->get('work-orders/{workOrder}/photo-checklist', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'getPhotoChecklist']);
+        // #5B NPS Dashboard
+        Route::middleware('check.permission:os.work_order.view')->get('nps/dashboard', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'npsDashboard']);
+        // #6 Heatmap
+        Route::middleware('check.permission:os.work_order.view')->get('heatmap', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'heatmapData']);
+        // #7 Technician Productivity
+        Route::middleware('check.permission:os.work_order.view')->get('productivity', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'techProductivity']);
+        Route::middleware('check.permission:os.work_order.view')->get('productivity/ranking', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'techRanking']);
+        Route::middleware('check.permission:os.work_order.view')->get('productivity/team', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'teamSummary']);
+        // #8B Auto-assignment rules
+        Route::middleware('check.permission:os.work_order.view')->get('auto-assign/rules', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'autoAssignRules']);
+        Route::middleware('check.permission:os.work_order.create')->post('auto-assign/rules', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'storeAutoAssignRule']);
+        Route::middleware('check.permission:os.work_order.update')->put('auto-assign/rules/{rule}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'updateAutoAssignRule']);
+        Route::middleware('check.permission:os.work_order.delete')->delete('auto-assign/rules/{rule}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'deleteAutoAssignRule']);
+        Route::middleware('check.permission:os.work_order.update')->post('auto-assign/{workOrder}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'triggerAutoAssign']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 2: Financeiro Avançado (#9B-#15B)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('finance-advanced')->group(function () {
+        Route::middleware('check.permission:finance.receivable.create')->post('cnab/import', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'importCnab']);
+        Route::middleware('check.permission:finance.cashflow.view')->get('cash-flow/projection', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'cashFlowProjection']);
+        Route::middleware('check.permission:finance.receivable.view')->get('collection-rules', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'collectionRules']);
+        Route::middleware('check.permission:finance.receivable.create')->post('collection-rules', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'storeCollectionRule']);
+        Route::middleware('check.permission:finance.receivable.update')->put('collection-rules/{rule}', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'updateCollectionRule']);
+        Route::middleware('check.permission:finance.receivable.delete')->delete('collection-rules/{rule}', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'deleteCollectionRule']);
+        Route::middleware('check.permission:finance.receivable.update')->post('receivables/{receivable}/partial-payment', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'partialPayment']);
+        Route::middleware('check.permission:finance.dre.view')->get('dre/cost-center', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'dreByCostCenter']);
+        Route::middleware('check.permission:finance.receivable.view')->post('installment/simulate', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'simulateInstallment']);
+        Route::middleware('check.permission:finance.receivable.create')->post('installment/create', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'createInstallment']);
+        Route::middleware('check.permission:finance.receivable.view')->get('delinquency/dashboard', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'delinquencyDashboard']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 3: Estoque & Compras (#16B-#21B)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('stock-advanced')->group(function () {
+        Route::middleware('check.permission:estoque.movement.view')->get('auto-reorder/suggestions', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'autoReorder']);
+        Route::middleware('check.permission:estoque.movement.create')->post('auto-reorder/create', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'createAutoOrder']);
+        Route::middleware('check.permission:estoque.movement.create')->post('work-orders/{workOrder}/auto-deduct', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'autoDeductFromWO']);
+        Route::middleware('check.permission:estoque.movement.create')->post('inventory/start-count', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'startCyclicCount']);
+        Route::middleware('check.permission:estoque.movement.create')->post('inventory/{count}/record', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'recordCountItem']);
+        Route::middleware('check.permission:estoque.movement.update')->post('inventory/{count}/finalize', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'finalizeCount']);
+        Route::middleware('check.permission:estoque.movement.view')->get('warranty/lookup', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'warrantyLookup']);
+        Route::middleware('check.permission:estoque.movement.view')->post('quotes/compare', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'compareQuotes']);
+        Route::middleware('check.permission:estoque.movement.view')->get('slow-moving', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'slowMovingAnalysis']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 4: CRM & Vendas (#22-#27)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('crm-advanced')->group(function () {
+        Route::middleware('check.permission:crm.deal.view')->get('funnel-automations', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'funnelAutomations']);
+        Route::middleware('check.permission:crm.deal.create')->post('funnel-automations', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'storeFunnelAutomation']);
+        Route::middleware('check.permission:crm.deal.update')->put('funnel-automations/{id}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'updateFunnelAutomation']);
+        Route::middleware('check.permission:crm.deal.delete')->delete('funnel-automations/{id}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'deleteFunnelAutomation']);
+        Route::middleware('check.permission:crm.scoring.view')->post('lead-scoring/recalculate', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'recalculateLeadScores']);
+        Route::middleware('check.permission:crm.deal.update')->post('quotes/{quote}/send-for-signature', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'sendQuoteForSignature']);
+        Route::middleware('check.permission:crm.forecast.view')->get('forecast', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'salesForecast']);
+        Route::middleware('check.permission:crm.deal.view')->get('leads/duplicates', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'findDuplicateLeads']);
+        Route::middleware('check.permission:crm.deal.update')->post('leads/merge', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'mergeLeads']);
+        Route::middleware('check.permission:crm.pipeline.view')->get('pipelines', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'multiProductPipelines']);
+        Route::middleware('check.permission:crm.pipeline.create')->post('pipelines', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'createPipeline']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 5: BI & Analytics (#28-#32)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('bi-analytics')->group(function () {
+        Route::middleware('check.permission:reports.analytics.view')->get('kpis/realtime', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'realtimeKpis']);
+        Route::middleware('check.permission:reports.analytics.view')->get('profitability', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'profitabilityByOS']);
+        Route::middleware('check.permission:reports.analytics.view')->get('anomalies', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'anomalyDetection']);
+        Route::middleware('check.permission:reports.analytics.view')->get('exports/scheduled', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'scheduledExports']);
+        Route::middleware('check.permission:reports.analytics.view')->post('exports/scheduled', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'createScheduledExport']);
+        Route::middleware('check.permission:reports.analytics.view')->delete('exports/scheduled/{id}', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'deleteScheduledExport']);
+        Route::middleware('check.permission:reports.analytics.view')->get('comparison', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'periodComparison']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 6: RH & Pessoas (#33-#37)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('hr-advanced')->group(function () {
+        Route::middleware('check.permission:hr.schedule.view')->get('hour-bank', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'hourBankSummary']);
+        Route::middleware('check.permission:hr.schedule.view')->get('on-call', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'onCallSchedule']);
+        Route::middleware('check.permission:hr.schedule.manage')->post('on-call', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeOnCallSchedule']);
+        Route::middleware('check.permission:hr.performance.view')->get('performance-reviews', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'performanceReviews']);
+        Route::middleware('check.permission:hr.performance.view')->post('performance-reviews', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storePerformanceReview']);
+        Route::middleware('check.permission:hr.onboarding.view')->get('onboarding/templates', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'onboardingTemplates']);
+        Route::middleware('check.permission:hr.onboarding.view')->post('onboarding/templates', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeOnboardingTemplate']);
+        Route::middleware('check.permission:hr.onboarding.view')->post('onboarding/start', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'startOnboarding']);
+        Route::middleware('check.permission:hr.schedule.view')->get('training/courses', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'trainingCourses']);
+        Route::middleware('check.permission:hr.schedule.manage')->post('training/courses', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeTrainingCourse']);
+        Route::middleware('check.permission:hr.schedule.manage')->post('training/enroll', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'enrollUser']);
+        Route::middleware('check.permission:hr.schedule.manage')->post('training/{enrollment}/complete', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'completeTraining']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 7: Contratos & Recorrência (#38-#41)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('contracts-advanced')->group(function () {
+        Route::middleware('check.permission:contracts.contract.view')->get('adjustments/pending', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'pendingAdjustments']);
+        Route::middleware('check.permission:contracts.contract.update')->post('{contract}/adjust', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'applyAdjustment']);
+        Route::middleware('check.permission:contracts.contract.view')->get('churn-risk', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'churnRisk']);
+        Route::middleware('check.permission:contracts.contract.view')->get('{contract}/addendums', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'contractAddendums']);
+        Route::middleware('check.permission:contracts.contract.create')->post('{contract}/addendums', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'createAddendum']);
+        Route::middleware('check.permission:contracts.contract.update')->post('addendums/{addendum}/approve', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'approveAddendum']);
+        Route::middleware('check.permission:contracts.contract.view')->get('{contract}/measurements', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'contractMeasurements']);
+        Route::middleware('check.permission:contracts.contract.create')->post('{contract}/measurements', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'storeMeasurement']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 8: Portal do Cliente (#42-#44)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('client-portal')->group(function () {
+        Route::middleware('check.permission:portal.client.create')->post('service-calls', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'createServiceCallFromPortal']);
+        Route::middleware('check.permission:portal.client.view')->get('work-orders/track', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'trackWorkOrders']);
+        Route::middleware('check.permission:portal.client.view')->get('service-calls/track', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'trackServiceCalls']);
+        Route::middleware('check.permission:portal.client.view')->get('calibration-certificates', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'calibrationCertificates']);
+        Route::middleware('check.permission:portal.client.view')->get('calibration-certificates/{certificate}/download', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'downloadCertificate']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 9: Metrologia & Qualidade (#45-#48)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('metrology')->group(function () {
+        Route::middleware('check.permission:calibration.reading.view')->get('non-conformances', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'nonConformances']);
+        Route::middleware('check.permission:calibration.reading.create')->post('non-conformances', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'storeNonConformance']);
+        Route::middleware('check.permission:calibration.reading.create')->put('non-conformances/{id}', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'updateNonConformance']);
+        Route::middleware('check.permission:calibration.reading.view')->post('certificates/{certificate}/qr', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'generateCertificateQR']);
+        Route::middleware('check.permission:calibration.reading.view')->get('uncertainties', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'measurementUncertainty']);
+        Route::middleware('check.permission:calibration.reading.create')->post('uncertainties', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'storeMeasurementUncertainty']);
+        Route::middleware('check.permission:calibration.reading.view')->get('calibration-schedule', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'calibrationSchedule']);
+        Route::middleware('check.permission:calibration.reading.create')->post('calibration-schedule/recall', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'triggerRecall']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LOTE 10: Infraestrutura & Integrações (#49-#50)
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('infra')->group(function () {
+        Route::middleware('check.permission:platform.settings.view')->get('webhooks', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'webhookConfigs']);
+        Route::middleware('check.permission:platform.settings.manage')->post('webhooks', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'storeWebhook']);
+        Route::middleware('check.permission:platform.settings.manage')->put('webhooks/{id}', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'updateWebhook']);
+        Route::middleware('check.permission:platform.settings.manage')->delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'deleteWebhook']);
+        Route::middleware('check.permission:platform.settings.manage')->post('webhooks/{id}/test', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'testWebhook']);
+        Route::middleware('check.permission:platform.settings.view')->get('webhooks/{id}/logs', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'webhookLogs']);
+        Route::middleware('check.permission:platform.settings.view')->get('api-keys', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'apiKeys']);
+        Route::middleware('check.permission:platform.settings.manage')->post('api-keys', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'createApiKey']);
+        Route::middleware('check.permission:platform.settings.manage')->delete('api-keys/{id}/revoke', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'revokeApiKey']);
+        Route::middleware('check.permission:platform.settings.view')->get('swagger', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'swaggerSpec']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // End of Lotes 1-10
+    // ═══════════════════════════════════════════════════════════════════
+
+    // ═══ Recursos Avançados (Follow-ups, Tabelas de Preço, Centros de Custo, Rotas, Avaliações) ═══
+    Route::middleware('check.permission:advanced.follow_up.view')->group(function () {
+        Route::get('advanced/follow-ups', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexFollowUps']);
+        Route::get('advanced/price-tables', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexPriceTables']);
+        Route::get('advanced/price-tables/{priceTable}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'showPriceTable']);
+        Route::get('advanced/customer-documents', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCustomerDocumentsGlobal']);
+        Route::get('advanced/cost-centers', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCostCenters']);
+        Route::get('advanced/collection-rules', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexCollectionRules']);
+        Route::get('advanced/route-plans', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexRoutePlans']);
+        Route::get('advanced/ratings', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'indexRatings']);
+    });
+    Route::middleware('check.permission:advanced.follow_up.manage')->group(function () {
+        Route::post('advanced/follow-ups', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeFollowUp']);
+        Route::put('advanced/follow-ups/{followUp}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'completeFollowUp']);
+        Route::delete('advanced/follow-ups/{followUp}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'completeFollowUp']);
+    });
+    Route::middleware('check.permission:advanced.price_table.manage')->group(function () {
+        Route::post('advanced/price-tables', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storePriceTable']);
+        Route::put('advanced/price-tables/{priceTable}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'updatePriceTable']);
+        Route::delete('advanced/price-tables/{priceTable}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'destroyPriceTable']);
+    });
+    Route::middleware('check.permission:advanced.cost_center.manage')->group(function () {
+        Route::post('advanced/cost-centers', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeCostCenter']);
+        Route::put('advanced/cost-centers/{costCenter}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'updateCostCenter']);
+        Route::delete('advanced/cost-centers/{costCenter}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'destroyCostCenter']);
+    });
+    Route::middleware('check.permission:advanced.follow_up.manage')->group(function () {
+        Route::post('advanced/collection-rules', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeCollectionRule']);
+        Route::put('advanced/collection-rules/{rule}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'updateCollectionRule']);
+    });
+    Route::middleware('check.permission:advanced.route_plan.view')->group(function () {
+        Route::post('advanced/route-plans', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeRoutePlan']);
+    });
+
 });
 // â”€â”€â”€ PUBLIC: Work Order Rating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Route::middleware('throttle:30,1')->post('rate/{token}', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'submitRating']);
@@ -2700,179 +3016,7 @@ Route::prefix('quotes')->group(function () {
     Route::middleware('throttle:30,1')->post('{quote}/public-approve', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicApprove']);
 });
 
-// ═══════════════════════════════════════════════════════════════════
-    // LOTE 1: Atendimento & OS — Service Ops (#1-#8B)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('operational/service-ops')->group(function () {
-        // #1 SLA
-        Route::get('sla/dashboard', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'slaDashboard']);
-        Route::post('sla/run-checks', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'runSlaChecks']);
-        Route::get('sla/status/{workOrder}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'slaStatus']);
-        // #2B Bulk create
-        Route::post('work-orders/bulk-create', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'bulkCreateWorkOrders']);
-        // #3B Route optimization
-        Route::post('work-orders/optimize-route', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'optimizeRoute']);
-        // #4 Photo checklist
-        Route::post('work-orders/{workOrder}/photo-checklist', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'validatePhotoChecklist']);
-        Route::get('work-orders/{workOrder}/photo-checklist', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'getPhotoChecklist']);
-        // #5B NPS Dashboard
-        Route::get('nps/dashboard', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'npsDashboard']);
-        // #6 Heatmap
-        Route::get('heatmap', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'heatmapData']);
-        // #7 Technician Productivity
-        Route::get('productivity', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'techProductivity']);
-        Route::get('productivity/ranking', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'techRanking']);
-        Route::get('productivity/team', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'teamSummary']);
-        // #8B Auto-assignment rules
-        Route::get('auto-assign/rules', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'autoAssignRules']);
-        Route::post('auto-assign/rules', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'storeAutoAssignRule']);
-        Route::put('auto-assign/rules/{rule}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'updateAutoAssignRule']);
-        Route::delete('auto-assign/rules/{rule}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'deleteAutoAssignRule']);
-        Route::post('auto-assign/{workOrder}', [\App\Http\Controllers\Api\V1\ServiceOpsController::class, 'triggerAutoAssign']);
-    });
 
-    // ═══════════════════════════════════════════════════════════════════
-    // End of Lote 1
-    // ═══════════════════════════════════════════════════════════════════
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 2: Financeiro (#9B-#15B)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('finance-advanced')->group(function () {
-        Route::post('cnab/import', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'importCnab']);
-        Route::get('cash-flow/projection', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'cashFlowProjection']);
-        Route::get('collection-rules', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'collectionRules']);
-        Route::post('collection-rules', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'storeCollectionRule']);
-        Route::put('collection-rules/{rule}', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'updateCollectionRule']);
-        Route::delete('collection-rules/{rule}', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'deleteCollectionRule']);
-        Route::post('receivables/{receivable}/partial-payment', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'partialPayment']);
-        Route::get('dre/cost-center', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'dreByCostCenter']);
-        Route::post('installment/simulate', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'simulateInstallment']);
-        Route::post('installment/create', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'createInstallment']);
-        Route::get('delinquency/dashboard', [\App\Http\Controllers\Api\V1\FinanceAdvancedController::class, 'delinquencyDashboard']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 3: Estoque & Compras (#16B-#21B)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('stock-advanced')->group(function () {
-        Route::get('auto-reorder/suggestions', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'autoReorder']);
-        Route::post('auto-reorder/create', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'createAutoOrder']);
-        Route::post('work-orders/{workOrder}/auto-deduct', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'autoDeductFromWO']);
-        Route::post('inventory/start-count', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'startCyclicCount']);
-        Route::post('inventory/{count}/record', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'recordCountItem']);
-        Route::post('inventory/{count}/finalize', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'finalizeCount']);
-        Route::get('warranty/lookup', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'warrantyLookup']);
-        Route::post('quotes/compare', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'compareQuotes']);
-        Route::get('slow-moving', [\App\Http\Controllers\Api\V1\StockAdvancedController::class, 'slowMovingAnalysis']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 4: CRM & Vendas (#22-#27)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('crm-advanced')->group(function () {
-        Route::get('funnel-automations', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'funnelAutomations']);
-        Route::post('funnel-automations', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'storeFunnelAutomation']);
-        Route::put('funnel-automations/{id}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'updateFunnelAutomation']);
-        Route::delete('funnel-automations/{id}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'deleteFunnelAutomation']);
-        Route::post('lead-scoring/recalculate', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'recalculateLeadScores']);
-        Route::post('quotes/{quote}/send-for-signature', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'sendQuoteForSignature']);
-        Route::get('forecast', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'salesForecast']);
-        Route::get('leads/duplicates', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'findDuplicateLeads']);
-        Route::post('leads/merge', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'mergeLeads']);
-        Route::get('pipelines', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'multiProductPipelines']);
-        Route::post('pipelines', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'createPipeline']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 5: BI & Analytics (#28-#32)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('bi-analytics')->group(function () {
-        Route::get('kpis/realtime', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'realtimeKpis']);
-        Route::get('profitability', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'profitabilityByOS']);
-        Route::get('anomalies', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'anomalyDetection']);
-        Route::get('exports/scheduled', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'scheduledExports']);
-        Route::post('exports/scheduled', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'createScheduledExport']);
-        Route::delete('exports/scheduled/{id}', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'deleteScheduledExport']);
-        Route::get('comparison', [\App\Http\Controllers\Api\V1\BiAnalyticsController::class, 'periodComparison']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 6: RH & Pessoas (#33-#37)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('hr')->group(function () {
-        Route::get('hour-bank', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'hourBankSummary']);
-        Route::get('on-call', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'onCallSchedule']);
-        Route::post('on-call', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeOnCallSchedule']);
-        Route::get('performance-reviews', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'performanceReviews']);
-        Route::post('performance-reviews', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storePerformanceReview']);
-        Route::get('onboarding/templates', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'onboardingTemplates']);
-        Route::post('onboarding/templates', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeOnboardingTemplate']);
-        Route::post('onboarding/start', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'startOnboarding']);
-        Route::get('training/courses', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'trainingCourses']);
-        Route::post('training/courses', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'storeTrainingCourse']);
-        Route::post('training/enroll', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'enrollUser']);
-        Route::post('training/{enrollment}/complete', [\App\Http\Controllers\Api\V1\HrPeopleController::class, 'completeTraining']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 7: Contratos & Recorrência (#38-#41)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('contracts-advanced')->group(function () {
-        Route::get('adjustments/pending', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'pendingAdjustments']);
-        Route::post('{contract}/adjust', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'applyAdjustment']);
-        Route::get('churn-risk', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'churnRisk']);
-        Route::get('{contract}/addendums', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'contractAddendums']);
-        Route::post('{contract}/addendums', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'createAddendum']);
-        Route::post('addendums/{addendum}/approve', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'approveAddendum']);
-        Route::get('{contract}/measurements', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'contractMeasurements']);
-        Route::post('{contract}/measurements', [\App\Http\Controllers\Api\V1\ContractsAdvancedController::class, 'storeMeasurement']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 8: Portal do Cliente (#42-#44)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('client-portal')->group(function () {
-        Route::post('service-calls', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'createServiceCallFromPortal']);
-        Route::get('work-orders/track', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'trackWorkOrders']);
-        Route::get('service-calls/track', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'trackServiceCalls']);
-        Route::get('calibration-certificates', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'calibrationCertificates']);
-        Route::get('calibration-certificates/{certificate}/download', [\App\Http\Controllers\Api\V1\ClientPortalController::class, 'downloadCertificate']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 9: Metrologia & Qualidade (#45-#48)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('metrology')->group(function () {
-        Route::get('non-conformances', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'nonConformances']);
-        Route::post('non-conformances', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'storeNonConformance']);
-        Route::put('non-conformances/{id}', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'updateNonConformance']);
-        Route::post('certificates/{certificate}/qr', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'generateCertificateQR']);
-        Route::get('uncertainties', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'measurementUncertainty']);
-        Route::post('uncertainties', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'storeMeasurementUncertainty']);
-        Route::get('calibration-schedule', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'calibrationSchedule']);
-        Route::post('calibration-schedule/recall', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'triggerRecall']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // LOTE 10: Infraestrutura & Integrações (#49-#50)
-    // ═══════════════════════════════════════════════════════════════════
-    Route::prefix('infra')->group(function () {
-        Route::get('webhooks', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'webhookConfigs']);
-        Route::post('webhooks', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'storeWebhook']);
-        Route::put('webhooks/{id}', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'updateWebhook']);
-        Route::delete('webhooks/{id}', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'deleteWebhook']);
-        Route::post('webhooks/{id}/test', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'testWebhook']);
-        Route::get('webhooks/{id}/logs', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'webhookLogs']);
-        Route::get('api-keys', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'apiKeys']);
-        Route::post('api-keys', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'createApiKey']);
-        Route::delete('api-keys/{id}/revoke', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'revokeApiKey']);
-        Route::get('swagger', [\App\Http\Controllers\Api\V1\InfraIntegrationController::class, 'swaggerSpec']);
-    });
-
-    // ═══════════════════════════════════════════════════════════════════
-    // End of Lotes 2-10
-    // ═══════════════════════════════════════════════════════════════════
 
 // Rota pública: Assinatura digital de orçamento (#24)
 Route::middleware('throttle:30,1')->post('v1/crm/quotes/sign/{token}', [\App\Http\Controllers\Api\V1\CrmAdvancedController::class, 'signQuote']);

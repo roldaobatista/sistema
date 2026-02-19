@@ -20,8 +20,8 @@ class StoreServiceCallRequest extends FormRequest
         return [
             'customer_id' => ['required', Rule::exists('customers', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'quote_id' => ['nullable', Rule::exists('quotes', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
-            'technician_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true))],
-            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true))],
+            'technician_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true)->where('tenant_id', $tenantId))],
+            'driver_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('is_active', true)->where('tenant_id', $tenantId))],
             'priority' => ['nullable', Rule::in(array_keys(ServiceCall::PRIORITIES))],
             'scheduled_date' => 'nullable|date',
             'address' => 'nullable|string',
@@ -30,6 +30,9 @@ class StoreServiceCallRequest extends FormRequest
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'observations' => 'nullable|string',
+            'contract_id' => ['nullable', Rule::exists('contracts', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'sla_policy_id' => ['nullable', Rule::exists('sla_policies', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'template_id' => ['nullable', Rule::exists('service_call_templates', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
             'equipment_ids' => 'nullable|array',
             'equipment_ids.*' => [Rule::exists('equipments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ];
@@ -38,8 +41,8 @@ class StoreServiceCallRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'customer_id.required' => 'O cliente e obrigatorio.',
-            'customer_id.exists' => 'Cliente invalido.',
+            'customer_id.required' => 'O cliente é obrigatório.',
+            'customer_id.exists' => 'Cliente inválido.',
             'state.max' => 'O estado deve ter no maximo 2 caracteres (UF).',
         ];
     }

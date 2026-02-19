@@ -1,0 +1,38 @@
+{
+    "totalRules":  140,
+    "protectedRoutes":  202,
+    "portalProtectedRoutes":  5,
+    "protectedRoutesWithoutPermissionRule":  5,
+    "duplicateRuleMatches":  1,
+    "rulePermissionsMissingInSeeder":  2,
+    "issues":  {
+                   "protectedRoutesWithoutPermissionRule":  [
+                                                                {
+                                                                    "path":  "/"
+                                                                },
+                                                                {
+                                                                    "path":  "/perfil"
+                                                                },
+                                                                {
+                                                                    "path":  "/calibracao/:calibrationId/leituras"
+                                                                },
+                                                                {
+                                                                    "path":  "/calibracao/templates"
+                                                                },
+                                                                {
+                                                                    "path":  "/tv/cameras"
+                                                                }
+                                                            ],
+                   "duplicateRuleMatches":  [
+                                                {
+                                                    "match":  "/rh/onboarding",
+                                                    "count":  2,
+                                                    "permissions":  "hr.onboarding.view,hr.onboarding.view"
+                                                }
+                                            ],
+                   "rulePermissionsMissingInSeeder":  [
+                                                          "fiscal.config.manage",
+                                                          "reports.analytics.view"
+                                                      ]
+               }
+}

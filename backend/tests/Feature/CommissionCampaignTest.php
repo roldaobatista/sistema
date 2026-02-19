@@ -43,16 +43,16 @@ class CommissionCampaignTest extends TestCase
 
     public function test_campaigns_index_returns_list(): void
     {
-        $response = $this->getJson('/api/v1/commissions/campaigns');
+        $response = $this->getJson('/api/v1/commission-campaigns');
         $response->assertOk();
     }
 
     public function test_create_campaign_with_valid_data(): void
     {
-        $response = $this->postJson('/api/v1/commissions/campaigns', [
+        $response = $this->postJson('/api/v1/commission-campaigns', [
             'name' => 'Campanha Verão 2025',
             'multiplier' => 1.5,
-            'applies_to_role' => 'technician',
+            'applies_to_role' => \App\Models\CommissionRule::ROLE_TECHNICIAN,
             'starts_at' => now()->format('Y-m-d'),
             'ends_at' => now()->addMonths(2)->format('Y-m-d'),
         ]);
@@ -62,7 +62,7 @@ class CommissionCampaignTest extends TestCase
 
     public function test_create_campaign_validates_multiplier_range(): void
     {
-        $response = $this->postJson('/api/v1/commissions/campaigns', [
+        $response = $this->postJson('/api/v1/commission-campaigns', [
             'name' => 'Campanha inválida',
             'multiplier' => 0.5, // below 1.01
             'starts_at' => now()->format('Y-m-d'),
@@ -74,7 +74,7 @@ class CommissionCampaignTest extends TestCase
 
     public function test_create_campaign_validates_end_date_after_start(): void
     {
-        $response = $this->postJson('/api/v1/commissions/campaigns', [
+        $response = $this->postJson('/api/v1/commission-campaigns', [
             'name' => 'Campanha datas erradas',
             'multiplier' => 2.0,
             'starts_at' => '2025-12-31',
@@ -97,7 +97,7 @@ class CommissionCampaignTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $response = $this->putJson("/api/v1/commissions/campaigns/{$campaignId}", [
+        $response = $this->putJson("/api/v1/commission-campaigns/{$campaignId}", [
             'name' => 'Campanha Atualizada',
             'active' => false,
         ]);
@@ -118,7 +118,7 @@ class CommissionCampaignTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $response = $this->deleteJson("/api/v1/commissions/campaigns/{$campaignId}");
+        $response = $this->deleteJson("/api/v1/commission-campaigns/{$campaignId}");
         $response->assertNoContent();
     }
 }

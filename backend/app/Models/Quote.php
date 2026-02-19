@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentTerms;
 use App\Enums\QuoteStatus;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\Auditable;
@@ -10,6 +11,7 @@ use App\Enums\CentralItemStatus;
 use App\Enums\CentralItemPriority;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -55,25 +57,36 @@ class Quote extends Model
         'tenant_id', 'quote_number', 'revision', 'customer_id', 'seller_id', 'status',
         'source', 'valid_until', 'discount_percentage', 'discount_amount',
         'displacement_value',
-        'subtotal', 'total', 'observations', 'internal_notes',
+        'subtotal', 'total', 'currency', 'observations', 'internal_notes',
+        'payment_terms', 'payment_terms_detail', 'template_id', 'is_template',
+        'opportunity_id', 'custom_fields',
         'internal_approved_by', 'internal_approved_at',
+        'level2_approved_by', 'level2_approved_at',
         'sent_at', 'approved_at', 'rejected_at', 'rejection_reason',
+        'last_followup_at', 'followup_count',
+        'client_viewed_at', 'client_view_count',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => QuoteStatus::class,
+            'payment_terms' => PaymentTerms::class,
             'valid_until' => 'date',
             'discount_percentage' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'displacement_value' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'total' => 'decimal:2',
+            'is_template' => 'boolean',
+            'custom_fields' => 'array',
             'internal_approved_at' => 'datetime',
+            'level2_approved_at' => 'datetime',
             'sent_at' => 'datetime',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'last_followup_at' => 'datetime',
+            'client_viewed_at' => 'datetime',
         ];
     }
 
@@ -115,6 +128,80 @@ class Quote extends Model
     public function serviceCalls(): HasMany
     {
         return $this->hasMany(ServiceCall::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(QuoteTemplate::class, 'template_id');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(QuoteTag::class, 'quote_quote_tag');
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(QuoteEmail::class);
+    }
+
+    public function level2Approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'level2_approved_by');
+    }
+
+    // ── Margin & Installment helpers ──
+
+    public function totalCost(): string
+    {
+        $this->loadMissing('equipments.items');
+        $cost = '0.00';
+        foreach ($this->equipments as $eq) {
+            foreach ($eq->items as $item) {
+                $itemCost = bcmul((string) $item->cost_price, (string) $item->quantity, 2);
+                $cost = bcadd($cost, $itemCost, 2);
+            }
+        }
+        return $cost;
+    }
+
+    public function profitMargin(): float
+    {
+        $total = (float) $this->total;
+        if ($total <= 0) {
+            return 0;
+        }
+        $cost = (float) $this->totalCost();
+        return round((($total - $cost) / $total) * 100, 1);
+    }
+
+    public function installmentSimulation(): array
+    {
+        $total = (float) $this->total;
+        $installments = [2, 3, 6, 10, 12];
+        $result = [];
+        foreach ($installments as $n) {
+            $result[] = [
+                'installments' => $n,
+                'value' => round($total / $n, 2),
+            ];
+        }
+        return $result;
+    }
+
+    public function requiresLevel2Approval(): bool
+    {
+        $threshold = QuoteApprovalThreshold::where('tenant_id', $this->tenant_id)
+            ->where('is_active', true)
+            ->where('required_level', 2)
+            ->where('min_value', '<=', $this->total)
+            ->where(function ($q) {
+                $q->whereNull('max_value')
+                  ->orWhere('max_value', '>=', $this->total);
+            })
+            ->first();
+
+        return $threshold !== null;
     }
 
     public function recalculateTotal(): void

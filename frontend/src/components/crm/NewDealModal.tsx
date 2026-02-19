@@ -4,8 +4,11 @@ import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { crmApi } from '@/lib/crm-api'
+import { crmFeaturesApi } from '@/lib/crm-features-api'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
+import { Lightbulb } from 'lucide-react'
 
 interface Props {
     open: boolean
@@ -48,6 +51,22 @@ export function NewDealModal({ open, onClose, pipelineId, stageId, initialCustom
 
     const customers = customersRes?.data?.data ?? []
 
+    // Smart suggestions when customer is selected (#13)
+    const { data: suggestions } = useQuery({
+        queryKey: ['crm-smart-suggestions', form.customer_id],
+        queryFn: async () => {
+            const customerId = Number(form.customer_id)
+            const [crossSell, recentDeals] = await Promise.allSettled([
+                crmFeaturesApi.getCrossSellRecommendations(customerId),
+                crmApi.getDeals({ customer_id: customerId, per_page: 5 }),
+            ])
+            const recs = crossSell.status === 'fulfilled' ? (crossSell.value.data ?? []) : []
+            const recent = recentDeals.status === 'fulfilled' ? (recentDeals.value.data?.data ?? []) : []
+            return { recommendations: recs.slice(0, 3), recentDeals: recent.slice(0, 3) }
+        },
+        enabled: open && !!form.customer_id,
+    })
+
     const resetForm = () => {
         setForm({ title: '', customer_id: '', value: '', expected_close_date: '', source: '', notes: '' })
     }
@@ -65,6 +84,7 @@ export function NewDealModal({ open, onClose, pipelineId, stageId, initialCustom
         }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['crm'] })
+            broadcastQueryInvalidation(['crm'], 'Deal')
             toast.success('Deal criado com sucesso')
             resetForm()
             onClose()
@@ -106,6 +126,53 @@ export function NewDealModal({ open, onClose, pipelineId, stageId, initialCustom
                         ))}
                     </select>
                 </div>
+
+                {/* Smart Suggestions (#13) */}
+                {form.customer_id && suggestions && (suggestions.recommendations.length > 0 || suggestions.recentDeals.length > 0) && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 space-y-2">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+                            <Lightbulb className="h-3.5 w-3.5" /> Sugestões Inteligentes
+                        </div>
+                        {suggestions.recommendations.length > 0 && (
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-medium text-amber-600 uppercase tracking-wider">Cross-sell</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {suggestions.recommendations.map((r: any, i: number) => (
+                                        <button
+                                            key={i}
+                                            type="button"
+                                            onClick={() => set('title', r.service || r.product || r.name || '')}
+                                            className="rounded-md bg-white border border-amber-200 px-2 py-1 text-xs text-amber-800 hover:bg-amber-100 transition-colors"
+                                        >
+                                            {r.service || r.product || r.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {suggestions.recentDeals.length > 0 && (
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-medium text-amber-600 uppercase tracking-wider">Deals recentes</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {suggestions.recentDeals.map((d: any) => (
+                                        <button
+                                            key={d.id}
+                                            type="button"
+                                            onClick={() => {
+                                                set('title', d.title)
+                                                if (d.value) set('value', String(d.value))
+                                                if (d.source) set('source', d.source)
+                                            }}
+                                            className="rounded-md bg-white border border-amber-200 px-2 py-1 text-xs text-amber-800 hover:bg-amber-100 transition-colors"
+                                        >
+                                            {d.title}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>

@@ -12,7 +12,7 @@ import {
 import {
     LayoutDashboard, FileText, Users, Package, DollarSign, Scale, Settings,
     Search, Briefcase, Phone, Wrench, Calendar, BarChart3, Shield, Plus,
-    Upload, Warehouse, BookOpen,
+    Upload, Warehouse, BookOpen, Wand2,
 } from 'lucide-react'
 
 interface CommandRoute {
@@ -44,6 +44,7 @@ const routes: CommandRoute[] = [
     { label: 'Equipamentos', path: '/equipamentos', icon: Scale, group: 'Navegação', keywords: ['instruments', 'calibração'] },
     { label: 'Pesos Padrão', path: '/equipamentos/pesos-padrao', icon: Scale, group: 'Navegação', keywords: ['standard weights', 'peso'] },
     { label: 'Agenda Calibrações', path: '/agenda-calibracoes', icon: Calendar, group: 'Navegação' },
+    { label: 'Wizard Calibração', path: '/calibracao/wizard/0', icon: Wand2, group: 'Navegação', keywords: ['certificado', 'calibrar', 'balança', 'wizard'] },
 
     // Finance
     { label: 'Contas a Receber', path: '/financeiro/receber', icon: DollarSign, group: 'Financeiro', keywords: ['receivables'] },

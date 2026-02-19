@@ -307,8 +307,8 @@ class CommissionTest extends TestCase
 
         $this->getJson('/api/v1/commission-disputes?os_number=BLOCO-DSP-01')
             ->assertOk()
-            ->assertJsonCount(1)
-            ->assertJsonPath('0.os_number', 'BLOCO-DSP-01');
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.commission_event.work_order.os_number', 'BLOCO-DSP-01');
     }
     public function test_reopen_settlement_reverts_approved_events_to_pending(): void
     {
@@ -588,5 +588,63 @@ class CommissionTest extends TestCase
         $commission = $rule->calculate($workOrder);
 
         $this->assertEquals(80.0, $commission);
+    }
+
+    public function test_reject_settlement_sets_rejected_status_and_reverts_events(): void
+    {
+        $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+        $workOrder = WorkOrder::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $customer->id,
+            'created_by' => $this->user->id,
+            'total' => 1000,
+        ]);
+
+        $rule = CommissionRule::create([
+            'tenant_id' => $this->tenant->id,
+            'user_id' => $this->user->id,
+            'name' => 'Reject test rule',
+            'type' => 'percentage',
+            'value' => 10,
+            'applies_to' => 'all',
+            'active' => true,
+            'calculation_type' => CommissionRule::CALC_PERCENT_GROSS,
+            'applies_to_role' => CommissionRule::ROLE_TECHNICIAN,
+            'applies_when' => CommissionRule::WHEN_OS_COMPLETED,
+        ]);
+
+        $event = CommissionEvent::create([
+            'tenant_id' => $this->tenant->id,
+            'commission_rule_id' => $rule->id,
+            'work_order_id' => $workOrder->id,
+            'user_id' => $this->user->id,
+            'base_amount' => 1000,
+            'commission_amount' => 100,
+            'status' => CommissionEvent::STATUS_APPROVED,
+        ]);
+
+        $period = now()->format('Y-m');
+
+        // Close the settlement
+        $close = $this->postJson('/api/v1/commission-settlements/close', [
+            'user_id' => $this->user->id,
+            'period' => $period,
+        ]);
+
+        $close->assertStatus(201);
+        $settlementId = $close->json('id');
+
+        // Reject the settlement
+        $reject = $this->postJson("/api/v1/commission-settlements/{$settlementId}/reject", [
+            'rejection_reason' => 'Valores incorretos, necessário revisão.',
+        ]);
+
+        $reject->assertOk()
+            ->assertJsonPath('status', CommissionSettlement::STATUS_REJECTED);
+
+        // Events should be unlinked and reverted to pending
+        $event->refresh();
+        $this->assertSame(CommissionEvent::STATUS_PENDING, $event->status);
+        $this->assertNull($event->settlement_id);
     }
 }

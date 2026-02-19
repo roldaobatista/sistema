@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
+import { PushNotificationSettings } from '@/components/pwa/PushNotificationSettings'
 
 export function ProfilePage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const { setUser } = useAuthStore()
@@ -58,7 +59,7 @@ export function ProfilePage() {
         mutationFn: (data: typeof passwordForm) => api.post('/profile/change-password', data),
         onSuccess: () => {
             toast.success('Senha alterada com sucesso!')
-                setPwSaved(true)
+            setPwSaved(true)
             setPasswordForm({ current_password: '', new_password: '', new_password_confirmation: '' })
             setTimeout(() => setPwSaved(false), 3000)
         },
@@ -222,6 +223,11 @@ export function ProfilePage() {
                         </p>
                     </div>
                 </div>
+            </div>
+
+            {/* Notificações Push */}
+            <div className="animate-slide-up stagger-4">
+                <PushNotificationSettings />
             </div>
         </div>
     )

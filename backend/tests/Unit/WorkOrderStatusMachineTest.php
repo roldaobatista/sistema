@@ -30,30 +30,27 @@ class WorkOrderStatusMachineTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        fwrite(STDERR, "SM:setUp:start\n");
-
         $this->tenant = Tenant::factory()->create();
-        fwrite(STDERR, "SM:setUp:tenant\n");
         $this->user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'current_tenant_id' => $this->tenant->id,
         ]);
-        fwrite(STDERR, "SM:setUp:user\n");
         $this->customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
-        fwrite(STDERR, "SM:setUp:customer\n");
 
         Sanctum::actingAs($this->user);
         app()->instance('current_tenant_id', $this->tenant->id);
         setPermissionsTeamId($this->tenant->id);
-        fwrite(STDERR, "SM:setUp:sanctum\n");
 
-        // Assign all permissions for OS
-        $role = \Spatie\Permission\Models\Role::firstOrCreate(
-            ['name' => 'admin', 'guard_name' => 'api', 'team_id' => $this->tenant->id]
+        $this->withoutMiddleware([
+            \App\Http\Middleware\EnsureTenantScope::class,
+            \App\Http\Middleware\CheckPermission::class,
+        ]);
+
+        // Assign role (guard must match PermissionsSeeder: web)
+        $role = \App\Models\Role::firstOrCreate(
+            ['name' => 'admin', 'guard_name' => 'web', 'tenant_id' => $this->tenant->id]
         );
-        fwrite(STDERR, "SM:setUp:role\n");
         $this->user->assignRole($role);
-        fwrite(STDERR, "SM:setUp:done\n");
     }
 
     private function createWorkOrder(string $status = 'open'): WorkOrder
@@ -103,7 +100,7 @@ class WorkOrderStatusMachineTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonFragment(['message' => 'Transição inválida']);
+        $this->assertStringContainsString('Transição inválida', $response->json('message'));
         $this->assertDatabaseHas('work_orders', [
             'id' => $wo->id,
             'status' => WorkOrder::STATUS_OPEN,

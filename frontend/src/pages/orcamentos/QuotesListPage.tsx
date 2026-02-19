@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import {
     Plus, Search, Send, CheckCircle, Copy, ArrowRightLeft,
-    Trash2, FileText, X, RefreshCw, Download, UploadCloud
+    Trash2, FileText, X, RefreshCw, Download, UploadCloud,
+    MessageCircle, Tag, BarChart3
 } from 'lucide-react'
 
 const STATUS_FILTERS = [
@@ -45,6 +46,7 @@ export function QuotesListPage() {
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [status, setStatus] = useState('')
     const [sellerId, setSellerId] = useState('')
+    const [tagFilter, setTagFilter] = useState('')
     const [dateFrom, setDateFrom] = useState('')
     const [dateTo, setDateTo] = useState('')
     const [page, setPage] = useState(1)
@@ -85,13 +87,20 @@ export function QuotesListPage() {
     })
     const users = usersRes?.data ?? (Array.isArray(usersRes) ? usersRes : [])
 
+    const { data: tagsData } = useQuery<{ id: number; name: string; color: string }[]>({
+        queryKey: ['quote-tags'],
+        queryFn: () => api.get('/quote-tags').then(r => r.data),
+    })
+    const tags = tagsData ?? []
+
     const { data: listData, isLoading } = useQuery({
-        queryKey: ['quotes', debouncedSearch, status, sellerId, dateFrom, dateTo, page],
+        queryKey: ['quotes', debouncedSearch, status, sellerId, tagFilter, dateFrom, dateTo, page],
         queryFn: () => api.get('/quotes', {
             params: {
                 search: debouncedSearch || undefined,
                 status: status || undefined,
                 seller_id: sellerId || undefined,
+                tag_id: tagFilter || undefined,
                 date_from: dateFrom || undefined,
                 date_to: dateTo || undefined,
                 page,
@@ -183,6 +192,7 @@ export function QuotesListPage() {
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-content-primary">Orçamentos</h1>
                 <div className="flex gap-2">
+                    <Button variant="outline" size="sm" icon={<BarChart3 className="h-4 w-4" />} onClick={() => navigate('/orcamentos/dashboard')}>Dashboard</Button>
                     <Button variant="outline" size="sm" icon={<Download className="h-4 w-4" />} onClick={handleExportCsv}>Exportar CSV</Button>
                     {canCreate && (
                         <Button icon={<Plus className="h-4 w-4" />} onClick={() => navigate('/orcamentos/novo')}>Novo Orçamento</Button>
@@ -195,7 +205,7 @@ export function QuotesListPage() {
                     {summaryCards.map((c) => (
                         <Card key={c.label} className="p-4 text-center">
                             <p className="text-xs text-content-secondary mb-1">{c.label}</p>
-                            <p className={`text-xl font-bold ${c.color}`}>{c.isCurrency ? c.value : c.value}</p>
+                            <p className={`text-xl font-bold ${c.color}`}>{c.value}</p>
                         </Card>
                     ))}
                 </div>
@@ -238,6 +248,19 @@ export function QuotesListPage() {
                             <option value="">Todos</option>
                             {Array.isArray(users) && users.map((u: { id: number; name: string }) => (
                                 <option key={u.id} value={u.id}>{u.name}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="flex items-center gap-2">
+                        <span className="text-content-secondary">Tag</span>
+                        <select
+                            value={tagFilter}
+                            onChange={(e) => { setTagFilter(e.target.value); setPage(1) }}
+                            className="rounded-lg border border-default bg-surface-0 px-3 py-1.5 min-w-[120px]"
+                        >
+                            <option value="">Todas</option>
+                            {tags.map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                         </select>
                     </label>
@@ -320,7 +343,18 @@ export function QuotesListPage() {
                                             </td>
                                             <td className="px-4 py-3 text-content-primary">{q.customer?.name ?? '—'}</td>
                                             <td className="px-4 py-3 text-content-secondary text-sm">{q.seller?.name ?? '—'}</td>
-                                            <td className="px-4 py-3"><Badge variant={cfg.variant}>{cfg.label}</Badge></td>
+                                            <td className="px-4 py-3">
+                                                <Badge variant={cfg.variant}>{cfg.label}</Badge>
+                                                {q.tags && q.tags.length > 0 && (
+                                                    <div className="flex gap-1 mt-1 flex-wrap">
+                                                        {q.tags.map((t: any) => (
+                                                            <span key={t.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ backgroundColor: `${t.color}20`, color: t.color }}>
+                                                                <Tag className="h-2.5 w-2.5" />{t.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-3 text-right font-medium">{formatCurrency(q.total)}</td>
                                             <td className="px-4 py-3 text-content-secondary text-sm">
                                                 {q.valid_until ? new Date(q.valid_until).toLocaleDateString('pt-BR') : '—'}
@@ -365,6 +399,16 @@ export function QuotesListPage() {
                                                     {canCreate && (
                                                         <button title="Duplicar" onClick={() => duplicateMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-content-secondary">
                                                             <Copy className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                    {isSent && (
+                                                        <button title="Enviar WhatsApp" onClick={async () => {
+                                                            try {
+                                                                const res = await api.get(`/quotes/${q.id}/whatsapp`)
+                                                                window.open(res.data.url, '_blank')
+                                                            } catch { toast.error('Erro ao gerar link WhatsApp') }
+                                                        }} className="p-1.5 rounded hover:bg-green-50 text-green-600">
+                                                            <MessageCircle className="h-4 w-4" />
                                                         </button>
                                                     )}
                                                     {canDelete && isMutable && (

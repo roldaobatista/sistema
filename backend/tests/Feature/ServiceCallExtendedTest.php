@@ -88,22 +88,21 @@ class ServiceCallExtendedTest extends TestCase
     {
         $response = $this->postJson('/api/v1/service-calls', [
             'customer_id' => $this->customer->id,
-            'title' => 'Balança não liga',
-            'description' => 'Cliente reporta que a balança não está ligando',
+            'observations' => 'Cliente reporta que a balança não está ligando',
             'priority' => 'high',
         ]);
 
         $response->assertCreated();
         $this->assertDatabaseHas('service_calls', [
             'customer_id' => $this->customer->id,
-            'title' => 'Balança não liga',
+            'observations' => 'Cliente reporta que a balança não está ligando',
         ]);
     }
 
     public function test_create_service_call_requires_customer(): void
     {
         $response = $this->postJson('/api/v1/service-calls', [
-            'title' => 'Chamado sem cliente',
+            'observations' => 'Chamado sem cliente',
         ]);
 
         $response->assertStatus(422);
@@ -119,32 +118,39 @@ class ServiceCallExtendedTest extends TestCase
         ]);
 
         $response = $this->putJson("/api/v1/service-calls/{$sc->id}", [
-            'title' => 'Título atualizado',
+            'observations' => 'Observação atualizada',
         ]);
 
         $response->assertOk();
         $this->assertDatabaseHas('service_calls', [
             'id' => $sc->id,
-            'title' => 'Título atualizado',
+            'observations' => 'Observação atualizada',
         ]);
     }
 
     public function test_update_service_call_status(): void
     {
+        $technician = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'current_tenant_id' => $this->tenant->id,
+        ]);
+        $technician->tenants()->attach($this->tenant->id, ['is_default' => true]);
+
         $sc = ServiceCall::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
+            'technician_id' => $technician->id,
             'status' => 'open',
         ]);
 
         $response = $this->putJson("/api/v1/service-calls/{$sc->id}/status", [
-            'status' => 'in_progress',
+            'status' => 'scheduled',
         ]);
 
         $response->assertOk();
         $this->assertDatabaseHas('service_calls', [
             'id' => $sc->id,
-            'status' => 'in_progress',
+            'status' => 'scheduled',
         ]);
     }
 
@@ -191,7 +197,7 @@ class ServiceCallExtendedTest extends TestCase
         $technician->tenants()->attach($this->tenant->id, ['is_default' => true]);
 
         $response = $this->putJson("/api/v1/service-calls/{$sc->id}/assign", [
-            'assigned_to' => $technician->id,
+            'technician_id' => $technician->id,
         ]);
 
         $response->assertOk();
@@ -204,6 +210,8 @@ class ServiceCallExtendedTest extends TestCase
         $sc = ServiceCall::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
+            'status' => ServiceCall::STATUS_IN_PROGRESS,
+            'started_at' => now(),
         ]);
 
         $response = $this->postJson("/api/v1/service-calls/{$sc->id}/convert-to-os");

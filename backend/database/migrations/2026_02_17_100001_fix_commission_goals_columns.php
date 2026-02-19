@@ -16,16 +16,16 @@ return new class extends Migration
     {
         Schema::table('commission_goals', function (Blueprint $table) {
             if (!Schema::hasColumn('commission_goals', 'type')) {
-                $table->string('type', 30)->default('revenue')->after('period');
+                $table->string('type', 30)->default('revenue');
             }
             if (!Schema::hasColumn('commission_goals', 'bonus_percentage')) {
-                $table->decimal('bonus_percentage', 5, 2)->nullable()->after('achieved_amount');
+                $table->decimal('bonus_percentage', 5, 2)->nullable();
             }
             if (!Schema::hasColumn('commission_goals', 'bonus_amount')) {
-                $table->decimal('bonus_amount', 12, 2)->nullable()->after('bonus_percentage');
+                $table->decimal('bonus_amount', 12, 2)->nullable();
             }
             if (!Schema::hasColumn('commission_goals', 'notes')) {
-                $table->text('notes')->nullable()->after('bonus_amount');
+                $table->text('notes')->nullable();
             }
         });
 

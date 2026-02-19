@@ -97,8 +97,13 @@ class CrmFeaturesController extends Controller
 
     public function destroyScoringRule(CrmLeadScoringRule $rule): JsonResponse
     {
-        $rule->delete();
-        return response()->json(['message' => 'Regra removida']);
+        try {
+            $rule->delete();
+            return response()->json(['message' => 'Regra removida']);
+        } catch (\Exception $e) {
+            Log::error('CrmFeatures destroyScoringRule failed', ['rule_id' => $rule->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover regra'], 500);
+        }
     }
 
     public function calculateScores(Request $request): JsonResponse
@@ -249,9 +254,14 @@ class CrmFeaturesController extends Controller
 
     public function destroySequence(CrmSequence $sequence): JsonResponse
     {
-        $sequence->enrollments()->where('status', 'active')->update(['status' => 'cancelled']);
-        $sequence->delete();
-        return response()->json(['message' => 'Cadência removida']);
+        try {
+            $sequence->enrollments()->where('status', 'active')->update(['status' => 'cancelled']);
+            $sequence->delete();
+            return response()->json(['message' => 'Cadência removida']);
+        } catch (\Exception $e) {
+            Log::error('CrmFeatures destroySequence failed', ['sequence_id' => $sequence->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover cadência'], 500);
+        }
     }
 
     public function enrollInSequence(Request $request): JsonResponse
@@ -829,8 +839,13 @@ class CrmFeaturesController extends Controller
 
     public function destroyTerritory(CrmTerritory $territory): JsonResponse
     {
-        $territory->delete();
-        return response()->json(['message' => 'Território removido']);
+        try {
+            $territory->delete();
+            return response()->json(['message' => 'Território removido']);
+        } catch (\Exception $e) {
+            Log::error('CrmFeatures destroyTerritory failed', ['territory_id' => $territory->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover território'], 500);
+        }
     }
 
     // ═══════════════════════════════════════════════════════
@@ -1167,8 +1182,13 @@ class CrmFeaturesController extends Controller
 
     public function destroyWebForm(CrmWebForm $form): JsonResponse
     {
-        $form->delete();
-        return response()->json(['message' => 'Formulário removido']);
+        try {
+            $form->delete();
+            return response()->json(['message' => 'Formulário removido']);
+        } catch (\Exception $e) {
+            Log::error('CrmFeatures destroyWebForm failed', ['form_id' => $form->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover formulário'], 500);
+        }
     }
 
     public function submitWebForm(Request $request, string $slug): JsonResponse
@@ -1614,8 +1634,13 @@ class CrmFeaturesController extends Controller
 
     public function destroyCalendarEvent(CrmCalendarEvent $event): JsonResponse
     {
-        $event->delete();
-        return response()->json(['message' => 'Evento removido']);
+        try {
+            $event->delete();
+            return response()->json(['message' => 'Evento removido']);
+        } catch (\Exception $e) {
+            Log::error('CrmFeatures destroyCalendarEvent failed', ['event_id' => $event->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao remover evento'], 500);
+        }
     }
 
     // ═══════════════════════════════════════════════════════
@@ -1834,4 +1859,167 @@ class CrmFeaturesController extends Controller
             'forecast_period_types' => CrmForecastSnapshot::PERIOD_TYPES,
         ]);
     }
+
+    // ═══════════════════════════════════════════════════════
+    // 21. CSV EXPORT / IMPORT (#15)
+    // ═══════════════════════════════════════════════════════
+
+    public function exportDealsCsv(Request $request): mixed
+    {
+        $tenantId = $this->tenantId($request);
+
+        $query = CrmDeal::where('tenant_id', $tenantId)
+            ->with(['customer:id,name', 'pipeline:id,name', 'stage:id,name', 'assignee:id,name']);
+
+        if ($request->input('pipeline_id')) {
+            $query->where('pipeline_id', (int) $request->input('pipeline_id'));
+        }
+        if ($request->input('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $deals = $query->orderByDesc('created_at')->get();
+
+        $headers = ['ID', 'Título', 'Cliente', 'Pipeline', 'Etapa', 'Valor', 'Probabilidade', 'Status', 'Origem', 'Responsável', 'Previsão Fechamento', 'Criado em'];
+
+        $callback = function () use ($deals, $headers) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
+            fputcsv($file, $headers, ';');
+
+            foreach ($deals as $deal) {
+                fputcsv($file, [
+                    $deal->id,
+                    $deal->title,
+                    $deal->customer?->name ?? '',
+                    $deal->pipeline?->name ?? '',
+                    $deal->stage?->name ?? '',
+                    number_format($deal->value ?? 0, 2, ',', '.'),
+                    $deal->probability ?? 0,
+                    $deal->status,
+                    $deal->source ?? '',
+                    $deal->assignee?->name ?? '',
+                    $deal->expected_close_date?->format('d/m/Y') ?? '',
+                    $deal->created_at->format('d/m/Y H:i'),
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        $filename = 'deals_export_' . now()->format('Y-m-d_His') . '.csv';
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    public function importDealsCsv(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $tenantId = $this->tenantId($request);
+        $file = $request->file('file');
+        $imported = 0;
+        $errors = [];
+
+        $handle = fopen($file->getPathname(), 'r');
+        $headerRow = fgetcsv($handle, 0, ';');
+
+        if (!$headerRow) {
+            return response()->json(['imported' => 0, 'errors' => ['Arquivo CSV vazio ou malformado']], 422);
+        }
+
+        $headerMap = array_flip(array_map('mb_strtolower', array_map('trim', $headerRow)));
+        $row = 1;
+
+        $defaultPipeline = CrmPipeline::where('tenant_id', $tenantId)->default()->first();
+        $firstStage = $defaultPipeline?->stages()->orderBy('sort_order')->first();
+
+        while (($data = fgetcsv($handle, 0, ';')) !== false) {
+            $row++;
+            try {
+                $title = trim($data[$headerMap['título'] ?? $headerMap['titulo'] ?? $headerMap['title'] ?? 0] ?? '');
+                if (!$title) {
+                    $errors[] = "Linha {$row}: título obrigatório";
+                    continue;
+                }
+
+                $customerName = trim($data[$headerMap['cliente'] ?? $headerMap['customer'] ?? 99] ?? '');
+                $customer = null;
+                if ($customerName) {
+                    $customer = Customer::where('tenant_id', $tenantId)
+                        ->where('name', 'LIKE', "%{$customerName}%")
+                        ->first();
+                }
+
+                if (!$customer) {
+                    $errors[] = "Linha {$row}: cliente '{$customerName}' não encontrado";
+                    continue;
+                }
+
+                $valueStr = trim($data[$headerMap['valor'] ?? $headerMap['value'] ?? 99] ?? '0');
+                $value = (float) str_replace(['.', ','], ['', '.'], $valueStr);
+
+                CrmDeal::create([
+                    'tenant_id' => $tenantId,
+                    'title' => $title,
+                    'customer_id' => $customer->id,
+                    'pipeline_id' => $defaultPipeline?->id,
+                    'stage_id' => $firstStage?->id,
+                    'value' => $value,
+                    'source' => trim($data[$headerMap['origem'] ?? $headerMap['source'] ?? 99] ?? '') ?: null,
+                    'assigned_to' => $request->user()->id,
+                ]);
+
+                $imported++;
+            } catch (\Throwable $e) {
+                $errors[] = "Linha {$row}: " . $e->getMessage();
+            }
+        }
+
+        fclose($handle);
+
+        return response()->json([
+            'imported' => $imported,
+            'errors' => array_slice($errors, 0, 20),
+        ]);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 22. CALENDAR ACTIVITIES INTEGRATION (#14)
+    // ═══════════════════════════════════════════════════════
+
+    public function calendarActivities(Request $request): JsonResponse
+    {
+        $tenantId = $this->tenantId($request);
+        $start = $request->input('start', now()->startOfMonth()->toDateString());
+        $end = $request->input('end', now()->endOfMonth()->toDateString());
+
+        $activities = CrmActivity::where('tenant_id', $tenantId)
+            ->whereNotNull('scheduled_at')
+            ->whereBetween('scheduled_at', [$start, $end])
+            ->with(['customer:id,name', 'deal:id,title', 'user:id,name'])
+            ->orderBy('scheduled_at')
+            ->get()
+            ->map(fn($a) => [
+                'id' => 'activity-' . $a->id,
+                'title' => $a->title,
+                'start_at' => $a->scheduled_at,
+                'end_at' => $a->scheduled_at->addMinutes($a->duration_minutes ?? 30),
+                'type' => $a->type,
+                'customer' => $a->customer,
+                'deal' => $a->deal,
+                'user' => $a->user,
+                'is_activity' => true,
+                'completed' => $a->completed_at !== null,
+                'notes' => $a->notes,
+            ]);
+
+        return response()->json($activities);
+    }
 }
+

@@ -41,6 +41,8 @@ export function QuoteEditPage() {
     const [observations, setObservations] = useState('')
     const [internalNotes, setInternalNotes] = useState('')
     const [source, setSource] = useState('')
+    const [paymentTerms, setPaymentTerms] = useState('')
+    const [paymentTermsDetail, setPaymentTermsDetail] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
     const [displacementValue, setDisplacementValue] = useState(0)
     const [addItemEquipmentId, setAddItemEquipmentId] = useState<number | null>(null)
@@ -74,6 +76,8 @@ export function QuoteEditPage() {
             setSource(quote.source ?? '')
             setDiscountPercentage(parseFloat(String(quote.discount_percentage)) || 0)
             setDisplacementValue(parseFloat(String(quote.displacement_value)) || 0)
+            setPaymentTerms((quote as any).payment_terms ?? '')
+            setPaymentTermsDetail((quote as any).payment_terms_detail ?? '')
         }
     }, [quote])
 
@@ -133,6 +137,8 @@ export function QuoteEditPage() {
             internal_notes: internalNotes || null,
             discount_percentage: discountPercentage,
             displacement_value: displacementValue,
+            payment_terms: paymentTerms || null,
+            payment_terms_detail: paymentTermsDetail || null,
         })
     }
 
@@ -213,6 +219,34 @@ export function QuoteEditPage() {
                             <option value="indicacao">Indicação</option>
                         </select>
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-content-secondary mb-1">Condições de Pagamento</label>
+                        <select value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)}
+                            className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                            <option value="">Selecione (opcional)</option>
+                            <option value="a_vista">À Vista</option>
+                            <option value="boleto_30">Boleto 30 dias</option>
+                            <option value="boleto_30_60">Boleto 30/60 dias</option>
+                            <option value="boleto_30_60_90">Boleto 30/60/90 dias</option>
+                            <option value="cartao_credito">Cartão de Crédito</option>
+                            <option value="cartao_debito">Cartão de Débito</option>
+                            <option value="pix">PIX</option>
+                            <option value="transferencia">Transferência Bancária</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="financiamento">Financiamento</option>
+                            <option value="parcelado">Parcelado</option>
+                            <option value="consignado">Consignado</option>
+                            <option value="outros">Outros</option>
+                        </select>
+                    </div>
+                    {paymentTerms && (
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-content-secondary mb-1">Detalhes do Pagamento</label>
+                            <input value={paymentTermsDetail} onChange={e => setPaymentTermsDetail(e.target.value)}
+                                placeholder="Detalhes adicionais sobre forma de pagamento..."
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                        </div>
+                    )}
                 </div>
                 <div className="flex justify-end mt-4">
                     <Button icon={<Save className="h-4 w-4" />} onClick={handleSaveGeneral} disabled={updateMut.isPending}>
@@ -330,11 +364,10 @@ export function QuoteEditPage() {
                                             type="button"
                                             onClick={() => { setQuickPSTab(newItem.type); setShowQuickProductService(true) }}
                                             title={`Cadastrar novo ${newItem.type === 'product' ? 'produto' : 'serviço'}`}
-                                            className={`flex items-center justify-center rounded-lg border border-dashed h-[34px] w-[34px] transition-colors ${
-                                                newItem.type === 'product'
-                                                    ? 'border-brand-300 bg-brand-50 text-brand-600 hover:bg-brand-100 hover:border-brand-400'
-                                                    : 'border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:border-emerald-400'
-                                            }`}
+                                            className={`flex items-center justify-center rounded-lg border border-dashed h-[34px] w-[34px] transition-colors ${newItem.type === 'product'
+                                                ? 'border-brand-300 bg-brand-50 text-brand-600 hover:bg-brand-100 hover:border-brand-400'
+                                                : 'border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:border-emerald-400'
+                                                }`}
                                         >
                                             <Plus className="h-3.5 w-3.5" />
                                         </button>

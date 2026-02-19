@@ -168,7 +168,7 @@ export function ServiceCallEditPage() {
         },
         onSuccess: () => {
             toast.success('Chamado atualizado com sucesso')
-                queryClient.invalidateQueries({ queryKey: ['service-call', id] })
+            queryClient.invalidateQueries({ queryKey: ['service-call', id] })
             queryClient.invalidateQueries({ queryKey: ['service-calls'] })
             queryClient.invalidateQueries({ queryKey: ['service-calls-summary'] })
             navigate(`/chamados/${id}`)

@@ -38,7 +38,7 @@ export function CrmVisitRoutesPage() {
 
     const searchQ = useQuery({
         queryKey: ['customers-route-search', searchCustomer],
-        queryFn: () => api.get('/api/v1/customers', { params: { search: searchCustomer, per_page: 8, is_active: true } }).then(r => r.data?.data ?? []),
+        queryFn: () => api.get('/customers', { params: { search: searchCustomer, per_page: 8, is_active: true } }).then(r => r.data?.data ?? []),
         enabled: searchCustomer.length >= 2,
     })
 

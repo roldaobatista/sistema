@@ -25,12 +25,12 @@ class StockIntegrationController extends Controller
 
     public function purchaseQuoteIndex(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->current_tenant_id;
+        $tenantId = app('current_tenant_id');
         $query = PurchaseQuote::where('tenant_id', $tenantId)
             ->with(['items.product:id,name,code', 'suppliers', 'creator:id,name'])
             ->orderByDesc('created_at');
 
-        if ($request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         if ($request->search) {
@@ -45,12 +45,14 @@ class StockIntegrationController extends Controller
 
     public function purchaseQuoteStore(Request $request): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $request->validate([
             'title' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'deadline' => 'nullable|date',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.specifications' => 'nullable|string',
             'supplier_ids' => 'nullable|array',
@@ -59,7 +61,7 @@ class StockIntegrationController extends Controller
         try {
             DB::beginTransaction();
 
-            $tenantId = $request->user()->current_tenant_id;
+            $tenantId = app('current_tenant_id');
             $lastRef = PurchaseQuote::where('tenant_id', $tenantId)->max('id') ?? 0;
             $reference = 'COT-' . str_pad($lastRef + 1, 6, '0', STR_PAD_LEFT);
 
@@ -93,6 +95,7 @@ class StockIntegrationController extends Controller
 
     public function purchaseQuoteShow(PurchaseQuote $purchaseQuote): JsonResponse
     {
+        $this->authorizeTenant($purchaseQuote);
         return response()->json([
             'data' => $purchaseQuote->load(['items.product:id,name,code,unit,cost_price', 'suppliers', 'creator:id,name']),
         ]);
@@ -100,6 +103,7 @@ class StockIntegrationController extends Controller
 
     public function purchaseQuoteUpdate(Request $request, PurchaseQuote $purchaseQuote): JsonResponse
     {
+        $this->authorizeTenant($purchaseQuote);
         $request->validate([
             'status' => 'nullable|in:draft,sent,received,approved,rejected,cancelled',
             'title' => 'nullable|string|max:255',
@@ -108,12 +112,16 @@ class StockIntegrationController extends Controller
             'approved_supplier_id' => 'nullable|integer',
         ]);
 
-        $purchaseQuote->update($request->only(['status', 'title', 'notes', 'deadline', 'approved_supplier_id']));
+        $purchaseQuote->update(array_filter(
+            $request->only(['status', 'title', 'notes', 'deadline', 'approved_supplier_id']),
+            fn($v) => $v !== null
+        ));
         return response()->json(['message' => 'Cotação atualizada', 'data' => $purchaseQuote->fresh()]);
     }
 
     public function purchaseQuoteDestroy(PurchaseQuote $purchaseQuote): JsonResponse
     {
+        $this->authorizeTenant($purchaseQuote);
         $purchaseQuote->delete();
         return response()->json(['message' => 'Cotação removida']);
     }
@@ -122,15 +130,15 @@ class StockIntegrationController extends Controller
 
     public function materialRequestIndex(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->current_tenant_id;
+        $tenantId = app('current_tenant_id');
         $query = MaterialRequest::where('tenant_id', $tenantId)
             ->with(['items.product:id,name,code', 'requester:id,name', 'warehouse:id,name'])
             ->orderByDesc('created_at');
 
-        if ($request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if ($request->priority) {
+        if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
         }
 
@@ -139,20 +147,22 @@ class StockIntegrationController extends Controller
 
     public function materialRequestStore(Request $request): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $request->validate([
-            'warehouse_id' => 'nullable|exists:warehouses,id',
+            'warehouse_id' => "nullable|exists:warehouses,id,tenant_id,{$tenantId}",
             'work_order_id' => 'nullable|exists:work_orders,id',
             'priority' => 'nullable|in:low,normal,high,urgent',
             'justification' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
             'items.*.quantity_requested' => 'required|numeric|min:0.01',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $tenantId = $request->user()->current_tenant_id;
+            $tenantId = app('current_tenant_id');
             $lastRef = MaterialRequest::where('tenant_id', $tenantId)->max('id') ?? 0;
             $reference = 'SOL-' . str_pad($lastRef + 1, 6, '0', STR_PAD_LEFT);
 
@@ -181,6 +191,7 @@ class StockIntegrationController extends Controller
 
     public function materialRequestShow(MaterialRequest $materialRequest): JsonResponse
     {
+        $this->authorizeTenant($materialRequest);
         return response()->json([
             'data' => $materialRequest->load(['items.product:id,name,code,unit,stock_qty', 'requester:id,name', 'approver:id,name', 'warehouse:id,name']),
         ]);
@@ -188,6 +199,7 @@ class StockIntegrationController extends Controller
 
     public function materialRequestUpdate(Request $request, MaterialRequest $materialRequest): JsonResponse
     {
+        $this->authorizeTenant($materialRequest);
         $request->validate([
             'status' => 'nullable|in:pending,approved,partially_fulfilled,fulfilled,rejected,cancelled',
             'rejection_reason' => 'nullable|string',
@@ -208,7 +220,7 @@ class StockIntegrationController extends Controller
 
     public function assetTagIndex(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->current_tenant_id;
+        $tenantId = app('current_tenant_id');
         $query = AssetTag::where('tenant_id', $tenantId)
             ->with(['lastScanner:id,name'])
             ->orderByDesc('last_scanned_at');
@@ -216,7 +228,7 @@ class StockIntegrationController extends Controller
         if ($request->tag_type) {
             $query->where('tag_type', $request->tag_type);
         }
-        if ($request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         if ($request->search) {
@@ -237,7 +249,7 @@ class StockIntegrationController extends Controller
         ]);
 
         $tag = AssetTag::create([
-            'tenant_id' => $request->user()->current_tenant_id,
+            'tenant_id' => app('current_tenant_id'),
             ...$request->only(['tag_code', 'tag_type', 'taggable_type', 'taggable_id', 'location']),
         ]);
 
@@ -246,6 +258,7 @@ class StockIntegrationController extends Controller
 
     public function assetTagScan(Request $request, AssetTag $assetTag): JsonResponse
     {
+        $this->authorizeTenant($assetTag);
         $request->validate([
             'action' => 'nullable|string|max:50',
             'location' => 'nullable|string',
@@ -272,6 +285,7 @@ class StockIntegrationController extends Controller
 
     public function assetTagShow(AssetTag $assetTag): JsonResponse
     {
+        $this->authorizeTenant($assetTag);
         return response()->json([
             'data' => $assetTag->load(['scans' => fn($q) => $q->latest()->limit(50), 'scans.scanner:id,name']),
         ]);
@@ -279,6 +293,7 @@ class StockIntegrationController extends Controller
 
     public function assetTagUpdate(Request $request, AssetTag $assetTag): JsonResponse
     {
+        $this->authorizeTenant($assetTag);
         $request->validate([
             'status' => 'nullable|in:active,inactive,lost,damaged',
             'location' => 'nullable|string',
@@ -292,12 +307,12 @@ class StockIntegrationController extends Controller
 
     public function rmaIndex(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->current_tenant_id;
+        $tenantId = app('current_tenant_id');
         $query = RmaRequest::where('tenant_id', $tenantId)
             ->with(['items.product:id,name,code', 'creator:id,name', 'customer:id,name'])
             ->orderByDesc('created_at');
 
-        if ($request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         if ($request->type) {
@@ -309,6 +324,8 @@ class StockIntegrationController extends Controller
 
     public function rmaStore(Request $request): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $request->validate([
             'type' => 'required|in:customer_return,supplier_return',
             'customer_id' => 'nullable|exists:customers,id',
@@ -316,7 +333,7 @@ class StockIntegrationController extends Controller
             'work_order_id' => 'nullable|exists:work_orders,id',
             'reason' => 'required|string',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.defect_description' => 'nullable|string',
             'items.*.condition' => 'nullable|in:new,used,damaged,defective',
@@ -325,7 +342,7 @@ class StockIntegrationController extends Controller
         try {
             DB::beginTransaction();
 
-            $tenantId = $request->user()->current_tenant_id;
+            $tenantId = app('current_tenant_id');
             $lastRef = RmaRequest::where('tenant_id', $tenantId)->max('id') ?? 0;
             $rmaNumber = 'RMA-' . str_pad($lastRef + 1, 6, '0', STR_PAD_LEFT);
 
@@ -355,6 +372,7 @@ class StockIntegrationController extends Controller
 
     public function rmaShow(RmaRequest $rmaRequest): JsonResponse
     {
+        $this->authorizeTenant($rmaRequest);
         return response()->json([
             'data' => $rmaRequest->load(['items.product:id,name,code,unit', 'creator:id,name', 'customer:id,name']),
         ]);
@@ -362,6 +380,7 @@ class StockIntegrationController extends Controller
 
     public function rmaUpdate(Request $request, RmaRequest $rmaRequest): JsonResponse
     {
+        $this->authorizeTenant($rmaRequest);
         $request->validate([
             'status' => 'nullable|in:requested,approved,in_transit,received,inspected,resolved,rejected',
             'resolution' => 'nullable|in:refund,replacement,repair,credit,rejected',
@@ -376,12 +395,12 @@ class StockIntegrationController extends Controller
 
     public function disposalIndex(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->current_tenant_id;
+        $tenantId = app('current_tenant_id');
         $query = StockDisposal::where('tenant_id', $tenantId)
             ->with(['items.product:id,name,code', 'warehouse:id,name', 'creator:id,name'])
             ->orderByDesc('created_at');
 
-        if ($request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         if ($request->disposal_type) {
@@ -393,24 +412,26 @@ class StockIntegrationController extends Controller
 
     public function disposalStore(Request $request): JsonResponse
     {
+        $tenantId = app('current_tenant_id');
+
         $request->validate([
             'disposal_type' => 'required|in:expired,damaged,obsolete,recalled,hazardous,other',
             'disposal_method' => 'required|in:recycling,incineration,landfill,donation,return_manufacturer,specialized_treatment',
             'justification' => 'required|string',
             'environmental_notes' => 'nullable|string',
-            'warehouse_id' => 'nullable|exists:warehouses,id',
+            'warehouse_id' => "nullable|exists:warehouses,id,tenant_id,{$tenantId}",
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => "required|exists:products,id,tenant_id,{$tenantId}",
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_cost' => 'nullable|numeric|min:0',
-            'items.*.batch_id' => 'nullable|exists:batches,id',
+            'items.*.batch_id' => "nullable|exists:batches,id,tenant_id,{$tenantId}",
             'items.*.notes' => 'nullable|string',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $tenantId = $request->user()->current_tenant_id;
+            $tenantId = app('current_tenant_id');
             $lastRef = StockDisposal::where('tenant_id', $tenantId)->max('id') ?? 0;
             $reference = 'DESC-' . str_pad($lastRef + 1, 6, '0', STR_PAD_LEFT);
 
@@ -440,6 +461,7 @@ class StockIntegrationController extends Controller
 
     public function disposalShow(StockDisposal $stockDisposal): JsonResponse
     {
+        $this->authorizeTenant($stockDisposal);
         return response()->json([
             'data' => $stockDisposal->load(['items.product:id,name,code,unit', 'items.batch:id,code', 'warehouse:id,name', 'creator:id,name', 'approver:id,name']),
         ]);
@@ -447,6 +469,7 @@ class StockIntegrationController extends Controller
 
     public function disposalUpdate(Request $request, StockDisposal $stockDisposal): JsonResponse
     {
+        $this->authorizeTenant($stockDisposal);
         $request->validate([
             'status' => 'nullable|in:pending,approved,in_progress,completed,cancelled',
             'disposal_certificate' => 'nullable|string',
@@ -464,5 +487,13 @@ class StockIntegrationController extends Controller
 
         $stockDisposal->update($data);
         return response()->json(['message' => 'Descarte atualizado', 'data' => $stockDisposal->fresh()]);
+    }
+
+    private function authorizeTenant($model): void
+    {
+        $tenantId = (int) app('current_tenant_id');
+        if ($model->tenant_id !== $tenantId) {
+            abort(403, 'Acesso não autorizado a este recurso.');
+        }
     }
 }

@@ -1,0 +1,16 @@
+route_permissions=360
+seeder_permissions=464
+missing_in_seeder=12
+
+admin.settings.manage
+financeiro.accounts_receivable.create
+financeiro.accounts_receivable.view
+financeiro.payment.create
+qualidade.procedure.create
+qualidade.procedure.update
+qualidade.procedure.view
+relatorios.report.view
+reports.analytics.view
+reports.commissions_report.view
+reports.profitability_report.view
+rh.manage

@@ -8,12 +8,16 @@ export interface QuoteItem {
     custom_description: string | null;
     quantity: number;
     original_price: number;
+    cost_price: number;
     unit_price: number;
     discount_percentage: number;
     subtotal: number;
     sort_order: number;
+    internal_note: string | null;
     created_at: string;
     updated_at: string;
+    // Appended
+    description: string | null;
     // Relations
     product?: { id: number; name: string };
     service?: { id: number; name: string };
@@ -63,12 +67,25 @@ export interface Quote {
     total: number;
     observations: string | null;
     internal_notes: string | null;
+    payment_terms: string | null;
+    payment_terms_detail: string | null;
+    template_id: number | null;
+    opportunity_id: number | null;
+    currency: string;
+    custom_fields: Record<string, unknown> | null;
+    is_template: boolean;
     internal_approved_by: number | null;
     internal_approved_at: string | null;
+    level2_approved_by: number | null;
+    level2_approved_at: string | null;
     sent_at: string | null;
     approved_at: string | null;
     rejected_at: string | null;
     rejection_reason: string | null;
+    last_followup_at: string | null;
+    followup_count: number;
+    client_viewed_at: string | null;
+    client_view_count: number;
     approval_url?: string;
     created_at: string;
     updated_at: string;
@@ -77,6 +94,7 @@ export interface Quote {
     customer?: { id: number; name: string; document?: string; email?: string; phone?: string; contacts?: any[] };
     seller?: { id: number; name: string };
     equipments?: QuoteEquipment[];
+    tags?: { id: number; name: string; color: string | null }[];
 }
 
 export interface QuoteSummary {

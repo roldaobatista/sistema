@@ -1,0 +1,2120 @@
+{
+    "generatedAt":  "2026-02-18T07:27:55",
+    "routeCount":  1150,
+    "modules":  [
+                    {
+                        "module":  "commission-statement",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "central",
+                        "total":  15,
+                        "auth":  15,
+                        "checkPermission":  15,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  1
+                    },
+                    {
+                        "module":  "lab-advanced",
+                        "total":  12,
+                        "auth":  0,
+                        "checkPermission":  12,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  7
+                    },
+                    {
+                        "module":  "hr",
+                        "total":  97,
+                        "auth":  58,
+                        "checkPermission":  96,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "tech",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  3,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "technician",
+                        "total":  2,
+                        "auth":  2,
+                        "checkPermission":  2,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-calls-map",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "tenants-stats",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "security",
+                        "total":  20,
+                        "auth":  0,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "batches",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  3
+                    },
+                    {
+                        "module":  "hr-advanced",
+                        "total":  5,
+                        "auth":  0,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "equipments-export",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-calls-export",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "financial",
+                        "total":  20,
+                        "auth":  2,
+                        "checkPermission":  20,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  7
+                    },
+                    {
+                        "module":  "dre",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "stock",
+                        "total":  19,
+                        "auth":  19,
+                        "checkPermission":  19,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  4
+                    },
+                    {
+                        "module":  "warehouses",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  3
+                    },
+                    {
+                        "module":  "fleet-advanced",
+                        "total":  5,
+                        "auth":  0,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "email-signatures",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "account-payable-categories",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "equipments-dashboard",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "payment-methods",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "quotes-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "innovation",
+                        "total":  7,
+                        "auth":  0,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "accounts-payable",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "roles",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  7,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "email-rules",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "commission-campaigns",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "stock-disposals",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  2
+                    },
+                    {
+                        "module":  "equipments-alerts",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "reconciliation-rules",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  7,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  1
+                    },
+                    {
+                        "module":  "equipment-documents",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "commission-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "emails",
+                        "total":  19,
+                        "auth":  19,
+                        "checkPermission":  19,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  6
+                    },
+                    {
+                        "module":  "route-plans",
+                        "total":  2,
+                        "auth":  2,
+                        "checkPermission":  2,
+                        "missingSeederPerm":  1,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "expenses",
+                        "total":  10,
+                        "auth":  10,
+                        "checkPermission":  10,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "cash-flow",
+                        "total":  2,
+                        "auth":  2,
+                        "checkPermission":  2,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "invoices",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "expense-analytics",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-calls-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "commission-events",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  7,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "customers",
+                        "total":  11,
+                        "auth":  11,
+                        "checkPermission":  11,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "logout",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "integrations",
+                        "total":  18,
+                        "auth":  0,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "expenses-export",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "fleet",
+                        "total":  57,
+                        "auth":  57,
+                        "checkPermission":  57,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "me",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "fiscal",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  7,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "pixel",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "accounts-receivable",
+                        "total":  8,
+                        "auth":  8,
+                        "checkPermission":  8,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "quality",
+                        "total":  18,
+                        "auth":  18,
+                        "checkPermission":  18,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "automation",
+                        "total":  16,
+                        "auth":  16,
+                        "checkPermission":  16,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "portal",
+                        "total":  29,
+                        "auth":  7,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  7,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-calls",
+                        "total":  12,
+                        "auth":  12,
+                        "checkPermission":  12,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "email-tags",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "work-orders-metadata",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "users",
+                        "total":  15,
+                        "auth":  15,
+                        "checkPermission":  15,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "profile",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  3,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "commission-disputes",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "stock-advanced",
+                        "total":  19,
+                        "auth":  0,
+                        "checkPermission":  19,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  11
+                    },
+                    {
+                        "module":  "bank-reconciliation",
+                        "total":  16,
+                        "auth":  16,
+                        "checkPermission":  16,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-categories",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "work-orders",
+                        "total":  26,
+                        "auth":  26,
+                        "checkPermission":  26,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "checklist-submissions",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  3,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-checklists",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  3
+                    },
+                    {
+                        "module":  "payments-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "quote-items",
+                        "total":  2,
+                        "auth":  2,
+                        "checkPermission":  2,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "accounts-receivable-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "time-entries",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "chart-of-accounts",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "auvo",
+                        "total":  13,
+                        "auth":  13,
+                        "checkPermission":  13,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "numbering-sequences",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  3,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "email-notes",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "dashboard-stats",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-calls-assignees",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "fund-transfers",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "inmetro",
+                        "total":  97,
+                        "auth":  97,
+                        "checkPermission":  97,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "checklists",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "service-calls-agenda",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "audit-logs",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  1
+                    },
+                    {
+                        "module":  "import",
+                        "total":  14,
+                        "auth":  14,
+                        "checkPermission":  14,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "inventories",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  4
+                    },
+                    {
+                        "module":  "commission-calculation-types",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "product-categories",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "my-tenants",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "commission-goals",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "fueling-logs",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "quote-photos",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "import-stats",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "work-orders-dashboard-stats",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "quote-equipments",
+                        "total":  2,
+                        "auth":  2,
+                        "checkPermission":  2,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "sla-dashboard",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  3,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "accounts-payable-categories",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "external",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  7,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "bank-accounts",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "sla-policies",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  3
+                    },
+                    {
+                        "module":  "commission-simulate",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "email-templates",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "tools",
+                        "total":  4,
+                        "auth":  0,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "tv",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "expense-categories",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "accounts-payable-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "schedules",
+                        "total":  8,
+                        "auth":  8,
+                        "checkPermission":  8,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "equipments-constants",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "expense-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "sales",
+                        "total":  6,
+                        "auth":  0,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "financial-extra",
+                        "total":  6,
+                        "auth":  0,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  4
+                    },
+                    {
+                        "module":  "services",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "warehouse-stocks",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "commission-dashboard",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "equipments",
+                        "total":  10,
+                        "auth":  10,
+                        "checkPermission":  10,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "products",
+                        "total":  12,
+                        "auth":  10,
+                        "checkPermission":  12,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  2
+                    },
+                    {
+                        "module":  "commission-settlements",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  7,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "permissions",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  3,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "parts-kits",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "rma",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  2
+                    },
+                    {
+                        "module":  "recurring-commissions",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "material-requests",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  2
+                    },
+                    {
+                        "module":  "cost-centers",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  3,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "technician-cash",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "switch-tenant",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "mobile",
+                        "total":  18,
+                        "auth":  0,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "login",
+                        "total":  1,
+                        "auth":  0,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "asset-tags",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  3
+                    },
+                    {
+                        "module":  "recurring-contracts",
+                        "total":  6,
+                        "auth":  6,
+                        "checkPermission":  6,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "reports",
+                        "total":  14,
+                        "auth":  14,
+                        "checkPermission":  13,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "crm",
+                        "total":  31,
+                        "auth":  31,
+                        "checkPermission":  31,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "purchase-quotes",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  3
+                    },
+                    {
+                        "module":  "operational",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  1
+                    },
+                    {
+                        "module":  "price-history",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "batch-export",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  3,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  2
+                    },
+                    {
+                        "module":  "schedules-unified",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "branches",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "collection-rules",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  3,
+                        "missingSeederPerm":  3,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "tenants",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  7,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "standard-weights",
+                        "total":  8,
+                        "auth":  8,
+                        "checkPermission":  8,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "technicians",
+                        "total":  3,
+                        "auth":  3,
+                        "checkPermission":  3,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  1
+                    },
+                    {
+                        "module":  "quotes-export",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "technician-cash-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "quotes",
+                        "total":  18,
+                        "auth":  18,
+                        "checkPermission":  18,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "notifications",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  4,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "commission-rules",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "advanced",
+                        "total":  15,
+                        "auth":  15,
+                        "checkPermission":  15,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "push",
+                        "total":  4,
+                        "auth":  4,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  3,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "user",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  0,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  1,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "crm-advanced",
+                        "total":  12,
+                        "auth":  0,
+                        "checkPermission":  12,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  5
+                    },
+                    {
+                        "module":  "payments",
+                        "total":  2,
+                        "auth":  2,
+                        "checkPermission":  2,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "settings",
+                        "total":  2,
+                        "auth":  2,
+                        "checkPermission":  2,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "time-entries-summary",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "work-orders-export",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "inventory",
+                        "total":  14,
+                        "auth":  0,
+                        "checkPermission":  14,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "import-entity-counts",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "suppliers",
+                        "total":  5,
+                        "auth":  5,
+                        "checkPermission":  5,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "customer-documents",
+                        "total":  1,
+                        "auth":  1,
+                        "checkPermission":  1,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "email-accounts",
+                        "total":  7,
+                        "auth":  7,
+                        "checkPermission":  7,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    },
+                    {
+                        "module":  "ai",
+                        "total":  15,
+                        "auth":  0,
+                        "checkPermission":  15,
+                        "missingSeederPerm":  0,
+                        "authWithoutCheckPermission":  0,
+                        "mutatingUsingOnlyViewPerm":  0
+                    }
+                ],
+    "totals":  {
+                   "modulesCount":  156,
+                   "missingSeederPermRoutes":  7,
+                   "authWithoutCheckPermissionRoutes":  32,
+                   "mutatingUsingOnlyViewPermRoutes":  81,
+                   "seederPermissions":  464
+               },
+    "issues":  {
+                   "missingSeederPermRoutes":  [
+                                                   {
+                                                       "module":  "collection-rules",
+                                                       "method":  "GET|HEAD",
+                                                       "uri":  "api/v1/collection-rules",
+                                                       "permissionRaw":  "finance.collection.view",
+                                                       "missingPermissions":  "finance.collection.view"
+                                                   },
+                                                   {
+                                                       "module":  "collection-rules",
+                                                       "method":  "POST",
+                                                       "uri":  "api/v1/collection-rules",
+                                                       "permissionRaw":  "finance.collection.manage",
+                                                       "missingPermissions":  "finance.collection.manage"
+                                                   },
+                                                   {
+                                                       "module":  "collection-rules",
+                                                       "method":  "PUT",
+                                                       "uri":  "api/v1/collection-rules/{rule}",
+                                                       "permissionRaw":  "finance.collection.manage",
+                                                       "missingPermissions":  "finance.collection.manage"
+                                                   },
+                                                   {
+                                                       "module":  "cost-centers",
+                                                       "method":  "POST",
+                                                       "uri":  "api/v1/cost-centers",
+                                                       "permissionRaw":  "finance.cost_center.manage",
+                                                       "missingPermissions":  "finance.cost_center.manage"
+                                                   },
+                                                   {
+                                                       "module":  "cost-centers",
+                                                       "method":  "PUT",
+                                                       "uri":  "api/v1/cost-centers/{costCenter}",
+                                                       "permissionRaw":  "finance.cost_center.manage",
+                                                       "missingPermissions":  "finance.cost_center.manage"
+                                                   },
+                                                   {
+                                                       "module":  "cost-centers",
+                                                       "method":  "DELETE",
+                                                       "uri":  "api/v1/cost-centers/{costCenter}",
+                                                       "permissionRaw":  "finance.cost_center.manage",
+                                                       "missingPermissions":  "finance.cost_center.manage"
+                                                   },
+                                                   {
+                                                       "module":  "route-plans",
+                                                       "method":  "POST",
+                                                       "uri":  "api/v1/route-plans",
+                                                       "permissionRaw":  "route.plan.manage",
+                                                       "missingPermissions":  "route.plan.manage"
+                                                   }
+                                               ],
+                   "authWithoutCheckPermissionRoutes":  [
+                                                            {
+                                                                "module":  "external",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/external/banks"
+                                                            },
+                                                            {
+                                                                "module":  "external",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/external/cep/{cep}"
+                                                            },
+                                                            {
+                                                                "module":  "external",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/external/cnpj/{cnpj}"
+                                                            },
+                                                            {
+                                                                "module":  "external",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/external/ddd/{ddd}"
+                                                            },
+                                                            {
+                                                                "module":  "external",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/external/holidays/{year}"
+                                                            },
+                                                            {
+                                                                "module":  "external",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/external/states"
+                                                            },
+                                                            {
+                                                                "module":  "external",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/external/states/{uf}/cities"
+                                                            },
+                                                            {
+                                                                "module":  "hr",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/hr/reviews"
+                                                            },
+                                                            {
+                                                                "module":  "logout",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/logout"
+                                                            },
+                                                            {
+                                                                "module":  "me",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/me"
+                                                            },
+                                                            {
+                                                                "module":  "my-tenants",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/my-tenants"
+                                                            },
+                                                            {
+                                                                "module":  "pixel",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/pixel/{tracking_id}"
+                                                            },
+                                                            {
+                                                                "module":  "portal",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/portal/financials"
+                                                            },
+                                                            {
+                                                                "module":  "portal",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/portal/logout"
+                                                            },
+                                                            {
+                                                                "module":  "portal",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/portal/me"
+                                                            },
+                                                            {
+                                                                "module":  "portal",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/portal/quotes"
+                                                            },
+                                                            {
+                                                                "module":  "portal",
+                                                                "method":  "POST|PUT",
+                                                                "uri":  "api/v1/portal/quotes/{id}/status"
+                                                            },
+                                                            {
+                                                                "module":  "portal",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/portal/service-calls"
+                                                            },
+                                                            {
+                                                                "module":  "portal",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/portal/work-orders"
+                                                            },
+                                                            {
+                                                                "module":  "profile",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/profile"
+                                                            },
+                                                            {
+                                                                "module":  "profile",
+                                                                "method":  "PUT",
+                                                                "uri":  "api/v1/profile"
+                                                            },
+                                                            {
+                                                                "module":  "profile",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/profile/change-password"
+                                                            },
+                                                            {
+                                                                "module":  "push",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/push/subscribe"
+                                                            },
+                                                            {
+                                                                "module":  "push",
+                                                                "method":  "DELETE",
+                                                                "uri":  "api/v1/push/unsubscribe"
+                                                            },
+                                                            {
+                                                                "module":  "push",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/push/vapid-key"
+                                                            },
+                                                            {
+                                                                "module":  "reports",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/reports/{type}/export"
+                                                            },
+                                                            {
+                                                                "module":  "switch-tenant",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/switch-tenant"
+                                                            },
+                                                            {
+                                                                "module":  "tech",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/tech/sync"
+                                                            },
+                                                            {
+                                                                "module":  "tech",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/tech/sync/batch"
+                                                            },
+                                                            {
+                                                                "module":  "tech",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/tech/sync/photo"
+                                                            },
+                                                            {
+                                                                "module":  "tv",
+                                                                "method":  "GET|HEAD",
+                                                                "uri":  "api/v1/tv/dashboard"
+                                                            },
+                                                            {
+                                                                "module":  "user",
+                                                                "method":  "POST",
+                                                                "uri":  "api/v1/user/location"
+                                                            }
+                                                        ],
+                   "mutatingUsingOnlyViewPermRoutes":  [
+                                                           {
+                                                               "module":  "asset-tags",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/asset-tags",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "asset-tags",
+                                                               "method":  "PUT",
+                                                               "uri":  "api/v1/asset-tags/{assetTag}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "asset-tags",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/asset-tags/{assetTag}/scan",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "audit-logs",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/audit-logs/export",
+                                                               "permissionRaw":  "iam.audit_log.view"
+                                                           },
+                                                           {
+                                                               "module":  "batch-export",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/batch-export/csv",
+                                                               "permissionRaw":  "cadastros.customer.view"
+                                                           },
+                                                           {
+                                                               "module":  "batch-export",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/batch-export/print",
+                                                               "permissionRaw":  "cadastros.customer.view"
+                                                           },
+                                                           {
+                                                               "module":  "batches",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/batches",
+                                                               "permissionRaw":  "estoque.warehouse.view"
+                                                           },
+                                                           {
+                                                               "module":  "batches",
+                                                               "method":  "PUT|PATCH",
+                                                               "uri":  "api/v1/batches/{batch}",
+                                                               "permissionRaw":  "estoque.warehouse.view"
+                                                           },
+                                                           {
+                                                               "module":  "batches",
+                                                               "method":  "DELETE",
+                                                               "uri":  "api/v1/batches/{batch}",
+                                                               "permissionRaw":  "estoque.warehouse.view"
+                                                           },
+                                                           {
+                                                               "module":  "central",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/central/items/{centralItem}/comments",
+                                                               "permissionRaw":  "central.item.view"
+                                                           },
+                                                           {
+                                                               "module":  "crm-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/crm-advanced/email-campaigns",
+                                                               "permissionRaw":  "crm.view"
+                                                           },
+                                                           {
+                                                               "module":  "crm-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/crm-advanced/import-leads",
+                                                               "permissionRaw":  "crm.view"
+                                                           },
+                                                           {
+                                                               "module":  "crm-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/crm-advanced/quotes/{quoteId}/variant",
+                                                               "permissionRaw":  "crm.view"
+                                                           },
+                                                           {
+                                                               "module":  "crm-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/crm-advanced/self-service/quote-request",
+                                                               "permissionRaw":  "crm.view"
+                                                           },
+                                                           {
+                                                               "module":  "crm-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/crm-advanced/whatsapp/send",
+                                                               "permissionRaw":  "crm.view"
+                                                           },
+                                                           {
+                                                               "module":  "emails",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/emails/batch-action",
+                                                               "permissionRaw":  "email.inbox.view"
+                                                           },
+                                                           {
+                                                               "module":  "emails",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/emails/{email}/archive",
+                                                               "permissionRaw":  "email.inbox.view"
+                                                           },
+                                                           {
+                                                               "module":  "emails",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/emails/{email}/link-entity",
+                                                               "permissionRaw":  "email.inbox.view"
+                                                           },
+                                                           {
+                                                               "module":  "emails",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/emails/{email}/mark-read",
+                                                               "permissionRaw":  "email.inbox.view"
+                                                           },
+                                                           {
+                                                               "module":  "emails",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/emails/{email}/mark-unread",
+                                                               "permissionRaw":  "email.inbox.view"
+                                                           },
+                                                           {
+                                                               "module":  "emails",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/emails/{email}/toggle-star",
+                                                               "permissionRaw":  "email.inbox.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial-extra",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial-extra/boleto",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial-extra",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial-extra/customers/{customerId}/block",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial-extra",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial-extra/nfse",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial-extra",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial-extra/payment-gateway/pay",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial/checks",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial",
+                                                               "method":  "PATCH",
+                                                               "uri":  "api/v1/financial/checks/{check}/status",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial/expense-reimbursements/{expense}/approve",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial/receivables-simulator",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial/supplier-advances",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial/supplier-contracts",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "financial",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/financial/tax-calculation",
+                                                               "permissionRaw":  "financeiro.view"
+                                                           },
+                                                           {
+                                                               "module":  "inventories",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/inventories",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "inventories",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/inventories/{inventory}/cancel",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "inventories",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/inventories/{inventory}/complete",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "inventories",
+                                                               "method":  "PUT",
+                                                               "uri":  "api/v1/inventories/{inventory}/items/{item}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "lab-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/lab-advanced/logbook",
+                                                               "permissionRaw":  "qualidade.view"
+                                                           },
+                                                           {
+                                                               "module":  "lab-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/lab-advanced/raw-data-backups",
+                                                               "permissionRaw":  "qualidade.view"
+                                                           },
+                                                           {
+                                                               "module":  "lab-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/lab-advanced/retention-samples",
+                                                               "permissionRaw":  "qualidade.view"
+                                                           },
+                                                           {
+                                                               "module":  "lab-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/lab-advanced/rr-study",
+                                                               "permissionRaw":  "qualidade.view"
+                                                           },
+                                                           {
+                                                               "module":  "lab-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/lab-advanced/scale-readings",
+                                                               "permissionRaw":  "qualidade.view"
+                                                           },
+                                                           {
+                                                               "module":  "lab-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/lab-advanced/sensor-readings",
+                                                               "permissionRaw":  "qualidade.view"
+                                                           },
+                                                           {
+                                                               "module":  "lab-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/lab-advanced/sign-certificate",
+                                                               "permissionRaw":  "qualidade.view"
+                                                           },
+                                                           {
+                                                               "module":  "material-requests",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/material-requests",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "material-requests",
+                                                               "method":  "PUT",
+                                                               "uri":  "api/v1/material-requests/{materialRequest}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "operational",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/operational/route-optimization",
+                                                               "permissionRaw":  "os.work_order.view"
+                                                           },
+                                                           {
+                                                               "module":  "products",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/products/{product}/kit",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "products",
+                                                               "method":  "DELETE",
+                                                               "uri":  "api/v1/products/{product}/kit/{childId}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "purchase-quotes",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/purchase-quotes",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "purchase-quotes",
+                                                               "method":  "PUT",
+                                                               "uri":  "api/v1/purchase-quotes/{purchaseQuote}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "purchase-quotes",
+                                                               "method":  "DELETE",
+                                                               "uri":  "api/v1/purchase-quotes/{purchaseQuote}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "reconciliation-rules",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/reconciliation-rules/test",
+                                                               "permissionRaw":  "finance.receivable.view"
+                                                           },
+                                                           {
+                                                               "module":  "rma",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/rma",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "rma",
+                                                               "method":  "PUT",
+                                                               "uri":  "api/v1/rma/{rmaRequest}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "service-checklists",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/service-checklists",
+                                                               "permissionRaw":  "os.work_order.view"
+                                                           },
+                                                           {
+                                                               "module":  "service-checklists",
+                                                               "method":  "PUT|PATCH",
+                                                               "uri":  "api/v1/service-checklists/{service_checklist}",
+                                                               "permissionRaw":  "os.work_order.view"
+                                                           },
+                                                           {
+                                                               "module":  "service-checklists",
+                                                               "method":  "DELETE",
+                                                               "uri":  "api/v1/service-checklists/{service_checklist}",
+                                                               "permissionRaw":  "os.work_order.view"
+                                                           },
+                                                           {
+                                                               "module":  "sla-policies",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/sla-policies",
+                                                               "permissionRaw":  "os.work_order.view"
+                                                           },
+                                                           {
+                                                               "module":  "sla-policies",
+                                                               "method":  "PUT|PATCH",
+                                                               "uri":  "api/v1/sla-policies/{sla_policy}",
+                                                               "permissionRaw":  "os.work_order.view"
+                                                           },
+                                                           {
+                                                               "module":  "sla-policies",
+                                                               "method":  "DELETE",
+                                                               "uri":  "api/v1/sla-policies/{sla_policy}",
+                                                               "permissionRaw":  "os.work_order.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/asset-tags",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/asset-tags/scan",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/ecological-disposals",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/import-nfe-xml",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/material-requests",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/material-requests/{id}/approve",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/purchase-quotations",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/rma",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "PATCH",
+                                                               "uri":  "api/v1/stock-advanced/rma/{id}/status",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/serial-numbers",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-advanced",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-advanced/transfers",
+                                                               "permissionRaw":  "estoque.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-disposals",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock-disposals",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock-disposals",
+                                                               "method":  "PUT",
+                                                               "uri":  "api/v1/stock-disposals/{stockDisposal}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock/inventories",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock/inventories/{inventory}/cancel",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/stock/inventories/{inventory}/complete",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "stock",
+                                                               "method":  "PUT",
+                                                               "uri":  "api/v1/stock/inventories/{inventory}/items/{item}",
+                                                               "permissionRaw":  "estoque.movement.view"
+                                                           },
+                                                           {
+                                                               "module":  "technicians",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/technicians/customers/{customer}/geolocation",
+                                                               "permissionRaw":  "technicians.schedule.view"
+                                                           },
+                                                           {
+                                                               "module":  "warehouses",
+                                                               "method":  "POST",
+                                                               "uri":  "api/v1/warehouses",
+                                                               "permissionRaw":  "estoque.warehouse.view"
+                                                           },
+                                                           {
+                                                               "module":  "warehouses",
+                                                               "method":  "PUT|PATCH",
+                                                               "uri":  "api/v1/warehouses/{warehouse}",
+                                                               "permissionRaw":  "estoque.warehouse.view"
+                                                           },
+                                                           {
+                                                               "module":  "warehouses",
+                                                               "method":  "DELETE",
+                                                               "uri":  "api/v1/warehouses/{warehouse}",
+                                                               "permissionRaw":  "estoque.warehouse.view"
+                                                           }
+                                                       ]
+               }
+}

@@ -312,7 +312,7 @@ class EquipmentController extends Controller
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             report($e);
-            return response()->json(['message' => 'Erro ao registrar calibração: ' . $e->getMessage()], 500);
+            Log::error('Erro ao registrar calibração: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro ao registrar calibração'], 500);
         }
     }
 
@@ -339,7 +339,7 @@ class EquipmentController extends Controller
             return response()->json(['maintenance' => $maintenance], 201);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['message' => 'Erro ao registrar manutenção: ' . $e->getMessage()], 500);
+            Log::error('Erro ao registrar manutenção: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro ao registrar manutenção'], 500);
         }
     }
 

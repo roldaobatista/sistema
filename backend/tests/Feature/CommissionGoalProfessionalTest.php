@@ -46,7 +46,7 @@ class CommissionGoalProfessionalTest extends TestCase
 
     public function test_create_goal_returns_201_and_persists(): void
     {
-        $response = $this->postJson('/api/v1/commissions/goals', [
+        $response = $this->postJson('/api/v1/commission-goals', [
             'user_id' => $this->user->id,
             'period' => now()->format('Y-m'),
             'target_amount' => 10000,
@@ -80,7 +80,7 @@ class CommissionGoalProfessionalTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $response = $this->postJson('/api/v1/commissions/goals', [
+        $response = $this->postJson('/api/v1/commission-goals', [
             'user_id' => $this->user->id,
             'period' => '2025-06',
             'target_amount' => 8000,
@@ -91,7 +91,7 @@ class CommissionGoalProfessionalTest extends TestCase
 
     public function test_create_goal_validates_period_format(): void
     {
-        $response = $this->postJson('/api/v1/commissions/goals', [
+        $response = $this->postJson('/api/v1/commission-goals', [
             'user_id' => $this->user->id,
             'period' => '2025/06/01', // invalid
             'target_amount' => 5000,
@@ -115,7 +115,7 @@ class CommissionGoalProfessionalTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $response = $this->putJson("/api/v1/commissions/goals/{$goalId}", [
+        $response = $this->putJson("/api/v1/commission-goals/{$goalId}", [
             'target_amount' => 12000,
         ]);
 
@@ -141,7 +141,7 @@ class CommissionGoalProfessionalTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->deleteJson("/api/v1/commissions/goals/{$goalId}")
+        $this->deleteJson("/api/v1/commission-goals/{$goalId}")
             ->assertNoContent();
 
         $this->assertDatabaseMissing('commission_goals', ['id' => $goalId]);
@@ -149,7 +149,7 @@ class CommissionGoalProfessionalTest extends TestCase
 
     public function test_list_goals_returns_data(): void
     {
-        $response = $this->getJson('/api/v1/commissions/goals');
+        $response = $this->getJson('/api/v1/commission-goals');
         $response->assertOk();
     }
 
@@ -169,7 +169,7 @@ class CommissionGoalProfessionalTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $response = $this->postJson("/api/v1/commissions/goals/{$goalId}/refresh");
+        $response = $this->postJson("/api/v1/commission-goals/{$goalId}/refresh");
 
         $response->assertOk();
 
@@ -181,13 +181,13 @@ class CommissionGoalProfessionalTest extends TestCase
 
     public function test_disputes_index_returns_list(): void
     {
-        $response = $this->getJson('/api/v1/commissions/disputes');
+        $response = $this->getJson('/api/v1/commission-disputes');
         $response->assertOk();
     }
 
     public function test_disputes_filter_by_status(): void
     {
-        $response = $this->getJson('/api/v1/commissions/disputes?status=open');
+        $response = $this->getJson('/api/v1/commission-disputes?status=open');
         $response->assertOk();
     }
 }

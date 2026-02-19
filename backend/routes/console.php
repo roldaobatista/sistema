@@ -44,6 +44,18 @@ Schedule::command('quotes:check-expired')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/expired-quotes.log'));
 
+// ─── Quote Expiration Alerts (diário às 06:20) ───
+Schedule::job(new \App\Jobs\QuoteExpirationAlertJob)
+    ->dailyAt('06:20')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/quote-expiration-alerts.log'));
+
+// ─── Quote Follow-up (diário às 08:20) ───
+Schedule::job(new \App\Jobs\QuoteFollowUpJob)
+    ->dailyAt('08:20')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/quote-followup.log'));
+
 // ─── Low Stock Alerts (diário às 07:15) ───
 Schedule::command('stock:check-low')
     ->dailyAt('07:15')

@@ -55,6 +55,8 @@ const routeLabels: Record<string, string> = {
     'equipamentos': 'Equipamentos',
     'pesos-padrao': 'Pesos Padrão',
     'agenda-calibracoes': 'Agenda Calibrações',
+    'calibracao': 'Calibração',
+    'wizard': 'Wizard',
     'inmetro': 'Intel. INMETRO',
     'leads': 'Leads',
     'instrumentos': 'Instrumentos',

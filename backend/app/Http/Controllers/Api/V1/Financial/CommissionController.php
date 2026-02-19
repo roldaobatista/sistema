@@ -603,12 +603,17 @@ class CommissionController extends Controller
         try {
             DB::transaction(function () use ($commissionSettlement, $validated) {
                 $commissionSettlement->update([
-                    'status' => CommissionSettlement::STATUS_OPEN,
+                    'status' => CommissionSettlement::STATUS_REJECTED,
                     'rejection_reason' => $validated['rejection_reason'],
                     'approved_by' => null,
                     'approved_at' => null,
                     'paid_at' => null,
                 ]);
+
+                // Desvincular eventos do settlement rejeitado, revertendo para pendente
+                CommissionEvent::where('settlement_id', $commissionSettlement->id)
+                    ->whereIn('status', [CommissionEvent::STATUS_APPROVED, CommissionEvent::STATUS_PAID])
+                    ->update(['status' => CommissionEvent::STATUS_PENDING, 'settlement_id' => null]);
             });
 
             return response()->json($commissionSettlement->fresh()->load('user:id,name'));

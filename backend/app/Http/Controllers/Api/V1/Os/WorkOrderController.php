@@ -1094,7 +1094,7 @@ class WorkOrderController extends Controller
     public function dashboardStats(Request $request): JsonResponse
     {
         $tenantId = $this->currentTenantId();
-        $base = WorkOrder::where('tenant_id', $tenantId);
+        $base = WorkOrder::where('work_orders.tenant_id', $tenantId);
 
         // Status counts
         $statusCounts = (clone $base)
@@ -1367,10 +1367,10 @@ class WorkOrderController extends Controller
         $workOrder->load([
             'customer',
             'items',
-            'equipments',
-            'assignedTo',
+            'equipmentsList',
+            'assignee',
             'driver',
-            'statusHistories',
+            'statusHistory',
             'attachments',
         ]);
 
@@ -1382,14 +1382,14 @@ class WorkOrderController extends Controller
                 'tenant' => $tenant,
                 'items' => $workOrder->items,
                 'customer' => $workOrder->customer,
-                'equipments' => $workOrder->equipments ?? collect(),
-                'technician' => $workOrder->assignedTo,
+                'equipments' => $workOrder->equipmentsList ?? collect(),
+                'technician' => $workOrder->assignee,
                 'driver' => $workOrder->driver,
             ];
 
             // Calculate totals
             $subtotal = $workOrder->items->sum(fn ($i) => bcmul((string) $i->quantity, (string) $i->unit_price, 2));
-            $discount = $workOrder->items->sum('discount') + ($workOrder->discount ?? 0);
+            $discount = (float) ($workOrder->discount_amount ?? $workOrder->discount ?? 0);
             $displacement = $workOrder->displacement_value ?? 0;
             $total = bcsub(bcadd((string) $subtotal, (string) $displacement, 2), (string) $discount, 2);
 
@@ -1434,8 +1434,9 @@ class WorkOrderController extends Controller
         $items = $data['items'];
 
         $statusLabels = [
-            'open' => 'Aberta', 'scheduled' => 'Agendada', 'in_progress' => 'Em Andamento',
-            'completed' => 'Concluída', 'invoiced' => 'Faturada', 'cancelled' => 'Cancelada',
+            'open' => 'Aberta', 'awaiting_dispatch' => 'Aguard. Despacho', 'in_progress' => 'Em Andamento',
+            'waiting_parts' => 'Aguard. Peças', 'waiting_approval' => 'Aguard. Aprovação',
+            'completed' => 'Concluída', 'delivered' => 'Entregue', 'invoiced' => 'Faturada', 'cancelled' => 'Cancelada',
         ];
         $priorityLabels = [
             'low' => 'Baixa', 'normal' => 'Normal', 'high' => 'Alta', 'urgent' => 'Urgente',

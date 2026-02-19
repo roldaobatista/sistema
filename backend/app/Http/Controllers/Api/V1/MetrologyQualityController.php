@@ -15,7 +15,7 @@ class MetrologyQualityController extends Controller
 
     public function nonConformances(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         return response()->json(
             DB::table('non_conformances')->where('company_id', $tenantId)
                 ->orderByDesc('created_at')->paginate(20)
@@ -36,7 +36,7 @@ class MetrologyQualityController extends Controller
             'deadline' => 'nullable|date',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $number = 'RNC-' . now()->format('Y') . '-' . str_pad(
             DB::table('non_conformances')->where('company_id', $tenantId)
                 ->whereYear('created_at', now()->year)->count() + 1,
@@ -63,7 +63,7 @@ class MetrologyQualityController extends Controller
             'preventive_action' => 'sometimes|string',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $data['updated_at'] = now();
         if (isset($data['status']) && $data['status'] === 'closed') {
             $data['closed_at'] = now();
@@ -80,7 +80,7 @@ class MetrologyQualityController extends Controller
 
     public function generateCertificateQR(Request $request, int $certificateId): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $cert = DB::table('calibration_certificates')
             ->where('id', $certificateId)->where('company_id', $tenantId)->first();
 
@@ -127,7 +127,7 @@ class MetrologyQualityController extends Controller
 
     public function measurementUncertainty(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         return response()->json(
             DB::table('measurement_uncertainties')
                 ->where('company_id', $tenantId)
@@ -163,7 +163,7 @@ class MetrologyQualityController extends Controller
         $expanded = $combined * $k;
 
         $id = DB::table('measurement_uncertainties')->insertGetId([
-            'company_id' => $request->user()->company_id,
+            'company_id' => $request->user()->current_tenant_id,
             'equipment_id' => $data['equipment_id'],
             'calibration_id' => $data['calibration_id'] ?? null,
             'measurement_type' => $data['measurement_type'],
@@ -192,11 +192,11 @@ class MetrologyQualityController extends Controller
 
     public function calibrationSchedule(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $days = $request->input('days', 90);
 
         $upcoming = DB::table('equipments')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->whereNotNull('next_calibration_date')
             ->where('next_calibration_date', '<=', now()->addDays($days))
             ->where('is_active', true)
@@ -221,10 +221,10 @@ class MetrologyQualityController extends Controller
 
     public function triggerRecall(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
 
         $overdue = DB::table('equipments')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->whereNotNull('next_calibration_date')
             ->where('next_calibration_date', '<=', now())
             ->where('is_active', true)

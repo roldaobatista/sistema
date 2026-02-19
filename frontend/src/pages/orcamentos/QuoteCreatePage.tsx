@@ -74,6 +74,8 @@ export function QuoteCreatePage() {
     const [internalNotes, setInternalNotes] = useState('')
     const [source, setSource] = useState<string>('')
     const [sellerId, setSellerId] = useState<number | null>(null)
+    const [paymentTerms, setPaymentTerms] = useState<string>('')
+    const [paymentTermsDetail, setPaymentTermsDetail] = useState('')
     const [blocks, setBlocks] = useState<EquipmentBlock[]>([])
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
     const [showQuickEquipmentModal, setShowQuickEquipmentModal] = useState(false)
@@ -192,6 +194,8 @@ export function QuoteCreatePage() {
                 displacement_value: displacementValue,
                 observations: observations || null,
                 internal_notes: internalNotes || null,
+                payment_terms: paymentTerms || null,
+                payment_terms_detail: paymentTermsDetail || null,
                 equipments: blocks.map(b => ({
                     equipment_id: b.equipment_id,
                     description: b.description,
@@ -339,6 +343,34 @@ export function QuoteCreatePage() {
                                 placeholder="Notas visíveis apenas internamente..."
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-surface-700 mb-1">Condições de Pagamento</label>
+                            <select value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)}
+                                className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                                <option value="">Selecione (opcional)</option>
+                                <option value="a_vista">À Vista</option>
+                                <option value="boleto_30">Boleto 30 dias</option>
+                                <option value="boleto_30_60">Boleto 30/60 dias</option>
+                                <option value="boleto_30_60_90">Boleto 30/60/90 dias</option>
+                                <option value="cartao_credito">Cartão de Crédito</option>
+                                <option value="cartao_debito">Cartão de Débito</option>
+                                <option value="pix">PIX</option>
+                                <option value="transferencia">Transferência Bancária</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="financiamento">Financiamento</option>
+                                <option value="parcelado">Parcelado</option>
+                                <option value="consignado">Consignado</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                        {paymentTerms && (
+                            <div>
+                                <label className="block text-sm font-medium text-surface-700 mb-1">Detalhes do Pagamento</label>
+                                <input value={paymentTermsDetail} onChange={e => setPaymentTermsDetail(e.target.value)}
+                                    placeholder="Detalhes adicionais sobre forma de pagamento..."
+                                    className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                            </div>
+                        )}
                         <div className="flex justify-end pt-4">
                             <Button onClick={handleNext} disabled={!customerId} icon={<ArrowRight className="h-4 w-4" />}>
                                 {STRINGS.next}

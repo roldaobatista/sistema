@@ -5,15 +5,17 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AccountReceivable;
 use App\Models\AccountPayable;
-use App\Models\CollectionRule;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
 
 class FinanceAdvancedController extends Controller
 {
     // ─── #9B Importação CNAB 240/400 ────────────────────────────
+    // Nota: o matching por nosso_numero/numero_documento requer campos extras
+    // na tabela accounts_receivable. Atualmente tenta correspondência por notes/description.
 
     public function importCnab(Request $request): JsonResponse
     {
@@ -23,7 +25,7 @@ class FinanceAdvancedController extends Controller
             'type' => 'required|string|in:retorno,remessa',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $file = $request->file('file');
         $layout = $request->input('layout');
         $type = $request->input('type');
@@ -44,22 +46,24 @@ class FinanceAdvancedController extends Controller
                     if (!$parsed) continue;
                     $results['processed']++;
 
-                    // Match by nosso_numero or document
-                    $receivable = AccountReceivable::where('company_id', $tenantId)
+                    // Tenta matching por notes (campo livre) que pode conter nosso_numero
+                    $receivable = AccountReceivable::where('tenant_id', $tenantId)
                         ->where(function ($q) use ($parsed) {
-                            $q->where('nosso_numero', $parsed['nosso_numero'])
-                              ->orWhere('numero_documento', $parsed['documento']);
+                            $q->where('notes', 'like', '%' . $parsed['nosso_numero'] . '%')
+                              ->orWhere('notes', 'like', '%' . $parsed['documento'] . '%');
                         })
                         ->first();
 
                     if ($receivable) {
+                        $newAmountPaid = ($receivable->amount_paid ?? 0) + ($parsed['valor_pago'] ?? 0);
+                        $newStatus = $newAmountPaid >= $receivable->amount
+                            ? AccountReceivable::STATUS_PAID
+                            : AccountReceivable::STATUS_PARTIAL;
+
                         $receivable->update([
-                            'status' => $parsed['status'] === 'paid' ? 'PAGO' : $receivable->status,
-                            'data_pagamento' => $parsed['data_pagamento'],
-                            'valor_pago' => $parsed['valor_pago'],
-                            'valor_juros' => $parsed['juros'] ?? 0,
-                            'valor_desconto' => $parsed['desconto'] ?? 0,
-                            'cnab_import_date' => now(),
+                            'status'       => $parsed['status'] === 'paid' ? AccountReceivable::STATUS_PAID : $newStatus,
+                            'paid_at'      => $parsed['data_pagamento'],
+                            'amount_paid'  => $newAmountPaid,
                         ]);
                         $results['matched']++;
                     }
@@ -79,7 +83,7 @@ class FinanceAdvancedController extends Controller
 
     public function cashFlowProjection(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $months = $request->input('months', 6);
         $startDate = Carbon::now();
 
@@ -90,131 +94,40 @@ class FinanceAdvancedController extends Controller
             $monthEnd = $monthStart->copy()->endOfMonth();
             $label = $monthStart->format('Y-m');
 
-            $receivables = AccountReceivable::where('company_id', $tenantId)
-                ->where('status', '!=', 'PAGO')
-                ->whereBetween('data_vencimento', [$monthStart, $monthEnd])
-                ->sum('valor');
+            $receivables = AccountReceivable::where('tenant_id', $tenantId)
+                ->where('status', '!=', AccountReceivable::STATUS_PAID)
+                ->whereBetween('due_date', [$monthStart, $monthEnd])
+                ->sum('amount');
 
-            $payables = AccountPayable::where('company_id', $tenantId)
-                ->where('status', '!=', 'PAGO')
-                ->whereBetween('data_vencimento', [$monthStart, $monthEnd])
-                ->sum('valor');
-
-            // Recurring contracts revenue
-            $recurring = DB::table('recurring_contracts')
-                ->where('company_id', $tenantId)
-                ->where('status', 'active')
-                ->where('start_date', '<=', $monthEnd)
-                ->where(function ($q) use ($monthStart) {
-                    $q->whereNull('end_date')->orWhere('end_date', '>=', $monthStart);
-                })
-                ->sum('monthly_value');
+            $payables = AccountPayable::where('tenant_id', $tenantId)
+                ->whereNotIn('status', ['paid', 'cancelled'])
+                ->whereBetween('due_date', [$monthStart, $monthEnd])
+                ->sum('amount');
 
             $projection[] = [
-                'month' => $label,
-                'receivables' => round($receivables, 2),
-                'payables' => round($payables, 2),
-                'recurring_revenue' => round($recurring, 2),
-                'net_projection' => round($receivables + $recurring - $payables, 2),
+                'month'            => $label,
+                'receivables'      => round($receivables, 2),
+                'payables'         => round($payables, 2),
+                'net_projection'   => round($receivables - $payables, 2),
             ];
         }
 
-        // Current balance (sum of paid receivables - paid payables this month)
-        $currentBalance = AccountReceivable::where('company_id', $tenantId)
-            ->where('status', 'PAGO')
-            ->whereMonth('data_pagamento', now()->month)
-            ->sum('valor_pago')
-            - AccountPayable::where('company_id', $tenantId)
-            ->where('status', 'PAGO')
-            ->whereMonth('data_pagamento', now()->month)
-            ->sum('valor_pago');
+        // Saldo do mês atual (recebidos - pagos)
+        $currentBalance = AccountReceivable::where('tenant_id', $tenantId)
+            ->where('status', AccountReceivable::STATUS_PAID)
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year)
+            ->sum('amount_paid')
+            - AccountPayable::where('tenant_id', $tenantId)
+            ->where('status', 'paid')
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year)
+            ->sum('amount_paid');
 
         return response()->json([
             'current_balance' => round($currentBalance, 2),
-            'projection' => $projection,
+            'projection'      => $projection,
         ]);
-    }
-
-    // ─── #11 Régua de Cobrança Automatizada ─────────────────────
-
-    public function collectionRules(Request $request): JsonResponse
-    {
-        $rules = CollectionRule::where('company_id', $request->user()->company_id)
-            ->orderBy('days_before_due')
-            ->get();
-
-        return response()->json($rules);
-    }
-
-    public function storeCollectionRule(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'days_before_due' => 'required|integer', // negative = after due
-            'channel' => 'required|string|in:email,whatsapp,sms,notification',
-            'template' => 'required|string',
-            'is_active' => 'boolean',
-        ]);
-
-        $data['company_id'] = $request->user()->company_id;
-        $rule = CollectionRule::create($data);
-
-        return response()->json($rule, 201);
-    }
-
-    public function updateCollectionRule(Request $request, CollectionRule $rule): JsonResponse
-    {
-        $data = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'days_before_due' => 'sometimes|integer',
-            'channel' => 'sometimes|string|in:email,whatsapp,sms,notification',
-            'template' => 'sometimes|string',
-            'is_active' => 'boolean',
-        ]);
-
-        $rule->update($data);
-        return response()->json($rule);
-    }
-
-    public function deleteCollectionRule(CollectionRule $rule): JsonResponse
-    {
-        $rule->delete();
-        return response()->json(['message' => 'Rule deleted']);
-    }
-
-    public function runCollection(Request $request): JsonResponse
-    {
-        $tenantId = $request->user()->company_id;
-        $rules = CollectionRule::where('company_id', $tenantId)->where('is_active', true)->get();
-
-        $sent = 0;
-        foreach ($rules as $rule) {
-            $targetDate = $rule->days_before_due >= 0
-                ? now()->addDays($rule->days_before_due)->toDateString()
-                : now()->subDays(abs($rule->days_before_due))->toDateString();
-
-            $receivables = AccountReceivable::where('company_id', $tenantId)
-                ->where('status', '!=', 'PAGO')
-                ->whereDate('data_vencimento', $targetDate)
-                ->with('customer')
-                ->get();
-
-            foreach ($receivables as $ar) {
-                // Log the collection action (actual sending via channel service)
-                DB::table('collection_logs')->insert([
-                    'company_id' => $tenantId,
-                    'account_receivable_id' => $ar->id,
-                    'collection_rule_id' => $rule->id,
-                    'channel' => $rule->channel,
-                    'status' => 'sent',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $sent++;
-            }
-        }
-
-        return response()->json(['message' => "{$sent} collection actions executed", 'sent' => $sent]);
     }
 
     // ─── #12B Pagamento Parcial de Conta ────────────────────────
@@ -222,53 +135,47 @@ class FinanceAdvancedController extends Controller
     public function partialPayment(Request $request, AccountReceivable $receivable): JsonResponse
     {
         $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'payment_date' => 'required|date',
+            'amount'         => 'required|numeric|min:0.01',
+            'payment_date'   => 'required|date',
             'payment_method' => 'nullable|string',
-            'notes' => 'nullable|string|max:500',
+            'notes'          => 'nullable|string|max:500',
         ]);
 
-        $amount = $request->input('amount');
-        $remaining = $receivable->valor - ($receivable->valor_pago ?? 0);
+        $amount = (float) $request->input('amount');
+        $currentPaid = (float) ($receivable->amount_paid ?? 0);
+        $remaining = round((float) $receivable->amount - $currentPaid, 2);
 
         if ($amount > $remaining) {
-            return response()->json(['message' => 'Amount exceeds remaining balance'], 422);
+            return response()->json(['message' => 'Valor excede o saldo devedor'], 422);
         }
 
         DB::beginTransaction();
         try {
-            // Record partial payment
-            DB::table('partial_payments')->insert([
-                'company_id' => $receivable->company_id,
-                'account_receivable_id' => $receivable->id,
-                'amount' => $amount,
-                'payment_date' => $request->input('payment_date'),
-                'payment_method' => $request->input('payment_method'),
-                'notes' => $request->input('notes'),
-                'created_by' => $request->user()->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $newPaid = ($receivable->valor_pago ?? 0) + $amount;
-            $status = $newPaid >= $receivable->valor ? 'PAGO' : 'PARCIAL';
+            $newPaid = $currentPaid + $amount;
+            $newStatus = $newPaid >= (float) $receivable->amount
+                ? AccountReceivable::STATUS_PAID
+                : AccountReceivable::STATUS_PARTIAL;
 
             $receivable->update([
-                'valor_pago' => $newPaid,
-                'status' => $status,
-                'data_pagamento' => $status === 'PAGO' ? $request->input('payment_date') : null,
+                'amount_paid'    => $newPaid,
+                'status'         => $newStatus,
+                'paid_at'        => $newStatus === AccountReceivable::STATUS_PAID
+                    ? $request->input('payment_date')
+                    : $receivable->paid_at,
+                'payment_method' => $request->input('payment_method') ?? $receivable->payment_method,
             ]);
 
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error processing payment', 'error' => $e->getMessage()], 500);
+            Log::error('Error processing partial payment: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['error' => 'Erro ao processar pagamento'], 500);
         }
 
         return response()->json([
-            'message' => "Partial payment of {$amount} recorded",
-            'remaining' => round($receivable->valor - $newPaid, 2),
-            'status' => $status,
+            'message'   => "Pagamento parcial de {$amount} registrado",
+            'remaining' => round((float) $receivable->amount - $newPaid, 2),
+            'status'    => $newStatus,
         ]);
     }
 
@@ -276,24 +183,26 @@ class FinanceAdvancedController extends Controller
 
     public function dreByCostCenter(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $from = $request->input('from', now()->startOfYear()->toDateString());
-        $to = $request->input('to', now()->toDateString());
+        $to   = $request->input('to', now()->toDateString());
 
-        $revenue = DB::table('account_receivables')
-            ->where('company_id', $tenantId)
-            ->where('status', 'PAGO')
-            ->whereBetween('data_pagamento', [$from, $to])
-            ->selectRaw('cost_center, SUM(valor_pago) as total')
+        $revenue = DB::table('accounts_receivable')
+            ->where('tenant_id', $tenantId)
+            ->where('status', AccountReceivable::STATUS_PAID)
+            ->whereBetween('paid_at', [$from, $to])
+            ->whereNull('deleted_at')
+            ->selectRaw('cost_center, SUM(amount_paid) as total')
             ->groupBy('cost_center')
             ->get()
             ->keyBy('cost_center');
 
-        $expenses = DB::table('account_payables')
-            ->where('company_id', $tenantId)
-            ->where('status', 'PAGO')
-            ->whereBetween('data_pagamento', [$from, $to])
-            ->selectRaw('cost_center, SUM(valor_pago) as total')
+        $expenses = DB::table('accounts_payable')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$from, $to])
+            ->whereNull('deleted_at')
+            ->selectRaw('cost_center, SUM(amount_paid) as total')
             ->groupBy('cost_center')
             ->get()
             ->keyBy('cost_center');
@@ -305,17 +214,17 @@ class FinanceAdvancedController extends Controller
             $exp = $expenses[$center]->total ?? 0;
             return [
                 'cost_center' => $center ?? 'Sem Centro',
-                'revenue' => round($rev, 2),
-                'expenses' => round($exp, 2),
-                'profit' => round($rev - $exp, 2),
-                'margin' => $rev > 0 ? round((($rev - $exp) / $rev) * 100, 1) : 0,
+                'revenue'     => round($rev, 2),
+                'expenses'    => round($exp, 2),
+                'profit'      => round($rev - $exp, 2),
+                'margin'      => $rev > 0 ? round((($rev - $exp) / $rev) * 100, 1) : 0,
             ];
         })->values();
 
         $totals = [
-            'revenue' => $dre->sum('revenue'),
+            'revenue'  => $dre->sum('revenue'),
             'expenses' => $dre->sum('expenses'),
-            'profit' => $dre->sum('profit'),
+            'profit'   => $dre->sum('profit'),
         ];
         $totals['margin'] = $totals['revenue'] > 0
             ? round(($totals['profit'] / $totals['revenue']) * 100, 1) : 0;
@@ -328,99 +237,100 @@ class FinanceAdvancedController extends Controller
     public function simulateInstallments(Request $request): JsonResponse
     {
         $request->validate([
-            'total_amount' => 'required|numeric|min:0.01',
-            'installments' => 'required|integer|min:1|max:120',
-            'interest_rate' => 'nullable|numeric|min:0',
+            'total_amount'   => 'required|numeric|min:0.01',
+            'installments'   => 'required|integer|min:1|max:120',
+            'interest_rate'  => 'nullable|numeric|min:0',
             'first_due_date' => 'required|date|after:today',
         ]);
 
-        $total = $request->input('total_amount');
-        $n = $request->input('installments');
-        $rate = $request->input('interest_rate', 0) / 100;
+        $total    = $request->input('total_amount');
+        $n        = $request->input('installments');
+        $rate     = $request->input('interest_rate', 0) / 100;
         $firstDue = Carbon::parse($request->input('first_due_date'));
 
         $installments = [];
         if ($rate > 0) {
-            // Price table (PMT formula)
-            $pmt = $total * ($rate * pow(1 + $rate, $n)) / (pow(1 + $rate, $n) - 1);
+            $pmt     = $total * ($rate * pow(1 + $rate, $n)) / (pow(1 + $rate, $n) - 1);
             $balance = $total;
 
             for ($i = 1; $i <= $n; $i++) {
-                $interest = $balance * $rate;
+                $interest  = $balance * $rate;
                 $principal = $pmt - $interest;
-                $balance -= $principal;
+                $balance  -= $principal;
 
                 $installments[] = [
-                    'number' => $i,
-                    'due_date' => $firstDue->copy()->addMonths($i - 1)->toDateString(),
-                    'amount' => round($pmt, 2),
+                    'number'    => $i,
+                    'due_date'  => $firstDue->copy()->addMonths($i - 1)->toDateString(),
+                    'amount'    => round($pmt, 2),
                     'principal' => round($principal, 2),
-                    'interest' => round($interest, 2),
-                    'balance' => round(max(0, $balance), 2),
+                    'interest'  => round($interest, 2),
+                    'balance'   => round(max(0, $balance), 2),
                 ];
             }
         } else {
-            $base = floor($total * 100 / $n) / 100;
+            $base      = floor($total * 100 / $n) / 100;
             $remainder = round($total - ($base * $n), 2);
 
             for ($i = 1; $i <= $n; $i++) {
                 $amt = $i === $n ? $base + $remainder : $base;
                 $installments[] = [
-                    'number' => $i,
-                    'due_date' => $firstDue->copy()->addMonths($i - 1)->toDateString(),
-                    'amount' => round($amt, 2),
+                    'number'    => $i,
+                    'due_date'  => $firstDue->copy()->addMonths($i - 1)->toDateString(),
+                    'amount'    => round($amt, 2),
                     'principal' => round($amt, 2),
-                    'interest' => 0,
-                    'balance' => round($total - ($base * $i + ($i === $n ? $remainder : 0)), 2),
+                    'interest'  => 0,
+                    'balance'   => round($total - ($base * $i + ($i === $n ? $remainder : 0)), 2),
                 ];
             }
         }
 
         return response()->json([
-            'total_amount' => round($total, 2),
-            'total_with_interest' => round(collect($installments)->sum('amount'), 2),
-            'interest_rate' => $rate * 100,
-            'installments' => $installments,
+            'total_amount'         => round($total, 2),
+            'total_with_interest'  => round(collect($installments)->sum('amount'), 2),
+            'interest_rate'        => $rate * 100,
+            'installments'         => $installments,
         ]);
     }
 
     public function createInstallments(Request $request): JsonResponse
     {
         $request->validate([
-            'customer_id' => 'required|integer|exists:customers,id',
-            'description' => 'required|string|max:255',
-            'installments' => 'required|array|min:1',
-            'installments.*.due_date' => 'required|date',
-            'installments.*.amount' => 'required|numeric|min:0.01',
+            'customer_id'               => 'required|integer|exists:customers,id',
+            'description'               => 'required|string|max:255',
+            'installments'              => 'required|array|min:1',
+            'installments.*.due_date'   => 'required|date',
+            'installments.*.amount'     => 'required|numeric|min:0.01',
         ]);
 
-        $tenantId = $request->user()->company_id;
-        $created = [];
+        $tenantId = $request->user()->current_tenant_id;
+        $created  = [];
+        $total    = count($request->input('installments'));
 
         DB::beginTransaction();
         try {
             foreach ($request->input('installments') as $i => $inst) {
                 $ar = AccountReceivable::create([
-                    'company_id' => $tenantId,
+                    'tenant_id'   => $tenantId,
                     'customer_id' => $request->input('customer_id'),
-                    'descricao' => $request->input('description') . " ({$inst['number']}/{$request->input('installments_count', count($request->input('installments')))})",
-                    'valor' => $inst['amount'],
-                    'data_vencimento' => $inst['due_date'],
-                    'status' => 'ABERTO',
-                    'parcela' => ($i + 1) . '/' . count($request->input('installments')),
-                    'created_by' => $request->user()->id,
+                    'description' => $request->input('description') . " (" . ($i + 1) . "/{$total})",
+                    'amount'      => $inst['amount'],
+                    'amount_paid' => 0,
+                    'due_date'    => $inst['due_date'],
+                    'status'      => AccountReceivable::STATUS_PENDING,
+                    'created_by'  => $request->user()->id,
                 ]);
                 $created[] = $ar->id;
             }
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error creating installments', 'error' => $e->getMessage()], 500);
+            Log::error('Error creating installments: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['error' => 'Erro ao criar parcelas'], 500);
         }
 
         return response()->json([
-            'message' => count($created) . ' installments created',
-            'ids' => $created,
+            'message' => count($created) . ' parcelas criadas',
+            'ids'     => $created,
         ], 201);
     }
 
@@ -428,62 +338,61 @@ class FinanceAdvancedController extends Controller
 
     public function delinquencyDashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
 
-        $overdue = AccountReceivable::where('company_id', $tenantId)
-            ->where('status', '!=', 'PAGO')
-            ->where('data_vencimento', '<', now());
+        $overdue = AccountReceivable::where('tenant_id', $tenantId)
+            ->whereNotIn('status', [AccountReceivable::STATUS_PAID, AccountReceivable::STATUS_CANCELLED])
+            ->where('due_date', '<', now());
 
-        $total = $overdue->sum('valor');
-        $count = $overdue->count();
+        $total = (clone $overdue)->sum('amount');
+        $count = (clone $overdue)->count();
 
         // Aging buckets
         $buckets = [
-            '1-30' => (clone $overdue)->where('data_vencimento', '>=', now()->subDays(30))->sum('valor'),
-            '31-60' => (clone $overdue)->whereBetween('data_vencimento', [now()->subDays(60), now()->subDays(31)])->sum('valor'),
-            '61-90' => (clone $overdue)->whereBetween('data_vencimento', [now()->subDays(90), now()->subDays(61)])->sum('valor'),
-            '90+' => (clone $overdue)->where('data_vencimento', '<', now()->subDays(90))->sum('valor'),
+            '1-30'  => (clone $overdue)->where('due_date', '>=', now()->subDays(30))->sum('amount'),
+            '31-60' => (clone $overdue)->whereBetween('due_date', [now()->subDays(60), now()->subDays(31)])->sum('amount'),
+            '61-90' => (clone $overdue)->whereBetween('due_date', [now()->subDays(90), now()->subDays(61)])->sum('amount'),
+            '90+'   => (clone $overdue)->where('due_date', '<', now()->subDays(90))->sum('amount'),
         ];
 
-        // Top delinquent customers
-        $topCustomers = AccountReceivable::where('company_id', $tenantId)
-            ->where('status', '!=', 'PAGO')
-            ->where('data_vencimento', '<', now())
-            ->join('customers', 'account_receivables.customer_id', '=', 'customers.id')
-            ->selectRaw('customers.id, customers.nome_fantasia as name, SUM(account_receivables.valor) as total_due, COUNT(*) as count')
-            ->groupBy('customers.id', 'customers.nome_fantasia')
+        // Top clientes inadimplentes
+        $topCustomers = AccountReceivable::where('tenant_id', $tenantId)
+            ->whereNotIn('status', [AccountReceivable::STATUS_PAID, AccountReceivable::STATUS_CANCELLED])
+            ->where('due_date', '<', now())
+            ->join('customers', 'accounts_receivable.customer_id', '=', 'customers.id')
+            ->selectRaw('customers.id, customers.name, SUM(accounts_receivable.amount) as total_due, COUNT(*) as count')
+            ->groupBy('customers.id', 'customers.name')
             ->orderByDesc('total_due')
             ->limit(10)
             ->get();
 
-        // Trend (last 6 months)
+        // Tendência (últimos 6 meses)
         $trend = [];
         for ($i = 5; $i >= 0; $i--) {
             $monthStart = now()->subMonths($i)->startOfMonth();
-            $monthEnd = $monthStart->copy()->endOfMonth();
+            $monthEnd   = $monthStart->copy()->endOfMonth();
             $trend[] = [
                 'month' => $monthStart->format('Y-m'),
-                'total' => round(AccountReceivable::where('company_id', $tenantId)
-                    ->where('status', '!=', 'PAGO')
-                    ->where('data_vencimento', '<', $monthEnd)
+                'total' => round(AccountReceivable::where('tenant_id', $tenantId)
+                    ->whereNotIn('status', [AccountReceivable::STATUS_PAID, AccountReceivable::STATUS_CANCELLED])
+                    ->where('due_date', '<', $monthEnd)
                     ->where('created_at', '<=', $monthEnd)
-                    ->sum('valor'), 2),
+                    ->sum('amount'), 2),
             ];
         }
 
-        // Delinquency rate
-        $totalReceivables = AccountReceivable::where('company_id', $tenantId)
-            ->where('status', '!=', 'PAGO')
-            ->sum('valor');
+        $totalReceivables = AccountReceivable::where('tenant_id', $tenantId)
+            ->whereNotIn('status', [AccountReceivable::STATUS_PAID, AccountReceivable::STATUS_CANCELLED])
+            ->sum('amount');
         $rate = $totalReceivables > 0 ? round(($total / $totalReceivables) * 100, 1) : 0;
 
         return response()->json([
-            'total_overdue' => round($total, 2),
-            'overdue_count' => $count,
-            'delinquency_rate' => $rate,
-            'aging_buckets' => $buckets,
-            'top_customers' => $topCustomers,
-            'trend' => $trend,
+            'total_overdue'     => round($total, 2),
+            'overdue_count'     => $count,
+            'delinquency_rate'  => $rate,
+            'aging_buckets'     => $buckets,
+            'top_customers'     => $topCustomers,
+            'trend'             => $trend,
         ]);
     }
 
@@ -497,18 +406,18 @@ class FinanceAdvancedController extends Controller
         if ($segmento === 'T') {
             return [
                 'nosso_numero' => trim(substr($line, 37, 20)),
-                'documento' => trim(substr($line, 58, 15)),
-                'valor' => (int) substr($line, 81, 15) / 100,
-                'status' => $this->parseCnab240Status(substr($line, 15, 2)),
+                'documento'    => trim(substr($line, 58, 15)),
+                'valor'        => (int) substr($line, 81, 15) / 100,
+                'status'       => $this->parseCnab240Status(substr($line, 15, 2)),
             ];
         }
 
         return [
             'data_pagamento' => $this->parseCnabDate(substr($line, 137, 8)),
-            'valor_pago' => (int) substr($line, 77, 15) / 100,
-            'juros' => (int) substr($line, 17, 15) / 100,
-            'desconto' => (int) substr($line, 32, 15) / 100,
-            'status' => 'paid',
+            'valor_pago'     => (int) substr($line, 77, 15) / 100,
+            'juros'          => (int) substr($line, 17, 15) / 100,
+            'desconto'       => (int) substr($line, 32, 15) / 100,
+            'status'         => 'paid',
         ];
     }
 
@@ -518,13 +427,13 @@ class FinanceAdvancedController extends Controller
         if ($tipo !== '1') return null;
 
         return [
-            'nosso_numero' => trim(substr($line, 62, 10)),
-            'documento' => trim(substr($line, 116, 10)),
+            'nosso_numero'   => trim(substr($line, 62, 10)),
+            'documento'      => trim(substr($line, 116, 10)),
             'data_pagamento' => $this->parseCnabDate(substr($line, 295, 6)),
-            'valor_pago' => (int) substr($line, 253, 13) / 100,
-            'juros' => (int) substr($line, 266, 13) / 100,
-            'desconto' => (int) substr($line, 240, 13) / 100,
-            'status' => 'paid',
+            'valor_pago'     => (int) substr($line, 253, 13) / 100,
+            'juros'          => (int) substr($line, 266, 13) / 100,
+            'desconto'       => (int) substr($line, 240, 13) / 100,
+            'status'         => 'paid',
         ];
     }
 
@@ -532,9 +441,9 @@ class FinanceAdvancedController extends Controller
     {
         return match ($code) {
             '06', '17' => 'paid',
-            '02' => 'registered',
-            '09' => 'rejected',
-            default => 'unknown',
+            '02'       => 'registered',
+            '09'       => 'rejected',
+            default    => 'unknown',
         };
     }
 

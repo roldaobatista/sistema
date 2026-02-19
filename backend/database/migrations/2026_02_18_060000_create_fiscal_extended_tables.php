@@ -74,21 +74,40 @@ return new class extends Migration
         });
 
         // Add parent_note_id and payment_data to fiscal_notes
-        Schema::table('fiscal_notes', function (Blueprint $table) {
-            $table->foreignId('parent_note_id')->nullable()->after('quote_id')
-                ->constrained('fiscal_notes')->nullOnDelete();
-            $table->json('payment_data')->nullable()->after('items_data');
-            $table->integer('email_retry_count')->default(0)->after('contingency_mode');
-            $table->timestamp('last_email_sent_at')->nullable()->after('email_retry_count');
-        });
+        if (Schema::hasTable('fiscal_notes')) {
+            Schema::table('fiscal_notes', function (Blueprint $table) {
+                if (!Schema::hasColumn('fiscal_notes', 'parent_note_id')) {
+                    $table->foreignId('parent_note_id')->nullable()
+                        ->constrained('fiscal_notes')->nullOnDelete();
+                }
+                if (!Schema::hasColumn('fiscal_notes', 'payment_data')) {
+                    $table->json('payment_data')->nullable();
+                }
+                if (!Schema::hasColumn('fiscal_notes', 'email_retry_count')) {
+                    $table->integer('email_retry_count')->default(0);
+                }
+                if (!Schema::hasColumn('fiscal_notes', 'last_email_sent_at')) {
+                    $table->timestamp('last_email_sent_at')->nullable();
+                }
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('fiscal_notes', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('parent_note_id');
-            $table->dropColumn(['payment_data', 'email_retry_count', 'last_email_sent_at']);
-        });
+        if (Schema::hasTable('fiscal_notes')) {
+            Schema::table('fiscal_notes', function (Blueprint $table) {
+                if (Schema::hasColumn('fiscal_notes', 'parent_note_id')) {
+                    $table->dropConstrainedForeignId('parent_note_id');
+                }
+
+                $cols = ['payment_data', 'email_retry_count', 'last_email_sent_at'];
+                $existing = array_filter($cols, fn ($col) => Schema::hasColumn('fiscal_notes', $col));
+                if (!empty($existing)) {
+                    $table->dropColumn($existing);
+                }
+            });
+        }
         Schema::dropIfExists('fiscal_audit_logs');
         Schema::dropIfExists('fiscal_templates');
         Schema::dropIfExists('fiscal_scheduled_emissions');

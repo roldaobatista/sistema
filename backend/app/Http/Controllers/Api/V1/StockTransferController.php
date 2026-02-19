@@ -64,12 +64,16 @@ class StockTransferController extends Controller
 
     protected function applyDirectionFilter($query, string $direction): void
     {
-        $centralIds = Warehouse::where('type', Warehouse::TYPE_FIXED)
+        $tenantId = $this->resolvedTenantId();
+        $centralIds = Warehouse::where('tenant_id', $tenantId)
+            ->where('type', Warehouse::TYPE_FIXED)
             ->whereNull('user_id')
             ->whereNull('vehicle_id')
             ->pluck('id');
-        $vehicleIds = Warehouse::where('type', Warehouse::TYPE_VEHICLE)->pluck('id');
-        $technicianIds = Warehouse::where('type', Warehouse::TYPE_TECHNICIAN)->pluck('id');
+        $vehicleIds = Warehouse::where('tenant_id', $tenantId)
+            ->where('type', Warehouse::TYPE_VEHICLE)->pluck('id');
+        $technicianIds = Warehouse::where('tenant_id', $tenantId)
+            ->where('type', Warehouse::TYPE_TECHNICIAN)->pluck('id');
 
         match ($direction) {
             'company_to_vehicle' => $query->whereIn('from_warehouse_id', $centralIds)->whereIn('to_warehouse_id', $vehicleIds),
@@ -140,7 +144,7 @@ class StockTransferController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('StockTransfer accept failed', ['transfer_id' => $transfer->id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro ao aceitar transferência: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Erro ao aceitar transferência.'], 500);
         }
     }
 

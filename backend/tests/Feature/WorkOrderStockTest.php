@@ -22,6 +22,20 @@ class WorkOrderStockTest extends TestCase
         parent::setUp();
         $this->tenant = Tenant::factory()->create();
         $this->user = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        
+        // Ensure tenant context is set for BelongsToTenant scope
+        app()->instance('current_tenant_id', $this->tenant->id);
+        
+        // Create default warehouse for stock operations
+        \App\Models\Warehouse::create([
+            'tenant_id' => $this->tenant->id,
+            'type' => 'fixed',
+            'name' => 'Central Warehouse',
+            'code' => 'CENTRAL',
+            'branch_id' => null,
+            'is_active' => true,
+        ]);
+
         $this->actingAs($this->user);
     }
 

@@ -73,6 +73,9 @@ const BankAccountsPage = lazy(() => import('@/pages/financeiro/BankAccountsPage'
 const FundTransfersPage = lazy(() => import('@/pages/financeiro/FundTransfersPage').then(m => ({ default: m.FundTransfersPage })))
 const FiscalNotesPage = lazy(() => import('@/pages/fiscal/FiscalNotesPage'))
 const FiscalConfigPage = lazy(() => import('@/pages/fiscal/FiscalConfigPage'))
+const FiscalDashboardPage = lazy(() => import('@/pages/fiscal/FiscalDashboard'))
+const ServiceChecklistsPage = lazy(() => import('@/pages/os/ServiceChecklistsPage').then(m => ({ default: m.ServiceChecklistsPage })))
+const AuditLogsPage = lazy(() => import('@/pages/configuracoes/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })))
 const ReportsPage = lazy(() => import('@/pages/relatorios/ReportsPage').then(m => ({ default: m.ReportsPage })))
 const AnalyticsHubPage = lazy(() => import('@/pages/analytics/AnalyticsHubPage').then(m => ({ default: m.AnalyticsHubPage })))
 const SettingsPage = lazy(() => import('@/pages/configuracoes/SettingsPage').then(m => ({ default: m.SettingsPage })))
@@ -90,6 +93,8 @@ const ServiceCallMapPage = lazy(() => import('@/pages/chamados/ServiceCallMapPag
 const TechnicianAgendaPage = lazy(() => import('@/pages/chamados/TechnicianAgendaPage').then(m => ({ default: m.TechnicianAgendaPage })))
 const ServiceCallDetailPage = lazy(() => import('@/pages/chamados/ServiceCallDetailPage').then(m => ({ default: m.ServiceCallDetailPage })))
 const ServiceCallEditPage = lazy(() => import('@/pages/chamados/ServiceCallEditPage').then(m => ({ default: m.ServiceCallEditPage })))
+const ServiceCallKanbanPage = lazy(() => import('@/pages/chamados/ServiceCallKanbanPage'))
+const ServiceCallDashboardPage = lazy(() => import('@/pages/chamados/ServiceCallDashboardPage'))
 const ImportPage = lazy(() => import('@/pages/importacao/ImportPage'))
 const AuvoImportPage = lazy(() => import('@/pages/integracao/AuvoImportPage'))
 const EmailInboxPage = lazy(() => import('@/pages/emails/EmailInboxPage'))
@@ -142,6 +147,7 @@ const CrmImportantDatesPage = lazy(() => import('@/pages/crm/CrmImportantDatesPa
 const CrmVisitSurveysPage = lazy(() => import('@/pages/crm/CrmVisitSurveysPage').then(m => ({ default: m.CrmVisitSurveysPage })))
 const CrmAccountPlansPage = lazy(() => import('@/pages/crm/CrmAccountPlansPage').then(m => ({ default: m.CrmAccountPlansPage })))
 const CrmGamificationPage = lazy(() => import('@/pages/crm/CrmGamificationPage').then(m => ({ default: m.CrmGamificationPage })))
+const CrmNpsDashboardPage = lazy(() => import('@/pages/crm/CrmNpsDashboardPage').then(m => ({ default: m.CrmNpsDashboardPage })))
 const StockDashboardPage = lazy(() => import('@/pages/estoque/StockDashboardPage').then(m => ({ default: m.StockDashboardPage })))
 const StockMovementsPage = lazy(() => import('@/pages/estoque/StockMovementsPage').then(m => ({ default: m.StockMovementsPage })))
 const WarehousesPage = lazy(() => import('@/pages/estoque/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
@@ -161,6 +167,7 @@ const SerialNumbersPage = lazy(() => import('@/pages/estoque/SerialNumbersPage')
 const CentralPage = lazy(() => import('@/pages/central/CentralPage').then(m => ({ default: m.CentralPage })))
 const CentralDashboardPage = lazy(() => import('@/pages/central/CentralDashboardPage').then(m => ({ default: m.CentralDashboardPage })))
 const CentralRulesPage = lazy(() => import('@/pages/central/CentralRulesPage').then(m => ({ default: m.CentralRulesPage })))
+const CentralKanbanPage = lazy(() => import('@/pages/central/CentralKanbanPage').then(m => ({ default: m.CentralKanbanPage })))
 const InmetroDashboardPage = lazy(() => import('@/pages/inmetro/InmetroDashboardPage').then(m => ({ default: m.InmetroDashboardPage })))
 const InmetroLeadsPage = lazy(() => import('@/pages/inmetro/InmetroLeadsPage').then(m => ({ default: m.InmetroLeadsPage })))
 const InmetroImportPage = lazy(() => import('@/pages/inmetro/InmetroImportPage').then(m => ({ default: m.InmetroImportPage })))
@@ -198,6 +205,7 @@ const AutomationPage = lazy(() => import('@/pages/automacao/AutomationPage'))
 const AdvancedFeaturesPage = lazy(() => import('@/pages/avancado/AdvancedFeaturesPage'))
 const AlertsPage = lazy(() => import('@/pages/alertas/AlertsPage'))
 const CalibrationReadingsPage = lazy(() => import('@/pages/calibracao/CalibrationReadingsPage'))
+const CalibrationWizardPage = lazy(() => import('@/pages/calibracao/CalibrationWizardPage'))
 const WhatsAppConfigPage = lazy(() => import('@/pages/configuracoes/WhatsAppConfigPage'))
 const AgingReceivablesPage = lazy(() => import('@/pages/financeiro/AgingReceivablesPage').then(m => ({ default: m.AgingReceivablesPage })))
 const DebtRenegotiationPage = lazy(() => import('@/pages/financeiro/DebtRenegotiationPage'))
@@ -228,6 +236,9 @@ const TvCamerasPage = lazy(() => import('@/pages/tv/TvCamerasPage'))
 const AIAnalyticsPage = lazy(() => import('@/pages/ia/AIAnalyticsPage'))
 const PeopleAnalyticsPage = lazy(() => import('@/pages/rh/PeopleAnalyticsPage'))
 const AccountingReportsPage = lazy(() => import('@/pages/rh/AccountingReportsPage'))
+
+// PWA Share Target
+const ShareTargetPage = lazy(() => import('@/pages/ShareTargetPage'))
 
 // Tech (PWA Mobile)
 const TechWorkOrdersPage = lazy(() => import('@/pages/tech/TechWorkOrdersPage'))
@@ -292,6 +303,7 @@ initCrossTabSync(queryClient)
 const routePermissionRules: Array<{ match: string; permission: string | null }> = [
   { match: '/central/regras', permission: 'central.manage.rules' },
   { match: '/central/dashboard', permission: 'central.manage.kpis' },
+  { match: '/central/kanban', permission: 'central.item.view' },
   { match: '/central', permission: 'central.item.view' },
   { match: '/iam/usuarios', permission: 'iam.user.view' },
   { match: '/iam/roles', permission: 'iam.role.view' },
@@ -317,13 +329,19 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/inmetro/webhooks', permission: 'inmetro.intelligence.view' },
   { match: '/orcamentos/', permission: 'quotes.quote.view' },
   { match: '/orcamentos', permission: 'quotes.quote.view' },
+  { match: '/chamados/kanban', permission: 'service_calls.service_call.view' },
+  { match: '/chamados/dashboard', permission: 'service_calls.service_call.view' },
   { match: '/chamados', permission: 'service_calls.service_call.view' },
   { match: '/os/nova', permission: 'os.work_order.create' },
+  { match: '/os/checklists-servico', permission: 'os.checklist.view' },
+  { match: '/os/checklists', permission: 'os.checklist.view' },
   { match: '/os', permission: 'os.work_order.view' },
+  { match: '/fiscal/notas', permission: 'fiscal.note.view' },
+  { match: '/fiscal/configuracoes', permission: 'fiscal.config.view' },
+  { match: '/fiscal', permission: 'fiscal.note.view' },
   { match: '/tecnicos/agenda', permission: 'technicians.schedule.view' },
   { match: '/tecnicos/apontamentos', permission: 'technicians.time_entry.view' },
   { match: '/tecnicos/caixa', permission: 'technicians.cashbox.view' },
-  { match: '/financeiro', permission: 'financeiro.view' },
   { match: '/financeiro/receber', permission: 'finance.receivable.view' },
   { match: '/financeiro/pagar', permission: 'finance.payable.view' },
   { match: '/financeiro/comissoes/dashboard', permission: 'commissions.rule.view' },
@@ -337,13 +355,12 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/financeiro/conciliacao-bancaria', permission: 'finance.receivable.view' },
   { match: '/financeiro/regras-conciliacao', permission: 'finance.receivable.view' },
   { match: '/financeiro/dashboard-conciliacao', permission: 'finance.receivable.view' },
-  { match: '/financeiro/consolidado', permission: 'financeiro.view' },
+  { match: '/financeiro/consolidado', permission: 'finance.cashflow.view' },
   { match: '/financeiro/plano-contas', permission: 'finance.chart.view' },
   { match: '/financeiro/categorias-pagar', permission: 'finance.payable.view' },
   { match: '/financeiro/contas-bancarias', permission: 'financial.bank_account.view' },
   { match: '/financeiro/transferencias-tecnicos', permission: 'financial.fund_transfer.view' },
-  { match: '/fiscal/configuracoes', permission: 'fiscal.config.manage' },
-  { match: '/fiscal/notas', permission: 'fiscal.note.view' },
+
   { match: '/estoque/movimentacoes', permission: 'estoque.movement.view' },
   { match: '/estoque/armazens', permission: 'estoque.warehouse.view' },
   { match: '/estoque/inventario-pwa', permission: 'estoque.view' },
@@ -364,14 +381,16 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/equipamentos/atribuicao-pesos', permission: 'calibration.weight_assignment.view' },
   { match: '/equipamentos', permission: 'equipments.equipment.view' },
   { match: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
+  { match: '/calibracao/wizard', permission: 'calibration.reading.view' },
   { match: '/calibracao/leituras', permission: 'calibration.reading.view' },
   { match: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
   { match: '/configuracoes/filiais', permission: 'platform.branch.view' },
   { match: '/configuracoes/empresas', permission: 'platform.tenant.view' },
   { match: '/configuracoes/whatsapp', permission: 'whatsapp.config.view' },
   { match: '/configuracoes/auditoria', permission: 'iam.audit_log.view' },
-  { match: '/configuracoes', permission: 'platform.settings.view' },
+  { match: '/configuracoes/logs-auditoria', permission: 'iam.audit_log.view' },
   { match: '/configuracoes/cadastros-auxiliares', permission: 'lookups.view' },
+  { match: '/configuracoes', permission: 'platform.settings.view' },
   { match: '/financeiro/regua-cobranca', permission: 'finance.receivable.view' },
   { match: '/financeiro/renegociacao', permission: 'finance.renegotiation.view' },
   { match: '/financeiro/reembolsos', permission: 'expenses.expense.view' },
@@ -381,8 +400,9 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/financeiro/simulador-recebiveis', permission: 'finance.receivable.view' },
   { match: '/financeiro/aprovacao-lote', permission: 'finance.payable.view' },
   { match: '/financeiro/alocacao-despesas', permission: 'expenses.expense.view' },
-  { match: '/financeiro/calculadora-tributos', permission: 'financeiro.view' },
-  { match: '/financeiro/dre', permission: 'financeiro.view' },
+  { match: '/financeiro/calculadora-tributos', permission: 'finance.dre.view' },
+  { match: '/financeiro/dre', permission: 'finance.dre.view' },
+  { match: '/financeiro', permission: 'finance.cashflow.view|finance.receivable.view|finance.payable.view' },
   { match: '/alertas', permission: 'alerts.alert.view' },
   { match: '/qualidade/auditorias', permission: 'quality.audit.view' },
   { match: '/qualidade/documentos', permission: 'quality.document.view' },
@@ -406,6 +426,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/crm/velocity', permission: 'crm.deal.view' },
   { match: '/crm/cohort', permission: 'crm.forecast.view' },
   { match: '/crm/proposals', permission: 'crm.proposal.view' },
+  { match: '/crm/nps', permission: 'crm.deal.view' },
   { match: '/crm', permission: 'crm.deal.view' },
   { match: '/perfil', permission: null },
   { match: '/analytics', permission: 'reports.analytics.view' },
@@ -420,7 +441,6 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/rh/ferias', permission: 'hr.leave.view' },
   { match: '/rh/saldo-ferias', permission: 'hr.leave.view' },
   { match: '/rh/documentos', permission: 'hr.document.view' },
-  { match: '/rh/onboarding', permission: 'hr.onboarding.view' },
   { match: '/rh/onboarding', permission: 'hr.onboarding.view' },
   { match: '/rh/organograma', permission: 'hr.organization.view' },
   { match: '/rh/skills', permission: 'hr.skills.view' },
@@ -593,6 +613,7 @@ export default function App() {
 
               {/* Central (Inbox) */}
               <Route path="/central" element={<ProtectedRoute><CentralPage /></ProtectedRoute>} />
+              <Route path="/central/kanban" element={<ProtectedRoute><CentralKanbanPage /></ProtectedRoute>} />
               <Route path="/central/dashboard" element={<ProtectedRoute><CentralDashboardPage /></ProtectedRoute>} />
               <Route path="/central/regras" element={<ProtectedRoute><CentralRulesPage /></ProtectedRoute>} />
 
@@ -621,6 +642,8 @@ export default function App() {
               {/* Chamados Técnicos */}
               <Route path="/chamados" element={<ProtectedRoute><ServiceCallsPage /></ProtectedRoute>} />
               <Route path="/chamados/novo" element={<ProtectedRoute><ServiceCallCreatePage /></ProtectedRoute>} />
+              <Route path="/chamados/kanban" element={<ProtectedRoute><ServiceCallKanbanPage /></ProtectedRoute>} />
+              <Route path="/chamados/dashboard" element={<ProtectedRoute><ServiceCallDashboardPage /></ProtectedRoute>} />
               <Route path="/chamados/mapa" element={<ProtectedRoute><ServiceCallMapPage /></ProtectedRoute>} />
               <Route path="/chamados/agenda" element={<ProtectedRoute><TechnicianAgendaPage /></ProtectedRoute>} />
               <Route path="/chamados/:id" element={<ProtectedRoute><ServiceCallDetailPage /></ProtectedRoute>} />
@@ -635,6 +658,7 @@ export default function App() {
               <Route path="/os/sla" element={<ProtectedRoute><SlaPoliciesPage /></ProtectedRoute>} />
               <Route path="/os/sla-dashboard" element={<ProtectedRoute><SlaDashboardPage /></ProtectedRoute>} />
               <Route path="/os/checklists" element={<ProtectedRoute><ChecklistPage /></ProtectedRoute>} />
+              <Route path="/os/checklists-servico" element={<ProtectedRoute><ServiceChecklistsPage /></ProtectedRoute>} />
 
               {/* Técnicos */}
               <Route path="/tecnicos/agenda" element={<ProtectedRoute><SchedulesPage /></ProtectedRoute>} />
@@ -664,6 +688,7 @@ export default function App() {
               <Route path="/financeiro/transferencias-tecnicos" element={<ProtectedRoute><FundTransfersPage /></ProtectedRoute>} />
 
               {/* Fiscal */}
+              <Route path="/fiscal" element={<ProtectedRoute><FiscalDashboardPage /></ProtectedRoute>} />
               <Route path="/fiscal/notas" element={<ProtectedRoute><FiscalNotesPage /></ProtectedRoute>} />
               <Route path="/fiscal/configuracoes" element={<ProtectedRoute><FiscalConfigPage /></ProtectedRoute>} />
 
@@ -732,6 +757,7 @@ export default function App() {
               <Route path="/configuracoes/filiais" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
               <Route path="/configuracoes/empresas" element={<ProtectedRoute><TenantManagementPage /></ProtectedRoute>} />
               <Route path="/configuracoes/auditoria" element={<ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
+              <Route path="/configuracoes/logs-auditoria" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
               <Route path="/perfil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* CRM */}
@@ -779,6 +805,7 @@ export default function App() {
               <Route path="/crm/visit-surveys" element={<ProtectedRoute><CrmVisitSurveysPage /></ProtectedRoute>} />
               <Route path="/crm/account-plans" element={<ProtectedRoute><CrmAccountPlansPage /></ProtectedRoute>} />
               <Route path="/crm/gamification" element={<ProtectedRoute><CrmGamificationPage /></ProtectedRoute>} />
+              <Route path="/crm/nps" element={<ProtectedRoute><CrmNpsDashboardPage /></ProtectedRoute>} />
 
               {/* Frota */}
               <Route path="/frota" element={<ProtectedRoute><FleetPage /></ProtectedRoute>} />
@@ -817,6 +844,8 @@ export default function App() {
               {/* Calibração — Leituras para certificado */}
               <Route path="/calibracao/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
               <Route path="/calibracao/:calibrationId/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
+              <Route path="/calibracao/wizard/:equipmentId" element={<ProtectedRoute><CalibrationWizardPage /></ProtectedRoute>} />
+              <Route path="/calibracao/wizard/:equipmentId/:calibrationId" element={<ProtectedRoute><CalibrationWizardPage /></ProtectedRoute>} />
               <Route path="/calibracao/templates" element={<ProtectedRoute><CertificateTemplatesPage /></ProtectedRoute>} />
 
               {/* Configurações — WhatsApp */}
@@ -851,6 +880,9 @@ export default function App() {
               {/* TV Dashboard (Wallboard) */}
               <Route path="/tv/dashboard" element={<ProtectedRoute><TvDashboard /></ProtectedRoute>} />
               <Route path="/tv/cameras" element={<ProtectedRoute><TvCamerasPage /></ProtectedRoute>} />
+
+              {/* PWA Share Target */}
+              <Route path="/share" element={<ProtectedRoute><ShareTargetPage /></ProtectedRoute>} />
 
               {/* Tech PWA (Mobile Offline) */}
               <Route path="/tech" element={<TechShell />}>

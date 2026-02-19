@@ -11,6 +11,7 @@ use App\Models\WorkOrder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ServiceOpsController extends Controller
 {
@@ -24,13 +25,13 @@ class ServiceOpsController extends Controller
 
     public function slaDashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         return response()->json($this->slaService->getDashboard($tenantId));
     }
 
     public function runSlaChecks(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         $results = $this->slaService->runSlaChecks($tenantId);
         return response()->json(['message' => 'SLA checks completed', 'data' => $results]);
     }
@@ -61,7 +62,7 @@ class ServiceOpsController extends Controller
             foreach ($equipmentIds as $equipmentId) {
                 $data = array_merge($template, [
                     'equipment_id' => $equipmentId,
-                    'company_id' => $user->company_id,
+                    'tenant_id' => $user->current_tenant_id ?? $user->tenant_id,
                     'created_by' => $user->id,
                 ]);
                 $wo = WorkOrder::create($data);
@@ -70,7 +71,7 @@ class ServiceOpsController extends Controller
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Error creating batch', 'error' => $e->getMessage()], 500);
+            Log::error('Error creating batch: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Error creating batch'], 500);
         }
 
         return response()->json([
@@ -90,8 +91,8 @@ class ServiceOpsController extends Controller
             'start_longitude' => 'nullable|numeric',
         ]);
 
-        $tenantId = $request->user()->company_id;
-        $workOrders = WorkOrder::where('company_id', $tenantId)
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
+        $workOrders = WorkOrder::where('tenant_id', $tenantId)
             ->whereIn('id', $request->input('work_order_ids'))
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
@@ -201,12 +202,12 @@ class ServiceOpsController extends Controller
 
     public function npsDashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         $from = $request->input('from', now()->subMonths(3)->toDateString());
         $to = $request->input('to', now()->toDateString());
 
         $responses = DB::table('nps_responses')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$from, $to]);
 
         $total = $responses->count();
@@ -223,7 +224,7 @@ class ServiceOpsController extends Controller
 
         // Trend by month
         $trend = DB::table('nps_responses')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$from, $to])
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, AVG(score) as avg_score, COUNT(*) as total")
             ->groupBy('month')
@@ -233,7 +234,7 @@ class ServiceOpsController extends Controller
         // By technician
         $byTech = DB::table('nps_responses')
             ->join('users', 'nps_responses.technician_id', '=', 'users.id')
-            ->where('nps_responses.company_id', $tenantId)
+            ->where('nps_responses.tenant_id', $tenantId)
             ->whereBetween('nps_responses.created_at', [$from, $to])
             ->selectRaw('users.name, AVG(nps_responses.score) as avg_score, COUNT(*) as total')
             ->groupBy('users.name')
@@ -257,11 +258,11 @@ class ServiceOpsController extends Controller
 
     public function heatmapData(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         $from = $request->input('from', now()->subMonths(6)->toDateString());
         $to = $request->input('to', now()->toDateString());
 
-        $points = WorkOrder::where('company_id', $tenantId)
+        $points = WorkOrder::where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$from, $to])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
@@ -276,7 +277,7 @@ class ServiceOpsController extends Controller
             ]);
 
         // Regional summary
-        $byCidade = WorkOrder::where('company_id', $tenantId)
+        $byCidade = WorkOrder::where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$from, $to])
             ->selectRaw('cidade, estado, COUNT(*) as total')
             ->groupBy('cidade', 'estado')
@@ -295,7 +296,7 @@ class ServiceOpsController extends Controller
 
     public function techProductivity(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         $techId = $request->input('technician_id') ?? $request->user()->id;
         $from = $request->input('from');
         $to = $request->input('to');
@@ -305,7 +306,7 @@ class ServiceOpsController extends Controller
 
     public function techRanking(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         return response()->json($this->productivityService->getRanking(
             $tenantId,
             $request->input('from'),
@@ -316,7 +317,7 @@ class ServiceOpsController extends Controller
 
     public function teamSummary(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         return response()->json($this->productivityService->getTeamSummary(
             $tenantId,
             $request->input('from'),
@@ -328,7 +329,7 @@ class ServiceOpsController extends Controller
 
     public function autoAssignRules(Request $request): JsonResponse
     {
-        $rules = AutoAssignmentRule::where('company_id', $request->user()->company_id)
+        $rules = AutoAssignmentRule::where('tenant_id', (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id))
             ->orderBy('priority')
             ->paginate(20);
 
@@ -348,7 +349,7 @@ class ServiceOpsController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $data['company_id'] = $request->user()->company_id;
+        $data['tenant_id'] = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
         $rule = AutoAssignmentRule::create($data);
 
         return response()->json($rule, 201);
@@ -372,8 +373,13 @@ class ServiceOpsController extends Controller
 
     public function deleteAutoAssignRule(AutoAssignmentRule $rule): JsonResponse
     {
-        $rule->delete();
-        return response()->json(['message' => 'Rule deleted']);
+        try {
+            $rule->delete();
+            return response()->json(['message' => 'Rule deleted']);
+        } catch (\Exception $e) {
+            Log::error('ServiceOps deleteAutoAssignRule failed', ['rule_id' => $rule->id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao excluir regra de auto-atribuição'], 500);
+        }
     }
 
     public function triggerAutoAssign(Request $request, WorkOrder $workOrder): JsonResponse

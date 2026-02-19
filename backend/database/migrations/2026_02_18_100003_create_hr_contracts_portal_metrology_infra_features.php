@@ -12,12 +12,12 @@ return new class extends Migration
         if (!Schema::hasTable('on_call_schedules')) {
             Schema::create('on_call_schedules', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
                 $table->date('date');
                 $table->string('shift'); // morning, afternoon, night, full
                 $table->timestamps();
-                $table->unique(['company_id', 'date', 'shift']);
+                $table->unique(['tenant_id', 'date', 'shift']);
             });
         }
 
@@ -25,7 +25,7 @@ return new class extends Migration
         if (!Schema::hasTable('performance_reviews')) {
             Schema::create('performance_reviews', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
                 $table->foreignId('reviewer_id')->constrained('users')->onDelete('cascade');
                 $table->string('period');
@@ -41,7 +41,7 @@ return new class extends Migration
         if (!Schema::hasTable('onboarding_templates')) {
             Schema::create('onboarding_templates', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->string('name');
                 $table->string('role');
                 $table->json('steps');
@@ -52,7 +52,7 @@ return new class extends Migration
         if (!Schema::hasTable('onboarding_processes')) {
             Schema::create('onboarding_processes', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
                 $table->unsignedBigInteger('template_id');
                 $table->string('status')->default('in_progress');
@@ -79,7 +79,7 @@ return new class extends Migration
         if (!Schema::hasTable('training_courses')) {
             Schema::create('training_courses', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->string('name');
                 $table->text('description')->nullable();
                 $table->integer('duration_hours');
@@ -92,7 +92,7 @@ return new class extends Migration
         if (!Schema::hasTable('training_enrollments')) {
             Schema::create('training_enrollments', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
                 $table->unsignedBigInteger('course_id');
                 $table->string('status')->default('enrolled');
@@ -109,7 +109,7 @@ return new class extends Migration
         if (!Schema::hasTable('contract_addendums')) {
             Schema::create('contract_addendums', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->unsignedBigInteger('contract_id');
                 $table->string('type'); // value_change, scope_change, term_extension, cancellation
                 $table->text('description');
@@ -128,7 +128,7 @@ return new class extends Migration
         if (!Schema::hasTable('contract_adjustments')) {
             Schema::create('contract_adjustments', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->unsignedBigInteger('contract_id');
                 $table->decimal('old_value', 15, 2);
                 $table->decimal('new_value', 15, 2);
@@ -143,7 +143,7 @@ return new class extends Migration
         if (!Schema::hasTable('contract_measurements')) {
             Schema::create('contract_measurements', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->unsignedBigInteger('contract_id');
                 $table->string('period');
                 $table->json('items');
@@ -160,7 +160,7 @@ return new class extends Migration
         if (!Schema::hasTable('non_conformances')) {
             Schema::create('non_conformances', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->string('number')->unique();
                 $table->string('title');
                 $table->text('description');
@@ -185,7 +185,7 @@ return new class extends Migration
         if (!Schema::hasTable('measurement_uncertainties')) {
             Schema::create('measurement_uncertainties', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->unsignedBigInteger('equipment_id');
                 $table->unsignedBigInteger('calibration_id')->nullable();
                 $table->string('measurement_type');
@@ -207,7 +207,7 @@ return new class extends Migration
         if (!Schema::hasTable('recall_logs')) {
             Schema::create('recall_logs', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->unsignedBigInteger('equipment_id');
                 $table->unsignedBigInteger('customer_id');
                 $table->string('type');
@@ -220,7 +220,7 @@ return new class extends Migration
         if (!Schema::hasTable('webhook_configs')) {
             Schema::create('webhook_configs', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->string('name');
                 $table->string('url', 500);
                 $table->json('events');
@@ -248,7 +248,7 @@ return new class extends Migration
         if (!Schema::hasTable('api_keys')) {
             Schema::create('api_keys', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('company_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
                 $table->string('name');
                 $table->string('key_hash', 64);
                 $table->string('prefix', 16);

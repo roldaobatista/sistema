@@ -46,10 +46,10 @@ class CommissionCampaignProfessionalTest extends TestCase
 
     public function test_create_campaign_returns_201_and_persists(): void
     {
-        $response = $this->postJson('/api/v1/commissions/campaigns', [
+        $response = $this->postJson('/api/v1/commission-campaigns', [
             'name' => 'Campanha Verão 2025',
             'multiplier' => 1.5,
-            'applies_to_role' => 'technician',
+            'applies_to_role' => \App\Models\CommissionRule::ROLE_TECHNICIAN,
             'starts_at' => now()->format('Y-m-d'),
             'ends_at' => now()->addMonths(2)->format('Y-m-d'),
         ]);
@@ -66,7 +66,7 @@ class CommissionCampaignProfessionalTest extends TestCase
 
     public function test_create_campaign_validates_multiplier_minimum(): void
     {
-        $response = $this->postJson('/api/v1/commissions/campaigns', [
+        $response = $this->postJson('/api/v1/commission-campaigns', [
             'name' => 'Campanha inválida',
             'multiplier' => 0.5,
             'starts_at' => now()->format('Y-m-d'),
@@ -79,7 +79,7 @@ class CommissionCampaignProfessionalTest extends TestCase
 
     public function test_create_campaign_validates_end_after_start(): void
     {
-        $response = $this->postJson('/api/v1/commissions/campaigns', [
+        $response = $this->postJson('/api/v1/commission-campaigns', [
             'name' => 'Datas invertidas',
             'multiplier' => 2.0,
             'starts_at' => '2025-12-31',
@@ -105,7 +105,7 @@ class CommissionCampaignProfessionalTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $response = $this->putJson("/api/v1/commissions/campaigns/{$campaignId}", [
+        $response = $this->putJson("/api/v1/commission-campaigns/{$campaignId}", [
             'name' => 'Campanha Atualizada',
             'active' => false,
         ]);
@@ -134,7 +134,7 @@ class CommissionCampaignProfessionalTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->deleteJson("/api/v1/commissions/campaigns/{$campaignId}")
+        $this->deleteJson("/api/v1/commission-campaigns/{$campaignId}")
             ->assertNoContent();
 
         $this->assertDatabaseMissing('commission_campaigns', ['id' => $campaignId]);
@@ -167,7 +167,7 @@ class CommissionCampaignProfessionalTest extends TestCase
             ],
         ]);
 
-        $response = $this->getJson('/api/v1/commissions/campaigns');
+        $response = $this->getJson('/api/v1/commission-campaigns');
 
         $response->assertOk();
     }

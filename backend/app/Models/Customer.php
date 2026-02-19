@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Notifications\Notifiable;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Customer extends Model
 {
-    use BelongsToTenant, SoftDeletes, HasFactory, Auditable;
+    use BelongsToTenant, SoftDeletes, HasFactory, Auditable, Notifiable;
 
     protected $fillable = [
         'tenant_id', 'type', 'name', 'trade_name', 'document', 'email',

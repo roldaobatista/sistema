@@ -11,7 +11,7 @@ class AutoAssignmentRule extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'company_id',
+        'tenant_id',
         'name',
         'entity_type',
         'strategy',
@@ -30,8 +30,8 @@ class AutoAssignmentRule extends Model
         'priority' => 'integer',
     ];
 
-    public function company()
+    public function tenant()
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(Tenant::class);
     }
 }

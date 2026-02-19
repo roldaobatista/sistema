@@ -84,6 +84,24 @@
                 <div class="info-row"><span class="info-label">Tipo</span><span class="info-value">{{ ucfirst($calibration->calibration_type) }}</span></div>
                 <div class="info-row"><span class="info-label">Laboratório</span><span class="info-value">{{ $calibration->laboratory ?? '—' }}</span></div>
                 <div class="info-row"><span class="info-label">Incerteza</span><span class="info-value">{{ $calibration->uncertainty ?? '—' }}</span></div>
+                @if($calibration->verification_type)
+                    <div class="info-row"><span class="info-label">Verificação</span><span class="info-value">{{ ucfirst(str_replace('_', ' ', $calibration->verification_type)) }}</span></div>
+                @endif
+                @if($calibration->verification_division_e)
+                    <div class="info-row"><span class="info-label">Divisão (e)</span><span class="info-value">{{ number_format($calibration->verification_division_e, 6, ',', '.') }} {{ $calibration->mass_unit ?? 'kg' }}</span></div>
+                @endif
+                @if($calibration->calibration_method)
+                    <div class="info-row"><span class="info-label">Método</span><span class="info-value">{{ $calibration->calibration_method }}</span></div>
+                @endif
+                @if($calibration->calibration_location)
+                    <div class="info-row"><span class="info-label">Local</span><span class="info-value">{{ $calibration->calibration_location }} @if($calibration->calibration_location_type)({{ ucfirst($calibration->calibration_location_type) }})@endif</span></div>
+                @endif
+                @if($calibration->received_date)
+                    <div class="info-row"><span class="info-label">Recebimento</span><span class="info-value">{{ $calibration->received_date->format('d/m/Y') }}</span></div>
+                @endif
+                @if($calibration->issued_date)
+                    <div class="info-row"><span class="info-label">Emissão</span><span class="info-value">{{ $calibration->issued_date->format('d/m/Y') }}</span></div>
+                @endif
                 @if($calibration->performed_by)
                     <div class="info-row"><span class="info-label">Executado por</span><span class="info-value">{{ $calibration->performer->name ?? '—' }}</span></div>
                 @endif
@@ -347,6 +365,80 @@
         </table>
     @endif
 
+    {{-- 8. Ensaio de Repetibilidade --}}
+    @php $repTests = $calibration->repeatabilityTests ?? collect(); @endphp
+    @if($repTests->count())
+        @foreach($repTests as $repTest)
+            <table class="data-table" style="margin-top: 12px;">
+                <thead>
+                    <tr>
+                        <th colspan="4" style="background: #0891b2; color: #fff; text-align: left; font-size: 9px; letter-spacing: 1px; text-transform: uppercase;">
+                            8. Ensaio de Repetibilidade — Carga: {{ number_format($repTest->load_value, 4, ',', '.') }} {{ $repTest->unit ?? 'kg' }}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600; color: #64748b;">Medições</td>
+                        <td colspan="3" style="font-family: monospace;">
+                            @php
+                                $measurements = [];
+                                for ($m = 1; $m <= 10; $m++) {
+                                    $val = $repTest->{"measurement_$m"};
+                                    if ($val !== null) $measurements[] = number_format($val, 4, ',', '.');
+                                }
+                            @endphp
+                            {{ implode(' | ', $measurements) }}
+                        </td>
+                    </tr>
+                    @if($repTest->mean !== null)
+                        <tr>
+                            <td style="font-weight: 600; color: #64748b;">Média</td>
+                            <td style="font-family: monospace;">{{ number_format($repTest->mean, 4, ',', '.') }}</td>
+                            <td style="font-weight: 600; color: #64748b;">Desvio Padrão (s)</td>
+                            <td style="font-family: monospace;">{{ number_format($repTest->std_dev, 6, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; color: #64748b;">Incerteza Tipo A (u<sub>A</sub>)</td>
+                            <td style="font-family: monospace;">{{ number_format($repTest->uncertainty_type_a, 6, ',', '.') }}</td>
+                            <td style="font-weight: 600; color: #64748b;">Amplitude</td>
+                            <td style="font-family: monospace;">{{ number_format($repTest->range_value, 4, ',', '.') }}</td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+        @endforeach
+    @endif
+
+    {{-- Dados de Ajuste (Antes / Depois) --}}
+    @if($calibration->before_adjustment_data || $calibration->after_adjustment_data)
+        <div class="info-box" style="margin-top: 12px;">
+            <div class="info-box-title" style="color: #d97706;">Dados de Ajuste</div>
+            <div style="display: table; width: 100%;">
+                @if($calibration->before_adjustment_data)
+                    <div style="display: table-cell; width: 50%; padding: 8px; vertical-align: top; border-right: 1px solid #e2e8f0;">
+                        <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Antes do Ajuste</div>
+                        <div style="font-size: 9px; font-family: monospace; color: #334155;">
+                            @foreach($calibration->before_adjustment_data as $key => $val)
+                                {{ $key }}: {{ is_array($val) ? json_encode($val) : $val }}<br>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                @if($calibration->after_adjustment_data)
+                    <div style="display: table-cell; width: 50%; padding: 8px; vertical-align: top;">
+                        <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Após o Ajuste</div>
+                        <div style="font-size: 9px; font-family: monospace; color: #334155;">
+                            @foreach($calibration->after_adjustment_data as $key => $val)
+                                {{ $key }}: {{ is_array($val) ? json_encode($val) : $val }}<br>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+
     {{-- Observações --}}
     @if($calibration->notes)
         <div class="notes-section">
@@ -355,16 +447,26 @@
         </div>
     @endif
 
-    {{-- Rastreabilidade --}}
+    {{-- Rastreabilidade e Referências Normativas --}}
     <div style="background: #f0fdf4; border: 2px solid #059669; border-radius: 6px; padding: 14px 16px; margin-top: 15px;">
-        <div style="font-size: 8px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Declaração de Rastreabilidade</div>
+        <div style="font-size: 8px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Declaração de Rastreabilidade e Referências Normativas</div>
         <div style="font-size: 9px; color: #334155; line-height: 1.7;">
             Declaramos que o equipamento acima identificado foi calibrado conforme os procedimentos internos da empresa,
             rastreáveis à Rede Brasileira de Calibração (RBC) e aos padrões do INMETRO.
             @if(isset($standardWeights) && $standardWeights->count())
                 Os padrões de medição utilizados nesta calibração possuem certificados de calibração RBC (ou emitidos por laboratórios acreditados na RBC), permitindo ao cliente rastrear esta calibração à Rede Brasileira de Calibração através dos certificados dos pesos relacionados na tabela "Padrões de Medição Utilizados".
             @endif
-            O resultado expresso refere-se exclusivamente às condições no momento da calibração. Este certificado foi emitido conforme procedimentos internos e boas práticas de calibração.
+            O resultado expresso refere-se exclusivamente às condições no momento da calibração.
+        </div>
+        <div style="font-size: 8px; color: #475569; line-height: 1.6; margin-top: 8px; padding-top: 8px; border-top: 1px solid #bbf7d0;">
+            <strong>Referências normativas:</strong>
+            ABNT NBR ISO/IEC 17025:2017 — Requisitos para competência de laboratórios de ensaio e calibração;
+            Portaria INMETRO nº 157/2022 — Regulamento Técnico Metrológico para instrumentos de pesagem não automática;
+            OIML R76-1 — Non-automatic weighing instruments (Metrological and technical requirements);
+            VIM (Vocabulário Internacional de Metrologia) — Termos fundamentais de metrologia.
+            @if($calibration->calibration_method)
+                <br>Procedimento de calibração: {{ $calibration->calibration_method }}.
+            @endif
         </div>
     </div>
 

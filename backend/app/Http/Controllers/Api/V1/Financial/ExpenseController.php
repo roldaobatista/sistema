@@ -29,7 +29,7 @@ class ExpenseController extends Controller
     {
         try {
             $tenantId = $this->tenantId($request);
-            $query = Expense::with(['category:id,name,color', 'creator:id,name', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type', 'reviewer:id,name'])
+            $query = Expense::with(['category:id,name,color', 'creator:id,name', 'approver:id,name', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type', 'reviewer:id,name'])
                 ->where('tenant_id', $tenantId);
 
             if ($request->get('my')) {
@@ -111,6 +111,7 @@ class ExpenseController extends Controller
                     'created_by' => $request->user()->id,
                 ]);
                 $expense->forceFill(['status' => Expense::STATUS_PENDING]);
+
                 $expense->save();
 
                 ExpenseStatusHistory::create([
@@ -153,7 +154,7 @@ class ExpenseController extends Controller
     {
         try {
             if ($expense->tenant_id !== $this->tenantId($request)) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Despesa não encontrada'], 404);
             }
 
             return response()->json($expense->load([
@@ -176,7 +177,7 @@ class ExpenseController extends Controller
             $tenantId = $this->tenantId($request);
 
             if ($expense->tenant_id !== $tenantId) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Despesa não encontrada'], 404);
             }
 
             if (in_array($expense->status, [Expense::STATUS_APPROVED, Expense::STATUS_REIMBURSED], true)) {
@@ -200,8 +201,9 @@ class ExpenseController extends Controller
 
             DB::transaction(fn () => $expense->update($data));
 
-            $budgetWarning = $this->checkBudgetLimit($expense->fresh(), $tenantId);
-            $response = $expense->fresh()->load(['category:id,name,color', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type'])->toArray();
+            $expense->refresh();
+            $budgetWarning = $this->checkBudgetLimit($expense, $tenantId);
+            $response = $expense->load(['category:id,name,color', 'workOrder:id,number,os_number', 'chartOfAccount:id,code,name,type'])->toArray();
             if ($budgetWarning) {
                 $response['_budget_warning'] = $budgetWarning;
             }
@@ -219,7 +221,7 @@ class ExpenseController extends Controller
     {
         try {
             if ($expense->tenant_id !== $this->tenantId($request)) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Despesa não encontrada'], 404);
             }
 
             if (in_array($expense->status, [Expense::STATUS_APPROVED, Expense::STATUS_REIMBURSED], true)) {
@@ -250,7 +252,7 @@ class ExpenseController extends Controller
     {
         try {
             if ($expense->tenant_id !== $this->tenantId($request)) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Despesa não encontrada'], 404);
             }
 
             $validated = $request->validate([
@@ -303,6 +305,11 @@ class ExpenseController extends Controller
                 $data['approved_by'] = $request->user()->id;
             } elseif ($newStatus === Expense::STATUS_REJECTED) {
                 $data['approved_by'] = null;
+                $data['reviewed_by'] = null;
+                $data['reviewed_at'] = null;
+            } elseif ($newStatus === Expense::STATUS_PENDING) {
+                $data['reviewed_by'] = null;
+                $data['reviewed_at'] = null;
             }
 
             $oldStatus = $expense->status;
@@ -344,9 +351,7 @@ class ExpenseController extends Controller
                     );
                 }
 
-                if ($newStatus === Expense::STATUS_PENDING) {
-                    $expense->forceFill(['rejection_reason' => null])->save();
-                }
+                // rejection_reason already cleared via $data above
             });
 
             return response()->json($expense->fresh()->load(['category:id,name,color', 'approver:id,name', 'chartOfAccount:id,code,name,type']));
@@ -407,7 +412,7 @@ class ExpenseController extends Controller
             $tenantId = $this->tenantId($request);
 
             if ($category->tenant_id !== $tenantId) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Categoria não encontrada'], 404);
             }
 
             $validated = $request->validate([
@@ -416,15 +421,15 @@ class ExpenseController extends Controller
                     Rule::unique('expense_categories')->where(fn ($q) => $q->where('tenant_id', $tenantId)->whereNull('deleted_at'))->ignore($category->id),
                 ],
                 'color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-                'active' => 'boolean',
+                'active' => 'sometimes|boolean',
                 'budget_limit' => 'nullable|numeric|min:0',
-                'default_affects_net_value' => 'boolean',
-                'default_affects_technician_cash' => 'boolean',
+                'default_affects_net_value' => 'sometimes|boolean',
+                'default_affects_technician_cash' => 'sometimes|boolean',
             ]);
 
             DB::transaction(fn () => $category->update($validated));
 
-            return response()->json($category);
+            return response()->json($category->fresh());
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['message' => 'Erro de validação', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
@@ -437,7 +442,7 @@ class ExpenseController extends Controller
     {
         try {
             if ($category->tenant_id !== $this->tenantId($request)) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Categoria não encontrada'], 404);
             }
 
             if ($category->expenses()->withoutTrashed()->exists()) {
@@ -778,7 +783,7 @@ class ExpenseController extends Controller
                     'work_order_id' => $expense->work_order_id,
                     'chart_of_account_id' => $expense->chart_of_account_id,
                     'created_by' => $request->user()->id,
-                    'description' => $expense->description,
+                    'description' => $expense->description . ' (Cópia)',
                     'amount' => $expense->amount,
                     'expense_date' => now()->toDateString(),
                     'payment_method' => $expense->payment_method,
@@ -817,7 +822,7 @@ class ExpenseController extends Controller
     {
         try {
             if ($expense->tenant_id !== $this->tenantId($request)) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Despesa não encontrada'], 404);
             }
 
             $history = ExpenseStatusHistory::where('expense_id', $expense->id)
@@ -848,7 +853,7 @@ class ExpenseController extends Controller
     {
         try {
             if ($expense->tenant_id !== $this->tenantId($request)) {
-                return response()->json(['message' => 'Acesso negado'], 403);
+                return response()->json(['message' => 'Despesa não encontrada'], 404);
             }
 
             if ($expense->status !== Expense::STATUS_PENDING) {
@@ -865,11 +870,15 @@ class ExpenseController extends Controller
             }
 
             DB::transaction(function () use ($expense, $request) {
-                $expense->update([
+                $expense->forceFill([
                     'status' => Expense::STATUS_REVIEWED,
+                    'rejection_reason' => null,
+                ]);
+                $expense->fill([
                     'reviewed_by' => $request->user()->id,
                     'reviewed_at' => now(),
                 ]);
+                $expense->save();
 
                 ExpenseStatusHistory::create([
                     'expense_id' => $expense->id,
@@ -894,7 +903,7 @@ class ExpenseController extends Controller
             return null;
         }
 
-        $category = ExpenseCategory::find($expense->expense_category_id);
+        $category = ExpenseCategory::where('id', $expense->expense_category_id)->where('tenant_id', $tenantId)->first();
         if (!$category || !$category->budget_limit) {
             return null;
         }

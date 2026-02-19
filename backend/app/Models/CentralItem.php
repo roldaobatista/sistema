@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -39,6 +40,7 @@ class CentralItem extends Model
         'closed_at' => 'datetime',
         'contexto' => 'array',
         'tags' => 'array',
+        'recurrence_next_at' => 'datetime',
     ];
 
     public function responsavel(): BelongsTo
@@ -64,6 +66,31 @@ class CentralItem extends Model
     public function history(): HasMany
     {
         return $this->hasMany(CentralItemHistory::class);
+    }
+
+    public function subtasks(): HasMany
+    {
+        return $this->hasMany(CentralSubtask::class)->orderBy('ordem');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(CentralAttachment::class);
+    }
+
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(CentralTimeEntry::class);
+    }
+
+    public function dependsOn(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'central_item_dependencies', 'item_id', 'depends_on_id');
+    }
+
+    public function blockers(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'central_item_dependencies', 'depends_on_id', 'item_id');
     }
 
     public function source(): MorphTo

@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
     ArrowLeft, Pencil, Send, CheckCircle, XCircle, Copy,
-    ArrowRightLeft, FileDown, Trash2, RefreshCw, Link as LinkIcon, Clock, History, Phone, FileText
+    ArrowRightLeft, FileDown, Trash2, RefreshCw, Link as LinkIcon, Clock, History, Phone, FileText,
+    MessageCircle, Mail, Tag, DollarSign
 } from 'lucide-react'
 
 const formatCurrency = (v: number | string) => {
@@ -33,6 +34,10 @@ export function QuoteDetailPage() {
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [proposalOpen, setProposalOpen] = useState(false)
     const [proposalExpires, setProposalExpires] = useState('')
+    const [emailOpen, setEmailOpen] = useState(false)
+    const [emailTo, setEmailTo] = useState('')
+    const [emailName, setEmailName] = useState('')
+    const [emailBody, setEmailBody] = useState('')
 
     const canUpdate = hasPermission('quotes.quote.update')
     const canDelete = hasPermission('quotes.quote.delete')
@@ -138,7 +143,11 @@ export function QuoteDetailPage() {
 
     const duplicateMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/duplicate`),
-        onSuccess: (res: any) => { toast.success('Orçamento duplicado!'); navigate(`/orcamentos/${res.data.id}`) },
+        onSuccess: (res: any) => {
+            toast.success('Orçamento duplicado!')
+            const newId = res?.data?.id ?? res?.data?.data?.id
+            navigate(newId ? `/orcamentos/${newId}` : '/orcamentos')
+        },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao duplicar'),
     })
 
@@ -175,6 +184,32 @@ export function QuoteDetailPage() {
         navigator.clipboard.writeText(quote.approval_url)
         toast.success('Link copiado para a área de transferência!')
     }
+
+    const handleWhatsApp = async () => {
+        try {
+            const res = await api.get(`/quotes/${id}/whatsapp`)
+            window.open(res.data.url, '_blank')
+        } catch {
+            toast.error('Erro ao gerar link WhatsApp')
+        }
+    }
+
+    const sendEmailMut = useMutation({
+        mutationFn: (data: { recipient_email: string; recipient_name?: string; message?: string }) =>
+            api.post(`/quotes/${id}/email`, data),
+        onSuccess: () => {
+            toast.success('E-mail enviado com sucesso!')
+            setEmailOpen(false); setEmailTo(''); setEmailName(''); setEmailBody('')
+            invalidateAll()
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao enviar e-mail'),
+    })
+
+    const { data: installmentsData } = useQuery<{ installments: number; value: number }[]>({
+        queryKey: ['quote-installments', id],
+        queryFn: () => api.get(`/quotes/${id}/installments`).then(r => r.data),
+        enabled: !!id,
+    })
 
     if (isLoading) {
         return (
@@ -271,6 +306,16 @@ export function QuoteDetailPage() {
                             Copiar Link
                         </Button>
                     )}
+                    {isSent && (
+                        <Button variant="outline" size="sm" icon={<MessageCircle className="h-4 w-4" />} onClick={handleWhatsApp} className="text-green-600">
+                            WhatsApp
+                        </Button>
+                    )}
+                    {canSend && (isSent || isInternallyApproved) && (
+                        <Button variant="outline" size="sm" icon={<Mail className="h-4 w-4" />} onClick={() => { setEmailTo(quote.customer?.email ?? ''); setEmailName(quote.customer?.name ?? ''); setEmailOpen(true) }}>
+                            E-mail
+                        </Button>
+                    )}
                     {canProposalView && hasProposal && (
                         <Badge variant="outline" className="text-xs">Proposta interativa enviada</Badge>
                     )}
@@ -346,6 +391,47 @@ export function QuoteDetailPage() {
                     </div>
                 </Card>
             </div>
+
+            {/* Payment Terms & Installments */}
+            {((quote as any).payment_terms || (installmentsData && installmentsData.length > 0)) && (
+                <div className="grid gap-6 md:grid-cols-2">
+                    {(quote as any).payment_terms && (
+                        <Card className="p-5">
+                            <h3 className="text-sm font-semibold text-content-secondary mb-3 flex items-center gap-2">
+                                <DollarSign className="h-4 w-4" /> Condições de Pagamento
+                            </h3>
+                            <p className="text-sm text-content-primary font-medium">{(quote as any).payment_terms}</p>
+                            {(quote as any).payment_terms_detail && (
+                                <p className="text-sm text-content-secondary mt-1">{(quote as any).payment_terms_detail}</p>
+                            )}
+                        </Card>
+                    )}
+                    {installmentsData && installmentsData.length > 0 && (
+                        <Card className="p-5">
+                            <h3 className="text-sm font-semibold text-content-secondary mb-3">Simulação de Parcelas</h3>
+                            <div className="space-y-1">
+                                {installmentsData.map((inst) => (
+                                    <div key={inst.installments} className="flex justify-between text-sm">
+                                        <span className="text-content-secondary">{inst.installments}x</span>
+                                        <span className="font-medium">{formatCurrency(inst.value)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            )}
+
+            {/* Tags */}
+            {(quote as any).tags && (quote as any).tags.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                    {(quote as any).tags.map((t: any) => (
+                        <span key={t.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: `${t.color}20`, color: t.color }}>
+                            <Tag className="h-3 w-3" />{t.name}
+                        </span>
+                    ))}
+                </div>
+            )}
 
             {quote.equipments && quote.equipments.length > 0 && (
                 <Card className="p-5">
@@ -449,6 +535,36 @@ export function QuoteDetailPage() {
                             <Button variant="outline" size="sm" onClick={() => { setProposalOpen(false); setProposalExpires('') }}>Cancelar</Button>
                             <Button size="sm" onClick={() => createProposalMut.mutate({ quote_id: Number(id), expires_at: proposalExpires || undefined })} disabled={createProposalMut.isPending}>
                                 {createProposalMut.isPending ? 'Criando...' : 'Criar'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Email Modal */}
+            {emailOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEmailOpen(false)}>
+                    <div className="bg-surface-0 rounded-xl p-6 max-w-md mx-4 shadow-elevated w-full" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-content-primary mb-2">Enviar Orçamento por E-mail</h3>
+                        <p className="text-content-secondary text-sm mb-4">O PDF será anexado automaticamente ao e-mail.</p>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-sm font-medium text-content-secondary mb-1">E-mail do destinatário *</label>
+                                <input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm" placeholder="email@exemplo.com" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-content-secondary mb-1">Nome do destinatário</label>
+                                <input value={emailName} onChange={(e) => setEmailName(e.target.value)} className="w-full rounded-lg border border-default bg-surface-0 px-3 py-2 text-sm" placeholder="Nome" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-content-secondary mb-1">Mensagem personalizada</label>
+                                <textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} className="w-full rounded-lg border border-default p-3 text-sm min-h-[80px]" placeholder="Mensagem opcional..." />
+                            </div>
+                        </div>
+                        <div className="flex gap-3 justify-end mt-4">
+                            <Button variant="outline" size="sm" onClick={() => setEmailOpen(false)}>Cancelar</Button>
+                            <Button size="sm" icon={<Mail className="h-4 w-4" />} onClick={() => sendEmailMut.mutate({ recipient_email: emailTo, recipient_name: emailName || undefined, message: emailBody || undefined })} disabled={!emailTo || sendEmailMut.isPending}>
+                                {sendEmailMut.isPending ? 'Enviando...' : 'Enviar E-mail'}
                             </Button>
                         </div>
                     </div>

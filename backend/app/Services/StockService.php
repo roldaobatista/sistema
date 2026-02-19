@@ -340,7 +340,7 @@ class StockService
                          ->where('target_warehouse_id', $warehouseId);
                   });
             })
-            ->with(['batch', 'productSerial', 'user:id,name'])
+            ->with(['batch', 'productSerial', 'createdByUser:id,name'])
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc');
 
@@ -380,7 +380,7 @@ class StockService
                 'batch' => $movement->batch?->code,
                 'serial' => $movement->productSerial?->serial_number,
                 'notes' => $movement->notes,
-                'user' => $movement->user?->name,
+                'user' => $movement->createdByUser?->name,
                 'balance' => round($runningBalance, 2),
             ];
         });

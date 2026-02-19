@@ -14,8 +14,8 @@ class QuoteItem extends Model
 
     protected $fillable = [
         'tenant_id', 'quote_equipment_id', 'type', 'product_id', 'service_id',
-        'custom_description', 'quantity', 'original_price', 'unit_price',
-        'discount_percentage', 'subtotal', 'sort_order',
+        'custom_description', 'quantity', 'original_price', 'cost_price', 'unit_price',
+        'discount_percentage', 'subtotal', 'sort_order', 'internal_note',
     ];
 
     protected function casts(): array
@@ -23,10 +23,21 @@ class QuoteItem extends Model
         return [
             'quantity' => 'decimal:2',
             'original_price' => 'decimal:2',
+            'cost_price' => 'decimal:2',
             'unit_price' => 'decimal:2',
             'discount_percentage' => 'decimal:2',
             'subtotal' => 'decimal:2',
         ];
+    }
+
+    public function marginPercentage(): float
+    {
+        $sub = (float) $this->subtotal;
+        if ($sub <= 0) {
+            return 0;
+        }
+        $cost = bcmul((string) $this->cost_price, (string) $this->quantity, 2);
+        return round((($sub - (float) $cost) / $sub) * 100, 1);
     }
 
     protected static function booted(): void

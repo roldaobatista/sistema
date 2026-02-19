@@ -18,7 +18,7 @@ class ServiceCallFactory extends Factory
             'tenant_id' => Tenant::factory(),
             'customer_id' => Customer::factory(),
             'created_by' => User::factory(),
-            'call_number' => 'CH-' . str_pad($this->faker->unique()->numberBetween(1, 99999), 5, '0', STR_PAD_LEFT),
+            'call_number' => 'CT-' . str_pad($this->faker->unique()->numberBetween(1, 99999), 5, '0', STR_PAD_LEFT),
             'status' => ServiceCall::STATUS_OPEN,
             'priority' => $this->faker->randomElement(['low', 'normal', 'high', 'urgent']),
             'scheduled_date' => $this->faker->optional(0.7)->dateTimeBetween('now', '+30 days'),

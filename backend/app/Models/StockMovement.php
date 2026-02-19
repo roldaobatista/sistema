@@ -54,9 +54,12 @@ class StockMovement extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * Alias para createdByUser - Mantido para compatibilidade
+     */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->createdByUser();
     }
 
     public function warehouse(): BelongsTo
@@ -78,6 +81,8 @@ class StockMovement extends Model
     {
         return $this->belongsTo(ProductSerial::class, 'product_serial_id');
     }
+
+
 
     protected static function booted(): void
     {

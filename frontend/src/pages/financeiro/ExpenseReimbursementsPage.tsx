@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
 import { Modal } from '@/components/ui/modal'
+import { ColorDot } from '@/components/ui/color-dot'
 
 const fmtBRL = (val: string | number) => Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')
@@ -28,13 +29,14 @@ export function ExpenseReimbursementsPage() {
     const [statusFilter, setStatusFilter] = useState('approved')
     const [confirmTarget, setConfirmTarget] = useState<Expense | null>(null)
 
+    const [page, setPage] = useState(1)
+
     const { data: res, isLoading, isError, refetch } = useQuery({
-        queryKey: ['expense-reimbursements', statusFilter],
-        queryFn: () => api.get('/financial/expense-reimbursements', { params: { status: statusFilter === 'reimbursed' ? 'approved' : 'pending' } }),
+        queryKey: ['expense-reimbursements', statusFilter, page],
+        queryFn: () => api.get('/financial/expense-reimbursements', { params: { status: statusFilter === 'reimbursed' ? 'approved' : 'pending', page } }),
     })
     const records: Expense[] = res?.data?.data ?? []
     const pagination = { currentPage: res?.data?.current_page ?? 1, lastPage: res?.data?.last_page ?? 1, total: res?.data?.total ?? 0 }
-    const [page, setPage] = useState(1)
 
     const approveMut = useMutation({
         mutationFn: (id: number) => api.post(`/financial/expense-reimbursements/${id}/approve`),
@@ -91,7 +93,7 @@ export function ExpenseReimbursementsPage() {
                                 <td className="px-4 py-3">
                                     {r.category ? (
                                         <Badge variant="default">
-                                            <span className="inline-block h-2 w-2 rounded-full mr-1" style={{ backgroundColor: r.category.color ?? '#666' }} />
+                                            <ColorDot color={r.category.color ?? '#666'} className="mr-1" />
                                             {r.category.name}
                                         </Badge>
                                     ) : '—'}

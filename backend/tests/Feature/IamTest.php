@@ -65,6 +65,7 @@ class IamTest extends TestCase
             'name' => 'João Técnico',
             'email' => 'joao@test.com',
             'password' => 'Senha1234',
+            'password_confirmation' => 'Senha1234',
         ]);
 
         $response->assertStatus(201)

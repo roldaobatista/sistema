@@ -74,7 +74,8 @@ describe('WorkOrder Status Transitions', () => {
     const validTransitions = [
         { from: 'open', to: 'in_progress' },
         { from: 'in_progress', to: 'completed' },
-        { from: 'completed', to: 'invoiced' },
+        { from: 'completed', to: 'delivered' },
+        { from: 'delivered', to: 'invoiced' },
         { from: 'open', to: 'cancelled' },
     ]
 

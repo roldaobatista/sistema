@@ -1,3 +1,7 @@
+<?php
+
+namespace App\Http\Controllers;
+
 use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Models\WorkOrderTimeLog;
 use Illuminate\Http\JsonResponse;

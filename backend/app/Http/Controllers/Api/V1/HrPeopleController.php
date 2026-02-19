@@ -15,13 +15,13 @@ class HrPeopleController extends Controller
 
     public function hourBankSummary(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $userId = $request->input('user_id', $request->user()->id);
         $from = $request->input('from', now()->startOfMonth()->toDateString());
         $to = $request->input('to', now()->toDateString());
 
         $entries = DB::table('clock_entries')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->where('user_id', $userId)
             ->whereBetween('date', [$from, $to])
             ->get();
@@ -65,12 +65,12 @@ class HrPeopleController extends Controller
 
     public function onCallSchedule(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $from = $request->input('from', now()->toDateString());
         $to = $request->input('to', now()->addDays(30)->toDateString());
 
         $schedule = DB::table('on_call_schedules')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->whereBetween('date', [$from, $to])
             ->join('users', 'on_call_schedules.user_id', '=', 'users.id')
             ->select('on_call_schedules.*', 'users.name as technician_name')
@@ -89,11 +89,11 @@ class HrPeopleController extends Controller
             'entries.*.shift' => 'required|string|in:morning,afternoon,night,full',
         ]);
 
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
 
         foreach ($data['entries'] as $entry) {
             DB::table('on_call_schedules')->updateOrInsert(
-                ['company_id' => $tenantId, 'date' => $entry['date'], 'shift' => $entry['shift']],
+                ['tenant_id' => $tenantId, 'date' => $entry['date'], 'shift' => $entry['shift']],
                 ['user_id' => $entry['user_id'], 'updated_at' => now(), 'created_at' => now()]
             );
         }
@@ -105,10 +105,10 @@ class HrPeopleController extends Controller
 
     public function performanceReviews(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         return response()->json(
             DB::table('performance_reviews')
-                ->where('company_id', $tenantId)
+                ->where('tenant_id', $tenantId)
                 ->orderByDesc('created_at')
                 ->paginate(20)
         );
@@ -133,7 +133,7 @@ class HrPeopleController extends Controller
         $avgScore = round(collect($data['scores'])->avg(), 2);
 
         $id = DB::table('performance_reviews')->insertGetId([
-            'company_id' => $request->user()->company_id,
+            'tenant_id' => $request->user()->current_tenant_id,
             'user_id' => $data['user_id'],
             'reviewer_id' => $data['reviewer_id'],
             'period' => $data['period'],
@@ -151,9 +151,9 @@ class HrPeopleController extends Controller
 
     public function onboardingTemplates(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $templates = DB::table('onboarding_templates')
-            ->where('company_id', $tenantId)->get();
+            ->where('tenant_id', $tenantId)->get();
 
         return response()->json($templates);
     }
@@ -171,7 +171,7 @@ class HrPeopleController extends Controller
         ]);
 
         $id = DB::table('onboarding_templates')->insertGetId([
-            'company_id' => $request->user()->company_id,
+            'tenant_id' => $request->user()->current_tenant_id,
             'name' => $data['name'],
             'role' => $data['role'],
             'steps' => json_encode($data['steps']),
@@ -195,7 +195,7 @@ class HrPeopleController extends Controller
         $startDate = now();
 
         $onboardingId = DB::table('onboarding_processes')->insertGetId([
-            'company_id' => $request->user()->company_id,
+            'tenant_id' => $request->user()->current_tenant_id,
             'user_id' => $data['user_id'],
             'template_id' => $data['template_id'],
             'status' => 'in_progress',
@@ -222,9 +222,9 @@ class HrPeopleController extends Controller
 
     public function trainingCourses(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->company_id;
+        $tenantId = $request->user()->current_tenant_id;
         $courses = DB::table('training_courses')
-            ->where('company_id', $tenantId)
+            ->where('tenant_id', $tenantId)
             ->paginate(20);
 
         return response()->json($courses);
@@ -240,7 +240,7 @@ class HrPeopleController extends Controller
             'is_mandatory' => 'boolean',
         ]);
 
-        $data['company_id'] = $request->user()->company_id;
+        $data['tenant_id'] = $request->user()->current_tenant_id;
         $id = DB::table('training_courses')->insertGetId(array_merge($data, [
             'created_at' => now(), 'updated_at' => now(),
         ]));
@@ -257,7 +257,7 @@ class HrPeopleController extends Controller
         ]);
 
         $id = DB::table('training_enrollments')->insertGetId([
-            'company_id' => $request->user()->company_id,
+            'tenant_id' => $request->user()->current_tenant_id,
             'user_id' => $data['user_id'],
             'course_id' => $data['course_id'],
             'status' => 'enrolled',

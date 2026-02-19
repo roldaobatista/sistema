@@ -42,7 +42,7 @@ class InmetroAdvancedController extends Controller
             );
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to generate queue', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to generate queue: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to generate queue'], 500);
         }
     }
 
@@ -63,7 +63,7 @@ class InmetroAdvancedController extends Controller
             $item = $this->prospection->markQueueItem($queueId, $request->input('status'), $this->resolvedTenantId());
             return response()->json(['message' => 'Queue item updated', 'data' => $item]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to update queue item', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to update queue item: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to update queue item'], 500);
         }
     }
 
@@ -80,7 +80,7 @@ class InmetroAdvancedController extends Controller
             $score = $this->prospection->calculateLeadScore($owner, $this->resolvedTenantId());
             return response()->json(['message' => 'Score calculated', 'data' => $score]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to calculate score', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to calculate score: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to calculate score'], 500);
         }
     }
 
@@ -90,7 +90,7 @@ class InmetroAdvancedController extends Controller
             $count = $this->prospection->recalculateAllScores($this->resolvedTenantId());
             return response()->json(['message' => "Scores recalculated for {$count} owners"]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to recalculate scores', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to recalculate scores: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to recalculate scores'], 500);
         }
     }
 
@@ -127,7 +127,7 @@ class InmetroAdvancedController extends Controller
             $count = $this->prospection->classifySegments($this->resolvedTenantId());
             return response()->json(['message' => "{$count} owners classified"]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to classify segments', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to classify segments: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to classify segments'], 500);
         }
     }
 
@@ -170,7 +170,7 @@ class InmetroAdvancedController extends Controller
             );
             return response()->json(['message' => 'Interaction logged', 'data' => $interaction], 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to log interaction', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to log interaction: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to log interaction'], 500);
         }
     }
 
@@ -262,7 +262,7 @@ class InmetroAdvancedController extends Controller
             $snapshot = $this->competitorTracking->snapshotMarketShare($this->resolvedTenantId());
             return response()->json(['message' => 'Market share snapshot created', 'data' => $snapshot]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to create snapshot', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to create snapshot: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to create snapshot'], 500);
         }
     }
 
@@ -293,7 +293,7 @@ class InmetroAdvancedController extends Controller
             $result = $this->competitorTracking->getCompetitorProfile($this->resolvedTenantId(), $competitorId);
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Competitor not found', 'error' => $e->getMessage()], 404);
+            return response()->json(['message' => 'Competitor not found'], 404);
         }
     }
 
@@ -313,7 +313,7 @@ class InmetroAdvancedController extends Controller
             $record = $this->competitorTracking->recordWinLoss($data, $this->resolvedTenantId());
             return response()->json(['message' => 'Win/Loss recorded', 'data' => $record], 201);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Failed to record win/loss', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to record win/loss: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to record win/loss'], 500);
         }
     }
 
@@ -350,7 +350,7 @@ class InmetroAdvancedController extends Controller
             );
             return response()->json(['message' => 'Instrument linked', 'data' => $result]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to link instrument', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to link instrument: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to link instrument'], 500);
         }
     }
 
@@ -360,7 +360,7 @@ class InmetroAdvancedController extends Controller
             $result = $this->operational->prefillCertificateData($instrumentId);
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Instrument not found', 'error' => $e->getMessage()], 404);
+            return response()->json(['message' => 'Instrument not found'], 404);
         }
     }
 
@@ -370,7 +370,7 @@ class InmetroAdvancedController extends Controller
             $result = $this->operational->getInstrumentTimeline($instrumentId, $this->resolvedTenantId());
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Instrument not found', 'error' => $e->getMessage()], 404);
+            return response()->json(['message' => 'Instrument not found'], 404);
         }
     }
 
@@ -380,7 +380,7 @@ class InmetroAdvancedController extends Controller
             $result = $this->operational->compareCalibrationResults($instrumentId, $this->resolvedTenantId());
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Instrument not found', 'error' => $e->getMessage()], 404);
+            return response()->json(['message' => 'Instrument not found'], 404);
         }
     }
 
@@ -447,7 +447,7 @@ class InmetroAdvancedController extends Controller
             $checklist = $this->compliance->createChecklist($data, $this->resolvedTenantId());
             return response()->json(['message' => 'Checklist created', 'data' => $checklist], 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to create checklist', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to create checklist: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to create checklist'], 500);
         }
     }
 
@@ -463,7 +463,7 @@ class InmetroAdvancedController extends Controller
             $checklist = $this->compliance->updateChecklist($id, $data, $this->resolvedTenantId());
             return response()->json(['message' => 'Checklist updated', 'data' => $checklist]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to update checklist', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to update checklist: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to update checklist'], 500);
         }
     }
 
@@ -473,7 +473,7 @@ class InmetroAdvancedController extends Controller
             $result = $this->compliance->getRegulatoryTraceability($instrumentId, $this->resolvedTenantId());
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Instrument not found', 'error' => $e->getMessage()], 404);
+            return response()->json(['message' => 'Instrument not found'], 404);
         }
     }
 
@@ -544,7 +544,7 @@ class InmetroAdvancedController extends Controller
             $webhook = $this->webhooks->createWebhook($data, $this->resolvedTenantId());
             return response()->json(['message' => 'Webhook created', 'data' => $webhook], 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to create webhook', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to create webhook: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to create webhook'], 500);
         }
     }
 
@@ -559,7 +559,7 @@ class InmetroAdvancedController extends Controller
             $webhook = $this->webhooks->updateWebhook($id, $data, $this->resolvedTenantId());
             return response()->json(['message' => 'Webhook updated', 'data' => $webhook]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to update webhook', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to update webhook: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to update webhook'], 500);
         }
     }
 
@@ -569,7 +569,7 @@ class InmetroAdvancedController extends Controller
             $this->webhooks->deleteWebhook($id, $this->resolvedTenantId());
             return response()->json(['message' => 'Webhook deleted']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to delete webhook', 'error' => $e->getMessage()], 500);
+            Log::error('Failed to delete webhook: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Failed to delete webhook'], 500);
         }
     }
 

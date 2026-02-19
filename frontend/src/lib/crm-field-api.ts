@@ -292,7 +292,7 @@ export interface ForgottenClientsData {
 
 // ─── API Functions ──────────────────────────────────
 
-const BASE = '/api/v1/crm-field'
+const BASE = '/crm-field'
 
 // Constants
 export const getFieldConstants = () => api.get(`${BASE}/constants`).then(r => r.data)

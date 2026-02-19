@@ -106,6 +106,7 @@ class IamProfessionalTest extends TestCase
             'current_tenant_id' => $this->tenant->id,
             'name' => 'Nome Antigo',
         ]);
+        $user->tenants()->attach($this->tenant->id, ['is_default' => true]);
 
         $response = $this->putJson("/api/v1/users/{$user->id}", [
             'name' => 'Nome Novo',
@@ -126,6 +127,7 @@ class IamProfessionalTest extends TestCase
             'current_tenant_id' => $this->tenant->id,
             'is_active' => true,
         ]);
+        $user->tenants()->attach($this->tenant->id, ['is_default' => true]);
 
         $response = $this->putJson("/api/v1/users/{$user->id}", [
             'is_active' => false,
@@ -233,6 +235,7 @@ class IamProfessionalTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'current_tenant_id' => $this->tenant->id,
         ]);
+        $user->tenants()->attach($this->tenant->id, ['is_default' => true]);
 
         $response = $this->getJson("/api/v1/users/{$user->id}");
 

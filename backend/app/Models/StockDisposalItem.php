@@ -11,10 +11,13 @@ class StockDisposalItem extends Model
         'stock_disposal_id', 'product_id', 'quantity', 'unit_cost', 'batch_id', 'notes',
     ];
 
-    protected $casts = [
-        'quantity' => 'decimal:2',
-        'unit_cost' => 'decimal:4',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'decimal:2',
+            'unit_cost' => 'decimal:4',
+        ];
+    }
 
     public function disposal(): BelongsTo
     {

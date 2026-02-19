@@ -371,3 +371,42 @@ async function processOfflineQueue() {
     client.postMessage({ type: 'SYNC_COMPLETE', remaining: items.length });
   });
 }
+
+// --- Message Handlers ---
+self.addEventListener('message', (event) => {
+  const { type } = event.data || {};
+
+  if (type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+
+  if (type === 'FORCE_SYNC') {
+    // Notify clients that sync started
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => client.postMessage({ type: 'SYNC_STARTED' }));
+    });
+    processOfflineQueue();
+    return;
+  }
+
+  if (type === 'CACHE_API_DATA') {
+    const { urls, headers } = event.data;
+    if (!urls || !Array.isArray(urls)) return;
+
+    caches.open(API_CACHE).then(async (cache) => {
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, { headers });
+          if (response.ok) {
+            await cache.put(url, response);
+          }
+        } catch {
+          // Ignore failures — this is best-effort pre-caching
+        }
+      }
+      console.log('[SW] Pre-cached', urls.length, 'API endpoints');
+    });
+    return;
+  }
+});

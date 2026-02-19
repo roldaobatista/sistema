@@ -15,19 +15,19 @@ return new class extends Migration
     {
         Schema::table('commission_settlements', function (Blueprint $table) {
             if (!Schema::hasColumn('commission_settlements', 'closed_by')) {
-                $table->unsignedBigInteger('closed_by')->nullable()->after('status');
+                $table->unsignedBigInteger('closed_by')->nullable();
             }
             if (!Schema::hasColumn('commission_settlements', 'closed_at')) {
-                $table->timestamp('closed_at')->nullable()->after('closed_by');
+                $table->timestamp('closed_at')->nullable();
             }
             if (!Schema::hasColumn('commission_settlements', 'approved_by')) {
-                $table->unsignedBigInteger('approved_by')->nullable()->after('closed_at');
+                $table->unsignedBigInteger('approved_by')->nullable();
             }
             if (!Schema::hasColumn('commission_settlements', 'approved_at')) {
-                $table->timestamp('approved_at')->nullable()->after('approved_by');
+                $table->timestamp('approved_at')->nullable();
             }
             if (!Schema::hasColumn('commission_settlements', 'rejection_reason')) {
-                $table->text('rejection_reason')->nullable()->after('approved_at');
+                $table->text('rejection_reason')->nullable();
             }
         });
     }

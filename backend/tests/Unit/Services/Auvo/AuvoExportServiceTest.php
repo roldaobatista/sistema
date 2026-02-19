@@ -34,7 +34,7 @@ class AuvoExportServiceTest extends TestCase
     {
         $customer = Customer::factory()->create(['tenant_id' => $this->tenantId]);
 
-        $this->apiClient->shouldReceive('put')
+        $this->apiClient->shouldReceive('post')
             ->once()
             ->with('customers', Mockery::on(function ($payload) use ($customer) {
                 return $payload['externalId'] === (string) $customer->id

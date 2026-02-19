@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/pageheader'
 import { EmptyState } from '@/components/ui/emptystate'
 import { TableSkeleton } from '@/components/ui/tableskeleton'
 import { toast } from 'sonner'
+import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import {
     Workflow, Plus, Trash2, Eye, Users, Play, Pause,
     Mail, Phone, MessageSquare, Clock, ChevronRight, ArrowLeft,
@@ -64,6 +65,58 @@ const EMPTY_STEP: StepDraft = {
     step_order: 1, delay_days: 1, channel: 'email', action_type: 'send_email', subject: '', body: '',
 }
 
+const ENROLLMENT_STATUS: Record<string, { label: string; color: string }> = {
+    active: { label: 'Ativo', color: 'bg-green-100 text-green-800' },
+    paused: { label: 'Pausado', color: 'bg-amber-100 text-amber-800' },
+    completed: { label: 'Concluído', color: 'bg-blue-100 text-blue-800' },
+    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+}
+
+function EnrollmentsPanel({ sequenceId }: { sequenceId: number }) {
+    const { data: enrollments = [], isLoading: loadingEnrollments } = useQuery({
+        queryKey: ['crm-sequence-enrollments', sequenceId],
+        queryFn: async () => (await crmFeaturesApi.getSequenceEnrollments(sequenceId)).data ?? [],
+    })
+
+    if (loadingEnrollments) return <TableSkeleton rows={3} cols={5} />
+
+    if (enrollments.length === 0) {
+        return <EmptyState title="Nenhuma inscrição" message="Nenhum cliente inscrito nesta sequência ainda." compact />
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="border-b text-left text-xs text-surface-500">
+                        <th className="pb-2 font-medium">Cliente</th>
+                        <th className="pb-2 font-medium">Status</th>
+                        <th className="pb-2 font-medium">Etapa Atual</th>
+                        <th className="pb-2 font-medium">Início</th>
+                        <th className="pb-2 font-medium">Conclusão</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-subtle">
+                    {enrollments.map((e: any) => {
+                        const st = ENROLLMENT_STATUS[e.status] ?? ENROLLMENT_STATUS.active
+                        return (
+                            <tr key={e.id} className="hover:bg-muted/50">
+                                <td className="py-2 font-medium text-surface-900">{e.customer?.name ?? `#${e.customer_id}`}</td>
+                                <td className="py-2">
+                                    <Badge className={st.color} size="xs">{st.label}</Badge>
+                                </td>
+                                <td className="py-2 tabular-nums">{e.current_step ?? '-'}</td>
+                                <td className="py-2 text-surface-500">{e.started_at ? new Date(e.started_at).toLocaleDateString('pt-BR') : '-'}</td>
+                                <td className="py-2 text-surface-500">{e.completed_at ? new Date(e.completed_at).toLocaleDateString('pt-BR') : '-'}</td>
+                            </tr>
+                        )
+                    })}
+                </tbody>
+            </table>
+        </div>
+    )
+}
+
 export function CrmSequencesPage() {
     const qc = useQueryClient()
     const [viewSequence, setViewSequence] = useState<CrmSequence | null>(null)
@@ -94,6 +147,7 @@ export function CrmSequencesPage() {
         onSuccess: () => {
             toast.success('Sequência criada com sucesso')
             qc.invalidateQueries({ queryKey: ['crm-sequences'] })
+            broadcastQueryInvalidation(['crm-sequences'], 'Sequência')
             closeCreateDialog()
         },
         onError: (err: any) => {
@@ -106,6 +160,7 @@ export function CrmSequencesPage() {
         onSuccess: () => {
             toast.success('Sequência excluída com sucesso')
             qc.invalidateQueries({ queryKey: ['crm-sequences'] })
+            broadcastQueryInvalidation(['crm-sequences'], 'Sequência')
             setDeleteTarget(null)
         },
         onError: (err: any) => {
@@ -120,6 +175,7 @@ export function CrmSequencesPage() {
         onSuccess: () => {
             toast.success('Cliente inscrito na sequência com sucesso')
             qc.invalidateQueries({ queryKey: ['crm-sequences'] })
+            broadcastQueryInvalidation(['crm-sequences'], 'Sequência')
             closeEnrollDialog()
         },
         onError: (err: any) => {
@@ -284,6 +340,19 @@ export function CrmSequencesPage() {
                                 </div>
                             </div>
                         )}
+                    </CardContent>
+                </Card>
+
+                {/* Enrollments Monitoring Panel (#9) */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Painel de Monitoramento — Inscrições
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <EnrollmentsPanel sequenceId={viewSequence.id} />
                     </CardContent>
                 </Card>
 

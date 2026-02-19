@@ -103,6 +103,7 @@ class StockTest extends TestCase
             'type' => 'entry',
             'quantity' => 10,
             'unit_cost' => 15.00,
+            'warehouse_id' => $this->warehouse->id,
             'created_by' => $this->user->id,
         ]);
 
@@ -122,6 +123,7 @@ class StockTest extends TestCase
             'type' => 'entry',
             'quantity' => 5,
             'unit_cost' => 10,
+            'warehouse_id' => $this->warehouse->id,
             'created_by' => $this->user->id,
         ]);
 
@@ -131,6 +133,7 @@ class StockTest extends TestCase
             'type' => 'entry',
             'quantity' => 3,
             'unit_cost' => 10,
+            'warehouse_id' => $this->warehouse->id,
             'created_by' => $this->user->id,
         ]);
 

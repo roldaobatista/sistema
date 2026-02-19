@@ -193,7 +193,8 @@ class ChartOfAccountController extends Controller
         try {
             DB::transaction(fn () => $account->update($data));
         } catch (\Throwable $e) {
-            return $this->error('Erro ao atualizar conta: ' . $e->getMessage(), 500);
+            Log::error('Erro ao atualizar conta: ' . $e->getMessage(), ['exception' => $e]);
+            return $this->error('Erro ao atualizar conta.', 500);
         }
 
         return $this->success($account->fresh('parent:id,code,name,type'), 'Conta atualizada');
@@ -226,7 +227,8 @@ class ChartOfAccountController extends Controller
         try {
             DB::transaction(fn () => $account->delete());
         } catch (\Throwable $e) {
-            return $this->error('Erro ao remover conta: ' . $e->getMessage(), 500);
+            Log::error('Erro ao remover conta: ' . $e->getMessage(), ['exception' => $e]);
+            return $this->error('Erro ao remover conta.', 500);
         }
 
         return $this->success(null, 'Conta removida');

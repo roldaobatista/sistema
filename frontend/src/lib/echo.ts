@@ -16,7 +16,9 @@ async function initEcho(): Promise<EchoType<'reverb'> | null> {
     const key = (import.meta.env.VITE_REVERB_APP_KEY || '').trim();
     if (!key) {
         initAttempted = true;
-        console.info('[Echo] VITE_REVERB_APP_KEY não configurada — WebSocket desabilitado.');
+        if (!import.meta.env.PROD) {
+            console.info('[Echo] VITE_REVERB_APP_KEY não configurada — WebSocket desabilitado.');
+        }
         return null;
     }
 

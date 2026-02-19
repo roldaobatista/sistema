@@ -228,7 +228,7 @@ class InventoryController extends Controller
 
     private function authorizeTenant(Inventory $inventory)
     {
-        if ($inventory->tenant_id !== app('current_tenant_id')) {
+        if ($inventory->tenant_id !== (int) app('current_tenant_id')) {
             abort(403);
         }
     }

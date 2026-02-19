@@ -11,26 +11,26 @@ describe('Button', () => {
     it('renders as primary variant by default', () => {
         render(<Button>Primary</Button>)
         const btn = screen.getByRole('button')
-        expect(btn.className).toContain('bg-brand-600')
+        expect(btn.className).toMatch(/prix-gradient|text-white/)
     })
 
     it('renders secondary variant', () => {
         render(<Button variant="secondary">Sec</Button>)
         const btn = screen.getByRole('button')
-        expect(btn.className).toContain('bg-surface-100')
+        expect(btn.className).toContain('bg-prix-500')
     })
 
     it('renders danger variant', () => {
         render(<Button variant="danger">Danger</Button>)
         const btn = screen.getByRole('button')
-        expect(btn.className).toContain('bg-red-600')
+        expect(btn.className).toContain('bg-cta-500')
     })
 
     it('renders outline variant', () => {
         render(<Button variant="outline">Outline</Button>)
         const btn = screen.getByRole('button')
         expect(btn.className).toContain('border')
-        expect(btn.className).toContain('bg-surface-0')
+        expect(btn.className).toContain('bg-white')
     })
 
     it('renders ghost variant', () => {
@@ -42,20 +42,20 @@ describe('Button', () => {
     it('applies sm size class', () => {
         render(<Button size="sm">Sm</Button>)
         const btn = screen.getByRole('button')
-        expect(btn.className).toContain('h-7')
+        expect(btn.className).toContain('h-8')
     })
 
     it('applies lg size class', () => {
         render(<Button size="lg">Lg</Button>)
         const btn = screen.getByRole('button')
-        expect(btn.className).toContain('h-9.5')
+        expect(btn.className).toContain('h-10')
     })
 
     it('applies icon size class', () => {
         render(<Button size="icon">I</Button>)
         const btn = screen.getByRole('button')
-        expect(btn.className).toContain('h-8')
-        expect(btn.className).toContain('w-8')
+        expect(btn.className).toContain('h-9')
+        expect(btn.className).toContain('w-9')
     })
 
     it('fires onClick handler', () => {

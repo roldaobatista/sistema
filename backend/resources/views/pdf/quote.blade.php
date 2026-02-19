@@ -132,9 +132,44 @@
             • Os preços incluem todos os materiais e mão de obra necessários para a execução dos serviços.<br>
             • Garantia de 90 dias para serviços e peças, exceto desgaste natural.<br>
             • Prazo de execução a combinar após aprovação.<br>
-            • Forma de pagamento: a combinar.
+            @if($quote->payment_terms)
+                • Forma de pagamento: {{ $quote->payment_terms->label() }}.
+                @if($quote->payment_terms_detail)
+                    <br>• Detalhes: {{ $quote->payment_terms_detail }}
+                @endif
+            @else
+                • Forma de pagamento: a combinar.
+            @endif
         </div>
     </div>
+
+    {{-- Simulação de Parcelas --}}
+    @php
+        $installments = $quote->installmentSimulation();
+    @endphp
+    @if(!empty($installments))
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 14px 16px; margin-top: 10px;">
+            <div style="font-size: 8px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; border-bottom: 1px solid #bbf7d0; padding-bottom: 6px;">
+                Simulação de Parcelamento
+            </div>
+            <table style="width: 100%; font-size: 9px; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #bbf7d0; color: #15803d;">Parcelas</th>
+                        <th style="text-align: right; padding: 4px 8px; border-bottom: 1px solid #bbf7d0; color: #15803d;">Valor p/ parcela</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($installments as $inst)
+                        <tr>
+                            <td style="padding: 3px 8px; color: #64748b;">{{ $inst['installments'] }}x</td>
+                            <td style="text-align: right; padding: 3px 8px; color: #64748b;">R$ {{ number_format($inst['value'], 2, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     {{-- Aprovação --}}
     <div style="margin-top: 30px; padding: 16px; border: 2px solid #2563eb; border-radius: 6px; text-align: center;">
