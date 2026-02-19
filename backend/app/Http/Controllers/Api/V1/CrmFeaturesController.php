@@ -709,10 +709,11 @@ class CrmFeaturesController extends Controller
         $since = now()->subMonths($months);
 
         try {
-            $byReason = CrmDeal::where('tenant_id', $tenantId)
-                ->lost()
-                ->where('lost_at', '>=', $since)
-                ->whereNotNull('loss_reason_id')
+            $byReason = CrmDeal::where('crm_deals.tenant_id', $tenantId)
+                ->where('crm_deals.status', CrmDeal::STATUS_LOST)
+                ->where('crm_deals.lost_at', '>=', $since)
+                ->whereNotNull('crm_deals.loss_reason_id')
+                ->whereNull('crm_deals.deleted_at')
                 ->join('crm_loss_reasons', 'crm_deals.loss_reason_id', '=', 'crm_loss_reasons.id')
                 ->select('crm_loss_reasons.name', 'crm_loss_reasons.category',
                     DB::raw('COUNT(*) as count'), DB::raw('SUM(crm_deals.value) as total_value'))
@@ -732,8 +733,9 @@ class CrmFeaturesController extends Controller
                 ->get();
 
             $byUser = CrmDeal::where('crm_deals.tenant_id', $tenantId)
-                ->lost()
-                ->where('lost_at', '>=', $since)
+                ->where('crm_deals.status', CrmDeal::STATUS_LOST)
+                ->where('crm_deals.lost_at', '>=', $since)
+                ->whereNull('crm_deals.deleted_at')
                 ->join('users', 'crm_deals.assigned_to', '=', 'users.id')
                 ->select('users.name', DB::raw('COUNT(*) as count'), DB::raw('SUM(crm_deals.value) as total_value'))
                 ->groupBy('users.name')

@@ -887,10 +887,10 @@ class CrmFieldManagementController extends Controller
 
         $quotesGenerated = Quote::where('tenant_id', $tenantId)
             ->where('created_at', '>=', $since)
-            ->select('created_by', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total_value'))
-            ->groupBy('created_by')
+            ->select('seller_id', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total_value'))
+            ->groupBy('seller_id')
             ->get()
-            ->keyBy('created_by');
+            ->keyBy('seller_id');
 
         $sellers = \App\Models\User::whereHas('roles', fn($q) => $q->whereIn('name', ['comercial', 'vendedor', 'tecnico_vendedor']))
             ->where('tenant_id', $tenantId)
