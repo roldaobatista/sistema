@@ -78,9 +78,9 @@ class FinancialAnalyticsController extends Controller
             ->sum('amount');
 
         // COGS (custo dos serviços)
-        $cogs = WorkOrder::where('tenant_id', $tenantId)
-            ->whereNotNull('completed_at')
-            ->whereBetween('completed_at', [$from, $to])
+        $cogs = WorkOrder::where('work_orders.tenant_id', $tenantId)
+            ->whereNotNull('work_orders.completed_at')
+            ->whereBetween('work_orders.completed_at', [$from, $to])
             ->join('work_order_items', 'work_orders.id', '=', 'work_order_items.work_order_id')
             ->where('work_order_items.type', 'product')
             ->sum(DB::raw('work_order_items.quantity * work_order_items.unit_price'));
@@ -92,11 +92,12 @@ class FinancialAnalyticsController extends Controller
             ->sum('amount');
 
         // Expense breakdown by category
-        $expensesByCategory = AccountPayable::where('tenant_id', $tenantId)
-            ->where('status', 'paid')
-            ->whereBetween('paid_at', [$from, $to])
-            ->select('category', DB::raw('COALESCE(SUM(amount), 0) as total'))
-            ->groupBy('category')
+        $expensesByCategory = AccountPayable::where('accounts_payable.tenant_id', $tenantId)
+            ->where('accounts_payable.status', 'paid')
+            ->whereBetween('accounts_payable.paid_at', [$from, $to])
+            ->leftJoin('account_payable_categories', 'accounts_payable.category_id', '=', 'account_payable_categories.id')
+            ->select(DB::raw('COALESCE(account_payable_categories.name, \'Sem categoria\') as category'), DB::raw('COALESCE(SUM(accounts_payable.amount), 0) as total'))
+            ->groupBy('account_payable_categories.name')
             ->orderByDesc('total')
             ->get();
 
@@ -195,7 +196,7 @@ class FinancialAnalyticsController extends Controller
 
         $query = DB::table('expenses')
             ->where('expenses.tenant_id', $tenantId)
-            ->whereBetween('expenses.date', [$from, $to])
+            ->whereBetween('expenses.expense_date', [$from, $to])
             ->whereNotNull('expenses.work_order_id')
             ->join('work_orders', 'expenses.work_order_id', '=', 'work_orders.id')
             ->leftJoin('customers', 'work_orders.customer_id', '=', 'customers.id')

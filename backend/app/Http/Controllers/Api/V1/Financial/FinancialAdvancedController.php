@@ -421,8 +421,8 @@ class FinancialAdvancedController extends Controller
         $tenantId = $this->tenantId();
 
         $advances = AccountPayable::where('tenant_id', $tenantId)
-            ->where('type', 'advance')
-            ->with('supplier:id,name')
+            ->where('description', 'LIKE', '[Adiantamento]%')
+            ->with('supplierRelation:id,name')
             ->orderByDesc('created_at')
             ->paginate(20);
 

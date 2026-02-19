@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Services\StockService;
 use App\Models\Product;
+use App\Models\ProductSerial;
 use App\Models\WorkOrder;
 use App\Models\PurchaseOrder;
 use App\Models\WarrantyTracking;
@@ -17,6 +18,71 @@ use Illuminate\Support\Carbon;
 class StockAdvancedController extends Controller
 {
     public function __construct(private StockService $stockService) {}
+
+    // ─── Serial Numbers ─────────────────────────────────────────
+
+    public function serialNumbers(Request $request): JsonResponse
+    {
+        $tenantId = (int) app('current_tenant_id');
+
+        $query = ProductSerial::where('tenant_id', $tenantId)
+            ->with('product:id,name,code', 'warehouse:id,name');
+
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->input('product_id'));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('serial_number', 'like', "%{$search}%");
+        }
+
+        $serials = $query->orderByDesc('created_at')->paginate(
+            min((int) $request->input('per_page', 20), 100)
+        );
+
+        return response()->json($serials);
+    }
+
+    public function storeSerialNumber(Request $request): JsonResponse
+    {
+        $tenantId = (int) app('current_tenant_id');
+
+        $validated = $request->validate([
+            'product_id' => "required|integer|exists:products,id,tenant_id,{$tenantId}",
+            'warehouse_id' => "nullable|integer|exists:warehouses,id,tenant_id,{$tenantId}",
+            'serial_number' => 'required|string|max:255',
+            'status' => 'nullable|in:available,sold,maintenance,discarded',
+        ]);
+
+        $exists = ProductSerial::where('tenant_id', $tenantId)
+            ->where('serial_number', $validated['serial_number'])
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['message' => 'Número de série já cadastrado.'], 422);
+        }
+
+        try {
+            $serial = ProductSerial::create([
+                'tenant_id' => $tenantId,
+                'product_id' => $validated['product_id'],
+                'warehouse_id' => $validated['warehouse_id'] ?? null,
+                'serial_number' => $validated['serial_number'],
+                'status' => $validated['status'] ?? 'available',
+            ]);
+
+            return response()->json([
+                'message' => 'Número de série cadastrado com sucesso.',
+                'data' => $serial->load('product:id,name,code', 'warehouse:id,name'),
+            ], 201);
+        } catch (\Throwable $e) {
+            Log::error('storeSerialNumber failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro ao cadastrar número de série.'], 500);
+        }
+    }
 
     // ─── #16B Compra Automática por Reorder Point ───────────────
 

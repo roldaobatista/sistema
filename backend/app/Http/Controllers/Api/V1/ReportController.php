@@ -938,8 +938,8 @@ class ReportController extends Controller
                 ->get();
 
             $byCategory = Supplier::where('tenant_id', $tenantId)
-                ->select('category', DB::raw('COUNT(*) as count'))
-                ->groupBy('category')
+                ->select('type', DB::raw('COUNT(*) as count'))
+                ->groupBy('type')
                 ->get();
 
             return response()->json([
