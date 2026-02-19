@@ -20,13 +20,13 @@ export function useWebSocket(config: WebSocketConfig) {
     const wsRef = useRef<WebSocket | null>(null)
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const reconnectAttempts = useRef(0)
-    const connectRef = useRef<() => void>(() => {})
+    const connectRef = useRef<() => void>(() => { })
     const qc = useQueryClient()
     const [isConnected, setIsConnected] = useState(false)
     const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null)
 
-    const maxReconnectAttempts = 10
-    const baseDelay = 1000
+    const maxReconnectAttempts = 5
+    const baseDelay = 2000
 
     const getReconnectDelay = useCallback(() => {
         return Math.min(baseDelay * Math.pow(2, reconnectAttempts.current), 30000)

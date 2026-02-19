@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useAppMode } from '@/hooks/useAppMode'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePWA } from '@/hooks/usePWA'
+import { isApiHealthy } from '@/lib/api-health'
 
 const MODE_URLS: Record<string, string[]> = {
     gestao: [
@@ -39,7 +40,7 @@ export function usePrefetchCriticalData() {
     const lastPrefetch = useRef<string>('')
 
     useEffect(() => {
-        if (!isOnline || !swRegistration || !token) return
+        if (!isOnline || !swRegistration || !token || !isApiHealthy()) return
 
         const cacheKey = `${currentMode}-${token.substring(0, 8)}`
         if (lastPrefetch.current === cacheKey) return

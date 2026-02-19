@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { reportSuccess, reportFailure } from '@/lib/api-health'
 
 const _viteApi = (import.meta.env.VITE_API_URL || '').trim()
 
@@ -20,11 +21,22 @@ api.interceptors.request.use((config) => {
     return config
 })
 
-// Interceptor: trata 401 (token expirado) e 403 (sem permissão)
+// Interceptor: trata erros de rede, 401/403 e alimenta circuit breaker
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        reportSuccess()
+        return response
+    },
     (error) => {
-        if (error.response?.status === 401) {
+        const status = error.response?.status
+        const isNetworkError = !error.response && (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED')
+        const isBackendDown = status === 502 || status === 503 || status === 504
+
+        if (isNetworkError || isBackendDown) {
+            reportFailure()
+        }
+
+        if (status === 401) {
             localStorage.removeItem('auth_token')
             localStorage.removeItem('portal_token')
             // FIX-22: Limpar stores Zustand persistidos para evitar estado fantasma
@@ -33,9 +45,8 @@ api.interceptors.response.use(
             window.location.href = '/login'
         }
 
-        if (error.response?.status === 403) {
+        if (status === 403) {
             const message = error.response?.data?.message || 'Você não tem permissão para realizar esta ação.'
-            // Dispara evento customizado para que a UI possa reagir (toast, etc.)
             window.dispatchEvent(new CustomEvent('api:forbidden', { detail: { message } }))
         }
 

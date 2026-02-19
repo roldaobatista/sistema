@@ -14,6 +14,8 @@ export function useCurrentTenant() {
         queryKey: ['my-tenants'],
         queryFn: () => api.get('/my-tenants'),
         enabled: !!user,
+        retry: 1,
+        retryDelay: 5000,
         staleTime: 5 * 60 * 1000,
     })
 

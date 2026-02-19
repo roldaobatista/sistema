@@ -107,12 +107,12 @@ class AuvoImportQuotationsTest extends TestCase
         ]);
     }
 
-    public function test_import_quotations_uses_fallback_customer(): void
+    public function test_import_quotations_skips_when_customer_not_mapped(): void
     {
-        // Create a fallback customer (no Auvo mapping)
-        $customer = Customer::factory()->create([
+        // Create a customer but WITHOUT Auvo mapping — customer_id can't be resolved
+        Customer::factory()->create([
             'tenant_id' => $this->tenant->id,
-            'name' => 'Fallback Customer',
+            'name' => 'Unmapped Customer',
         ]);
 
         $this->fakeAuvoWithQuotations([
@@ -129,13 +129,9 @@ class AuvoImportQuotationsTest extends TestCase
         $result = $service->importEntity('quotations', $this->tenant->id, $this->user->id, 'skip');
 
         $this->assertEquals('done', $result['status']);
-        $this->assertEquals(1, $result['total_imported']);
-
-        $quote = Quote::where('tenant_id', $this->tenant->id)->first();
-        $this->assertNotNull($quote);
-        $this->assertEquals($customer->id, $quote->customer_id); // fallback customer
-        $this->assertEquals('draft', $quote->getRawOriginal('status'));
-        $this->assertEquals('800.50', $quote->total);
+        // Should be skipped because customer Auvo ID 999 has no mapping
+        $this->assertEquals(0, $result['total_imported']);
+        $this->assertEquals(1, $result['total_skipped']);
     }
 
     public function test_import_quotations_skips_when_no_customer_exists(): void
@@ -159,13 +155,15 @@ class AuvoImportQuotationsTest extends TestCase
 
     public function test_import_quotations_maps_auvo_statuses(): void
     {
-        Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+        $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+        // Create customer mappings for all quotation customerIds
+        AuvoIdMapping::mapOrCreate('customers', 600, $customer->id, $this->tenant->id);
 
         $statusCases = [
-            ['id' => 2001, 'status' => 'enviado', 'title' => 'Q1'],
-            ['id' => 2002, 'status' => 'rejeitado', 'title' => 'Q2'],
-            ['id' => 2003, 'status' => 'expirado', 'title' => 'Q3'],
-            ['id' => 2004, 'status' => 'unknown_status', 'title' => 'Q4'],
+            ['id' => 2001, 'status' => 'enviado', 'title' => 'Q1', 'customerId' => 600],
+            ['id' => 2002, 'status' => 'rejeitado', 'title' => 'Q2', 'customerId' => 600],
+            ['id' => 2003, 'status' => 'expirado', 'title' => 'Q3', 'customerId' => 600],
+            ['id' => 2004, 'status' => 'unknown_status', 'title' => 'Q4', 'customerId' => 600],
         ];
 
         $this->fakeAuvoWithQuotations($statusCases);
@@ -185,12 +183,13 @@ class AuvoImportQuotationsTest extends TestCase
 
     public function test_import_quotations_generates_numbers_from_auvo_ids(): void
     {
-        Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+        $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+        AuvoIdMapping::mapOrCreate('customers', 800, $customer->id, $this->tenant->id);
 
         $this->fakeAuvoWithQuotations([
-            ['id' => 3001, 'title' => 'First', 'status' => 'draft'],
-            ['id' => 3002, 'title' => 'Second', 'status' => 'draft'],
-            ['id' => 3003, 'title' => 'Third', 'status' => 'draft'],
+            ['id' => 3001, 'title' => 'First', 'status' => 'draft', 'customerId' => 800],
+            ['id' => 3002, 'title' => 'Second', 'status' => 'draft', 'customerId' => 800],
+            ['id' => 3003, 'title' => 'Third', 'status' => 'draft', 'customerId' => 800],
         ]);
 
         $service = $this->makeService();
@@ -209,20 +208,22 @@ class AuvoImportQuotationsTest extends TestCase
     public function test_import_quotations_skips_already_mapped(): void
     {
         $customer = Customer::factory()->create(['tenant_id' => $this->tenant->id]);
+        // Create customer mapping so new quotations can resolve customer_id
+        AuvoIdMapping::mapOrCreate('customers', 700, $customer->id, $this->tenant->id);
 
         // Pre-create a quote and mapping for auvo_id 4001
         $existingQuote = Quote::create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $customer->id,
             'seller_id' => $this->user->id,
-            'quote_number' => Quote::nextNumber($this->tenant->id),
+            'quote_number' => 'ORC-04001',
             'status' => 'draft',
         ]);
         AuvoIdMapping::mapOrCreate('quotations', 4001, $existingQuote->id, $this->tenant->id);
 
         $this->fakeAuvoWithQuotations([
-            ['id' => 4001, 'title' => 'Already Mapped', 'status' => 'draft'],
-            ['id' => 4002, 'title' => 'New One', 'status' => 'draft'],
+            ['id' => 4001, 'title' => 'Already Mapped', 'status' => 'draft', 'customerId' => 700],
+            ['id' => 4002, 'title' => 'New One', 'status' => 'draft', 'customerId' => 700],
         ]);
 
         $service = $this->makeService();

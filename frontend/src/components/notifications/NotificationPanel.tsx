@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { isApiHealthy } from '@/lib/api-health'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -66,7 +67,7 @@ export default function NotificationPanel() {
     const { data: countData } = useQuery<NotificationCountResponse>({
         queryKey: ['notifications-count'],
         queryFn: async () => (await api.get('/notifications/unread-count')).data,
-        refetchInterval: isConnected ? 60_000 : 30_000, // slower poll when WS active
+        refetchInterval: isApiHealthy() ? (isConnected ? 60_000 : 30_000) : false,
     })
 
     // Full list when panel open

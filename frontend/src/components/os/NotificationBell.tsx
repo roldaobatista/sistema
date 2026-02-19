@@ -3,6 +3,7 @@ import { Bell, BellRing, Check, Clock, Wrench, AlertTriangle, UserCheck } from '
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { isApiHealthy } from '@/lib/api-health'
 
 interface Notification {
     id: string
@@ -32,6 +33,7 @@ export function useOSNotifications() {
 
     // Fetch existing notifications
     const fetchNotifications = useCallback(async () => {
+        if (!isApiHealthy()) return
         try {
             const res = await api.get('/notifications', { params: { per_page: 20 } })
             const data: Notification[] = res.data?.data ?? []
@@ -92,9 +94,17 @@ export function useOSNotifications() {
             }
         }
 
+        // Listen for API health recovery to resume polling
+        const onHealthChange = (e: Event) => {
+            const detail = (e as CustomEvent).detail
+            if (detail?.healthy) fetchNotifications()
+        }
+        window.addEventListener('api:health-changed', onHealthChange)
+
         return () => {
             wsRef.current?.close()
             if (pollingRef.current) clearInterval(pollingRef.current)
+            window.removeEventListener('api:health-changed', onHealthChange)
         }
     }, [fetchNotifications])
 

@@ -9,7 +9,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        default:
+          'prix-gradient text-white shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.06)] hover:brightness-110 hover:shadow-[0_2px_8px_rgba(37,99,235,0.25)] active:brightness-95 dark:hover:shadow-[0_0_20px_rgba(96,165,250,0.2)]',
         primary:
+          'prix-gradient text-white shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.06)] hover:brightness-110 hover:shadow-[0_2px_8px_rgba(37,99,235,0.25)] active:brightness-95 dark:hover:shadow-[0_0_20px_rgba(96,165,250,0.2)]',
+        brand:
           'prix-gradient text-white shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.06)] hover:brightness-110 hover:shadow-[0_2px_8px_rgba(37,99,235,0.25)] active:brightness-95 dark:hover:shadow-[0_0_20px_rgba(96,165,250,0.2)]',
         secondary:
           'bg-prix-500 text-white shadow-sm hover:bg-prix-600 active:bg-prix-700',
@@ -19,9 +23,15 @@ const buttonVariants = cva(
           'text-surface-600 hover:bg-surface-100 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-white/[0.04] dark:hover:text-white',
         danger:
           'bg-cta-500 text-white shadow-sm hover:bg-cta-600 active:bg-cta-700 dark:hover:shadow-[0_0_16px_rgba(248,113,113,0.15)]',
+        destructive:
+          'bg-cta-500 text-white shadow-sm hover:bg-cta-600 active:bg-cta-700 dark:hover:shadow-[0_0_16px_rgba(248,113,113,0.15)]',
         link: 'text-prix-500 underline-offset-4 hover:underline',
         success:
           'bg-success text-white shadow-sm hover:bg-emerald-600 active:bg-emerald-700',
+        info:
+          'bg-sky-500 text-white shadow-sm hover:bg-sky-600 active:bg-sky-700',
+        warning:
+          'bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:bg-amber-700',
       },
       size: {
         xs: 'h-7 rounded-[var(--radius-pill)] px-2.5 text-xs',
