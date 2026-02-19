@@ -8,23 +8,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // #8B Auto-Assignment Rules
-        Schema::create('auto_assignment_rules', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('entity_type')->default('work_order'); // work_order, service_call
-            $table->string('strategy')->default('round_robin'); // round_robin, least_loaded, skill_match, proximity
-            $table->json('conditions')->nullable(); // { os_types: [], priorities: [], regions: [] }
-            $table->json('technician_ids')->nullable(); // specific techs or empty = all
-            $table->json('required_skills')->nullable();
-            $table->integer('priority')->default(10);
-            $table->boolean('is_active')->default(true);
-            $table->softDeletes();
-            $table->timestamps();
+        // #8B Auto-Assignment Rules (idempotente: tabela pode já existir em produção)
+        if (!Schema::hasTable('auto_assignment_rules')) {
+            Schema::create('auto_assignment_rules', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
+                $table->string('name');
+                $table->string('entity_type')->default('work_order'); // work_order, service_call
+                $table->string('strategy')->default('round_robin'); // round_robin, least_loaded, skill_match, proximity
+                $table->json('conditions')->nullable(); // { os_types: [], priorities: [], regions: [] }
+                $table->json('technician_ids')->nullable(); // specific techs or empty = all
+                $table->json('required_skills')->nullable();
+                $table->integer('priority')->default(10);
+                $table->boolean('is_active')->default(true);
+                $table->softDeletes();
+                $table->timestamps();
 
-            $table->index(['tenant_id', 'entity_type', 'is_active']);
-        });
+                $table->index(['tenant_id', 'entity_type', 'is_active']);
+            });
+        }
 
         // #1 SLA fields on work_orders (if not present)
         if (!Schema::hasColumn('work_orders', 'sla_deadline')) {
