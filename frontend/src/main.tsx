@@ -5,6 +5,27 @@ import { toast } from 'sonner'
 import './index.css'
 import App from './App'
 
+// Aplica tema de forma síncrona ao carregar (evita mistura claro+escuro quando index.html está em cache)
+function applyThemeSync() {
+  try {
+    const raw = localStorage.getItem('ui-store')
+    let theme: 'light' | 'dark' | 'system' = 'light'
+    if (raw) {
+      try {
+        const o = JSON.parse(raw) as { theme?: string }
+        if (o?.theme === 'dark' || o?.theme === 'light' || o?.theme === 'system') theme = o.theme
+      } catch { /* ignore */ }
+    }
+    const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const root = document.documentElement
+    root.classList.remove('dark', 'light')
+    root.classList.add(isDark ? 'dark' : 'light')
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', isDark ? '#09090B' : '#2563EB')
+  } catch { /* ignore */ }
+}
+applyThemeSync()
+
 // go2rtc URL for camera streaming (injected at build time or fallback to /go2rtc)
 ;(window as Window & { __GO2RTC_URL?: string }).__GO2RTC_URL =
   import.meta.env.VITE_GO2RTC_URL || (window.location.origin + '/go2rtc')

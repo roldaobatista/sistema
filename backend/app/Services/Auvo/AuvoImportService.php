@@ -378,6 +378,24 @@ class AuvoImportService
                 $data['default_price'] = bcadd(str_replace(',', '.', $data['default_price']), '0', 2);
             }
 
+            // Resolve category via ServiceCategory firstOrCreate
+            $categoryName = $mapped['_category_name'] ?? null;
+            if ($categoryName) {
+                $category = \App\Models\ServiceCategory::firstOrCreate(
+                    ['tenant_id' => $import->tenant_id, 'name' => $categoryName],
+                    ['tenant_id' => $import->tenant_id, 'name' => $categoryName]
+                );
+                $data['category_id'] = $category->id;
+            }
+
+            // Default is_active to true if not provided
+            $data['is_active'] = $data['is_active'] ?? true;
+
+            // Convert duration (minutes) to integer
+            if (isset($data['estimated_minutes'])) {
+                $data['estimated_minutes'] = (int) $data['estimated_minutes'];
+            }
+
             return $data;
         }, function (array $data, int $tenantId) {
             if (!empty($data['code'])) {
@@ -533,8 +551,10 @@ class AuvoImportService
                 'raw_fields' => array_keys($data),
             ]);
 
-            // Generate quote_number
-            $data['quote_number'] = Quote::nextNumber($import->tenant_id);
+            // Use Auvo ID formatted as ORC-XXXXX to preserve traceability
+            // nextNumber() will auto-continue from this via extractNumericSequence()
+            $auvoId = (int) ($mapped['_auvo_id'] ?? 0);
+            $data['quote_number'] = 'ORC-' . str_pad((string) $auvoId, 5, '0', STR_PAD_LEFT);
 
             // Map title to observations (Quote has no title field)
             if (!empty($data['title'])) {
@@ -546,6 +566,12 @@ class AuvoImportService
             if (!empty($data['notes'])) {
                 $data['internal_notes'] = $data['notes'];
                 unset($data['notes']);
+            }
+
+            // Map Auvo observation field to internal_notes (append if notes already set)
+            $auvoObservation = $mapped['_observation'] ?? null;
+            if ($auvoObservation && empty($data['internal_notes'])) {
+                $data['internal_notes'] = $auvoObservation;
             }
 
             // Resolve customer via AuvoIdMapping (required NOT NULL field)

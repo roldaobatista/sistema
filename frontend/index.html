@@ -18,12 +18,20 @@
     }
   </script>
   <script>
-    // Dark mode — apply before first paint to avoid FOUC (localStorage may be unavailable in private mode)
+    // Tema: uma única classe no html (evita mistura claro+escuro). Fonte: ui-store; default 'light'.
     try {
-      var t = localStorage.getItem('theme');
-      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
+      var raw = localStorage.getItem('ui-store');
+      var theme = 'light';
+      if (raw) {
+        try {
+          var o = JSON.parse(raw);
+          theme = (o && o.theme) || 'light';
+        } catch (e) { /* ignore */ }
       }
+      var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var root = document.documentElement;
+      root.classList.remove('dark', 'light');
+      root.classList.add(isDark ? 'dark' : 'light');
     } catch (e) { /* ignore */ }
   </script>
   <meta charset="UTF-8" />

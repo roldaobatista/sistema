@@ -92,11 +92,13 @@ class ServiceOpsController extends Controller
         ]);
 
         $tenantId = (int) ($request->user()->current_tenant_id ?? $request->user()->tenant_id);
-        $workOrders = WorkOrder::where('tenant_id', $tenantId)
-            ->whereIn('id', $request->input('work_order_ids'))
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->get(['id', 'latitude', 'longitude', 'customer_id', 'endereco']);
+        $workOrders = WorkOrder::where('work_orders.tenant_id', $tenantId)
+            ->whereIn('work_orders.id', $request->input('work_order_ids'))
+            ->join('customers', 'work_orders.customer_id', '=', 'customers.id')
+            ->whereNotNull('customers.latitude')
+            ->whereNotNull('customers.longitude')
+            ->select(['work_orders.id', 'customers.latitude', 'customers.longitude', 'work_orders.customer_id'])
+            ->get();
 
         if ($workOrders->count() < 2) {
             return response()->json(['message' => 'Need at least 2 geocoded work orders'], 422);

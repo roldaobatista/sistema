@@ -96,7 +96,8 @@ class AuvoImportQuotationsTest extends TestCase
         $this->assertEquals('1500.00', $quote->total);
         $this->assertEquals('Manutenção Preventiva', $quote->observations);
         $this->assertEquals('Orçamento importado do Auvo', $quote->internal_notes);
-        $this->assertStringStartsWith('ORC-', $quote->quote_number);
+        // Quote number should be based on Auvo ID (1001 -> ORC-01001)
+        $this->assertEquals('ORC-01001', $quote->quote_number);
 
         // ID mapping should be saved
         $this->assertDatabaseHas('auvo_id_mappings', [
@@ -182,7 +183,7 @@ class AuvoImportQuotationsTest extends TestCase
         $this->assertEquals('draft', $quotes['Q4']->getRawOriginal('status')); // unknown → draft
     }
 
-    public function test_import_quotations_generates_sequential_quote_numbers(): void
+    public function test_import_quotations_generates_numbers_from_auvo_ids(): void
     {
         Customer::factory()->create(['tenant_id' => $this->tenant->id]);
 
@@ -198,13 +199,11 @@ class AuvoImportQuotationsTest extends TestCase
         $quotes = Quote::where('tenant_id', $this->tenant->id)->orderBy('id')->get();
         $this->assertCount(3, $quotes);
 
-        // All should have unique sequential numbers
-        $numbers = $quotes->pluck('quote_number')->unique();
-        $this->assertCount(3, $numbers, 'All quote numbers should be unique');
-
-        foreach ($numbers as $number) {
-            $this->assertStringStartsWith('ORC-', $number);
-        }
+        // Numbers should be based on Auvo IDs
+        $numbers = $quotes->pluck('quote_number')->sort()->values();
+        $this->assertEquals('ORC-03001', $numbers[0]);
+        $this->assertEquals('ORC-03002', $numbers[1]);
+        $this->assertEquals('ORC-03003', $numbers[2]);
     }
 
     public function test_import_quotations_skips_already_mapped(): void
@@ -250,6 +249,9 @@ class AuvoImportQuotationsTest extends TestCase
                                 'code' => 'SVC-001',
                                 'description' => 'Serviço de manutenção',
                                 'price' => '250,00',
+                                'active' => true,
+                                'categoryName' => 'Manutenção',
+                                'duration' => 60,
                             ],
                         ],
                     ],
@@ -268,6 +270,14 @@ class AuvoImportQuotationsTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'name' => 'Manutenção Corretiva',
             'code' => 'SVC-001',
+            'is_active' => true,
+            'estimated_minutes' => 60,
+        ]);
+
+        // Category should be auto-created
+        $this->assertDatabaseHas('service_categories', [
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Manutenção',
         ]);
 
         $this->assertDatabaseHas('auvo_id_mappings', [

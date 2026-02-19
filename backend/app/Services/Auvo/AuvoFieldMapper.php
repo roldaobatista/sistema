@@ -75,13 +75,17 @@ class AuvoFieldMapper
     ];
 
     // ─── Services ───────────────────────────────────────────
-    // Auvo V2: id, name, code, description, price
+    // Auvo V2: id, name, code, description, price, active, categoryId, categoryName, duration
     public const SERVICE_MAP = [
         'id'            => '_auvo_id',
         'name'          => 'name',
         'code'          => 'code',
         'description'   => 'description',
         'price'         => 'default_price',
+        'active'        => 'is_active',
+        'categoryId'    => '_category_auvo_id',
+        'categoryName'  => '_category_name',
+        'duration'      => 'estimated_minutes',
     ];
 
     // ─── Tasks (OS / Work Orders) ───────────────────────────
@@ -122,7 +126,7 @@ class AuvoFieldMapper
     ];
 
     // ─── Quotations (Orçamentos) ────────────────────────────
-    // Auvo V2: id, title, customerId, status, totalValue, validUntil
+    // Auvo V2: id, title, customerId, status, totalValue, validUntil, expirationDate, observation, date
     public const QUOTATION_MAP = [
         'id'                => '_auvo_id',
         'title'             => 'title',
@@ -130,7 +134,10 @@ class AuvoFieldMapper
         'status'            => 'status',
         'totalValue'        => 'total',
         'validUntil'        => 'valid_until',
+        'expirationDate'    => 'valid_until',
         'notes'             => 'notes',
+        'observation'       => '_observation',
+        'date'              => '_creation_date',
     ];
 
     // ─── Users ──────────────────────────────────────────────

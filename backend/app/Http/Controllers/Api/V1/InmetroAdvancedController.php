@@ -11,6 +11,7 @@ use App\Services\InmetroTerritorialService;
 use App\Services\InmetroWebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 use App\Http\Controllers\Concerns\ResolvesCurrentTenant;
 use App\Http\Controllers\Controller;

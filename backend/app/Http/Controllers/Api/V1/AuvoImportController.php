@@ -73,7 +73,7 @@ class AuvoImportController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Auvo: preview failed', ['entity' => $entity, 'error' => $e->getMessage()]);
-            Log::error('Erro ao buscar dados: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro ao buscar dados'], 500);
+            return response()->json(['error' => 'Erro ao buscar dados'], 500);
         }
     }
 
@@ -130,7 +130,7 @@ class AuvoImportController extends Controller
             ], $result));
         } catch (\Exception $e) {
             Log::error('Auvo: import failed', ['entity' => $entity, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            Log::error('Erro na importação: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro na importação'], 500);
+            return response()->json(['error' => 'Erro na importação'], 500);
         }
     }
 
@@ -174,7 +174,7 @@ class AuvoImportController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Auvo: full import failed', ['error' => $e->getMessage()]);
-            Log::error('Erro na importação: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro na importação'], 500);
+            return response()->json(['error' => 'Erro na importação'], 500);
         }
     }
 
@@ -232,7 +232,7 @@ class AuvoImportController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Auvo: rollback failed', ['import_id' => $id, 'error' => $e->getMessage()]);
-            Log::error('Erro ao desfazer: ' . $e->getMessage(), ['exception' => $e]); return response()->json(['error' => 'Erro ao desfazer'], 500);
+            return response()->json(['error' => 'Erro ao desfazer'], 500);
         }
     }
 
