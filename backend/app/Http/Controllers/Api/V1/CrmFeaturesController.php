@@ -1758,9 +1758,11 @@ class CrmFeaturesController extends Controller
             ->get();
 
         // By segment
-        $bySegment = CrmDeal::where('tenant_id', $tenantId)
-            ->won()
-            ->where('won_at', '>=', now()->subYear())
+        $bySegment = CrmDeal::where('crm_deals.tenant_id', $tenantId)
+            ->where('crm_deals.status', 'won')
+            ->whereNotNull('crm_deals.won_at')
+            ->where('crm_deals.won_at', '>=', now()->subYear())
+            ->whereNull('crm_deals.deleted_at')
             ->join('customers', 'crm_deals.customer_id', '=', 'customers.id')
             ->select('customers.segment', DB::raw('SUM(crm_deals.value) as revenue'), DB::raw('COUNT(*) as deals'))
             ->groupBy('customers.segment')
@@ -1789,18 +1791,19 @@ class CrmFeaturesController extends Controller
         $months = $request->input('months', 12);
         $since = now()->subMonths($months);
 
-        $competitors = CrmDealCompetitor::whereHas('deal', fn($q) => $q->where('tenant_id', $tenantId))
-            ->join('crm_deals', 'crm_deal_competitors.deal_id', '=', 'crm_deals.id')
+        $competitors = CrmDealCompetitor::join('crm_deals', 'crm_deal_competitors.deal_id', '=', 'crm_deals.id')
+            ->where('crm_deals.tenant_id', $tenantId)
             ->where('crm_deals.created_at', '>=', $since)
+            ->whereNull('crm_deals.deleted_at')
             ->select(
-                'competitor_name',
+                'crm_deal_competitors.competitor_name',
                 DB::raw('COUNT(*) as total_encounters'),
                 DB::raw('SUM(CASE WHEN crm_deals.status = "won" THEN 1 ELSE 0 END) as wins'),
                 DB::raw('SUM(CASE WHEN crm_deals.status = "lost" THEN 1 ELSE 0 END) as losses'),
                 DB::raw('AVG(crm_deal_competitors.competitor_price) as avg_price'),
                 DB::raw('AVG(crm_deals.value) as our_avg_price'),
             )
-            ->groupBy('competitor_name')
+            ->groupBy('crm_deal_competitors.competitor_name')
             ->orderByDesc('total_encounters')
             ->get()
             ->map(function ($c) {
