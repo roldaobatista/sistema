@@ -2953,6 +2953,18 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:calibration.reading.create')->post('uncertainties', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'storeMeasurementUncertainty']);
         Route::middleware('check.permission:calibration.reading.view')->get('calibration-schedule', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'calibrationSchedule']);
         Route::middleware('check.permission:calibration.reading.create')->post('calibration-schedule/recall', [\App\Http\Controllers\Api\V1\MetrologyQualityController::class, 'triggerRecall']);
+
+        // Control Charts (SPC) - 2.14
+        Route::middleware('check.permission:equipments.equipment.view')->get('control-charts/{equipment_id}', [\App\Http\Controllers\Api\V1\CalibrationControlChartController::class, 'show']);
+
+        // QA Alerts (Anti-Fraud) - 2.13
+        Route::middleware('check.permission:calibration.reading.view')->get('qa-alerts', function (\Illuminate\Http\Request $request) {
+            $tenantId = app('current_tenant_id') ?? $request->user()->tenant_id;
+            return \Illuminate\Support\Facades\DB::table('qa_alerts')
+                ->where('tenant_id', $tenantId)
+                ->orderByDesc('created_at')
+                ->paginate(20);
+        });
     });
 
     // ═══════════════════════════════════════════════════════════════════
@@ -3024,7 +3036,12 @@ Route::prefix('webhooks')->middleware(['verify.webhook', 'throttle:240,1'])->gro
 // â?,â?,â?, Rotas públicas (sem autenticação, com token) â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,â?,
 Route::prefix('quotes')->group(function () {
     Route::middleware('throttle:120,1')->get('{quote}/public-view', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicView']);
+    Route::middleware('throttle:120,1')->get('{quote}/public-pdf', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicPdf']);
     Route::middleware('throttle:30,1')->post('{quote}/public-approve', [\App\Http\Controllers\Api\V1\QuoteController::class, 'publicApprove']);
+
+    // 4.33 Magic Token Approval
+    Route::middleware('throttle:120,1')->get('proposal/{magicToken}', [\App\Http\Controllers\Api\V1\QuotePublicApprovalController::class, 'show']);
+    Route::middleware('throttle:30,1')->post('proposal/{magicToken}/approve', [\App\Http\Controllers\Api\V1\QuotePublicApprovalController::class, 'approve']);
 });
 
 

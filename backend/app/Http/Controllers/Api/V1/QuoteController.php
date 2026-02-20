@@ -866,7 +866,17 @@ class QuoteController extends Controller
         }
 
         $cleanPhone = preg_replace('/\D/', '', $phone);
-        $message = urlencode("Olá! Segue o orçamento #{$quote->quote_number} no valor de R$ " . number_format((float) $quote->total, 2, ',', '.') . ". Para visualizar: {$quote->approval_url}");
+        $total = number_format((float) $quote->total, 2, ',', '.');
+        $lines = [
+            "Olá! Segue o orçamento *#{$quote->quote_number}* no valor de *R$ {$total}*.",
+            "",
+            "📄 *Baixar PDF:*",
+            $quote->pdf_url,
+            "",
+            "✅ *Visualizar e aprovar:*",
+            $quote->approval_url,
+        ];
+        $message = urlencode(implode("\n", $lines));
 
         return response()->json([
             'url' => "https://wa.me/{$cleanPhone}?text={$message}",
@@ -877,5 +887,20 @@ class QuoteController extends Controller
     public function installmentSimulation(Quote $quote): JsonResponse
     {
         return response()->json($quote->installmentSimulation());
+    }
+
+    public function publicPdf(Quote $quote, Request $request)
+    {
+        if (!Quote::verifyApprovalToken($quote->id, $request->query('token', ''))) {
+            return response()->json(['message' => 'Token inválido'], 403);
+        }
+
+        $quote->load(['customer', 'seller', 'equipments.equipment', 'equipments.items']);
+        $tenant = $quote->tenant;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.quote', compact('quote', 'tenant'));
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download("Orcamento-{$quote->quote_number}.pdf");
     }
 }

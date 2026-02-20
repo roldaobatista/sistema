@@ -280,6 +280,11 @@ class Quote extends Model
         return url("/api/quotes/{$this->id}/public-approve?token={$this->approval_token}");
     }
 
+    public function getPdfUrlAttribute(): string
+    {
+        return url("/api/quotes/{$this->id}/public-pdf?token={$this->approval_token}");
+    }
+
     public static function verifyApprovalToken(int $quoteId, string $token): bool
     {
         $expected = hash_hmac('sha256', "quote-approve-{$quoteId}", config('app.key'));
