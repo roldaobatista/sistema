@@ -156,6 +156,8 @@ class AuvoApiClient
     {
         $page = 1;
 
+        $filters = $this->applyRequiredFilters($endpoint, $filters);
+
         while (true) {
             $params = array_merge($filters, [
                 'page' => $page,
@@ -205,6 +207,7 @@ class AuvoApiClient
      */
     public function count(string $endpoint, array $filters = [], ?int $timeoutSeconds = null): int
     {
+        $filters = $this->applyRequiredFilters($endpoint, $filters);
         $params = array_merge($filters, ['page' => 1, 'pageSize' => 1]);
         $response = $this->get($endpoint, $params, $timeoutSeconds);
 
@@ -309,6 +312,29 @@ class AuvoApiClient
     // ─── Internal ────────────────────────────────────────────
 
     /**
+     * Some Auvo endpoints (quotations, tickets) require date filters.
+     * If none provided, default to a wide range to fetch all records.
+     */
+    private function applyRequiredFilters(string $endpoint, array $filters): array
+    {
+        $needsDate = ['quotations', 'tickets'];
+
+        if (!in_array($endpoint, $needsDate)) {
+            return $filters;
+        }
+
+        $hasDate = isset($filters['startDate']) || isset($filters['endDate'])
+            || isset($filters['lastUpdateStartDate']) || isset($filters['lastUpdateEndDate']);
+
+        if (!$hasDate) {
+            $filters['startDate'] = '2020-01-01';
+            $filters['endDate'] = now()->addDay()->format('Y-m-d');
+        }
+
+        return $filters;
+    }
+
+    /**
      * Extract the list of records from an Auvo API response.
      * Suporta variações: entityList, list, customerList, customers, data, result (array).
      */
@@ -317,7 +343,14 @@ class AuvoApiClient
         $result = $response['result'] ?? null;
 
         if (is_array($result)) {
-            foreach (['entityList', 'list', 'customerList', 'taskList', 'equipmentList', 'productList', 'serviceList', 'expenseList', 'customers', 'tasks', 'equipments', 'products', 'services', 'expenses', 'data', 'items', 'results'] as $key) {
+            foreach ([
+                'entityList', 'list',
+                'customerList', 'taskList', 'equipmentList', 'productList',
+                'serviceList', 'expenseList', 'quotationList', 'ticketList',
+                'customers', 'tasks', 'equipments', 'products', 'services',
+                'expenses', 'quotations', 'tickets',
+                'data', 'items', 'results',
+            ] as $key) {
                 if (isset($result[$key]) && is_array($result[$key]) && array_is_list($result[$key])) {
                     return $result[$key];
                 }
