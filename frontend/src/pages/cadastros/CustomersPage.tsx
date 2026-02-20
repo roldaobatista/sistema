@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { broadcastQueryInvalidation } from '@/lib/cross-tab-sync'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud, FileText, MapPin, Loader2, CheckCircle2, Zap, Sprout, Briefcase, DollarSign, AlertTriangle, Sparkles } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Search, X, Star, Heart, Building2, User, ChevronLeft, ChevronRight, UploadCloud, FileText, MapPin, Loader2, CheckCircle2, Zap, Sprout, Briefcase, DollarSign, AlertTriangle, Sparkles, Merge } from 'lucide-react'
 import api from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useAuthStore } from '@/stores/auth-store'
@@ -540,6 +540,13 @@ export function CustomersPage() {
         subtitle="Gerencie seus clientes e informações de contato"
         count={totalCount}
         actions={[
+          {
+            label: 'Fundir Duplicados',
+            onClick: () => navigate('/cadastros/clientes/fusao'),
+            icon: <Merge className="h-4 w-4" />,
+            variant: 'outline' as const,
+            permission: canCreate,
+          },
           {
             label: 'Novo Cliente',
             onClick: openCreate,

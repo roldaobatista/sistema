@@ -149,7 +149,9 @@ Route::prefix('v1')->group(function () {
 
         // Cadastros
         Route::middleware('check.permission:cadastros.customer.view')->get('customers', [CustomerController::class, 'index']);
-        Route::middleware('check.permission:cadastros.customer.view')->get('customers/duplicates', [\App\Http\Controllers\Api\V1\Customer\CustomerMergeController::class, 'searchDuplicates']); // compat
+        Route::middleware('check.permission:cadastros.customer.view')->get('customers/duplicates', [\App\Http\Controllers\Api\V1\Customer\CustomerMergeController::class, 'searchDuplicates']);
+        Route::middleware('check.permission:cadastros.customer.update')->get('customers/search-duplicates', [\App\Http\Controllers\Api\V1\Customer\CustomerMergeController::class, 'searchDuplicates']);
+        Route::middleware('check.permission:cadastros.customer.update')->post('customers/merge', [\App\Http\Controllers\Api\V1\Customer\CustomerMergeController::class, 'merge']);
         Route::middleware('check.permission:cadastros.customer.view')->get('customers/options', [CustomerController::class, 'options']);
         Route::middleware('check.permission:cadastros.customer.view')->get('customers/{customer}', [CustomerController::class, 'show']);
         Route::middleware('check.permission:cadastros.customer.create')->post('customers', [CustomerController::class, 'store']);
