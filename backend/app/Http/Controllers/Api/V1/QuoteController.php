@@ -854,10 +854,13 @@ class QuoteController extends Controller
         }
     }
 
-    public function whatsappLink(Quote $quote): JsonResponse
+    public function whatsappLink(Request $request, Quote $quote): JsonResponse
     {
-        $quote->load('customer.contacts');
-        $phone = $quote->customer?->contacts?->first()?->phone ?? $quote->customer?->phone;
+        $phone = $request->query('phone');
+        if (!$phone) {
+            $quote->load('customer.contacts');
+            $phone = $quote->customer?->contacts?->first()?->phone ?? $quote->customer?->phone;
+        }
         if (!$phone) {
             return response()->json(['message' => 'Cliente sem telefone cadastrado'], 422);
         }
