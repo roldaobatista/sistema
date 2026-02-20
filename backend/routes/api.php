@@ -307,6 +307,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('check.permission:estoque.movement.create')->group(function () {
             Route::post('stock/movements', [\App\Http\Controllers\Api\V1\StockController::class, 'store']);
             Route::post('stock/import-xml', [\App\Http\Controllers\Api\V1\XmlImportController::class, 'import']);
+            Route::post('stock/scan-qr', [\App\Http\Controllers\Api\V1\Stock\QrCodeInventoryController::class, 'scan']);
         });
 
         // ═══ Cotação de Compras ═══
@@ -534,6 +535,7 @@ Route::prefix('v1')->group(function () {
             Route::get('work-orders/{work_order}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'show']);
             Route::get('work-orders-metadata', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'metadata']);
             Route::get('technician/work-orders', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'index']);
+            Route::get('routing/daily-plan', [\App\Http\Controllers\Api\V1\RoutingController::class, 'dailyPlan']);
             Route::get('tech/os/{work_order}', [\App\Http\Controllers\Api\V1\Os\WorkOrderController::class, 'show']);
         });
         Route::middleware('check.permission:os.work_order.create')->group(function () {
@@ -2791,8 +2793,6 @@ Route::prefix('v1')->group(function () {
             Route::delete('{id}', [$fc, 'destroyToolCalibration']);
         });
 
-    });
-
     // --- Cadastros Auxiliares (Lookups) ---
     Route::prefix('lookups')->group(function () {
         Route::get('types', [\App\Http\Controllers\Api\V1\LookupController::class, 'types']);
@@ -3005,6 +3005,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('check.permission:advanced.route_plan.view')->group(function () {
         Route::post('advanced/route-plans', [\App\Http\Controllers\Api\V1\AdvancedFeaturesController::class, 'storeRoutePlan']);
     });
+
+    }); // end auth:sanctum + check.tenant
 
 });
 // â”€â”€â”€ PUBLIC: Work Order Rating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
