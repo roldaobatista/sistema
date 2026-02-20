@@ -675,4 +675,52 @@ class IamTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    public function test_cannot_edit_global_role(): void
+    {
+        $globalRole = Role::create([
+            'name' => 'global_template',
+            'guard_name' => 'web',
+            'tenant_id' => null, // Global
+        ]);
+
+        $response = $this->putJson("/api/v1/roles/{$globalRole->id}", [
+            'name' => 'hacked_global',
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_cannot_delete_global_role(): void
+    {
+        $globalRole = Role::create([
+            'name' => 'global_template_delete',
+            'guard_name' => 'web',
+            'tenant_id' => null, // Global
+        ]);
+
+        $response = $this->deleteJson("/api/v1/roles/{$globalRole->id}");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_cannot_toggle_global_role_permission(): void
+    {
+        $globalRole = Role::create([
+            'name' => 'global_template_perm',
+            'guard_name' => 'web',
+            'tenant_id' => null, // Global
+        ]);
+        $perm = Permission::firstOrCreate(
+            ['name' => 'iam.toggle.global', 'guard_name' => 'web'],
+            ['group_id' => null, 'criticality' => 'LOW']
+        );
+
+        $response = $this->postJson('/api/v1/permissions/toggle', [
+            'role_id' => $globalRole->id,
+            'permission_id' => $perm->id,
+        ]);
+
+        $response->assertStatus(403);
+    }
 }

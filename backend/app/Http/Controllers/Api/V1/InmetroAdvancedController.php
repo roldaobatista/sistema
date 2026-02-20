@@ -10,6 +10,7 @@ use App\Services\InmetroReportingService;
 use App\Services\InmetroTerritorialService;
 use App\Services\InmetroWebhookService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

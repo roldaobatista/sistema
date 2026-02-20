@@ -164,42 +164,24 @@ When auto-applying an agent, inform the user:
 
 **For complex requests, STOP and ASK first:**
 
-### 🛑 GLOBAL SOCRATIC GATE (TIER 0)
+### 🛑 GLOBAL SOCRATIC GATE (FLEXIBILIZADO)
 
-**MANDATORY: Every user request must pass through the Socratic Gate before ANY tool use or implementation.**
-
-| Request Type            | Strategy       | Required Action                                                   |
-| ----------------------- | -------------- | ----------------------------------------------------------------- |
-| **New Feature / Build** | Deep Discovery | ASK minimum 3 strategic questions                                 |
-| **Code Edit / Bug Fix** | Context Check  | Confirm understanding + ask impact questions                      |
-| **Vague / Simple**      | Clarification  | Ask Purpose, Users, and Scope                                     |
-| **Full Orchestration**  | Gatekeeper     | **STOP** subagents until user confirms plan details               |
-| **Direct "Proceed"**    | Validation     | **STOP** → Even if answers are given, ask 2 "Edge Case" questions |
+**WARNING:** O Socratic Gate foi flexibilizado para impedir burocracia operacional. NÃO faça as 3 perguntas mandatórias para correções, CRUDS diretos ou hotfixes.
+Assuma a postura **IMPLEMENT Mode** direto. Só use questionamento socrático para criação de APPs do zero ou grandes decisões arquiteturais abstratas.
 
 **Protocol:**
 
-1. **Never Assume:** If even 1% is unclear, ASK.
-2. **Handle Spec-heavy Requests:** When user gives a list (Answers 1, 2, 3...), do NOT skip the gate. Instead, ask about **Trade-offs** or **Edge Cases** (e.g., "LocalStorage confirmed, but should we handle data clearing or versioning?") before starting.
-3. **Wait:** Do NOT invoke subagents or write code until the user clears the Gate.
-4. **Reference:** Full protocol in `@[skills/brainstorming]`.
+1. **Fast Execution Default:** Pule o Socratic Gate. Recebeu o pedido, execute o código diretamente nas regras do Laravel/React.
+2. **Não crie barreiras:** A menos que falte um dado *bloqueante*, presuma que as restrições normais de clean-code e database-design já suprem a arquitetura.
 
-### 🏁 Final Checklist Protocol
+### 🏁 Final Checklist Protocol (FLEXIBILIZADO)
 
-**Trigger:** When the user says "son kontrolleri yap", "final checks", "çalıştır tüm testleri", or similar phrases.
-
-| Task Stage       | Command                                            | Purpose                        |
-| ---------------- | -------------------------------------------------- | ------------------------------ |
-| **Manual Audit** | `python .agent/scripts/checklist.py .`             | Priority-based project audit   |
-| **Pre-Deploy**   | `python .agent/scripts/checklist.py . --url <URL>` | Full Suite + Performance + E2E |
-
-**Priority Execution Order:**
-
-1. **Security** → 2. **Lint** → 3. **Schema** → 4. **Tests** → 5. **UX** → 6. **Seo** → 7. **Lighthouse/E2E**
+**Trigger:** Somente rode quando o usuário pedir abertamente ("execute os testes", "rode o checklist final").
 
 **Rules:**
 
-- **Completion:** A task is NOT finished until `checklist.py` returns success.
-- **Reporting:** If it fails, fix the **Critical** blockers first (Security/Lint).
+- **Sem Burocracia:** Para tarefas normais diárias, NÃO tente rodar os scripts de SEO, Playwright, UX ou Lighthouse automaticamente.
+- **Completion:** Corrija o código de forma atômica e avise o usuário assim que a alteração local de arquivos for finalizada.
 
 **Available Scripts (12 total):**
 

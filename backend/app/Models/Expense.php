@@ -34,6 +34,7 @@ class Expense extends Model
         'affects_net_value',
         'reviewed_by',
         'reviewed_at',
+        'status',
     ];
 
     protected function casts(): array

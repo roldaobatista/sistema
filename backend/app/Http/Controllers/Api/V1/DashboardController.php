@@ -46,7 +46,7 @@ class DashboardController extends Controller
         $recentOs = WorkOrder::with(['customer:id,name', 'assignee:id,name'])
             ->orderByDesc('created_at')
             ->take(10)
-            ->get(['id', 'number', 'customer_id', 'assigned_to', 'status', 'total', 'created_at']);
+            ->get(['id', 'number', 'os_number', 'customer_id', 'assigned_to', 'status', 'total', 'created_at']);
 
         $topTechnicians = WorkOrder::select('assigned_to', DB::raw('COUNT(*) as os_count'), DB::raw('SUM(total) as total_revenue'))
             ->where('status', WorkOrder::STATUS_COMPLETED)
@@ -56,7 +56,8 @@ class DashboardController extends Controller
             ->orderByDesc('os_count')
             ->take(5)
             ->with('assignee:id,name')
-            ->get();
+            ->get()
+            ->makeHidden(['business_number', 'waze_link', 'google_maps_link']);
 
         // Equipamentos - alertas
         $eqOverdue = Equipment::overdue()->active()->count();
@@ -174,7 +175,7 @@ class DashboardController extends Controller
             return response()->json(['message' => 'Parametros invalidos', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             Log::error('Dashboard stats failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Erro ao carregar dashboard'], 500);
+            return response()->json(['message' => 'Erro ao carregar dashboard', 'actual_error' => $e->getMessage()], 500);
         }
     }
 }

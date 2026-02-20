@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 class TenantService
@@ -133,7 +134,7 @@ class TenantService
 
             if ($user) {
                 if ($tenant->users()->where('user_id', $user->id)->exists()) {
-                    throw new \Exception('Usuário já pertence a esta empresa.', 422);
+                    throw ValidationException::withMessages(['email' => 'Usuário já pertence a esta empresa.']);
                 }
                 $tenant->users()->attach($user->id, ['is_default' => false]);
             } else {
@@ -171,7 +172,7 @@ class TenantService
     public function removeUser(Tenant $tenant, User $user, User $actor): void
     {
         if ($user->id === $actor->id) {
-            throw new \Exception('Você não pode remover a si mesmo da empresa.', 422);
+            throw ValidationException::withMessages(['user' => 'Você não pode remover a si mesmo da empresa.']);
         }
 
         if (!$tenant->users()->where('user_id', $user->id)->exists()) {
@@ -180,7 +181,7 @@ class TenantService
 
         $usersCount = $tenant->users()->count();
         if ($usersCount <= 1) {
-            throw new \Exception('Não é possível remover o último usuário da empresa. A empresa ficaria sem acesso.', 422);
+            throw ValidationException::withMessages(['user' => 'Não é possível remover o último usuário da empresa. A empresa ficaria sem acesso.']);
         }
 
         DB::transaction(function () use ($tenant, $user) {
@@ -207,7 +208,7 @@ class TenantService
             ->exists();
 
         if (!$roleExists) {
-            throw new \Exception('Role informada não existe ou não é válida para esta empresa.', 422);
+            throw ValidationException::withMessages(['role' => 'Role informada não existe ou não é válida para esta empresa.']);
         }
 
         setPermissionsTeamId($tenant->id);

@@ -518,7 +518,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Push Notifications
-        Route::post('push/subscribe', [\App\Http\Controllers\Api\V1\PushSubscriptionController::class, 'subscribe']);
+        Route::middleware('check.permission:admin.settings.view')->post('push/subscribe', [\App\Http\Controllers\Api\V1\PushSubscriptionController::class, 'subscribe']);
         Route::delete('push/unsubscribe', [\App\Http\Controllers\Api\V1\PushSubscriptionController::class, 'unsubscribe']);
         Route::middleware('check.permission:platform.settings.manage')->post('push/test', [\App\Http\Controllers\Api\V1\PushSubscriptionController::class, 'test']);
         Route::get('push/vapid-key', [\App\Http\Controllers\Api\V1\PushSubscriptionController::class, 'vapidKey']);
@@ -972,7 +972,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('check.permission:reports.customers_report.view')->get('/reports/customers', [\App\Http\Controllers\Api\V1\ReportController::class, 'customers']);
 
     // Export Routes
-    Route::middleware('check.permission:reports.os_report.view')->get('/reports/{type}/export', [\App\Http\Controllers\Api\V1\ReportController::class, 'export']);
+    Route::get('/reports/{type}/export', [\App\Http\Controllers\Api\V1\ReportController::class, 'export']);
 
         // Analytics Hub (Fase 2 — Unified Analytics)
         Route::middleware('check.permission:reports.analytics.view')->group(function () {
@@ -2663,19 +2663,25 @@ Route::prefix('v1')->group(function () {
 
         // --- Calibração (Certificado ISO 17025) ---
         Route::prefix('calibration')->middleware('check.permission:equipamentos.calibration.view')->group(function () use ($fc) {
+            Route::get('/', [$fc, 'listCalibrations']);
             Route::get('{calibration}/readings', [$fc, 'getCalibrationReadings']);
             Route::middleware('check.permission:equipamentos.calibration.create')->group(function () use ($fc) {
+                Route::post('equipment/{equipment}/draft', [$fc, 'createCalibrationDraft']);
+                Route::put('{calibration}/wizard', [$fc, 'updateCalibrationWizard']);
                 Route::post('{calibration}/readings', [$fc, 'storeCalibrationReadings']);
                 Route::post('{calibration}/excentricity', [$fc, 'storeExcentricityTest']);
                 Route::post('{calibration}/weights', [$fc, 'syncCalibrationWeights']);
                 Route::post('{calibration}/generate-certificate', [$fc, 'generateCertificate']);
                 Route::post('{calibration}/repeatability', [$fc, 'storeRepeatabilityTest']);
             });
-            // Wizard endpoints
             Route::get('equipment/{equipment}/prefill', [$fc, 'prefillCalibration']);
             Route::get('equipment/{equipment}/suggest-points', [$fc, 'suggestMeasurementPoints']);
             Route::post('calculate-ema', [$fc, 'calculateEma']);
             Route::get('{calibration}/validate-iso17025', [$fc, 'validateCalibrationIso17025']);
+            Route::post('procedure-config', [$fc, 'getProcedureConfig']);
+            Route::get('gravity', [$fc, 'getGravity']);
+            Route::get('{calibration}/validate-weights', [$fc, 'validateCalibrationWeights']);
+            Route::post('uncertainty-budget', [$fc, 'calculateUncertaintyBudget']);
         });
 
         // --- Templates de Certificado ---

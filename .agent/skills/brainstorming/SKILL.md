@@ -10,25 +10,20 @@ allowed-tools: Read, Glob, Grep
 
 ---
 
-## 🛑 SOCRATIC GATE (ENFORCEMENT)
+## 🧠 SOCRATIC GATE (FLEXIBILIZADO)
 
 ### When to Trigger
 
 | Pattern | Action |
 |---------|--------|
-| "Build/Create/Make [thing]" without details | 🛑 ASK 3 questions |
-| Complex feature or architecture | 🛑 Clarify before implementing |
-| Update/change request | 🛑 Confirm scope |
-| Vague requirements | 🛑 Ask purpose, users, constraints |
+| User explicitly asks for `/brainstorm` | 🧠 ASK questions to explore options |
+| Greenfield architectural decisions | 🧠 Clarify before implementing |
 
-### 🚫 MANDATORY: 3 Questions Before Implementation
+### 🚀 FAST EXECUTION (Default)
 
-1. **STOP** - Do NOT start coding
-2. **ASK** - Minimum 3 questions:
-   - 🎯 Purpose: What problem are you solving?
-   - 👥 Users: Who will use this?
-   - 📦 Scope: Must-have vs nice-to-have?
-3. **WAIT** - Get response before proceeding
+Para manutenção do dia-a-dia, correções de bugs, features novas menores, adicione código diretamente.
+**DO NOT STOP** and do **NOT** force 3 questions for everyday tasks.
+Assume the `IMPLEMENT Mode` by default.
 
 ---
 

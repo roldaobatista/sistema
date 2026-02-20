@@ -18,7 +18,8 @@ return new class extends Migration
         Schema::create('vehicle_tires', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('fleet_vehicle_id')->constrained('fleet_vehicles')->cascadeOnDelete();
+            $table->unsignedBigInteger('fleet_vehicle_id');
+            $table->index('fleet_vehicle_id');
             $table->string('serial_number')->nullable();
             $table->string('brand')->nullable();
             $table->string('model')->nullable();

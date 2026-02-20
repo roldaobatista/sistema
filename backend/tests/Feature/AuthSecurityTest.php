@@ -305,8 +305,8 @@ class AuthSecurityTest extends TestCase
 
         $response = $this->postJson('/api/v1/profile/change-password', [
             'current_password' => 'wrong_password',
-            'new_password' => 'newpassword123',
-            'new_password_confirmation' => 'newpassword123',
+            'new_password' => 'Newpassword123!',
+            'new_password_confirmation' => 'Newpassword123!',
         ]);
 
         $response->assertStatus(422)
@@ -319,8 +319,8 @@ class AuthSecurityTest extends TestCase
 
         $response = $this->postJson('/api/v1/profile/change-password', [
             'current_password' => 'senha1234',
-            'new_password' => 'newpassword123',
-            'new_password_confirmation' => 'newpassword123',
+            'new_password' => 'Newpassword123!',
+            'new_password_confirmation' => 'Newpassword123!',
         ]);
 
         $response->assertOk()
@@ -328,22 +328,21 @@ class AuthSecurityTest extends TestCase
 
         // Verify new password works
         $this->activeUser->refresh();
-        $this->assertTrue(Hash::check('newpassword123', $this->activeUser->password));
+        $this->assertTrue(Hash::check('Newpassword123!', $this->activeUser->password));
     }
 
     public function test_change_password_revokes_other_sessions(): void
     {
-        Sanctum::actingAs($this->activeUser, ['*']);
-
-        // Create extra tokens to simulate multiple sessions
+        $token = $this->activeUser->createToken('session-main')->plainTextToken;
         $this->activeUser->createToken('session-2');
         $this->activeUser->createToken('session-3');
         $this->assertGreaterThanOrEqual(2, $this->activeUser->tokens()->count());
 
-        $this->postJson('/api/v1/profile/change-password', [
+        $this->withToken($token)
+            ->postJson('/api/v1/profile/change-password', [
             'current_password' => 'senha1234',
-            'new_password' => 'newpassword123',
-            'new_password_confirmation' => 'newpassword123',
+            'new_password' => 'Newpassword123!',
+            'new_password_confirmation' => 'Newpassword123!',
         ])->assertOk();
 
         // Only current token should remain

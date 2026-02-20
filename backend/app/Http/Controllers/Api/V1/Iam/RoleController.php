@@ -115,9 +115,9 @@ class RoleController extends Controller
 
         $tenantId = (int) app('current_tenant_id');
 
-        // Impedir edição de roles de outros tenants (caso o scope fale ou seja burlado)
-        if ($role->tenant_id && (int) $role->tenant_id !== $tenantId) {
-            abort(403, 'Acesso negado a esta role.');
+        // Impedir edição de roles de outros tenants ou roles globais (sistema)
+        if ($role->tenant_id === null || (int) $role->tenant_id !== $tenantId) {
+            abort(403, 'Acesso negado. Não é possível editar roles globais ou de outros tenants.');
         }
 
         $validated = $request->validate([
@@ -178,9 +178,9 @@ class RoleController extends Controller
 
         $tenantId = (int) app('current_tenant_id');
 
-        // Verificar que a role pertence ao tenant atual
-        if ($role->tenant_id !== null && (int) $role->tenant_id !== $tenantId) {
-            abort(403, 'Acesso negado a esta role.');
+        // Verificar que a role pertence ao tenant atual (não pode excluir globais)
+        if ($role->tenant_id === null || (int) $role->tenant_id !== $tenantId) {
+            abort(403, 'Acesso negado. Não é possível excluir roles globais ou de outros tenants.');
         }
 
         if (in_array($role->name, self::PROTECTED_ROLES, true)) {

@@ -153,6 +153,16 @@ class WorkOrderController extends Controller
             ], 403);
         }
 
+        // Garante a mutualidade dos descontos
+        if (isset($validated['discount_percentage']) && (float) $validated['discount_percentage'] > 0) {
+            $validated['discount'] = 0;
+        } elseif (isset($validated['discount']) && (float) $validated['discount'] > 0) {
+            $validated['discount_percentage'] = 0;
+        } else {
+            $validated['discount'] = 0;
+            $validated['discount_percentage'] = 0;
+        }
+
         if (!empty($validated['items'])) {
             foreach ($validated['items'] as $index => $item) {
                 $message = $this->validateItemReference(
@@ -284,6 +294,7 @@ class WorkOrderController extends Controller
             'attachments',
             'checklistResponses.item',
             'displacementStops',
+            'calibrations:id,work_order_id,equipment_id,certificate_number,calibration_date,result',
         ]);
 
         $data = $workOrder->toArray();
@@ -306,6 +317,18 @@ class WorkOrderController extends Controller
             return response()->json([
                 'message' => 'Apenas gerentes/admin podem aplicar descontos.',
             ], 403);
+        }
+
+        // Garante a mutualidade dos descontos
+        if (array_key_exists('discount_percentage', $validated) || array_key_exists('discount', $validated)) {
+            if (isset($validated['discount_percentage']) && (float) $validated['discount_percentage'] > 0) {
+                $validated['discount'] = 0;
+            } elseif (isset($validated['discount']) && (float) $validated['discount'] > 0) {
+                $validated['discount_percentage'] = 0;
+            } else {
+                $validated['discount'] = 0;
+                $validated['discount_percentage'] = 0;
+            }
         }
 
         try {
@@ -1106,7 +1129,7 @@ class WorkOrderController extends Controller
         $avgCompletionHours = (clone $base)
             ->whereNotNull('completed_at')
             ->whereNotNull('started_at')
-            ->select('started_at', 'completed_at')
+            ->select('started_at', 'completed_at', 'os_number', 'number')
             ->get()
             ->avg(fn ($row) => \Carbon\Carbon::parse($row->started_at)->diffInHours(\Carbon\Carbon::parse($row->completed_at)));
 
@@ -1132,6 +1155,7 @@ class WorkOrderController extends Controller
             ->groupBy('customers.id', 'customers.name')
             ->orderByDesc('total_os')
             ->limit(5)
+            ->toBase()
             ->get();
 
         return response()->json([

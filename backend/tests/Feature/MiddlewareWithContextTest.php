@@ -118,9 +118,8 @@ class MiddlewareWithContextTest extends TestCase
         $this->postJson('/api/v1/products', ['name' => 'Test'])->assertForbidden();
 
         $this->grant('cadastros.product.create');
-        // Will get 422 if validation fails but NOT 403
-        $this->postJson('/api/v1/products', ['name' => 'Test Product'])
-            ->assertStatus(fn ($s) => $s !== 403);
+        $response = $this->postJson('/api/v1/products', ['name' => 'Test Product']);
+        $this->assertNotEquals(403, $response->status());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -168,8 +167,8 @@ class MiddlewareWithContextTest extends TestCase
         $this->postJson('/api/v1/equipments', ['name' => 'Balança'])->assertForbidden();
 
         $this->grant('equipments.equipment.create');
-        $this->postJson('/api/v1/equipments', ['name' => 'Balança'])
-            ->assertStatus(fn ($s) => $s !== 403);
+        $response = $this->postJson('/api/v1/equipments', ['name' => 'Balança']);
+        $this->assertNotEquals(403, $response->status());
     }
 
     public function test_equipments_dashboard_requires_permission(): void
@@ -213,8 +212,8 @@ class MiddlewareWithContextTest extends TestCase
         $this->postJson('/api/v1/work-orders', ['description' => 'OS Teste'])->assertForbidden();
 
         $this->grant('os.work_order.create');
-        $this->postJson('/api/v1/work-orders', ['description' => 'OS Teste'])
-            ->assertStatus(fn ($s) => $s !== 403);
+        $response = $this->postJson('/api/v1/work-orders', ['description' => 'OS Teste']);
+        $this->assertNotEquals(403, $response->status());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -236,8 +235,8 @@ class MiddlewareWithContextTest extends TestCase
         $this->postJson('/api/v1/quotes', ['title' => 'Quote'])->assertForbidden();
 
         $this->grant('quotes.quote.create');
-        $this->postJson('/api/v1/quotes', ['title' => 'Quote'])
-            ->assertStatus(fn ($s) => $s !== 403);
+        $response = $this->postJson('/api/v1/quotes', ['title' => 'Quote']);
+        $this->assertNotEquals(403, $response->status());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -285,8 +284,8 @@ class MiddlewareWithContextTest extends TestCase
         $this->getJson('/api/v1/inmetro/dashboard')->assertForbidden();
 
         $this->grant('inmetro.intelligence.view');
-        $this->getJson('/api/v1/inmetro/dashboard')
-            ->assertStatus(fn ($s) => $s !== 403);
+        $response = $this->getJson('/api/v1/inmetro/dashboard');
+        $this->assertNotEquals(403, $response->status());
     }
 
     // ═══════════════════════════════════════════════════════════════════

@@ -1,10 +1,16 @@
 ---
 name: geo-fundamentals
-description: Generative Engine Optimization for AI search engines (ChatGPT, Claude, Perplexity).
-allowed-tools: Read, Glob, Grep
+description: Generative Engine Optimization ajustado para ERP interno.
+allowed-tools: Read
 ---
 
-# GEO Fundamentals
+# GEO Fundamentals (Private Context)
+
+> **Sistemas fechados não requerem GEO**
+>
+> Não aplique técnicas de otimização de conteúdo para Perplexity, ChatGPT ou Claude em formulários e dashboards fechados do Kalibrium. Seu texto deve ser voltado unicamente para a precisão técnica da operação (`inputs`, `labels` auto-explicativas, `toasts` de erro assertivos).
+>
+> Foque 100% da sua capacidade na usabilidade, manutenibilidade e escalabilidade do React SPA e da API V1.
 
 > Optimization for AI-powered search engines.
 
@@ -153,4 +159,3 @@ How AI engines select content to cite:
 | Script | Purpose | Command |
 |--------|---------|---------|
 | `scripts/geo_checker.py` | GEO audit (AI citation readiness) | `python scripts/geo_checker.py <project_path>` |
-

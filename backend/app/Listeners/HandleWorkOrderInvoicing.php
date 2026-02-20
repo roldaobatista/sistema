@@ -51,22 +51,24 @@ class HandleWorkOrderInvoicing implements ShouldQueue
         }
 
         // 5. Notificar equipe financeira
-        Notification::notify(
-            $wo->tenant_id,
-            $wo->created_by,
-            'os_invoiced',
-            'OS Faturada',
-            [
-                'message' => "A OS {$wo->business_number} (R$ " . number_format((float) $wo->total, 2, ',', '.') . ") foi faturada. Fatura {$result['invoice']->invoice_number} gerada.",
-                'icon' => 'receipt',
-                'color' => 'success',
-                'data' => [
-                    'work_order_id' => $wo->id,
-                    'invoice_id' => $result['invoice']->id,
-                    'account_receivable_id' => $result['ar']->id,
-                ],
-            ]
-        );
+        if ($wo->created_by) {
+            Notification::notify(
+                $wo->tenant_id,
+                $wo->created_by,
+                'os_invoiced',
+                'OS Faturada',
+                [
+                    'message' => "A OS {$wo->business_number} (R$ " . number_format((float) $wo->total, 2, ',', '.') . ") foi faturada. Fatura {$result['invoice']->invoice_number} gerada.",
+                    'icon' => 'receipt',
+                    'color' => 'success',
+                    'data' => [
+                        'work_order_id' => $wo->id,
+                        'invoice_id' => $result['invoice']->id,
+                        'account_receivable_id' => $result['ar']->id,
+                    ],
+                ]
+            );
+        }
     }
 }
 

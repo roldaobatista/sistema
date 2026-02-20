@@ -17,7 +17,7 @@ class ChecklistController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $this->authorize('operational.checklists.view');
+            $this->authorize('technicians.checklist.view');
             
             $checklists = Checklist::query()
                 ->when($request->boolean('active_only'), function ($query) {
@@ -40,7 +40,7 @@ class ChecklistController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            $this->authorize('operational.checklists.create');
+            $this->authorize('technicians.checklist.manage');
 
             \DB::beginTransaction();
 
@@ -76,7 +76,7 @@ class ChecklistController extends Controller
     public function show(Checklist $checklist): JsonResponse
     {
         try {
-            $this->authorize('operational.checklists.view');
+            $this->authorize('technicians.checklist.view');
             return response()->json($checklist);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erro ao visualizar checklist'], 500);
@@ -89,7 +89,7 @@ class ChecklistController extends Controller
     public function update(Request $request, Checklist $checklist): JsonResponse
     {
         try {
-            $this->authorize('operational.checklists.update');
+            $this->authorize('technicians.checklist.manage');
 
             \DB::beginTransaction();
 
@@ -125,7 +125,7 @@ class ChecklistController extends Controller
     public function destroy(Checklist $checklist): JsonResponse
     {
         try {
-            $this->authorize('operational.checklists.delete');
+            $this->authorize('technicians.checklist.manage');
 
             DB::beginTransaction();
             $checklist->delete();

@@ -20,6 +20,7 @@ class UserFactory extends Factory
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'phone' => fake()->phoneNumber(),
             'email_verified_at' => now(),
             // NÃO usar Hash::make — o cast 'hashed' do Model já faz o hash.
             'password' => 'password',
@@ -27,6 +28,7 @@ class UserFactory extends Factory
             'is_active' => true,
             'tenant_id' => null,
             'current_tenant_id' => null,
+            'last_login_at' => null,
         ];
     }
 

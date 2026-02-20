@@ -45,6 +45,7 @@ class CrossModuleFlowProfessionalTest extends TestCase
         $this->user->tenants()->attach($this->tenant->id, ['is_default' => true]);
         $this->customer = Customer::factory()->create([
             'tenant_id' => $this->tenant->id,
+            'document' => '33.000.167/0001-01',
         ]);
 
         app()->instance('current_tenant_id', $this->tenant->id);
@@ -92,7 +93,7 @@ class CrossModuleFlowProfessionalTest extends TestCase
         $custResponse = $this->postJson('/api/v1/customers', [
             'name' => 'Cliente Cadeia Completa',
             'type' => 'PJ',
-            'document' => '12.345.678/0001-90',
+            'document' => '06.990.590/0001-23',
         ]);
         $custResponse->assertCreated();
         $custId = $custResponse->json('data.id') ?? $custResponse->json('id');
@@ -141,10 +142,27 @@ class CrossModuleFlowProfessionalTest extends TestCase
 
     public function test_quote_creation_persists_with_customer(): void
     {
+        $eq = \App\Models\Equipment::factory()->create(['customer_id' => $this->customer->id, 'tenant_id' => $this->tenant->id]);
+        $service = \App\Models\Service::factory()->create(['tenant_id' => $this->tenant->id]);
+
         $response = $this->postJson('/api/v1/quotes', [
             'customer_id' => $this->customer->id,
             'title' => 'Orçamento calibração anual',
             'valid_until' => now()->addDays(30)->format('Y-m-d'),
+            'equipments' => [
+                [
+                    'equipment_id' => $eq->id,
+                    'items' => [
+                        [
+                            'type' => 'service',
+                            'service_id' => $service->id,
+                            'quantity' => 1.0,
+                            'original_price' => 150.00,
+                            'unit_price' => 150.00,
+                        ]
+                    ]
+                ]
+            ],
         ]);
 
         $response->assertCreated();
@@ -165,20 +183,21 @@ class CrossModuleFlowProfessionalTest extends TestCase
         $sc = ServiceCall::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
-            'title' => 'Chamado para converter',
-            'status' => 'open',
+            'observations' => 'Chamado para converter',
+            'status' => 'in_progress',
         ]);
 
         $response = $this->postJson("/api/v1/service-calls/{$sc->id}/convert-to-os");
 
         $response->assertStatus(201);
 
-        $sc->refresh();
-        $this->assertNotNull($sc->work_order_id);
+        $woId = $response->json('data.id') ?? $response->json('id');
+        $this->assertNotNull($woId);
 
         $this->assertDatabaseHas('work_orders', [
-            'id' => $sc->work_order_id,
+            'id' => $woId,
             'customer_id' => $this->customer->id,
+            'service_call_id' => $sc->id,
         ]);
     }
 
@@ -192,7 +211,7 @@ class CrossModuleFlowProfessionalTest extends TestCase
         ]);
 
         $this->deleteJson("/api/v1/customers/{$customer->id}")
-            ->assertOk();
+            ->assertStatus(204);
     }
 
     public function test_delete_customer_with_work_orders_is_restricted(): void
@@ -205,7 +224,7 @@ class CrossModuleFlowProfessionalTest extends TestCase
 
         $response = $this->deleteJson("/api/v1/customers/{$this->customer->id}");
 
-        $response->assertStatus(422);
+        $response->assertStatus(409);
 
         // Customer must still exist
         $this->assertDatabaseHas('customers', ['id' => $this->customer->id]);

@@ -40,6 +40,9 @@ const CACHEABLE_API_PATTERNS = [
   /\/api\/v1\/service-calls/,
   /\/api\/v1\/material-requests/,
   /\/api\/v1\/recurring-contracts/,
+  // Calibration
+  /\/api\/v1\/calibration/,
+  /\/api\/v1\/calibration\/gravity/,
   // Certificates and assets
   /\/api\/v1\/certificate-templates/,
   /\/api\/v1\/asset-tags/,

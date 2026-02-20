@@ -155,6 +155,18 @@
       ]
     },
     {
+      "name": "Calibrações",
+      "short_name": "Calibrar",
+      "description": "Certificados de calibração",
+      "url": "/calibracoes",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "TV Dashboard",
       "short_name": "War Room",
       "description": "Central de monitoramento em tela cheia",

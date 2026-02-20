@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { toast } from 'sonner'
 import { reportSuccess, reportFailure } from '@/lib/api-health'
 
 const _viteApi = (import.meta.env.VITE_API_URL || '').trim()
@@ -34,6 +35,7 @@ api.interceptors.response.use(
 
         if (isNetworkError || isBackendDown) {
             reportFailure()
+            toast.error('Erro de conexão ou sistema indisponível.')
         }
 
         if (status === 401) {
@@ -43,11 +45,19 @@ api.interceptors.response.use(
             localStorage.removeItem('auth-store')
             localStorage.removeItem('portal-auth-store')
             window.location.href = '/login'
-        }
-
-        if (status === 403) {
+        } else if (status === 403) {
             const message = error.response?.data?.message || 'Você não tem permissão para realizar esta ação.'
+            toast.error(message)
             window.dispatchEvent(new CustomEvent('api:forbidden', { detail: { message } }))
+        } else if (status === 422) {
+            // Field validation errors
+            const message = error.response?.data?.message || 'Dados inválidos fornecidos.'
+            toast.error(message)
+        } else if (status >= 500 && !isBackendDown) {
+            toast.error('Ocorreu um erro interno no servidor.')
+        } else if (status && status !== 401 && status !== 403 && status !== 422 && status < 500) {
+            const message = error.response?.data?.message || 'Ocorreu um erro na requisição.'
+            toast.error(message)
         }
 
         return Promise.reject(error)

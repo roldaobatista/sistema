@@ -175,7 +175,7 @@ class CommissionController extends Controller
     {
         $osNumber = $this->osNumberFilter($request);
         $query = CommissionEvent::where('tenant_id', $this->tenantId())
-            ->with(['user:id,name', 'workOrder:id,number,os_number', 'rule:id,name,calculation_type']);
+            ->with(['user:id,name', 'workOrder:id,number,os_number,customer_id', 'rule:id,name,calculation_type']);
 
         if ($userId = $request->get('user_id')) {
             $query->where('user_id', $userId);
@@ -631,7 +631,7 @@ class CommissionController extends Controller
             $tenantId = $this->tenantId();
             $osNumber = $this->osNumberFilter($request);
             $query = CommissionEvent::where('tenant_id', $tenantId)
-                ->with(['user:id,name', 'workOrder:id,number,os_number', 'rule:id,name,calculation_type']);
+                ->with(['user:id,name', 'workOrder:id,number,os_number,customer_id', 'rule:id,name,calculation_type']);
 
             if ($userId = $request->get('user_id')) $query->where('user_id', $userId);
             if ($status = $request->get('status')) $query->where('status', $status);
@@ -700,7 +700,7 @@ class CommissionController extends Controller
 
         $query = CommissionEvent::where('tenant_id', $tenantId)
             ->where('user_id', $validated['user_id'])
-            ->with(['workOrder:id,number,os_number', 'rule:id,name,calculation_type'])
+            ->with(['workOrder:id,number,os_number,customer_id', 'rule:id,name,calculation_type'])
             ->orderBy('created_at');
         $this->wherePeriod($query, 'created_at', $validated['period']);
 

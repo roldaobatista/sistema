@@ -31,18 +31,20 @@ class HandleWorkOrderCancellation implements ShouldQueue
             'notes' => "OS cancelada por {$user->name}. Motivo: {$event->reason}",
         ]);
 
-        Notification::notify(
-            $wo->tenant_id,
-            $wo->created_by,
-            'os_cancelled',
-            'OS Cancelada',
-            [
-                'message' => "A OS {$wo->business_number} foi cancelada. Motivo: {$event->reason}",
-                'icon' => 'x-circle',
-                'color' => 'danger',
-                'data' => ['work_order_id' => $wo->id, 'reason' => $event->reason],
-            ]
-        );
+        if ($wo->created_by) {
+            Notification::notify(
+                $wo->tenant_id,
+                $wo->created_by,
+                'os_cancelled',
+                'OS Cancelada',
+                [
+                    'message' => "A OS {$wo->business_number} foi cancelada. Motivo: {$event->reason}",
+                    'icon' => 'x-circle',
+                    'color' => 'danger',
+                    'data' => ['work_order_id' => $wo->id, 'reason' => $event->reason],
+                ]
+            );
+        }
 
         // Devolver estoque reservado para itens tipo produto (com guard de idempotência)
         $alreadyCancelled = $wo->statusHistory()

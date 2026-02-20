@@ -1097,12 +1097,37 @@ class ReportController extends Controller
     }
     public function export(Request $request, string $type)
     {
-        $allowedTypes = ['equipments', 'suppliers', 'stock', 'customers'];
+        $allowedTypes = [
+            'work-orders', 'productivity', 'financial', 'commissions', 
+            'profitability', 'quotes', 'service-calls', 'technician-cash', 
+            'crm', 'equipments', 'suppliers', 'stock', 'customers'
+        ];
         if (!in_array($type, $allowedTypes, true)) {
             return response()->json([
                 'message' => 'Tipo de relatório inválido para exportação.',
                 'allowed_types' => $allowedTypes,
             ], 422);
+        }
+
+        $permissionMap = [
+            'work-orders' => 'reports.os_report.export',
+            'productivity' => 'reports.productivity_report.export',
+            'financial' => 'reports.financial_report.export',
+            'commissions' => 'reports.commission_report.export',
+            'profitability' => 'reports.margin_report.export',
+            'quotes' => 'reports.quotes_report.export',
+            'service-calls' => 'reports.service_calls_report.export',
+            'technician-cash' => 'reports.technician_cash_report.export',
+            'crm' => 'reports.crm_report.export',
+            'equipments' => 'reports.equipments_report.export',
+            'suppliers' => 'reports.suppliers_report.export',
+            'stock' => 'reports.stock_report.export',
+            'customers' => 'reports.customers_report.export',
+        ];
+
+        // Ensure user has specific report permission or the generic os_report.view as fallback
+        if (!$request->user()->hasPermissionTo($permissionMap[$type]) && !$request->user()->hasPermissionTo('reports.os_report.view')) {
+            abort(403, 'Acesso negado para exportar este relatório.');
         }
 
         try {
@@ -1124,6 +1149,216 @@ class ReportController extends Controller
                 fputs($file, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF))); // Byte Order Mark for Excel
 
                 switch ($type) {
+                    case 'work-orders':
+                        fputcsv($file, ['ID', 'Número OS', 'Status', 'Prioridade', 'Total', 'Criado em', 'Concluído em'], ';');
+                        WorkOrder::where('tenant_id', $tenantId)
+                            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+                            ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->id,
+                                        $item->os_number ?? $item->number,
+                                        $item->status,
+                                        $item->priority,
+                                        $item->total,
+                                        $item->created_at ? Carbon::parse($item->created_at)->format('d/m/Y H:i') : '',
+                                        $item->completed_at ? Carbon::parse($item->completed_at)->format('d/m/Y H:i') : '',
+                                    ], ';');
+                                }
+                            });
+                        break;
+                        
+                    case 'productivity':
+                        fputcsv($file, ['ID Técnico', 'Técnico', 'Minutos Trabalho', 'Minutos Deslocamento', 'Minutos Espera'], ';');
+                        DB::table('time_entries')
+                            ->join('users', 'users.id', '=', 'time_entries.technician_id')
+                            ->whereBetween('time_entries.started_at', [$from, "{$to} 23:59:59"])
+                            ->where('time_entries.tenant_id', $tenantId)
+                            ->whereNull('time_entries.deleted_at')
+                            ->when($branchId, fn($q) => $q->where('users.branch_id', $branchId))
+                            ->select(
+                                'users.id',
+                                'users.name',
+                                DB::raw("SUM(CASE WHEN type = 'work' THEN duration_minutes ELSE 0 END) as work_minutes"),
+                                DB::raw("SUM(CASE WHEN type = 'travel' THEN duration_minutes ELSE 0 END) as travel_minutes"),
+                                DB::raw("SUM(CASE WHEN type = 'waiting' THEN duration_minutes ELSE 0 END) as waiting_minutes")
+                            )
+                            ->groupBy('users.id', 'users.name')
+                            ->orderBy('users.name')
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->id,
+                                        $item->name,
+                                        $item->work_minutes,
+                                        $item->travel_minutes,
+                                        $item->waiting_minutes,
+                                    ], ';');
+                                }
+                            });
+                        break;
+
+                    case 'financial':
+                        fputcsv($file, ['Tipo', 'Categoria/Fornecedor/Cliente', 'Descrição', 'Valor', 'Status', 'Data'], ';');
+                        $arStatsQuery = AccountReceivable::where('tenant_id', $tenantId)
+                            ->whereBetween('due_date', [$from, "{$to} 23:59:59"])
+                            ->with('customer:id,name');
+                        if ($branchId) {
+                            $arStatsQuery->whereHas('workOrder', fn ($wo) => $wo->where('branch_id', $branchId));
+                        }
+                        $arStatsQuery->chunk(500, function ($items) use ($file) {
+                            foreach ($items as $item) {
+                                fputcsv($file, [
+                                    'Receita',
+                                    $item->customer?->name ?? '-',
+                                    $item->description,
+                                    $item->amount,
+                                    $item->status,
+                                    Carbon::parse($item->due_date)->format('d/m/Y'),
+                                ], ';');
+                            }
+                        });
+                        $apStatsQuery = AccountPayable::where('tenant_id', $tenantId)
+                            ->whereBetween('due_date', [$from, "{$to} 23:59:59"])
+                            ->with('supplier:id,name');
+                        $apStatsQuery->chunk(500, function ($items) use ($file) {
+                            foreach ($items as $item) {
+                                fputcsv($file, [
+                                    'Despesa (AP)',
+                                    $item->supplier?->name ?? '-',
+                                    $item->description,
+                                    $item->amount,
+                                    $item->status,
+                                    Carbon::parse($item->due_date)->format('d/m/Y'),
+                                ], ';');
+                            }
+                        });
+                        break;
+
+                    case 'commissions':
+                        fputcsv($file, ['Técnico', 'Qtd Eventos', 'Comissão Pendente', 'Comissão Paga', 'Total Comissão'], ';');
+                        $byTechQuery = CommissionEvent::join('users', 'users.id', '=', 'commission_events.user_id')
+                            ->where('commission_events.tenant_id', $tenantId)
+                            ->whereBetween('commission_events.created_at', [$from, "{$to} 23:59:59"]);
+                        if ($branchId) {
+                            $byTechQuery->join('work_orders as wo_br', 'wo_br.id', '=', 'commission_events.work_order_id')
+                                ->where('wo_br.branch_id', $branchId);
+                        }
+                        $byTechQuery->select(
+                                'users.id',
+                                'users.name',
+                                DB::raw('COUNT(*) as events_count'),
+                                DB::raw("SUM(CASE WHEN commission_events.status = '" . CommissionEvent::STATUS_PENDING . "' THEN commission_amount ELSE 0 END) as pending"),
+                                DB::raw("SUM(CASE WHEN commission_events.status = '" . CommissionEvent::STATUS_PAID . "' THEN commission_amount ELSE 0 END) as paid"),
+                                DB::raw('SUM(commission_amount) as total_commission')
+                            )
+                            ->groupBy('users.id', 'users.name')
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->name,
+                                        $item->events_count,
+                                        $item->pending,
+                                        $item->paid,
+                                        $item->total_commission,
+                                    ], ';');
+                                }
+                            });
+                        break;
+
+                    case 'profitability':
+                        fputcsv($file, ['Aviso'], ';');
+                        fputcsv($file, ['A exportação detalhada de DRE/Margem deve ser feita pelos relatórios financeiros.'], ';');
+                        break;
+                        
+                    case 'quotes':
+                        fputcsv($file, ['ID', 'Vendedor', 'Status', 'Total', 'Criado em'], ';');
+                        Quote::where('quotes.tenant_id', $tenantId)
+                            ->join('users', 'users.id', '=', 'quotes.seller_id')
+                            ->whereBetween('quotes.created_at', [$from, "{$to} 23:59:59"])
+                            ->when($branchId, fn ($q) => $q->where('users.branch_id', $branchId))
+                            ->select('quotes.id', 'users.name as seller_name', 'quotes.status', 'quotes.total', 'quotes.created_at')
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->id,
+                                        $item->seller_name,
+                                        $item->status,
+                                        $item->total,
+                                        Carbon::parse($item->created_at)->format('d/m/Y H:i'),
+                                    ], ';');
+                                }
+                            });
+                        break;
+
+                    case 'service-calls':
+                        fputcsv($file, ['ID', 'Técnico', 'Status', 'Prioridade', 'Criado em'], ';');
+                        ServiceCall::where('service_calls.tenant_id', $tenantId)
+                            ->leftJoin('users', 'users.id', '=', 'service_calls.technician_id')
+                            ->whereBetween('service_calls.created_at', [$from, "{$to} 23:59:59"])
+                            ->when($branchId, fn ($q) => $q->where('users.branch_id', $branchId))
+                            ->select('service_calls.id', 'users.name as tech_name', 'service_calls.status', 'service_calls.priority', 'service_calls.created_at')
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->id,
+                                        $item->tech_name ?? 'Sem técnico',
+                                        $item->status,
+                                        $item->priority,
+                                        Carbon::parse($item->created_at)->format('d/m/Y H:i'),
+                                    ], ';');
+                                }
+                            });
+                        break;
+
+                    case 'technician-cash':
+                        fputcsv($file, ['Técnico', 'Saldo Atual', 'Créditos Período', 'Débitos Período'], ';');
+                        $fundsQuery = TechnicianCashFund::where('tenant_id', $tenantId)->with('technician:id,name,branch_id');
+                        if ($branchId) {
+                            $fundsQuery->whereHas('technician', fn ($q) => $q->where('branch_id', $branchId));
+                        }
+                        $fundsQuery->chunk(500, function ($items) use ($file, $tenantId, $from, $to) {
+                            foreach ($items as $fund) {
+                                $transactions = $fund->transactions()
+                                    ->where('tenant_id', $tenantId)
+                                    ->whereBetween('transaction_date', [$from, "{$to} 23:59:59"]);
+                                
+                                $credits = (clone $transactions)->where('type', \App\Models\TechnicianCashTransaction::TYPE_CREDIT)->sum('amount');
+                                $debits = (clone $transactions)->where('type', \App\Models\TechnicianCashTransaction::TYPE_DEBIT)->sum('amount');
+                                
+                                fputcsv($file, [
+                                    $fund->technician?->name,
+                                    $fund->balance,
+                                    $credits,
+                                    $debits,
+                                ], ';');
+                            }
+                        });
+                        break;
+
+                    case 'crm':
+                        fputcsv($file, ['ID', 'Negócio', 'Vendedor', 'Valor', 'Status', 'Ganho Em', 'Criado Em'], ';');
+                        CrmDeal::where('crm_deals.tenant_id', $tenantId)
+                            ->leftJoin('users', 'users.id', '=', 'crm_deals.assigned_to')
+                            ->whereBetween('crm_deals.created_at', [$from, "{$to} 23:59:59"])
+                            ->when($branchId, fn ($q) => $q->where('users.branch_id', $branchId))
+                            ->select('crm_deals.id', 'crm_deals.title', 'users.name as seller_name', 'crm_deals.value', 'crm_deals.status', 'crm_deals.won_at', 'crm_deals.created_at')
+                            ->chunk(500, function ($items) use ($file) {
+                                foreach ($items as $item) {
+                                    fputcsv($file, [
+                                        $item->id,
+                                        $item->title,
+                                        $item->seller_name,
+                                        $item->value,
+                                        $item->status,
+                                        $item->won_at ? Carbon::parse($item->won_at)->format('d/m/Y H:i') : '',
+                                        Carbon::parse($item->created_at)->format('d/m/Y H:i'),
+                                    ], ';');
+                                }
+                            });
+                        break;
+
                     case 'equipments':
                         fputcsv($file, ['ID', 'Código', 'Cliente', 'Marca', 'Modelo', 'Nº Série', 'Status', 'Próxima Calibração'], ';');
                         $query = Equipment::where('tenant_id', $tenantId)->with('customer:id,name');

@@ -6,6 +6,7 @@ import {
     Briefcase, Package, Plus, Trash2, Pencil, Download, Save, X,
     CheckCircle2, AlertTriangle, Play, Pause, Truck, XCircle,
     DollarSign, CalendarDays, LinkIcon, Upload, Paperclip, Shield, Users, Copy, RotateCcw, Navigation, QrCode, TrendingUp, Layers,
+    FlaskConical,
 } from 'lucide-react'
 import { parseLabelQrPayload } from '@/lib/labelQr'
 import api from '@/lib/api'
@@ -1143,6 +1144,38 @@ export function WorkOrderDetailPage() {
                                     </div>
                                 ))}
                             </div>
+                        )}
+                    </div>
+
+                    {/* Calibrações vinculadas */}
+                    <div className="rounded-xl border border-default bg-surface-0 p-5 shadow-card">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-surface-900">
+                                <FlaskConical className="h-4 w-4 text-green-600" />
+                                Calibrações
+                            </h3>
+                            {order.equipment_id && canUpdate && (
+                                <Button variant="ghost" size="sm" onClick={() => navigate(`/calibracao/wizard/${order.equipment_id}?os=${id}`)} icon={<Plus className="h-4 w-4" />}>
+                                    Iniciar Calibração
+                                </Button>
+                            )}
+                        </div>
+                        {order.calibrations?.length > 0 ? (
+                            <div className="space-y-2">
+                                {order.calibrations.map((cal: any) => (
+                                    <button key={cal.id} type="button" onClick={() => cal.certificate_number ? navigate(`/calibracoes/${cal.id}`) : navigate(`/calibracao/wizard/${cal.equipment_id}/${cal.id}?os=${id}`)} className="w-full text-left flex items-center gap-2 rounded-lg border border-default p-2.5 hover:bg-surface-50 transition-colors">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-surface-800">{cal.certificate_number || 'Rascunho'}</p>
+                                            <p className="text-xs text-surface-400">{cal.calibration_date ? new Date(cal.calibration_date).toLocaleDateString('pt-BR') : '—'} · {cal.result === 'aprovado' ? 'Aprovado' : cal.result === 'reprovado' ? 'Reprovado' : 'Ressalva'}</p>
+                                        </div>
+                                        {cal.certificate_number ? <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" /> : <Clock className="h-4 w-4 text-amber-500 shrink-0" />}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="py-4 text-center text-sm text-surface-400">
+                                {order.equipment_id ? 'Nenhuma calibração vinculada. Clique em "Iniciar Calibração" para começar.' : 'Vincule um equipamento para iniciar uma calibração.'}
+                            </p>
                         )}
                     </div>
 

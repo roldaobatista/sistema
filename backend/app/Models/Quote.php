@@ -38,7 +38,7 @@ class Quote extends Model
         self::STATUS_APPROVED => ['label' => 'Aprovado', 'color' => 'green'],
         self::STATUS_REJECTED => ['label' => 'Rejeitado', 'color' => 'red'],
         self::STATUS_EXPIRED => ['label' => 'Expirado', 'color' => 'amber'],
-        self::STATUS_INVOICED => ['label' => 'Faturado', 'color' => 'purple'],
+        self::STATUS_INVOICED => ['label' => 'Faturado', 'color' => 'indigo'],
     ];
 
     // GAP-03: Commercial source (affects seller commission %)

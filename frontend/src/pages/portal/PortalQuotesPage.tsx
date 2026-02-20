@@ -16,11 +16,11 @@ const statusCfg: Record<string, { label: string; color: string; bg: string; icon
     [QUOTE_STATUS.APPROVED]: { label: 'Aprovado', color: 'text-emerald-600', bg: 'bg-emerald-100', icon: CheckCircle },
     [QUOTE_STATUS.REJECTED]: { label: 'Rejeitado', color: 'text-red-600', bg: 'bg-red-100', icon: XCircle },
     [QUOTE_STATUS.EXPIRED]: { label: 'Expirado', color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
-    [QUOTE_STATUS.INVOICED]: { label: 'Faturado', color: 'text-purple-700', bg: 'bg-purple-100', icon: DollarSign },
+    [QUOTE_STATUS.INVOICED]: { label: 'Faturado', color: 'text-indigo-700', bg: 'bg-indigo-100', icon: DollarSign },
 }
 
 export function PortalQuotesPage() {
-  const { hasPermission } = useAuthStore()
+    const { hasPermission } = useAuthStore()
 
     const qc = useQueryClient()
     const [rejectingId, setRejectingId] = useState<number | null>(null)
@@ -35,7 +35,7 @@ export function PortalQuotesPage() {
         mutationFn: (id: number) => api.post(`/portal/quotes/${id}/status`, { action: 'approve' }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['portal-quotes'] })
+            qc.invalidateQueries({ queryKey: ['portal-quotes'] })
         },
     })
 
@@ -44,7 +44,7 @@ export function PortalQuotesPage() {
             api.post(`/portal/quotes/${id}/status`, { action: 'reject', comments }),
         onSuccess: () => {
             toast.success('Operação realizada com sucesso')
-                qc.invalidateQueries({ queryKey: ['portal-quotes'] })
+            qc.invalidateQueries({ queryKey: ['portal-quotes'] })
         },
     })
 

@@ -370,7 +370,7 @@ class QuoteService
                 'quote_id' => $quote->id,
                 'status' => 'open',
                 'priority' => 'normal',
-                'description' => $quote->observations ?? "Chamado gerado a partir do orçamento {$quote->quote_number}",
+                'observations' => $quote->observations ?? "Chamado gerado a partir do orçamento {$quote->quote_number}",
                 'created_by' => $userId,
             ]);
 

@@ -45,7 +45,7 @@ export const usePortalAuthStore = create<PortalAuthState>()(
                         token: data.token,
                         isAuthenticated: true,
                     })
-                } catch (err: any) {
+                } catch (err: unknown) {
                     set({ isAuthenticated: false, user: null, token: null })
                     throw err
                 } finally {

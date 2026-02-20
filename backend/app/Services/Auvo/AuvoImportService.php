@@ -737,14 +737,21 @@ class AuvoImportService
 
                 $mapped = AuvoFieldMapper::map($record, $fieldMap);
                 $auvoId = AuvoFieldMapper::extractAuvoId($mapped);
+                $existingMapped = null;
 
                 // Check if already mapped
                 if ($auvoId) {
                     $existingLocalId = AuvoIdMapping::findLocal($entity, $auvoId, $import->tenant_id);
-                    if ($existingLocalId && $strategy === 'skip') {
-                        $skipped++;
-                        DB::commit();
-                        continue;
+                    if ($existingLocalId) {
+                        if ($strategy === 'skip') {
+                            $skipped++;
+                            DB::commit();
+                            continue;
+                        } else {
+                            // Pre-load existing record for update strategy via mapping 
+                            // This ensures we don't recreate entities that don't have natural keys
+                            $existingMapped = $modelClass::find($existingLocalId);
+                        }
                     }
                 }
 
@@ -760,8 +767,8 @@ class AuvoImportService
 
                 $data['tenant_id'] = $import->tenant_id;
 
-                // Check for duplicate by natural key
-                $existing = $duplicateFinder($data, $import->tenant_id);
+                // Check for duplicate by natural key (fallback if not mapped yet)
+                $existing = $existingMapped ?? $duplicateFinder($data, $import->tenant_id);
 
                 if ($existing) {
                     if ($strategy === 'skip') {

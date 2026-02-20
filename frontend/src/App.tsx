@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -206,6 +206,7 @@ const AdvancedFeaturesPage = lazy(() => import('@/pages/avancado/AdvancedFeature
 const AlertsPage = lazy(() => import('@/pages/alertas/AlertsPage'))
 const CalibrationReadingsPage = lazy(() => import('@/pages/calibracao/CalibrationReadingsPage'))
 const CalibrationWizardPage = lazy(() => import('@/pages/calibracao/CalibrationWizardPage'))
+const CalibrationListPage = lazy(() => import('@/pages/calibracao/CalibrationListPage'))
 const WhatsAppConfigPage = lazy(() => import('@/pages/configuracoes/WhatsAppConfigPage'))
 const AgingReceivablesPage = lazy(() => import('@/pages/financeiro/AgingReceivablesPage').then(m => ({ default: m.AgingReceivablesPage })))
 const DebtRenegotiationPage = lazy(() => import('@/pages/financeiro/DebtRenegotiationPage'))
@@ -383,6 +384,7 @@ const routePermissionRules: Array<{ match: string; permission: string | null }> 
   { match: '/agenda-calibracoes', permission: 'equipments.equipment.view' },
   { match: '/calibracao/wizard', permission: 'calibration.reading.view' },
   { match: '/calibracao/leituras', permission: 'calibration.reading.view' },
+  { match: '/calibracoes', permission: 'calibration.reading.view' },
   { match: '/estoque/calibracoes-ferramentas', permission: 'calibration.tool.view' },
   { match: '/configuracoes/filiais', permission: 'platform.branch.view' },
   { match: '/configuracoes/empresas', permission: 'platform.tenant.view' },
@@ -509,18 +511,19 @@ function AccessDeniedState({ permission }: { permission: string }) {
   )
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const location = useLocation()
-  const { isAuthenticated, fetchMe, logout, user, hasPermission, hasRole } = useAuthStore()
+function ProtectedLayout() {
+  const { isAuthenticated, fetchMe, logout, user } = useAuthStore()
   const [timedOut, setTimedOut] = useState(false)
+  const fetchedRef = useRef(false)
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !fetchedRef.current) {
+      fetchedRef.current = true
       fetchMe().catch(() => {
         logout()
       })
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, fetchMe, logout])
 
   useEffect(() => {
     if (isAuthenticated && !user) {
@@ -547,18 +550,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
+  return (
+    <AppLayout>
+      <PermissionGate />
+    </AppLayout>
+  )
+}
+
+function PermissionGate() {
+  const location = useLocation()
+  const { hasPermission, hasRole } = useAuthStore()
   const requiredPermission = resolveRequiredPermission(location.pathname)
   const isSuperAdmin = hasRole('super_admin')
 
   if (requiredPermission && !isSuperAdmin && !hasPermissionExpression(requiredPermission, hasPermission)) {
-    return (
-      <AppLayout>
-        <AccessDeniedState permission={requiredPermission} />
-      </AppLayout>
-    )
+    return <AccessDeniedState permission={requiredPermission} />
   }
 
-  return <AppLayout>{children}</AppLayout>
+  return <Outlet />
 }
 
 function GuestRoute({ children }: { children: React.ReactNode }) {
@@ -608,281 +617,222 @@ export default function App() {
                 }
               />
 
-              {/* Rotas autenticadas */}
-              <Route path="/" element={<ProtectedRoute><TechAutoRedirect><DashboardPage /></TechAutoRedirect></ProtectedRoute>} />
-
-              {/* Central (Inbox) */}
-              <Route path="/central" element={<ProtectedRoute><CentralPage /></ProtectedRoute>} />
-              <Route path="/central/kanban" element={<ProtectedRoute><CentralKanbanPage /></ProtectedRoute>} />
-              <Route path="/central/dashboard" element={<ProtectedRoute><CentralDashboardPage /></ProtectedRoute>} />
-              <Route path="/central/regras" element={<ProtectedRoute><CentralRulesPage /></ProtectedRoute>} />
-
-              {/* IAM */}
-              <Route path="/iam/usuarios" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
-              <Route path="/iam/roles" element={<ProtectedRoute><RolesPage /></ProtectedRoute>} />
-              <Route path="/iam/permissoes" element={<ProtectedRoute><PermissionsMatrixPage /></ProtectedRoute>} />
-              <Route path="/admin/audit-log" element={<ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
-
-              {/* Cadastros */}
-              <Route path="/cadastros/clientes" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
-              <Route path="/cadastros/clientes/fusao" element={<ProtectedRoute><CustomerMergePage /></ProtectedRoute>} />
-              <Route path="/cadastros/produtos" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
-              <Route path="/cadastros/servicos" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
-              <Route path="/cadastros/historico-precos" element={<ProtectedRoute><PriceHistoryPage /></ProtectedRoute>} />
-              <Route path="/cadastros/exportacao-lote" element={<ProtectedRoute><BatchExportPage /></ProtectedRoute>} />
-              <Route path="/cadastros/fornecedores" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
-              <Route path="/catalogo" element={<ProtectedRoute><CatalogAdminPage /></ProtectedRoute>} />
-
-              {/* Orçamentos */}
-              <Route path="/orcamentos" element={<ProtectedRoute><QuotesListPage /></ProtectedRoute>} />
-              <Route path="/orcamentos/novo" element={<ProtectedRoute><QuoteCreatePage /></ProtectedRoute>} />
-              <Route path="/orcamentos/:id" element={<ProtectedRoute><QuoteDetailPage /></ProtectedRoute>} />
-              <Route path="/orcamentos/:id/editar" element={<ProtectedRoute><QuoteEditPage /></ProtectedRoute>} />
-
-              {/* Chamados Técnicos */}
-              <Route path="/chamados" element={<ProtectedRoute><ServiceCallsPage /></ProtectedRoute>} />
-              <Route path="/chamados/novo" element={<ProtectedRoute><ServiceCallCreatePage /></ProtectedRoute>} />
-              <Route path="/chamados/kanban" element={<ProtectedRoute><ServiceCallKanbanPage /></ProtectedRoute>} />
-              <Route path="/chamados/dashboard" element={<ProtectedRoute><ServiceCallDashboardPage /></ProtectedRoute>} />
-              <Route path="/chamados/mapa" element={<ProtectedRoute><ServiceCallMapPage /></ProtectedRoute>} />
-              <Route path="/chamados/agenda" element={<ProtectedRoute><TechnicianAgendaPage /></ProtectedRoute>} />
-              <Route path="/chamados/:id" element={<ProtectedRoute><ServiceCallDetailPage /></ProtectedRoute>} />
-              <Route path="/chamados/:id/editar" element={<ProtectedRoute><ServiceCallEditPage /></ProtectedRoute>} />
-
-              {/* Ordens de Serviço */}
-              <Route path="/os" element={<ProtectedRoute><WorkOrdersListPage /></ProtectedRoute>} />
-              <Route path="/os/kanban" element={<ProtectedRoute><WorkOrderKanbanPage /></ProtectedRoute>} />
-              <Route path="/os/nova" element={<ProtectedRoute><WorkOrderCreatePage /></ProtectedRoute>} />
-              <Route path="/os/:id" element={<ProtectedRoute><WorkOrderDetailPage /></ProtectedRoute>} />
-              <Route path="/os/contratos-recorrentes" element={<ProtectedRoute><RecurringContractsPage /></ProtectedRoute>} />
-              <Route path="/os/sla" element={<ProtectedRoute><SlaPoliciesPage /></ProtectedRoute>} />
-              <Route path="/os/sla-dashboard" element={<ProtectedRoute><SlaDashboardPage /></ProtectedRoute>} />
-              <Route path="/os/checklists" element={<ProtectedRoute><ChecklistPage /></ProtectedRoute>} />
-              <Route path="/os/checklists-servico" element={<ProtectedRoute><ServiceChecklistsPage /></ProtectedRoute>} />
-
-              {/* Técnicos */}
-              <Route path="/tecnicos/agenda" element={<ProtectedRoute><SchedulesPage /></ProtectedRoute>} />
-              <Route path="/tecnicos/apontamentos" element={<ProtectedRoute><TimeEntriesPage /></ProtectedRoute>} />
-              <Route path="/tecnicos/caixa" element={<ProtectedRoute><TechnicianCashPage /></ProtectedRoute>} />
-
-              {/* Financeiro */}
-              <Route path="/financeiro" element={<ProtectedRoute><FinanceiroDashboardPage /></ProtectedRoute>} />
-              <Route path="/financeiro/receber" element={<ProtectedRoute><AccountsReceivablePage /></ProtectedRoute>} />
-              <Route path="/financeiro/pagar" element={<ProtectedRoute><AccountsPayablePage /></ProtectedRoute>} />
-              <Route path="/financeiro/comissoes" element={<ProtectedRoute><CommissionsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/comissoes/dashboard" element={<ProtectedRoute><CommissionDashboardPage /></ProtectedRoute>} />
-              <Route path="/financeiro/despesas" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
-              <Route path="/financeiro/abastecimento" element={<ProtectedRoute><FuelingLogsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/pagamentos" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/formas-pagamento" element={<ProtectedRoute><PaymentMethodsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/fluxo-caixa" element={<ProtectedRoute><CashFlowPage /></ProtectedRoute>} />
-              <Route path="/financeiro/fluxo-caixa-semanal" element={<ProtectedRoute><CashFlowWeeklyDashboardPage /></ProtectedRoute>} />
-              <Route path="/financeiro/faturamento" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
-              <Route path="/financeiro/conciliacao-bancaria" element={<ProtectedRoute><BankReconciliationPage /></ProtectedRoute>} />
-              <Route path="/financeiro/regras-conciliacao" element={<ProtectedRoute><ReconciliationRulesPage /></ProtectedRoute>} />
-              <Route path="/financeiro/dashboard-conciliacao" element={<ProtectedRoute><ReconciliationDashboardPage /></ProtectedRoute>} />
-              <Route path="/financeiro/consolidado" element={<ProtectedRoute><ConsolidatedFinancialPage /></ProtectedRoute>} />
-              <Route path="/financeiro/plano-contas" element={<ProtectedRoute><ChartOfAccountsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/categorias-pagar" element={<ProtectedRoute><AccountPayableCategoriesPage /></ProtectedRoute>} />
-              <Route path="/financeiro/contas-bancarias" element={<ProtectedRoute><BankAccountsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/transferencias-tecnicos" element={<ProtectedRoute><FundTransfersPage /></ProtectedRoute>} />
-
-              {/* Fiscal */}
-              <Route path="/fiscal" element={<ProtectedRoute><FiscalDashboardPage /></ProtectedRoute>} />
-              <Route path="/fiscal/notas" element={<ProtectedRoute><FiscalNotesPage /></ProtectedRoute>} />
-              <Route path="/fiscal/configuracoes" element={<ProtectedRoute><FiscalConfigPage /></ProtectedRoute>} />
-
-              {/* Estoque */}
-              <Route path="/estoque" element={<ProtectedRoute><StockDashboardPage /></ProtectedRoute>} />
-              <Route path="/estoque/armazens" element={<ProtectedRoute><WarehousesPage /></ProtectedRoute>} />
-              <Route path="/estoque/movimentacoes" element={<ProtectedRoute><StockMovementsPage /></ProtectedRoute>} />
-              <Route path="/estoque/lotes" element={<ProtectedRoute><BatchManagementPage /></ProtectedRoute>} />
-              <Route path="/estoque/inventarios" element={<ProtectedRoute><InventoryListPage /></ProtectedRoute>} />
-              <Route path="/estoque/inventarios/novo" element={<ProtectedRoute><InventoryCreatePage /></ProtectedRoute>} />
-              <Route path="/estoque/inventarios/:id" element={<ProtectedRoute><InventoryExecutionPage /></ProtectedRoute>} />
-              <Route path="/estoque/inventario-pwa" element={<ProtectedRoute><InventoryPwaListPage /></ProtectedRoute>} />
-              <Route path="/estoque/inventario-pwa/:warehouseId" element={<ProtectedRoute><InventoryPwaCountPage /></ProtectedRoute>} />
-              <Route path="/estoque/kardex" element={<ProtectedRoute><KardexPage /></ProtectedRoute>} />
-              <Route path="/estoque/calibracoes-ferramentas" element={<ProtectedRoute><ToolCalibrationsPage /></ProtectedRoute>} />
-              <Route path="/estoque/inteligencia" element={<ProtectedRoute><StockIntelligencePage /></ProtectedRoute>} />
-              <Route path="/estoque/etiquetas" element={<ProtectedRoute><StockLabelsPage /></ProtectedRoute>} />
-              <Route path="/estoque/integracao" element={<ProtectedRoute><StockIntegrationPage /></ProtectedRoute>} />
-              <Route path="/estoque/transferencias" element={<ProtectedRoute><StockTransfersPage /></ProtectedRoute>} />
-              <Route path="/estoque/pecas-usadas" element={<ProtectedRoute><UsedStockItemsPage /></ProtectedRoute>} />
-              <Route path="/estoque/numeros-serie" element={<ProtectedRoute><SerialNumbersPage /></ProtectedRoute>} />
-
-              {/* Relatórios */}
-              <Route path="/relatorios" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><AnalyticsHubPage /></ProtectedRoute>} />
-              <Route path="/notificacoes" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-
-              {/* Importação */}
-              <Route path="/importacao" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
-              <Route path="/integracao/auvo" element={<ProtectedRoute><AuvoImportPage /></ProtectedRoute>} />
-
-              {/* Email Integration */}
-              <Route path="/emails" element={<ProtectedRoute><EmailInboxPage /></ProtectedRoute>} />
-              <Route path="/emails/compose" element={<ProtectedRoute><EmailComposePage /></ProtectedRoute>} />
-              <Route path="/emails/configuracoes" element={<ProtectedRoute><EmailSettingsPage /></ProtectedRoute>} />
-
-              {/* Inteligência INMETRO */}
-              <Route path="/inmetro" element={<ProtectedRoute><InmetroDashboardPage /></ProtectedRoute>} />
-              <Route path="/inmetro/leads" element={<ProtectedRoute><InmetroLeadsPage /></ProtectedRoute>} />
-              <Route path="/inmetro/instrumentos" element={<ProtectedRoute><InmetroInstrumentsPage /></ProtectedRoute>} />
-              <Route path="/inmetro/importacao" element={<ProtectedRoute><InmetroImportPage /></ProtectedRoute>} />
-              <Route path="/inmetro/concorrentes" element={<ProtectedRoute><InmetroCompetitorPage /></ProtectedRoute>} />
-              <Route path="/inmetro/owners/:id" element={<ProtectedRoute><InmetroOwnerDetailPage /></ProtectedRoute>} />
-              <Route path="/inmetro/mapa" element={<ProtectedRoute><InmetroMapPage /></ProtectedRoute>} />
-              <Route path="/inmetro/mercado" element={<ProtectedRoute><InmetroMarketPage /></ProtectedRoute>} />
-              <Route path="/inmetro/prospeccao" element={<ProtectedRoute><InmetroProspectionPage /></ProtectedRoute>} />
-              <Route path="/inmetro/executivo" element={<ProtectedRoute><InmetroExecutivePage /></ProtectedRoute>} />
-              <Route path="/inmetro/compliance" element={<ProtectedRoute><InmetroCompliancePage /></ProtectedRoute>} />
-              <Route path="/inmetro/webhooks" element={<ProtectedRoute><InmetroWebhooksPage /></ProtectedRoute>} />
-              <Route path="/inmetro/selos" element={<ProtectedRoute><InmetroSealManagement /></ProtectedRoute>} />
-              <Route path="/inmetro/relatorio-selos" element={<ProtectedRoute><InmetroSealReportPage /></ProtectedRoute>} />
-
-              {/* Equipamentos */}
-              <Route path="/equipamentos" element={<ProtectedRoute><EquipmentListPage /></ProtectedRoute>} />
-              <Route path="/equipamentos/modelos" element={<ProtectedRoute><EquipmentModelsPage /></ProtectedRoute>} />
-              <Route path="/equipamentos/novo" element={<ProtectedRoute><EquipmentCreatePage /></ProtectedRoute>} />
-              <Route path="/equipamentos/pesos-padrao" element={<ProtectedRoute><StandardWeightsPage /></ProtectedRoute>} />
-              <Route path="/equipamentos/atribuicao-pesos" element={<ProtectedRoute><WeightAssignmentsPage /></ProtectedRoute>} />
-              <Route path="/equipamentos/:id" element={<ProtectedRoute><EquipmentDetailPage /></ProtectedRoute>} />
-              <Route path="/equipamentos/:id/editar" element={<ProtectedRoute><EquipmentEditPage /></ProtectedRoute>} />
-              <Route path="/agenda-calibracoes" element={<ProtectedRoute><EquipmentCalendarPage /></ProtectedRoute>} />
-
-              {/* Configurações */}
-              <Route path="/configuracoes" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="/configuracoes/cadastros-auxiliares" element={<ProtectedRoute><LookupsPage /></ProtectedRoute>} />
-              <Route path="/configuracoes/filiais" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
-              <Route path="/configuracoes/empresas" element={<ProtectedRoute><TenantManagementPage /></ProtectedRoute>} />
-              <Route path="/configuracoes/auditoria" element={<ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
-              <Route path="/configuracoes/logs-auditoria" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
-              <Route path="/perfil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-
-              {/* CRM */}
-              <Route path="/crm" element={<ProtectedRoute><CrmDashboardPage /></ProtectedRoute>} />
-              <Route path="/crm/pipeline/:id" element={<ProtectedRoute><CrmPipelinePage /></ProtectedRoute>} />
-              <Route path="/crm/pipeline" element={<ProtectedRoute><CrmPipelinePage /></ProtectedRoute>} />
-              <Route path="/cadastros/clientes/:id" element={<ProtectedRoute><Customer360Page /></ProtectedRoute>} />
-              <Route path="/crm/clientes/:id" element={<ProtectedRoute><Customer360Page /></ProtectedRoute>} />
-              <Route path="/crm/templates" element={<ProtectedRoute><MessageTemplatesPage /></ProtectedRoute>} />
-              <Route path="/crm/forecast" element={<ProtectedRoute><CrmForecastPage /></ProtectedRoute>} />
-              <Route path="/crm/goals" element={<ProtectedRoute><CrmGoalsPage /></ProtectedRoute>} />
-              <Route path="/crm/alerts" element={<ProtectedRoute><CrmAlertsPage /></ProtectedRoute>} />
-              <Route path="/crm/calendar" element={<ProtectedRoute><CrmCalendarPage /></ProtectedRoute>} />
-              <Route path="/crm/scoring" element={<ProtectedRoute><CrmScoringPage /></ProtectedRoute>} />
-              <Route path="/crm/sequences" element={<ProtectedRoute><CrmSequencesPage /></ProtectedRoute>} />
-              <Route path="/crm/loss-analytics" element={<ProtectedRoute><CrmLossAnalyticsPage /></ProtectedRoute>} />
-              <Route path="/crm/territories" element={<ProtectedRoute><CrmTerritoriesPage /></ProtectedRoute>} />
-              <Route path="/crm/renewals" element={<ProtectedRoute><CrmRenewalsPage /></ProtectedRoute>} />
-              <Route path="/crm/referrals" element={<ProtectedRoute><CrmReferralsPage /></ProtectedRoute>} />
-              <Route path="/crm/web-forms" element={<ProtectedRoute><CrmWebFormsPage /></ProtectedRoute>} />
-              <Route path="/crm/revenue" element={<ProtectedRoute><CrmRevenueIntelligencePage /></ProtectedRoute>} />
-              <Route path="/crm/competitors" element={<ProtectedRoute><CrmCompetitorsPage /></ProtectedRoute>} />
-              <Route path="/crm/velocity" element={<ProtectedRoute><CrmVelocityPage /></ProtectedRoute>} />
-              <Route path="/crm/cohort" element={<ProtectedRoute><CrmCohortPage /></ProtectedRoute>} />
-              <Route path="/crm/proposals" element={<ProtectedRoute><CrmProposalsPage /></ProtectedRoute>} />
-
-              {/* CRM Field Management (20 novas funcionalidades) */}
-              <Route path="/crm/visit-checkins" element={<ProtectedRoute><CrmVisitCheckinsPage /></ProtectedRoute>} />
-              <Route path="/crm/visit-routes" element={<ProtectedRoute><CrmVisitRoutesPage /></ProtectedRoute>} />
-              <Route path="/crm/visit-reports" element={<ProtectedRoute><CrmVisitReportsPage /></ProtectedRoute>} />
-              <Route path="/crm/portfolio-map" element={<ProtectedRoute><CrmPortfolioMapPage /></ProtectedRoute>} />
-              <Route path="/crm/forgotten-clients" element={<ProtectedRoute><CrmForgottenClientsPage /></ProtectedRoute>} />
-              <Route path="/crm/contact-policies" element={<ProtectedRoute><CrmContactPoliciesPage /></ProtectedRoute>} />
-              <Route path="/crm/smart-agenda" element={<ProtectedRoute><CrmSmartAgendaPage /></ProtectedRoute>} />
-              <Route path="/crm/post-visit-workflow" element={<ProtectedRoute><CrmPostVisitWorkflowPage /></ProtectedRoute>} />
-              <Route path="/crm/quick-notes" element={<ProtectedRoute><CrmQuickNotesPage /></ProtectedRoute>} />
-              <Route path="/crm/commitments" element={<ProtectedRoute><CrmCommitmentsPage /></ProtectedRoute>} />
-              <Route path="/crm/negotiation-history" element={<ProtectedRoute><CrmNegotiationHistoryPage /></ProtectedRoute>} />
-              <Route path="/crm/client-summary" element={<ProtectedRoute><CrmClientSummaryPage /></ProtectedRoute>} />
-              <Route path="/crm/rfm" element={<ProtectedRoute><CrmRfmPage /></ProtectedRoute>} />
-              <Route path="/crm/coverage" element={<ProtectedRoute><CrmCoveragePage /></ProtectedRoute>} />
-              <Route path="/crm/productivity" element={<ProtectedRoute><CrmProductivityPage /></ProtectedRoute>} />
-              <Route path="/crm/opportunities" element={<ProtectedRoute><CrmOpportunitiesPage /></ProtectedRoute>} />
-              <Route path="/crm/important-dates" element={<ProtectedRoute><CrmImportantDatesPage /></ProtectedRoute>} />
-              <Route path="/crm/visit-surveys" element={<ProtectedRoute><CrmVisitSurveysPage /></ProtectedRoute>} />
-              <Route path="/crm/account-plans" element={<ProtectedRoute><CrmAccountPlansPage /></ProtectedRoute>} />
-              <Route path="/crm/gamification" element={<ProtectedRoute><CrmGamificationPage /></ProtectedRoute>} />
-              <Route path="/crm/nps" element={<ProtectedRoute><CrmNpsDashboardPage /></ProtectedRoute>} />
-
-              {/* Frota */}
-              <Route path="/frota" element={<ProtectedRoute><FleetPage /></ProtectedRoute>} />
-
-              {/* RH */}
-              <Route path="/rh" element={<ProtectedRoute><HRPage /></ProtectedRoute>} />
-              <Route path="/rh/ponto" element={<ProtectedRoute><ClockInPage /></ProtectedRoute>} />
-              <Route path="/rh/geofences" element={<ProtectedRoute><GeofenceLocationsPage /></ProtectedRoute>} />
-              <Route path="/rh/ajustes-ponto" element={<ProtectedRoute><ClockAdjustmentsPage /></ProtectedRoute>} />
-              <Route path="/rh/jornada" element={<ProtectedRoute><JourneyPage /></ProtectedRoute>} />
-              <Route path="/rh/jornada/regras" element={<ProtectedRoute><JourneyRulesPage /></ProtectedRoute>} />
-              <Route path="/rh/feriados" element={<ProtectedRoute><HolidaysPage /></ProtectedRoute>} />
-              <Route path="/rh/ferias" element={<ProtectedRoute><LeavesPage /></ProtectedRoute>} />
-              <Route path="/rh/saldo-ferias" element={<ProtectedRoute><VacationBalancePage /></ProtectedRoute>} />
-              <Route path="/rh/documentos" element={<ProtectedRoute><EmployeeDocumentsPage /></ProtectedRoute>} />
-              <Route path="/rh/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-              <Route path="/rh/organograma" element={<ProtectedRoute><OrgChartPage /></ProtectedRoute>} />
-              <Route path="/rh/skills" element={<ProtectedRoute><SkillsMatrixPage /></ProtectedRoute>} />
-              <Route path="/rh/desempenho" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
-              <Route path="/rh/desempenho/:id" element={<ProtectedRoute><PerformanceReviewDetailPage /></ProtectedRoute>} />
-              <Route path="/rh/beneficios" element={<ProtectedRoute><BenefitsPage /></ProtectedRoute>} />
-              <Route path="/rh/recrutamento" element={<ProtectedRoute><RecruitmentPage /></ProtectedRoute>} />
-              <Route path="/rh/recrutamento/:id" element={<ProtectedRoute><RecruitmentKanbanPage /></ProtectedRoute>} />
-              <Route path="/rh/analytics" element={<ProtectedRoute><PeopleAnalyticsPage /></ProtectedRoute>} />
-              <Route path="/rh/relatorios" element={<ProtectedRoute><AccountingReportsPage /></ProtectedRoute>} />
-
-              {/* Qualidade */}
-              <Route path="/qualidade" element={<ProtectedRoute><QualityPage /></ProtectedRoute>} />
-              <Route path="/qualidade/auditorias" element={<ProtectedRoute><QualityAuditsPage /></ProtectedRoute>} />
-              <Route path="/qualidade/documentos" element={<ProtectedRoute><IsoDocumentsPage /></ProtectedRoute>} />
-              <Route path="/qualidade/revisao-direcao" element={<ProtectedRoute><ManagementReviewPage /></ProtectedRoute>} />
-
-              {/* Alertas */}
-              <Route path="/alertas" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
-
-              {/* Calibração — Leituras para certificado */}
-              <Route path="/calibracao/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
-              <Route path="/calibracao/:calibrationId/leituras" element={<ProtectedRoute><CalibrationReadingsPage /></ProtectedRoute>} />
-              <Route path="/calibracao/wizard/:equipmentId" element={<ProtectedRoute><CalibrationWizardPage /></ProtectedRoute>} />
-              <Route path="/calibracao/wizard/:equipmentId/:calibrationId" element={<ProtectedRoute><CalibrationWizardPage /></ProtectedRoute>} />
-              <Route path="/calibracao/templates" element={<ProtectedRoute><CertificateTemplatesPage /></ProtectedRoute>} />
-
-              {/* Configurações — WhatsApp */}
-              <Route path="/configuracoes/whatsapp" element={<ProtectedRoute><WhatsAppConfigPage /></ProtectedRoute>} />
-              <Route path="/configuracoes/whatsapp/logs" element={<ProtectedRoute><WhatsAppLogPage /></ProtectedRoute>} />
-
-              {/* Financeiro — Cobrança Automática */}
-              <Route path="/financeiro/regua-cobranca" element={<ProtectedRoute><AgingReceivablesPage /></ProtectedRoute>} />
-              <Route path="/financeiro/cobranca-automatica" element={<ProtectedRoute><CollectionAutomationPage /></ProtectedRoute>} />
-
-              {/* Financeiro — Renegociação */}
-              <Route path="/financeiro/renegociacao" element={<ProtectedRoute><DebtRenegotiationPage /></ProtectedRoute>} />
-              <Route path="/financeiro/reembolsos" element={<ProtectedRoute><ExpenseReimbursementsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/cheques" element={<ProtectedRoute><FinancialChecksPage /></ProtectedRoute>} />
-              <Route path="/financeiro/contratos-fornecedores" element={<ProtectedRoute><SupplierContractsPage /></ProtectedRoute>} />
-              <Route path="/financeiro/adiantamentos-fornecedores" element={<ProtectedRoute><SupplierAdvancesPage /></ProtectedRoute>} />
-              <Route path="/financeiro/simulador-recebiveis" element={<ProtectedRoute><ReceivablesSimulatorPage /></ProtectedRoute>} />
-              <Route path="/financeiro/aprovacao-lote" element={<ProtectedRoute><BatchPaymentApprovalPage /></ProtectedRoute>} />
-              <Route path="/financeiro/alocacao-despesas" element={<ProtectedRoute><ExpenseAllocationPage /></ProtectedRoute>} />
-              <Route path="/financeiro/calculadora-tributos" element={<ProtectedRoute><TaxCalculatorPage /></ProtectedRoute>} />
-              <Route path="/financeiro/dre" element={<ProtectedRoute><DrePage /></ProtectedRoute>} />
-
-              {/* Automação */}
-              <Route path="/automacao" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
-
-              {/* Avançado */}
-              <Route path="/avancado" element={<ProtectedRoute><AdvancedFeaturesPage /></ProtectedRoute>} />
-
-              {/* IA & Análise */}
-              <Route path="/ia" element={<ProtectedRoute><AIAnalyticsPage /></ProtectedRoute>} />
-
-              {/* TV Dashboard (Wallboard) */}
-              <Route path="/tv/dashboard" element={<ProtectedRoute><TvDashboard /></ProtectedRoute>} />
-              <Route path="/tv/cameras" element={<ProtectedRoute><TvCamerasPage /></ProtectedRoute>} />
-
-              {/* PWA Share Target */}
-              <Route path="/share" element={<ProtectedRoute><ShareTargetPage /></ProtectedRoute>} />
+              {/* Rotas autenticadas — layout único (não re-monta a cada navegação) */}
+              <Route element={<ProtectedLayout />}>
+                <Route path="/" element={<TechAutoRedirect><DashboardPage /></TechAutoRedirect>} />
+                <Route path="/central" element={<CentralPage />} />
+                <Route path="/central/kanban" element={<CentralKanbanPage />} />
+                <Route path="/central/dashboard" element={<CentralDashboardPage />} />
+                <Route path="/central/regras" element={<CentralRulesPage />} />
+                <Route path="/iam/usuarios" element={<UsersPage />} />
+                <Route path="/iam/roles" element={<RolesPage />} />
+                <Route path="/iam/permissoes" element={<PermissionsMatrixPage />} />
+                <Route path="/admin/audit-log" element={<AuditLogPage />} />
+                <Route path="/cadastros/clientes" element={<CustomersPage />} />
+                <Route path="/cadastros/clientes/fusao" element={<CustomerMergePage />} />
+                <Route path="/cadastros/clientes/:id" element={<Customer360Page />} />
+                <Route path="/cadastros/produtos" element={<ProductsPage />} />
+                <Route path="/cadastros/servicos" element={<ServicesPage />} />
+                <Route path="/cadastros/historico-precos" element={<PriceHistoryPage />} />
+                <Route path="/cadastros/exportacao-lote" element={<BatchExportPage />} />
+                <Route path="/cadastros/fornecedores" element={<SuppliersPage />} />
+                <Route path="/catalogo" element={<CatalogAdminPage />} />
+                <Route path="/orcamentos" element={<QuotesListPage />} />
+                <Route path="/orcamentos/novo" element={<QuoteCreatePage />} />
+                <Route path="/orcamentos/:id" element={<QuoteDetailPage />} />
+                <Route path="/orcamentos/:id/editar" element={<QuoteEditPage />} />
+                <Route path="/chamados" element={<ServiceCallsPage />} />
+                <Route path="/chamados/novo" element={<ServiceCallCreatePage />} />
+                <Route path="/chamados/kanban" element={<ServiceCallKanbanPage />} />
+                <Route path="/chamados/dashboard" element={<ServiceCallDashboardPage />} />
+                <Route path="/chamados/mapa" element={<ServiceCallMapPage />} />
+                <Route path="/chamados/agenda" element={<TechnicianAgendaPage />} />
+                <Route path="/chamados/:id" element={<ServiceCallDetailPage />} />
+                <Route path="/chamados/:id/editar" element={<ServiceCallEditPage />} />
+                <Route path="/os" element={<WorkOrdersListPage />} />
+                <Route path="/os/kanban" element={<WorkOrderKanbanPage />} />
+                <Route path="/os/nova" element={<WorkOrderCreatePage />} />
+                <Route path="/os/:id" element={<WorkOrderDetailPage />} />
+                <Route path="/os/contratos-recorrentes" element={<RecurringContractsPage />} />
+                <Route path="/os/sla" element={<SlaPoliciesPage />} />
+                <Route path="/os/sla-dashboard" element={<SlaDashboardPage />} />
+                <Route path="/os/checklists" element={<ChecklistPage />} />
+                <Route path="/os/checklists-servico" element={<ServiceChecklistsPage />} />
+                <Route path="/tecnicos/agenda" element={<SchedulesPage />} />
+                <Route path="/tecnicos/apontamentos" element={<TimeEntriesPage />} />
+                <Route path="/tecnicos/caixa" element={<TechnicianCashPage />} />
+                <Route path="/financeiro" element={<FinanceiroDashboardPage />} />
+                <Route path="/financeiro/receber" element={<AccountsReceivablePage />} />
+                <Route path="/financeiro/pagar" element={<AccountsPayablePage />} />
+                <Route path="/financeiro/comissoes" element={<CommissionsPage />} />
+                <Route path="/financeiro/comissoes/dashboard" element={<CommissionDashboardPage />} />
+                <Route path="/financeiro/despesas" element={<ExpensesPage />} />
+                <Route path="/financeiro/abastecimento" element={<FuelingLogsPage />} />
+                <Route path="/financeiro/pagamentos" element={<PaymentsPage />} />
+                <Route path="/financeiro/formas-pagamento" element={<PaymentMethodsPage />} />
+                <Route path="/financeiro/fluxo-caixa" element={<CashFlowPage />} />
+                <Route path="/financeiro/fluxo-caixa-semanal" element={<CashFlowWeeklyDashboardPage />} />
+                <Route path="/financeiro/faturamento" element={<InvoicesPage />} />
+                <Route path="/financeiro/conciliacao-bancaria" element={<BankReconciliationPage />} />
+                <Route path="/financeiro/regras-conciliacao" element={<ReconciliationRulesPage />} />
+                <Route path="/financeiro/dashboard-conciliacao" element={<ReconciliationDashboardPage />} />
+                <Route path="/financeiro/consolidado" element={<ConsolidatedFinancialPage />} />
+                <Route path="/financeiro/plano-contas" element={<ChartOfAccountsPage />} />
+                <Route path="/financeiro/categorias-pagar" element={<AccountPayableCategoriesPage />} />
+                <Route path="/financeiro/contas-bancarias" element={<BankAccountsPage />} />
+                <Route path="/financeiro/transferencias-tecnicos" element={<FundTransfersPage />} />
+                <Route path="/fiscal" element={<FiscalDashboardPage />} />
+                <Route path="/fiscal/notas" element={<FiscalNotesPage />} />
+                <Route path="/fiscal/configuracoes" element={<FiscalConfigPage />} />
+                <Route path="/estoque" element={<StockDashboardPage />} />
+                <Route path="/estoque/armazens" element={<WarehousesPage />} />
+                <Route path="/estoque/movimentacoes" element={<StockMovementsPage />} />
+                <Route path="/estoque/lotes" element={<BatchManagementPage />} />
+                <Route path="/estoque/inventarios" element={<InventoryListPage />} />
+                <Route path="/estoque/inventarios/novo" element={<InventoryCreatePage />} />
+                <Route path="/estoque/inventarios/:id" element={<InventoryExecutionPage />} />
+                <Route path="/estoque/inventario-pwa" element={<InventoryPwaListPage />} />
+                <Route path="/estoque/inventario-pwa/:warehouseId" element={<InventoryPwaCountPage />} />
+                <Route path="/estoque/kardex" element={<KardexPage />} />
+                <Route path="/estoque/calibracoes-ferramentas" element={<ToolCalibrationsPage />} />
+                <Route path="/estoque/inteligencia" element={<StockIntelligencePage />} />
+                <Route path="/estoque/etiquetas" element={<StockLabelsPage />} />
+                <Route path="/estoque/integracao" element={<StockIntegrationPage />} />
+                <Route path="/estoque/transferencias" element={<StockTransfersPage />} />
+                <Route path="/estoque/pecas-usadas" element={<UsedStockItemsPage />} />
+                <Route path="/estoque/numeros-serie" element={<SerialNumbersPage />} />
+                <Route path="/relatorios" element={<ReportsPage />} />
+                <Route path="/analytics" element={<AnalyticsHubPage />} />
+                <Route path="/notificacoes" element={<NotificationsPage />} />
+                <Route path="/importacao" element={<ImportPage />} />
+                <Route path="/integracao/auvo" element={<AuvoImportPage />} />
+                <Route path="/emails" element={<EmailInboxPage />} />
+                <Route path="/emails/compose" element={<EmailComposePage />} />
+                <Route path="/emails/configuracoes" element={<EmailSettingsPage />} />
+                <Route path="/inmetro" element={<InmetroDashboardPage />} />
+                <Route path="/inmetro/leads" element={<InmetroLeadsPage />} />
+                <Route path="/inmetro/instrumentos" element={<InmetroInstrumentsPage />} />
+                <Route path="/inmetro/importacao" element={<InmetroImportPage />} />
+                <Route path="/inmetro/concorrentes" element={<InmetroCompetitorPage />} />
+                <Route path="/inmetro/owners/:id" element={<InmetroOwnerDetailPage />} />
+                <Route path="/inmetro/mapa" element={<InmetroMapPage />} />
+                <Route path="/inmetro/mercado" element={<InmetroMarketPage />} />
+                <Route path="/inmetro/prospeccao" element={<InmetroProspectionPage />} />
+                <Route path="/inmetro/executivo" element={<InmetroExecutivePage />} />
+                <Route path="/inmetro/compliance" element={<InmetroCompliancePage />} />
+                <Route path="/inmetro/webhooks" element={<InmetroWebhooksPage />} />
+                <Route path="/inmetro/selos" element={<InmetroSealManagement />} />
+                <Route path="/inmetro/relatorio-selos" element={<InmetroSealReportPage />} />
+                <Route path="/equipamentos" element={<EquipmentListPage />} />
+                <Route path="/equipamentos/modelos" element={<EquipmentModelsPage />} />
+                <Route path="/equipamentos/novo" element={<EquipmentCreatePage />} />
+                <Route path="/equipamentos/pesos-padrao" element={<StandardWeightsPage />} />
+                <Route path="/equipamentos/atribuicao-pesos" element={<WeightAssignmentsPage />} />
+                <Route path="/equipamentos/:id" element={<EquipmentDetailPage />} />
+                <Route path="/equipamentos/:id/editar" element={<EquipmentEditPage />} />
+                <Route path="/agenda-calibracoes" element={<EquipmentCalendarPage />} />
+                <Route path="/configuracoes" element={<SettingsPage />} />
+                <Route path="/configuracoes/cadastros-auxiliares" element={<LookupsPage />} />
+                <Route path="/configuracoes/filiais" element={<BranchesPage />} />
+                <Route path="/configuracoes/empresas" element={<TenantManagementPage />} />
+                <Route path="/configuracoes/auditoria" element={<AuditLogPage />} />
+                <Route path="/configuracoes/logs-auditoria" element={<AuditLogsPage />} />
+                <Route path="/configuracoes/whatsapp" element={<WhatsAppConfigPage />} />
+                <Route path="/configuracoes/whatsapp/logs" element={<WhatsAppLogPage />} />
+                <Route path="/perfil" element={<ProfilePage />} />
+                <Route path="/crm" element={<CrmDashboardPage />} />
+                <Route path="/crm/pipeline/:id" element={<CrmPipelinePage />} />
+                <Route path="/crm/pipeline" element={<CrmPipelinePage />} />
+                <Route path="/crm/clientes/:id" element={<Customer360Page />} />
+                <Route path="/crm/templates" element={<MessageTemplatesPage />} />
+                <Route path="/crm/forecast" element={<CrmForecastPage />} />
+                <Route path="/crm/goals" element={<CrmGoalsPage />} />
+                <Route path="/crm/alerts" element={<CrmAlertsPage />} />
+                <Route path="/crm/calendar" element={<CrmCalendarPage />} />
+                <Route path="/crm/scoring" element={<CrmScoringPage />} />
+                <Route path="/crm/sequences" element={<CrmSequencesPage />} />
+                <Route path="/crm/loss-analytics" element={<CrmLossAnalyticsPage />} />
+                <Route path="/crm/territories" element={<CrmTerritoriesPage />} />
+                <Route path="/crm/renewals" element={<CrmRenewalsPage />} />
+                <Route path="/crm/referrals" element={<CrmReferralsPage />} />
+                <Route path="/crm/web-forms" element={<CrmWebFormsPage />} />
+                <Route path="/crm/revenue" element={<CrmRevenueIntelligencePage />} />
+                <Route path="/crm/competitors" element={<CrmCompetitorsPage />} />
+                <Route path="/crm/velocity" element={<CrmVelocityPage />} />
+                <Route path="/crm/cohort" element={<CrmCohortPage />} />
+                <Route path="/crm/proposals" element={<CrmProposalsPage />} />
+                <Route path="/crm/visit-checkins" element={<CrmVisitCheckinsPage />} />
+                <Route path="/crm/visit-routes" element={<CrmVisitRoutesPage />} />
+                <Route path="/crm/visit-reports" element={<CrmVisitReportsPage />} />
+                <Route path="/crm/portfolio-map" element={<CrmPortfolioMapPage />} />
+                <Route path="/crm/forgotten-clients" element={<CrmForgottenClientsPage />} />
+                <Route path="/crm/contact-policies" element={<CrmContactPoliciesPage />} />
+                <Route path="/crm/smart-agenda" element={<CrmSmartAgendaPage />} />
+                <Route path="/crm/post-visit-workflow" element={<CrmPostVisitWorkflowPage />} />
+                <Route path="/crm/quick-notes" element={<CrmQuickNotesPage />} />
+                <Route path="/crm/commitments" element={<CrmCommitmentsPage />} />
+                <Route path="/crm/negotiation-history" element={<CrmNegotiationHistoryPage />} />
+                <Route path="/crm/client-summary" element={<CrmClientSummaryPage />} />
+                <Route path="/crm/rfm" element={<CrmRfmPage />} />
+                <Route path="/crm/coverage" element={<CrmCoveragePage />} />
+                <Route path="/crm/productivity" element={<CrmProductivityPage />} />
+                <Route path="/crm/opportunities" element={<CrmOpportunitiesPage />} />
+                <Route path="/crm/important-dates" element={<CrmImportantDatesPage />} />
+                <Route path="/crm/visit-surveys" element={<CrmVisitSurveysPage />} />
+                <Route path="/crm/account-plans" element={<CrmAccountPlansPage />} />
+                <Route path="/crm/gamification" element={<CrmGamificationPage />} />
+                <Route path="/crm/nps" element={<CrmNpsDashboardPage />} />
+                <Route path="/frota" element={<FleetPage />} />
+                <Route path="/rh" element={<HRPage />} />
+                <Route path="/rh/ponto" element={<ClockInPage />} />
+                <Route path="/rh/geofences" element={<GeofenceLocationsPage />} />
+                <Route path="/rh/ajustes-ponto" element={<ClockAdjustmentsPage />} />
+                <Route path="/rh/jornada" element={<JourneyPage />} />
+                <Route path="/rh/jornada/regras" element={<JourneyRulesPage />} />
+                <Route path="/rh/feriados" element={<HolidaysPage />} />
+                <Route path="/rh/ferias" element={<LeavesPage />} />
+                <Route path="/rh/saldo-ferias" element={<VacationBalancePage />} />
+                <Route path="/rh/documentos" element={<EmployeeDocumentsPage />} />
+                <Route path="/rh/onboarding" element={<OnboardingPage />} />
+                <Route path="/rh/organograma" element={<OrgChartPage />} />
+                <Route path="/rh/skills" element={<SkillsMatrixPage />} />
+                <Route path="/rh/desempenho" element={<PerformancePage />} />
+                <Route path="/rh/desempenho/:id" element={<PerformanceReviewDetailPage />} />
+                <Route path="/rh/beneficios" element={<BenefitsPage />} />
+                <Route path="/rh/recrutamento" element={<RecruitmentPage />} />
+                <Route path="/rh/recrutamento/:id" element={<RecruitmentKanbanPage />} />
+                <Route path="/rh/analytics" element={<PeopleAnalyticsPage />} />
+                <Route path="/rh/relatorios" element={<AccountingReportsPage />} />
+                <Route path="/qualidade" element={<QualityPage />} />
+                <Route path="/qualidade/auditorias" element={<QualityAuditsPage />} />
+                <Route path="/qualidade/documentos" element={<IsoDocumentsPage />} />
+                <Route path="/qualidade/revisao-direcao" element={<ManagementReviewPage />} />
+                <Route path="/alertas" element={<AlertsPage />} />
+                <Route path="/calibracoes" element={<CalibrationListPage />} />
+                <Route path="/calibracao/leituras" element={<CalibrationReadingsPage />} />
+                <Route path="/calibracao/:calibrationId/leituras" element={<CalibrationReadingsPage />} />
+                <Route path="/calibracao/wizard/:equipmentId" element={<CalibrationWizardPage />} />
+                <Route path="/calibracao/wizard/:equipmentId/:calibrationId" element={<CalibrationWizardPage />} />
+                <Route path="/calibracao/templates" element={<CertificateTemplatesPage />} />
+                <Route path="/financeiro/regua-cobranca" element={<AgingReceivablesPage />} />
+                <Route path="/financeiro/cobranca-automatica" element={<CollectionAutomationPage />} />
+                <Route path="/financeiro/renegociacao" element={<DebtRenegotiationPage />} />
+                <Route path="/financeiro/reembolsos" element={<ExpenseReimbursementsPage />} />
+                <Route path="/financeiro/cheques" element={<FinancialChecksPage />} />
+                <Route path="/financeiro/contratos-fornecedores" element={<SupplierContractsPage />} />
+                <Route path="/financeiro/adiantamentos-fornecedores" element={<SupplierAdvancesPage />} />
+                <Route path="/financeiro/simulador-recebiveis" element={<ReceivablesSimulatorPage />} />
+                <Route path="/financeiro/aprovacao-lote" element={<BatchPaymentApprovalPage />} />
+                <Route path="/financeiro/alocacao-despesas" element={<ExpenseAllocationPage />} />
+                <Route path="/financeiro/calculadora-tributos" element={<TaxCalculatorPage />} />
+                <Route path="/financeiro/dre" element={<DrePage />} />
+                <Route path="/automacao" element={<AutomationPage />} />
+                <Route path="/avancado" element={<AdvancedFeaturesPage />} />
+                <Route path="/ia" element={<AIAnalyticsPage />} />
+                <Route path="/tv/dashboard" element={<TvDashboard />} />
+                <Route path="/tv/cameras" element={<TvCamerasPage />} />
+                <Route path="/share" element={<ShareTargetPage />} />
+              </Route>
 
               {/* Tech PWA (Mobile Offline) */}
               <Route path="/tech" element={<TechShell />}>

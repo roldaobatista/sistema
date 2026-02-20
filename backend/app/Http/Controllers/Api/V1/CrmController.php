@@ -797,7 +797,7 @@ class CrmController extends Controller
 
         // Filtro por técnico (Regra de Negócio: Técnico só vê o que é dele)
         $user = $request->user();
-        $isAdmin = $user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN) || $user->hasPermission('platform.dashboard.view');
+        $isAdmin = $user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN) || $user->hasPermissionTo('platform.dashboard.view');
 
         // Timeline (Atividades CRM)
         $timeline = CrmActivity::where('customer_id', $customer->id)
@@ -837,7 +837,7 @@ class CrmController extends Controller
         $receivables = [];
         $pendingReceivablesSum = 0;
 
-        if ($isAdmin || $user->hasPermission('finance.receivable.view')) {
+        if ($isAdmin || $user->hasPermissionTo('finance.receivable.view')) {
             $receivables = $customer->accountsReceivable()
                 ->with(['workOrder:id,number'])
                 ->orderByDesc('due_date')
@@ -851,7 +851,7 @@ class CrmController extends Controller
 
         // Notas Fiscais
         $fiscalNotes = [];
-        if ($isAdmin || $user->hasPermission('fiscal.note.view')) {
+        if ($isAdmin || $user->hasPermissionTo('fiscal.note.view')) {
             $fiscalNotes = FiscalNote::where('customer_id', $customer->id)
                 ->orderByDesc('created_at')
                 ->take(20)

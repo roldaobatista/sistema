@@ -44,7 +44,7 @@ class AuvoImportControllerTest extends TestCase
     public function test_test_connection_returns_status(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response([
+            'api.auvo.com.br/v2/login' => Http::response([
                 'result' => ['accessToken' => 'test-token'],
             ]),
             'api.auvo.com.br/v2/*' => Http::response(['result' => ['totalCount' => 5]]),
@@ -71,7 +71,7 @@ class AuvoImportControllerTest extends TestCase
     public function test_preview_returns_sample_for_valid_entity(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/customers*' => Http::response([
                 'result' => [
                     'entityList' => [
@@ -99,7 +99,7 @@ class AuvoImportControllerTest extends TestCase
     public function test_import_entity_returns_results(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/customers*' => Http::sequence()
                 ->push([
                     'result' => [
@@ -137,7 +137,7 @@ class AuvoImportControllerTest extends TestCase
     public function test_import_all_processes_entities(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login' => Http::response(['result' => ['accessToken' => 'tk']]),
             'api.auvo.com.br/v2/*' => Http::response(['result' => []], 200),
         ]);
 
@@ -352,7 +352,7 @@ class AuvoImportControllerTest extends TestCase
     public function test_config_saves_credentials(): void
     {
         Http::fake([
-            'api.auvo.com.br/v2/login/' => Http::response(['result' => ['accessToken' => 'tk']]),
+            'api.auvo.com.br/v2/login' => Http::response(['result' => ['accessToken' => 'tk']]),
         ]);
 
         $response = $this->putJson('/api/v1/auvo/config', [

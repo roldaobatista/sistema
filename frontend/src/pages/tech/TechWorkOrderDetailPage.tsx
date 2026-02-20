@@ -782,6 +782,7 @@ export default function TechWorkOrderDetailPage() {
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                         {[
                             { key: 'photos', label: 'Fotos do Serviço', desc: 'Registre fotos do antes/depois', icon: Camera, path: `/tech/os/${wo.id}/photos`, required: false },
+                            ...(wo.equipment_id ? [{ key: 'calibration_wizard', label: 'Wizard Calibração', desc: 'Certificado de calibração ISO 17025', icon: FlaskConical, path: `/calibracao/wizard/${wo.equipment_id}?os=${wo.id}`, required: false }] : []),
                             { key: 'checklist', label: 'Checklists', desc: 'Preencha os checklists obrigatórios', icon: ClipboardList, path: `/tech/os/${wo.id}/checklist`, required: true },
                             { key: 'signature', label: 'Assinatura do Cliente', desc: 'Colete a assinatura', icon: PenTool, path: `/tech/os/${wo.id}/signature`, required: true },
                             { key: 'nps', label: 'Avaliação NPS', desc: 'Colete a avaliação do cliente', icon: Star, path: `/tech/os/${wo.id}/nps`, required: false },

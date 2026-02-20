@@ -152,9 +152,8 @@ OFX;
         $tmpFile = $this->createTempFile($content);
 
         $statement = $this->service->import($this->tenant->id, $tmpFile, $this->user->id, 'ext.ofx');
-        $matched = $this->service->autoMatch($statement);
 
-        $this->assertSame(1, $matched);
+        $this->assertSame(1, $statement->matched_entries);
         $entry = $statement->entries()->first();
         $this->assertSame(BankStatementEntry::STATUS_MATCHED, $entry->status);
         $this->assertSame(AccountReceivable::class, $entry->matched_type);
@@ -178,9 +177,8 @@ OFX;
         $tmpFile = $this->createTempFile($content);
 
         $statement = $this->service->import($this->tenant->id, $tmpFile, $this->user->id, 'ext.ofx');
-        $matched = $this->service->autoMatch($statement);
 
-        $this->assertSame(1, $matched);
+        $this->assertSame(1, $statement->matched_entries);
         $entry = $statement->entries()->first();
         $this->assertSame(BankStatementEntry::STATUS_MATCHED, $entry->status);
         $this->assertSame(AccountPayable::class, $entry->matched_type);
@@ -207,9 +205,8 @@ OFX;
         $tmpFile = $this->createTempFile($content);
 
         $statement = $this->service->import($this->tenant->id, $tmpFile, $this->user->id, 'ext.ofx');
-        $matched = $this->service->autoMatch($statement);
 
-        $this->assertSame(0, $matched);
+        $this->assertSame(0, $statement->matched_entries);
         $entry = $statement->entries()->first();
         $this->assertSame(BankStatementEntry::STATUS_PENDING, $entry->status);
 

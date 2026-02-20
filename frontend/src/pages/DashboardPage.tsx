@@ -96,7 +96,25 @@ export function DashboardPage() {
     const eqAlerts = s.eq_alerts ?? []
     const eqOverdue = s.eq_overdue ?? 0
     const eqDue7 = s.eq_due_7 ?? 0
-    const isEmpty = !isLoading && (s.open_os ?? 0) === 0 && (s.completed_month ?? 0) === 0 && (s.revenue_month ?? 0) === 0
+    const isEmpty = !isLoading && !isError && (s.open_os ?? 0) === 0 && (s.completed_month ?? 0) === 0 && (s.revenue_month ?? 0) === 0
+
+    if (isError) {
+        return (
+            <div className="py-16 text-center animate-fade-in">
+                <AlertTriangle className="mx-auto h-12 w-12 text-danger/50 dark:text-danger/40" />
+                <h3 className="mt-4 text-sm font-semibold text-foreground">Erro de Carregamento</h3>
+                <p className="mt-2 text-sm text-surface-500 max-w-sm mx-auto">
+                    Não foi possível carregar os dados do dashboard. Nossa equipe já foi notificada.
+                </p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-6 inline-flex items-center gap-2 rounded-lg border border-default bg-surface-0 px-4 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50 dark:bg-surface-800 dark:hover:bg-surface-700 transition-colors"
+                >
+                    Tentar Novamente
+                </button>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-8">

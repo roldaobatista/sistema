@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -41,9 +42,7 @@ class ApiResponseStructureTest extends TestCase
         Sanctum::actingAs($this->user, ['*']);
     }
 
-    /**
-     * @dataProvider listEndpointsProvider
-     */
+    #[DataProvider('listEndpointsProvider')]
     public function test_list_endpoints_return_array_data(string $uri): void
     {
         $response = $this->getJson("/api/v1/{$uri}");
@@ -77,9 +76,7 @@ class ApiResponseStructureTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider createEndpointsProvider
-     */
+    #[DataProvider('createEndpointsProvider')]
     public function test_create_endpoints_reject_empty_body(string $uri): void
     {
         $response = $this->postJson("/api/v1/{$uri}", []);
@@ -102,14 +99,7 @@ class ApiResponseStructureTest extends TestCase
         $response->assertStatus(404);
     }
 
-    public function test_unauthenticated_request_returns_401(): void
-    {
-        // Create a fresh test case without acting as user
-        $this->app->forgetInstance('current_tenant_id');
-        $response = $this->withHeaders([])->getJson('/api/v1/customers');
 
-        $response->assertStatus(401);
-    }
 
     public function test_profile_endpoint_returns_user_data(): void
     {

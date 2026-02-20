@@ -183,7 +183,7 @@ export function QuotesListPage() {
         { label: 'Enviados', value: summary.sent, color: 'text-blue-600' },
         { label: 'Aprovados', value: summary.approved, color: 'text-green-600' },
         { label: 'Rejeitados', value: summary.rejected ?? 0, color: 'text-red-600' },
-        { label: 'Faturados', value: summary.invoiced, color: 'text-violet-600' },
+        { label: 'Faturados', value: summary.invoiced, color: 'text-indigo-600' },
         { label: 'Total do Mês', value: formatCurrency(summary.total_month ?? 0), color: 'text-emerald-600', isCurrency: true },
     ] : []
 
@@ -387,7 +387,7 @@ export function QuotesListPage() {
                                                         </button>
                                                     )}
                                                     {canConvert && isApproved && (
-                                                        <button title="Converter em OS" onClick={() => convertMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-violet-600">
+                                                        <button title="Converter em OS" onClick={() => convertMut.mutate(q.id)} className="p-1.5 rounded hover:bg-surface-100 text-indigo-600">
                                                             <ArrowRightLeft className="h-4 w-4" />
                                                         </button>
                                                     )}

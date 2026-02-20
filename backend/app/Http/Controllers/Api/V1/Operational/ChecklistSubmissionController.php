@@ -17,7 +17,7 @@ class ChecklistSubmissionController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $this->authorize('operational.checklist_submissions.view');
+            $this->authorize('technicians.checklist.view');
 
             $submissions = ChecklistSubmission::query()
                 ->with(['checklist', 'technician', 'workOrder'])
@@ -41,7 +41,7 @@ class ChecklistSubmissionController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            $this->authorize('operational.checklist_submissions.create');
+            $this->authorize('technicians.checklist.create');
 
             DB::beginTransaction();
 
@@ -76,7 +76,7 @@ class ChecklistSubmissionController extends Controller
     public function show(ChecklistSubmission $checklistSubmission): JsonResponse
     {
         try {
-            $this->authorize('operational.checklist_submissions.view');
+            $this->authorize('technicians.checklist.view');
             $checklistSubmission->load(['checklist', 'technician', 'workOrder']);
             return response()->json($checklistSubmission);
         } catch (\Exception $e) {

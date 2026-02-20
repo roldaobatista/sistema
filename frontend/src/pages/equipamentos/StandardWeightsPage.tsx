@@ -32,7 +32,7 @@ interface StandardWeight {
 }
 
 interface Constants {
-    statuses: Record<string, string>
+    statuses: Record<string, string | { label: string; color: string }>
     precision_classes: Record<string, string>
     units: string[]
     shapes: Record<string, string>
@@ -40,9 +40,9 @@ interface Constants {
 
 const statusColors: Record<string, string> = {
     ativo: 'bg-emerald-100 text-emerald-700',
-    inativo: 'bg-surface-200 text-surface-600',
     em_calibracao: 'bg-blue-100 text-blue-700',
-    fora_de_serviço: 'bg-red-100 text-red-700',
+    fora_de_uso: 'bg-red-100 text-red-700',
+    descartado: 'bg-surface-200 text-surface-600',
 }
 
 function fmtDate(d: string | null) {
@@ -106,7 +106,7 @@ export default function StandardWeightsPage() {
         },
         onSuccess: () => {
             toast.success(editingWeight ? 'Peso padrão atualizado!' : 'Peso padrão criado!')
-                queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
+            queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
             setShowModal(false)
             setEditingWeight(null)
             setForm(emptyForm)
@@ -125,7 +125,7 @@ export default function StandardWeightsPage() {
         mutationFn: (id: number) => api.delete(`/standard-weights/${id}`),
         onSuccess: () => {
             toast.success('Peso padrão removido!')
-                queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
+            queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
         },
         onError: (err: any) => {
             if (err.response?.status === 409) {
@@ -249,7 +249,7 @@ export default function StandardWeightsPage() {
                 >
                     <option value="">Todos os status</option>
                     {constants && Object.entries(constants.statuses).map(([k, v]) => (
-                        <option key={k} value={k}>{v}</option>
+                        <option key={k} value={k}>{typeof v === 'object' && v !== null ? v.label : v}</option>
                     ))}
                 </select>
             </div>
@@ -426,7 +426,7 @@ export default function StandardWeightsPage() {
                                     <label className="block text-xs font-medium text-surface-600 mb-1">Status</label>
                                     <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full rounded-md border border-default px-2.5 py-1.5 text-sm">
                                         {constants && Object.entries(constants.statuses).map(([k, v]) => (
-                                            <option key={k} value={k}>{v}</option>
+                                            <option key={k} value={k}>{typeof v === 'object' && v !== null ? v.label : v}</option>
                                         ))}
                                     </select>
                                 </div>

@@ -16,7 +16,9 @@ export function useCurrentTenant() {
         enabled: !!user,
         retry: 1,
         retryDelay: 5000,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 10 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+        refetchOnWindowFocus: false,
     })
 
     const switchMut = useMutation({

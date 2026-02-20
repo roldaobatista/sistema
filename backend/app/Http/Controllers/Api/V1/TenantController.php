@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class TenantController extends Controller
 {
@@ -59,6 +60,10 @@ class TenantController extends Controller
         ]);
 
         try {
+            if (!empty($validated['document'])) {
+                $validated['document'] = preg_replace('/[^0-9]/', '', $validated['document']);
+            }
+
             $tenant = $this->service->create($validated);
             return response()->json($tenant->loadCount(['users', 'branches']), 201);
         } catch (\Throwable $e) {
@@ -89,7 +94,9 @@ class TenantController extends Controller
             'name' => 'sometimes|string|max:255',
             'document' => [
                 'nullable', 'string', 'max:20',
-                Rule::unique('tenants', 'document')->whereNotNull('document')->ignore($tenant->id),
+                Rule::unique('tenants', 'document')
+                    ->whereNotNull('document')
+                    ->ignore($tenant->id),
                 'regex:/^(\d{11}|\d{14}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})$/',
             ],
             'email' => 'nullable|email|max:255',
@@ -109,6 +116,10 @@ class TenantController extends Controller
         ]);
 
         try {
+            if (array_key_exists('document', $validated) && !empty($validated['document'])) {
+                $validated['document'] = preg_replace('/[^0-9]/', '', $validated['document']);
+            }
+
             $freshTenant = $this->service->update($tenant, $validated);
             return response()->json($freshTenant->loadCount(['users', 'branches']));
         } catch (\Throwable $e) {
@@ -156,11 +167,15 @@ class TenantController extends Controller
                     ? 'Usuário criado e notificação de definição de senha enviada.'
                     : 'Usuário existente vinculado à empresa.',
             ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Os dados informados são inválidos.',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'errors' => $e->getCode() === 422 ? ['role' => [$e->getMessage()]] : null
-            ], $e->getCode() ?: 500);
+            ], $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao convidar usuário.'], 500);
@@ -175,8 +190,15 @@ class TenantController extends Controller
         try {
             $this->service->removeUser($tenant, $user, Auth::user());
             return response()->json(null, 204);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Ação não permitida.',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao remover usuário.'], 500);

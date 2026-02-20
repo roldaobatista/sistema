@@ -50,8 +50,8 @@ class UpdateWorkOrderRequest extends FormRequest
 
         if (!$isClosedStatus) {
             $rules += [
-                'discount' => 'sometimes|numeric|min:0',
-                'discount_percentage' => 'sometimes|numeric|min:0|max:100',
+                'discount' => 'nullable|numeric|min:0',
+                'discount_percentage' => 'nullable|numeric|min:0|max:100',
             ];
         }
 

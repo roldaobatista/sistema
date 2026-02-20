@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('vehicle_insurances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('fleet_vehicle_id')->constrained('fleet_vehicles')->cascadeOnDelete();
+            $table->unsignedBigInteger('fleet_vehicle_id');
+            $table->index('fleet_vehicle_id');
             $table->string('insurer', 150);
             $table->string('policy_number', 80)->nullable();
             $table->string('coverage_type', 50)->default('comprehensive'); // comprehensive, third_party, total_loss

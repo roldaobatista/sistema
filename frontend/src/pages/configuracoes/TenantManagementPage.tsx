@@ -299,7 +299,12 @@ export function TenantManagementPage() {
             toast.success(res.data?.message ?? 'Convite enviado com sucesso!')
         },
         onError: (err: AxiosError<any>) => {
-            toast.error(err.response?.data?.message ?? 'Erro ao convidar usuário.')
+            if (err.response?.status === 422 && err.response.data?.errors) {
+                const msgs = Object.values(err.response.data.errors).flat()
+                toast.error((msgs[0] as string) || 'Dados inválidos.')
+            } else {
+                toast.error(err.response?.data?.message ?? 'Erro ao convidar usuário.')
+            }
         },
     })
 
@@ -314,7 +319,12 @@ export function TenantManagementPage() {
         },
         onError: (err: AxiosError<any>) => {
             setShowConfirmRemoveUser(null)
-            toast.error(err.response?.data?.message ?? 'Erro ao remover usuário.')
+            if (err.response?.status === 422 && err.response.data?.errors) {
+                const msgs = Object.values(err.response.data.errors).flat()
+                toast.error((msgs[0] as string) || 'Ação não permitida.')
+            } else {
+                toast.error(err.response?.data?.message ?? 'Erro ao remover usuário.')
+            }
         },
     })
 

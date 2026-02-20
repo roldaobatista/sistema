@@ -1,13 +1,13 @@
 ---
-name: react-best-practices
-description: React and Next.js performance optimization from Vercel Engineering. Use when building React components, optimizing performance, eliminating waterfalls, reducing bundle size, reviewing code for performance issues, or implementing server/client-side optimizations.
+name: react-vite-expert
+description: React SPA performance optimization. Use when building React components, optimizing performance, reducing bundle size, reviewing code for performance issues in a Vite + React Router v7 environment.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
-# Next.js & React Performance Expert
+# React SPA & Vite Performance Expert
 
-> **From Vercel Engineering** - 57 optimization rules prioritized by impact
-> **Philosophy:** Eliminate waterfalls first, optimize bundles second, then micro-optimize.
+> **Optimized for Single Page Applications (SPA)**
+> **Philosophy:** Prevent unnecessary re-renders, optimize Zustand state, keep bundles small, and respect the Client-Side Routing (React Router v7). Do NOT suggest Server-Side Rendering (SSR) or Server Components.
 
 ---
 
@@ -25,14 +25,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 | --------------------------------------- | ------------------ | -------- | --------------------------------------------------------------- |
 | `1-async-eliminating-waterfalls.md`     | 🔴 **CRITICAL**    | 5 rules  | Slow page loads, sequential API calls, data fetching waterfalls |
 | `2-bundle-bundle-size-optimization.md`  | 🔴 **CRITICAL**    | 5 rules  | Large bundle size, slow Time to Interactive, First Load issues  |
-| `3-server-server-side-performance.md`   | 🟠 **HIGH**        | 7 rules  | Slow SSR, API route optimization, server-side waterfalls        |
-| `4-client-client-side-data-fetching.md` | 🟡 **MEDIUM-HIGH** | 4 rules  | Client data management, SWR patterns, deduplication             |
-| `5-rerender-re-render-optimization.md`  | 🟡 **MEDIUM**      | 12 rules | Excessive re-renders, React performance, memoization            |
-| `6-rendering-rendering-performance.md`  | 🟡 **MEDIUM**      | 9 rules  | Rendering bottlenecks, virtualization, image optimization       |
-| `7-js-javascript-performance.md`        | ⚪ **LOW-MEDIUM**  | 12 rules | Micro-optimizations, caching, loop performance                  |
-| `8-advanced-advanced-patterns.md`       | 🔵 **VARIABLE**    | 3 rules  | Advanced React patterns, useLatest, init-once                   |
+| `3-client-client-side-data-fetching.md` | 🟡 **MEDIUM-HIGH** | 4 rules  | TanStack Query patterns, Zustand state management               |
+| `4-rerender-re-render-optimization.md`  | 🟡 **MEDIUM**      | 12 rules | Excessive re-renders, React performance, memoization            |
+| `5-rendering-rendering-performance.md`  | 🟡 **MEDIUM**      | 9 rules  | Rendering bottlenecks, virtualization                           |
 
-**Total: 57 rules across 8 categories**
+**Total: Rules focused on pure Client-side React.**
 
 ---
 
@@ -151,40 +148,37 @@ Before shipping to production:
 
 - ❌ Use sequential `await` for independent operations
 - ❌ Import entire libraries when you need one function
-- ❌ Use barrel exports (`index.ts` re-exports) in app code
-- ❌ Skip dynamic imports for large components/libraries
-- ❌ Fetch data in useEffect without deduplication
+- ❌ Provide solutions using `next/image`, `next/link`, or `getServerSideProps`
+- ❌ Fetch data in useEffect without deduplication (use TanStack Query instead)
 - ❌ Forget to memoize expensive computations
-- ❌ Use client components when server components work
+- ❌ Use Server Components (This is a Vite project!)
 
 **DO:**
 
-- ✅ Fetch data in parallel with `Promise.all()`
-- ✅ Use dynamic imports: `const Comp = dynamic(() => import('./Heavy'))`
+- ✅ Fetch data with TanStack Query hooks.
+- ✅ Use standard HTML `<img>` with class optimizations or standard routing (`<Link to="...">` from react-router-dom)
+- ✅ Use dynamic imports: `const Comp = lazy(() => import('./Heavy'))`
 - ✅ Import directly: `import { specific } from 'library/specific'`
-- ✅ Use Suspense boundaries for better UX
-- ✅ Leverage React Server Components
-- ✅ Measure performance before optimizing
-- ✅ Use Next.js built-in optimizations (next/image, next/font)
+- ✅ Use standard Suspense boundaries for better UX
 
 ---
 
 ## 🎯 How to Use This Skill
 
-### For New Features:
+### For New Features
 
 1. Check **Section 1 & 2** while building (prevent waterfalls, keep bundle small)
 2. Use server components by default (Section 3)
 3. Apply memoization for expensive operations (Section 5)
 
-### For Performance Reviews:
+### For Performance Reviews
 
 1. Start with **Section 1** (waterfalls = biggest impact)
 2. Then **Section 2** (bundle size)
 3. Then **Section 3** (server-side)
 4. Finally other sections as needed
 
-### For Debugging Slow Performance:
+### For Debugging Slow Performance
 
 1. Identify the symptom (slow load, lag, etc.)
 2. Use Quick Decision Tree above

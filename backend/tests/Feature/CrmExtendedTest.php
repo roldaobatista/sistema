@@ -43,6 +43,12 @@ class CrmExtendedTest extends TestCase
 
         app()->instance('current_tenant_id', $this->tenant->id);
         setPermissionsTeamId($this->tenant->id);
+        
+        // Ensure necessary permissions exist for tests bypassing CheckPermission middleware
+        \Spatie\Permission\Models\Permission::findOrCreate('platform.dashboard.view', 'web');
+        \Spatie\Permission\Models\Permission::findOrCreate('finance.receivable.view', 'web');
+        \Spatie\Permission\Models\Permission::findOrCreate('fiscal.note.view', 'web');
+
         Sanctum::actingAs($this->user, ['*']);
     }
 
@@ -89,9 +95,14 @@ class CrmExtendedTest extends TestCase
 
     public function test_deal_mark_won(): void
     {
+        $pipeline = CrmPipeline::factory()->create(['tenant_id' => $this->tenant->id]);
+        $stage = CrmPipelineStage::factory()->create(['pipeline_id' => $pipeline->id, 'tenant_id' => $this->tenant->id]);
+
         $deal = CrmDeal::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
+            'pipeline_id' => $pipeline->id,
+            'stage_id' => $stage->id,
         ]);
 
         $response = $this->putJson("/api/v1/crm/deals/{$deal->id}/won");
@@ -104,9 +115,14 @@ class CrmExtendedTest extends TestCase
 
     public function test_deal_mark_lost(): void
     {
+        $pipeline = CrmPipeline::factory()->create(['tenant_id' => $this->tenant->id]);
+        $stage = CrmPipelineStage::factory()->create(['pipeline_id' => $pipeline->id, 'tenant_id' => $this->tenant->id]);
+
         $deal = CrmDeal::factory()->create([
             'tenant_id' => $this->tenant->id,
             'customer_id' => $this->customer->id,
+            'pipeline_id' => $pipeline->id,
+            'stage_id' => $stage->id,
         ]);
 
         $response = $this->putJson("/api/v1/crm/deals/{$deal->id}/lost", [
@@ -136,7 +152,8 @@ class CrmExtendedTest extends TestCase
 
         $response = $this->postJson('/api/v1/crm/activities', [
             'deal_id' => $deal->id,
-            'type' => 'call',
+            'customer_id' => $this->customer->id,
+            'type' => 'ligacao',
             'title' => 'Ligação de follow-up',
             'scheduled_at' => now()->addDays(1)->toISOString(),
         ]);
@@ -156,6 +173,10 @@ class CrmExtendedTest extends TestCase
     {
         $response = $this->postJson('/api/v1/crm/pipelines', [
             'name' => 'Pipeline de Vendas',
+            'slug' => 'pipeline-de-vendas',
+            'stages' => [
+                ['name' => 'Nova', 'color' => '#ffffff', 'order_index' => 1]
+            ]
         ]);
 
         $response->assertCreated();

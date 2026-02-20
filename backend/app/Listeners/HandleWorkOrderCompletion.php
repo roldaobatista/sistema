@@ -29,16 +29,18 @@ class HandleWorkOrderCompletion implements ShouldQueue
         ]);
 
         // Notificar o responsável / admin (interno)
-        Notification::notify(
-            $wo->tenant_id,
-            $wo->created_by,
-            'os_completed',
-            'OS Concluída',
-            [
-                'message' => "A OS {$wo->business_number} foi concluída por {$user->name}.",
-                'data' => ['work_order_id' => $wo->id],
-            ]
-        );
+        if ($wo->created_by) {
+            Notification::notify(
+                $wo->tenant_id,
+                $wo->created_by,
+                'os_completed',
+                'OS Concluída',
+                [
+                    'message' => "A OS {$wo->business_number} foi concluída por {$user->name}.",
+                    'data' => ['work_order_id' => $wo->id],
+                ]
+            );
+        }
 
         // Recalcular health score do cliente
         if ($wo->customer) {

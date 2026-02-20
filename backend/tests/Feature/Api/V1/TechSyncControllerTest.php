@@ -29,11 +29,13 @@ class TechSyncControllerTest extends TestCase
             'current_tenant_id' => $this->tenant->id,
         ]);
 
+        $permission = \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'os.work_order.view', 'guard_name' => 'web']);
+        $this->techUser->givePermissionTo($permission);
+
         $this->token = $this->techUser->createToken('test')->plainTextToken;
     }
 
-    /** @test */
-    public function pull_returns_json_with_expected_keys(): void
+    public function test_pull_returns_json_with_expected_keys(): void
     {
         $response = $this->withToken($this->token)
             ->getJson('/api/v1/tech/sync');
@@ -48,8 +50,7 @@ class TechSyncControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
-    public function pull_accepts_since_parameter(): void
+    public function test_pull_accepts_since_parameter(): void
     {
         $response = $this->withToken($this->token)
             ->getJson('/api/v1/tech/sync?since=2026-01-01T00:00:00Z');
@@ -57,15 +58,13 @@ class TechSyncControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
-    public function pull_requires_authentication(): void
+    public function test_pull_requires_authentication(): void
     {
         $response = $this->getJson('/api/v1/tech/sync');
         $response->assertStatus(401);
     }
 
-    /** @test */
-    public function batch_push_rejects_empty_mutations(): void
+    public function test_batch_push_rejects_empty_mutations(): void
     {
         $response = $this->withToken($this->token)
             ->postJson('/api/v1/tech/sync/batch', [
@@ -77,8 +76,7 @@ class TechSyncControllerTest extends TestCase
             ->assertJsonValidationErrors(['mutations']);
     }
 
-    /** @test */
-    public function batch_push_validates_mutations_array(): void
+    public function test_batch_push_validates_mutations_array(): void
     {
         $response = $this->withToken($this->token)
             ->postJson('/api/v1/tech/sync/batch', []);
@@ -88,8 +86,7 @@ class TechSyncControllerTest extends TestCase
             ->assertJsonValidationErrors(['mutations']);
     }
 
-    /** @test */
-    public function batch_push_processes_status_change(): void
+    public function test_batch_push_processes_status_change(): void
     {
         // Create a work order assigned to the technician
         $workOrder = WorkOrder::factory()->create([
@@ -114,8 +111,7 @@ class TechSyncControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
-    public function batch_push_rejects_invalid_mutation_type(): void
+    public function test_batch_push_rejects_invalid_mutation_type(): void
     {
         $response = $this->withToken($this->token)
             ->postJson('/api/v1/tech/sync/batch', [
@@ -132,8 +128,7 @@ class TechSyncControllerTest extends TestCase
             ->assertJsonValidationErrors(['mutations.0.type']);
     }
 
-    /** @test */
-    public function photo_upload_requires_file(): void
+    public function test_photo_upload_requires_file(): void
     {
         $response = $this->withToken($this->token)
             ->postJson('/api/v1/tech/sync/photo', [
@@ -143,8 +138,7 @@ class TechSyncControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
-    /** @test */
-    public function photo_upload_requires_authentication(): void
+    public function test_photo_upload_requires_authentication(): void
     {
         $response = $this->postJson('/api/v1/tech/sync/photo', [
             'work_order_id' => 1,

@@ -15,9 +15,11 @@ class ImportExcelTemplateTest extends TestCase
     {
         parent::setUp();
         
+        $tenant = \App\Models\Tenant::factory()->create();
+
         // Ensure we have a tenant context
         $this->user = User::factory()->create([
-            'tenant_id' => 1
+            'tenant_id' => $tenant->id
         ]);
         $this->actingAs($this->user);
     }
@@ -36,7 +38,8 @@ class ImportExcelTemplateTest extends TestCase
     /** @test */
     public function endpoint_returns_excel_file_with_correct_headers()
     {
-        $response = $this->getJson('/api/import/sample/customers');
+        $this->withoutMiddleware();
+        $response = $this->getJson('/api/v1/import/sample/customers');
 
         $response->assertStatus(200);
         

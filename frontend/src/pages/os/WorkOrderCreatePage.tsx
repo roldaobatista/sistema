@@ -186,7 +186,11 @@ export function WorkOrderCreatePage() {
         }))
     }
 
-    const removeItem = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i))
+    const removeItem = (i: number) => {
+        if (window.confirm('Tem certeza que deseja remover este item?')) {
+            setItems(prev => prev.filter((_, idx) => idx !== i))
+        }
+    }
 
     const itemTotal = (it: ItemForm) => Math.max(0, (parseFloat(it.quantity) || 0) * (parseFloat(it.unit_price) || 0) - (parseFloat(it.discount) || 0))
     const round2 = (n: number) => Math.round(n * 100) / 100
@@ -202,8 +206,22 @@ export function WorkOrderCreatePage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+
+        let finalDiscount = form.discount;
+        let finalPercent = form.discount_percentage;
+        if (parseFloat(finalPercent) > 0) {
+            finalDiscount = '0';
+        } else if (parseFloat(finalDiscount) > 0) {
+            finalPercent = '0';
+        } else {
+            finalDiscount = '0';
+            finalPercent = '0';
+        }
+
         const payload: any = {
             ...form,
+            discount: finalDiscount,
+            discount_percentage: finalPercent,
             technician_ids: selectedTechIds.length > 0 ? selectedTechIds : undefined,
             equipment_ids: selectedEquipIds.length > 0 ? selectedEquipIds : undefined,
             items: items.map(it => ({
@@ -258,7 +276,7 @@ export function WorkOrderCreatePage() {
 
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Prioridade</label>
-                            <select value={form.priority} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('priority', e.target.value)}
+                            <select title="Prioridade" value={form.priority} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('priority', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="low">Baixa</option>
                                 <option value="normal">Normal</option>
@@ -282,7 +300,7 @@ export function WorkOrderCreatePage() {
 
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Status Inicial</label>
-                            <select value={form.initial_status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('initial_status', e.target.value)}
+                            <select title="Status Inicial" value={form.initial_status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('initial_status', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="open">Aberta</option>
                                 <option value="completed">Concluída (retroativo)</option>
@@ -306,7 +324,7 @@ export function WorkOrderCreatePage() {
 
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Técnico</label>
-                            <select value={form.assigned_to} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('assigned_to', e.target.value)}
+                            <select title="Técnico" value={form.assigned_to} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('assigned_to', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Sem atribuição</option>
                                 {technicians.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -339,7 +357,7 @@ export function WorkOrderCreatePage() {
                         </div>
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700">Vendedor</label>
-                            <select value={form.seller_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('seller_id', e.target.value)}
+                            <select title="Vendedor" value={form.seller_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('seller_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
                                 {allUsers.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -347,7 +365,7 @@ export function WorkOrderCreatePage() {
                         </div>
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-surface-700 flex items-center gap-1"><Truck className="h-3.5 w-3.5" />Motorista (UMC)</label>
-                            <select value={form.driver_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('driver_id', e.target.value)}
+                            <select title="Motorista (UMC)" value={form.driver_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('driver_id', e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3.5 py-2.5 text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                 <option value="">Nenhum</option>
                                 {allUsers.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -423,7 +441,7 @@ export function WorkOrderCreatePage() {
                                             </button>
                                         </div>
                                         <div className="flex-1">
-                                            <select value={item.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateItem(i, 'reference_id', e.target.value)}
+                                            <select title="Produto ou Serviço" value={item.reference_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateItem(i, 'reference_id', e.target.value)}
                                                 className="w-full rounded-lg border border-default bg-surface-0 px-2.5 py-1.5 text-xs focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15">
                                                 <option value="">— Selecionar {item.type === 'product' ? 'produto' : 'serviço'} —</option>
                                                 {(item.type === 'product' ? products : services).map((r: any) => (
@@ -471,13 +489,13 @@ export function WorkOrderCreatePage() {
                             </div>
                             <div className="flex items-center justify-between gap-4 text-sm">
                                 <span className="text-surface-600">Desconto Fixo (R$)</span>
-                                <input type="number" step="0.01" value={form.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount', e.target.value)}
+                                <input title="Desconto Fixo (R$)" placeholder="0.00" type="number" step="0.01" value={form.discount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount', e.target.value)}
                                     disabled={parseFloat(form.discount_percentage) > 0}
                                     className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
                             </div>
                             <div className="flex items-center justify-between gap-4 text-sm">
                                 <span className="text-surface-600">Desconto Global (%)</span>
-                                <input type="number" step="0.01" min="0" max="100" value={form.discount_percentage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount_percentage', e.target.value)}
+                                <input title="Desconto Global (%)" placeholder="0.00" type="number" step="0.01" min="0" max="100" value={form.discount_percentage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('discount_percentage', e.target.value)}
                                     disabled={parseFloat(form.discount) > 0}
                                     className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15 disabled:opacity-50 disabled:cursor-not-allowed" />
                             </div>
@@ -486,7 +504,7 @@ export function WorkOrderCreatePage() {
                             )}
                             <div className="flex items-center justify-between gap-4 text-sm">
                                 <span className="text-surface-600">Valor Deslocamento (R$)</span>
-                                <input type="number" step="0.01" value={form.displacement_value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('displacement_value', e.target.value)}
+                                <input title="Valor Deslocamento (R$)" placeholder="0.00" type="number" step="0.01" value={form.displacement_value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('displacement_value', e.target.value)}
                                     className="w-28 rounded-lg border border-default px-2.5 py-1.5 text-right text-sm focus:border-brand-400 focus:bg-surface-0 focus:outline-none focus:ring-2 focus:ring-brand-500/15" />
                             </div>
                             <div className="flex items-center justify-between text-base border-t border-subtle pt-2">

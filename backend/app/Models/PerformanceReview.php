@@ -14,6 +14,7 @@ class PerformanceReview extends Model
         'tenant_id',
         'user_id',
         'reviewer_id',
+        'title',
         'cycle',
         'year',
         'type',

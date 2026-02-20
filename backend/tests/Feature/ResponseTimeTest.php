@@ -139,7 +139,6 @@ class ResponseTimeTest extends TestCase
     }
 
     // ── FINANCIAL REPORTS ──
-
     public function test_cash_flow_under_500ms(): void
     {
         $start = microtime(true);

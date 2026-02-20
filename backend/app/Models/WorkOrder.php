@@ -87,7 +87,11 @@ class WorkOrder extends Model
     public function wazeLink(): Attribute
     {
         return Attribute::get(function () {
-            if (!$this->customer) return null;
+            if (!$this->relationLoaded('customer') || !$this->customer) return null;
+            
+            $attrs = $this->customer->getAttributes();
+            if (!array_key_exists('latitude', $attrs) || !array_key_exists('longitude', $attrs)) return null;
+
             $lat = $this->customer->latitude;
             $lng = $this->customer->longitude;
             if (!$lat || !$lng) return null;
@@ -98,7 +102,11 @@ class WorkOrder extends Model
     public function googleMapsLink(): Attribute
     {
         return Attribute::get(function () {
-            if (!$this->customer) return null;
+            if (!$this->relationLoaded('customer') || !$this->customer) return null;
+            
+            $attrs = $this->customer->getAttributes();
+            if (!array_key_exists('latitude', $attrs) || !array_key_exists('longitude', $attrs)) return null;
+
             $lat = $this->customer->latitude;
             $lng = $this->customer->longitude;
             if (!$lat || !$lng) return null;
@@ -306,6 +314,11 @@ class WorkOrder extends Model
         return $this->hasMany(WorkOrderAttachment::class);
     }
 
+    public function calibrations(): HasMany
+    {
+        return $this->hasMany(EquipmentCalibration::class);
+    }
+
     public function centralSyncData(): array
     {
         $statusMap = [
@@ -320,9 +333,14 @@ class WorkOrder extends Model
             self::STATUS_CANCELLED => \App\Enums\CentralItemStatus::CANCELADO,
         ];
 
+        $titulo = "OS #{$this->business_number}";
+        if ($this->relationLoaded('customer') && $this->customer) {
+            $titulo .= " - {$this->customer->name}";
+        }
+
         return [
             'status' => $statusMap[$this->status] ?? \App\Enums\CentralItemStatus::ABERTO,
-            'titulo' => "OS #{$this->business_number} - {$this->customer?->name}",
+            'titulo' => $titulo,
         ];
     }
 

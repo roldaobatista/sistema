@@ -81,17 +81,15 @@ class MetrologyQualityController extends Controller
     public function generateCertificateQR(Request $request, int $certificateId): JsonResponse
     {
         $tenantId = $request->user()->current_tenant_id;
-        $cert = DB::table('calibration_certificates')
-            ->where('id', $certificateId)->where('company_id', $tenantId)->first();
+        $cert = \App\Models\EquipmentCalibration::where('id', $certificateId)
+            ->where('tenant_id', $tenantId)->first();
 
         if (!$cert) return response()->json(['message' => 'Not found'], 404);
 
         $verificationCode = $cert->verification_code ?? Str::uuid()->toString();
 
         if (!$cert->verification_code) {
-            DB::table('calibration_certificates')
-                ->where('id', $certificateId)
-                ->update(['verification_code' => $verificationCode, 'updated_at' => now()]);
+            $cert->update(['verification_code' => $verificationCode]);
         }
 
         $verifyUrl = config('app.url') . "/api/verify-certificate/{$verificationCode}";
@@ -106,7 +104,7 @@ class MetrologyQualityController extends Controller
 
     public function verifyCertificate(string $code): JsonResponse
     {
-        $cert = DB::table('calibration_certificates')
+        $cert = \App\Models\EquipmentCalibration::with('equipment')
             ->where('verification_code', $code)->first();
 
         if (!$cert) {
@@ -115,11 +113,11 @@ class MetrologyQualityController extends Controller
 
         return response()->json([
             'valid' => true,
-            'certificate_number' => $cert->number ?? $cert->id,
-            'equipment' => DB::table('equipments')->find($cert->equipment_id)?->name,
-            'date' => $cert->date,
-            'expires_at' => $cert->expires_at,
-            'status' => $cert->expires_at && Carbon::parse($cert->expires_at)->isPast() ? 'expired' : 'valid',
+            'certificate_number' => $cert->certificate_number ?? $cert->id,
+            'equipment' => $cert->equipment?->name,
+            'date' => $cert->calibration_date,
+            'expires_at' => $cert->next_due_date,
+            'status' => $cert->next_due_date && Carbon::parse($cert->next_due_date)->isPast() ? 'expired' : 'valid',
         ]);
     }
 

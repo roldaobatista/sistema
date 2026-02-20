@@ -22,16 +22,18 @@ class LogWorkOrderStartActivity implements ShouldQueue
             'notes' => "OS iniciada por {$user->name}",
         ]);
 
-        Notification::notify(
-            $wo->tenant_id,
-            $wo->assigned_to,
-            'os_started',
-            'OS Iniciada',
-            [
-                'message' => "A OS {$wo->business_number} foi iniciada.",
-                'data' => ['work_order_id' => $wo->id],
-            ]
-        );
+        if ($wo->assigned_to) {
+            Notification::notify(
+                $wo->tenant_id,
+                $wo->assigned_to,
+                'os_started',
+                'OS Iniciada',
+                [
+                    'message' => "A OS {$wo->business_number} foi iniciada.",
+                    'data' => ['work_order_id' => $wo->id],
+                ]
+            );
+        }
     }
 }
 

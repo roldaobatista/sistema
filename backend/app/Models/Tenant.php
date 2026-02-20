@@ -57,6 +57,11 @@ class Tenant extends Model
         'fiscal_environment',
     ];
 
+    protected $hidden = [
+        'fiscal_certificate_password',
+        'fiscal_nfse_token',
+    ];
+
     protected function casts(): array
     {
         return [

@@ -9,11 +9,15 @@ allowed-tools: Read, Glob, Grep
 > Source: obra/superpowers
 
 ## Overview
+
 This skill provides a structured approach to debugging that prevents random guessing and ensures problems are properly understood before solving.
+
+> **CRITICAL EXECUTION RULE:** O processo descrito abaixo é um modelo mental. **NÃO escreva relatórios verbosos ou imprima os formulários das Fases no chat, a menos que o usuário exija um laudo.** Vá direto para a investigação e entregue o conserto de código de imediato (IMPLEMENT Mode).
 
 ## 4-Phase Debugging Process
 
 ### Phase 1: Reproduce
+
 Before fixing, reliably reproduce the issue.
 
 ```markdown
@@ -30,6 +34,7 @@ Before fixing, reliably reproduce the issue.
 ```
 
 ### Phase 2: Isolate
+
 Narrow down the source.
 
 ```markdown
@@ -42,6 +47,7 @@ Narrow down the source.
 ```
 
 ### Phase 3: Understand
+
 Find the root cause, not just symptoms.
 
 ```markdown
@@ -55,6 +61,7 @@ Find the root cause, not just symptoms.
 ```
 
 ### Phase 4: Fix & Verify
+
 Fix and verify it's truly fixed.
 
 ```markdown

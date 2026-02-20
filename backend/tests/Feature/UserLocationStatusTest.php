@@ -18,6 +18,7 @@ class UserLocationStatusTest extends TestCase
         $user = User::factory()->create();
         $user->tenants()->attach($tenant->id);
         $user->update(['current_tenant_id' => $tenant->id]);
+        $user->refresh();
 
         \Illuminate\Support\Facades\Event::fake();
 

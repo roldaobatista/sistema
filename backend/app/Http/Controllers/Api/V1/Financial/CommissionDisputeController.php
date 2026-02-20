@@ -26,7 +26,7 @@ class CommissionDisputeController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = CommissionDispute::with(['user:id,name', 'commissionEvent.workOrder:id,os_number,number'])
+        $query = CommissionDispute::with(['user:id,name', 'commissionEvent.workOrder:id,os_number,number,customer_id'])
             ->where('tenant_id', $this->tenantId())
             ->when($request->get('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->get('user_id'), fn ($q, $u) => $q->where('user_id', $u))
@@ -179,7 +179,7 @@ class CommissionDisputeController extends Controller
     {
         $dispute = CommissionDispute::with([
             'user:id,name',
-            'commissionEvent.workOrder:id,os_number,number',
+            'commissionEvent.workOrder:id,os_number,number,customer_id',
             'resolver:id,name',
         ])->where('tenant_id', $this->tenantId())->find($id);
 

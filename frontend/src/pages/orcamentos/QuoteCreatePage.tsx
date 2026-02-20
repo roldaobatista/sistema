@@ -151,7 +151,10 @@ export function QuoteCreatePage() {
         setBlocks(p => [...p, { equipment_id: eqId, equipmentName: eqName, description: '', items: [] }])
     }
 
-    const removeBlock = (idx: number) => setBlocks(p => p.filter((_, i) => i !== idx))
+    const removeBlock = (idx: number) => {
+        if (!window.confirm('Tem certeza que deseja remover este equipamento e todos os seus itens?')) return
+        setBlocks(p => p.filter((_, i) => i !== idx))
+    }
 
     const updateBlock = (idx: number, field: string, value: any) =>
         setBlocks(p => p.map((b, i) => i === idx ? { ...b, [field]: value } : b))
@@ -170,8 +173,10 @@ export function QuoteCreatePage() {
             ...b, items: b.items.map((it, ii) => ii === itemIdx ? { ...it, [field]: value } : it)
         } : b))
 
-    const removeItem = (blockIdx: number, itemIdx: number) =>
+    const removeItem = (blockIdx: number, itemIdx: number) => {
+        if (!window.confirm('Tem certeza que deseja remover este item?')) return
         setBlocks(p => p.map((b, bi) => bi === blockIdx ? { ...b, items: b.items.filter((_, ii) => ii !== itemIdx) } : b))
+    }
 
     const subtotal = blocks.reduce((acc, b) => acc + b.items.reduce((a, it) => {
         const price = it.unit_price * (1 - it.discount_percentage / 100)
@@ -253,7 +258,7 @@ export function QuoteCreatePage() {
         <div className="max-w-4xl mx-auto pb-20 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/orcamentos')} className="rounded-lg p-1.5 hover:bg-surface-100">
+                <button title="Voltar" onClick={() => navigate('/orcamentos')} className="rounded-lg p-1.5 hover:bg-surface-100">
                     <ArrowLeft className="h-5 w-5 text-surface-500" />
                 </button>
                 <div>
@@ -308,17 +313,17 @@ export function QuoteCreatePage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-surface-700 mb-1">{STRINGS.validity}</label>
-                            <input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)}
+                            <input title="Validade" placeholder="dd/mm/aaaa" type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-surface-700 mb-1">{STRINGS.observations}</label>
-                            <textarea value={observations} onChange={e => setObservations(e.target.value)} rows={3}
+                            <textarea title="Observações" placeholder="Observações adicionais..." value={observations} onChange={e => setObservations(e.target.value)} rows={3}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-surface-700 mb-1">Vendedor</label>
-                            <select value={sellerId ?? ''} onChange={e => setSellerId(e.target.value ? Number(e.target.value) : null)}
+                            <select title="Vendedor" value={sellerId ?? ''} onChange={e => setSellerId(e.target.value ? Number(e.target.value) : null)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                                 <option value="">Usuário atual (padrão)</option>
                                 {sellers.map((u: { id: number; name: string }) => (
@@ -328,7 +333,7 @@ export function QuoteCreatePage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-surface-700 mb-1">Origem Comercial</label>
-                            <select value={source} onChange={e => setSource(e.target.value)}
+                            <select title="Origem Comercial" value={source} onChange={e => setSource(e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                                 <option value="">Selecione (opcional)</option>
                                 <option value="prospeccao">Prospecção</option>
@@ -339,13 +344,13 @@ export function QuoteCreatePage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-surface-700 mb-1">Notas Internas</label>
-                            <textarea value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={2}
+                            <textarea title="Notas Internas" value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={2}
                                 placeholder="Notas visíveis apenas internamente..."
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-surface-700 mb-1">Condições de Pagamento</label>
-                            <select value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)}
+                            <select title="Condições de Pagamento" value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)}
                                 className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                                 <option value="">Selecione (opcional)</option>
                                 <option value="a_vista">À Vista</option>
@@ -366,7 +371,7 @@ export function QuoteCreatePage() {
                         {paymentTerms && (
                             <div>
                                 <label className="block text-sm font-medium text-surface-700 mb-1">Detalhes do Pagamento</label>
-                                <input value={paymentTermsDetail} onChange={e => setPaymentTermsDetail(e.target.value)}
+                                <input title="Detalhes do Pagamento" value={paymentTermsDetail} onChange={e => setPaymentTermsDetail(e.target.value)}
                                     placeholder="Detalhes adicionais sobre forma de pagamento..."
                                     className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
                             </div>
@@ -414,11 +419,11 @@ export function QuoteCreatePage() {
                             <div key={block.equipment_id} className="rounded-xl border border-default p-4 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-sm font-semibold text-surface-800">{block.equipmentName}</h4>
-                                    <button onClick={() => removeBlock(bIdx)} className="text-red-400 hover:text-red-600">
+                                    <button title="Remover Equipamento" onClick={() => removeBlock(bIdx)} className="text-red-400 hover:text-red-600">
                                         <Trash2 className="h-4 w-4" />
                                     </button>
                                 </div>
-                                <textarea value={block.description}
+                                <textarea title="Descrição" value={block.description}
                                     onChange={e => updateBlock(bIdx, 'description', e.target.value)}
                                     placeholder={STRINGS.descriptionPlaceholder} rows={2}
                                     className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
@@ -429,19 +434,19 @@ export function QuoteCreatePage() {
                                         <div className="flex items-center gap-2 rounded-lg bg-surface-50 p-2 text-sm">
                                             <span className="w-16 text-xs text-surface-500">{it.type === 'product' ? 'Produto' : 'Serviço'}</span>
                                             <span className="flex-1 font-medium text-surface-800">{it.name}</span>
-                                            <input type="number" min={1} value={it.quantity}
+                                            <input title="Quantidade" placeholder="1" type="number" min={1} value={it.quantity}
                                                 onChange={e => updateItem(bIdx, iIdx, 'quantity', Number(e.target.value))}
                                                 className="w-16 rounded border border-default bg-surface-0 px-2 py-1 text-center text-sm" />
-                                            <input type="number" step="0.01" value={it.unit_price}
+                                            <input title="Preço Unitário" placeholder="0.00" type="number" step="0.01" value={it.unit_price}
                                                 onChange={e => updateItem(bIdx, iIdx, 'unit_price', Number(e.target.value))}
                                                 className="w-24 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
-                                            <input type="number" step="0.01" min={0} max={100} value={it.discount_percentage}
+                                            <input title="Desconto (%)" placeholder="0.00" type="number" step="0.01" min={0} max={100} value={it.discount_percentage}
                                                 onChange={e => updateItem(bIdx, iIdx, 'discount_percentage', Number(e.target.value))}
                                                 className="w-20 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
                                             <span className="w-24 text-right font-medium text-surface-900">
                                                 {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
                                             </span>
-                                            <button onClick={() => removeItem(bIdx, iIdx)} className="text-surface-400 hover:text-red-500">
+                                            <button title="Remover Item" onClick={() => removeItem(bIdx, iIdx)} className="text-surface-400 hover:text-red-500">
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
                                         </div>
@@ -459,7 +464,7 @@ export function QuoteCreatePage() {
                                 {/* Add item buttons */}
                                 <div className="flex gap-2 flex-wrap">
                                     <div className="flex gap-1 items-center">
-                                        <select onChange={e => {
+                                        <select title="Adicionar produto" onChange={e => {
                                             const p = products.find((pr: any) => pr.id === Number(e.target.value))
                                             if (p) addItem(bIdx, 'product', p.id, p.name, p.sell_price ?? 0)
                                             e.target.value = ''
@@ -477,7 +482,7 @@ export function QuoteCreatePage() {
                                         </button>
                                     </div>
                                     <div className="flex gap-1 items-center">
-                                        <select onChange={e => {
+                                        <select title="Adicionar serviço" onChange={e => {
                                             const s = services.find((sv: any) => sv.id === Number(e.target.value))
                                             if (s) addItem(bIdx, 'service', s.id, s.name, s.default_price ?? 0)
                                             e.target.value = ''
@@ -551,13 +556,13 @@ export function QuoteCreatePage() {
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-surface-600">{STRINGS.globalDiscount}</span>
-                                <input type="number" min={0} max={100} step="0.01" value={discountPercentage}
+                                <input title="Desconto Global (%)" placeholder="0.00" type="number" min={0} max={100} step="0.01" value={discountPercentage}
                                     onChange={e => setDiscountPercentage(Number(e.target.value))}
                                     className="w-20 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm" />
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-surface-600">Deslocamento (R$)</span>
-                                <input type="number" min={0} step="0.01" value={displacementValue}
+                                <input title="Deslocamento (R$)" placeholder="0.00" type="number" min={0} step="0.01" value={displacementValue}
                                     onChange={e => setDisplacementValue(Number(e.target.value))}
                                     className="w-28 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm" />
                             </div>

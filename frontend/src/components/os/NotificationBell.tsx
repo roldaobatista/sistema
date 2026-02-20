@@ -99,17 +99,22 @@ export function useOSNotifications() {
     return { notifications, unreadCount, markAsRead, markAllRead, requestPermission, refetch: fetchNotifications }
 }
 
-// Notification Bell Component
 export default function NotificationBell() {
     const { notifications, unreadCount, markAsRead, markAllRead, requestPermission } = useOSNotifications()
     const [isOpen, setIsOpen] = useState(false)
+    const [currentTime, setCurrentTime] = useState(Date.now())
 
     useEffect(() => {
         requestPermission()
     }, [requestPermission])
 
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(Date.now()), 60000)
+        return () => clearInterval(interval)
+    }, [])
+
     const formatTimeAgo = (date: string) => {
-        const diff = Date.now() - new Date(date).getTime()
+        const diff = currentTime - new Date(date).getTime()
         const mins = Math.floor(diff / 60000)
         if (mins < 1) return 'agora'
         if (mins < 60) return `${mins}min`

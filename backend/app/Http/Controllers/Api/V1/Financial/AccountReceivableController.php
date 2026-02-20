@@ -174,33 +174,35 @@ class AccountReceivableController extends Controller
             return response()->json(['message' => 'Título cancelado não pode receber baixa'], 422);
         }
 
-        $remaining = bcsub((string) $accountReceivable->amount, (string) $accountReceivable->amount_paid, 2);
-        if (bccomp($remaining, '0', 2) <= 0) {
-            return response()->json(['message' => 'Título já liquidado'], 422);
-        }
-
-        if (bccomp((string) $validated['amount'], $remaining, 2) > 0) {
-            return response()->json(['message' => 'Valor excede o saldo restante (R$ ' . number_format((float) $remaining, 2, ',', '.') . ')'], 422);
-        }
-
         try {
             $payment = DB::transaction(function () use ($validated, $request, $accountReceivable) {
-                $payment = Payment::create([
+                $lockedReceivable = AccountReceivable::lockForUpdate()->find($accountReceivable->id);
+
+                $remaining = bcsub((string) $lockedReceivable->amount, (string) $lockedReceivable->amount_paid, 2);
+                if (bccomp($remaining, '0', 2) <= 0) {
+                    throw new \Exception('Título já liquidado', 422);
+                }
+
+                if (bccomp((string) $validated['amount'], $remaining, 2) > 0) {
+                    throw new \Exception('Valor excede o saldo restante (R$ ' . number_format((float) $remaining, 2, ',', '.') . ')', 422);
+                }
+
+                return Payment::create([
                     ...$validated,
                     'tenant_id' => $this->tenantId($request),
                     'payable_type' => AccountReceivable::class,
-                    'payable_id' => $accountReceivable->id,
+                    'payable_id' => $lockedReceivable->id,
                     'received_by' => $request->user()->id,
                 ]);
-
-                // amount_paid e status são atualizados automaticamente pelo Payment::booted()
-                return $payment;
             });
 
             PaymentReceived::dispatch($accountReceivable->fresh(), $payment);
 
             return response()->json($payment->load('receiver:id,name'), 201);
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
+            if ($e->getCode() === 422) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
             Log::error('AR pay failed', ['id' => $accountReceivable->id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Erro ao registrar pagamento'], 500);
         }

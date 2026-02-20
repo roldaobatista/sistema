@@ -23,7 +23,9 @@ class WorkOrderTest extends TestCase
 
     protected function setUp(): void
     {
+        dump('entering setup');
         parent::setUp();
+        dump('parent setup done');
 
         $this->withoutMiddleware([
             \App\Http\Middleware\EnsureTenantScope::class,
@@ -31,17 +33,21 @@ class WorkOrderTest extends TestCase
         ]);
 
         $this->tenant = Tenant::factory()->create();
+        dump('tenant created');
         $this->user = User::factory()->create([
             'tenant_id' => $this->tenant->id,
             'current_tenant_id' => $this->tenant->id,
             'is_active' => true,
         ]);
+        dump('user created');
         $this->customer = Customer::factory()->create([
             'tenant_id' => $this->tenant->id,
         ]);
+        dump('customer created');
 
         app()->instance('current_tenant_id', $this->tenant->id);
         Sanctum::actingAs($this->user, ['*']);
+        dump('exiting setup');
     }
 
     // ── CRUD ──

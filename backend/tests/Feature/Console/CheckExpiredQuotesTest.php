@@ -53,9 +53,9 @@ class CheckExpiredQuotesTest extends TestCase
             ->expectsOutput('Marked 1 quote(s) as expired.')
             ->assertExitCode(0);
 
-        $this->assertEquals(Quote::STATUS_EXPIRED, $expiredQuote->fresh()->status);
-        $this->assertEquals(Quote::STATUS_SENT, $validQuote->fresh()->status);
-        $this->assertEquals(Quote::STATUS_APPROVED, $approvedQuote->fresh()->status);
+        $this->assertEquals(Quote::STATUS_EXPIRED, $expiredQuote->fresh()->status->value ?? $expiredQuote->fresh()->status);
+        $this->assertEquals(Quote::STATUS_SENT, $validQuote->fresh()->status->value ?? $validQuote->fresh()->status);
+        $this->assertEquals(Quote::STATUS_APPROVED, $approvedQuote->fresh()->status->value ?? $approvedQuote->fresh()->status);
 
         $this->assertDatabaseHas('audit_logs', [
             'tenant_id' => $tenant->id,

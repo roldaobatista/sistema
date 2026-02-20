@@ -190,23 +190,24 @@ class AccountPayableController extends Controller
             return response()->json(['message' => 'Título cancelado não pode receber baixa'], 422);
         }
 
-        $remaining = bcsub((string) $accountPayable->amount, (string) $accountPayable->amount_paid, 2);
-        if (bccomp($remaining, '0', 2) <= 0) {
-            return response()->json(['message' => 'Título já liquidado'], 422);
-        }
-
-        if (bccomp((string) $validated['amount'], $remaining, 2) > 0) {
-            return response()->json(['message' => 'Valor excede o saldo restante (R$ ' . number_format((float) $remaining, 2, ',', '.') . ')'], 422);
-        }
-
         try {
-            // amount_paid e status são atualizados automaticamente pelo Payment::booted()
             $payment = DB::transaction(function () use ($validated, $request, $accountPayable) {
+                $lockedPayable = AccountPayable::lockForUpdate()->find($accountPayable->id);
+
+                $remaining = bcsub((string) $lockedPayable->amount, (string) $lockedPayable->amount_paid, 2);
+                if (bccomp($remaining, '0', 2) <= 0) {
+                    throw new \Exception('Título já liquidado', 422);
+                }
+
+                if (bccomp((string) $validated['amount'], $remaining, 2) > 0) {
+                    throw new \Exception('Valor excede o saldo restante (R$ ' . number_format((float) $remaining, 2, ',', '.') . ')', 422);
+                }
+
                 return Payment::create([
                     ...$validated,
                     'tenant_id' => $this->tenantId($request),
                     'payable_type' => AccountPayable::class,
-                    'payable_id' => $accountPayable->id,
+                    'payable_id' => $lockedPayable->id,
                     'received_by' => $request->user()->id,
                 ]);
             });
@@ -214,7 +215,10 @@ class AccountPayableController extends Controller
             PaymentMade::dispatch($accountPayable->fresh(), $payment);
 
             return response()->json($payment->load('receiver:id,name'), 201);
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
+            if ($e->getCode() === 422) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
             Log::error('AP pay failed', ['id' => $accountPayable->id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Erro ao registrar pagamento'], 500);
         }

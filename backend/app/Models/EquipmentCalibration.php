@@ -26,6 +26,8 @@ class EquipmentCalibration extends Model
         'received_date', 'issued_date', 'calibration_location',
         'calibration_location_type', 'before_adjustment_data', 'after_adjustment_data',
         'verification_type', 'verification_division_e', 'prefilled_from_id',
+        'gravity_acceleration', 'decision_rule', 'uncertainty_budget',
+        'laboratory_address', 'scope_declaration', 'precision_class',
     ];
 
     protected function casts(): array
@@ -46,6 +48,8 @@ class EquipmentCalibration extends Model
             'before_adjustment_data' => 'array',
             'after_adjustment_data' => 'array',
             'verification_division_e' => 'decimal:6',
+            'gravity_acceleration' => 'decimal:6',
+            'uncertainty_budget' => 'array',
         ];
     }
 

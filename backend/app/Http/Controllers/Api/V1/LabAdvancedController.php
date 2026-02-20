@@ -157,7 +157,7 @@ class LabAdvancedController extends Controller
     public function signCertificate(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'certificate_id' => 'required|integer|exists:calibration_certificates,id',
+            'certificate_id' => 'required|integer|exists:equipment_calibrations,id',
             'signer_name' => 'required|string|max:255',
             'signer_role' => 'required|in:technical_responsible,quality_manager,laboratory_director',
         ]);
@@ -165,7 +165,7 @@ class LabAdvancedController extends Controller
         try {
             DB::beginTransaction();
 
-            $cert = DB::table('calibration_certificates')->find($validated['certificate_id']);
+            $cert = DB::table('equipment_calibrations')->find($validated['certificate_id']);
             if (!$cert) {
                 return response()->json(['message' => 'Certificado não encontrado'], 404);
             }
@@ -183,11 +183,10 @@ class LabAdvancedController extends Controller
             ]);
 
             // Update certificate status
-            DB::table('calibration_certificates')
+            DB::table('equipment_calibrations')
                 ->where('id', $validated['certificate_id'])
                 ->update([
-                    'signed_by' => $validated['signer_name'],
-                    'signed_at' => now(),
+                    'approved_by' => $validated['signer_name'], // Mapeando para o campo correto aprovado
                     'updated_at' => now(),
                 ]);
 

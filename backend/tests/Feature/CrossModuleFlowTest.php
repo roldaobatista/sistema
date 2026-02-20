@@ -100,9 +100,9 @@ class CrossModuleFlowTest extends TestCase
         $custResponse = $this->postJson('/api/v1/customers', [
             'name' => 'Cliente Cadeia Completa',
             'type' => 'PJ',
-            'document' => '12.345.678/0001-90',
         ]);
         $custResponse->assertCreated();
+
         $custId = $custResponse->json('data.id') ?? $custResponse->json('id');
 
         // Create WO for this customer
@@ -144,10 +144,30 @@ class CrossModuleFlowTest extends TestCase
 
     public function test_quote_creation_with_customer(): void
     {
+        $product = \App\Models\Product::factory()->create(['tenant_id' => $this->tenant->id]);
+        $equipment = \App\Models\Equipment::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'customer_id' => $this->customer->id,
+        ]);
+
         $response = $this->postJson('/api/v1/quotes', [
             'customer_id' => $this->customer->id,
             'title' => 'Orçamento para calibração anual',
             'valid_until' => now()->addDays(30)->format('Y-m-d'),
+            'equipments' => [
+                [
+                    'equipment_id' => $equipment->id,
+                    'items' => [
+                        [
+                            'type' => 'product',
+                            'product_id' => $product->id,
+                            'quantity' => 1,
+                            'original_price' => 100,
+                            'unit_price' => 100,
+                        ]
+                    ]
+                ]
+            ]
         ]);
 
         $response->assertCreated();
@@ -170,7 +190,7 @@ class CrossModuleFlowTest extends TestCase
         ]);
 
         $response = $this->deleteJson("/api/v1/customers/{$customer->id}");
-        $response->assertOk();
+        $response->assertStatus(204);
     }
 
     public function test_deleting_customer_with_os_is_restricted(): void
@@ -183,6 +203,6 @@ class CrossModuleFlowTest extends TestCase
 
         $response = $this->deleteJson("/api/v1/customers/{$this->customer->id}");
 
-        $response->assertStatus(422);
+        $response->assertStatus(409);
     }
 }

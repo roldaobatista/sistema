@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { isAxiosError } from 'axios'
 import api from '@/lib/api'
 
 interface RoleDetail {
@@ -45,7 +46,7 @@ interface AuthState {
     setUser: (user: User) => void
 }
 
-function normalizeUser(rawUser: any): User {
+function normalizeUser(rawUser: Partial<User> & Record<string, unknown>): User {
     const permissions = Array.isArray(rawUser?.permissions)
         ? rawUser.permissions
         : (Array.isArray(rawUser?.all_permissions) ? rawUser.all_permissions : [])
@@ -55,12 +56,17 @@ function normalizeUser(rawUser: any): User {
         : (Array.isArray(rawUser?.all_roles) ? rawUser.all_roles : [])
 
     return {
-        ...rawUser,
+        id: Number(rawUser?.id) || 0,
+        name: String(rawUser?.name || ''),
+        email: String(rawUser?.email || ''),
+        phone: rawUser?.phone ? String(rawUser.phone) : null,
+        tenant_id: rawUser?.tenant_id ? Number(rawUser.tenant_id) : null,
         permissions,
         roles,
-        role_details: Array.isArray(rawUser?.role_details) ? rawUser.role_details : [],
+        role_details: Array.isArray(rawUser?.role_details) ? (rawUser.role_details as RoleDetail[]) : [],
         all_permissions: permissions,
         all_roles: roles,
+        tenant: rawUser?.tenant ? (rawUser.tenant as Tenant) : null,
     }
 }
 
@@ -87,9 +93,9 @@ export const useAuthStore = create<AuthState>()(
                     })
 
                     await get().fetchMe()
-                } catch (err: any) {
+                } catch (err: unknown) {
                     set({ isAuthenticated: false, user: null, token: null })
-                    if (err?.response?.status === 403) {
+                    if (isAxiosError(err) && err.response?.status === 403) {
                         throw new Error(err.response?.data?.message ?? 'Conta desativada.')
                     }
                     throw err

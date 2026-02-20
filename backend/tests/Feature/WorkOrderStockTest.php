@@ -32,7 +32,6 @@ class WorkOrderStockTest extends TestCase
             'type' => 'fixed',
             'name' => 'Central Warehouse',
             'code' => 'CENTRAL',
-            'branch_id' => null,
             'is_active' => true,
         ]);
 
@@ -48,12 +47,26 @@ class WorkOrderStockTest extends TestCase
             'stock_qty' => 100,
             'sell_price' => 50,
         ]);
+        
+        \App\Models\WarehouseStock::create([
+            'tenant_id' => $this->tenant->id,
+            'warehouse_id' => \App\Models\Warehouse::where('code', 'CENTRAL')->first()->id,
+            'product_id' => $productA->id,
+            'quantity' => 100,
+        ]);
 
         $productB = Product::factory()->create([
             'tenant_id' => $this->tenant->id,
             'track_stock' => true,
             'stock_qty' => 100,
             'sell_price' => 80,
+        ]);
+
+        \App\Models\WarehouseStock::create([
+            'tenant_id' => $this->tenant->id,
+            'warehouse_id' => \App\Models\Warehouse::where('code', 'CENTRAL')->first()->id,
+            'product_id' => $productB->id,
+            'quantity' => 100,
         ]);
 
         // 2. Create OS with Product A (Qty 10)
@@ -92,6 +105,13 @@ class WorkOrderStockTest extends TestCase
             'tenant_id' => $this->tenant->id,
             'track_stock' => true,
             'stock_qty' => 50,
+        ]);
+        
+        \App\Models\WarehouseStock::create([
+            'tenant_id' => $this->tenant->id,
+            'warehouse_id' => \App\Models\Warehouse::where('code', 'CENTRAL')->first()->id,
+            'product_id' => $product->id,
+            'quantity' => 50,
         ]);
 
         $workOrder = WorkOrder::factory()->create(['tenant_id' => $this->tenant->id]);

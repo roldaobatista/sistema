@@ -109,6 +109,10 @@ class PermissionController extends Controller
             $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id');
         })->findOrFail($validated['role_id']);
 
+        if ($role->tenant_id === null || (int) $role->tenant_id !== $tenantId) {
+            abort(403, 'Permissões de roles de sistema não podem ser alteradas. Clone a role se desejar personalizar.');
+        }
+
         if ($role->name === Role::SUPER_ADMIN) {
             return response()->json(['message' => 'Permissões do super_admin não podem ser alteradas.'], 422);
         }
