@@ -134,54 +134,67 @@ class CustomerMergeController extends Controller
      */
     public function searchDuplicates(Request $request)
     {
-        // Find customers with same name OR same document OR same email
-        // This is a heavy query, optimize for specific cases or limited set.
-        
-        $type = $request->query('type', 'name'); // name, document, email
+        $type = $request->query('type', 'name');
 
-        // DB-agnostic aggregate: GROUP_CONCAT (MySQL/SQLite) vs STRING_AGG (PostgreSQL)
         $driver = DB::connection()->getDriverName();
         $concatExpr = $driver === 'pgsql'
             ? "STRING_AGG(CAST(id AS VARCHAR), ',')"
             : 'GROUP_CONCAT(id)';
-        
+
         $duplicates = [];
 
         if ($type === 'document') {
-             $duplicates = Customer::select('document', DB::raw('count(*) as count'), DB::raw("{$concatExpr} as ids"))
+            $normalizedDoc = "REPLACE(REPLACE(REPLACE(REPLACE(document, '.', ''), '/', ''), '-', ''), ' ', '')";
+            $duplicates = Customer::select(
+                    DB::raw("{$normalizedDoc} as document_normalized"),
+                    DB::raw('count(*) as count'),
+                    DB::raw("{$concatExpr} as ids")
+                )
                 ->whereNotNull('document')
                 ->where('document', '!=', '')
-                ->groupBy('document')
+                ->groupBy(DB::raw($normalizedDoc))
                 ->having('count', '>', 1)
                 ->limit(20)
                 ->get();
         } elseif ($type === 'email') {
-             $duplicates = Customer::select('email', DB::raw('count(*) as count'), DB::raw("{$concatExpr} as ids"))
+            $duplicates = Customer::select(
+                    DB::raw('LOWER(TRIM(email)) as email_normalized'),
+                    DB::raw('count(*) as count'),
+                    DB::raw("{$concatExpr} as ids")
+                )
                 ->whereNotNull('email')
                 ->where('email', '!=', '')
-                ->groupBy('email')
+                ->groupBy(DB::raw('LOWER(TRIM(email))'))
                 ->having('count', '>', 1)
                 ->limit(20)
                 ->get();
         } else {
-            // Name fuzzy search is hard in pure SQL efficiently without fulltext, 
-            // but we can look for exact matches first.
-            $duplicates = Customer::select('name', DB::raw('count(*) as count'), DB::raw("{$concatExpr} as ids"))
-                ->groupBy('name')
+            $duplicates = Customer::select(
+                    DB::raw('LOWER(TRIM(name)) as name_normalized'),
+                    DB::raw('count(*) as count'),
+                    DB::raw("{$concatExpr} as ids")
+                )
+                ->groupBy(DB::raw('LOWER(TRIM(name))'))
                 ->having('count', '>', 1)
                 ->limit(20)
                 ->get();
         }
 
-        // Hydrate the IDs to return basic info
         $results = [];
         foreach ($duplicates as $dup) {
             $ids = explode(',', $dup->ids);
             $customers = Customer::whereIn('id', $ids)->get(['id', 'name', 'document', 'email', 'created_at']);
+
+            $key = match ($type) {
+                'document' => $dup->document_normalized,
+                'email' => $dup->email_normalized,
+                default => $dup->name_normalized,
+            };
+
             $results[] = [
-                'key' => $dup->{$type}, // The duplicate value
+                'key' => $key ?: $customers->first()?->name,
                 'count' => $dup->count,
-                'customers' => $customers
+                'customers' => $customers,
             ];
         }
 
