@@ -13,6 +13,8 @@ import { ArrowLeft, Save, Plus, Trash2, Package, Wrench } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 import QuickProductServiceModal from '@/components/common/QuickProductServiceModal'
+import { CurrencyInput } from '@/components/common/CurrencyInput'
+import { PercentInput } from '@/components/common/PercentInput'
 import { ItemSearchCombobox } from '@/components/common/ItemSearchCombobox'
 
 const formatCurrency = (v: number | string) => {
