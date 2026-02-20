@@ -215,7 +215,8 @@ class AuvoApiClient
             return 0;
         }
 
-        return $response['result']['totalCount']
+        return $response['result']['pagedSearchReturnData']['totalItems']
+            ?? $response['result']['totalCount']
             ?? $response['result']['total']
             ?? $response['totalCount']
             ?? 0;
