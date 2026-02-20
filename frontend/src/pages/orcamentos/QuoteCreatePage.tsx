@@ -10,7 +10,7 @@ import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/common/CurrencyInput'
-import { PercentInput } from '@/components/common/PercentInput'
+import { DiscountInput, type DiscountMode } from '@/components/common/DiscountInput'
 import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 import QuickEquipmentModal from '@/components/common/QuickEquipmentModal'
@@ -39,11 +39,11 @@ const STRINGS = {
     item: 'Item',
     quantity: 'Qtd',
     unitPrice: 'Preço Unit.',
-    discount: 'Desc %',
+    discount: 'Desconto',
     subtotal: 'Subtotal',
     summary: 'Resumo do Orçamento',
     totalItems: 'Total de itens',
-    globalDiscount: 'Desconto global (%)',
+    globalDiscount: 'Desconto global',
     total: 'Total',
     saveQuote: 'Salvar Orçamento',
     saving: 'Salvando...',
@@ -58,7 +58,8 @@ interface EquipmentBlock {
 }
 interface ItemRow {
     type: 'product' | 'service'; product_id?: number; service_id?: number
-    name: string; quantity: number; original_price: number; unit_price: number; discount_percentage: number
+    name: string; quantity: number; original_price: number; unit_price: number
+    discount_percentage: number; discount_mode: DiscountMode; discount_value: number
 }
 
 export function QuoteCreatePage() {
@@ -72,6 +73,8 @@ export function QuoteCreatePage() {
     const [customerSearch, setCustomerSearch] = useState('')
     const [validUntil, setValidUntil] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
+    const [discountAmount, setDiscountAmount] = useState(0)
+    const [globalDiscountMode, setGlobalDiscountMode] = useState<DiscountMode>('percent')
     const [displacementValue, setDisplacementValue] = useState(0)
     const [observations, setObservations] = useState('')
     const [internalNotes, setInternalNotes] = useState('')
@@ -166,7 +169,8 @@ export function QuoteCreatePage() {
         setBlocks(p => p.map((b, i) => i === blockIdx ? {
             ...b, items: [...b.items, {
                 type, ...(type === 'product' ? { product_id: id } : { service_id: id }),
-                name, quantity: 1, original_price: price, unit_price: price, discount_percentage: 0,
+                name, quantity: 1, original_price: price, unit_price: price,
+                discount_percentage: 0, discount_mode: 'percent' as DiscountMode, discount_value: 0,
             }]
         } : b))
     }
@@ -181,12 +185,18 @@ export function QuoteCreatePage() {
         setBlocks(p => p.map((b, bi) => bi === blockIdx ? { ...b, items: b.items.filter((_, ii) => ii !== itemIdx) } : b))
     }
 
-    const subtotal = blocks.reduce((acc, b) => acc + b.items.reduce((a, it) => {
-        const price = it.unit_price * (1 - it.discount_percentage / 100)
-        return a + price * it.quantity
-    }, 0), 0)
-    const discountAmount = discountPercentage > 0 ? subtotal * (discountPercentage / 100) : 0
-    const total = subtotal - discountAmount + displacementValue
+    const calcItemSubtotal = (it: ItemRow) => {
+        if (it.discount_mode === 'value' && it.discount_value > 0) {
+            return Math.max(0, it.unit_price * it.quantity - it.discount_value)
+        }
+        return it.unit_price * (1 - it.discount_percentage / 100) * it.quantity
+    }
+
+    const subtotal = blocks.reduce((acc, b) => acc + b.items.reduce((a, it) => a + calcItemSubtotal(it), 0), 0)
+    const globalDiscount = globalDiscountMode === 'percent'
+        ? (discountPercentage > 0 ? subtotal * discountPercentage / 100 : 0)
+        : discountAmount
+    const total = subtotal - globalDiscount + displacementValue
 
     const qc = useQueryClient()
 
@@ -198,7 +208,8 @@ export function QuoteCreatePage() {
                 seller_id: sellerId || undefined,
                 source: source || null,
                 valid_until: validUntil || null,
-                discount_percentage: discountPercentage,
+                discount_percentage: globalDiscountMode === 'percent' ? discountPercentage : 0,
+                discount_amount: globalDiscountMode === 'value' ? discountAmount : 0,
                 displacement_value: displacementValue,
                 observations: observations || null,
                 internal_notes: internalNotes || null,
@@ -207,11 +218,17 @@ export function QuoteCreatePage() {
                 equipments: blocks.map(b => ({
                     equipment_id: b.equipment_id,
                     description: b.description,
-                    items: b.items.map(it => ({
-                        type: it.type, product_id: it.product_id, service_id: it.service_id,
-                        quantity: it.quantity, original_price: it.original_price,
-                        unit_price: it.unit_price, discount_percentage: it.discount_percentage,
-                    })),
+                    items: b.items.map(it => {
+                        let discPct = it.discount_percentage
+                        if (it.discount_mode === 'value' && it.discount_value > 0 && it.unit_price > 0) {
+                            discPct = Math.round((it.discount_value / (it.unit_price * it.quantity)) * 10000) / 100
+                        }
+                        return {
+                            type: it.type, product_id: it.product_id, service_id: it.service_id,
+                            quantity: it.quantity, original_price: it.original_price,
+                            unit_price: it.unit_price, discount_percentage: discPct,
+                        }
+                    }),
                 })),
             })
         },
@@ -443,11 +460,25 @@ export function QuoteCreatePage() {
                                             <CurrencyInput title="Preço Unitário" placeholder="R$ 0,00" value={it.unit_price}
                                                 onChange={val => updateItem(bIdx, iIdx, 'unit_price', val)}
                                                 className="w-28 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm h-8" />
-                                            <PercentInput title="Desconto (%)" placeholder="0,00%" value={it.discount_percentage}
-                                                onChange={val => updateItem(bIdx, iIdx, 'discount_percentage', val)}
-                                                className="w-24 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm h-8" />
+                                            <DiscountInput
+                                                title="Desconto"
+                                                mode={it.discount_mode}
+                                                value={it.discount_mode === 'percent' ? it.discount_percentage : it.discount_value}
+                                                referenceAmount={it.unit_price * it.quantity}
+                                                className="w-32"
+                                                onUpdate={(mode, val) => {
+                                                    setBlocks(p => p.map((b, bi) => bi !== bIdx ? b : {
+                                                        ...b, items: b.items.map((item, ii) => ii !== iIdx ? item : {
+                                                            ...item,
+                                                            discount_mode: mode,
+                                                            discount_percentage: mode === 'percent' ? val : 0,
+                                                            discount_value: mode === 'value' ? val : 0,
+                                                        })
+                                                    }))
+                                                }}
+                                            />
                                             <span className="w-24 text-right font-medium text-surface-900">
-                                                {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
+                                                {formatCurrency(calcItemSubtotal(it))}
                                             </span>
                                             <button title="Remover Item" onClick={() => removeItem(bIdx, iIdx)} className="text-surface-400 hover:text-red-500">
                                                 <Trash2 className="h-3.5 w-3.5" />
@@ -549,7 +580,7 @@ export function QuoteCreatePage() {
                                     <div key={i} className="flex justify-between text-sm py-1">
                                         <span className="text-surface-700">{it.name} × {it.quantity}</span>
                                         <span className="font-medium text-surface-900">
-                                            {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
+                                            {formatCurrency(calcItemSubtotal(it))}
                                         </span>
                                     </div>
                                 ))}
@@ -562,10 +593,19 @@ export function QuoteCreatePage() {
                                 <span>{blocks.reduce((a, b) => a + b.items.length, 0)}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-surface-600">{STRINGS.globalDiscount}</span>
-                                <PercentInput title="Desconto Global (%)" placeholder="0,00%" value={discountPercentage}
-                                    onChange={val => setDiscountPercentage(val)}
-                                    className="w-24 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm h-8" />
+                                <span className="text-surface-600">Desconto global</span>
+                                <DiscountInput
+                                    title="Desconto Global"
+                                    mode={globalDiscountMode}
+                                    value={globalDiscountMode === 'percent' ? discountPercentage : discountAmount}
+                                    referenceAmount={subtotal}
+                                    className="w-36"
+                                    onUpdate={(mode, val) => {
+                                        setGlobalDiscountMode(mode)
+                                        if (mode === 'percent') { setDiscountPercentage(val); setDiscountAmount(0) }
+                                        else { setDiscountAmount(val); setDiscountPercentage(0) }
+                                    }}
+                                />
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-surface-600">Deslocamento (R$)</span>
@@ -573,6 +613,12 @@ export function QuoteCreatePage() {
                                     onChange={val => setDisplacementValue(val)}
                                     className="w-28 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm h-8" />
                             </div>
+                            {globalDiscount > 0 && (
+                                <div className="flex justify-between text-sm text-red-500">
+                                    <span>Desconto</span>
+                                    <span>-{formatCurrency(globalDiscount)}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-base font-bold pt-2">
                                 <span className="text-surface-900">{STRINGS.total}</span>
                                 <span className="text-brand-600">{formatCurrency(total)}</span>

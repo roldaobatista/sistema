@@ -14,7 +14,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 import QuickProductServiceModal from '@/components/common/QuickProductServiceModal'
 import { CurrencyInput } from '@/components/common/CurrencyInput'
-import { PercentInput } from '@/components/common/PercentInput'
+import { DiscountInput, type DiscountMode } from '@/components/common/DiscountInput'
 import { ItemSearchCombobox } from '@/components/common/ItemSearchCombobox'
 
 const formatCurrency = (v: number | string) => {
@@ -31,6 +31,8 @@ interface ItemForm {
     original_price: number
     unit_price: number
     discount_percentage: number
+    discount_mode: DiscountMode
+    discount_value: number
 }
 
 export function QuoteEditPage() {
@@ -47,9 +49,11 @@ export function QuoteEditPage() {
     const [paymentTerms, setPaymentTerms] = useState('')
     const [paymentTermsDetail, setPaymentTermsDetail] = useState('')
     const [discountPercentage, setDiscountPercentage] = useState(0)
+    const [discountAmountVal, setDiscountAmountVal] = useState(0)
+    const [globalDiscountMode, setGlobalDiscountMode] = useState<DiscountMode>('percent')
     const [displacementValue, setDisplacementValue] = useState(0)
     const [addItemEquipmentId, setAddItemEquipmentId] = useState<number | null>(null)
-    const [newItem, setNewItem] = useState<ItemForm>({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
+    const [newItem, setNewItem] = useState<ItemForm>({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0, discount_mode: 'percent', discount_value: 0 })
     const [showAddEquipment, setShowAddEquipment] = useState(false)
     const [showQuickProductService, setShowQuickProductService] = useState(false)
     const [quickPSTab, setQuickPSTab] = useState<'product' | 'service'>('product')
@@ -77,7 +81,11 @@ export function QuoteEditPage() {
             setObservations(quote.observations ?? '')
             setInternalNotes(quote.internal_notes ?? '')
             setSource(quote.source ?? '')
-            setDiscountPercentage(parseFloat(String(quote.discount_percentage)) || 0)
+            const pct = parseFloat(String(quote.discount_percentage)) || 0
+            const amt = parseFloat(String(quote.discount_amount)) || 0
+            setDiscountPercentage(pct)
+            setDiscountAmountVal(amt)
+            setGlobalDiscountMode(pct > 0 ? 'percent' : amt > 0 ? 'value' : 'percent')
             setDisplacementValue(parseFloat(String(quote.displacement_value)) || 0)
             setPaymentTerms((quote as any).payment_terms ?? '')
             setPaymentTermsDetail((quote as any).payment_terms_detail ?? '')
@@ -110,11 +118,19 @@ export function QuoteEditPage() {
     })
 
     const addItemMut = useMutation({
-        mutationFn: ({ equipId, data }: { equipId: number; data: ItemForm }) => api.post(`/quote-equipments/${equipId}/items`, data),
+        mutationFn: ({ equipId, data }: { equipId: number; data: ItemForm }) => {
+            const payload = { ...data } as any
+            if (data.discount_mode === 'value' && data.discount_value > 0 && data.unit_price > 0) {
+                payload.discount_percentage = Math.round((data.discount_value / (data.unit_price * data.quantity)) * 10000) / 100
+            }
+            delete payload.discount_mode
+            delete payload.discount_value
+            return api.post(`/quote-equipments/${equipId}/items`, payload)
+        },
         onSuccess: () => {
             toast.success('Item adicionado!')
             setAddItemEquipmentId(null)
-            setNewItem({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0 })
+            setNewItem({ type: 'service', custom_description: '', quantity: 1, original_price: 0, unit_price: 0, discount_percentage: 0, discount_mode: 'percent', discount_value: 0 })
             invalidateAll()
         },
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao adicionar item'),
@@ -138,7 +154,8 @@ export function QuoteEditPage() {
             source: source || null,
             observations: observations || null,
             internal_notes: internalNotes || null,
-            discount_percentage: discountPercentage,
+            discount_percentage: globalDiscountMode === 'percent' ? discountPercentage : 0,
+            discount_amount: globalDiscountMode === 'value' ? discountAmountVal : 0,
             displacement_value: displacementValue,
             payment_terms: paymentTerms || null,
             payment_terms_detail: paymentTermsDetail || null,
@@ -196,12 +213,20 @@ export function QuoteEditPage() {
                         <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-content-secondary mb-1">Desconto (%)</label>
-                        <Input type="number" min={0} max={100} step={0.01} value={discountPercentage} onChange={(e) => setDiscountPercentage(parseFloat(e.target.value) || 0)} />
+                        <label className="block text-sm font-medium text-content-secondary mb-1">Desconto</label>
+                        <DiscountInput
+                            mode={globalDiscountMode}
+                            value={globalDiscountMode === 'percent' ? discountPercentage : discountAmountVal}
+                            onUpdate={(mode, val) => {
+                                setGlobalDiscountMode(mode)
+                                if (mode === 'percent') { setDiscountPercentage(val); setDiscountAmountVal(0) }
+                                else { setDiscountAmountVal(val); setDiscountPercentage(0) }
+                            }}
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-content-secondary mb-1">Deslocamento (R$)</label>
-                        <Input type="number" min={0} step={0.01} value={displacementValue} onChange={(e) => setDisplacementValue(parseFloat(e.target.value) || 0)} />
+                        <CurrencyInput value={displacementValue} onChange={val => setDisplacementValue(val)} />
                     </div>
                     <div className="md:col-span-2">
                         <label htmlFor="quote-observations" className="block text-sm font-medium text-content-secondary mb-1">Observações</label>
@@ -386,8 +411,20 @@ export function QuoteEditPage() {
                                     <CurrencyInput value={newItem.unit_price} onChange={(val) => setNewItem({ ...newItem, unit_price: val })} />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-content-secondary">Desconto (%)</label>
-                                    <PercentInput value={newItem.discount_percentage} onChange={(val) => setNewItem({ ...newItem, discount_percentage: val })} />
+                                    <label className="text-xs text-content-secondary">Desconto</label>
+                                    <DiscountInput
+                                        mode={newItem.discount_mode}
+                                        value={newItem.discount_mode === 'value' ? newItem.discount_value : newItem.discount_percentage}
+                                        referenceAmount={newItem.unit_price * newItem.quantity}
+                                        onUpdate={(mode, val) => {
+                                            setNewItem(prev => ({
+                                                ...prev,
+                                                discount_mode: mode,
+                                                discount_percentage: mode === 'percent' ? val : 0,
+                                                discount_value: mode === 'value' ? val : 0,
+                                            }))
+                                        }}
+                                    />
                                 </div>
                                 <div>
                                     <label className="text-xs text-content-secondary">Descrição</label>
@@ -459,6 +496,8 @@ function EditableItemRow({ item, onSave, onRemove, saving }: {
     const [qty, setQty] = useState(item.quantity)
     const [price, setPrice] = useState(parseFloat(String(item.unit_price)))
     const [disc, setDisc] = useState(parseFloat(String(item.discount_percentage)) || 0)
+    const [discMode, setDiscMode] = useState<DiscountMode>('percent')
+    const [discValue, setDiscValue] = useState(0)
     const [confirmDelete, setConfirmDelete] = useState(false)
 
     const name = item.custom_description || item.product?.name || item.service?.name || '—'
@@ -492,6 +531,15 @@ function EditableItemRow({ item, onSave, onRemove, saving }: {
         )
     }
 
+    const handleSaveItem = () => {
+        let finalDisc = disc
+        if (discMode === 'value' && discValue > 0 && price > 0) {
+            finalDisc = Math.round((discValue / (price * qty)) * 10000) / 100
+        }
+        onSave({ quantity: qty, unit_price: price, discount_percentage: finalDisc })
+        setEditing(false)
+    }
+
     return (
         <div className="p-3 rounded-lg border border-brand-300 bg-brand-50/20">
             <div className="grid gap-2 grid-cols-3">
@@ -504,13 +552,22 @@ function EditableItemRow({ item, onSave, onRemove, saving }: {
                     <CurrencyInput value={price} onChange={(val) => setPrice(val)} />
                 </div>
                 <div>
-                    <label className="text-xs text-content-secondary">Desconto (%)</label>
-                    <PercentInput value={disc} onChange={(val) => setDisc(val)} />
+                    <label className="text-xs text-content-secondary">Desconto</label>
+                    <DiscountInput
+                        mode={discMode}
+                        value={discMode === 'percent' ? disc : discValue}
+                        referenceAmount={price * qty}
+                        onUpdate={(mode, val) => {
+                            setDiscMode(mode)
+                            if (mode === 'percent') { setDisc(val); setDiscValue(0) }
+                            else { setDiscValue(val); setDisc(0) }
+                        }}
+                    />
                 </div>
             </div>
             <div className="flex gap-2 justify-end mt-2">
                 <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Cancelar</Button>
-                <Button size="sm" disabled={saving} onClick={() => { onSave({ quantity: qty, unit_price: price, discount_percentage: disc }); setEditing(false) }}>
+                <Button size="sm" disabled={saving} onClick={handleSaveItem}>
                     Salvar
                 </Button>
             </div>
