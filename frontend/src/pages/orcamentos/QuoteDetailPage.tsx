@@ -34,6 +34,7 @@ export function QuoteDetailPage() {
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [proposalOpen, setProposalOpen] = useState(false)
     const [proposalExpires, setProposalExpires] = useState('')
+    const [sendModalOpen, setSendModalOpen] = useState(false)
     const [emailOpen, setEmailOpen] = useState(false)
     const [emailTo, setEmailTo] = useState('')
     const [emailName, setEmailName] = useState('')
@@ -101,11 +102,35 @@ export function QuoteDetailPage() {
         onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao aprovar internamente'),
     })
 
+    const [pendingSendChannel, setPendingSendChannel] = useState<'none' | 'whatsapp' | 'email'>('none')
+
     const sendMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/send`),
-        onSuccess: () => { toast.success('Orçamento enviado!'); invalidateAll() },
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao enviar'),
+        onSuccess: async () => {
+            toast.success('Orçamento marcado como enviado!')
+            invalidateAll()
+            setSendModalOpen(false)
+            if (pendingSendChannel === 'whatsapp') {
+                try {
+                    const res = await api.get(`/quotes/${id}/whatsapp`)
+                    window.open(res.data.url, '_blank')
+                } catch {
+                    toast.error('Erro ao gerar link WhatsApp')
+                }
+            } else if (pendingSendChannel === 'email') {
+                setEmailTo(quote?.customer?.email ?? '')
+                setEmailName(quote?.customer?.name ?? '')
+                setEmailOpen(true)
+            }
+            setPendingSendChannel('none')
+        },
+        onError: (err: any) => { toast.error(err?.response?.data?.message || 'Erro ao enviar'); setPendingSendChannel('none') },
     })
+
+    const handleSendViaChannel = (channel: 'none' | 'whatsapp' | 'email') => {
+        setPendingSendChannel(channel)
+        sendMut.mutate()
+    }
 
     const approveMut = useMutation({
         mutationFn: () => api.post(`/quotes/${id}/approve`),
@@ -271,8 +296,8 @@ export function QuoteDetailPage() {
                         </Button>
                     )}
                     {canSend && isInternallyApproved && (
-                        <Button size="sm" icon={<Send className="h-4 w-4" />} onClick={() => sendMut.mutate()} disabled={sendMut.isPending}>
-                            {sendMut.isPending ? 'Enviando...' : 'Enviar ao Cliente'}
+                        <Button size="sm" icon={<Send className="h-4 w-4" />} onClick={() => setSendModalOpen(true)}>
+                            Enviar ao Cliente
                         </Button>
                     )}
                     {canApprove && isSent && (
@@ -535,6 +560,97 @@ export function QuoteDetailPage() {
                             <Button variant="outline" size="sm" onClick={() => { setProposalOpen(false); setProposalExpires('') }}>Cancelar</Button>
                             <Button size="sm" onClick={() => createProposalMut.mutate({ quote_id: Number(id), expires_at: proposalExpires || undefined })} disabled={createProposalMut.isPending}>
                                 {createProposalMut.isPending ? 'Criando...' : 'Criar'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Send Channel Modal */}
+            {sendModalOpen && quote && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSendModalOpen(false)}>
+                    <div className="bg-surface-0 rounded-xl p-6 max-w-md mx-4 shadow-elevated w-full" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-content-primary mb-1">Enviar Orçamento ao Cliente</h3>
+                        <p className="text-content-secondary text-sm mb-4">
+                            Escolha como deseja enviar o orçamento <strong>{quote.quote_number}</strong> para o cliente.
+                        </p>
+
+                        <div className="rounded-lg bg-surface-50 border border-default p-4 mb-5">
+                            <p className="text-sm font-semibold text-content-primary mb-2">{quote.customer?.name ?? 'Cliente'}</p>
+                            <div className="space-y-1 text-sm text-content-secondary">
+                                {quote.customer?.phone ? (
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="h-3.5 w-3.5 text-green-600" />
+                                        <span>{quote.customer.phone}</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-surface-400">
+                                        <Phone className="h-3.5 w-3.5" />
+                                        <span className="italic">Sem telefone cadastrado</span>
+                                    </div>
+                                )}
+                                {quote.customer?.email ? (
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="h-3.5 w-3.5 text-blue-600" />
+                                        <span>{quote.customer.email}</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-surface-400">
+                                        <Mail className="h-3.5 w-3.5" />
+                                        <span className="italic">Sem e-mail cadastrado</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <button
+                                type="button"
+                                onClick={() => handleSendViaChannel('whatsapp')}
+                                disabled={sendMut.isPending || !quote.customer?.phone}
+                                className="flex w-full items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 text-left text-sm font-medium text-green-800 hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <MessageCircle className="h-5 w-5 text-green-600 shrink-0" />
+                                <div>
+                                    <p>Enviar por WhatsApp</p>
+                                    <p className="text-xs font-normal text-green-600">Marca como enviado e abre conversa no WhatsApp</p>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleSendViaChannel('email')}
+                                disabled={sendMut.isPending}
+                                className="flex w-full items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-left text-sm font-medium text-blue-800 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <Mail className="h-5 w-5 text-blue-600 shrink-0" />
+                                <div>
+                                    <p>Enviar por E-mail</p>
+                                    <p className="text-xs font-normal text-blue-600">Marca como enviado e abre formulário de e-mail com PDF</p>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleSendViaChannel('none')}
+                                disabled={sendMut.isPending}
+                                className="flex w-full items-center gap-3 rounded-lg border border-default bg-surface-50 p-3 text-left text-sm font-medium text-content-secondary hover:bg-surface-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <CheckCircle className="h-5 w-5 text-surface-500 shrink-0" />
+                                <div>
+                                    <p>Apenas marcar como enviado</p>
+                                    <p className="text-xs font-normal text-surface-400">Altera o status sem enviar notificação</p>
+                                </div>
+                            </button>
+                        </div>
+
+                        {sendMut.isPending && (
+                            <p className="text-xs text-brand-600 text-center mt-3 animate-pulse">Processando envio...</p>
+                        )}
+
+                        <div className="flex justify-end mt-4">
+                            <Button variant="outline" size="sm" onClick={() => setSendModalOpen(false)} disabled={sendMut.isPending}>
+                                Cancelar
                             </Button>
                         </div>
                     </div>

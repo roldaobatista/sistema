@@ -945,25 +945,29 @@ class CrmController extends Controller
             ->avg('work_orders_sum_total') ?? 0;
 
         // 7. Automação de Retenção (CRM Proativo)
-        if (in_array($churnRisk, ['crítico', 'alto'])) {
-            $hasOpenFollowUp = CrmActivity::where('customer_id', $customer->id)
-                ->where('type', 'call')
-                ->where('is_automated', true)
-                ->whereNull('completed_at')
-                ->where('title', 'LIKE', '%Retenção%')
-                ->exists();
+        if ($customer->id && in_array($churnRisk, ['crítico', 'alto'])) {
+            try {
+                $hasOpenFollowUp = CrmActivity::where('customer_id', $customer->id)
+                    ->where('type', 'call')
+                    ->where('is_automated', true)
+                    ->whereNull('completed_at')
+                    ->where('title', 'LIKE', '%Retenção%')
+                    ->exists();
 
-            if (!$hasOpenFollowUp) {
-                CrmActivity::create([
-                    'tenant_id' => $tenantId,
-                    'customer_id' => $customer->id,
-                    'user_id' => $customer->assigned_seller_id ?? $request->user()->id,
-                    'title' => 'Retenção: Cliente com Risco de Churn ' . ucfirst($churnRisk),
-                    'description' => "Automação: O sistema detectou risco de perda devido à inatividade de {$lastContactDays} dias. Favor entrar em contato.",
-                    'type' => 'call',
-                    'is_automated' => true,
-                    'scheduled_at' => now()->addDays(2),
-                ]);
+                if (!$hasOpenFollowUp) {
+                    CrmActivity::create([
+                        'tenant_id' => $tenantId,
+                        'customer_id' => $customer->id,
+                        'user_id' => $customer->assigned_seller_id ?? $request->user()->id,
+                        'title' => 'Retenção: Cliente com Risco de Churn ' . ucfirst($churnRisk),
+                        'description' => "Automação: O sistema detectou risco de perda devido à inatividade de {$lastContactDays} dias. Favor entrar em contato.",
+                        'type' => 'call',
+                        'is_automated' => true,
+                        'scheduled_at' => now()->addDays(2),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                report($e);
             }
         }
 
