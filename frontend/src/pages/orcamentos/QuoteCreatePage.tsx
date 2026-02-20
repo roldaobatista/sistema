@@ -9,10 +9,13 @@ import {
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/common/CurrencyInput'
+import { PercentInput } from '@/components/common/PercentInput'
 import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 import QuickEquipmentModal from '@/components/common/QuickEquipmentModal'
 import QuickProductServiceModal from '@/components/common/QuickProductServiceModal'
+import { ItemSearchCombobox } from '@/components/common/ItemSearchCombobox'
 
 // Strings constant for easy localization in the future
 const STRINGS = {
@@ -437,12 +440,12 @@ export function QuoteCreatePage() {
                                             <input title="Quantidade" placeholder="1" type="number" min={1} value={it.quantity}
                                                 onChange={e => updateItem(bIdx, iIdx, 'quantity', Number(e.target.value))}
                                                 className="w-16 rounded border border-default bg-surface-0 px-2 py-1 text-center text-sm" />
-                                            <input title="Preço Unitário" placeholder="0.00" type="number" step="0.01" value={it.unit_price}
-                                                onChange={e => updateItem(bIdx, iIdx, 'unit_price', Number(e.target.value))}
-                                                className="w-24 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
-                                            <input title="Desconto (%)" placeholder="0.00" type="number" step="0.01" min={0} max={100} value={it.discount_percentage}
-                                                onChange={e => updateItem(bIdx, iIdx, 'discount_percentage', Number(e.target.value))}
-                                                className="w-20 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm" />
+                                            <CurrencyInput title="Preço Unitário" placeholder="R$ 0,00" value={it.unit_price}
+                                                onChange={val => updateItem(bIdx, iIdx, 'unit_price', val)}
+                                                className="w-28 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm h-8" />
+                                            <PercentInput title="Desconto (%)" placeholder="0,00%" value={it.discount_percentage}
+                                                onChange={val => updateItem(bIdx, iIdx, 'discount_percentage', val)}
+                                                className="w-24 rounded border border-default bg-surface-0 px-2 py-1 text-right text-sm h-8" />
                                             <span className="w-24 text-right font-medium text-surface-900">
                                                 {formatCurrency(it.quantity * it.unit_price * (1 - it.discount_percentage / 100))}
                                             </span>
@@ -464,14 +467,16 @@ export function QuoteCreatePage() {
                                 {/* Add item buttons */}
                                 <div className="flex gap-2 flex-wrap">
                                     <div className="flex gap-1 items-center">
-                                        <select title="Adicionar produto" onChange={e => {
-                                            const p = products.find((pr: any) => pr.id === Number(e.target.value))
-                                            if (p) addItem(bIdx, 'product', p.id, p.name, p.sell_price ?? 0)
-                                            e.target.value = ''
-                                        }} className="rounded-lg border border-default bg-surface-50 px-2 py-1.5 text-xs">
-                                            <option value="">{STRINGS.addProduct}</option>
-                                            {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                        </select>
+                                        <ItemSearchCombobox
+                                            items={products}
+                                            type="product"
+                                            placeholder={STRINGS.addProduct}
+                                            className="w-[200px] h-[30px]"
+                                            onSelect={(id) => {
+                                                const p = products.find((pr: any) => pr.id === id)
+                                                if (p) addItem(bIdx, 'product', p.id, p.name, p.sell_price ?? 0)
+                                            }}
+                                        />
                                         <button
                                             type="button"
                                             onClick={() => { setQuickPSTab('product'); setShowQuickProductService(true) }}
@@ -482,14 +487,16 @@ export function QuoteCreatePage() {
                                         </button>
                                     </div>
                                     <div className="flex gap-1 items-center">
-                                        <select title="Adicionar serviço" onChange={e => {
-                                            const s = services.find((sv: any) => sv.id === Number(e.target.value))
-                                            if (s) addItem(bIdx, 'service', s.id, s.name, s.default_price ?? 0)
-                                            e.target.value = ''
-                                        }} className="rounded-lg border border-default bg-surface-50 px-2 py-1.5 text-xs">
-                                            <option value="">{STRINGS.addService}</option>
-                                            {services.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
+                                        <ItemSearchCombobox
+                                            items={services}
+                                            type="service"
+                                            placeholder={STRINGS.addService}
+                                            className="w-[200px] h-[30px]"
+                                            onSelect={(id) => {
+                                                const s = services.find((sv: any) => sv.id === id)
+                                                if (s) addItem(bIdx, 'service', s.id, s.name, s.default_price ?? 0)
+                                            }}
+                                        />
                                         <button
                                             type="button"
                                             onClick={() => { setQuickPSTab('service'); setShowQuickProductService(true) }}
@@ -556,15 +563,15 @@ export function QuoteCreatePage() {
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-surface-600">{STRINGS.globalDiscount}</span>
-                                <input title="Desconto Global (%)" placeholder="0.00" type="number" min={0} max={100} step="0.01" value={discountPercentage}
-                                    onChange={e => setDiscountPercentage(Number(e.target.value))}
-                                    className="w-20 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm" />
+                                <PercentInput title="Desconto Global (%)" placeholder="0,00%" value={discountPercentage}
+                                    onChange={val => setDiscountPercentage(val)}
+                                    className="w-24 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm h-8" />
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-surface-600">Deslocamento (R$)</span>
-                                <input title="Deslocamento (R$)" placeholder="0.00" type="number" min={0} step="0.01" value={displacementValue}
-                                    onChange={e => setDisplacementValue(Number(e.target.value))}
-                                    className="w-28 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm" />
+                                <CurrencyInput title="Deslocamento (R$)" placeholder="R$ 0,00" value={displacementValue}
+                                    onChange={val => setDisplacementValue(val)}
+                                    className="w-28 rounded border border-default bg-surface-50 px-2 py-1 text-right text-sm h-8" />
                             </div>
                             <div className="flex justify-between text-base font-bold pt-2">
                                 <span className="text-surface-900">{STRINGS.total}</span>

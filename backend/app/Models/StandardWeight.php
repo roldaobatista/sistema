@@ -51,6 +51,7 @@ class StandardWeight extends Model
         'manufacturer', 'precision_class', 'material', 'shape',
         'certificate_number', 'certificate_date', 'certificate_expiry',
         'certificate_file', 'laboratory', 'status', 'notes',
+        'wear_rate_percentage', 'expected_failure_date'
     ];
 
     protected function casts(): array
@@ -59,6 +60,8 @@ class StandardWeight extends Model
             'nominal_value' => 'decimal:4',
             'certificate_date' => 'date',
             'certificate_expiry' => 'date',
+            'wear_rate_percentage' => 'decimal:2',
+            'expected_failure_date' => 'date',
         ];
     }
 

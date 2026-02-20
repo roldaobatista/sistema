@@ -286,6 +286,7 @@ const TechGoalsPage = lazy(() => import('@/pages/tech/TechGoalsPage'))
 const TechServiceCallsPage = lazy(() => import('@/pages/tech/TechServiceCallsPage'))
 const TechMaterialRequestPage = lazy(() => import('@/pages/tech/TechMaterialRequestPage'))
 const TechMapViewPage = lazy(() => import('@/pages/tech/TechMapViewPage'))
+const QrInventoryScanPage = lazy(() => import('@/pages/tech/QrInventoryScanPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -881,6 +882,7 @@ export default function App() {
                 <Route path="metas" element={<TechGoalsPage />} />
                 <Route path="chamados" element={<TechServiceCallsPage />} />
                 <Route path="solicitar-material" element={<TechMaterialRequestPage />} />
+                <Route path="inventory-scan" element={<QrInventoryScanPage />} />
               </Route>
 
               {/* Rotas do Portal do Cliente */}

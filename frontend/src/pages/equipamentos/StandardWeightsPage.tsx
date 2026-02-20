@@ -29,6 +29,8 @@ interface StandardWeight {
     display_name: string
     notes: string | null
     created_at: string
+    wear_rate_percentage?: number | null
+    expected_failure_date?: string | null
 }
 
 interface Constants {
@@ -181,6 +183,22 @@ export default function StandardWeightsPage() {
             toast.error('Erro ao exportar')
         }
     }
+
+    const predictWearMutation = useMutation({
+        mutationFn: (id: number) => api.post(`/standard-weights/${id}/predict-wear`),
+        onSuccess: (res) => {
+            toast.success(`Desgaste calculado: ${res.data.wear_rate_percentage}%`)
+            queryClient.invalidateQueries({ queryKey: ['standard-weights'] })
+            if (showDetail && showDetail.id === res.data.weight_id) {
+                setShowDetail(prev => prev ? ({
+                    ...prev,
+                    wear_rate_percentage: res.data.wear_rate_percentage,
+                    expected_failure_date: res.data.expected_failure_date
+                }) : null)
+            }
+        },
+        onError: () => toast.error('Erro ao realizar previsão de desgaste')
+    });
 
     const weights: StandardWeight[] = data?.data ?? []
     const total = data?.total ?? 0
@@ -476,6 +494,37 @@ export default function StandardWeightsPage() {
                                     <div>
                                         <span className="text-xs text-surface-400">Validade</span>
                                         <p className="font-medium flex items-center gap-1.5">{fmtDate(showDetail.certificate_expiry)} {certBadge(showDetail.certificate_expiry)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="border-t border-default pt-2 mt-2">
+                                <div className="flex justify-between items-center mb-2">
+                                    <p className="text-xs font-semibold text-surface-500">Métricas Analíticas (INMETRO)</p>
+                                    <button
+                                        onClick={() => predictWearMutation.mutate(showDetail.id)}
+                                        disabled={predictWearMutation.isPending}
+                                        className="btn-ghost text-xs gap-1 opacity-80 hover:opacity-100"
+                                    >
+                                        <AlertTriangle className="h-3 w-3" />
+                                        {predictWearMutation.isPending ? 'Analisando...' : 'Reavaliar Desgaste'}
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 bg-surface-50 p-2 rounded-lg border border-default">
+                                    <div>
+                                        <span className="text-[10px] uppercase text-surface-400 font-semibold tracking-wider">Desgaste Acumulado (MPE)</span>
+                                        <div className="flex items-end gap-1 font-mono">
+                                            <span className={cn(
+                                                "text-lg font-bold",
+                                                (showDetail.wear_rate_percentage || 0) > 80 ? "text-red-600" :
+                                                    (showDetail.wear_rate_percentage || 0) > 50 ? "text-amber-600" : "text-emerald-600"
+                                            )}>
+                                                {showDetail.wear_rate_percentage ? `${showDetail.wear_rate_percentage}%` : '—'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] uppercase text-surface-400 font-semibold tracking-wider">Falha Prevista</span>
+                                        <p className="font-medium text-surface-700">{fmtDate(showDetail.expected_failure_date ?? null)}</p>
                                     </div>
                                 </div>
                             </div>

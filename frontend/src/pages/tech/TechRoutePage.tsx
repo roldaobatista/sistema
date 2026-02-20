@@ -85,10 +85,11 @@ export default function TechRoutePage() {
 
         setOptimizing(true)
         try {
-            const { data } = await api.post('/operational/route-optimization', {
-                work_order_ids: workOrders.map(wo => wo.id),
+            const { data } = await api.get('/routing/daily-plan', {
+                params: { date: selectedDate }
             })
-            setOptimizedOrder(data ?? [])
+            // data.optimized_path is what the new backend service returns
+            setOptimizedOrder(data?.optimized_path ?? [])
             toast.success('Rota otimizada com sucesso!')
         } catch (err: unknown) {
             const msg = err && typeof err === 'object' && 'response' in err
@@ -195,6 +196,7 @@ export default function TechRoutePage() {
                     </label>
                     <input
                         type="date"
+                        aria-label="Data de planejamento"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                         className="w-full px-3 py-2 rounded-lg bg-surface-50 border border-border text-sm text-foreground focus:ring-2 focus:ring-brand-500/30 focus:outline-none"

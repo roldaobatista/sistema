@@ -1352,6 +1352,7 @@ Route::prefix('v1')->group(function () {
             Route::get('standard-weights/expiring', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'expiring']);
             Route::get('standard-weights/constants', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'constants']);
             Route::get('standard-weights/export', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'exportCsv']);
+            Route::post('standard-weights/{id}/predict-wear', [\App\Http\Controllers\Api\V1\Metrology\StandardWeightWearController::class, 'predict']);
             Route::get('standard-weights/{standardWeight}', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'show']);
         });
         Route::middleware('check.permission:equipments.standard_weight.create')->post('standard-weights', [\App\Http\Controllers\Api\V1\StandardWeightController::class, 'store']);

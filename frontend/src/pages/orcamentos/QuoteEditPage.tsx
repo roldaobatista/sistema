@@ -13,6 +13,7 @@ import { ArrowLeft, Save, Plus, Trash2, Package, Wrench } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import PriceHistoryHint from '@/components/common/PriceHistoryHint'
 import QuickProductServiceModal from '@/components/common/QuickProductServiceModal'
+import { ItemSearchCombobox } from '@/components/common/ItemSearchCombobox'
 
 const formatCurrency = (v: number | string) => {
     const n = typeof v === 'string' ? parseFloat(v) : v
@@ -221,7 +222,7 @@ export function QuoteEditPage() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-content-secondary mb-1">Condições de Pagamento</label>
-                        <select value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)}
+                        <select title="Condições de Pagamento" value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)}
                             className="w-full rounded-lg border border-default bg-surface-50 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
                             <option value="">Selecione (opcional)</option>
                             <option value="a_vista">À Vista</option>
@@ -343,23 +344,24 @@ export function QuoteEditPage() {
                                 <div>
                                     <label htmlFor="new-item-product-service" className="text-xs text-content-secondary">{newItem.type === 'product' ? 'Produto' : 'Serviço'}</label>
                                     <div className="flex gap-1 items-center mt-1">
-                                        <select id="new-item-product-service" aria-label={newItem.type === 'product' ? 'Selecionar produto' : 'Selecionar serviço'} className="flex-1 rounded-lg border border-default p-2 text-sm" onChange={(e) => {
-                                            const val = parseInt(e.target.value)
-                                            if (newItem.type === 'product') {
-                                                const p = (products ?? []).find((x: any) => x.id === val)
-                                                const price = p?.sell_price ?? 0
-                                                setNewItem({ ...newItem, product_id: val, unit_price: price, original_price: price, custom_description: p?.name ?? '' })
-                                            } else {
-                                                const s = (services ?? []).find((x: any) => x.id === val)
-                                                const price = s?.default_price ?? 0
-                                                setNewItem({ ...newItem, service_id: val, unit_price: price, original_price: price, custom_description: s?.name ?? '' })
-                                            }
-                                        }}>
-                                            <option value="">Selecione...</option>
-                                            {(newItem.type === 'product' ? products : services)?.map((x: any) => (
-                                                <option key={x.id} value={x.id}>{x.name}</option>
-                                            ))}
-                                        </select>
+                                        <ItemSearchCombobox
+                                            items={newItem.type === 'product' ? (products ?? []) : (services ?? [])}
+                                            type={newItem.type}
+                                            value={newItem.type === 'product' ? newItem.product_id : newItem.service_id}
+                                            placeholder={`Pesquisar ${newItem.type === 'product' ? 'produto' : 'serviço'}...`}
+                                            className="h-[34px] flex-1 min-w-0"
+                                            onSelect={(id) => {
+                                                if (newItem.type === 'product') {
+                                                    const p = (products ?? []).find((x: any) => x.id === id)
+                                                    const price = p?.sell_price ?? 0
+                                                    setNewItem({ ...newItem, product_id: id, unit_price: price, original_price: price, custom_description: p?.name ?? '' })
+                                                } else {
+                                                    const s = (services ?? []).find((x: any) => x.id === id)
+                                                    const price = s?.default_price ?? 0
+                                                    setNewItem({ ...newItem, service_id: id, unit_price: price, original_price: price, custom_description: s?.name ?? '' })
+                                                }
+                                            }}
+                                        />
                                         <button
                                             type="button"
                                             onClick={() => { setQuickPSTab(newItem.type); setShowQuickProductService(true) }}
@@ -379,11 +381,11 @@ export function QuoteEditPage() {
                                 </div>
                                 <div>
                                     <label className="text-xs text-content-secondary">Preço Unitário</label>
-                                    <Input type="number" min={0} step={0.01} value={newItem.unit_price} onChange={(e) => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })} />
+                                    <CurrencyInput value={newItem.unit_price} onChange={(val) => setNewItem({ ...newItem, unit_price: val })} />
                                 </div>
                                 <div>
                                     <label className="text-xs text-content-secondary">Desconto (%)</label>
-                                    <Input type="number" min={0} max={100} step={0.01} value={newItem.discount_percentage} onChange={(e) => setNewItem({ ...newItem, discount_percentage: parseFloat(e.target.value) || 0 })} />
+                                    <PercentInput value={newItem.discount_percentage} onChange={(val) => setNewItem({ ...newItem, discount_percentage: val })} />
                                 </div>
                                 <div>
                                     <label className="text-xs text-content-secondary">Descrição</label>
@@ -497,11 +499,11 @@ function EditableItemRow({ item, onSave, onRemove, saving }: {
                 </div>
                 <div>
                     <label className="text-xs text-content-secondary">Preço Unitário</label>
-                    <Input type="number" min={0} step={0.01} value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} />
+                    <CurrencyInput value={price} onChange={(val) => setPrice(val)} />
                 </div>
                 <div>
                     <label className="text-xs text-content-secondary">Desconto (%)</label>
-                    <Input type="number" min={0} max={100} step={0.01} value={disc} onChange={(e) => setDisc(parseFloat(e.target.value) || 0)} />
+                    <PercentInput value={disc} onChange={(val) => setDisc(val)} />
                 </div>
             </div>
             <div className="flex gap-2 justify-end mt-2">
